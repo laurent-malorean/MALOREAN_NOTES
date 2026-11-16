@@ -4,7 +4,7 @@ use domain::attachments::relink;
 use domain::front_matter::{is_pinned, pinned, split, unpinned};
 use domain::search::{ExcerptPart, SearchQuery, search};
 use domain::title::displayed_title;
-use domain::{FileName, Folder, NotePath, Title};
+use domain::{AttachmentName, FileName, Folder, NotePath, Title};
 use proptest::prelude::*;
 
 /// Une ligne de note plausible : titres, blocs de code, délimiteurs d'en-tête, texte libre.
@@ -27,6 +27,22 @@ fn markdown_note() -> impl Strategy<Value = String> {
 }
 
 proptest! {
+    #[test]
+    fn a_dropped_file_name_always_becomes_a_safe_name_its_link_leads_back_to(
+        stem in any::<String>(),
+        extension in prop::sample::select(vec!["png", "JPG", "pdf", "Svg"]),
+    ) {
+        let name = AttachmentName::dropped(&format!("{stem}.{extension}")).unwrap();
+        let text = name.to_name();
+        let existing = AttachmentName::existing(&text);
+        prop_assert_eq!(existing.as_ref(), Some(&name));
+        let note = FileName::parse("note.md").unwrap();
+        let link = name.markdown_link(&note);
+        let target = link.rsplit_once("](").unwrap().1.strip_suffix(')').unwrap();
+        prop_assert!(!target.contains([' ', '(', ')']));
+        prop_assert_eq!(AttachmentName::in_link(&note, target), Some(name));
+    }
+
     #[test]
     fn pinning_and_unpinning_never_touch_the_title(content in markdown_note()) {
         let title = displayed_title(&content);

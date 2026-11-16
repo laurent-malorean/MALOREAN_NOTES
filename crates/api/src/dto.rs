@@ -100,3 +100,12 @@ pub struct TrashInfo {
     /// Les notes de la corbeille, triées par chemin.
     pub notes: Vec<TrashedNoteItem>,
 }
+
+/// Une pièce jointe ajoutée à une note.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AttachedFile {
+    /// Le lien Markdown à insérer dans la note, là où le fichier a été collé ou glissé.
+    pub markdown: String,
+}

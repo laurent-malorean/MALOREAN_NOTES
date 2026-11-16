@@ -7,8 +7,8 @@ mod error;
 mod session;
 
 pub use dto::{
-    ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
-    TrashInfo, TrashedNoteItem,
+    AttachedFile, ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, SavedNote,
+    SearchResultItem, TrashInfo, TrashedNoteItem,
 };
 pub use error::ApiError;
 pub use session::Session;

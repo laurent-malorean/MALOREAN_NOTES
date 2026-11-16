@@ -1,5 +1,6 @@
 //! Un type par intention de l'utilisateur.
 
+mod attachments;
 mod create_note;
 mod folders;
 mod library;
@@ -11,6 +12,7 @@ mod save_note;
 mod search_notes;
 mod trash;
 
+pub use attachments::{AttachFile, AttachmentSource, MAX_ATTACHMENT_MEGABYTES, OpenAttachment};
 pub use create_note::CreateNote;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use library::{OpenLibrary, OpenedLibrary, ReopenLastLibrary};

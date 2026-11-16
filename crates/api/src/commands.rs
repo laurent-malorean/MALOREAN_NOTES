@@ -2,13 +2,16 @@
 
 use std::sync::Arc;
 
-use tauri::ipc::Invoke;
+use application::use_cases::AttachmentSource;
+use percent_encoding::percent_decode_str;
+use tauri::ipc::{Invoke, InvokeBody, Request};
 use tauri::{AppHandle, Manager, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 
 use crate::{
-    ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session,
-    TrashInfo,
+    ApiError, AttachedFile, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
+    Session, TrashInfo,
 };
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
@@ -298,6 +301,73 @@ pub async fn empty_trash(session: SharedSession<'_>) -> Result<(), ApiError> {
     in_background(move || session.empty_trash()).await
 }
 
+/// En-têtes d'une pièce jointe envoyée par la page, encodés comme une adresse (`%XX`).
+/// Le chemin de la note qui la reçoit :
+pub const NOTE_HEADER: &str = "x-note";
+/// Le nom d'un fichier glissé :
+pub const FILE_NAME_HEADER: &str = "x-file-name";
+/// Le type d'un contenu collé (`image/png`…), quand aucun nom n'est donné :
+pub const MEDIA_TYPE_HEADER: &str = "x-media-type";
+
+fn header(request: &Request<'_>, name: &str) -> Option<String> {
+    let value = request.headers().get(name)?.to_str().ok()?;
+    Some(percent_decode_str(value).decode_utf8_lossy().into_owned())
+}
+
+/// Joint à une note un fichier collé ou glissé, reçu tel quel (octets bruts) ; rend le lien
+/// Markdown à insérer. La note est dans l'en-tête [`NOTE_HEADER`], le nom du fichier glissé
+/// dans [`FILE_NAME_HEADER`], ou le type du contenu collé dans [`MEDIA_TYPE_HEADER`].
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`Session::attach_file`]. S'y ajoute une
+/// requête incomplète (contenu ou en-tête manquant).
+#[tauri::command]
+pub async fn attach_file(
+    request: Request<'_>,
+    session: SharedSession<'_>,
+) -> Result<AttachedFile, ApiError> {
+    let incomplete = || ApiError::incomplete_attachment();
+    let InvokeBody::Raw(bytes) = request.body() else {
+        return Err(incomplete());
+    };
+    let bytes = bytes.clone();
+    let note = header(&request, NOTE_HEADER).ok_or_else(incomplete)?;
+    let file_name = header(&request, FILE_NAME_HEADER);
+    let media_type = header(&request, MEDIA_TYPE_HEADER);
+    let session = Arc::clone(&session);
+    in_background(move || {
+        let source = match (&file_name, &media_type) {
+            (Some(file_name), _) => AttachmentSource::Dropped { file_name },
+            (None, Some(media_type)) => AttachmentSource::Pasted { media_type },
+            (None, None) => return Err(incomplete()),
+        };
+        session.attach_file(&note, source, &bytes)
+    })
+    .await
+}
+
+/// Ouvre avec l'application du Mac la pièce jointe visée par la cible d'un lien de la note.
+/// Seules les pièces jointes de la note s'ouvrent ainsi.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`Session::attachment_location`]. S'y ajoute
+/// l'échec de l'ouverture par le Mac.
+#[tauri::command]
+pub async fn open_attachment<R: Runtime>(
+    app: AppHandle<R>,
+    session: SharedSession<'_>,
+    path: String,
+    target: String,
+) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    let location = in_background(move || session.attachment_location(&path, &target)).await?;
+    app.opener()
+        .open_path(location, None::<&str>)
+        .map_err(|e| ApiError::internal(&e))
+}
+
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
@@ -321,5 +391,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         restore_note,
         restore_folder,
         empty_trash,
+        attach_file,
+        open_attachment,
     ]
 }

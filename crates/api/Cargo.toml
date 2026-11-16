@@ -11,6 +11,8 @@ application.workspace = true
 serde.workspace = true
 tauri.workspace = true
 tauri-plugin-dialog.workspace = true
+tauri-plugin-opener.workspace = true
+percent-encoding.workspace = true
 tracing.workspace = true
 ts-rs.workspace = true
 

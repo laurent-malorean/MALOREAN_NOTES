@@ -8,10 +8,12 @@
 use std::sync::Arc;
 
 use api::commands::invoke_handler;
+use api::commands::{FILE_NAME_HEADER, MEDIA_TYPE_HEADER, NOTE_HEADER};
 use api::{
-    LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session, TrashInfo,
+    AttachedFile, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session,
+    TrashInfo,
 };
-use application::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
+use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 use application::{LibraryLocation, Preferences};
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
@@ -31,7 +33,11 @@ fn window(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
         .remember_library(&LibraryLocation::new("/Users/moi/Notes").unwrap())
         .unwrap();
     let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
-    let session = Session::new(Arc::new(opener), Arc::new(preferences));
+    let session = Session::new(
+        Arc::new(opener),
+        Arc::new(preferences),
+        Arc::new(FixedClock::default()),
+    );
     let app = mock_builder()
         .manage(Arc::new(session))
         .invoke_handler(invoke_handler())
@@ -313,4 +319,106 @@ fn a_folder_goes_to_the_trash_comes_back_and_the_trash_is_emptied() {
     call(&window, "empty_trash", json!({})).unwrap();
     let trash: TrashInfo = ok(call(&window, "list_trash", json!({})));
     assert!(trash.folders.is_empty() && trash.notes.is_empty());
+}
+
+/// Envoie un fichier comme la page : octets bruts, et en-têtes encodés comme une adresse.
+fn attach(
+    window: &WebviewWindow<MockRuntime>,
+    body: InvokeBody,
+    headers: &[(&str, &str)],
+) -> Result<Value, Value> {
+    let mut map = tauri::http::HeaderMap::new();
+    for (name, value) in headers {
+        map.insert(
+            tauri::http::HeaderName::from_bytes(name.as_bytes()).unwrap(),
+            value.parse().unwrap(),
+        );
+    }
+    let request = InvokeRequest {
+        cmd: "attach_file".into(),
+        callback: CallbackFn(0),
+        error: CallbackFn(1),
+        url: APP_ORIGIN.parse().unwrap(),
+        body,
+        headers: map,
+        invoke_key: INVOKE_KEY.to_string(),
+    };
+    get_ipc_response(window, request).map(|body| body.deserialize::<Value>().unwrap())
+}
+
+fn opened_with(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
+    let window = window(notes);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    window
+}
+
+#[test]
+fn a_dropped_file_is_attached_under_its_decoded_name() {
+    let window = opened_with(&[("Voyages/été.md", "# Été")]);
+    let attached: AttachedFile = ok(attach(
+        &window,
+        InvokeBody::Raw(b"PDF".to_vec()),
+        &[
+            (NOTE_HEADER, "Voyages/%C3%A9t%C3%A9.md"),
+            (FILE_NAME_HEADER, "billet%20d%27avion.pdf"),
+        ],
+    ));
+    assert_eq!(
+        attached.markdown,
+        "[billet d'avion.pdf](été.assets/billet%20d'avion.pdf)"
+    );
+}
+
+#[test]
+fn a_pasted_image_is_named_after_the_moment() {
+    let window = opened_with(&[("a.md", "# A")]);
+    let attached: AttachedFile = ok(attach(
+        &window,
+        InvokeBody::Raw(b"PNG".to_vec()),
+        &[(NOTE_HEADER, "a.md"), (MEDIA_TYPE_HEADER, "image%2Fpng")],
+    ));
+    assert_eq!(attached.markdown, "![](a.assets/image-2026-11-16-1830.png)");
+}
+
+#[test]
+fn an_incomplete_attachment_is_refused() {
+    let window = opened_with(&[("a.md", "# A")]);
+    let refused = "le fichier à joindre n'a pas été reçu en entier";
+    let json_body = attach(
+        &window,
+        InvokeBody::Json(json!({})),
+        &[(NOTE_HEADER, "a.md")],
+    );
+    assert_eq!(error_message(json_body), refused);
+    let no_note = attach(
+        &window,
+        InvokeBody::Raw(vec![1]),
+        &[(MEDIA_TYPE_HEADER, "image%2Fpng")],
+    );
+    assert_eq!(error_message(no_note), refused);
+    let no_name = attach(&window, InvokeBody::Raw(vec![1]), &[(NOTE_HEADER, "a.md")]);
+    assert_eq!(error_message(no_name), refused);
+}
+
+#[test]
+fn only_attachments_of_the_note_can_be_opened() {
+    let window = opened_with(&[("a.md", "# A")]);
+    let elsewhere = call(
+        &window,
+        "open_attachment",
+        json!({ "path": "a.md", "target": "../../etc/passwd" }),
+    );
+    assert_eq!(
+        error_message(elsewhere),
+        "« ../../etc/passwd » n'est pas une pièce jointe de la note"
+    );
+    let missing = call(
+        &window,
+        "open_attachment",
+        json!({ "path": "a.md", "target": "a.assets/absent.pdf" }),
+    );
+    assert_eq!(
+        error_message(missing),
+        "la pièce jointe « absent.pdf » est introuvable"
+    );
 }

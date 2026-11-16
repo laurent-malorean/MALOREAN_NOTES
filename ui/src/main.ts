@@ -1,5 +1,6 @@
 // Assemblage de l'interface : relie l'état de l'écran, l'éditeur et le pont vers Rust.
 import * as bridge from "./bridge";
+import type { AttachmentActions } from "./editor/attachments";
 import { createEditor } from "./editor/editor";
 import type { FocusUnit } from "./editor/focus/focus-range";
 import { imageAddress } from "./editor/image-address";
@@ -40,6 +41,24 @@ let screen: Screen = welcome;
 let autosave: Autosave | null = null;
 let libraryPath = "";
 
+/** Joindre à la note ouverte : ce qui est tapé est enregistré d'abord, pour viser son vrai nom. */
+const attachmentActions: AttachmentActions = {
+  attach: async (file, origin) => {
+    try {
+      await autosave?.flush();
+      const path = selectedNote(screen);
+      return path === null ? null : (await bridge.attachFile(path, file, origin)).markdown;
+    } catch (error) {
+      showError(error);
+      return null;
+    }
+  },
+  open: (target) => {
+    const path = selectedNote(screen);
+    if (path !== null) run(bridge.openAttachment(path, target));
+  },
+};
+
 const editor = createEditor(
   layout.editor,
   (content) => autosave?.edit(content),
@@ -48,6 +67,7 @@ const editor = createEditor(
     const folder = folderOf(selectedNote(screen) ?? "");
     return imageAddress(src, folder ? `${libraryPath}/${folder}` : libraryPath, bridge.fileAddress);
   },
+  attachmentActions,
 );
 
 function showError(error: unknown) {

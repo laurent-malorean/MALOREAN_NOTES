@@ -4,6 +4,7 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { Compartment, EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
+import { type AttachmentActions, attachments } from "./attachments";
 import { focusMode } from "./focus/focus-mode";
 import type { FocusUnit } from "./focus/focus-range";
 import { liveFormatting } from "./live-formatting";
@@ -22,12 +23,14 @@ export function createEditor(
   parent: HTMLElement,
   onChange: (content: string) => void,
   resolveImage?: ImageResolver,
+  attachmentActions?: AttachmentActions,
 ): Editor {
   const focus = new Compartment();
   let focusUnit: FocusUnit | null = null;
   const extensions = () => [
     focus.of(focusMode(focusUnit)),
     resolveImage ? imageResolver.of(resolveImage) : [],
+    attachmentActions ? attachments(attachmentActions) : [],
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.

@@ -2,6 +2,7 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
+import type { AttachedFile } from "./generated/AttachedFile";
 import type { LibraryInfo } from "./generated/LibraryInfo";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
@@ -11,6 +12,7 @@ import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
 import type { TrashInfo } from "./generated/TrashInfo";
 
 export type {
+  AttachedFile,
   LibraryInfo,
   NoteContent,
   NoteListItem,
@@ -75,3 +77,30 @@ export const setFullScreen = (on: boolean) => getCurrentWindow().setFullscreen(o
 export const isFullScreen = () => getCurrentWindow().isFullscreen();
 /** Prévient à chaque changement de taille de la fenêtre, entrée et sortie du plein écran comprises. */
 export const onWindowResized = (handler: () => void) => getCurrentWindow().onResized(handler);
+
+/** D'où vient un fichier à joindre : collé (seul son type est connu) ou glissé (il a un nom). */
+export type AttachmentOrigin =
+  | { readonly kind: "pasted"; readonly mediaType: string }
+  | { readonly kind: "dropped"; readonly fileName: string };
+
+/** En-têtes d'une pièce jointe, encodés comme une adresse ; mêmes noms côté Rust. */
+const NOTE_HEADER = "x-note";
+const FILE_NAME_HEADER = "x-file-name";
+const MEDIA_TYPE_HEADER = "x-media-type";
+
+/** Joint un fichier à la note `path` (envoyé tel quel, en octets) ; rend le lien à insérer. */
+export async function attachFile(
+  path: string,
+  file: Blob,
+  origin: AttachmentOrigin,
+): Promise<AttachedFile> {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const headers: Record<string, string> = { [NOTE_HEADER]: encodeURIComponent(path) };
+  if (origin.kind === "dropped") headers[FILE_NAME_HEADER] = encodeURIComponent(origin.fileName);
+  else headers[MEDIA_TYPE_HEADER] = encodeURIComponent(origin.mediaType);
+  return invoke<AttachedFile>("attach_file", bytes, { headers });
+}
+
+/** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
+export const openAttachment = (path: string, target: string) =>
+  invoke<null>("open_attachment", { path, target });

@@ -1,5 +1,6 @@
 //! La bibliothèque ouverte et les cas d'usage qu'on lui applique.
 
+mod attachments;
 mod trash;
 
 use std::path::Path;
@@ -9,7 +10,9 @@ use application::use_cases::{
     CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenLibrary, PinNote,
     ReadNote, RenameFolder, ReopenLastLibrary, SaveNote, SearchNotes, SearchResult,
 };
-use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences, StoredNote};
+use application::{
+    AppError, Clock, LibraryLocation, LibraryOpener, NoteStore, Preferences, StoredNote,
+};
 
 use domain::search::{ExcerptPart, SearchQuery};
 use domain::{Folder, FolderName, NotePath};
@@ -23,16 +26,22 @@ use crate::{
 pub struct Session {
     opener: Arc<dyn LibraryOpener>,
     preferences: Arc<dyn Preferences>,
+    clock: Arc<dyn Clock>,
     library: RwLock<Option<Arc<dyn NoteStore>>>,
 }
 
 impl Session {
     /// Une session sans bibliothèque ouverte.
     #[must_use]
-    pub fn new(opener: Arc<dyn LibraryOpener>, preferences: Arc<dyn Preferences>) -> Self {
+    pub fn new(
+        opener: Arc<dyn LibraryOpener>,
+        preferences: Arc<dyn Preferences>,
+        clock: Arc<dyn Clock>,
+    ) -> Self {
         Self {
             opener,
             preferences,
+            clock,
             library: RwLock::new(None),
         }
     }
@@ -303,7 +312,7 @@ fn library_info(location: &LibraryLocation) -> LibraryInfo {
 mod tests {
     use std::sync::Arc;
 
-    use application::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
+    use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
     use application::{LibraryLocation, Preferences};
 
     use std::path::Path;
@@ -312,7 +321,11 @@ mod tests {
 
     fn session_with(notes: &[(&str, &str)]) -> Session {
         let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
-        Session::new(Arc::new(opener), Arc::new(FakePreferences::default()))
+        Session::new(
+            Arc::new(opener),
+            Arc::new(FakePreferences::default()),
+            Arc::new(FixedClock::default()),
+        )
     }
 
     fn opened(notes: &[(&str, &str)]) -> Session {
@@ -385,7 +398,11 @@ mod tests {
             .remember_library(&LibraryLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::default()));
-        let session = Session::new(Arc::new(opener), Arc::new(preferences));
+        let session = Session::new(
+            Arc::new(opener),
+            Arc::new(preferences),
+            Arc::new(FixedClock::default()),
+        );
         assert_eq!(
             session.reopen_last_library().unwrap().map(|i| i.name),
             Some("Notes".into())

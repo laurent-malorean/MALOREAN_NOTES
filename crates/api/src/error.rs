@@ -21,6 +21,13 @@ impl ApiError {
         }
     }
 
+    /// La page a envoyé une pièce jointe sans son contenu ou sans dire à quelle note elle va.
+    pub(crate) fn incomplete_attachment() -> Self {
+        Self {
+            message: "le fichier à joindre n'a pas été reçu en entier".to_owned(),
+        }
+    }
+
     pub(crate) fn internal(reason: &impl std::fmt::Display) -> Self {
         tracing::error!(%reason, "erreur interne");
         Self {

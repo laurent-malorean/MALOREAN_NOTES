@@ -100,13 +100,17 @@ mod tests {
     use std::sync::Arc;
 
     use application::LibraryLocation;
-    use application::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
+    use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
 
     fn opened(notes: &[(&str, &str)]) -> Session {
         let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
-        let session = Session::new(Arc::new(opener), Arc::new(FakePreferences::default()));
+        let session = Session::new(
+            Arc::new(opener),
+            Arc::new(FakePreferences::default()),
+            Arc::new(FixedClock::default()),
+        );
         session
             .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();

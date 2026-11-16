@@ -17,6 +17,10 @@ export interface FakeBackend {
   failNextSave: boolean;
   calls: string[];
   fullScreen: boolean;
+  /** Les pièces jointes écrites, par chemin (`voyage.assets/vue.png`), avec leur taille. */
+  attachments: Record<string, number>;
+  /** Les cibles de liens dont l'ouverture a été demandée. */
+  opened: string[];
   /** Le plein écran demandé par le Mac lui-même (bouton vert, menu). */
   enterFullScreenFromTheSystem: () => Promise<void>;
 }
@@ -36,6 +40,8 @@ const backend: FakeBackend = {
   failNextSave: false,
   calls: [],
   fullScreen: false,
+  attachments: {},
+  opened: [],
   enterFullScreenFromTheSystem: async () => {
     backend.fullScreen = true;
     await emit("tauri://resize", { width: 1440, height: 900 });
@@ -262,12 +268,54 @@ const windowCommands: Record<string, (args: Record<string, unknown>) => unknown>
   "plugin:window|is_fullscreen": () => backend.fullScreen,
 };
 
+/** Pièces jointes : même nommage que Rust, en plus simple (moment figé). */
+const PASTED_NAMES: Record<string, string> = {
+  "image/png": "image-2026-11-16-1830.png",
+  "application/pdf": "document-2026-11-16-1830.pdf",
+};
+const ATTACHABLE = /\.(png|jpe?g|gif|webp|heic|tiff|svg|pdf)$/i;
+const encodedInLink = (text: string) =>
+  text.replaceAll(" ", "%20").replaceAll("(", "%28").replaceAll(")", "%29");
+/** Les en-têtes de la dernière commande : le simulateur de Tauri ne les transmet pas. */
+let lastHeaders: Record<string, string> = {};
+
+const header = (name: string) => {
+  const value = lastHeaders[name];
+  return value === undefined ? undefined : decodeURIComponent(value);
+};
+
+/** Le nom que prend le fichier dans `assets` : le sien, ou un suffixe libre. */
+function freeAttachmentName(assets: string, wanted: string) {
+  const [base = "", extension = ""] = /^(.*)\.([^.]+)$/.exec(wanted)?.slice(1) ?? [];
+  let name = wanted;
+  for (let n = 2; `${assets}${name}` in backend.attachments; n++)
+    name = `${base}-${n}.${extension}`;
+  return name;
+}
+
+function attachFile(bytes: Uint8Array) {
+  const note = header("x-note") ?? "";
+  const wanted = header("x-file-name") ?? PASTED_NAMES[header("x-media-type") ?? ""] ?? "";
+  if (!ATTACHABLE.test(wanted)) {
+    throw { message: `« ${wanted} » ne peut pas être joint à une note` };
+  }
+  const stem = note.replace(/^.*\//, "").replace(/\.md$/, "");
+  const assets = `${note.replace(/[^/]*$/, "")}${stem}.assets/`;
+  const name = freeAttachmentName(assets, wanted);
+  backend.attachments[`${assets}${name}`] = bytes.length;
+  const target = `${stem}.assets/${encodedInLink(name)}`;
+  return { markdown: /\.pdf$/i.test(name) ? `[${name}](${target})` : `![](${target})` };
+}
+
+commands.open_attachment = ({ target = "" }) => void backend.opened.push(target);
+
 mockWindows("main");
 mockIPC(
   (command, args) => {
     backend.calls.push(command);
     const windowCommand = windowCommands[command];
     if (windowCommand) return windowCommand((args ?? {}) as Record<string, unknown>);
+    if (command === "attach_file") return attachFile(args as Uint8Array);
     const handler = commands[command];
     if (!handler) throw { message: `commande inconnue : ${command}` };
     return handler((args ?? {}) as Record<string, string>);
@@ -276,3 +324,16 @@ mockIPC(
 );
 
 mockConvertFileSrc("macos");
+
+type Invoke = (
+  command: string,
+  args: unknown,
+  options?: { headers?: Record<string, string> },
+) => unknown;
+const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
+  .__TAURI_INTERNALS__;
+const forward = internals.invoke;
+internals.invoke = (command, args, options) => {
+  lastHeaders = options?.headers ?? {};
+  return forward(command, args, options);
+};

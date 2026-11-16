@@ -15,6 +15,10 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Titre | `Title` | Premier titre `#` de la note ; nom affiché. |
 | Nom de fichier | `FileName` | Titre en kebab-case suivi de `.md` ; suit le titre. |
 | Pièce jointe | `Attachment` | Fichier non Markdown (image, document) lié depuis une note par un lien relatif. |
+| Nom de pièce jointe | `AttachmentName` | Nom du fichier d'une pièce jointe dans le dossier de pièces jointes : une image (PNG, JPEG, GIF, WebP, HEIC, TIFF, SVG) ou un PDF. Celui d'un fichier glissé garde son nom, rendu sûr ; celui d'une image collée est tiré du moment (`image-2026-11-16-1830.png`). |
+| Joindre | `attach` | Copier un fichier collé ou glissé dans le dossier de pièces jointes de la note, et insérer le lien vers lui à l'endroit voulu. |
+| Moment | `Moment` | Date et heure locales à la minute, telles que les donne l'horloge. |
+| Horloge | `Clock` | Ce qui donne le moment présent ; seule l'infrastructure lit la vraie heure, les tests passent une horloge arrêtée. |
 | Dossier de pièces jointes | `AttachmentFolder` | Dossier `<nom-de-la-note>.assets/` qui contient les pièces jointes d'une seule note ; ce n'est pas un dossier de notes. |
 | Épinglée | `pinned` | Une note épinglée apparaît en tête de liste. |
 | Étiquette | `Tag` | Mot-clé libre attaché à une note. |

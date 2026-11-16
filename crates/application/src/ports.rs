@@ -3,7 +3,7 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use domain::{FileName, Folder, Modified, NotePath};
+use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 
 /// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,6 +38,10 @@ pub enum StoreError {
     Unreadable(NotePath),
     /// Aucun dossier n'existe à ce chemin.
     FolderNotFound(Folder),
+    /// Le dossier de pièces jointes de la note a déjà un fichier de ce nom.
+    AttachmentAlreadyExists(String),
+    /// La note n'a pas de pièce jointe de ce nom.
+    AttachmentNotFound(String),
     /// Un dossier existe déjà à ce chemin.
     FolderAlreadyExists(Folder),
     /// Le stockage ne répond pas (dossier absent, droits, disque plein) ; la cause est lisible.
@@ -182,6 +186,66 @@ pub trait NoteStore: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si la suppression échoue.
     fn empty_trash(&self) -> Result<(), StoreError>;
+
+    /// Les pièces jointes de la note (images et PDF de son dossier de pièces jointes) ; aucune
+    /// si elle n'a pas encore de dossier de pièces jointes.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si le dossier de pièces jointes ne peut pas être lu.
+    fn attachment_names(&self, note: &NotePath) -> Result<Vec<AttachmentName>, StoreError>;
+
+    /// Écrit une nouvelle pièce jointe dans le dossier de pièces jointes de la note, créé si
+    /// besoin ; n'écrase jamais un fichier existant.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::NotFound`] si la note n'existe pas, [`StoreError::AttachmentAlreadyExists`]
+    /// si le nom est pris, [`StoreError::Unavailable`] si l'écriture échoue ; rien n'est laissé
+    /// à moitié écrit.
+    fn write_attachment(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+        bytes: &[u8],
+    ) -> Result<(), StoreError>;
+
+    /// Où se trouve une pièce jointe de la note, pour l'ouvrir avec une application du Mac.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::AttachmentNotFound`] si la note n'a pas cette pièce jointe,
+    /// [`StoreError::Unavailable`] si le stockage ne répond pas.
+    fn attachment_location(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+    ) -> Result<AttachmentLocation, StoreError>;
+}
+
+/// Emplacement d'une pièce jointe, que seul l'adaptateur de stockage sait fabriquer et que
+/// seul l'ouvreur d'applications sait lire.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AttachmentLocation(String);
+
+impl AttachmentLocation {
+    /// L'emplacement donné par l'adaptateur de stockage.
+    #[must_use]
+    pub fn new(location: String) -> Self {
+        Self(location)
+    }
+
+    /// L'emplacement, tel que l'adaptateur l'a donné.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// Donne le moment présent.
+pub trait Clock: Send + Sync + Debug {
+    /// La date et l'heure locales, à la minute.
+    fn now(&self) -> Moment;
 }
 
 /// Emplacement d'une bibliothèque, tel que l'utilisateur l'a choisi.

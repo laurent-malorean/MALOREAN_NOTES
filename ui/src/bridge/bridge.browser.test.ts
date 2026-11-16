@@ -192,3 +192,62 @@ describe("pont vers Rust : corbeille", () => {
     expect(calls).toEqual([{ command: "empty_trash", args: {} }]);
   });
 });
+
+interface SentFile {
+  readonly command: string;
+  readonly bytes: unknown;
+  readonly headers: unknown;
+}
+
+/** Note ce que le pont envoie, en-têtes compris (le simulateur de Tauri les ignore). */
+function recordSentFiles(answer: unknown): SentFile[] {
+  recordCalls(answer);
+  const sent: SentFile[] = [];
+  type Invoke = (command: string, args: unknown, options?: { headers?: unknown }) => unknown;
+  const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
+    .__TAURI_INTERNALS__;
+  const invoke = internals.invoke;
+  internals.invoke = (command, bytes, options) => {
+    sent.push({ command, bytes, headers: options?.headers });
+    return invoke(command, bytes, options);
+  };
+  return sent;
+}
+
+describe("pont vers Rust : pièces jointes", () => {
+  const link = { markdown: "![](a.assets/x.png)" };
+
+  it("envoie un fichier glissé en octets, avec la note et son nom encodés", async () => {
+    const sent = recordSentFiles(link);
+    const file = new File(["PDF"], "billet d'été.pdf");
+    const attached = await bridge.attachFile("Voyages/été.md", file, {
+      kind: "dropped",
+      fileName: file.name,
+    });
+    expect(attached).toEqual(link);
+    expect(sent).toEqual([
+      {
+        command: "attach_file",
+        bytes: new Uint8Array([80, 68, 70]),
+        headers: {
+          "x-note": "Voyages%2F%C3%A9t%C3%A9.md",
+          "x-file-name": "billet%20d'%C3%A9t%C3%A9.pdf",
+        },
+      },
+    ]);
+  });
+
+  it("envoie un contenu collé avec son type", async () => {
+    const sent = recordSentFiles(link);
+    await bridge.attachFile("a.md", new Blob(["x"]), { kind: "pasted", mediaType: "image/png" });
+    expect(sent[0]?.headers).toEqual({ "x-note": "a.md", "x-media-type": "image%2Fpng" });
+  });
+
+  it("demande d'ouvrir une pièce jointe de la note", async () => {
+    const calls = recordCalls(null);
+    await bridge.openAttachment("a.md", "a.assets/b.pdf");
+    expect(calls).toEqual([
+      { command: "open_attachment", args: { path: "a.md", target: "a.assets/b.pdf" } },
+    ]);
+  });
+});

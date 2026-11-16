@@ -7,9 +7,10 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use application::{
-    LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote, TrashContents,
+    AttachmentLocation, LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote,
+    TrashContents,
 };
-use domain::{FileName, Folder, FolderName, Modified, NotePath};
+use domain::{AttachmentName, FileName, Folder, FolderName, Modified, NotePath};
 
 const TEMPORARY_PREFIX: &str = ".";
 const TEMPORARY_SUFFIX: &str = ".enregistrement";
@@ -364,6 +365,72 @@ impl NoteStore for FsNoteStore {
             return Ok(());
         }
         fs::remove_dir_all(&trash.root).map_err(unavailable)
+    }
+
+    fn attachment_names(&self, note: &NotePath) -> Result<Vec<AttachmentName>, StoreError> {
+        let entries = match fs::read_dir(self.attachment_path(note)) {
+            Ok(entries) => entries,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(error) => return Err(unavailable(error)),
+        };
+        let mut names = Vec::new();
+        for entry in entries {
+            let entry = entry.map_err(unavailable)?;
+            let is_file = entry.file_type().map_err(unavailable)?.is_file();
+            let name = entry
+                .file_name()
+                .to_str()
+                .and_then(AttachmentName::existing);
+            if let (true, Some(name)) = (is_file, name) {
+                names.push(name);
+            }
+        }
+        Ok(names)
+    }
+
+    /// Écrit un fichier temporaire, puis le lie sous son nom : le lien échoue si le nom est
+    /// pris (casse comprise sur un disque qui l'ignore), donc rien n'est jamais écrasé.
+    fn write_attachment(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+        bytes: &[u8],
+    ) -> Result<(), StoreError> {
+        if !self.has_note(note)? {
+            return Err(StoreError::NotFound(note.clone()));
+        }
+        let folder = self.attachment_path(note);
+        if !folder.is_dir() {
+            fs::create_dir(&folder).map_err(unavailable)?;
+        }
+        let file_name = name.to_name();
+        let temporary = folder.join(format!("{TEMPORARY_PREFIX}{file_name}{TEMPORARY_SUFFIX}"));
+        let linked = fs::write(&temporary, bytes)
+            .and_then(|()| fs::hard_link(&temporary, folder.join(&file_name)));
+        // Le fichier temporaire part dans tous les cas : seul le lien sous le vrai nom reste.
+        if let Err(cleanup) = fs::remove_file(&temporary) {
+            tracing::debug!(%cleanup, "fichier temporaire déjà absent");
+        }
+        linked.map_err(|error| match error.kind() {
+            io::ErrorKind::AlreadyExists => StoreError::AttachmentAlreadyExists(file_name),
+            _ => unavailable(error),
+        })
+    }
+
+    fn attachment_location(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+    ) -> Result<AttachmentLocation, StoreError> {
+        let path = self.attachment_path(note).join(name.to_name());
+        if !path.is_file() {
+            return Err(StoreError::AttachmentNotFound(name.to_name()));
+        }
+        path.to_str()
+            .map(|p| AttachmentLocation::new(p.to_owned()))
+            .ok_or_else(|| {
+                StoreError::Unavailable(format!("chemin illisible : {}", path.display()))
+            })
     }
 }
 

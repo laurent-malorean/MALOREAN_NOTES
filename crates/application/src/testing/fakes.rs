@@ -3,11 +3,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use domain::{FileName, Folder, Modified, NotePath};
+use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 
 use crate::{
-    LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError, StoredNote, TrashContents,
+    AttachmentLocation, Clock, LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError,
+    StoredNote, TrashContents,
 };
+
+/// Emplacement fictif d'une pièce jointe en mémoire.
+const MEMORY_LOCATION: &str = "mémoire://";
 
 /// Bibliothèque en mémoire ; chaque écriture avance la date de modification d'un cran.
 #[derive(Debug, Default)]
@@ -24,6 +28,8 @@ struct State {
     trashed_notes: BTreeMap<NotePath, (String, Modified)>,
     /// Les dossiers de la corbeille, racine exclue.
     trashed_folders: BTreeSet<Folder>,
+    /// Les pièces jointes de chaque note (leur contenu ne sert à aucun test).
+    attachments: BTreeMap<NotePath, Vec<AttachmentName>>,
     tick: u64,
 }
 
@@ -175,6 +181,9 @@ impl NoteStore for InMemoryNoteStore {
         if let Some(note) = state.notes.remove(from) {
             state.notes.insert(to.clone(), note);
         }
+        if let Some(attachments) = state.attachments.remove(from) {
+            state.attachments.insert(to.clone(), attachments);
+        }
         Ok(())
     }
 
@@ -319,6 +328,53 @@ impl NoteStore for InMemoryNoteStore {
         state.trashed_folders.clear();
         Ok(())
     }
+
+    fn attachment_names(&self, note: &NotePath) -> Result<Vec<AttachmentName>, StoreError> {
+        Ok(self
+            .state()
+            .attachments
+            .get(note)
+            .cloned()
+            .unwrap_or_default())
+    }
+
+    fn write_attachment(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+        _bytes: &[u8],
+    ) -> Result<(), StoreError> {
+        let mut state = self.state();
+        if !state.notes.contains_key(note) {
+            return Err(StoreError::NotFound(note.clone()));
+        }
+        let attachments = state.attachments.entry(note.clone()).or_default();
+        if attachments.iter().any(|a| a.same_file_as(name)) {
+            return Err(StoreError::AttachmentAlreadyExists(name.to_name()));
+        }
+        attachments.push(name.clone());
+        Ok(())
+    }
+
+    fn attachment_location(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+    ) -> Result<AttachmentLocation, StoreError> {
+        let state = self.state();
+        let known = state
+            .attachments
+            .get(note)
+            .is_some_and(|attachments| attachments.contains(name));
+        if !known {
+            return Err(StoreError::AttachmentNotFound(name.to_name()));
+        }
+        Ok(AttachmentLocation::new(format!(
+            "{MEMORY_LOCATION}{}/{}",
+            note.to_path(),
+            name.to_name()
+        )))
+    }
 }
 
 impl InMemoryNoteStore {
@@ -394,5 +450,32 @@ impl Preferences for FakePreferences {
     fn remember_library(&self, location: &LibraryLocation) -> Result<(), StoreError> {
         *self.last.lock().unwrap_or_else(PoisonError::into_inner) = Some(location.clone());
         Ok(())
+    }
+}
+
+/// Horloge arrêtée : donne toujours le même moment.
+#[derive(Debug)]
+pub struct FixedClock {
+    moment: Moment,
+}
+
+impl FixedClock {
+    /// Une horloge arrêtée sur `moment`.
+    #[must_use]
+    pub fn at(moment: Moment) -> Self {
+        Self { moment }
+    }
+}
+
+/// Par défaut, l'horloge est arrêtée le 16 novembre 2026 à 18 h 30.
+impl Default for FixedClock {
+    fn default() -> Self {
+        Self::at(Moment::new(2026, 11, 16, 18, 30).unwrap_or_else(|_| unreachable!()))
+    }
+}
+
+impl Clock for FixedClock {
+    fn now(&self) -> Moment {
+        self.moment
     }
 }

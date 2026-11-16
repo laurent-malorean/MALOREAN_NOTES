@@ -1,6 +1,6 @@
 //! Erreurs des cas d'usage.
 
-use domain::{Folder, NotePath};
+use domain::{Folder, NotePath, RefusedAttachment};
 
 use crate::StoreError;
 
@@ -34,6 +34,24 @@ pub enum AppError {
     /// La racine (la bibliothèque elle-même) ne va pas dans la corbeille.
     #[error("la bibliothèque elle-même ne peut pas aller dans la corbeille")]
     RootCannotBeTrashed,
+    /// Le fichier collé ou glissé n'est ni une image ni un PDF.
+    #[error("{0}")]
+    AttachmentRefused(RefusedAttachment),
+    /// Le fichier collé ou glissé dépasse la taille permise.
+    #[error("le fichier fait plus de {limit_megabytes} Mo : il ne peut pas être joint à une note")]
+    AttachmentTooLarge {
+        /// La taille permise, en mégaoctets.
+        limit_megabytes: usize,
+    },
+    /// Le dossier de pièces jointes a déjà un fichier de ce nom.
+    #[error("une pièce jointe « {0} » existe déjà")]
+    AttachmentNameTaken(String),
+    /// La note n'a pas cette pièce jointe.
+    #[error("la pièce jointe « {0} » est introuvable")]
+    AttachmentNotFound(String),
+    /// Le lien ne mène pas à une pièce jointe de la note.
+    #[error("« {0} » n'est pas une pièce jointe de la note")]
+    NotAnAttachment(String),
     /// Le stockage ne répond pas ; la cause est lisible.
     #[error("stockage indisponible : {0}")]
     StorageUnavailable(String),
@@ -47,6 +65,8 @@ impl From<StoreError> for AppError {
             StoreError::Unreadable(name) => Self::NoteUnreadable(name),
             StoreError::FolderNotFound(folder) => Self::FolderNotFound(folder),
             StoreError::FolderAlreadyExists(folder) => Self::FolderNameTaken(folder),
+            StoreError::AttachmentAlreadyExists(name) => Self::AttachmentNameTaken(name),
+            StoreError::AttachmentNotFound(name) => Self::AttachmentNotFound(name),
             StoreError::Unavailable(reason) => Self::StorageUnavailable(reason),
         }
     }
@@ -98,6 +118,33 @@ mod tests {
         assert_eq!(
             AppError::RootIsFixed.to_string(),
             "la bibliothèque elle-même ne peut être ni renommée ni déplacée"
+        );
+    }
+
+    #[test]
+    fn attachment_errors_say_what_happened() {
+        let taken = AppError::from(StoreError::AttachmentAlreadyExists("a.png".into()));
+        assert_eq!(taken.to_string(), "une pièce jointe « a.png » existe déjà");
+        let missing = AppError::from(StoreError::AttachmentNotFound("a.pdf".into()));
+        assert_eq!(
+            missing.to_string(),
+            "la pièce jointe « a.pdf » est introuvable"
+        );
+        assert_eq!(
+            AppError::AttachmentTooLarge {
+                limit_megabytes: 50
+            }
+            .to_string(),
+            "le fichier fait plus de 50 Mo : il ne peut pas être joint à une note"
+        );
+        assert_eq!(
+            AppError::NotAnAttachment("https://a.fr".into()).to_string(),
+            "« https://a.fr » n'est pas une pièce jointe de la note"
+        );
+        let refused = RefusedAttachment::UnsupportedType("a.txt".into());
+        assert_eq!(
+            AppError::AttachmentRefused(refused.clone()).to_string(),
+            refused.to_string()
         );
     }
 
