@@ -6,6 +6,8 @@ mod dto;
 mod error;
 mod session;
 
-pub use dto::{LibraryInfo, NoteContent, NoteListItem, SavedNote};
+pub use dto::{
+    ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
+};
 pub use error::ApiError;
 pub use session::Session;

@@ -8,7 +8,7 @@
 use std::sync::Arc;
 
 use api::commands::invoke_handler;
-use api::{LibraryInfo, NoteContent, NoteListItem, SavedNote, Session};
+use api::{LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session};
 use application::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
 use application::{LibraryLocation, Preferences};
 use serde::de::DeserializeOwned;
@@ -242,5 +242,17 @@ fn moving_a_note_into_a_folder_with_a_bad_name_is_refused() {
     assert!(
         error.contains("../dehors") || error.contains(".."),
         "{error}"
+    );
+}
+
+#[test]
+fn the_page_searches_the_whole_library_by_its_query_argument() {
+    let window = window(&[("a.md", "# Alpha\nété"), ("Travail/b.md", "# Bêta\nhiver")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let results: Vec<SearchResultItem> =
+        ok(call(&window, "search_notes", json!({ "query": "ete" })));
+    assert_eq!(
+        results.iter().map(|r| r.path.as_str()).collect::<Vec<_>>(),
+        ["a.md"]
     );
 }

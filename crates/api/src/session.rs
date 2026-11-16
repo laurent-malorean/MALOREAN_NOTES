@@ -5,13 +5,16 @@ use std::sync::{Arc, PoisonError, RwLock};
 
 use application::use_cases::{
     CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenLibrary, ReadNote,
-    RenameFolder, ReopenLastLibrary, SaveNote,
+    RenameFolder, ReopenLastLibrary, SaveNote, SearchNotes, SearchResult,
 };
 use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences};
 
+use domain::search::{ExcerptPart, SearchQuery};
 use domain::{Folder, FolderName, NotePath};
 
-use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote};
+use crate::{
+    ApiError, ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
+};
 
 /// État partagé par les commandes : les adaptateurs et la bibliothèque ouverte.
 #[derive(Debug)]
@@ -90,6 +93,22 @@ impl Session {
                 modified: n.modified().0,
             })
             .collect())
+    }
+
+    /// Les notes de toute la bibliothèque qui contiennent tous les mots de `query` ;
+    /// aucune si `query` n'a pas de mot.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucune bibliothèque
+    /// ouverte, bibliothèque illisible.
+    pub fn search_notes(&self, query: &str) -> Result<Vec<SearchResultItem>, ApiError> {
+        let store = self.store()?;
+        let Some(query) = SearchQuery::parse(query) else {
+            return Ok(Vec::new());
+        };
+        let found = SearchNotes::new(&*store).execute(&query)?;
+        Ok(found.into_iter().map(search_result_item).collect())
     }
 
     /// Le contenu d'une note, désignée par le chemin reçu de la page.
@@ -211,6 +230,31 @@ impl Session {
         library
             .clone()
             .ok_or_else(|| AppError::NoLibraryOpen.into())
+    }
+}
+
+fn search_result_item(result: SearchResult) -> SearchResultItem {
+    let excerpt = result
+        .excerpt
+        .parts()
+        .iter()
+        .map(|part| match part {
+            ExcerptPart::Text(text) => ExcerptPartItem {
+                text: text.clone(),
+                matched: false,
+            },
+            ExcerptPart::Match(text) => ExcerptPartItem {
+                text: text.clone(),
+                matched: true,
+            },
+        })
+        .collect();
+    SearchResultItem {
+        path: result.path.to_path(),
+        title: result.title,
+        folder: result.path.folder().to_path(),
+        modified: result.modified.0,
+        excerpt,
     }
 }
 
@@ -374,6 +418,47 @@ mod tests {
             session.list_notes("../x").unwrap_err().message,
             "nom de dossier invalide : « ../x »"
         );
+    }
+
+    #[test]
+    fn notes_are_searched_in_every_folder_with_an_excerpt() {
+        let session = opened(&[
+            ("a.md", "# Alpha\ndu pain"),
+            ("Travail/b.md", "# Bêta\nlait"),
+        ]);
+        let results = session.search_notes("PAIN").unwrap();
+        assert_eq!(
+            results,
+            [SearchResultItem {
+                path: "a.md".into(),
+                title: "Alpha".into(),
+                folder: String::new(),
+                modified: results[0].modified,
+                excerpt: vec![
+                    ExcerptPartItem {
+                        text: "# Alpha du ".into(),
+                        matched: false
+                    },
+                    ExcerptPartItem {
+                        text: "pain".into(),
+                        matched: true
+                    },
+                ],
+            }]
+        );
+        assert_eq!(session.search_notes("lait").unwrap()[0].folder, "Travail");
+    }
+
+    #[test]
+    fn a_search_without_words_finds_nothing() {
+        let session = opened(&[("a.md", "# Alpha")]);
+        assert!(session.search_notes("   ").unwrap().is_empty());
+    }
+
+    #[test]
+    fn searching_needs_an_open_library() {
+        let session = session_with(&[]);
+        assert!(session.search_notes("pain").is_err());
     }
 
     #[test]

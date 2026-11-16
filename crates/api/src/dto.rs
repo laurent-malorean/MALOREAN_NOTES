@@ -28,6 +28,35 @@ pub struct NoteListItem {
     pub modified: u64,
 }
 
+/// Une note trouvée par la recherche.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SearchResultItem {
+    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    pub path: String,
+    /// Le titre affiché.
+    pub title: String,
+    /// Le dossier de la note : `""` pour la racine.
+    pub folder: String,
+    /// Millisecondes depuis le 1er janvier 1970.
+    #[ts(type = "number")]
+    pub modified: u64,
+    /// L'extrait, en morceaux : les mots trouvés sont marqués.
+    pub excerpt: Vec<ExcerptPartItem>,
+}
+
+/// Un morceau d'extrait.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ExcerptPartItem {
+    /// Le texte du morceau, tel qu'il est écrit dans la note.
+    pub text: String,
+    /// Vrai si c'est un mot cherché, à mettre en évidence.
+    pub matched: bool,
+}
+
 /// Une note ouverte dans l'éditeur.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]

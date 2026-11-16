@@ -7,6 +7,7 @@ pub mod folder;
 pub mod front_matter;
 pub mod note;
 pub mod saving;
+pub mod search;
 pub mod title;
 
 pub use file_name::{FileName, InvalidFileName};

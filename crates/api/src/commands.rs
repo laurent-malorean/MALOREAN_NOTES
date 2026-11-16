@@ -6,7 +6,9 @@ use tauri::ipc::Invoke;
 use tauri::{AppHandle, Manager, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
-use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote, Session};
+use crate::{
+    ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session,
+};
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
 
@@ -80,6 +82,20 @@ pub async fn list_notes(
 ) -> Result<Vec<NoteListItem>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.list_notes(&folder)).await
+}
+
+/// Les notes de toute la bibliothèque qui contiennent tous les mots cherchés.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn search_notes(
+    session: SharedSession<'_>,
+    query: String,
+) -> Result<Vec<SearchResultItem>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.search_notes(&query)).await
 }
 
 /// Le contenu d'une note.
@@ -199,6 +215,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         reopen_last_library,
         choose_library,
         list_notes,
+        search_notes,
         read_note,
         save_note,
         create_note,

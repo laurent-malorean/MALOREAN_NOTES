@@ -2,6 +2,7 @@
 
 use domain::attachments::relink;
 use domain::front_matter::split;
+use domain::search::{ExcerptPart, SearchQuery, search};
 use domain::title::displayed_title;
 use domain::{FileName, Folder, NotePath, Title};
 use proptest::prelude::*;
@@ -121,4 +122,60 @@ fn is_kebab_file_name(name: &str) -> bool {
                 .bytes()
                 .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit())
     })
+}
+
+/// Un mot cherchable : des lettres, avec ou sans accent.
+fn word() -> impl Strategy<Value = String> {
+    "[a-zA-Zéèàçôœ]{1,8}"
+}
+
+fn excerpt_text(parts: &[ExcerptPart]) -> String {
+    parts
+        .iter()
+        .map(|p| match p {
+            ExcerptPart::Text(t) | ExcerptPart::Match(t) => t.as_str(),
+        })
+        .collect()
+}
+
+proptest! {
+    #[test]
+    fn a_note_containing_every_word_is_found_whatever_the_case(
+        before in any::<String>(), wanted in word(), after in any::<String>(),
+    ) {
+        let content = format!("{before} {wanted} {after}");
+        let query = SearchQuery::parse(&wanted.to_uppercase()).unwrap();
+        prop_assert!(search(&query, &content).is_some());
+    }
+
+    #[test]
+    fn a_note_missing_a_word_is_never_found(content in "[a-m \n]{0,80}", missing in "[n-z]{1,5}") {
+        let query = SearchQuery::parse(&missing).unwrap();
+        prop_assert_eq!(search(&query, &content), None);
+    }
+
+    #[test]
+    fn an_excerpt_is_one_short_line_of_the_note(content in markdown_note(), wanted in word()) {
+        let content = format!("{content}\n{wanted}");
+        let query = SearchQuery::parse(&wanted).unwrap();
+        let excerpt = search(&query, &content).unwrap();
+        let text = excerpt_text(excerpt.parts());
+        prop_assert!(!text.contains(['\n', '\r']), "extrait : {text:?}");
+        prop_assert!(text.chars().count() <= domain::search::EXCERPT_LENGTH + 2);
+    }
+
+    #[test]
+    fn every_highlighted_part_is_a_searched_word(
+        before in "[a-z ]{0,20}", wanted in word(), after in "[a-z ]{0,20}",
+    ) {
+        let content = format!("{before} {wanted} {after}");
+        let query = SearchQuery::parse(&wanted).unwrap();
+        let excerpt = search(&query, &content).unwrap();
+        let matches: Vec<_> = excerpt.parts().iter().filter_map(|p| match p {
+            ExcerptPart::Match(m) => Some(m.clone()),
+            ExcerptPart::Text(_) => None,
+        }).collect();
+        prop_assert!(!matches.is_empty());
+        prop_assert!(matches.iter().any(|m| m.to_lowercase().contains(&wanted.to_lowercase())));
+    }
 }

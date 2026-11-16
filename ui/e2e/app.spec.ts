@@ -222,3 +222,31 @@ test("la note ouverte glissée dans un dossier reste ouverte, avec ce qu'on vien
   await expect(editorLines(page).last()).toHaveText("texte ajouté");
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
 });
+
+test("la recherche trouve les notes de tous les dossiers et ouvre celle qu'on clique", async ({
+  page,
+}) => {
+  await launch(page, {
+    notes: {
+      "courses.md": { content: "# Courses\n- pain\n- lait", modified: 3 },
+      "Travail/reunion.md": { content: "# Réunion\nApporter du pain", modified: 2 },
+      "idee.md": { content: "# Idée\nRien à voir", modified: 1 },
+    },
+  });
+  const field = page.getByRole("searchbox", { name: "Rechercher" });
+  await field.fill("PAIN");
+  await expect(page.locator(".search-result .note-title")).toHaveText(["Courses", "Réunion"]);
+  await expect(page.locator(".search-result .search-folder")).toHaveText(["Notes", "Travail"]);
+  await expect(page.locator(".search-result mark").first()).toHaveText("pain");
+  await page.locator(".search-result", { hasText: "Réunion" }).click();
+  await expect(editorLines(page).first()).toHaveText("Réunion");
+  await field.press("Escape");
+  await expect(field).toHaveValue("");
+  await expect(titles(page)).toHaveText(["Courses", "Idée"]);
+});
+
+test("une recherche sans résultat le dit", async ({ page }) => {
+  await launch(page);
+  await page.getByRole("searchbox", { name: "Rechercher" }).fill("introuvable");
+  await expect(page.locator(".notes-list")).toHaveText("Aucune note trouvée");
+});

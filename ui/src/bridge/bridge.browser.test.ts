@@ -37,6 +37,12 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     expect(calls).toEqual([{ command: "list_notes", args: { folder: "Travail" } }]);
   });
 
+  it("cherche dans toute la bibliothèque", async () => {
+    const calls = recordCalls([]);
+    expect(await bridge.searchNotes("pain")).toEqual([]);
+    expect(calls).toEqual([{ command: "search_notes", args: { query: "pain" } }]);
+  });
+
   it("lit une note par son nom de fichier", async () => {
     const calls = recordCalls({ path: "a.md", content: "# A" });
     await bridge.readNote("a.md");

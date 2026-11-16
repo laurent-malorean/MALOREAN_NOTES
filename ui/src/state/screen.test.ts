@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { NoteListItem } from "../bridge";
+import type { NoteListItem, SearchResultItem } from "../bridge";
 import {
   currentFolder,
   folderMoved,
@@ -9,6 +9,8 @@ import {
   noteRenamed,
   noteSelected,
   notesRefreshed,
+  searchAnswered,
+  searchTyped,
   selectedNote,
   welcome,
 } from "./screen";
@@ -34,6 +36,7 @@ describe("état de l'écran", () => {
       folder: "",
       notes: [note("recente.md", 2), note("vieille.md", 1)],
       selected: "recente.md",
+      search: null,
     });
   });
 
@@ -45,6 +48,7 @@ describe("état de l'écran", () => {
       folder: "",
       notes: [],
       selected: null,
+      search: null,
     });
   });
 
@@ -60,6 +64,7 @@ describe("état de l'écran", () => {
       folder: "",
       notes: [note("a.md", 2), note("b.md", 1)],
       selected: "b.md",
+      search: null,
     });
   });
 
@@ -72,6 +77,7 @@ describe("état de l'écran", () => {
       folder: "",
       notes: [note("a.md", 1)],
       selected: "b.md",
+      search: null,
     });
   });
 
@@ -87,6 +93,7 @@ describe("état de l'écran", () => {
       folder: "",
       notes: [note("b.md", 2), note("a.md", 1)],
       selected: "a.md",
+      search: null,
     });
   });
 
@@ -97,6 +104,8 @@ describe("état de l'écran", () => {
     expect(noteSelected(welcome, "a.md")).toBe(welcome);
     expect(noteRenamed(welcome, "a.md", "b.md")).toBe(welcome);
     expect(notesRefreshed(welcome, [note("a.md", 1)])).toBe(welcome);
+    expect(searchTyped(welcome, "pain")).toBe(welcome);
+    expect(searchAnswered(welcome, "pain", [])).toBe(welcome);
   });
 });
 
@@ -146,6 +155,55 @@ describe("dossiers", () => {
     expect(folderMoved(empty, "Travail", "x/Travail")).toMatchObject({
       folder: "Perso",
       selected: null,
+      search: null,
     });
+  });
+});
+
+describe("recherche", () => {
+  const result = (path: string): SearchResultItem => ({
+    path,
+    title: path,
+    folder: "",
+    modified: 1,
+    excerpt: [{ text: "pain", matched: true }],
+  });
+  const opened = () => libraryOpened(library, [], [note("a.md", 1)]);
+  const searchOf = (screen: ReturnType<typeof opened>) =>
+    screen.kind === "library" ? screen.search : undefined;
+
+  it("commence une recherche dès qu'on tape, sans résultat encore", () => {
+    expect(searchOf(searchTyped(opened(), "pain"))).toEqual({ query: "pain", results: null });
+  });
+
+  it("montre les notes trouvées pour la recherche en cours", () => {
+    const screen = searchAnswered(searchTyped(opened(), "pain"), "pain", [result("a.md")]);
+    expect(searchOf(screen)).toEqual({ query: "pain", results: [result("a.md")] });
+  });
+
+  it("garde les résultats précédents pendant qu'on continue de taper", () => {
+    const answered = searchAnswered(searchTyped(opened(), "pa"), "pa", [result("a.md")]);
+    expect(searchOf(searchTyped(answered, "pain"))).toEqual({
+      query: "pain",
+      results: [result("a.md")],
+    });
+  });
+
+  it("ignore la réponse d'une recherche déjà dépassée", () => {
+    const typed = searchTyped(searchTyped(opened(), "pa"), "pain");
+    expect(searchAnswered(typed, "pa", [result("a.md")])).toBe(typed);
+  });
+
+  it("ignore une réponse arrivée après la fin de la recherche", () => {
+    expect(searchAnswered(opened(), "pain", [result("a.md")])).toEqual(opened());
+  });
+
+  it("revient à la liste du dossier quand le champ est vidé", () => {
+    expect(searchOf(searchTyped(searchTyped(opened(), "pain"), "  "))).toBeNull();
+  });
+
+  it("revient à la liste quand on choisit un dossier", () => {
+    const screen = folderSelected(searchTyped(opened(), "pain"), "Travail", []);
+    expect(searchOf(screen)).toBeNull();
   });
 });

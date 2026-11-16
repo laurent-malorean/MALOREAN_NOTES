@@ -19,6 +19,9 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Épinglée | `pinned` | Une note épinglée apparaît en tête de liste. |
 | Étiquette | `Tag` | Mot-clé libre attaché à une note. |
 | Corbeille | `Trash` | Endroit où va une note ou un dossier supprimé, d'où on peut le restaurer. |
+| Recherche | `SearchQuery` | Les mots tapés pour retrouver des notes ; une note est trouvée si elle contient tous les mots, sans tenir compte des majuscules ni des accents. |
+| Résultat de recherche | `SearchResult` | Une note trouvée : son titre, son dossier et un extrait. |
+| Extrait | `Excerpt` | Court passage d'une note trouvée, autour du premier mot cherché, mots trouvés mis en évidence. |
 | Index | `SearchIndex` | Cache de recherche, reconstructible à partir des fichiers. |
 | Conflit | `Conflict` | Une note modifiée à la fois dans l'application et hors de l'application. |
 | Aperçu en direct | `livePreview` | Affichage de la note mise en forme dans l'éditeur : la syntaxe Markdown est masquée, sauf là où se trouve le curseur ; le fichier n'est jamais modifié. |

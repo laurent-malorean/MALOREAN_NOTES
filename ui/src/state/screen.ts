@@ -1,10 +1,20 @@
-import type { LibraryInfo, NoteListItem } from "../bridge";
+import type { LibraryInfo, NoteListItem, SearchResultItem } from "../bridge";
 import { movedPath } from "./folders";
 import { followRename, initialSelection } from "./selection";
 
 /**
+ * Une recherche en cours : les mots tapés et les notes trouvées à la dernière réponse
+ * (`null` tant qu'aucune réponse n'est arrivée).
+ */
+export interface Search {
+  readonly query: string;
+  readonly results: readonly SearchResultItem[] | null;
+}
+
+/**
  * Ce que montre la fenêtre : l'accueil, ou une bibliothèque ouverte avec ses dossiers,
- * le dossier choisi (`""` pour la racine), ses notes et la note sélectionnée.
+ * le dossier choisi (`""` pour la racine), ses notes, la note sélectionnée, et la recherche
+ * en cours (`null` : la liste montre les notes du dossier).
  */
 export type Screen =
   | { readonly kind: "welcome" }
@@ -15,6 +25,7 @@ export type Screen =
       readonly folder: string;
       readonly notes: readonly NoteListItem[];
       readonly selected: string | null;
+      readonly search: Search | null;
     };
 
 /** L'écran du lancement, avant toute bibliothèque. */
@@ -33,6 +44,7 @@ export function libraryOpened(
     folder: "",
     notes,
     selected: initialSelection(notes),
+    search: null,
   };
 }
 
@@ -43,7 +55,7 @@ export function folderSelected(
   notes: readonly NoteListItem[],
 ): Screen {
   return screen.kind === "library"
-    ? { ...screen, folder, notes, selected: initialSelection(notes) }
+    ? { ...screen, folder, notes, selected: initialSelection(notes), search: null }
     : screen;
 }
 
@@ -74,6 +86,24 @@ export function noteRenamed(screen: Screen, from: string, to: string): Screen {
   return screen.kind === "library"
     ? { ...screen, selected: followRename(screen.selected, from, to) }
     : screen;
+}
+
+/** La recherche tapée : elle commence, continue avec les résultats précédents, ou s'arrête si vide. */
+export function searchTyped(screen: Screen, query: string): Screen {
+  if (screen.kind !== "library") return screen;
+  if (query.trim() === "") return { ...screen, search: null };
+  return { ...screen, search: { query, results: screen.search?.results ?? null } };
+}
+
+/** Les notes trouvées pour `query` ; ignorées si la recherche a changé ou s'est arrêtée entre-temps. */
+export function searchAnswered(
+  screen: Screen,
+  query: string,
+  results: readonly SearchResultItem[],
+): Screen {
+  // Stryker disable next-line ConditionalExpression: l'accueil n'a pas de recherche, la seconde condition l'écarte aussi ; TypeScript exige la première.
+  if (screen.kind !== "library" || screen.search?.query !== query) return screen;
+  return { ...screen, search: { query, results } };
 }
 
 /** La note sélectionnée, s'il y en a une. */

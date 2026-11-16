@@ -5,8 +5,10 @@ import { imageAddress } from "./editor/image-address";
 import { folderOf } from "./state/folders";
 import { createLayout } from "./screens/layout";
 import { startFolderCreation } from "./screens/folders-list";
+import { connectSearchField } from "./screens/search-field";
 import { renderScreen, type ScreenActions } from "./screens/screen-view";
 import { type Autosave, createAutosave, timerScheduler } from "./state/autosave";
+import { createDebouncer, SEARCH_DELAY_MS } from "./state/debounce";
 import {
   currentFolder,
   folderMoved,
@@ -17,6 +19,8 @@ import {
   noteSelected,
   notesRefreshed,
   type Screen,
+  searchAnswered,
+  searchTyped,
   selectedNote,
   welcome,
 } from "./state/screen";
@@ -64,6 +68,20 @@ function show(next: Screen) {
 
 async function refreshList() {
   show(notesRefreshed(screen, await bridge.listNotes(currentFolder(screen))));
+  if (screen.kind === "library" && screen.search) await search(screen.search.query);
+}
+
+const searchLater = createDebouncer(timerScheduler(SEARCH_DELAY_MS));
+
+async function search(query: string) {
+  show(searchAnswered(screen, query, await bridge.searchNotes(query)));
+}
+
+/** Chaque frappe montre la recherche ; elle part vers Rust après une courte pause. */
+function typeSearch(query: string) {
+  show(searchTyped(screen, query));
+  if (query.trim() === "") return searchLater.cancel();
+  searchLater(() => run(search(query)));
 }
 
 async function selectFolder(folder: string) {
@@ -151,6 +169,7 @@ for (const button of layout.chooseButtons) {
   button.addEventListener("click", () => void chooseLibrary().catch(showError));
 }
 layout.newNoteButton.addEventListener("click", () => void createNote().catch(showError));
+connectSearchField(layout.searchField, typeSearch);
 layout.newFolderButton.addEventListener("click", () =>
   startFolderCreation(layout.foldersList, currentFolder(screen), actions.create),
 );

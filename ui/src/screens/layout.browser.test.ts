@@ -18,6 +18,7 @@ describe("mise en page", () => {
       layout.libraryName,
       layout.foldersList,
       layout.newFolderButton,
+      layout.searchField,
       layout.notesList,
       layout.editor,
       layout.status,

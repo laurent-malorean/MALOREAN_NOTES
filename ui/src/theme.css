@@ -17,6 +17,7 @@
   --selected: #e4e1d9;
   --border: #e2dfd7;
   --danger: #c0392b;
+  --highlight: #fbe38a;
   --on-danger: #ffffff;
 
   /* Coloration des blocs de code */
@@ -66,6 +67,7 @@
     --selected: #34343a;
     --border: #333336;
     --danger: #c0392b;
+    --highlight: #6b5a1e;
     --on-danger: #ffffff;
     --syntax-plain: #e8e6e1;
     --syntax-keyword: #c792ea;

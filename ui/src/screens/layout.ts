@@ -5,6 +5,7 @@ export interface Layout {
   readonly libraryName: HTMLElement;
   readonly foldersList: HTMLElement;
   readonly newFolderButton: HTMLButtonElement;
+  readonly searchField: HTMLInputElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
   readonly status: HTMLElement;
@@ -32,6 +33,7 @@ export function createLayout(root: HTMLElement): Layout {
           <span class="library-name"></span>
           <button class="icon" data-new title="Nouvelle note">＋</button>
         </header>
+        <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
         <nav class="notes-list"></nav>
         <footer class="sidebar-footer"><button class="link" data-choose>Changer de dossier</button></footer>
       </aside>
@@ -45,6 +47,7 @@ export function createLayout(root: HTMLElement): Layout {
     libraryName: find(".library-name"),
     foldersList: find(".folders-list"),
     newFolderButton: find("[data-new-folder]"),
+    searchField: find(".search-field"),
     notesList: find(".notes-list"),
     editor: find(".editor"),
     status: find(".status"),

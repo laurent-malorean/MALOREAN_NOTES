@@ -84,7 +84,31 @@ const treeOrder = (a: string, b: string) =>
     .join("\u0000")
     .localeCompare(b.toLowerCase().split("/").join("\u0000"));
 
+/** Sans majuscule ni accent, comme la vraie recherche. */
+const folded = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** Recherche simplifiée : toutes les notes qui contiennent tous les mots ; l'extrait est la note entière. */
+function searchNotes(query: string) {
+  const words = folded(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  return Object.entries(backend.notes)
+    .filter(([, note]) => words.every((word) => folded(note.content).includes(word)))
+    .sort(([, a], [, b]) => b.modified - a.modified)
+    .map(([path, note]) => {
+      const line = note.content.replace(/\s+/g, " ");
+      const parts = line.split(new RegExp(`(${words.join("|")})`, "i")).filter(Boolean);
+      return {
+        path,
+        title: titleOf(note.content) ?? "Sans titre",
+        folder: folderOf(path),
+        modified: note.modified,
+        excerpt: parts.map((text) => ({ text, matched: words.includes(folded(text)) })),
+      };
+    });
+}
+
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
+  search_notes: ({ query = "" }) => searchNotes(query),
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
   choose_library: () => library,
   list_notes: ({ folder = "" }) =>
