@@ -250,3 +250,28 @@ test("une recherche sans résultat le dit", async ({ page }) => {
   await page.getByRole("searchbox", { name: "Rechercher" }).fill("introuvable");
   await expect(page.locator(".notes-list")).toHaveText("Aucune note trouvée");
 });
+
+test("épingler une note par clic droit la met en tête, sans perdre ce qu'on tape", async ({
+  page,
+}) => {
+  await launch(page);
+  await expect(titles(page)).toHaveText(["Courses", "Idée", "Vieille note"]);
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await editorLines(page).last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" ajouté");
+  await page.locator(".note-item", { hasText: "Vieille note" }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Épingler" }).click();
+  await expect(titles(page)).toHaveText(["Vieille note", "Courses", "Idée"]);
+  await expect(page.locator(".note-item").first().locator(".note-pin")).toBeVisible();
+  await expect
+    .poll(() => savedContent(page, "vieille-note.md"))
+    .toBe("---\npinned: true\n---\n# Vieille note\ntexte ajouté");
+  await expect(editorLines(page).first()).toHaveText("---");
+
+  await page.locator(".note-item", { hasText: "Vieille note" }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Désépingler" }).click();
+  await expect(page.locator(".note-pin")).toHaveCount(0);
+  // Ce qu'on a tapé l'a rendue la plus récente.
+  await expect(editorLines(page).first()).toHaveText("Vieille note");
+});

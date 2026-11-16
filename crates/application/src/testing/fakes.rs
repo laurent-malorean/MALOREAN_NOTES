@@ -86,6 +86,16 @@ impl NoteStore for InMemoryNoteStore {
         Ok(())
     }
 
+    fn write_keeping_date(&self, note: &NotePath, content: &str) -> Result<(), StoreError> {
+        let mut state = self.state();
+        let (text, _) = state
+            .notes
+            .get_mut(note)
+            .ok_or_else(|| StoreError::NotFound(note.clone()))?;
+        content.clone_into(text);
+        Ok(())
+    }
+
     fn move_note(&self, from: &NotePath, to: &NotePath) -> Result<(), StoreError> {
         let mut state = self.state();
         if !state.notes.contains_key(from) {

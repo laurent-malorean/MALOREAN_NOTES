@@ -352,3 +352,35 @@ fn moving_refuses_when_the_attachment_folder_is_taken_in_the_target() {
     );
     assert_eq!(store.names(&root()).unwrap(), [file("voyage.md")]);
 }
+
+#[test]
+fn rewriting_while_keeping_the_date_keeps_the_file_date() {
+    let (dir, store) = library();
+    let path = dir.path().join("x.md");
+    fs::write(&path, "avant").unwrap();
+    let old = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000_000);
+    fs::File::options()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_modified(old)
+        .unwrap();
+    store.write_keeping_date(&name("x.md"), "après").unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), "après");
+    assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), old);
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn rewriting_while_keeping_the_date_fails_cleanly_in_a_read_only_folder() {
+    let (dir, store) = library();
+    fs::write(dir.path().join("x.md"), "avant").unwrap();
+    fs::set_permissions(dir.path(), fs::Permissions::from_mode(READ_ONLY_FOLDER)).unwrap();
+    let result = store.write_keeping_date(&name("x.md"), "après");
+    fs::set_permissions(dir.path(), fs::Permissions::from_mode(WRITABLE_FOLDER)).unwrap();
+    assert!(matches!(result, Err(StoreError::Unavailable(_))));
+    assert_eq!(
+        fs::read_to_string(dir.path().join("x.md")).unwrap(),
+        "avant"
+    );
+}

@@ -4,7 +4,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::UNIX_EPOCH;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use application::{LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote};
 use domain::{FileName, Folder, FolderName, Modified, NotePath};
@@ -29,6 +29,36 @@ impl FsNoteStore {
         let mut path = self.root.clone();
         path.extend(folder.names().iter().map(FolderName::as_str));
         path
+    }
+
+    /// Écrit un fichier temporaire puis le met à la place de la note : jamais de note à moitié
+    /// écrite. Avec `date`, le fichier garde cette date de modification.
+    fn write_atomically(
+        &self,
+        note: &NotePath,
+        content: &str,
+        date: Option<SystemTime>,
+    ) -> Result<(), StoreError> {
+        let temporary = self.folder_path(note.folder()).join(format!(
+            "{TEMPORARY_PREFIX}{}{TEMPORARY_SUFFIX}",
+            note.name().as_str()
+        ));
+        let written = fs::write(&temporary, content)
+            .and_then(|()| match date {
+                Some(date) => fs::File::options()
+                    .write(true)
+                    .open(&temporary)?
+                    .set_modified(date),
+                None => Ok(()),
+            })
+            .and_then(|()| fs::rename(&temporary, self.path(note)));
+        written.map_err(|error| {
+            // Nettoyage best-effort : l'erreur d'origine est celle que l'on rapporte.
+            if let Err(cleanup) = fs::remove_file(&temporary) {
+                tracing::debug!(%cleanup, "fichier temporaire déjà absent");
+            }
+            unavailable(error)
+        })
     }
 
     fn path(&self, note: &NotePath) -> PathBuf {
@@ -123,19 +153,17 @@ impl NoteStore for FsNoteStore {
     }
 
     fn write(&self, name: &NotePath, content: &str) -> Result<(), StoreError> {
-        let temporary = self.folder_path(name.folder()).join(format!(
-            "{TEMPORARY_PREFIX}{}{TEMPORARY_SUFFIX}",
-            name.name().as_str()
-        ));
-        let written =
-            fs::write(&temporary, content).and_then(|()| fs::rename(&temporary, self.path(name)));
-        written.map_err(|error| {
-            // Nettoyage best-effort : l'erreur d'origine est celle que l'on rapporte.
-            if let Err(cleanup) = fs::remove_file(&temporary) {
-                tracing::debug!(%cleanup, "fichier temporaire déjà absent");
-            }
-            unavailable(error)
-        })
+        self.write_atomically(name, content, None)
+    }
+
+    fn write_keeping_date(&self, note: &NotePath, content: &str) -> Result<(), StoreError> {
+        if !self.note_names(note.folder())?.contains(note.name()) {
+            return Err(StoreError::NotFound(note.clone()));
+        }
+        let date = fs::metadata(self.path(note))
+            .and_then(|metadata| metadata.modified())
+            .map_err(|e| not_found_or(note, e))?;
+        self.write_atomically(note, content, Some(date))
     }
 
     fn move_note(&self, from: &NotePath, to: &NotePath) -> Result<(), StoreError> {

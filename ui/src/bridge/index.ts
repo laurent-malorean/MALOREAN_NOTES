@@ -41,3 +41,7 @@ export const moveFolder = (path: string, into: string) =>
   invoke<string>("move_folder", { path, into });
 export const moveNote = (path: string, into: string) =>
   invoke<SavedNote>("move_note", { path, into });
+/** Épingle une note en tête de liste, sans changer sa date ; rend son nouveau contenu. */
+export const pinNote = (path: string) => invoke<NoteContent>("pin_note", { path });
+/** Désépingle une note ; rend son nouveau contenu. */
+export const unpinNote = (path: string) => invoke<NoteContent>("unpin_note", { path });

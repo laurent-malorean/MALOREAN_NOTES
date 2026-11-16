@@ -20,6 +20,7 @@ const note = (path: string, modified: number): NoteListItem => ({
   path,
   title: path,
   modified,
+  pinned: false,
 });
 
 describe("état de l'écran", () => {

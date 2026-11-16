@@ -4,10 +4,10 @@ use std::path::Path;
 use std::sync::{Arc, PoisonError, RwLock};
 
 use application::use_cases::{
-    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenLibrary, ReadNote,
-    RenameFolder, ReopenLastLibrary, SaveNote, SearchNotes, SearchResult,
+    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenLibrary, PinNote,
+    ReadNote, RenameFolder, ReopenLastLibrary, SaveNote, SearchNotes, SearchResult,
 };
-use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences};
+use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences, StoredNote};
 
 use domain::search::{ExcerptPart, SearchQuery};
 use domain::{Folder, FolderName, NotePath};
@@ -91,6 +91,7 @@ impl Session {
                 path: n.path().to_path(),
                 title: n.title().to_owned(),
                 modified: n.modified().0,
+                pinned: n.is_pinned(),
             })
             .collect())
     }
@@ -119,11 +120,9 @@ impl Session {
     /// absente ou illisible, aucune bibliothèque ouverte.
     pub fn read_note(&self, path: &str) -> Result<NoteContent, ApiError> {
         let store = self.store()?;
-        let note = ReadNote::new(&*store).execute(&NotePath::parse(path)?)?;
-        Ok(NoteContent {
-            path: note.path.to_path(),
-            content: note.content,
-        })
+        Ok(note_content(
+            ReadNote::new(&*store).execute(&NotePath::parse(path)?)?,
+        ))
     }
 
     /// Enregistre une note ; rend son chemin, dont le nom a peut-être changé avec le titre.
@@ -153,6 +152,31 @@ impl Session {
         Ok(SavedNote {
             path: moved.to_path(),
         })
+    }
+
+    /// Épingle une note en tête de liste, sans changer sa date ; rend son nouveau contenu.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note absente
+    /// ou illisible, stockage indisponible, aucune bibliothèque ouverte.
+    pub fn pin_note(&self, path: &str) -> Result<NoteContent, ApiError> {
+        let store = self.store()?;
+        Ok(note_content(
+            PinNote::new(&*store).pin(&NotePath::parse(path)?)?,
+        ))
+    }
+
+    /// Désépingle une note, sans changer sa date ; rend son nouveau contenu.
+    ///
+    /// # Errors
+    ///
+    /// Les mêmes que [`Session::pin_note`].
+    pub fn unpin_note(&self, path: &str) -> Result<NoteContent, ApiError> {
+        let store = self.store()?;
+        Ok(note_content(
+            PinNote::new(&*store).unpin(&NotePath::parse(path)?)?,
+        ))
     }
 
     /// Crée une note vide, sans titre, dans le dossier reçu de la page.
@@ -255,6 +279,13 @@ fn search_result_item(result: SearchResult) -> SearchResultItem {
         folder: result.path.folder().to_path(),
         modified: result.modified.0,
         excerpt,
+    }
+}
+
+fn note_content(note: StoredNote) -> NoteContent {
+    NoteContent {
+        path: note.path.to_path(),
+        content: note.content,
     }
 }
 
@@ -366,6 +397,32 @@ mod tests {
         let notes = session.list_notes("").unwrap();
         assert_eq!(notes[0].path, "a.md");
         assert_eq!(notes[0].title, "Alpha");
+    }
+
+    #[test]
+    fn a_pinned_note_is_listed_first_and_marked() {
+        let session = opened(&[("a.md", "# Alpha"), ("b.md", "# Bêta")]);
+        let pinned = session.pin_note("a.md").unwrap();
+        assert_eq!(pinned.path, "a.md");
+        assert_eq!(pinned.content, "---\npinned: true\n---\n# Alpha");
+        let notes = session.list_notes("").unwrap();
+        assert_eq!(notes[0].path, "a.md");
+        assert!(notes[0].pinned);
+        assert!(!notes[1].pinned);
+    }
+
+    #[test]
+    fn an_unpinned_note_loses_its_mark() {
+        let session = opened(&[("a.md", "---\npinned: true\n---\n# Alpha")]);
+        assert_eq!(session.unpin_note("a.md").unwrap().content, "# Alpha");
+        assert!(!session.list_notes("").unwrap()[0].pinned);
+    }
+
+    #[test]
+    fn pinning_a_note_with_a_bad_path_is_refused() {
+        let session = opened(&[]);
+        assert!(session.pin_note("../x.md").is_err());
+        assert!(session.unpin_note("../x.md").is_err());
     }
 
     #[test]

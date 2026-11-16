@@ -104,6 +104,21 @@ describe("pont vers Rust : fichiers de la bibliothèque", () => {
 });
 
 describe("pont vers Rust : déplacer une note", () => {
+  it("épingle une note et rend son nouveau contenu", async () => {
+    const calls = recordCalls({ path: "a.md", content: "---\npinned: true\n---\n# A" });
+    expect(await bridge.pinNote("a.md")).toEqual({
+      path: "a.md",
+      content: "---\npinned: true\n---\n# A",
+    });
+    expect(calls).toEqual([{ command: "pin_note", args: { path: "a.md" } }]);
+  });
+
+  it("désépingle une note et rend son nouveau contenu", async () => {
+    const calls = recordCalls({ path: "a.md", content: "# A" });
+    expect(await bridge.unpinNote("a.md")).toEqual({ path: "a.md", content: "# A" });
+    expect(calls).toEqual([{ command: "unpin_note", args: { path: "a.md" } }]);
+  });
+
   it("déplace une note dans un dossier et rend son nouveau chemin", async () => {
     const calls = recordCalls({ path: "Perso/a.md" });
     expect(await bridge.moveNote("a.md", "Perso")).toEqual({ path: "Perso/a.md" });

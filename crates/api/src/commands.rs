@@ -209,6 +209,28 @@ pub async fn move_note(
     in_background(move || session.move_note(&path, &into)).await
 }
 
+/// Épingle une note en tête de liste, sans changer sa date ; rend son nouveau contenu.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn pin_note(session: SharedSession<'_>, path: String) -> Result<NoteContent, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.pin_note(&path)).await
+}
+
+/// Désépingle une note, sans changer sa date ; rend son nouveau contenu.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn unpin_note(session: SharedSession<'_>, path: String) -> Result<NoteContent, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.unpin_note(&path)).await
+}
+
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
@@ -224,5 +246,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         rename_folder,
         move_folder,
         move_note,
+        pin_note,
+        unpin_note,
     ]
 }

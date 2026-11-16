@@ -16,6 +16,8 @@ const ignore: ScreenActions = {
   rename: () => {},
   move: () => {},
   moveNote: () => {},
+  pin: () => {},
+  unpin: () => {},
 };
 
 function layout() {
@@ -38,7 +40,7 @@ describe("affichage de l'écran", () => {
     const screen = libraryOpened(
       library,
       ["Travail"],
-      [{ path: "a.md", title: "Alpha", modified: 0 }],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
     );
     renderScreen(view, screen, ignore);
     expect([view.welcome.hidden, view.workspace.hidden]).toEqual([true, false]);
@@ -72,7 +74,11 @@ describe("affichage de l'écran", () => {
     };
     renderScreen(
       view,
-      libraryOpened(library, ["Travail"], [{ path: "a.md", title: "A", modified: 0 }]),
+      libraryOpened(
+        library,
+        ["Travail"],
+        [{ path: "a.md", title: "A", modified: 0, pinned: false }],
+      ),
       actions,
     );
     view.notesList.querySelector<HTMLElement>(".note-item")?.click();
@@ -82,7 +88,11 @@ describe("affichage de l'écran", () => {
 
   it("montre les notes trouvées à la place de la liste pendant une recherche", () => {
     const view = layout();
-    const opened = libraryOpened(library, [], [{ path: "a.md", title: "Alpha", modified: 0 }]);
+    const opened = libraryOpened(
+      library,
+      [],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
+    );
     const result = { path: "b.md", title: "Bêta", folder: "", modified: 0, excerpt: [] };
     const calls: string[] = [];
     const searching = searchAnswered(searchTyped(opened, "pain"), "pain", [result]);

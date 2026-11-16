@@ -59,6 +59,8 @@ const actions: ScreenActions = {
   rename: (path, name) => run(changeFolder(path, bridge.renameFolder(path, name))),
   move: (path, into) => run(changeFolder(path, bridge.moveFolder(path, into))),
   moveNote: (path, into) => run(moveNote(path, into)),
+  pin: (path) => run(changePin(path, bridge.pinNote)),
+  unpin: (path) => run(changePin(path, bridge.unpinNote)),
 };
 
 function show(next: Screen) {
@@ -120,6 +122,19 @@ async function moveNote(path: string, into: string) {
   const moved = await bridge.moveNote(source, into);
   await refreshList();
   if (wasOpen) await openNote(moved.path);
+}
+
+/**
+ * Épingle ou désépingle une note. Ce qui est tapé est enregistré d'abord ; si c'est la note
+ * ouverte, l'éditeur montre son nouvel en-tête.
+ */
+async function changePin(path: string, change: (path: string) => Promise<bridge.NoteContent>) {
+  const wasOpen = selectedNote(screen) === path;
+  await autosave?.flush();
+  // L'enregistrement a pu renommer la note ouverte (titre changé).
+  const note = await change(wasOpen ? (selectedNote(screen) ?? path) : path);
+  if (wasOpen) editor.show(note.content);
+  await refreshList();
 }
 
 function editNote(path: string): Autosave {

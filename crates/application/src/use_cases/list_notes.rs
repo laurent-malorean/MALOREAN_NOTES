@@ -1,11 +1,11 @@
 //! Lister les notes de la bibliothèque.
 
-use domain::note::sort_by_recent;
+use domain::note::sort_pinned_first;
 use domain::{Folder, NoteSummary};
 
 use crate::{AppError, NoteStore};
 
-/// Les notes de la bibliothèque, la plus récemment modifiée en premier.
+/// Les notes d'un dossier : les épinglées d'abord, la plus récemment modifiée en premier.
 #[derive(Debug)]
 pub struct ListNotes<'a> {
     store: &'a dyn NoteStore,
@@ -18,7 +18,8 @@ impl<'a> ListNotes<'a> {
         Self { store }
     }
 
-    /// Le résumé de chaque note du dossier, la plus récemment modifiée en premier.
+    /// Le résumé de chaque note du dossier : les épinglées d'abord, puis les autres ;
+    /// dans chaque groupe, la plus récemment modifiée en premier.
     ///
     /// # Errors
     ///
@@ -29,7 +30,7 @@ impl<'a> ListNotes<'a> {
             .into_iter()
             .map(|n| NoteSummary::new(n.path, &n.content, n.modified))
             .collect();
-        Ok(sort_by_recent(summaries))
+        Ok(sort_pinned_first(summaries))
     }
 }
 
@@ -44,5 +45,16 @@ mod tests {
         let notes = ListNotes::new(&store).execute(&Folder::root()).unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
         assert_eq!(titles, ["Sans titre", "Alpha"]);
+    }
+
+    #[test]
+    fn pinned_notes_are_listed_first() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("a.md", "---\npinned: true\n---\n# Alpha"),
+            ("b.md", "# Bêta"),
+        ]);
+        let notes = ListNotes::new(&store).execute(&Folder::root()).unwrap();
+        let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
+        assert_eq!(titles, ["Alpha", "Bêta"]);
     }
 }

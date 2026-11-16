@@ -1,7 +1,7 @@
 //! Propriétés vérifiées sur des milliers de textes générés au hasard.
 
 use domain::attachments::relink;
-use domain::front_matter::split;
+use domain::front_matter::{is_pinned, pinned, split, unpinned};
 use domain::search::{ExcerptPart, SearchQuery, search};
 use domain::title::displayed_title;
 use domain::{FileName, Folder, NotePath, Title};
@@ -27,6 +27,32 @@ fn markdown_note() -> impl Strategy<Value = String> {
 }
 
 proptest! {
+    #[test]
+    fn pinning_and_unpinning_never_touch_the_title(content in markdown_note()) {
+        let title = displayed_title(&content);
+        let pinned_note = pinned(&content);
+        prop_assert!(is_pinned(&pinned_note));
+        prop_assert_eq!(displayed_title(&pinned_note), title.clone());
+        prop_assert_eq!(pinned(&pinned_note), pinned_note.clone());
+        let unpinned_note = unpinned(&pinned_note);
+        prop_assert!(!is_pinned(&unpinned_note));
+        prop_assert_eq!(displayed_title(&unpinned_note), title);
+    }
+
+    #[test]
+    fn pinning_keeps_the_body_of_the_note(content in markdown_note()) {
+        let (_, body) = split(&content);
+        let pinned_note = pinned(&content);
+        prop_assert_eq!(split(&pinned_note).1, body);
+    }
+
+    #[test]
+    fn pinning_then_unpinning_a_note_without_header_gives_it_back(content in markdown_note()) {
+        if split(&content).0.is_none() && !content.starts_with("---") {
+            prop_assert_eq!(unpinned(&pinned(&content)), content);
+        }
+    }
+
     #[test]
     fn a_title_always_gives_a_safe_kebab_case_file_name(content in markdown_note()) {
         let name = FileName::from_title(Title::of(&content).as_ref());

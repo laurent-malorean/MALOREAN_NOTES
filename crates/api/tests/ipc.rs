@@ -256,3 +256,21 @@ fn the_page_searches_the_whole_library_by_its_query_argument() {
         ["a.md"]
     );
 }
+
+#[test]
+fn the_page_pins_and_unpins_a_note_by_its_path() {
+    let window = window(&[("a.md", "# Alpha"), ("b.md", "# Bêta")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let pinned: NoteContent = ok(call(&window, "pin_note", json!({ "path": "a.md" })));
+    assert_eq!(pinned.content, "---\npinned: true\n---\n# Alpha");
+    let notes: Vec<NoteListItem> = ok(call(&window, "list_notes", json!({ "folder": "" })));
+    assert_eq!(
+        notes
+            .iter()
+            .map(|n| (n.path.as_str(), n.pinned))
+            .collect::<Vec<_>>(),
+        [("a.md", true), ("b.md", false)]
+    );
+    let unpinned: NoteContent = ok(call(&window, "unpin_note", json!({ "path": "a.md" })));
+    assert_eq!(unpinned.content, "# Alpha");
+}

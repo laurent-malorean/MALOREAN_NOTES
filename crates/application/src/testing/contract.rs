@@ -42,6 +42,26 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     a_moved_note_leaves_its_folder_for_the_new_one(&empty_store());
     moving_a_note_onto_a_taken_name_is_refused(&empty_store());
     moving_a_missing_note_or_into_a_missing_folder_is_refused(&empty_store());
+    rewriting_while_keeping_the_date_changes_only_the_content(&empty_store());
+    rewriting_a_missing_note_while_keeping_the_date_is_refused(&empty_store());
+}
+
+fn rewriting_while_keeping_the_date_changes_only_the_content(store: &impl NoteStore) {
+    store.write(&name("x.md"), "avant").unwrap();
+    store.write(&name("y.md"), "autre").unwrap();
+    let before = store.read(&name("x.md")).unwrap().modified;
+    store.write_keeping_date(&name("x.md"), "après").unwrap();
+    let after = store.read(&name("x.md")).unwrap();
+    assert_eq!(after.content, "après");
+    assert_eq!(after.modified, before);
+}
+
+fn rewriting_a_missing_note_while_keeping_the_date_is_refused(store: &impl NoteStore) {
+    assert_eq!(
+        store.write_keeping_date(&name("absente.md"), "x"),
+        Err(StoreError::NotFound(name("absente.md")))
+    );
+    assert!(store.names(&root()).unwrap().is_empty());
 }
 
 fn a_moved_note_leaves_its_folder_for_the_new_one(store: &impl NoteStore) {

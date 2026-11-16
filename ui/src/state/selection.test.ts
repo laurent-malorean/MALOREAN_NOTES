@@ -6,6 +6,7 @@ const note = (path: string, modified: number): NoteListItem => ({
   path,
   title: path,
   modified,
+  pinned: false,
 });
 
 describe("sélection de la note", () => {

@@ -19,6 +19,7 @@
   --danger: #c0392b;
   --highlight: #fbe38a;
   --on-danger: #ffffff;
+  --shadow: #00000026;
 
   /* Coloration des blocs de code */
   --syntax-plain: #1f1f1f;
@@ -69,6 +70,7 @@
     --danger: #c0392b;
     --highlight: #6b5a1e;
     --on-danger: #ffffff;
+    --shadow: #00000080;
     --syntax-plain: #e8e6e1;
     --syntax-keyword: #c792ea;
     --syntax-string: #a5d6a7;

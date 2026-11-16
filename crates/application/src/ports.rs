@@ -58,6 +58,15 @@ pub trait NoteStore: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si l'écriture échoue ; l'ancienne version reste intacte.
     fn write(&self, note: &NotePath, content: &str) -> Result<(), StoreError>;
 
+    /// Réécrit une note existante sans changer sa date de modification : pour un changement
+    /// qui ne touche pas au texte (épingler), la note garde sa place parmi les plus récentes.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::NotFound`] si la note n'existe pas, [`StoreError::Unavailable`] si
+    /// l'écriture échoue ; l'ancienne version reste intacte.
+    fn write_keeping_date(&self, note: &NotePath, content: &str) -> Result<(), StoreError>;
+
     /// Renomme la note et son dossier de pièces jointes, dans le même dossier.
     ///
     /// # Errors

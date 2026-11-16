@@ -107,6 +107,16 @@ function searchNotes(query: string) {
     });
 }
 
+/** Doublure de l'en-tête d'une note épinglée : les vraies règles sont testées côté Rust. */
+const PIN_HEADER = "---\npinned: true\n---\n";
+
+function rewritePin(path: string, change: (content: string) => string) {
+  const note = backend.notes[path];
+  if (!note) throw { message: `la note « ${path} » n'existe pas` };
+  note.content = change(note.content);
+  return { path, content: note.content };
+}
+
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   search_notes: ({ query = "" }) => searchNotes(query),
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
@@ -118,8 +128,13 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
         path,
         title: titleOf(n.content) ?? "Sans titre",
         modified: n.modified,
+        pinned: n.content.startsWith(PIN_HEADER),
       }))
-      .sort((a, b) => b.modified - a.modified),
+      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.modified - a.modified),
+  // Épingler ne change pas la date de la note.
+  pin_note: ({ path = "" }) =>
+    rewritePin(path, (c) => (c.startsWith(PIN_HEADER) ? c : PIN_HEADER + c)),
+  unpin_note: ({ path = "" }) => rewritePin(path, (c) => c.replace(PIN_HEADER, "")),
   read_note: ({ path = "" }) => {
     const note = backend.notes[path];
     if (!note) throw { message: `la note « ${path} » n'existe pas` };

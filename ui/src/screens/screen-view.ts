@@ -2,13 +2,11 @@ import { nameOf } from "../state/folders";
 import type { Screen } from "../state/screen";
 import { type FolderActions, renderFoldersList } from "./folders-list";
 import type { Layout } from "./layout";
-import { renderNotesList } from "./notes-list";
+import { type NoteActions, renderNotesList } from "./notes-list";
 import { renderSearchResults } from "./search-results";
 
 /** Ce que l'utilisateur peut demander depuis l'espace de travail. */
-export interface ScreenActions extends FolderActions {
-  readonly open: (path: string) => void;
-}
+export type ScreenActions = FolderActions & NoteActions;
 
 /** Le nom du dossier affiché : celui de la bibliothèque pour la racine. */
 function folderName(libraryName: string, folder: string): string {
@@ -44,7 +42,7 @@ export function renderScreen(layout: Layout, screen: Screen, actions: ScreenActi
           actions.open,
         );
       } else {
-        renderNotesList(layout.notesList, screen.notes, screen.selected, actions.open);
+        renderNotesList(layout.notesList, screen.notes, screen.selected, actions);
       }
       return;
     // Stryker disable all: cas impossible, le compilateur vérifie que tous les cas sont traités.

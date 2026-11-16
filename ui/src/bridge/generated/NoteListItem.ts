@@ -15,4 +15,8 @@ title: string,
 /**
  * Millisecondes depuis le 1er janvier 1970.
  */
-modified: number, };
+modified: number, 
+/**
+ * La note est épinglée en tête de liste.
+ */
+pinned: boolean, };

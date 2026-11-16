@@ -1,22 +1,152 @@
-//! En-tête YAML optionnel d'une note.
+//! En-tête YAML optionnel d'une note, et l'épinglage qu'il porte.
 
 const DELIMITER: &str = "---";
+const PINNED_KEY: &str = "pinned";
+const PINNED_LINE: &str = "pinned: true";
+/// Valeurs YAML qui épinglent la note, sans tenir compte de la casse.
+const PINNED_VALUES: [&str; 2] = ["true", "yes"];
+const COMMENT: char = '#';
 
 /// Sépare l'en-tête YAML (s'il existe et est fermé) du contenu de la note.
 #[must_use]
 pub fn split(content: &str) -> (Option<&str>, &str) {
-    let Some(after_open) = strip_delimiter_line(content) else {
-        return (None, content);
-    };
-    let mut offset = 0;
-    for line in after_open.split_inclusive('\n') {
-        if line.trim_end_matches(['\r', '\n']) == DELIMITER {
-            let yaml = after_open[..offset].trim_end_matches(['\r', '\n']);
-            return (Some(yaml), &after_open[offset + line.len()..]);
+    match Header::of(content) {
+        Some(header) => {
+            let yaml = &content[header.yaml_start..header.close_start];
+            (
+                Some(yaml.trim_end_matches(['\r', '\n'])),
+                &content[header.close_end..],
+            )
         }
-        offset += line.len();
+        None => (None, content),
     }
-    (None, content)
+}
+
+/// L'en-tête d'une note, repéré par ses positions dans le texte.
+struct Header<'a> {
+    content: &'a str,
+    /// Début de la première ligne YAML, juste après le délimiteur d'ouverture.
+    yaml_start: usize,
+    /// Début de la ligne du délimiteur de fermeture.
+    close_start: usize,
+    /// Fin de la ligne du délimiteur de fermeture : début du contenu.
+    close_end: usize,
+}
+
+impl<'a> Header<'a> {
+    fn of(content: &'a str) -> Option<Self> {
+        let after_open = strip_delimiter_line(content)?;
+        let yaml_start = content.len() - after_open.len();
+        let mut offset = yaml_start;
+        for line in after_open.split_inclusive('\n') {
+            if line.trim_end_matches(['\r', '\n']) == DELIMITER {
+                return Some(Self {
+                    content,
+                    yaml_start,
+                    close_start: offset,
+                    close_end: offset + line.len(),
+                });
+            }
+            offset += line.len();
+        }
+        None
+    }
+
+    /// Les lignes YAML, chacune avec sa fin de ligne.
+    fn lines(&self) -> std::str::SplitInclusive<'a, char> {
+        self.content[self.yaml_start..self.close_start].split_inclusive('\n')
+    }
+
+    /// La fin de ligne du délimiteur d'ouverture, reprise pour une ligne ajoutée.
+    fn newline(&self) -> &'a str {
+        let opening = &self.content[..self.yaml_start];
+        &opening[opening.trim_end_matches(['\r', '\n']).len()..]
+    }
+
+    /// La note avec ces lignes YAML à la place des anciennes.
+    fn with_yaml(&self, yaml: &str) -> String {
+        let (before, after) = (
+            &self.content[..self.yaml_start],
+            &self.content[self.close_start..],
+        );
+        format!("{before}{yaml}{after}")
+    }
+}
+
+/// La valeur de la clé `pinned` si la ligne la porte (au premier niveau), commentaire retiré.
+fn pinned_value(line: &str) -> Option<&str> {
+    let rest = line.strip_prefix(PINNED_KEY)?;
+    let value = rest.trim_start_matches([' ', '\t']).strip_prefix(':')?;
+    value.split(COMMENT).next().map(str::trim)
+}
+
+fn line_ending(line: &str) -> &str {
+    &line[line.trim_end_matches(['\r', '\n']).len()..]
+}
+
+/// La note est épinglée : son en-tête porte `pinned: true` (ou `yes`).
+#[must_use]
+pub fn is_pinned(content: &str) -> bool {
+    Header::of(content).is_some_and(|header| {
+        header
+            .lines()
+            .filter_map(pinned_value)
+            .any(|value| PINNED_VALUES.iter().any(|v| value.eq_ignore_ascii_case(v)))
+    })
+}
+
+/// La note épinglée : `pinned: true` ajouté à son en-tête (créé s'il n'existe pas),
+/// le reste du texte inchangé.
+#[must_use]
+pub fn pinned(content: &str) -> String {
+    if is_pinned(content) {
+        return content.to_owned();
+    }
+    let Some(header) = Header::of(content) else {
+        let newline = if content.contains("\r\n") {
+            "\r\n"
+        } else {
+            "\n"
+        };
+        return format!("{DELIMITER}{newline}{PINNED_LINE}{newline}{DELIMITER}{newline}{content}");
+    };
+    let mut yaml = String::new();
+    let mut replaced = false;
+    for line in header.lines() {
+        if !replaced && pinned_value(line).is_some() {
+            yaml.push_str(PINNED_LINE);
+            yaml.push_str(line_ending(line));
+            replaced = true;
+        } else {
+            yaml.push_str(line);
+        }
+    }
+    if !replaced {
+        yaml.push_str(PINNED_LINE);
+        yaml.push_str(header.newline());
+    }
+    header.with_yaml(&yaml)
+}
+
+/// La note désépinglée : la clé `pinned` retirée de son en-tête, et l'en-tête retiré
+/// s'il ne contient plus rien. Une note sans clé `pinned` reste telle quelle.
+#[must_use]
+pub fn unpinned(content: &str) -> String {
+    let Some(header) = Header::of(content) else {
+        return content.to_owned();
+    };
+    if header.lines().all(|line| pinned_value(line).is_none()) {
+        return content.to_owned();
+    }
+    let yaml: String = header
+        .lines()
+        .filter(|line| pinned_value(line).is_none())
+        .collect();
+    if yaml.trim().is_empty() {
+        content[header.close_end..].to_owned()
+    } else {
+        header.with_yaml(&yaml)
+    }
 }
 
 fn strip_delimiter_line(content: &str) -> Option<&str> {
@@ -28,6 +158,95 @@ fn strip_delimiter_line(content: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_note_is_pinned_by_its_header() {
+        assert!(is_pinned("---\npinned: true\n---\n# T"));
+        assert!(is_pinned(
+            "---\ntags: [a]\npinned:   YES # épinglée\n---\n# T"
+        ));
+        assert!(is_pinned("---\npinned : True\n---"));
+        assert!(!is_pinned("---\npinned: false\n---\n# T"));
+        assert!(!is_pinned("# T\npinned: true"));
+        assert!(!is_pinned("---\n  pinned: true\n---\n"));
+        assert!(!is_pinned("---\npinnedx: true\n---\n"));
+        assert!(!is_pinned("---\npinned: true"));
+    }
+
+    #[test]
+    fn pinning_creates_a_header_when_there_is_none() {
+        assert_eq!(
+            pinned("# Titre\ntexte"),
+            "---\npinned: true\n---\n# Titre\ntexte"
+        );
+        assert_eq!(pinned(""), "---\npinned: true\n---\n");
+    }
+
+    #[test]
+    fn pinning_adds_the_key_after_the_other_keys() {
+        assert_eq!(
+            pinned("---\ntags: [a, b]   # mes étiquettes\n---\n# T"),
+            "---\ntags: [a, b]   # mes étiquettes\npinned: true\n---\n# T"
+        );
+    }
+
+    #[test]
+    fn pinning_replaces_a_false_value_in_place() {
+        assert_eq!(
+            pinned("---\npinned: false\ntags: [a]\n---\n# T"),
+            "---\npinned: true\ntags: [a]\n---\n# T"
+        );
+    }
+
+    #[test]
+    fn pinning_a_pinned_note_changes_nothing() {
+        let note = "---\npinned: yes\n---\n# T";
+        assert_eq!(pinned(note), note);
+    }
+
+    #[test]
+    fn pinning_keeps_windows_line_endings() {
+        assert_eq!(
+            pinned("---\r\na: 1\r\n---\r\n# T"),
+            "---\r\na: 1\r\npinned: true\r\n---\r\n# T"
+        );
+        assert_eq!(pinned("# T\r\nx"), "---\r\npinned: true\r\n---\r\n# T\r\nx");
+    }
+
+    #[test]
+    fn pinning_fills_an_empty_header() {
+        assert_eq!(pinned("---\n---\n# T"), "---\npinned: true\n---\n# T");
+    }
+
+    #[test]
+    fn pinning_a_header_that_ends_the_note() {
+        assert_eq!(pinned("---\na: 1\n---"), "---\na: 1\npinned: true\n---");
+    }
+
+    #[test]
+    fn unpinning_removes_only_the_key() {
+        assert_eq!(
+            unpinned("---\ntags: [a]\npinned: true\ndate: 2026\n---\n# T"),
+            "---\ntags: [a]\ndate: 2026\n---\n# T"
+        );
+    }
+
+    #[test]
+    fn unpinning_removes_a_header_left_empty() {
+        assert_eq!(unpinned("---\npinned: true\n---\n# T"), "# T");
+        assert_eq!(unpinned("---\r\npinned: true\r\n\r\n---\r\n# T"), "# T");
+    }
+
+    #[test]
+    fn unpinning_a_note_whose_header_has_no_pin_changes_nothing() {
+        assert_eq!(unpinned("---\n---\n# T"), "---\n---\n# T");
+    }
+
+    #[test]
+    fn unpinning_a_note_without_header_changes_nothing() {
+        assert_eq!(unpinned("# T\npinned: true"), "# T\npinned: true");
+        assert_eq!(unpinned("---\nx: 1\n---\n# T"), "---\nx: 1\n---\n# T");
+    }
 
     #[test]
     fn content_without_front_matter_is_all_body() {

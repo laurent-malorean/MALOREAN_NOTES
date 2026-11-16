@@ -26,6 +26,8 @@ pub struct NoteListItem {
     /// Millisecondes depuis le 1er janvier 1970.
     #[ts(type = "number")]
     pub modified: u64,
+    /// La note est épinglée en tête de liste.
+    pub pinned: bool,
 }
 
 /// Une note trouvée par la recherche.
