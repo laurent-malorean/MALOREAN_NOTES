@@ -21,6 +21,10 @@ fn name(text: &str) -> FileName {
     FileName::parse(text).unwrap()
 }
 
+fn location(path: &std::path::Path) -> LibraryLocation {
+    LibraryLocation::new(path.to_str().unwrap()).unwrap()
+}
+
 fn library() -> (TempDir, FsNoteStore) {
     let dir = TempDir::new().unwrap();
     let store = FsNoteStore::new(dir.path().to_path_buf());
@@ -104,7 +108,7 @@ fn renaming_only_the_letter_case_is_allowed() {
 #[test]
 fn opening_a_missing_folder_fails() {
     let opener = FsLibraryOpener;
-    let missing = LibraryLocation("/chemin/qui/n/existe/pas".into());
+    let missing = LibraryLocation::new("/chemin/qui/n/existe/pas").unwrap();
     assert!(matches!(
         opener.open(&missing),
         Err(StoreError::Unavailable(_))
@@ -115,9 +119,7 @@ fn opening_a_missing_folder_fails() {
 fn opening_an_existing_folder_gives_its_notes() {
     let dir = TempDir::new().unwrap();
     fs::write(dir.path().join("a.md"), "# A").unwrap();
-    let store = FsLibraryOpener
-        .open(&LibraryLocation(dir.path().to_path_buf()))
-        .unwrap();
+    let store = FsLibraryOpener.open(&location(dir.path())).unwrap();
     assert_eq!(store.list().unwrap().len(), 1);
 }
 
@@ -202,7 +204,7 @@ fn opening_a_file_instead_of_a_folder_fails() {
     let file = dir.path().join("note.md");
     fs::write(&file, "x").unwrap();
     assert!(matches!(
-        FsLibraryOpener.open(&LibraryLocation(file)),
+        FsLibraryOpener.open(&location(&file)),
         Err(StoreError::Unavailable(_))
     ));
 }

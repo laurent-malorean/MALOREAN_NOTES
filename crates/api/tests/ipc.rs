@@ -26,7 +26,7 @@ const BRIDGE_SOURCE: &str = include_str!("../../../ui/src/bridge/index.ts");
 fn window(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
     let preferences = FakePreferences::default();
     preferences
-        .remember_library(&LibraryLocation("/Users/moi/Notes".into()))
+        .remember_library(&LibraryLocation::new("/Users/moi/Notes").unwrap())
         .unwrap();
     let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
     let session = Session::new(Arc::new(opener), Arc::new(preferences));

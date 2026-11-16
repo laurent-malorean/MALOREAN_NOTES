@@ -120,13 +120,14 @@ pub struct FsLibraryOpener;
 
 impl LibraryOpener for FsLibraryOpener {
     fn open(&self, location: &LibraryLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
-        if !location.0.is_dir() {
+        let root = PathBuf::from(location.as_str());
+        if !root.is_dir() {
             return Err(StoreError::Unavailable(format!(
                 "le dossier « {} » est introuvable",
-                location.0.display()
+                location.as_str()
             )));
         }
-        Ok(Arc::new(FsNoteStore::new(location.0.clone())))
+        Ok(Arc::new(FsNoteStore::new(root)))
     }
 }
 

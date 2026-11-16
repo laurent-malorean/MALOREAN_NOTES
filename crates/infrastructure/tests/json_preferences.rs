@@ -15,7 +15,7 @@ fn no_library_is_remembered_at_first_launch() {
 fn remembered_library_is_read_back_after_restart() {
     let dir = TempDir::new().unwrap();
     let file = dir.path().join("prefs/preferences.json");
-    let location = LibraryLocation("/Users/moi/Notes".into());
+    let location = LibraryLocation::new("/Users/moi/Notes").unwrap();
     JsonPreferences::new(file.clone())
         .remember_library(&location)
         .unwrap();
@@ -32,7 +32,7 @@ fn damaged_preferences_do_not_block_the_launch() {
     std::fs::write(&file, "{ pas du json").unwrap();
     let preferences = JsonPreferences::new(file);
     assert_eq!(preferences.last_library().unwrap(), None);
-    let location = LibraryLocation("/Users/moi/Notes".into());
+    let location = LibraryLocation::new("/Users/moi/Notes").unwrap();
     preferences.remember_library(&location).unwrap();
     assert_eq!(preferences.last_library().unwrap(), Some(location));
 }

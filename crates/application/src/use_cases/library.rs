@@ -58,14 +58,13 @@ impl<'a> ReopenLastLibrary<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use std::sync::Arc;
 
     use super::*;
     use crate::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
 
     fn location(path: &str) -> LibraryLocation {
-        LibraryLocation(PathBuf::from(path))
+        LibraryLocation::new(path).unwrap()
     }
 
     #[test]

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize)]
 struct Stored {
-    last_library: Option<PathBuf>,
+    last_library: Option<String>,
 }
 
 /// Préférences gardées dans un fichier JSON.
@@ -49,12 +49,16 @@ impl JsonPreferences {
 
 impl Preferences for JsonPreferences {
     fn last_library(&self) -> Result<Option<LibraryLocation>, StoreError> {
-        Ok(self.load()?.last_library.map(LibraryLocation))
+        // Un emplacement vide gardé par erreur vaut « aucune bibliothèque ».
+        Ok(self
+            .load()?
+            .last_library
+            .and_then(|l| LibraryLocation::new(l).ok()))
     }
 
     fn remember_library(&self, location: &LibraryLocation) -> Result<(), StoreError> {
         let mut stored = self.load()?;
-        stored.last_library = Some(location.0.clone());
+        stored.last_library = Some(location.as_str().to_owned());
         self.save(&stored)
     }
 }

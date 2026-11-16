@@ -1,6 +1,5 @@
 //! Ports : ce dont les cas d'usage ont besoin, sans savoir comment c'est fait.
 
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use domain::{FileName, Modified};
@@ -35,9 +34,38 @@ pub trait NoteStore: Send + Sync {
     fn exists(&self, name: &FileName) -> Result<bool, StoreError>;
 }
 
-/// Emplacement d'une bibliothèque, choisi par l'utilisateur.
+/// Emplacement d'une bibliothèque, tel que l'utilisateur l'a choisi.
+///
+/// L'application ne l'interprète pas : seul l'adaptateur de stockage sait le traduire.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LibraryLocation(pub PathBuf);
+pub struct LibraryLocation(String);
+
+/// Emplacement refusé parce qu'il est vide.
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("l'emplacement de la bibliothèque est vide")]
+pub struct EmptyLocation;
+
+impl LibraryLocation {
+    /// L'emplacement choisi par l'utilisateur.
+    ///
+    /// # Errors
+    ///
+    /// [`EmptyLocation`] si l'emplacement est vide.
+    pub fn new(location: impl Into<String>) -> Result<Self, EmptyLocation> {
+        let location = location.into();
+        if location.is_empty() {
+            Err(EmptyLocation)
+        } else {
+            Ok(Self(location))
+        }
+    }
+
+    /// L'emplacement, tel qu'il a été choisi.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
 
 /// Ouvre la bibliothèque qui se trouve à un emplacement.
 pub trait LibraryOpener: Send + Sync {

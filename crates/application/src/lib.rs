@@ -7,4 +7,6 @@ pub mod testing;
 pub mod use_cases;
 
 pub use error::AppError;
-pub use ports::{LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError, StoredNote};
+pub use ports::{
+    EmptyLocation, LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError, StoredNote,
+};

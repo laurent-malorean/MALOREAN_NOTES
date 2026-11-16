@@ -1,6 +1,6 @@
 //! Traduction des erreurs en message pour l'interface : le seul endroit où cela se fait.
 
-use application::AppError;
+use application::{AppError, EmptyLocation};
 use domain::InvalidFileName;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -13,6 +13,13 @@ pub struct ApiError {
 }
 
 impl ApiError {
+    /// Le dossier choisi a un nom qui n'est pas du texte lisible : on ne peut pas s'en souvenir.
+    pub(crate) fn unreadable_folder_name(path: &std::path::Path) -> Self {
+        Self {
+            message: format!("le nom du dossier « {} » est illisible", path.display()),
+        }
+    }
+
     pub(crate) fn internal(reason: &impl std::fmt::Display) -> Self {
         tracing::error!(%reason, "erreur interne");
         Self {
@@ -23,6 +30,14 @@ impl ApiError {
 
 impl From<AppError> for ApiError {
     fn from(error: AppError) -> Self {
+        Self {
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<EmptyLocation> for ApiError {
+    fn from(error: EmptyLocation) -> Self {
         Self {
             message: error.to_string(),
         }

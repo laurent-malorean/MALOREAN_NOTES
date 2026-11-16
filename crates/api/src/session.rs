@@ -1,6 +1,6 @@
 //! La bibliothèque ouverte et les cas d'usage qu'on lui applique.
 
-use std::path::PathBuf;
+use std::path::Path;
 use std::sync::{Arc, PoisonError, RwLock};
 
 use application::use_cases::{
@@ -33,8 +33,7 @@ impl Session {
         Ok(reopened.map(|opened| self.keep(&opened.location, opened.store)))
     }
 
-    pub fn open_library(&self, path: PathBuf) -> Result<LibraryInfo, ApiError> {
-        let location = LibraryLocation(path);
+    pub fn open_library(&self, location: LibraryLocation) -> Result<LibraryInfo, ApiError> {
         let store = OpenLibrary::new(&*self.opener, &*self.preferences).execute(&location)?;
         Ok(self.keep(&location, store))
     }
@@ -91,9 +90,8 @@ impl Session {
 }
 
 fn library_info(location: &LibraryLocation) -> LibraryInfo {
-    let path = location.0.to_string_lossy().into_owned();
-    let name = location
-        .0
+    let path = location.as_str().to_owned();
+    let name = Path::new(&path)
         .file_name()
         .map_or_else(|| path.clone(), |n| n.to_string_lossy().into_owned());
     LibraryInfo { name, path }
@@ -101,7 +99,6 @@ fn library_info(location: &LibraryLocation) -> LibraryInfo {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use std::sync::Arc;
 
     use application::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
@@ -117,7 +114,7 @@ mod tests {
     fn opened(notes: &[(&str, &str)]) -> Session {
         let session = session_with(notes);
         session
-            .open_library(PathBuf::from("/Users/moi/Notes"))
+            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         session
     }
@@ -135,7 +132,7 @@ mod tests {
     fn opening_a_library_tells_its_name() {
         let session = session_with(&[]);
         let info = session
-            .open_library(PathBuf::from("/Users/moi/Notes"))
+            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         assert_eq!(info.name, "Notes");
         assert_eq!(info.path, "/Users/moi/Notes");
@@ -145,7 +142,7 @@ mod tests {
     fn last_library_is_reopened() {
         let preferences = FakePreferences::default();
         preferences
-            .remember_library(&LibraryLocation("/Users/moi/Notes".into()))
+            .remember_library(&LibraryLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::default()));
         let session = Session::new(Arc::new(opener), Arc::new(preferences));
