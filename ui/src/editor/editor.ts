@@ -1,6 +1,7 @@
 // Éditeur Markdown : CodeMirror 6, Markdown GitHub, mise en forme et aperçu en direct.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import { languages } from "@codemirror/language-data";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { liveFormatting } from "./live-formatting";
@@ -22,7 +23,8 @@ export function createEditor(
     resolveImage ? imageResolver.of(resolveImage) : [],
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
-    markdown({ base: markdownLanguage }),
+    // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.
+    markdown({ base: markdownLanguage, codeLanguages: languages }),
     liveFormatting,
     livePreview,
     liveTables,

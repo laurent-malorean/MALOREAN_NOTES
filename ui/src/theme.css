@@ -19,6 +19,18 @@
   --danger: #c0392b;
   --on-danger: #ffffff;
 
+  /* Coloration des blocs de code */
+  --syntax-plain: #1f1f1f;
+  --syntax-keyword: #8a3ab9;
+  --syntax-string: #2e7d32;
+  --syntax-comment: #8a8780;
+  --syntax-number: #b35c00;
+  --syntax-function: #1f5fbf;
+  --syntax-type: #00796b;
+  --syntax-property: #5c4d9a;
+  --syntax-tag: #b0306a;
+  --code-block-background: #f2f0eb;
+
   /* Polices */
   --serif: "Iowan Old Style", "Charter", Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
@@ -33,6 +45,7 @@
   --heading3-size: 1.2em;
   --image-max-height: 70vh;
   --table-text-size: 0.9em;
+  --code-block-text-size: 0.85em;
 
   /* Fenêtre */
   --sidebar-width: 280px;
@@ -52,5 +65,15 @@
     --border: #333336;
     --danger: #c0392b;
     --on-danger: #ffffff;
+    --syntax-plain: #e8e6e1;
+    --syntax-keyword: #c792ea;
+    --syntax-string: #a5d6a7;
+    --syntax-comment: #7d7b75;
+    --syntax-number: #f6b26b;
+    --syntax-function: #82aaff;
+    --syntax-type: #80cbc4;
+    --syntax-property: #b4a7f0;
+    --syntax-tag: #f48fb1;
+    --code-block-background: #242426;
   }
 }

@@ -31,11 +31,13 @@ export interface PreviewInput {
 
 export const FRONT_MATTER_CLASS = "cm-lp-front-matter";
 export const QUOTE_CLASS = "cm-lp-quote";
+export const CODE_BLOCK_CLASS = "cm-lp-code-block";
+export const CODE_FENCE_CLASS = "cm-lp-code-fence";
 
 /** Un en-tête YAML doit se fermer dans ces premiers caractères : au-delà, ce n'en est pas un. */
 const FRONT_MATTER_SCAN_LIMIT = 10_000;
 const FRONT_MATTER = /^---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/;
-// Seul un bloc de code délimité contient des marques que l'aperçu cacherait (ses ```) :
+// Seul un bloc de code délimité a des marques à cacher (ses ```), et rien d'autre en lui :
 // les blocs indentés, HTML et commentaires ne contiennent aucune marque Markdown.
 const FENCED_CODE = "FencedCode";
 const LINK_TEXT_END = "]";
@@ -111,10 +113,27 @@ function isActive(input: PreviewInput, node: SyntaxNodeRef): boolean {
 function visit(node: SyntaxNodeRef, input: PreviewInput, context: Context, frontMatterEnd: number) {
   // Stryker disable next-line BooleanLiteral: descendre ne changerait rien, chaque enfant serait écarté à son tour.
   if (node.to <= frontMatterEnd) return false;
-  if (node.name === FENCED_CODE) return false;
+  if (node.name === FENCED_CODE) return codeBlock(node.node, input, context);
   if (node.name === "Blockquote") styleLines(context, node.from, node.to, QUOTE_CLASS);
   if (isActive(input, node)) return true;
   return HANDLERS[node.name]?.(node.node, context) !== "skip";
+}
+
+/**
+ * Un bloc de code est mis en forme sur toutes ses lignes ; ses délimiteurs (et la langue)
+ * sont cachés, sauf si le curseur est dans le bloc. Son contenu n'est jamais parcouru.
+ */
+function codeBlock(node: SyntaxNode, input: PreviewInput, context: Context): false {
+  styleLines(context, node.from, node.to, CODE_BLOCK_CLASS);
+  const first = input.doc.lineAt(node.from).number;
+  const last = input.doc.lineAt(node.to).number;
+  for (let n = first; n <= last; n++) if (input.activeLines.has(n)) return false;
+  for (const fence of node.getChildren("CodeMark")) {
+    const line = input.doc.lineAt(fence.from);
+    hide(context, fence.from, line.to);
+    context.preview.lineStyles.push({ from: line.from, className: CODE_FENCE_CLASS });
+  }
+  return false;
 }
 
 /** Un lien ne montre que son texte : `[` caché, et tout ce qui suit `]` (adresse, titre, référence). */

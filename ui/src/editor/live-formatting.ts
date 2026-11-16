@@ -19,5 +19,18 @@ export const liveFormatting = syntaxHighlighting(
     { tag: tags.url, color: theme("accent"), textDecoration: "underline" },
     { tag: tags.quote, color: theme("muted"), fontStyle: "italic" },
     { tag: [tags.processingInstruction, tags.meta, tags.contentSeparator], color: theme("marker") },
+    // Blocs de code, selon leur langue.
+    { tag: tags.keyword, color: theme("syntax-keyword") },
+    { tag: [tags.string, tags.special(tags.string), tags.regexp], color: theme("syntax-string") },
+    { tag: tags.comment, color: theme("syntax-comment"), fontStyle: "italic" },
+    { tag: [tags.number, tags.bool, tags.null, tags.atom], color: theme("syntax-number") },
+    {
+      tag: [tags.function(tags.variableName), tags.function(tags.propertyName)],
+      color: theme("syntax-function"),
+    },
+    { tag: [tags.typeName, tags.className, tags.namespace], color: theme("syntax-type") },
+    { tag: [tags.propertyName, tags.attributeName], color: theme("syntax-property") },
+    { tag: tags.tagName, color: theme("syntax-tag") },
+    { tag: tags.variableName, color: theme("syntax-plain") },
   ]),
 );

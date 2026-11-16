@@ -35,13 +35,17 @@ function drawn(c: Conceal): string {
 }
 
 function lineStyles(source: string): string[] {
+  return lineStylesWithCursor(source, []);
+}
+
+function lineStylesWithCursor(source: string, activeLines: number[]): string[] {
   const state = EditorState.create({
     doc: source,
     extensions: markdown({ base: markdownLanguage }),
   });
   const tree = ensureSyntaxTree(state, state.doc.length, 5000);
   if (!tree) throw new Error("analyse Markdown incomplète");
-  return computePreview({ doc: state.doc, tree, activeLines: new Set() }).lineStyles.map(
+  return computePreview({ doc: state.doc, tree, activeLines: new Set(activeLines) }).lineStyles.map(
     (s) => `${state.doc.lineAt(s.from).number}:${s.className}`,
   );
 }
@@ -83,8 +87,8 @@ describe("titres, gras, italique, barré", () => {
     expect(seen("<!-- **x** -->")).toBe("<!-- **x** -->");
   });
 
-  it("ne touche à rien dans un bloc de code", () => {
-    expect(seen("```\n# pas un titre **x**\n```")).toBe("```\n# pas un titre **x**\n```");
+  it("ne touche à rien dans un bloc de code, sauf ses délimiteurs", () => {
+    expect(seen("```\n# pas un titre **x**\n```")).toBe("\n# pas un titre **x**\n");
   });
 
   it("ne touche pas à l'en-tête YAML et l'affiche en discret", () => {
@@ -177,6 +181,47 @@ describe("liens", () => {
 
   it("laisse une adresse brute visible", () => {
     expect(seen("voir https://example.org")).toBe("voir https://example.org");
+  });
+});
+
+describe("blocs de code", () => {
+  it("cache les délimiteurs et la langue d'un bloc de code", () => {
+    expect(seen("texte\n```js\nlet a = 1;\n```\nfin")).toBe("texte\n\nlet a = 1;\n\nfin");
+  });
+
+  it("accepte les délimiteurs en tildes", () => {
+    expect(seen("~~~\ncode\n~~~")).toBe("\ncode\n");
+  });
+
+  it("cache le délimiteur d'un bloc qui n'est pas fermé", () => {
+    expect(seen("```\ncode")).toBe("\ncode");
+  });
+
+  it("montre tout le bloc quand le curseur est sur l'une de ses lignes", () => {
+    expect(seen("```js\nlet a;\nlet b;\n```\nfin", [3])).toBe("```js\nlet a;\nlet b;\n```\nfin");
+    expect(seen("```js\nlet a;\n```\nfin", [3])).toBe("```js\nlet a;\n```\nfin");
+  });
+
+  it("cache les délimiteurs d'un bloc dans une liste, pas l'indentation", () => {
+    expect(seen("- a\n\n  ```\n  x\n  ```")).toBe("• a\n\n  \n  x\n  ");
+  });
+
+  it("met en forme chaque ligne du bloc, et réduit les lignes de délimiteurs", () => {
+    expect(lineStyles("```js\nlet a;\n```\nfin")).toEqual([
+      "1:cm-lp-code-block",
+      "2:cm-lp-code-block",
+      "3:cm-lp-code-block",
+      "1:cm-lp-code-fence",
+      "3:cm-lp-code-fence",
+    ]);
+  });
+
+  it("garde la taille des délimiteurs quand le curseur est dans le bloc", () => {
+    expect(lineStylesWithCursor("```js\nlet a;\n```", [2])).toEqual([
+      "1:cm-lp-code-block",
+      "2:cm-lp-code-block",
+      "3:cm-lp-code-block",
+    ]);
   });
 });
 

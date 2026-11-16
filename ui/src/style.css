@@ -222,6 +222,15 @@ button {
   font-family: var(--mono);
   color: var(--code);
 }
+.editor .cm-lp-code-block {
+  font-family: var(--mono);
+  font-size: var(--code-block-text-size);
+  background: var(--code-block-background);
+  padding: 0 1em !important;
+}
+.editor .cm-lp-code-fence {
+  line-height: 0.6;
+}
 .editor .cm-lp-quote {
   border-left: 3px solid var(--border);
   padding-left: 1em !important;

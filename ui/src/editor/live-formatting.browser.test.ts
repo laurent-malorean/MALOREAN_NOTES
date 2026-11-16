@@ -12,6 +12,15 @@ const THEME = {
   "--heading1-size": "1.8em",
   "--heading2-size": "1.45em",
   "--heading3-size": "1.2em",
+  "--syntax-keyword": "rgb(20, 0, 0)",
+  "--syntax-string": "rgb(21, 0, 0)",
+  "--syntax-comment": "rgb(22, 0, 0)",
+  "--syntax-number": "rgb(23, 0, 0)",
+  "--syntax-function": "rgb(24, 0, 0)",
+  "--syntax-type": "rgb(25, 0, 0)",
+  "--syntax-property": "rgb(26, 0, 0)",
+  "--syntax-tag": "rgb(27, 0, 0)",
+  "--syntax-plain": "rgb(28, 0, 0)",
 };
 
 function mount(content: string) {
@@ -26,12 +35,29 @@ function mount(content: string) {
   return parent;
 }
 
+function spanOf(parent: HTMLElement, text: string): Element | undefined {
+  return [...parent.querySelectorAll(".cm-line span")].find((s) => s.textContent === text);
+}
+
 /** Le style calculé du texte `text`, tel qu'il s'affiche. */
 function styleOf(parent: HTMLElement, text: string): CSSStyleDeclaration {
-  const span = [...parent.querySelectorAll(".cm-line span")].find((s) => s.textContent === text);
+  const span = spanOf(parent, text);
   if (!span) throw new Error(`texte introuvable : ${text}`);
   return getComputedStyle(span);
 }
+
+/** Délai pour charger une langue : le tout premier chargement est lent. */
+const LANGUAGE_LOADING_MS = 10_000;
+
+/** La couleur du texte `text`, une fois la langue du bloc de code chargée. */
+const colorOnceLoaded = (parent: HTMLElement, text: string) =>
+  expect.poll(
+    () => {
+      const span = spanOf(parent, text);
+      return span ? getComputedStyle(span).color : null;
+    },
+    { timeout: LANGUAGE_LOADING_MS },
+  );
 
 afterEach(() => document.documentElement.removeAttribute("style"));
 
@@ -77,5 +103,33 @@ describe("mise en forme en direct", () => {
   it("affiche les numéros de liste dans la couleur discrète des marques", () => {
     const parent = mount("1. un");
     expect(styleOf(parent, "1.").color).toBe("rgb(1, 2, 3)");
+  });
+
+  it("colore un bloc de code selon sa langue, avec les couleurs du thème", async () => {
+    const parent = mount(
+      [
+        "```js",
+        "// note",
+        'const nom = "Ada";',
+        "let n = 42;",
+        "class Robot {}",
+        "lancer(nom.longueur);",
+        "```",
+      ].join("\n"),
+    );
+    await colorOnceLoaded(parent, "const").toBe("rgb(20, 0, 0)");
+    await colorOnceLoaded(parent, '"Ada"').toBe("rgb(21, 0, 0)");
+    await colorOnceLoaded(parent, "// note").toBe("rgb(22, 0, 0)");
+    expect(styleOf(parent, "// note").fontStyle).toBe("italic");
+    await colorOnceLoaded(parent, "42").toBe("rgb(23, 0, 0)");
+    await colorOnceLoaded(parent, "lancer").toBe("rgb(24, 0, 0)");
+    await colorOnceLoaded(parent, "Robot").toBe("rgb(25, 0, 0)");
+    await colorOnceLoaded(parent, "longueur").toBe("rgb(26, 0, 0)");
+    await colorOnceLoaded(parent, "nom").toBe("rgb(28, 0, 0)");
+  });
+
+  it("colore les balises d'un bloc HTML", async () => {
+    const parent = mount("```html\n<p>x</p>\n```");
+    await colorOnceLoaded(parent, "p").toBe("rgb(27, 0, 0)");
   });
 });
