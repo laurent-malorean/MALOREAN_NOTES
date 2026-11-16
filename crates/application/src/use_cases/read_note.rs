@@ -4,17 +4,25 @@ use domain::FileName;
 
 use crate::{AppError, NoteStore, StoredNote};
 
-/// Le contenu d'une note, pour l'éditer.
+/// Le contenu d'une note, pour l'éditer (port d'entrée de la lecture).
+#[derive(Debug)]
 pub struct ReadNote<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> ReadNote<'a> {
+    /// Le cas d'usage, branché sur la bibliothèque ouverte.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
     }
 
+    /// La note qui porte ce nom.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::NoteNotFound`] si elle n'existe pas, [`AppError::NoteUnreadable`] si elle
+    /// n'est pas du texte UTF-8, [`AppError::StorageUnavailable`] si le stockage ne répond pas.
     pub fn execute(&self, name: &FileName) -> Result<StoredNote, AppError> {
         Ok(self.store.read(name)?)
     }

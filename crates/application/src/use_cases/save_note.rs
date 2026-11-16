@@ -6,17 +6,25 @@ use domain::saving::plan_save;
 use crate::{AppError, NoteStore};
 
 /// Enregistre une note ; si son titre a changé, le fichier (et ses pièces jointes) est renommé.
+#[derive(Debug)]
 pub struct SaveNote<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> SaveNote<'a> {
+    /// Le cas d'usage, branché sur la bibliothèque ouverte.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
     }
 
     /// Le nom de fichier de la note après enregistrement.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::NameTaken`] si le nouveau nom est pris entre-temps,
+    /// [`AppError::NoteNotFound`] si la note a disparu, [`AppError::StorageUnavailable`]
+    /// si le stockage ne répond pas.
     pub fn execute(&self, current: &FileName, content: &str) -> Result<FileName, AppError> {
         let existing = self.store.names()?;
         let plan = plan_save(current, content, &existing);

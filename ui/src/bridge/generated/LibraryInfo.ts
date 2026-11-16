@@ -3,4 +3,12 @@
 /**
  * La bibliothèque ouverte.
  */
-export type LibraryInfo = { name: string, path: string, };
+export type LibraryInfo = { 
+/**
+ * Le nom du dossier, affiché en tête de la liste.
+ */
+name: string, 
+/**
+ * L'emplacement complet du dossier.
+ */
+path: string, };

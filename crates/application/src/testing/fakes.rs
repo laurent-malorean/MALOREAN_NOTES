@@ -8,12 +8,12 @@ use domain::{FileName, Modified};
 use crate::{LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError, StoredNote};
 
 /// Bibliothèque en mémoire ; chaque écriture avance la date de modification d'un cran.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct InMemoryNoteStore {
     state: Mutex<State>,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct State {
     notes: BTreeMap<FileName, (String, Modified)>,
     tick: u64,
@@ -94,6 +94,7 @@ fn stored(name: &FileName, content: &str, modified: Modified) -> StoredNote {
 }
 
 /// Ouvre toujours la même bibliothèque en mémoire, quel que soit l'emplacement.
+#[derive(Debug)]
 pub struct FakeOpener {
     store: Arc<InMemoryNoteStore>,
 }
@@ -113,7 +114,7 @@ impl LibraryOpener for FakeOpener {
 }
 
 /// Préférences en mémoire.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct FakePreferences {
     last: Mutex<Option<LibraryLocation>>,
 }

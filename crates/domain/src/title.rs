@@ -36,6 +36,7 @@ impl Title {
         None
     }
 
+    /// Le texte du titre.
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0

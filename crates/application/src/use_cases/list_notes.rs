@@ -6,16 +6,23 @@ use domain::note::sort_by_recent;
 use crate::{AppError, NoteStore};
 
 /// Les notes de la bibliothèque, la plus récemment modifiée en premier.
+#[derive(Debug)]
 pub struct ListNotes<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> ListNotes<'a> {
+    /// Le cas d'usage, branché sur la bibliothèque ouverte.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
     }
 
+    /// Le résumé de chaque note, la plus récemment modifiée en premier.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
     pub fn execute(&self) -> Result<Vec<NoteSummary>, AppError> {
         let notes = self.store.list()?;
         let summaries = notes

@@ -12,6 +12,7 @@ use domain::FileName;
 use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote};
 
 /// État partagé par les commandes : les adaptateurs et la bibliothèque ouverte.
+#[derive(Debug)]
 pub struct Session {
     opener: Arc<dyn LibraryOpener>,
     preferences: Arc<dyn Preferences>,
@@ -19,6 +20,7 @@ pub struct Session {
 }
 
 impl Session {
+    /// Une session sans bibliothèque ouverte.
     #[must_use]
     pub fn new(opener: Arc<dyn LibraryOpener>, preferences: Arc<dyn Preferences>) -> Self {
         Self {
@@ -28,16 +30,34 @@ impl Session {
         }
     }
 
+    /// Rouvre la dernière bibliothèque ; rien au premier lancement.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; préférences illisibles,
+    /// bibliothèque introuvable.
     pub fn reopen_last_library(&self) -> Result<Option<LibraryInfo>, ApiError> {
         let reopened = ReopenLastLibrary::new(&*self.opener, &*self.preferences).execute()?;
         Ok(reopened.map(|opened| self.keep(&opened.location, opened.store)))
     }
 
+    /// Ouvre la bibliothèque choisie et s'en souvient.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier introuvable,
+    /// préférences impossibles à écrire.
     pub fn open_library(&self, location: LibraryLocation) -> Result<LibraryInfo, ApiError> {
         let store = OpenLibrary::new(&*self.opener, &*self.preferences).execute(&location)?;
         Ok(self.keep(&location, store))
     }
 
+    /// Les notes de la bibliothèque ouverte, la plus récente en premier.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucune bibliothèque
+    /// ouverte, bibliothèque illisible.
     pub fn list_notes(&self) -> Result<Vec<NoteListItem>, ApiError> {
         let store = self.store()?;
         let notes = ListNotes::new(&*store).execute()?;
@@ -51,6 +71,12 @@ impl Session {
             .collect())
     }
 
+    /// Le contenu d'une note, désignée par le nom reçu de la page.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom invalide, note
+    /// absente ou illisible, aucune bibliothèque ouverte.
     pub fn read_note(&self, file_name: &str) -> Result<NoteContent, ApiError> {
         let store = self.store()?;
         let note = ReadNote::new(&*store).execute(&FileName::parse(file_name)?)?;
@@ -60,6 +86,12 @@ impl Session {
         })
     }
 
+    /// Enregistre une note ; rend son nom de fichier, peut-être changé par le titre.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom invalide, nom pris,
+    /// stockage indisponible, aucune bibliothèque ouverte.
     pub fn save_note(&self, file_name: &str, content: &str) -> Result<SavedNote, ApiError> {
         let store = self.store()?;
         let saved = SaveNote::new(&*store).execute(&FileName::parse(file_name)?, content)?;
@@ -68,6 +100,12 @@ impl Session {
         })
     }
 
+    /// Crée une note vide, sans titre.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; stockage indisponible,
+    /// aucune bibliothèque ouverte.
     pub fn create_note(&self) -> Result<SavedNote, ApiError> {
         let store = self.store()?;
         let created = CreateNote::new(&*store).execute()?;

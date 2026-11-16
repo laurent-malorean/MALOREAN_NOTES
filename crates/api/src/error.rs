@@ -9,6 +9,7 @@ use ts_rs::TS;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct ApiError {
+    /// Ce qui s'est passé, en clair, pour la personne qui utilise l'application.
     pub message: String,
 }
 

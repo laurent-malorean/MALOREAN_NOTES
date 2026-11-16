@@ -3,7 +3,15 @@
 /**
  * Une ligne de la liste des notes.
  */
-export type NoteListItem = { fileName: string, title: string, 
+export type NoteListItem = { 
+/**
+ * Le nom du fichier de la note.
+ */
+fileName: string, 
+/**
+ * Le titre affiché.
+ */
+title: string, 
 /**
  * Millisecondes depuis le 1er janvier 1970.
  */

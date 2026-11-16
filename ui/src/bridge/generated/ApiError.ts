@@ -3,4 +3,8 @@
 /**
  * Erreur rendue à l'interface : un message lisible.
  */
-export type ApiError = { message: string, };
+export type ApiError = { 
+/**
+ * Ce qui s'est passé, en clair, pour la personne qui utilise l'application.
+ */
+message: string, };

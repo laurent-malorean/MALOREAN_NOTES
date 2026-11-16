@@ -6,16 +6,23 @@ use domain::saving::new_note_name;
 use crate::{AppError, NoteStore};
 
 /// Une nouvelle note vide, sans titre, qui n'écrase aucune autre note.
+#[derive(Debug)]
 pub struct CreateNote<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> CreateNote<'a> {
+    /// Le cas d'usage, branché sur la bibliothèque ouverte.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
     }
 
+    /// Le nom de fichier de la note créée.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue ou écrite.
     pub fn execute(&self) -> Result<FileName, AppError> {
         let existing = self.store.names()?;
         let name = new_note_name(&existing);

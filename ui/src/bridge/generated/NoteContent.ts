@@ -3,4 +3,12 @@
 /**
  * Une note ouverte dans l'éditeur.
  */
-export type NoteContent = { fileName: string, content: string, };
+export type NoteContent = { 
+/**
+ * Le nom du fichier de la note.
+ */
+fileName: string, 
+/**
+ * Le contenu Markdown complet.
+ */
+content: string, };

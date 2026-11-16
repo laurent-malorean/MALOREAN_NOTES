@@ -21,6 +21,10 @@ async fn in_background<T: Send + 'static>(
 }
 
 /// Rouvre la dernière bibliothèque au lancement ; rien au premier lancement.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
 pub async fn reopen_last_library(
     session: SharedSession<'_>,
@@ -30,6 +34,11 @@ pub async fn reopen_last_library(
 }
 
 /// Demande un dossier à l'utilisateur et l'ouvre ; rien s'il annule.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+/// S'y ajoute un nom de dossier illisible.
 #[tauri::command]
 pub async fn choose_library<R: Runtime>(
     app: AppHandle<R>,
@@ -51,12 +60,22 @@ pub async fn choose_library<R: Runtime>(
     .await
 }
 
+/// Les notes de la bibliothèque ouverte, la plus récente en premier.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
 pub async fn list_notes(session: SharedSession<'_>) -> Result<Vec<NoteListItem>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.list_notes()).await
 }
 
+/// Le contenu d'une note.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
 pub async fn read_note(
     session: SharedSession<'_>,
@@ -66,6 +85,11 @@ pub async fn read_note(
     in_background(move || session.read_note(&file_name)).await
 }
 
+/// Enregistre une note ; rend son nom de fichier, peut-être changé par le titre.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
 pub async fn save_note(
     session: SharedSession<'_>,
@@ -76,6 +100,11 @@ pub async fn save_note(
     in_background(move || session.save_note(&file_name, &content)).await
 }
 
+/// Crée une note vide, sans titre.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
 pub async fn create_note(session: SharedSession<'_>) -> Result<SavedNote, ApiError> {
     let session = Arc::clone(&session);

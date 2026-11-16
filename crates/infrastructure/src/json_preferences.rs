@@ -13,11 +13,13 @@ struct Stored {
 }
 
 /// Préférences gardées dans un fichier JSON.
+#[derive(Debug)]
 pub struct JsonPreferences {
     file: PathBuf,
 }
 
 impl JsonPreferences {
+    /// Des préférences gardées dans `file`, créé au premier enregistrement.
     #[must_use]
     pub fn new(file: PathBuf) -> Self {
         Self { file }

@@ -8,7 +8,9 @@ use ts_rs::TS;
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct LibraryInfo {
+    /// Le nom du dossier, affiché en tête de la liste.
     pub name: String,
+    /// L'emplacement complet du dossier.
     pub path: String,
 }
 
@@ -17,7 +19,9 @@ pub struct LibraryInfo {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteListItem {
+    /// Le nom du fichier de la note.
     pub file_name: String,
+    /// Le titre affiché.
     pub title: String,
     /// Millisecondes depuis le 1er janvier 1970.
     #[ts(type = "number")]
@@ -29,7 +33,9 @@ pub struct NoteListItem {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteContent {
+    /// Le nom du fichier de la note.
     pub file_name: String,
+    /// Le contenu Markdown complet.
     pub content: String,
 }
 
@@ -38,5 +44,6 @@ pub struct NoteContent {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct SavedNote {
+    /// Le nom du fichier, peut-être changé par le titre.
     pub file_name: String,
 }

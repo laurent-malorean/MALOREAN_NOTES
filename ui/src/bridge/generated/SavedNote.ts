@@ -3,4 +3,8 @@
 /**
  * Le nom de fichier d'une note après enregistrement ou création.
  */
-export type SavedNote = { fileName: string, };
+export type SavedNote = { 
+/**
+ * Le nom du fichier, peut-être changé par le titre.
+ */
+fileName: string, };

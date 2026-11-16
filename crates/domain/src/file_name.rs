@@ -30,6 +30,11 @@ impl std::error::Error for InvalidFileName {}
 
 impl FileName {
     /// Accepte un nom existant s'il est sûr : pas de séparateur, pas caché, extension `.md`.
+    ///
+    /// # Errors
+    ///
+    /// [`InvalidFileName`] si le nom est vide, caché, contient un séparateur de dossier
+    /// ou ne se termine pas par `.md`.
     pub fn parse(name: &str) -> Result<Self, InvalidFileName> {
         // `.md` seul est refusé par la règle des fichiers cachés : pas besoin de l'exclure ici.
         let has_md_extension = name
@@ -75,11 +80,13 @@ impl FileName {
         format!("{}{ATTACHMENT_SUFFIX}", self.stem())
     }
 
+    /// Le nom sans l'extension `.md`.
     #[must_use]
     pub fn stem(&self) -> &str {
         &self.0[..self.0.len() - EXTENSION.len()]
     }
 
+    /// Le nom complet, extension comprise.
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0

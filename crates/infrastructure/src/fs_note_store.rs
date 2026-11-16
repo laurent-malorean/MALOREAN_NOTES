@@ -13,11 +13,13 @@ const TEMPORARY_PREFIX: &str = ".";
 const TEMPORARY_SUFFIX: &str = ".enregistrement";
 
 /// Les notes d'un dossier de la bibliothèque.
+#[derive(Debug)]
 pub struct FsNoteStore {
     root: PathBuf,
 }
 
 impl FsNoteStore {
+    /// Les notes du dossier `root`.
     #[must_use]
     pub fn new(root: PathBuf) -> Self {
         Self { root }
@@ -116,6 +118,7 @@ impl NoteStore for FsNoteStore {
 }
 
 /// Ouvre une bibliothèque : un dossier existant sur le disque.
+#[derive(Debug)]
 pub struct FsLibraryOpener;
 
 impl LibraryOpener for FsLibraryOpener {
