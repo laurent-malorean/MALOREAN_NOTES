@@ -1,6 +1,7 @@
 //! Créer une note vide.
 
 use domain::FileName;
+use domain::saving::new_note_name;
 
 use crate::{AppError, NoteStore};
 
@@ -16,31 +17,10 @@ impl<'a> CreateNote<'a> {
     }
 
     pub fn execute(&self) -> Result<FileName, AppError> {
-        let name = free_name(self.store, FileName::from_title(None), None)?;
+        let existing = self.store.names()?;
+        let name = new_note_name(&existing);
         self.store.write(&name, "")?;
         Ok(name)
-    }
-}
-
-/// Le nom voulu, ou le premier `-2`, `-3`… libre ; `current` (la note elle-même) compte comme libre.
-pub(crate) fn free_name(
-    store: &dyn NoteStore,
-    wanted: FileName,
-    current: Option<&FileName>,
-) -> Result<FileName, AppError> {
-    let mut failure = None;
-    let name = wanted.deduplicated(|candidate| {
-        if Some(candidate) == current {
-            return false;
-        }
-        store.exists(candidate).unwrap_or_else(|error| {
-            failure = Some(error.clone());
-            true
-        })
-    });
-    match failure {
-        Some(error) => Err(error.into()),
-        None => Ok(name),
     }
 }
 

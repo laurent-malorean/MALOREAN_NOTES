@@ -19,7 +19,7 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     rewriting_replaces_content_and_advances_modified(&empty_store());
     list_returns_every_note(&empty_store());
     missing_note_is_not_found(&empty_store());
-    exists_tells_whether_a_note_is_there(&empty_store());
+    names_are_those_of_every_note(&empty_store());
     renamed_note_moves_to_its_new_name(&empty_store());
     rename_refuses_a_taken_name(&empty_store());
 }
@@ -58,16 +58,18 @@ fn missing_note_is_not_found(store: &impl NoteStore) {
     );
 }
 
-fn exists_tells_whether_a_note_is_there(store: &impl NoteStore) {
+fn names_are_those_of_every_note(store: &impl NoteStore) {
     store.write(&name("a.md"), "A").unwrap();
-    assert!(store.exists(&name("a.md")).unwrap());
-    assert!(!store.exists(&name("b.md")).unwrap());
+    store.write(&name("b.md"), "B").unwrap();
+    let mut names = store.names().unwrap();
+    names.sort();
+    assert_eq!(names, [name("a.md"), name("b.md")]);
 }
 
 fn renamed_note_moves_to_its_new_name(store: &impl NoteStore) {
     store.write(&name("a.md"), "A").unwrap();
     store.rename(&name("a.md"), &name("b.md")).unwrap();
-    assert!(!store.exists(&name("a.md")).unwrap());
+    assert_eq!(store.names().unwrap(), [name("b.md")]);
     assert_eq!(store.read(&name("b.md")).unwrap().content, "A");
 }
 

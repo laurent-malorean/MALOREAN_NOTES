@@ -31,7 +31,8 @@ pub trait NoteStore: Send + Sync {
     fn write(&self, name: &FileName, content: &str) -> Result<(), StoreError>;
     /// Renomme la note et son dossier de pièces jointes ; refuse un nom déjà pris.
     fn rename(&self, from: &FileName, to: &FileName) -> Result<(), StoreError>;
-    fn exists(&self, name: &FileName) -> Result<bool, StoreError>;
+    /// Les noms de toutes les notes, sans lire leur contenu.
+    fn names(&self) -> Result<Vec<FileName>, StoreError>;
 }
 
 /// Emplacement d'une bibliothèque, tel que l'utilisateur l'a choisi.

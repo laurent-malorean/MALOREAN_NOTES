@@ -69,7 +69,7 @@ impl NoteStore for FsNoteStore {
     }
 
     fn read(&self, name: &FileName) -> Result<StoredNote, StoreError> {
-        if !self.exists(name)? {
+        if !self.note_names()?.contains(name) {
             return Err(StoreError::NotFound(name.clone()));
         }
         let (content, modified) = self.read_raw(name)?;
@@ -99,7 +99,7 @@ impl NoteStore for FsNoteStore {
 
     fn rename(&self, from: &FileName, to: &FileName) -> Result<(), StoreError> {
         let new_assets = self.root.join(to.attachment_folder());
-        if self.exists(to)? || new_assets.exists() {
+        if self.note_names()?.contains(to) || new_assets.exists() {
             return Err(StoreError::AlreadyExists(to.clone()));
         }
         fs::rename(self.path(from), self.path(to)).map_err(|e| not_found_or(from, e))?;
@@ -110,8 +110,8 @@ impl NoteStore for FsNoteStore {
         Ok(())
     }
 
-    fn exists(&self, name: &FileName) -> Result<bool, StoreError> {
-        Ok(self.note_names()?.contains(name))
+    fn names(&self) -> Result<Vec<FileName>, StoreError> {
+        self.note_names()
     }
 }
 

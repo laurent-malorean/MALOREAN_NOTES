@@ -1,0 +1,125 @@
+//! Décider ce que devient une note qu'on enregistre ou qu'on crée : son nom et son contenu.
+
+use crate::attachments::relink;
+use crate::{FileName, Title};
+
+/// Ce que devient une note enregistrée : le nom de fichier qu'elle doit porter
+/// et le contenu à écrire (liens vers ses pièces jointes déjà mis à jour).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SavePlan {
+    file_name: FileName,
+    content: String,
+}
+
+impl SavePlan {
+    /// Le nom de fichier que la note doit porter après l'enregistrement.
+    #[must_use]
+    pub fn file_name(&self) -> &FileName {
+        &self.file_name
+    }
+
+    /// Le contenu à écrire.
+    #[must_use]
+    pub fn content(&self) -> &str {
+        &self.content
+    }
+}
+
+/// Le nom et le contenu d'une note enregistrée sous `current`.
+///
+/// Le nom suit le titre ; s'il est pris par une autre note de `existing`, il reçoit
+/// le premier suffixe `-2`, `-3`… libre. La note elle-même ne compte pas comme une autre.
+#[must_use]
+pub fn plan_save(current: &FileName, content: &str, existing: &[FileName]) -> SavePlan {
+    let wanted = FileName::from_title(Title::of(content).as_ref());
+    let file_name =
+        wanted.deduplicated(|candidate| candidate != current && existing.contains(candidate));
+    let content = if &file_name == current {
+        content.to_owned()
+    } else {
+        relink(content, current, &file_name)
+    };
+    SavePlan { file_name, content }
+}
+
+/// Le nom d'une nouvelle note vide : `sans-titre.md`, ou le premier suffixe libre.
+#[must_use]
+pub fn new_note_name(existing: &[FileName]) -> FileName {
+    FileName::from_title(None).deduplicated(|candidate| existing.contains(candidate))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn name(text: &str) -> FileName {
+        FileName::parse(text).unwrap()
+    }
+
+    #[test]
+    fn a_note_whose_title_matches_its_name_keeps_it() {
+        let plan = plan_save(
+            &name("courses.md"),
+            "# Courses\n- pain",
+            &[name("courses.md")],
+        );
+        assert_eq!(plan.file_name(), &name("courses.md"));
+        assert_eq!(plan.content(), "# Courses\n- pain");
+    }
+
+    #[test]
+    fn a_new_title_gives_a_new_kebab_case_name() {
+        let plan = plan_save(
+            &name("ancien-nom.md"),
+            "# Mon idée",
+            &[name("ancien-nom.md")],
+        );
+        assert_eq!(plan.file_name(), &name("mon-idee.md"));
+    }
+
+    #[test]
+    fn a_name_taken_by_another_note_gets_a_numbered_suffix() {
+        let existing = [name("idee.md"), name("brouillon.md")];
+        let plan = plan_save(&name("brouillon.md"), "# Idée", &existing);
+        assert_eq!(plan.file_name(), &name("idee-2.md"));
+    }
+
+    #[test]
+    fn a_note_already_holding_its_numbered_name_keeps_it() {
+        let existing = [name("idee.md"), name("idee-2.md")];
+        let plan = plan_save(&name("idee-2.md"), "# Idée\nsuite", &existing);
+        assert_eq!(plan.file_name(), &name("idee-2.md"));
+    }
+
+    #[test]
+    fn attachment_links_follow_the_new_name() {
+        let plan = plan_save(
+            &name("voyage.md"),
+            "# Lisbonne\n![vue](voyage.assets/vue.png)",
+            &[],
+        );
+        assert_eq!(
+            plan.content(),
+            "# Lisbonne\n![vue](lisbonne.assets/vue.png)"
+        );
+    }
+
+    #[test]
+    fn removing_the_title_makes_the_note_untitled() {
+        let plan = plan_save(&name("courses.md"), "plus de titre", &[name("courses.md")]);
+        assert_eq!(plan.file_name(), &name("sans-titre.md"));
+    }
+
+    #[test]
+    fn a_new_note_is_untitled() {
+        assert_eq!(new_note_name(&[]), name("sans-titre.md"));
+    }
+
+    #[test]
+    fn a_new_note_never_takes_the_name_of_another_untitled_note() {
+        assert_eq!(
+            new_note_name(&[name("sans-titre.md")]),
+            name("sans-titre-2.md")
+        );
+    }
+}

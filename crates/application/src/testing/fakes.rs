@@ -80,8 +80,8 @@ impl NoteStore for InMemoryNoteStore {
         Ok(())
     }
 
-    fn exists(&self, name: &FileName) -> Result<bool, StoreError> {
-        Ok(self.state().notes.contains_key(name))
+    fn names(&self) -> Result<Vec<FileName>, StoreError> {
+        Ok(self.state().notes.keys().cloned().collect())
     }
 }
 

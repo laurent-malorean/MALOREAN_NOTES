@@ -1,9 +1,8 @@
 //! Enregistrer une note ; son nom de fichier suit son titre.
 
-use domain::attachments::relink;
-use domain::{FileName, Title};
+use domain::FileName;
+use domain::saving::plan_save;
 
-use super::create_note::free_name;
 use crate::{AppError, NoteStore};
 
 /// Enregistre une note ; si son titre a changé, le fichier (et ses pièces jointes) est renommé.
@@ -19,16 +18,13 @@ impl<'a> SaveNote<'a> {
 
     /// Le nom de fichier de la note après enregistrement.
     pub fn execute(&self, current: &FileName, content: &str) -> Result<FileName, AppError> {
-        let wanted = FileName::from_title(Title::of(content).as_ref());
-        let target = free_name(self.store, wanted, Some(current))?;
-        if &target == current {
-            self.store.write(current, content)?;
-        } else {
-            self.store
-                .write(current, &relink(content, current, &target))?;
-            self.store.rename(current, &target)?;
+        let existing = self.store.names()?;
+        let plan = plan_save(current, content, &existing);
+        self.store.write(current, plan.content())?;
+        if plan.file_name() != current {
+            self.store.rename(current, plan.file_name())?;
         }
-        Ok(target)
+        Ok(plan.file_name().clone())
     }
 }
 
@@ -58,7 +54,7 @@ mod tests {
             .execute(&name("ancien-nom.md"), "# Mon idée")
             .unwrap();
         assert_eq!(saved, name("mon-idee.md"));
-        assert!(!store.exists(&name("ancien-nom.md")).unwrap());
+        assert_eq!(store.names().unwrap(), [name("mon-idee.md")]);
         assert_eq!(store.read(&saved).unwrap().content, "# Mon idée");
     }
 

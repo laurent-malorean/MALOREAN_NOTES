@@ -92,7 +92,7 @@ fn renaming_moves_the_attachment_folder() {
 fn renaming_only_the_letter_case_is_allowed() {
     let (dir, store) = library();
     fs::write(dir.path().join("Courses.md"), "# Courses").unwrap();
-    assert!(!store.exists(&name("courses.md")).unwrap());
+    assert_eq!(store.names().unwrap(), [name("Courses.md")]);
     store
         .rename(&name("Courses.md"), &name("courses.md"))
         .unwrap();
@@ -185,7 +185,7 @@ fn renaming_refuses_when_the_target_attachment_folder_exists() {
         store.rename(&name("voyage.md"), &name("lisbonne.md")),
         Err(StoreError::AlreadyExists(name("lisbonne.md")))
     );
-    assert!(store.exists(&name("voyage.md")).unwrap());
+    assert_eq!(store.names().unwrap(), [name("voyage.md")]);
     assert!(dir.path().join("voyage.assets").is_dir());
 }
 
