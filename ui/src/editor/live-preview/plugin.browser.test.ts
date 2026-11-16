@@ -1,11 +1,12 @@
 import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { createEditor } from "../editor";
+import type { ImageResolver } from "./plugin";
 
-function mount(content: string) {
+function mount(content: string, resolveImage?: ImageResolver) {
   const parent = document.createElement("div");
   document.body.replaceChildren(parent);
-  const editor = createEditor(parent, () => {});
+  const editor = createEditor(parent, () => {}, resolveImage);
   editor.show(content);
   const frame = parent.querySelector(".cm-editor") as HTMLElement;
   frame.style.height = "300px";
@@ -91,5 +92,42 @@ describe("aperçu en direct : éléments dessinés", () => {
     const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
     parent.querySelector(".cm-lp-checkbox")?.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
+  });
+});
+
+describe("aperçu en direct : images", () => {
+  const PIXEL =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+  it("affiche l'image à l'adresse donnée par le traducteur, avec son texte de remplacement", () => {
+    const { parent } = mount("![un chat](chat.png)", (src) => `asset://bibliotheque/${src}`);
+    const image = parent.querySelector<HTMLImageElement>("img.cm-lp-image");
+    expect(image?.getAttribute("src")).toBe("asset://bibliotheque/chat.png");
+    expect(image?.alt).toBe("un chat");
+    expect(image?.title).toBe("un chat");
+  });
+
+  it("charge l'adresse écrite telle quelle sans traducteur", () => {
+    const { parent } = mount(`![](${PIXEL})`);
+    expect(parent.querySelector("img.cm-lp-image")?.getAttribute("src")).toBe(PIXEL);
+  });
+
+  it("ne recharge pas l'image quand on tape ailleurs", () => {
+    const { parent, view } = mount("![x](a.png)\ntexte");
+    const before = parent.querySelector("img.cm-lp-image");
+    view.dispatch({ changes: { from: view.state.doc.length, insert: "!" } });
+    expect(parent.querySelector("img.cm-lp-image")).toBe(before);
+  });
+
+  it("remplace l'image quand son adresse change", () => {
+    const { parent, view } = mount("![x](a.png)\ntexte");
+    view.dispatch({ changes: { from: 5, to: 6, insert: "b" } });
+    expect(parent.querySelector("img.cm-lp-image")?.getAttribute("src")).toBe("b.png");
+  });
+
+  it("remplace l'image quand son texte de remplacement change", () => {
+    const { parent, view } = mount("![x](a.png)\ntexte");
+    view.dispatch({ changes: { from: 2, to: 3, insert: "y" } });
+    expect(parent.querySelector<HTMLImageElement>("img.cm-lp-image")?.alt).toBe("y");
   });
 });

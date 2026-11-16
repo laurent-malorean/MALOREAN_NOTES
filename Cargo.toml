@@ -16,7 +16,7 @@ api = { path = "crates/api" }
 proptest = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tauri = "2"
+tauri = { version = "2", features = ["protocol-asset"] }
 tauri-build = "2"
 tauri-plugin-dialog = "2"
 tempfile = "3"

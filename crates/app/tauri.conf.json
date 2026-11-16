@@ -21,8 +21,9 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:",
-      "devCsp": null
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost https:",
+      "devCsp": null,
+      "assetProtocol": { "enable": true, "scope": [] }
     }
   },
   "bundle": {

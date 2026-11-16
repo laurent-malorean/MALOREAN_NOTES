@@ -1,6 +1,6 @@
 // Applique l'aperçu en direct à l'écran, pour la seule partie visible du document.
 import { syntaxTree } from "@codemirror/language";
-import type { Range } from "@codemirror/state";
+import { Facet, type Range } from "@codemirror/state";
 import {
   Decoration,
   type DecorationSet,
@@ -9,7 +9,15 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 import { type Conceal, computePreview, type LineStyle } from "./preview";
-import { BulletWidget, CheckboxWidget, RuleWidget } from "./widgets";
+import { BulletWidget, CheckboxWidget, ImageWidget, RuleWidget } from "./widgets";
+
+/** Donne l'adresse à charger pour l'adresse d'image écrite dans la note. */
+export type ImageResolver = (src: string) => string;
+
+/** Le traducteur d'adresses d'images ; par défaut, l'adresse écrite telle quelle. */
+export const imageResolver = Facet.define<ImageResolver, ImageResolver>({
+  combine: (resolvers) => resolvers[0] ?? ((src) => src),
+});
 
 const hidden = Decoration.replace({});
 const bullet = Decoration.replace({ widget: new BulletWidget() });
@@ -19,7 +27,7 @@ const checkboxes = {
   unchecked: Decoration.replace({ widget: new CheckboxWidget(false) }),
 };
 
-function decorationFor(conceal: Conceal): Decoration {
+function decorationFor(conceal: Conceal, resolve: ImageResolver): Decoration {
   switch (conceal.kind) {
     case "hide":
       return hidden;
@@ -29,6 +37,8 @@ function decorationFor(conceal: Conceal): Decoration {
       return rule;
     case "checkbox":
       return conceal.checked ? checkboxes.checked : checkboxes.unchecked;
+    case "image":
+      return Decoration.replace({ widget: new ImageWidget(resolve(conceal.src), conceal.alt) });
   }
 }
 
@@ -46,6 +56,7 @@ function activeLines(view: EditorView): Set<number> {
 function build(view: EditorView): DecorationSet {
   const tree = syntaxTree(view.state);
   const active = activeLines(view);
+  const resolve = view.state.facet(imageResolver);
   const conceals = new Map<number, Conceal>();
   const lineStyles = new Map<string, LineStyle>();
   for (const { from, to } of view.visibleRanges) {
@@ -55,7 +66,7 @@ function build(view: EditorView): DecorationSet {
   }
   const ranges: Range<Decoration>[] = [
     ...[...lineStyles.values()].map((s) => Decoration.line({ class: s.className }).range(s.from)),
-    ...[...conceals.values()].map((c) => decorationFor(c).range(c.from, c.to)),
+    ...[...conceals.values()].map((c) => decorationFor(c, resolve).range(c.from, c.to)),
   ];
   return Decoration.set(ranges, true);
 }

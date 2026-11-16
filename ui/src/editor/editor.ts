@@ -4,7 +4,7 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { liveFormatting } from "./live-formatting";
-import { livePreview } from "./live-preview/plugin";
+import { type ImageResolver, imageResolver, livePreview } from "./live-preview/plugin";
 
 export interface Editor {
   /** Affiche une autre note, sans la signaler comme modifiée. */
@@ -12,8 +12,13 @@ export interface Editor {
   focus(): void;
 }
 
-export function createEditor(parent: HTMLElement, onChange: (content: string) => void): Editor {
+export function createEditor(
+  parent: HTMLElement,
+  onChange: (content: string) => void,
+  resolveImage?: ImageResolver,
+): Editor {
   const extensions = [
+    resolveImage ? imageResolver.of(resolveImage) : [],
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     markdown({ base: markdownLanguage }),

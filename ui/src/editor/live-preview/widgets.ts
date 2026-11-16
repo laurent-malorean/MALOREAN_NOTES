@@ -1,4 +1,4 @@
-// Éléments dessinés à la place de la syntaxe : puce, case à cocher, séparateur.
+// Éléments dessinés à la place de la syntaxe : puce, case à cocher, séparateur, image.
 import { type EditorView, WidgetType } from "@codemirror/view";
 import { toggledTaskMarker } from "./preview";
 
@@ -38,5 +38,26 @@ export class CheckboxWidget extends WidgetType {
       view.dispatch({ changes: { from, to, insert } });
     });
     return box;
+  }
+}
+
+/** Image affichée à la place de sa syntaxe ; son texte de remplacement si elle ne charge pas. */
+export class ImageWidget extends WidgetType {
+  constructor(
+    readonly address: string,
+    readonly alt: string,
+  ) {
+    super();
+  }
+  override eq(other: ImageWidget) {
+    return other.address === this.address && other.alt === this.alt;
+  }
+  toDOM() {
+    const image = document.createElement("img");
+    image.className = "cm-lp-image";
+    image.src = this.address;
+    image.alt = this.alt;
+    image.title = this.alt;
+    return image;
   }
 }

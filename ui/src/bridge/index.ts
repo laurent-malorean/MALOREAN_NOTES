@@ -1,5 +1,5 @@
 // Seul module qui parle à Rust. Les types viennent de `generated/`, produits par `cargo test`.
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import type { ApiError } from "./generated/ApiError";
 import type { LibraryInfo } from "./generated/LibraryInfo";
 import type { NoteContent } from "./generated/NoteContent";
@@ -23,3 +23,5 @@ export const readNote = (fileName: string) => invoke<NoteContent>("read_note", {
 export const saveNote = (fileName: string, content: string) =>
   invoke<SavedNote>("save_note", { fileName, content });
 export const createNote = () => invoke<SavedNote>("create_note");
+/** L'adresse qui charge dans la fenêtre un fichier de la bibliothèque, comme une image. */
+export const fileAddress = (path: string) => convertFileSrc(path);

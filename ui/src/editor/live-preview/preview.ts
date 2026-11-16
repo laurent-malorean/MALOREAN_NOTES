@@ -7,7 +7,8 @@ export type Conceal =
   | { kind: "hide"; from: number; to: number }
   | { kind: "bullet"; from: number; to: number }
   | { kind: "checkbox"; from: number; to: number; checked: boolean }
-  | { kind: "rule"; from: number; to: number };
+  | { kind: "rule"; from: number; to: number }
+  | { kind: "image"; from: number; to: number; src: string; alt: string };
 
 export interface LineStyle {
   readonly from: number;
@@ -50,19 +51,26 @@ interface Context {
   preview: Preview;
 }
 
-type Handler = (node: SyntaxNode, context: Context) => void;
+/** `"skip"` : l'élément est dessiné en entier, son contenu n'est pas parcouru. */
+type Handler = (node: SyntaxNode, context: Context) => "skip" | undefined;
 
 const withSpace = (doc: Text, to: number) => (doc.sliceString(to, to + 1) === " " ? to + 1 : to);
 // Stryker disable next-line OptionalChaining,StringLiteral: une marque a toujours un parent ; TypeScript exige le cas contraire.
 const parentName = (node: SyntaxNode) => node.parent?.name ?? "";
 
-function hide(context: Context, from: number, to: number) {
-  context.preview.conceals.push({ kind: "hide", from, to });
+function draw(context: Context, conceal: Conceal): undefined {
+  context.preview.conceals.push(conceal);
+  return undefined;
+}
+
+function hide(context: Context, from: number, to: number): undefined {
+  return draw(context, { kind: "hide", from, to });
 }
 
 const HANDLERS: Record<string, Handler> = {
   HeaderMark: (node, c) => {
     if (parentName(node).startsWith("ATXHeading")) hide(c, node.from, withSpace(c.doc, node.to));
+    return undefined;
   },
   EmphasisMark: (node, c) => hide(c, node.from, node.to),
   StrikethroughMark: (node, c) => hide(c, node.from, node.to),
@@ -72,21 +80,21 @@ const HANDLERS: Record<string, Handler> = {
   ListMark: (node, c) => listMark(node, c),
   TaskMarker: (node, c) => {
     const checked = CHECKED.test(c.doc.sliceString(node.from, node.to));
-    c.preview.conceals.push({ kind: "checkbox", from: node.from, to: node.to, checked });
+    return draw(c, { kind: "checkbox", from: node.from, to: node.to, checked });
   },
   Link: (node, c) => link(node, c),
-  HorizontalRule: (node, c) =>
-    c.preview.conceals.push({ kind: "rule", from: node.from, to: node.to }),
+  Image: (node, c) => image(node, c),
+  HorizontalRule: (node, c) => draw(c, { kind: "rule", from: node.from, to: node.to }),
 };
 
-function listMark(node: SyntaxNode, context: Context) {
+function listMark(node: SyntaxNode, context: Context): undefined {
   const item = node.parent;
   const to = withSpace(context.doc, node.to);
   // Stryker disable next-line OptionalChaining: une marque de liste a toujours un élément parent.
   if (item?.getChild("Task")) return hide(context, node.from, to);
-  if (parentName(item ?? node) === "BulletList") {
-    context.preview.conceals.push({ kind: "bullet", from: node.from, to });
-  }
+  if (parentName(item ?? node) === "BulletList")
+    draw(context, { kind: "bullet", from: node.from, to });
+  return undefined;
 }
 
 function styleLines(context: Context, from: number, to: number, className: string) {
@@ -106,20 +114,38 @@ function visit(node: SyntaxNodeRef, input: PreviewInput, context: Context, front
   if (node.name === FENCED_CODE) return false;
   if (node.name === "Blockquote") styleLines(context, node.from, node.to, QUOTE_CLASS);
   if (isActive(input, node)) return true;
-  HANDLERS[node.name]?.(node.node, context);
-  return true;
+  return HANDLERS[node.name]?.(node.node, context) !== "skip";
 }
 
 /** Un lien ne montre que son texte : `[` caché, et tout ce qui suit `]` (adresse, titre, référence). */
-function link(node: SyntaxNode, context: Context) {
+function link(node: SyntaxNode, context: Context): undefined {
   const opening = node.firstChild;
   const textEnd = node
     .getChildren("LinkMark")
     .find((mark) => context.doc.sliceString(mark.from, mark.to) === LINK_TEXT_END);
   // Stryker disable next-line ConditionalExpression,LogicalOperator: un lien a toujours `[` et `]` ; TypeScript exige le cas contraire.
-  if (!opening || !textEnd) return;
+  if (!opening || !textEnd) return undefined;
   hide(context, opening.from, opening.to);
-  hide(context, textEnd.from, node.to);
+  return hide(context, textEnd.from, node.to);
+}
+
+/** Une image avec son adresse est dessinée ; une image par référence garde sa syntaxe. */
+function image(node: SyntaxNode, context: Context): "skip" | undefined {
+  const url = node.getChild("URL");
+  if (!url) return undefined;
+  const marks = node.getChildren("LinkMark");
+  const altFrom = node.from + "![".length;
+  // Les marques d'une image : `![`, `]`, `(`, `)` ; la deuxième ferme le texte de remplacement.
+  // Stryker disable next-line OptionalChaining: une image a toujours `]` ; TypeScript exige le cas contraire.
+  const altTo = marks[1]?.from ?? altFrom;
+  draw(context, {
+    kind: "image",
+    from: node.from,
+    to: node.to,
+    src: context.doc.sliceString(url.from, url.to),
+    alt: context.doc.sliceString(altFrom, altTo),
+  });
+  return "skip";
 }
 
 /** Ce qu'il faut masquer ou dessiner entre `from` et `to`, triés par position. */

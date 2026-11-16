@@ -30,6 +30,7 @@ function drawn(c: Conceal): string {
   if (c.kind === "bullet") return "• ";
   if (c.kind === "checkbox") return c.checked ? "☑" : "☐";
   if (c.kind === "rule") return "───";
+  if (c.kind === "image") return `🖼(${c.alt}|${c.src})`;
   return "";
 }
 
@@ -176,6 +177,33 @@ describe("liens", () => {
 
   it("laisse une adresse brute visible", () => {
     expect(seen("voir https://example.org")).toBe("voir https://example.org");
+  });
+});
+
+describe("images", () => {
+  it("dessine l'image à la place de sa syntaxe", () => {
+    expect(seen("avant ![un chat](chat.png) après")).toBe("avant 🖼(un chat|chat.png) après");
+  });
+
+  it("garde l'adresse d'une image distante ou d'un sous-dossier", () => {
+    expect(seen("![](https://example.com/a.png)")).toBe("🖼(|https://example.com/a.png)");
+    expect(seen("![x](note.assets/photo%20mer.jpg)")).toBe("🖼(x|note.assets/photo%20mer.jpg)");
+  });
+
+  it("ne masque rien à l'intérieur d'une image dessinée", () => {
+    expect(seen("![**x**](a.png)")).toBe("🖼(**x**|a.png)");
+  });
+
+  it("ignore le titre d'une image", () => {
+    expect(seen('![x](a.png "Titre")')).toBe("🖼(x|a.png)");
+  });
+
+  it("montre la syntaxe de l'image sur la ligne où l'on écrit", () => {
+    expect(seen("![x](a.png)", [1])).toBe("![x](a.png)");
+  });
+
+  it("laisse visible une image sans adresse", () => {
+    expect(seen("![x][ref]\n\n[ref]: a.png")).toBe("![x][ref]\n\n[ref]: a.png");
   });
 });
 

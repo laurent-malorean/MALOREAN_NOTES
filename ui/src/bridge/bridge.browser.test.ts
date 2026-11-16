@@ -1,4 +1,4 @@
-import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
+import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 import { afterEach, describe, expect, it } from "vitest";
 import * as bridge from "./index";
 
@@ -65,5 +65,14 @@ describe("pont vers Rust : message d'erreur", () => {
     expect(bridge.errorMessage(new Error("réseau"))).toBe("réseau");
     expect(bridge.errorMessage("panne")).toBe("panne");
     expect(bridge.errorMessage(null)).toBe("null");
+  });
+});
+
+describe("pont vers Rust : fichiers de la bibliothèque", () => {
+  it("donne l'adresse qui charge un fichier du disque dans la fenêtre", () => {
+    mockConvertFileSrc("macos");
+    expect(bridge.fileAddress("/Users/moi/Notes/a b.png")).toBe(
+      "asset://localhost/%2FUsers%2Fmoi%2FNotes%2Fa%20b.png",
+    );
   });
 });

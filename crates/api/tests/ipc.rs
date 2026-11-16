@@ -18,7 +18,7 @@ use tauri::test::{
     INVOKE_KEY, MockRuntime, get_ipc_response, mock_builder, mock_context, noop_assets,
 };
 use tauri::webview::InvokeRequest;
-use tauri::{WebviewWindow, WebviewWindowBuilder};
+use tauri::{Manager, WebviewWindow, WebviewWindowBuilder};
 
 const BRIDGE_SOURCE: &str = include_str!("../../../ui/src/bridge/index.ts");
 
@@ -169,4 +169,15 @@ fn a_page_from_the_internet_cannot_call_any_command() {
         json!({}),
     );
     assert!(result.unwrap_err().to_string().contains("not allowed"));
+}
+
+#[test]
+fn the_window_can_load_the_files_of_the_open_library_only() {
+    let window = window(&[]);
+    let scope = window.asset_protocol_scope();
+    let image = "/Users/moi/Notes/voyage.assets/mer.png";
+    assert!(!scope.is_allowed(image));
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    assert!(scope.is_allowed(image));
+    assert!(!scope.is_allowed("/Users/moi/Documents/secret.png"));
 }

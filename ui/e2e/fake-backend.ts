@@ -1,6 +1,6 @@
 // Partie Rust simulée pour les parcours de test : une bibliothèque en mémoire.
 // Doublure volontairement simple ; les vraies règles sont testées côté Rust.
-import { mockIPC } from "@tauri-apps/api/mocks";
+import { mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
 
 interface FakeNote {
   content: string;
@@ -88,3 +88,5 @@ mockIPC((command, args) => {
   if (!handler) throw { message: `commande inconnue : ${command}` };
   return handler((args ?? {}) as Record<string, string>);
 });
+
+mockConvertFileSrc("macos");

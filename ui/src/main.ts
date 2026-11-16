@@ -1,6 +1,7 @@
 // Assemblage de l'interface : relie l'état de l'écran, l'éditeur et le pont vers Rust.
 import * as bridge from "./bridge";
 import { createEditor } from "./editor/editor";
+import { imageAddress } from "./editor/image-address";
 import { createLayout } from "./screens/layout";
 import { renderScreen } from "./screens/screen-view";
 import { type Autosave, createAutosave, timerScheduler } from "./state/autosave";
@@ -21,8 +22,13 @@ const STATUS_DURATION_MS = 4000;
 const layout = createLayout(document.querySelector<HTMLElement>("#app") as HTMLElement);
 let screen: Screen = welcome;
 let autosave: Autosave | null = null;
+let libraryPath = "";
 
-const editor = createEditor(layout.editor, (content) => autosave?.edit(content));
+const editor = createEditor(
+  layout.editor,
+  (content) => autosave?.edit(content),
+  (src) => imageAddress(src, libraryPath, bridge.fileAddress),
+);
 
 function showError(error: unknown) {
   layout.status.textContent = bridge.errorMessage(error);
@@ -65,6 +71,7 @@ async function openNote(fileName: string | null) {
 }
 
 async function showLibrary(library: bridge.LibraryInfo) {
+  libraryPath = library.path;
   show(libraryOpened(library, await bridge.listNotes()));
   await openNote(selectedNote(screen));
 }

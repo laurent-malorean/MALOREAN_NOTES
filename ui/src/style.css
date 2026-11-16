@@ -196,6 +196,13 @@ button {
   vertical-align: middle;
   cursor: pointer;
 }
+.editor .cm-lp-image {
+  display: block;
+  max-width: 100%;
+  max-height: var(--image-max-height);
+  margin: 0.5em 0;
+  border-radius: 4px;
+}
 .editor .cm-lp-quote {
   border-left: 3px solid var(--border);
   padding-left: 1em !important;

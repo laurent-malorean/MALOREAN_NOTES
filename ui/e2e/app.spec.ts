@@ -117,3 +117,15 @@ test("une bibliothèque vide s'ouvre sans erreur", async ({ page }) => {
   await expect(titles(page)).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("");
 });
+
+test("une image de la note s'affiche à la place de sa syntaxe", async ({ page }) => {
+  await launch(page, {
+    notes: { "voyage.md": { content: "# Voyage\n![La mer](voyage.assets/mer.png)", modified: 1 } },
+  });
+  const image = page.locator(".cm-editor img.cm-lp-image");
+  await expect(image).toHaveAttribute(
+    "src",
+    "asset://localhost/%2FUsers%2Fmoi%2FNotes%2Fvoyage.assets%2Fmer.png",
+  );
+  await expect(image).toHaveAttribute("alt", "La mer");
+});

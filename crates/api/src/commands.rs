@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use tauri::ipc::Invoke;
-use tauri::{AppHandle, Runtime, State};
+use tauri::{AppHandle, Manager, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote, Session};
@@ -18,17 +18,32 @@ async fn in_background<T: Send + 'static>(
         .map_err(|e| ApiError::internal(&e))?
 }
 
+/// La fenêtre peut charger les fichiers de la bibliothèque ouverte (images des notes), rien d'autre.
+/// Une bibliothèque ouverte auparavant reste lisible jusqu'à la fermeture de l'application.
+fn let_window_load_files<R: Runtime>(
+    app: &AppHandle<R>,
+    library: Option<LibraryInfo>,
+) -> Result<Option<LibraryInfo>, ApiError> {
+    if let Some(library) = &library {
+        app.asset_protocol_scope()
+            .allow_directory(&library.path, true)
+            .map_err(|e| ApiError::internal(&e))?;
+    }
+    Ok(library)
+}
+
 /// Rouvre la dernière bibliothèque au lancement ; rien au premier lancement.
 ///
 /// # Errors
 ///
 /// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
-pub async fn reopen_last_library(
+pub async fn reopen_last_library<R: Runtime>(
+    app: AppHandle<R>,
     session: SharedSession<'_>,
 ) -> Result<Option<LibraryInfo>, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.reopen_last_library()).await
+    in_background(move || let_window_load_files(&app, session.reopen_last_library()?)).await
 }
 
 /// Demande un dossier à l'utilisateur et l'ouvre ; rien s'il annule.
@@ -48,7 +63,7 @@ pub async fn choose_library<R: Runtime>(
         let folder = chosen
             .map(|folder| folder.into_path().map_err(|e| ApiError::internal(&e)))
             .transpose()?;
-        session.open_chosen_folder(folder.as_deref())
+        let_window_load_files(&app, session.open_chosen_folder(folder.as_deref())?)
     })
     .await
 }
