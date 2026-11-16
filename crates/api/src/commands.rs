@@ -6,8 +6,6 @@ use tauri::ipc::Invoke;
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
-use application::LibraryLocation;
-
 use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote, Session};
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
@@ -46,16 +44,11 @@ pub async fn choose_library<R: Runtime>(
 ) -> Result<Option<LibraryInfo>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || {
-        let Some(folder) = app.dialog().file().blocking_pick_folder() else {
-            return Ok(None);
-        };
-        let path = folder.into_path().map_err(|e| ApiError::internal(&e))?;
-        let location = path
-            .to_str()
-            .ok_or_else(|| ApiError::unreadable_folder_name(&path))?;
-        session
-            .open_library(LibraryLocation::new(location)?)
-            .map(Some)
+        let chosen = app.dialog().file().blocking_pick_folder();
+        let folder = chosen
+            .map(|folder| folder.into_path().map_err(|e| ApiError::internal(&e)))
+            .transpose()?;
+        session.open_chosen_folder(folder.as_deref())
     })
     .await
 }

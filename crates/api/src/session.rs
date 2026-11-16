@@ -7,6 +7,7 @@ use application::use_cases::{
     CreateNote, ListNotes, OpenLibrary, ReadNote, ReopenLastLibrary, SaveNote,
 };
 use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences};
+
 use domain::FileName;
 
 use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote};
@@ -50,6 +51,25 @@ impl Session {
     pub fn open_library(&self, location: LibraryLocation) -> Result<LibraryInfo, ApiError> {
         let store = OpenLibrary::new(&*self.opener, &*self.preferences).execute(&location)?;
         Ok(self.keep(&location, store))
+    }
+
+    /// Ouvre le dossier choisi dans la fenêtre de choix ; rien si l'utilisateur a annulé.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom de dossier illisible,
+    /// emplacement vide, dossier introuvable, préférences impossibles à écrire.
+    pub fn open_chosen_folder(
+        &self,
+        folder: Option<&Path>,
+    ) -> Result<Option<LibraryInfo>, ApiError> {
+        let Some(folder) = folder else {
+            return Ok(None);
+        };
+        let location = folder
+            .to_str()
+            .ok_or_else(|| ApiError::unreadable_folder_name(folder))?;
+        self.open_library(LibraryLocation::new(location)?).map(Some)
     }
 
     /// Les notes de la bibliothèque ouverte, la plus récente en premier.
