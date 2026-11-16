@@ -44,9 +44,9 @@ impl Session {
         Ok(notes
             .into_iter()
             .map(|n| NoteListItem {
-                file_name: n.file_name.as_str().to_owned(),
-                title: n.title,
-                modified: n.modified.0,
+                file_name: n.file_name().as_str().to_owned(),
+                title: n.title().to_owned(),
+                modified: n.modified().0,
             })
             .collect())
     }

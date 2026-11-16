@@ -93,28 +93,21 @@ fn stored(name: &FileName, content: &str, modified: Modified) -> StoredNote {
     }
 }
 
-/// Ouvre toujours la même bibliothèque en mémoire, et note les emplacements demandés.
+/// Ouvre toujours la même bibliothèque en mémoire, quel que soit l'emplacement.
 pub struct FakeOpener {
-    pub store: Arc<InMemoryNoteStore>,
-    pub opened: Mutex<Vec<LibraryLocation>>,
+    store: Arc<InMemoryNoteStore>,
 }
 
 impl FakeOpener {
+    /// Un ouvreur qui rend toujours `store`.
     #[must_use]
     pub fn new(store: Arc<InMemoryNoteStore>) -> Self {
-        Self {
-            store,
-            opened: Mutex::default(),
-        }
+        Self { store }
     }
 }
 
 impl LibraryOpener for FakeOpener {
-    fn open(&self, location: &LibraryLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
-        self.opened
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push(location.clone());
+    fn open(&self, _location: &LibraryLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
         Ok(self.store.clone())
     }
 }

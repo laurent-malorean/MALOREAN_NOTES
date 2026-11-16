@@ -10,12 +10,13 @@ pub struct Modified(pub u64);
 /// Une note telle que l'affiche la liste.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NoteSummary {
-    pub file_name: FileName,
-    pub title: String,
-    pub modified: Modified,
+    file_name: FileName,
+    title: String,
+    modified: Modified,
 }
 
 impl NoteSummary {
+    /// Le résumé d'une note : son titre affiché est tiré de son contenu.
     #[must_use]
     pub fn new(file_name: FileName, content: &str, modified: Modified) -> Self {
         Self {
@@ -23,6 +24,24 @@ impl NoteSummary {
             title: displayed_title(content),
             modified,
         }
+    }
+
+    /// Le nom de fichier de la note.
+    #[must_use]
+    pub fn file_name(&self) -> &FileName {
+        &self.file_name
+    }
+
+    /// Le titre affiché : le titre `#` de la note, ou « Sans titre ».
+    #[must_use]
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    /// La date de dernière modification.
+    #[must_use]
+    pub fn modified(&self) -> Modified {
+        self.modified
     }
 }
 
@@ -57,7 +76,7 @@ mod tests {
             "sans titre ici",
             Modified(0),
         );
-        assert_eq!(note.title, "Sans titre");
+        assert_eq!(note.title(), "Sans titre");
     }
 
     #[test]
@@ -67,14 +86,14 @@ mod tests {
             summary("b.md", 3),
             summary("c.md", 2),
         ]);
-        let names: Vec<_> = sorted.iter().map(|n| n.file_name.as_str()).collect();
+        let names: Vec<_> = sorted.iter().map(|n| n.file_name().as_str()).collect();
         assert_eq!(names, ["b.md", "c.md", "a.md"]);
     }
 
     #[test]
     fn same_date_is_ordered_by_file_name() {
         let sorted = sort_by_recent(vec![summary("b.md", 1), summary("a.md", 1)]);
-        let names: Vec<_> = sorted.iter().map(|n| n.file_name.as_str()).collect();
+        let names: Vec<_> = sorted.iter().map(|n| n.file_name().as_str()).collect();
         assert_eq!(names, ["a.md", "b.md"]);
     }
 }
