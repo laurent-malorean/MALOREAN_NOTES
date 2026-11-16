@@ -61,9 +61,8 @@ const HANDLERS: Record<string, Handler> = {
   },
   EmphasisMark: (node, c) => hide(c, node.from, node.to),
   StrikethroughMark: (node, c) => hide(c, node.from, node.to),
-  CodeMark: (node, c) => {
-    if (parentName(node) === "InlineCode") hide(c, node.from, node.to);
-  },
+  // Les blocs de code ne sont jamais parcourus : il ne reste que le code en ligne.
+  CodeMark: (node, c) => hide(c, node.from, node.to),
   QuoteMark: (node, c) => hide(c, node.from, withSpace(c.doc, node.to)),
   ListMark: (node, c) => listMark(node, c),
   TaskMarker: (node, c) => {

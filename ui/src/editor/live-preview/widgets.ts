@@ -2,10 +2,8 @@
 import { type EditorView, WidgetType } from "@codemirror/view";
 import { toggledTaskMarker } from "./preview";
 
+// Puce et séparateur sont des instances uniques : CodeMirror les reconnaît sans les comparer.
 export class BulletWidget extends WidgetType {
-  override eq() {
-    return true;
-  }
   toDOM() {
     const bullet = document.createElement("span");
     bullet.className = "cm-lp-bullet";
@@ -15,9 +13,6 @@ export class BulletWidget extends WidgetType {
 }
 
 export class RuleWidget extends WidgetType {
-  override eq() {
-    return true;
-  }
   toDOM() {
     const rule = document.createElement("span");
     rule.className = "cm-lp-rule";
