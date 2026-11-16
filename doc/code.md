@@ -87,6 +87,24 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Le faux et le vrai se ressemblent** : une même fonction de test de contrat, générique sur le port, est jouée sur le faux et sur l'implémentation réelle.
 - **Logique de l'interface hors de l'écran** : l'état d'un écran et ses transitions sont du code testable sans fenêtre.
 - **Pas de test qui dépend de l'heure, de l'ordre ou du réseau.**
+- **Un test doit pouvoir échouer** : s'il passerait même avec le défaut, il est réécrit. Un défaut trouvé se corrige en écrivant d'abord le test qui le montre.
+- **Exceptions à « aucune logique dans un test »** : les tests de propriétés (une condition sur des données générées) et les tests de cohérence entre deux fichiers (toutes les commandes appelées par la page existent).
+
+| Niveau | Où | Outil |
+|---|---|---|
+| Règles du domaine | `crates/domain` (unitaires) | `cargo test` |
+| Propriétés sur des notes générées au hasard | `crates/domain/tests/properties.rs` | `proptest` |
+| Cas d'usage, avec le faux stockage en mémoire | `crates/application` | `cargo test` |
+| Contrat : mêmes tests sur le faux et le vrai stockage | `application::testing::contract`, joué par `crates/infrastructure/tests` | `cargo test` |
+| Disque réel : erreurs, droits, fichiers illisibles | `crates/infrastructure/tests` (dossiers temporaires) | `tempfile` |
+| Commandes appelées comme par la page (noms, arguments JSON, origine) | `crates/api/tests/ipc.rs` | simulateur Tauri |
+| Logique de l'interface, sans écran | `ui/src/**/*.test.ts` | Vitest |
+| Écran et éditeur dans WebKit (le moteur de la fenêtre) | `ui/src/**/*.browser.test.ts` | Vitest, mode navigateur |
+| Parcours utilisateur complets, partie Rust remplacée par un faux | `ui/e2e/` | Playwright, WebKit |
+| Solidité des tests : erreurs introduites volontairement | tout le Rust | `cargo mutants` |
+
+- **Seuils de couverture** (lignes exécutées par les tests) : Rust ≥ 93 %, interface ≥ 90 %. L'assemblage (`crates/app/src/main.rs`, `ui/src/main.ts`) est couvert par les tests des commandes et les parcours complets.
+- **Test de mutation** : aucune erreur introduite ne doit passer inaperçue. Une mutation « équivalente » (qui ne change rien) se supprime en simplifiant le code.
 
 ## 8. Interface (ui/, TypeScript + CodeMirror 6)
 
@@ -202,10 +220,12 @@ disallowed-methods = [
 
 | Quand | Quoi |
 |---|---|
-| Avant chaque push : mini CI `scripts/ci.sh` | Rust : secrets exclus du dépôt, longueur des fichiers, `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace` (tous les tests), `cargo deny check`. Interface : types générés à jour, `prettier --check`, `tsc --noEmit`, ESLint, Vitest (tous les tests) |
-| Avant de livrer | benchmarks si la lecture a changé, build `release` signé et notarisé |
+| Avant chaque push : mini CI `scripts/ci.sh`, lancée automatiquement par `.githooks/pre-push` | fichiers privés exclus ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 93 %, dépendances ; interface : types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec couverture ≥ 90 %, parcours complets |
+| Avant de livrer : `scripts/ci.sh --complet` | tout ce qui précède, plus le test de mutation ; benchmarks si la lecture a changé ; build `release` signé et notarisé |
 
-Un push n'a lieu que si la mini CI réussit. Un nouveau dépassement qui passerait les contrôles est un défaut des contrôles : on les complète.
+Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov cargo-deny cargo-mutants --locked`, puis dans `ui/` : `npm install` et `npx playwright install webkit`. Le garde-fou s'active avec `git config --local core.hooksPath .githooks`.
+
+Un push n'a lieu que si la mini CI réussit ; jamais de contournement (`--no-verify`). Un nouveau dépassement qui passerait les contrôles est un défaut des contrôles : on les complète.
 
 ## 16. Sources
 

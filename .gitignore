@@ -6,3 +6,7 @@ target/
 node_modules/
 ui/dist/
 todo.md 
+ui/test-results/
+ui/playwright-report/
+ui/coverage/
+mutants.out*/
