@@ -6,11 +6,17 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use application::{LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote};
+use application::{
+    LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote, TrashContents,
+};
 use domain::{FileName, Folder, FolderName, Modified, NotePath};
 
 const TEMPORARY_PREFIX: &str = ".";
 const TEMPORARY_SUFFIX: &str = ".enregistrement";
+/// La corbeille : un dossier caché à la racine, comme dans Obsidian ; elle n'est donc jamais
+/// listée parmi les dossiers de la bibliothèque.
+const TRASH_FOLDER: &str = ".trash";
+const HIDDEN_PREFIX: char = '.';
 
 /// Les notes d'un dossier de la bibliothèque.
 #[derive(Debug)]
@@ -109,6 +115,55 @@ impl FsNoteStore {
                 Ok(self.has_folder(&parent)? && self.sub_folders(&parent)?.contains(folder))
             }
         }
+    }
+
+    /// La corbeille, vue comme une petite bibliothèque rangée dans le dossier caché.
+    fn trash_store(&self) -> Self {
+        Self::new(self.root.join(TRASH_FOLDER))
+    }
+
+    fn exists(&self) -> bool {
+        self.root.is_dir()
+    }
+
+    fn has_note(&self, note: &NotePath) -> Result<bool, StoreError> {
+        Ok(
+            self.has_folder(note.folder())?
+                && self.note_names(note.folder())?.contains(note.name()),
+        )
+    }
+
+    /// Le dossier n'a rien de visible : les fichiers cachés (`.DS_Store` du Finder) ne comptent pas.
+    fn is_empty_folder(&self, folder: &Folder) -> Result<bool, StoreError> {
+        for entry in fs::read_dir(self.folder_path(folder)).map_err(unavailable)? {
+            let name = entry.map_err(unavailable)?.file_name();
+            if !name.to_string_lossy().starts_with(HIDDEN_PREFIX) {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    /// Retire `folder` et ses parents, tant qu'ils n'ont rien de visible ; la racine reste.
+    fn prune(&self, folder: &Folder) -> Result<(), StoreError> {
+        let mut current = folder.clone();
+        while let Some(parent) = current.parent() {
+            if !self.is_empty_folder(&current)? {
+                return Ok(());
+            }
+            fs::remove_dir_all(self.folder_path(&current)).map_err(unavailable)?;
+            current = parent;
+        }
+        Ok(())
+    }
+
+    /// Toutes les notes, à toute profondeur.
+    fn all_notes(&self, folders: &[Folder]) -> Result<Vec<StoredNote>, StoreError> {
+        let mut notes = self.list(&Folder::root())?;
+        for folder in folders {
+            notes.extend(self.list(folder)?);
+        }
+        Ok(notes)
     }
 
     /// Le contenu et la date de la note ; en erreur, la version lisible d'un contenu qui n'est pas en UTF-8.
@@ -233,6 +288,103 @@ impl NoteStore for FsNoteStore {
         }
         fs::rename(self.folder_path(from), target).map_err(unavailable)
     }
+
+    fn trash(&self) -> Result<TrashContents, StoreError> {
+        let trash = self.trash_store();
+        if !trash.exists() {
+            return Ok(TrashContents::default());
+        }
+        let folders = trash.folders()?;
+        let notes = trash.all_notes(&folders)?;
+        Ok(TrashContents { folders, notes })
+    }
+
+    fn trash_note(&self, note: &NotePath, at: &NotePath) -> Result<(), StoreError> {
+        if !self.has_note(note)? {
+            return Err(StoreError::NotFound(note.clone()));
+        }
+        let trash = self.trash_store();
+        if trash.path(at).exists() || trash.attachment_path(at).exists() {
+            return Err(StoreError::AlreadyExists(at.clone()));
+        }
+        fs::create_dir_all(trash.folder_path(at.folder())).map_err(unavailable)?;
+        move_with_attachments(
+            (self.path(note), self.attachment_path(note)),
+            (trash.path(at), trash.attachment_path(at)),
+        )
+        .map_err(|e| not_found_or(note, e))
+    }
+
+    fn trash_folder(&self, folder: &Folder, at: &Folder) -> Result<(), StoreError> {
+        if !self.has_folder(folder)? {
+            return Err(StoreError::FolderNotFound(folder.clone()));
+        }
+        let target = self.trash_store().folder_path(at);
+        if target.exists() {
+            return Err(StoreError::FolderAlreadyExists(at.clone()));
+        }
+        move_into_place(&self.folder_path(folder), &target).map_err(unavailable)
+    }
+
+    fn restore_note(&self, at: &NotePath, to: &NotePath) -> Result<(), StoreError> {
+        let trash = self.trash_store();
+        if !trash.exists() || !trash.has_note(at)? {
+            return Err(StoreError::NotFound(at.clone()));
+        }
+        if self.has_note(to)? || self.attachment_path(to).exists() {
+            return Err(StoreError::AlreadyExists(to.clone()));
+        }
+        fs::create_dir_all(self.folder_path(to.folder())).map_err(unavailable)?;
+        move_with_attachments(
+            (trash.path(at), trash.attachment_path(at)),
+            (self.path(to), self.attachment_path(to)),
+        )
+        .map_err(|e| not_found_or(at, e))?;
+        trash.prune(at.folder())
+    }
+
+    fn restore_folder(&self, at: &Folder, to: &Folder) -> Result<(), StoreError> {
+        let trash = self.trash_store();
+        if at.parent().is_none() || !trash.exists() || !trash.has_folder(at)? {
+            return Err(StoreError::FolderNotFound(at.clone()));
+        }
+        if self.has_folder(to)? {
+            if !trash.is_empty_folder(at)? {
+                return Err(StoreError::FolderAlreadyExists(to.clone()));
+            }
+            return trash.prune(at);
+        }
+        move_into_place(&trash.folder_path(at), &self.folder_path(to)).map_err(unavailable)?;
+        trash.prune(&at.parent().unwrap_or_else(Folder::root))
+    }
+
+    fn empty_trash(&self) -> Result<(), StoreError> {
+        let trash = self.trash_store();
+        if !trash.exists() {
+            return Ok(());
+        }
+        fs::remove_dir_all(&trash.root).map_err(unavailable)
+    }
+}
+
+/// Déplace un fichier de note et, s'il existe, son dossier de pièces jointes.
+fn move_with_attachments(
+    (note, attachments): (PathBuf, PathBuf),
+    (to_note, to_attachments): (PathBuf, PathBuf),
+) -> io::Result<()> {
+    fs::rename(note, to_note)?;
+    if attachments.is_dir() {
+        fs::rename(attachments, to_attachments)?;
+    }
+    Ok(())
+}
+
+/// Déplace un dossier à `target`, en créant les dossiers qui manquent au-dessus.
+fn move_into_place(folder: &Path, target: &Path) -> io::Result<()> {
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    fs::rename(folder, target)
 }
 
 /// Ouvre une bibliothèque : un dossier existant sur le disque.

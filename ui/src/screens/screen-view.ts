@@ -4,9 +4,12 @@ import { type FolderActions, renderFoldersList } from "./folders-list";
 import type { Layout } from "./layout";
 import { type NoteActions, renderNotesList } from "./notes-list";
 import { renderSearchResults } from "./search-results";
+import { renderTrash, type TrashActions } from "./trash-view";
 
 /** Ce que l'utilisateur peut demander depuis l'espace de travail. */
-export type ScreenActions = FolderActions & NoteActions;
+export type ScreenActions = FolderActions & NoteActions & TrashActions;
+
+const TRASH_TITLE = "Corbeille";
 
 /** Le nom du dossier affiché : celui de la bibliothèque pour la racine. */
 function folderName(libraryName: string, folder: string): string {
@@ -23,17 +26,22 @@ export function renderScreen(layout: Layout, screen: Screen, actions: ScreenActi
     case "library":
       layout.welcome.hidden = true;
       layout.workspace.hidden = false;
-      layout.libraryName.textContent = folderName(screen.library.name, screen.folder);
+      layout.libraryName.textContent = screen.trash
+        ? TRASH_TITLE
+        : folderName(screen.library.name, screen.folder);
       renderFoldersList(
         layout.foldersList,
         screen.library.name,
         screen.folders,
-        screen.folder,
+        screen.trash ? null : screen.folder,
         actions,
       );
+      layout.trashButton.classList.toggle("selected", screen.trash !== null);
       // Remettre la même valeur ne déplace pas le curseur du champ.
       layout.searchField.value = screen.search?.query ?? "";
-      if (screen.search) {
+      if (screen.trash) {
+        renderTrash(layout.notesList, screen.library.name, screen.trash, actions);
+      } else if (screen.search) {
         renderSearchResults(
           layout.notesList,
           screen.library.name,

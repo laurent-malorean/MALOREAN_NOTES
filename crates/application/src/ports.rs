@@ -16,6 +16,17 @@ pub struct StoredNote {
     pub modified: Modified,
 }
 
+/// Le contenu de la corbeille. Chaque élément y garde son chemin d'origine, avec un suffixe
+/// si un élément supprimé avant lui portait déjà le même.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct TrashContents {
+    /// Tous les dossiers de la corbeille, à toute profondeur : ceux qu'on a supprimés et ceux
+    /// qui contiennent une note supprimée.
+    pub folders: Vec<Folder>,
+    /// Toutes les notes de la corbeille, à toute profondeur.
+    pub notes: Vec<StoredNote>,
+}
+
 /// Échec du stockage.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StoreError {
@@ -119,6 +130,58 @@ pub trait NoteStore: Send + Sync + Debug {
     /// [`StoreError::FolderAlreadyExists`] si `to` est pris, [`StoreError::Unavailable`]
     /// si le stockage ne répond pas.
     fn move_folder(&self, from: &Folder, to: &Folder) -> Result<(), StoreError>;
+
+    /// Ce que contient la corbeille ; rien si elle n'a jamais servi.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si la corbeille ne peut pas être lue.
+    fn trash(&self) -> Result<TrashContents, StoreError>;
+
+    /// Place la note et son dossier de pièces jointes dans la corbeille, au chemin `at`.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::NotFound`] si la note n'existe pas, [`StoreError::AlreadyExists`] si
+    /// `at` est pris dans la corbeille, [`StoreError::Unavailable`] si le stockage ne répond pas.
+    fn trash_note(&self, note: &NotePath, at: &NotePath) -> Result<(), StoreError>;
+
+    /// Place le dossier, avec tout ce qu'il contient, dans la corbeille, au chemin `at`.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::FolderNotFound`] si le dossier n'existe pas,
+    /// [`StoreError::FolderAlreadyExists`] si `at` est pris dans la corbeille,
+    /// [`StoreError::Unavailable`] si le stockage ne répond pas.
+    fn trash_folder(&self, folder: &Folder, at: &Folder) -> Result<(), StoreError>;
+
+    /// Remet la note `at` de la corbeille (et ses pièces jointes) au chemin `to` de la
+    /// bibliothèque, en recréant les dossiers qui manquent. Les dossiers de la corbeille
+    /// qu'elle laisse vides en disparaissent.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::NotFound`] si la corbeille n'a pas cette note, [`StoreError::AlreadyExists`]
+    /// si `to` est pris, [`StoreError::Unavailable`] si le stockage ne répond pas.
+    fn restore_note(&self, at: &NotePath, to: &NotePath) -> Result<(), StoreError>;
+
+    /// Remet le dossier `at` de la corbeille, avec tout ce qu'il contient, au chemin `to` de la
+    /// bibliothèque, en recréant les dossiers qui manquent. Si `to` existe déjà, le dossier de
+    /// la corbeille doit être vide : il en est alors simplement retiré.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::FolderNotFound`] si la corbeille n'a pas ce dossier,
+    /// [`StoreError::FolderAlreadyExists`] si `to` existe et que le dossier de la corbeille
+    /// n'est pas vide, [`StoreError::Unavailable`] si le stockage ne répond pas.
+    fn restore_folder(&self, at: &Folder, to: &Folder) -> Result<(), StoreError>;
+
+    /// Supprime définitivement tout ce que contient la corbeille.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si la suppression échoue.
+    fn empty_trash(&self) -> Result<(), StoreError>;
 }
 
 /// Emplacement d'une bibliothèque, tel que l'utilisateur l'a choisi.

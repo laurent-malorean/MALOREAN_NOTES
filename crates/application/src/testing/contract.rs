@@ -44,6 +44,7 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     moving_a_missing_note_or_into_a_missing_folder_is_refused(&empty_store());
     rewriting_while_keeping_the_date_changes_only_the_content(&empty_store());
     rewriting_a_missing_note_while_keeping_the_date_is_refused(&empty_store());
+    super::trash_contract::trash_contract(&empty_store);
 }
 
 fn rewriting_while_keeping_the_date_changes_only_the_content(store: &impl NoteStore) {

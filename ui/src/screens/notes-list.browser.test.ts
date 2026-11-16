@@ -3,7 +3,12 @@ import { closeContextMenu } from "./context-menu";
 import { dragged, stopDragging } from "./dragging";
 import { type NoteActions, renderNotesList } from "./notes-list";
 
-const noActions: NoteActions = { open: () => {}, pin: () => {}, unpin: () => {} };
+const noActions: NoteActions = {
+  open: () => {},
+  pin: () => {},
+  unpin: () => {},
+  trash: () => {},
+};
 
 /** Les actions demandées, notées dans l'ordre : `ouvrir a.md`, `épingler a.md`… */
 function recorded(): { readonly asked: string[]; readonly actions: NoteActions } {
@@ -14,6 +19,7 @@ function recorded(): { readonly asked: string[]; readonly actions: NoteActions }
       open: (path) => asked.push(`ouvrir ${path}`),
       pin: (path) => asked.push(`épingler ${path}`),
       unpin: (path) => asked.push(`désépingler ${path}`),
+      trash: (path) => asked.push(`jeter ${path}`),
     },
   };
 }
@@ -119,7 +125,7 @@ describe("notes épinglées", () => {
     renderNotesList(container, withPinned, null, actions);
     const event = rightClick(container.querySelectorAll(".note-item")[1] as Element);
     expect(event.defaultPrevented).toBe(true);
-    expect(menuEntries()).toEqual(["Épingler"]);
+    expect(menuEntries()).toEqual(["Épingler", "Placer dans la corbeille"]);
     expect(document.querySelector<HTMLElement>(".context-menu")?.style.left).toBe("12px");
     document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
     expect(asked).toEqual(["épingler a.md"]);
@@ -130,9 +136,38 @@ describe("notes épinglées", () => {
     const { asked, actions } = recorded();
     renderNotesList(container, withPinned, null, actions);
     rightClick(container.querySelector(".note-item") as Element);
-    expect(menuEntries()).toEqual(["Désépingler"]);
+    expect(menuEntries()).toEqual(["Désépingler", "Placer dans la corbeille"]);
     document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
     expect(asked).toEqual(["désépingler p.md"]);
+  });
+});
+
+describe("jeter une note", () => {
+  const press = (target: Element, key: string) => {
+    const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    return event;
+  };
+
+  it("le clic droit propose de placer la note dans la corbeille", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    renderNotesList(container, notes, null, actions);
+    const item = container.querySelectorAll(".note-item")[1] as Element;
+    item.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].at(-1)?.click();
+    expect(asked).toEqual(["jeter a.md"]);
+  });
+
+  it("les touches Effacer et Suppr placent la note choisie dans la corbeille", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    renderNotesList(container, notes, null, actions);
+    const [first, second] = container.querySelectorAll(".note-item");
+    expect(press(first as Element, "Backspace").defaultPrevented).toBe(true);
+    press(second as Element, "Delete");
+    expect(press(second as Element, "a").defaultPrevented).toBe(false);
+    expect(asked).toEqual(["jeter b.md", "jeter a.md"]);
   });
 });
 

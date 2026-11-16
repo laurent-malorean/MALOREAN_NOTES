@@ -2,6 +2,7 @@
 // Créer, renommer (double-clic) et déplacer (glisser-déposer) passent par un champ ou un geste ;
 // une note glissée depuis la liste se dépose aussi sur un dossier.
 import { canMoveInto, folderTree } from "../state/folders";
+import { showContextMenu } from "./context-menu";
 import { type Dragged, dragged, startDragging, stopDragging } from "./dragging";
 
 /** Ce que l'utilisateur peut demander depuis la colonne des dossiers. */
@@ -11,13 +12,20 @@ export interface FolderActions {
   readonly rename: (path: string, name: string) => void;
   readonly move: (path: string, into: string) => void;
   readonly moveNote: (path: string, into: string) => void;
+  readonly trashFolder: (path: string) => void;
 }
 
 const ROOT = "";
 const INPUT_CLASS = "folder-input";
 const DROP_TARGET_CLASS = "drop-target";
 
-function item(path: string, name: string, depth: number, selected: string, actions: FolderActions) {
+function item(
+  path: string,
+  name: string,
+  depth: number,
+  selected: string | null,
+  actions: FolderActions,
+) {
   const button = document.createElement("button");
   button.className = "folder-item";
   button.dataset.path = path;
@@ -36,6 +44,12 @@ function item(path: string, name: string, depth: number, selected: string, actio
     button.draggable = true;
     button.addEventListener("dragstart", () => startDragging({ kind: "folder", path }));
     button.addEventListener("dragend", stopDragging);
+    button.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      showContextMenu(event.clientX, event.clientY, [
+        { label: "Placer dans la corbeille", run: () => actions.trashFolder(path) },
+      ]);
+    });
     button.addEventListener("dblclick", () => {
       const input = nameInput(
         name,
@@ -101,12 +115,15 @@ function focus(input: HTMLInputElement) {
   input.select();
 }
 
-/** Affiche la colonne ; ne fait rien pendant qu'un nom est en cours de saisie. */
+/**
+ * Affiche la colonne, avec le dossier `selected` en évidence (aucun : `null`) ; ne fait rien
+ * pendant qu'un nom est en cours de saisie.
+ */
 export function renderFoldersList(
   container: HTMLElement,
   libraryName: string,
   folders: readonly string[],
-  selected: string,
+  selected: string | null,
   actions: FolderActions,
 ): void {
   if (container.querySelector(`.${INPUT_CLASS}`)) return;

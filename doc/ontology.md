@@ -18,7 +18,8 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Dossier de pièces jointes | `AttachmentFolder` | Dossier `<nom-de-la-note>.assets/` qui contient les pièces jointes d'une seule note ; ce n'est pas un dossier de notes. |
 | Épinglée | `pinned` | Une note épinglée apparaît en tête de liste. |
 | Étiquette | `Tag` | Mot-clé libre attaché à une note. |
-| Corbeille | `Trash` | Endroit où va une note ou un dossier supprimé, d'où on peut le restaurer. |
+| Corbeille | `Trash` | Dossier caché `.trash/` à la racine de la bibliothèque, où va une note ou un dossier supprimé, rangé à son chemin d'origine. Elle ne se vide qu'à la main. |
+| Restaurer | `restore` | Remettre un élément de la corbeille à son chemin d'origine ; un nom pris reçoit un suffixe libre. |
 | Recherche | `SearchQuery` | Les mots tapés pour retrouver des notes ; une note est trouvée si elle contient tous les mots, sans tenir compte des majuscules ni des accents. |
 | Résultat de recherche | `SearchResult` | Une note trouvée : son titre, son dossier et un extrait. |
 | Extrait | `Excerpt` | Court passage d'une note trouvée, autour du premier mot cherché, mots trouvés mis en évidence. |

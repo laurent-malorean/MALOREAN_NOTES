@@ -23,8 +23,10 @@ import {
   searchAnswered,
   searchTyped,
   selectedNote,
+  trashShown,
   welcome,
 } from "./state/screen";
+import { initialSelection, nextSelection } from "./state/selection";
 import { showFocusUnit, showFullScreen } from "./screens/editor-tools";
 import { type Shortcut, shortcutFor } from "./screens/shortcuts";
 import { loadFocusUnit, nextFocusUnit, saveFocusUnit } from "./state/focus-preference";
@@ -65,6 +67,11 @@ const actions: ScreenActions = {
   moveNote: (path, into) => run(moveNote(path, into)),
   pin: (path) => run(changePin(path, bridge.pinNote)),
   unpin: (path) => run(changePin(path, bridge.unpinNote)),
+  trash: (path) => run(trashNote(path)),
+  trashFolder: (path) => run(trashFolder(path)),
+  restoreNote: (path) => run(changeTrash(bridge.restoreNote(path))),
+  restoreFolder: (path) => run(changeTrash(bridge.restoreFolder(path))),
+  empty: () => run(changeTrash(bridge.emptyTrash())),
 };
 
 function show(next: Screen) {
@@ -91,7 +98,9 @@ function typeSearch(query: string) {
 }
 
 async function selectFolder(folder: string) {
-  if (folder === currentFolder(screen)) return;
+  // Rechoisir le dossier affiché ne le recharge pas, sauf pour quitter la corbeille.
+  const trashOpen = screen.kind === "library" && screen.trash !== null;
+  if (folder === currentFolder(screen) && !trashOpen) return;
   await autosave?.flush();
   show(folderSelected(screen, folder, await bridge.listNotes(folder)));
   await openNote(selectedNote(screen));
@@ -139,6 +148,53 @@ async function changePin(path: string, change: (path: string) => Promise<bridge.
   const note = await change(wasOpen ? (selectedNote(screen) ?? path) : path);
   if (wasOpen) editor.show(note.content);
   await refreshList();
+}
+
+/**
+ * Place une note dans la corbeille, une fois ce qui est tapé enregistré ; si c'était la note
+ * ouverte, la suivante de la liste s'ouvre (ou aucune).
+ */
+async function trashNote(path: string) {
+  const wasOpen = selectedNote(screen) === path;
+  await autosave?.flush();
+  // L'enregistrement a pu renommer la note ouverte (titre changé).
+  const source = wasOpen ? (selectedNote(screen) ?? path) : path;
+  const next = screen.kind === "library" ? nextSelection(screen.notes, source) : null;
+  await bridge.trashNote(source);
+  if (wasOpen) autosave = null;
+  await refreshList();
+  if (wasOpen) await openNote(next);
+}
+
+/**
+ * Place un dossier dans la corbeille, avec tout ce qu'il contient. Si l'on y était, la liste
+ * revient à la bibliothèque ; si la note ouverte y était, une autre s'ouvre.
+ */
+async function trashFolder(path: string) {
+  await autosave?.flush();
+  const inside = (p: string) => p === path || p.startsWith(`${path}/`);
+  const noteGone = inside(folderOf(selectedNote(screen) ?? ""));
+  await bridge.trashFolder(path);
+  if (noteGone) autosave = null;
+  show(foldersRefreshed(screen, await bridge.listFolders()));
+  if (inside(currentFolder(screen))) {
+    show(folderSelected(screen, "", await bridge.listNotes("")));
+    return openNote(selectedNote(screen));
+  }
+  await refreshList();
+  if (noteGone) await openNote(screen.kind === "library" ? initialSelection(screen.notes) : null);
+}
+
+async function showTrash() {
+  show(trashShown(screen, await bridge.listTrash()));
+}
+
+/** Restaure ou vide : la corbeille, les dossiers et les notes affichées sont relus. */
+async function changeTrash(change: Promise<unknown>) {
+  await change;
+  show(foldersRefreshed(screen, await bridge.listFolders()));
+  show(notesRefreshed(screen, await bridge.listNotes(currentFolder(screen))));
+  await showTrash();
 }
 
 function editNote(path: string): Autosave {
@@ -189,6 +245,7 @@ for (const button of layout.chooseButtons) {
 }
 layout.newNoteButton.addEventListener("click", () => void createNote().catch(showError));
 connectSearchField(layout.searchField, typeSearch);
+layout.trashButton.addEventListener("click", () => run(showTrash()));
 layout.newFolderButton.addEventListener("click", () =>
   startFolderCreation(layout.foldersList, currentFolder(screen), actions.create),
 );

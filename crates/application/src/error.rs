@@ -31,6 +31,9 @@ pub enum AppError {
     /// La racine (la bibliothèque elle-même) ne se renomme ni ne se déplace dans l'application.
     #[error("la bibliothèque elle-même ne peut être ni renommée ni déplacée")]
     RootIsFixed,
+    /// La racine (la bibliothèque elle-même) ne va pas dans la corbeille.
+    #[error("la bibliothèque elle-même ne peut pas aller dans la corbeille")]
+    RootCannotBeTrashed,
     /// Le stockage ne répond pas ; la cause est lisible.
     #[error("stockage indisponible : {0}")]
     StorageUnavailable(String),

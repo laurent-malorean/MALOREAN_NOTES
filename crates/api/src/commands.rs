@@ -8,6 +8,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::{
     ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session,
+    TrashInfo,
 };
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
@@ -231,6 +232,72 @@ pub async fn unpin_note(session: SharedSession<'_>, path: String) -> Result<Note
     in_background(move || session.unpin_note(&path)).await
 }
 
+/// Place une note dans la corbeille ; rend son chemin dans la corbeille.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn trash_note(session: SharedSession<'_>, path: String) -> Result<String, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.trash_note(&path)).await
+}
+
+/// Place un dossier, avec tout ce qu'il contient, dans la corbeille.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn trash_folder(session: SharedSession<'_>, path: String) -> Result<String, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.trash_folder(&path)).await
+}
+
+/// Ce que contient la corbeille.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn list_trash(session: SharedSession<'_>) -> Result<TrashInfo, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.list_trash()).await
+}
+
+/// Remet une note de la corbeille à sa place ; rend son chemin.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn restore_note(session: SharedSession<'_>, path: String) -> Result<SavedNote, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.restore_note(&path)).await
+}
+
+/// Remet un dossier de la corbeille à sa place ; rend son chemin.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn restore_folder(session: SharedSession<'_>, path: String) -> Result<String, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.restore_folder(&path)).await
+}
+
+/// Supprime définitivement tout ce que contient la corbeille.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn empty_trash(session: SharedSession<'_>) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.empty_trash()).await
+}
+
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
@@ -248,5 +315,11 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         move_note,
         pin_note,
         unpin_note,
+        trash_note,
+        trash_folder,
+        list_trash,
+        restore_note,
+        restore_folder,
+        empty_trash,
     ]
 }

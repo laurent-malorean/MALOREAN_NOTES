@@ -4,6 +4,7 @@ import {
   libraryOpened,
   searchAnswered,
   searchTyped,
+  trashShown,
   welcome,
 } from "../state/screen";
 import { createLayout } from "./layout";
@@ -18,6 +19,11 @@ const ignore: ScreenActions = {
   moveNote: () => {},
   pin: () => {},
   unpin: () => {},
+  trash: () => {},
+  trashFolder: () => {},
+  restoreNote: () => {},
+  restoreFolder: () => {},
+  empty: () => {},
 };
 
 function layout() {
@@ -124,5 +130,28 @@ describe("affichage de l'écran", () => {
     renderScreen(view, libraryOpened(library, [], []), ignore);
     renderScreen(view, welcome, ignore);
     expect([view.welcome.hidden, view.workspace.hidden]).toEqual([false, true]);
+  });
+});
+
+describe("affichage de la corbeille", () => {
+  it("montre la corbeille à la place des notes, et elle seule en évidence", () => {
+    const view = layout();
+    const opened = libraryOpened(
+      library,
+      ["Travail"],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
+    );
+    const screen = trashShown(opened, {
+      folders: [],
+      notes: [{ path: "x.md", title: "Jetée" }],
+    });
+    renderScreen(view, screen, ignore);
+    expect(view.libraryName.textContent).toBe("Corbeille");
+    expect(view.notesList.querySelector(".trash-label")?.textContent).toBe("Jetée");
+    expect(view.trashButton.classList.contains("selected")).toBe(true);
+    expect(view.foldersList.querySelector(".folder-item.selected")).toBeNull();
+    renderScreen(view, folderSelected(screen, "", []), ignore);
+    expect(view.trashButton.classList.contains("selected")).toBe(false);
+    expect(view.foldersList.querySelector(".folder-item.selected")).not.toBeNull();
   });
 });

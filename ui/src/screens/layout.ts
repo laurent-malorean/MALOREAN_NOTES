@@ -5,6 +5,7 @@ export interface Layout {
   readonly libraryName: HTMLElement;
   readonly foldersList: HTMLElement;
   readonly newFolderButton: HTMLButtonElement;
+  readonly trashButton: HTMLButtonElement;
   readonly searchField: HTMLInputElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
@@ -29,6 +30,7 @@ export function createLayout(root: HTMLElement): Layout {
           <button class="icon" data-new-folder title="Nouveau dossier">＋</button>
         </header>
         <nav class="folders-list"></nav>
+        <footer class="sidebar-footer"><button class="trash-item" data-trash>Corbeille</button></footer>
       </aside>
       <aside class="sidebar">
         <header class="sidebar-header">
@@ -54,6 +56,7 @@ export function createLayout(root: HTMLElement): Layout {
     libraryName: find(".library-name"),
     foldersList: find(".folders-list"),
     newFolderButton: find("[data-new-folder]"),
+    trashButton: find("[data-trash]"),
     searchField: find(".search-field"),
     notesList: find(".notes-list"),
     editor: find(".editor"),

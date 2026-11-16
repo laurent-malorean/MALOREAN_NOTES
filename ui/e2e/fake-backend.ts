@@ -11,6 +11,8 @@ interface FakeNote {
 export interface FakeBackend {
   notes: Record<string, FakeNote>;
   folders: string[];
+  /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
+  trash: { notes: Record<string, FakeNote>; folders: string[] };
   rememberedLibrary: boolean;
   failNextSave: boolean;
   calls: string[];
@@ -29,6 +31,7 @@ const params = new URLSearchParams(location.search);
 const backend: FakeBackend = {
   notes: JSON.parse(params.get("notes") ?? "{}") as Record<string, FakeNote>,
   folders: JSON.parse(params.get("folders") ?? "[]") as string[],
+  trash: { notes: {}, folders: [] },
   rememberedLibrary: params.get("remembered") === "1",
   failNextSave: false,
   calls: [],
@@ -126,7 +129,85 @@ function rewritePin(path: string, change: (content: string) => string) {
   return { path, content: note.content };
 }
 
+const within = (path: string, folder: string) => path === folder || path.startsWith(`${folder}/`);
+
+/** Le dossier et ses parents, de la racine vers lui. */
+const withParents = (folder: string) =>
+  folder ? folder.split("/").map((_, i, parts) => parts.slice(0, i + 1).join("/")) : [];
+
+function addFolders(target: string[], folder: string) {
+  for (const f of withParents(folder)) if (!target.includes(f)) target.push(f);
+}
+
+/** Retire de la corbeille les dossiers vidés, en remontant depuis `folder`. */
+function pruneTrash(folder: string) {
+  for (const f of withParents(folder).reverse()) {
+    const used =
+      Object.keys(backend.trash.notes).some((n) => within(folderOf(n), f)) ||
+      backend.trash.folders.some((other) => other !== f && within(other, f));
+    if (used) return;
+    backend.trash.folders = backend.trash.folders.filter((other) => other !== f);
+  }
+}
+
+/** Doublure simple de la corbeille : les vraies règles (suffixes, pièces jointes) sont testées côté Rust. */
+const trashCommands: Record<string, (args: Record<string, string>) => unknown> = {
+  trash_note: ({ path = "" }) => {
+    const note = backend.notes[path];
+    if (!note) throw { message: `la note « ${path} » n'existe pas` };
+    Reflect.deleteProperty(backend.notes, path);
+    backend.trash.notes[path] = note;
+    addFolders(backend.trash.folders, folderOf(path));
+    return path;
+  },
+  trash_folder: ({ path = "" }) => {
+    addFolders(backend.trash.folders, path);
+    for (const f of backend.folders.filter((f) => within(f, path))) {
+      addFolders(backend.trash.folders, f);
+    }
+    backend.folders = backend.folders.filter((f) => !within(f, path));
+    for (const [notePath, note] of Object.entries(backend.notes)) {
+      if (!within(folderOf(notePath), path)) continue;
+      Reflect.deleteProperty(backend.notes, notePath);
+      backend.trash.notes[notePath] = note;
+    }
+    return path;
+  },
+  list_trash: () => ({
+    folders: [...backend.trash.folders].sort(treeOrder),
+    notes: Object.entries(backend.trash.notes)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([path, n]) => ({ path, title: titleOf(n.content) ?? "Sans titre" })),
+  }),
+  restore_note: ({ path = "" }) => {
+    const note = backend.trash.notes[path];
+    if (!note) throw { message: `la note « ${path} » n'existe pas` };
+    const target = freeName(folderOf(path), (path.split("/").at(-1) ?? "").replace(/\.md$/, ""));
+    Reflect.deleteProperty(backend.trash.notes, path);
+    backend.notes[target] = note;
+    addFolders(backend.folders, folderOf(path));
+    pruneTrash(folderOf(path));
+    return { path: target };
+  },
+  restore_folder: ({ path = "" }) => {
+    for (const f of backend.trash.folders.filter((f) => within(f, path))) {
+      addFolders(backend.folders, f);
+    }
+    for (const notePath of Object.keys(backend.trash.notes)) {
+      if (within(folderOf(notePath), path)) trashCommands.restore_note?.({ path: notePath });
+    }
+    backend.trash.folders = backend.trash.folders.filter((f) => !within(f, path));
+    pruneTrash(folderOf(path));
+    return path;
+  },
+  empty_trash: () => {
+    backend.trash = { notes: {}, folders: [] };
+    return null;
+  },
+};
+
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
+  ...trashCommands,
   search_notes: ({ query = "" }) => searchNotes(query),
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
   choose_library: () => library,

@@ -2,5 +2,6 @@
 
 pub mod contract;
 mod fakes;
+mod trash_contract;
 
 pub use fakes::{FakeOpener, FakePreferences, InMemoryNoteStore};

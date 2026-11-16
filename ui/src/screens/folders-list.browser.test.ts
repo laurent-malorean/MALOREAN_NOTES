@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { closeContextMenu } from "./context-menu";
 import { startDragging, stopDragging } from "./dragging";
 import { type FolderActions, renderFoldersList, startFolderCreation } from "./folders-list";
 
@@ -6,7 +7,7 @@ type Call = readonly [string, ...string[]];
 
 function column(
   folders: readonly string[] = ["Perso", "Travail", "Travail/Réunions"],
-  selected = "",
+  selected: string | null = "",
 ) {
   const container = document.createElement("nav");
   document.body.replaceChildren(container);
@@ -17,6 +18,7 @@ function column(
     rename: (path, name) => calls.push(["rename", path, name]),
     move: (path, into) => calls.push(["move", path, into]),
     moveNote: (path, into) => calls.push(["moveNote", path, into]),
+    trashFolder: (path) => calls.push(["trashFolder", path]),
   };
   renderFoldersList(container, "Notes", folders, selected, actions);
   return { container, calls, actions };
@@ -231,5 +233,34 @@ describe("déplacer une note dans un dossier", () => {
     drag(item(container, "Perso"), "drop");
     drag(item(container, "Travail"), "drop");
     expect(calls).toEqual([["moveNote", "courses.md", "Perso"]]);
+  });
+});
+
+describe("jeter un dossier", () => {
+  afterEach(() => closeContextMenu());
+  const rightClick = (target: HTMLElement) => {
+    const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    return event;
+  };
+
+  it("le clic droit sur un dossier propose de le placer dans la corbeille", () => {
+    const { container, calls } = column();
+    expect(rightClick(item(container, "Travail")).defaultPrevented).toBe(true);
+    const entries = [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
+    expect(entries.map((e) => e.textContent)).toEqual(["Placer dans la corbeille"]);
+    entries[0]?.click();
+    expect(calls).toEqual([["trashFolder", "Travail"]]);
+  });
+
+  it("la bibliothèque elle-même n'a pas ce menu", () => {
+    const { container } = column();
+    expect(rightClick(item(container, "")).defaultPrevented).toBe(false);
+    expect(document.querySelector(".context-menu")).toBeNull();
+  });
+
+  it("aucun dossier n'est choisi quand la corbeille est affichée", () => {
+    const { container } = column(["Travail"], null);
+    expect(container.querySelector(".folder-item.selected")).toBeNull();
   });
 });

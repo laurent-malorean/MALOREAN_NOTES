@@ -153,3 +153,42 @@ describe("pont vers Rust : fenêtre", () => {
     expect(calls[0]?.args).toMatchObject({ event: "tauri://resize" });
   });
 });
+
+describe("pont vers Rust : corbeille", () => {
+  it("place une note dans la corbeille", async () => {
+    const calls = recordCalls("a/b.md");
+    expect(await bridge.trashNote("a/b.md")).toBe("a/b.md");
+    expect(calls).toEqual([{ command: "trash_note", args: { path: "a/b.md" } }]);
+  });
+
+  it("place un dossier dans la corbeille", async () => {
+    const calls = recordCalls("a");
+    expect(await bridge.trashFolder("a")).toBe("a");
+    expect(calls).toEqual([{ command: "trash_folder", args: { path: "a" } }]);
+  });
+
+  it("liste la corbeille", async () => {
+    const trash = { folders: ["a"], notes: [{ path: "a/b.md", title: "B" }] };
+    const calls = recordCalls(trash);
+    expect(await bridge.listTrash()).toEqual(trash);
+    expect(calls).toEqual([{ command: "list_trash", args: {} }]);
+  });
+
+  it("restaure une note", async () => {
+    const calls = recordCalls({ path: "a/b-2.md" });
+    expect(await bridge.restoreNote("a/b.md")).toEqual({ path: "a/b-2.md" });
+    expect(calls).toEqual([{ command: "restore_note", args: { path: "a/b.md" } }]);
+  });
+
+  it("restaure un dossier", async () => {
+    const calls = recordCalls("a");
+    expect(await bridge.restoreFolder("a")).toBe("a");
+    expect(calls).toEqual([{ command: "restore_folder", args: { path: "a" } }]);
+  });
+
+  it("vide la corbeille", async () => {
+    const calls = recordCalls(null);
+    expect(await bridge.emptyTrash()).toBeNull();
+    expect(calls).toEqual([{ command: "empty_trash", args: {} }]);
+  });
+});

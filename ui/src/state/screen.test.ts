@@ -12,6 +12,7 @@ import {
   searchAnswered,
   searchTyped,
   selectedNote,
+  trashShown,
   welcome,
 } from "./screen";
 
@@ -38,6 +39,7 @@ describe("état de l'écran", () => {
       notes: [note("recente.md", 2), note("vieille.md", 1)],
       selected: "recente.md",
       search: null,
+      trash: null,
     });
   });
 
@@ -50,6 +52,7 @@ describe("état de l'écran", () => {
       notes: [],
       selected: null,
       search: null,
+      trash: null,
     });
   });
 
@@ -66,6 +69,7 @@ describe("état de l'écran", () => {
       notes: [note("a.md", 2), note("b.md", 1)],
       selected: "b.md",
       search: null,
+      trash: null,
     });
   });
 
@@ -79,6 +83,7 @@ describe("état de l'écran", () => {
       notes: [note("a.md", 1)],
       selected: "b.md",
       search: null,
+      trash: null,
     });
   });
 
@@ -95,6 +100,7 @@ describe("état de l'écran", () => {
       notes: [note("b.md", 2), note("a.md", 1)],
       selected: "a.md",
       search: null,
+      trash: null,
     });
   });
 
@@ -157,6 +163,7 @@ describe("dossiers", () => {
       folder: "Perso",
       selected: null,
       search: null,
+      trash: null,
     });
   });
 });
@@ -206,5 +213,29 @@ describe("recherche", () => {
   it("revient à la liste quand on choisit un dossier", () => {
     const screen = folderSelected(searchTyped(opened(), "pain"), "Travail", []);
     expect(searchOf(screen)).toBeNull();
+  });
+});
+
+describe("corbeille", () => {
+  const trash = { folders: ["Travail"], notes: [{ path: "Travail/lundi.md", title: "Lundi" }] };
+  const opened = () => libraryOpened(library, ["Travail"], [note("a.md", 1)]);
+
+  it("montre la corbeille à la place des notes du dossier", () => {
+    const screen = trashShown(opened(), trash);
+    expect(screen.kind === "library" && screen.trash).toEqual(trash);
+  });
+
+  it("ne montre rien sur l'accueil", () => {
+    expect(trashShown(welcome, trash)).toBe(welcome);
+  });
+
+  it("quitte la corbeille quand on choisit un dossier", () => {
+    const screen = folderSelected(trashShown(opened(), trash), "Travail", []);
+    expect(screen.kind === "library" && screen.trash).toBeNull();
+  });
+
+  it("quitte la corbeille quand on cherche", () => {
+    const screen = searchTyped(trashShown(opened(), trash), "lundi");
+    expect(screen.kind === "library" && screen.trash).toBeNull();
   });
 });

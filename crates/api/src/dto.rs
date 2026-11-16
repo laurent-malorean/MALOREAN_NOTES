@@ -78,3 +78,25 @@ pub struct SavedNote {
     /// Le chemin de la note, dont le nom a peut-être changé avec le titre.
     pub path: String,
 }
+
+/// Une note de la corbeille.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TrashedNoteItem {
+    /// Son chemin dans la corbeille, qui est son chemin d'origine : `dossier/nom.md`.
+    pub path: String,
+    /// Le titre affiché.
+    pub title: String,
+}
+
+/// Ce que contient la corbeille.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TrashInfo {
+    /// Les dossiers de la corbeille, chacun suivi des siens.
+    pub folders: Vec<String>,
+    /// Les notes de la corbeille, triées par chemin.
+    pub notes: Vec<TrashedNoteItem>,
+}

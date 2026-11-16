@@ -7,7 +7,11 @@ export interface NoteActions {
   readonly open: (path: string) => void;
   readonly pin: (path: string) => void;
   readonly unpin: (path: string) => void;
+  readonly trash: (path: string) => void;
 }
+
+/** Les touches qui placent la note choisie dans la corbeille. */
+const TRASH_KEYS = new Set(["Backspace", "Delete"]);
 
 const PIN = "📌";
 
@@ -19,22 +23,31 @@ function pinMark(): HTMLElement {
   return pin;
 }
 
-/** Le clic droit propose d'épingler la note, ou de la désépingler si elle l'est. */
-function offerPinning(item: HTMLElement, note: NoteListItem, actions: NoteActions) {
+/**
+ * Le clic droit propose d'épingler la note (ou de la désépingler si elle l'est) et de la placer
+ * dans la corbeille ; les touches Effacer et Suppr la placent aussi dans la corbeille.
+ */
+function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteActions) {
   item.addEventListener("contextmenu", (event) => {
     event.preventDefault();
-    const entry = note.pinned
+    const pinning = note.pinned
       ? { label: "Désépingler", run: () => actions.unpin(note.path) }
       : { label: "Épingler", run: () => actions.pin(note.path) };
-    showContextMenu(event.clientX, event.clientY, [entry]);
+    const trashing = { label: "Placer dans la corbeille", run: () => actions.trash(note.path) };
+    showContextMenu(event.clientX, event.clientY, [pinning, trashing]);
+  });
+  item.addEventListener("keydown", (event) => {
+    if (!TRASH_KEYS.has(event.key)) return;
+    event.preventDefault();
+    actions.trash(note.path);
   });
 }
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 /**
- * Affiche la liste des notes ; un clic ouvre la note, un clic droit l'épingle ou la désépingle,
- * et on peut la glisser vers un dossier.
+ * Affiche la liste des notes ; un clic ouvre la note, un clic droit l'épingle, la désépingle ou
+ * la place dans la corbeille, et on peut la glisser vers un dossier.
  */
 export function renderNotesList(
   container: HTMLElement,
@@ -58,7 +71,7 @@ export function renderNotesList(
       date.textContent = dateFormat.format(new Date(note.modified));
       item.append(heading, date);
       item.addEventListener("click", () => actions.open(note.path));
-      offerPinning(item, note, actions);
+      offerActions(item, note, actions);
       item.draggable = true;
       item.addEventListener("dragstart", () => startDragging({ kind: "note", path: note.path }));
       item.addEventListener("dragend", stopDragging);

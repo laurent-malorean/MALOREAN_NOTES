@@ -5,7 +5,9 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use domain::{FileName, Folder, Modified, NotePath};
 
-use crate::{LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError, StoredNote};
+use crate::{
+    LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError, StoredNote, TrashContents,
+};
 
 /// Bibliothèque en mémoire ; chaque écriture avance la date de modification d'un cran.
 #[derive(Debug, Default)]
@@ -18,6 +20,10 @@ struct State {
     notes: BTreeMap<NotePath, (String, Modified)>,
     /// Les sous-dossiers, racine exclue.
     folders: BTreeSet<Folder>,
+    /// Les notes de la corbeille, à leur chemin dans la corbeille.
+    trashed_notes: BTreeMap<NotePath, (String, Modified)>,
+    /// Les dossiers de la corbeille, racine exclue.
+    trashed_folders: BTreeSet<Folder>,
     tick: u64,
 }
 
@@ -28,10 +34,69 @@ impl State {
 
     /// Le dossier et tous ses parents existent désormais.
     fn add_folder(&mut self, folder: &Folder) {
+        add_with_parents(&mut self.folders, folder);
+    }
+
+    /// Le dossier de la corbeille contient-il une note ou un sous-dossier ?
+    fn trash_has_content_in(&self, folder: &Folder) -> bool {
+        self.trashed_notes
+            .keys()
+            .any(|n| n.folder().is_within(folder))
+            || self
+                .trashed_folders
+                .iter()
+                .any(|f| f != folder && f.is_within(folder))
+    }
+
+    /// Retire de la corbeille `folder` et ses parents, tant qu'ils sont vides.
+    fn prune_trash(&mut self, folder: &Folder) {
         let mut current = folder.clone();
         while let Some(parent) = current.parent() {
-            self.folders.insert(current);
+            if self.trash_has_content_in(&current) {
+                return;
+            }
+            self.trashed_folders.remove(&current);
             current = parent;
+        }
+    }
+}
+
+fn add_with_parents(folders: &mut BTreeSet<Folder>, folder: &Folder) {
+    let mut current = folder.clone();
+    while let Some(parent) = current.parent() {
+        folders.insert(current);
+        current = parent;
+    }
+}
+
+type Notes = BTreeMap<NotePath, (String, Modified)>;
+
+/// Déplace d'un ensemble à l'autre les dossiers et les notes qui sont dans `from`, vers `to`.
+fn transfer(
+    (from_folders, from_notes): (&mut BTreeSet<Folder>, &mut Notes),
+    (to_folders, to_notes): (&mut BTreeSet<Folder>, &mut Notes),
+    from: &Folder,
+    to: &Folder,
+) {
+    add_with_parents(to_folders, to);
+    let moved: Vec<Folder> = from_folders
+        .iter()
+        .filter(|f| f.is_within(from))
+        .cloned()
+        .collect();
+    for folder in moved {
+        from_folders.remove(&folder);
+        to_folders.insert(folder.moved(from, to));
+    }
+    let notes: Vec<NotePath> = from_notes
+        .keys()
+        .filter(|n| n.folder().is_within(from))
+        .cloned()
+        .collect();
+    for note in notes {
+        if let Some(value) = from_notes.remove(&note) {
+            let path = NotePath::new(note.folder().moved(from, to), note.name().clone());
+            to_notes.insert(path, value);
         }
     }
 }
@@ -153,6 +218,105 @@ impl NoteStore for InMemoryNoteStore {
             return Err(StoreError::FolderAlreadyExists(to.clone()));
         }
         Self::move_folder_contents(&mut state, from, to);
+        Ok(())
+    }
+
+    fn trash(&self) -> Result<TrashContents, StoreError> {
+        let state = self.state();
+        Ok(TrashContents {
+            folders: state.trashed_folders.iter().cloned().collect(),
+            notes: state
+                .trashed_notes
+                .iter()
+                .map(|(name, (c, m))| stored(name, c, *m))
+                .collect(),
+        })
+    }
+
+    fn trash_note(&self, note: &NotePath, at: &NotePath) -> Result<(), StoreError> {
+        let mut state = self.state();
+        if state.trashed_notes.contains_key(at) {
+            return Err(StoreError::AlreadyExists(at.clone()));
+        }
+        let value = state
+            .notes
+            .remove(note)
+            .ok_or_else(|| StoreError::NotFound(note.clone()))?;
+        add_with_parents(&mut state.trashed_folders, at.folder());
+        state.trashed_notes.insert(at.clone(), value);
+        Ok(())
+    }
+
+    fn trash_folder(&self, folder: &Folder, at: &Folder) -> Result<(), StoreError> {
+        let mut state = self.state();
+        if !state.has_folder(folder) {
+            return Err(StoreError::FolderNotFound(folder.clone()));
+        }
+        if state.trashed_folders.contains(at) {
+            return Err(StoreError::FolderAlreadyExists(at.clone()));
+        }
+        let State {
+            notes,
+            folders,
+            trashed_notes,
+            trashed_folders,
+            ..
+        } = &mut *state;
+        transfer(
+            (folders, notes),
+            (trashed_folders, trashed_notes),
+            folder,
+            at,
+        );
+        Ok(())
+    }
+
+    fn restore_note(&self, at: &NotePath, to: &NotePath) -> Result<(), StoreError> {
+        let mut state = self.state();
+        if !state.trashed_notes.contains_key(at) {
+            return Err(StoreError::NotFound(at.clone()));
+        }
+        if state.notes.contains_key(to) {
+            return Err(StoreError::AlreadyExists(to.clone()));
+        }
+        if let Some(value) = state.trashed_notes.remove(at) {
+            state.add_folder(to.folder());
+            state.notes.insert(to.clone(), value);
+        }
+        state.prune_trash(at.folder());
+        Ok(())
+    }
+
+    fn restore_folder(&self, at: &Folder, to: &Folder) -> Result<(), StoreError> {
+        let mut state = self.state();
+        if !state.trashed_folders.contains(at) {
+            return Err(StoreError::FolderNotFound(at.clone()));
+        }
+        if state.has_folder(to) {
+            if state.trash_has_content_in(at) {
+                return Err(StoreError::FolderAlreadyExists(to.clone()));
+            }
+            state.trashed_folders.remove(at);
+        } else {
+            let State {
+                notes,
+                folders,
+                trashed_notes,
+                trashed_folders,
+                ..
+            } = &mut *state;
+            transfer((trashed_folders, trashed_notes), (folders, notes), at, to);
+        }
+        if let Some(parent) = at.parent() {
+            state.prune_trash(&parent);
+        }
+        Ok(())
+    }
+
+    fn empty_trash(&self) -> Result<(), StoreError> {
+        let mut state = self.state();
+        state.trashed_notes.clear();
+        state.trashed_folders.clear();
         Ok(())
     }
 }

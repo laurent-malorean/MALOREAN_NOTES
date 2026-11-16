@@ -392,3 +392,66 @@ button {
   font-size: 0.8em;
   color: var(--marker);
 }
+
+/* Corbeille */
+.trash-item {
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  color: var(--muted);
+  font: inherit;
+  width: 100%;
+  text-align: left;
+}
+.trash-item:hover {
+  color: var(--text);
+}
+.trash-item.selected {
+  background: var(--selected);
+  color: var(--text);
+  font-weight: 600;
+}
+.trash-header {
+  padding: 0.4rem 0.7rem 0.6rem;
+}
+.trash-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+.danger {
+  background: var(--danger);
+  color: var(--on-danger);
+  border: 0;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+}
+.trash-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+}
+.trash-folder .trash-label {
+  font-weight: 600;
+}
+.trash-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.trash-label,
+.trash-origin {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trash-origin {
+  font-size: 0.8rem;
+  color: var(--muted);
+}

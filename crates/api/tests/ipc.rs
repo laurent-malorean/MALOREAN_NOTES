@@ -8,7 +8,9 @@
 use std::sync::Arc;
 
 use api::commands::invoke_handler;
-use api::{LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session};
+use api::{
+    LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session, TrashInfo,
+};
 use application::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
 use application::{LibraryLocation, Preferences};
 use serde::de::DeserializeOwned;
@@ -273,4 +275,42 @@ fn the_page_pins_and_unpins_a_note_by_its_path() {
     );
     let unpinned: NoteContent = ok(call(&window, "unpin_note", json!({ "path": "a.md" })));
     assert_eq!(unpinned.content, "# Alpha");
+}
+
+#[test]
+fn a_note_goes_to_the_trash_and_comes_back_with_the_argument_names_used_by_the_page() {
+    let window = window(&[("Travail/lundi.md", "# Lundi")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let at: String = ok(call(
+        &window,
+        "trash_note",
+        json!({ "path": "Travail/lundi.md" }),
+    ));
+    assert_eq!(at, "Travail/lundi.md");
+    let trash: TrashInfo = ok(call(&window, "list_trash", json!({})));
+    assert_eq!(trash.notes[0].title, "Lundi");
+    let restored: SavedNote = ok(call(
+        &window,
+        "restore_note",
+        json!({ "path": "Travail/lundi.md" }),
+    ));
+    assert_eq!(restored.path, "Travail/lundi.md");
+}
+
+#[test]
+fn a_folder_goes_to_the_trash_comes_back_and_the_trash_is_emptied() {
+    let window = window(&[("Travail/lundi.md", "# Lundi")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let at: String = ok(call(&window, "trash_folder", json!({ "path": "Travail" })));
+    assert_eq!(at, "Travail");
+    let back: String = ok(call(
+        &window,
+        "restore_folder",
+        json!({ "path": "Travail" }),
+    ));
+    assert_eq!(back, "Travail");
+    call(&window, "trash_folder", json!({ "path": "Travail" })).unwrap();
+    call(&window, "empty_trash", json!({})).unwrap();
+    let trash: TrashInfo = ok(call(&window, "list_trash", json!({})));
+    assert!(trash.folders.is_empty() && trash.notes.is_empty());
 }

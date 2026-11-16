@@ -6,6 +6,7 @@ use crate::FileName;
 
 const SEPARATOR: char = '/';
 const ATTACHMENT_SUFFIX: &str = ".assets";
+const FIRST_DUPLICATE_NUMBER: u32 = 2;
 
 /// Nom d'un dossier : un seul élément de chemin, tel que l'utilisateur l'a écrit.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -121,6 +122,22 @@ impl Folder {
         }
     }
 
+    /// Ce dossier, ou le premier `Nom 2`, `Nom 3`… qui n'est pas pris (comme le Finder).
+    /// La racine reste la racine.
+    #[must_use]
+    pub fn deduplicated(self, mut is_taken: impl FnMut(&Self) -> bool) -> Self {
+        let (Some(parent), Some(name)) = (self.parent(), self.name()) else {
+            return self;
+        };
+        if !is_taken(&self) {
+            return self;
+        }
+        (FIRST_DUPLICATE_NUMBER..)
+            .map(|n| parent.join(FolderName(format!("{} {n}", name.as_str()))))
+            .find(|candidate| !is_taken(candidate))
+            .unwrap_or(self)
+    }
+
     /// Le chemin `a/b/c` ; vide pour la racine.
     #[must_use]
     pub fn to_path(&self) -> String {
@@ -207,6 +224,28 @@ impl NotePath {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_free_folder_keeps_its_name() {
+        assert_eq!(
+            folder("a/Projets").deduplicated(|_| false),
+            folder("a/Projets")
+        );
+    }
+
+    #[test]
+    fn a_taken_folder_gets_the_first_free_number_like_the_finder() {
+        let taken = [folder("a/Projets"), folder("a/Projets 2")];
+        assert_eq!(
+            folder("a/Projets").deduplicated(|f| taken.contains(f)),
+            folder("a/Projets 3")
+        );
+    }
+
+    #[test]
+    fn the_root_is_never_renamed() {
+        assert_eq!(Folder::root().deduplicated(|_| true), Folder::root());
+    }
 
     fn folder(path: &str) -> Folder {
         Folder::parse(path).unwrap()

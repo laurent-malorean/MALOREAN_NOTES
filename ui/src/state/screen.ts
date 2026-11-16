@@ -1,4 +1,4 @@
-import type { LibraryInfo, NoteListItem, SearchResultItem } from "../bridge";
+import type { LibraryInfo, NoteListItem, SearchResultItem, TrashInfo } from "../bridge";
 import { movedPath } from "./folders";
 import { followRename, initialSelection } from "./selection";
 
@@ -13,8 +13,9 @@ export interface Search {
 
 /**
  * Ce que montre la fenêtre : l'accueil, ou une bibliothèque ouverte avec ses dossiers,
- * le dossier choisi (`""` pour la racine), ses notes, la note sélectionnée, et la recherche
- * en cours (`null` : la liste montre les notes du dossier).
+ * le dossier choisi (`""` pour la racine), ses notes, la note sélectionnée, la recherche
+ * en cours et la corbeille affichée (`null` pour l'une et l'autre : la liste montre les notes
+ * du dossier).
  */
 export type Screen =
   | { readonly kind: "welcome" }
@@ -26,6 +27,7 @@ export type Screen =
       readonly notes: readonly NoteListItem[];
       readonly selected: string | null;
       readonly search: Search | null;
+      readonly trash: TrashInfo | null;
     };
 
 /** L'écran du lancement, avant toute bibliothèque. */
@@ -45,6 +47,7 @@ export function libraryOpened(
     notes,
     selected: initialSelection(notes),
     search: null,
+    trash: null,
   };
 }
 
@@ -55,7 +58,7 @@ export function folderSelected(
   notes: readonly NoteListItem[],
 ): Screen {
   return screen.kind === "library"
-    ? { ...screen, folder, notes, selected: initialSelection(notes), search: null }
+    ? { ...screen, folder, notes, selected: initialSelection(notes), search: null, trash: null }
     : screen;
 }
 
@@ -92,7 +95,16 @@ export function noteRenamed(screen: Screen, from: string, to: string): Screen {
 export function searchTyped(screen: Screen, query: string): Screen {
   if (screen.kind !== "library") return screen;
   if (query.trim() === "") return { ...screen, search: null };
-  return { ...screen, search: { query, results: screen.search?.results ?? null } };
+  return {
+    ...screen,
+    search: { query, results: screen.search?.results ?? null },
+    trash: null,
+  };
+}
+
+/** La corbeille, montrée à la place des notes du dossier. */
+export function trashShown(screen: Screen, trash: TrashInfo): Screen {
+  return screen.kind === "library" ? { ...screen, trash, search: null } : screen;
 }
 
 /** Les notes trouvées pour `query` ; ignorées si la recherche a changé ou s'est arrêtée entre-temps. */

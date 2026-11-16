@@ -7,8 +7,18 @@ import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
 import type { SavedNote } from "./generated/SavedNote";
 import type { SearchResultItem } from "./generated/SearchResultItem";
+import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
+import type { TrashInfo } from "./generated/TrashInfo";
 
-export type { LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem };
+export type {
+  LibraryInfo,
+  NoteContent,
+  NoteListItem,
+  SavedNote,
+  SearchResultItem,
+  TrashedNoteItem,
+  TrashInfo,
+};
 
 /** Le message lisible d'une erreur rendue par Rust, ou de toute autre erreur. */
 export function errorMessage(error: unknown): string {
@@ -46,6 +56,18 @@ export const moveNote = (path: string, into: string) =>
 export const pinNote = (path: string) => invoke<NoteContent>("pin_note", { path });
 /** Désépingle une note ; rend son nouveau contenu. */
 export const unpinNote = (path: string) => invoke<NoteContent>("unpin_note", { path });
+
+/** Place une note dans la corbeille ; rend son chemin dans la corbeille. */
+export const trashNote = (path: string) => invoke<string>("trash_note", { path });
+/** Place un dossier, avec tout ce qu'il contient, dans la corbeille. */
+export const trashFolder = (path: string) => invoke<string>("trash_folder", { path });
+export const listTrash = () => invoke<TrashInfo>("list_trash");
+/** Remet une note de la corbeille à sa place ; rend son chemin, peut-être suffixé. */
+export const restoreNote = (path: string) => invoke<SavedNote>("restore_note", { path });
+/** Remet un dossier de la corbeille à sa place, avec tout ce qu'il contient. */
+export const restoreFolder = (path: string) => invoke<string>("restore_folder", { path });
+/** Supprime définitivement tout ce que contient la corbeille. */
+export const emptyTrash = () => invoke<null>("empty_trash");
 
 /** Passe la fenêtre en plein écran, ou l'en fait sortir. */
 export const setFullScreen = (on: boolean) => getCurrentWindow().setFullscreen(on);

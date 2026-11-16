@@ -1,5 +1,7 @@
 //! La bibliothèque ouverte et les cas d'usage qu'on lui applique.
 
+mod trash;
+
 use std::path::Path;
 use std::sync::{Arc, PoisonError, RwLock};
 
