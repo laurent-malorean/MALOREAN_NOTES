@@ -54,6 +54,7 @@ const actions: ScreenActions = {
   create: (parent, name) => run(createFolder(parent, name)),
   rename: (path, name) => run(changeFolder(path, bridge.renameFolder(path, name))),
   move: (path, into) => run(changeFolder(path, bridge.moveFolder(path, into))),
+  moveNote: (path, into) => run(moveNote(path, into)),
 };
 
 function show(next: Screen) {
@@ -87,6 +88,20 @@ async function changeFolder(path: string, change: Promise<string>) {
   const selected = selectedNote(screen);
   await refreshList();
   await openNote(selected);
+}
+
+/**
+ * Déplace une note dans un autre dossier ; la liste reste sur le dossier affiché.
+ * La note ouverte le reste, sous son nouveau chemin, une fois ce qui est tapé enregistré.
+ */
+async function moveNote(path: string, into: string) {
+  const wasOpen = selectedNote(screen) === path;
+  await autosave?.flush();
+  // L'enregistrement a pu renommer la note ouverte (titre changé).
+  const source = wasOpen ? (selectedNote(screen) ?? path) : path;
+  const moved = await bridge.moveNote(source, into);
+  await refreshList();
+  if (wasOpen) await openNote(moved.path);
 }
 
 function editNote(path: string): Autosave {

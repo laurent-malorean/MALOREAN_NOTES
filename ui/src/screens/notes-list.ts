@@ -1,8 +1,9 @@
 import type { NoteListItem } from "../bridge";
+import { startDragging, stopDragging } from "./dragging";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
-/** Affiche la liste des notes ; un clic ouvre la note. */
+/** Affiche la liste des notes ; un clic ouvre la note, qu'on peut aussi glisser vers un dossier. */
 export function renderNotesList(
   container: HTMLElement,
   notes: readonly NoteListItem[],
@@ -22,6 +23,9 @@ export function renderNotesList(
       date.textContent = dateFormat.format(new Date(note.modified));
       item.append(title, date);
       item.addEventListener("click", () => onOpen(note.path));
+      item.draggable = true;
+      item.addEventListener("dragstart", () => startDragging({ kind: "note", path: note.path }));
+      item.addEventListener("dragend", stopDragging);
       return item;
     }),
   );

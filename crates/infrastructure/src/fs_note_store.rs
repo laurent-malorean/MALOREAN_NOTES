@@ -35,6 +35,11 @@ impl FsNoteStore {
         self.folder_path(note.folder()).join(note.name().as_str())
     }
 
+    fn attachment_path(&self, note: &NotePath) -> PathBuf {
+        self.folder_path(note.folder())
+            .join(note.name().attachment_folder())
+    }
+
     /// Les noms exacts des notes : la casse compte, même sur un disque qui l'ignore.
     fn note_names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError> {
         let mut names = Vec::new();
@@ -133,15 +138,19 @@ impl NoteStore for FsNoteStore {
         })
     }
 
-    fn rename(&self, from: &NotePath, to: &FileName) -> Result<(), StoreError> {
-        let folder = self.folder_path(from.folder());
-        let new_assets = folder.join(to.attachment_folder());
-        let target = from.renamed(to.clone());
-        if self.note_names(from.folder())?.contains(to) || new_assets.exists() {
-            return Err(StoreError::AlreadyExists(target));
+    fn move_note(&self, from: &NotePath, to: &NotePath) -> Result<(), StoreError> {
+        if !self.note_names(from.folder())?.contains(from.name()) {
+            return Err(StoreError::NotFound(from.clone()));
         }
-        fs::rename(self.path(from), self.path(&target)).map_err(|e| not_found_or(from, e))?;
-        let old_assets = folder.join(from.name().attachment_folder());
+        if !self.has_folder(to.folder())? {
+            return Err(StoreError::FolderNotFound(to.folder().clone()));
+        }
+        let new_assets = self.attachment_path(to);
+        if self.note_names(to.folder())?.contains(to.name()) || new_assets.exists() {
+            return Err(StoreError::AlreadyExists(to.clone()));
+        }
+        fs::rename(self.path(from), self.path(to)).map_err(|e| not_found_or(from, e))?;
+        let old_assets = self.attachment_path(from);
         if old_assets.is_dir() {
             fs::rename(old_assets, new_assets).map_err(unavailable)?;
         }

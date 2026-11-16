@@ -319,3 +319,36 @@ fn a_folder_is_moved_on_disk_with_its_attachments() {
     assert!(dir.path().join("b/a/voyage.assets/x.png").is_file());
     assert!(!dir.path().join("a").exists());
 }
+
+#[test]
+fn a_moved_note_takes_its_attachment_folder_along() {
+    let (dir, store) = library();
+    store
+        .write(&name("voyage.md"), "![vue](voyage.assets/vue.png)")
+        .unwrap();
+    fs::create_dir(dir.path().join("voyage.assets")).unwrap();
+    fs::write(dir.path().join("voyage.assets/vue.png"), [1, 2, 3]).unwrap();
+    store
+        .create_folder(&Folder::parse("Vacances").unwrap())
+        .unwrap();
+    store
+        .move_note(&name("voyage.md"), &name("Vacances/voyage.md"))
+        .unwrap();
+    assert!(!dir.path().join("voyage.assets").exists());
+    assert_eq!(
+        fs::read(dir.path().join("Vacances/voyage.assets/vue.png")).unwrap(),
+        [1, 2, 3]
+    );
+}
+
+#[test]
+fn moving_refuses_when_the_attachment_folder_is_taken_in_the_target() {
+    let (dir, store) = library();
+    store.write(&name("voyage.md"), "texte").unwrap();
+    fs::create_dir_all(dir.path().join("Vacances/voyage.assets")).unwrap();
+    assert_eq!(
+        store.move_note(&name("voyage.md"), &name("Vacances/voyage.md")),
+        Err(StoreError::AlreadyExists(name("Vacances/voyage.md")))
+    );
+    assert_eq!(store.names(&root()).unwrap(), [file("voyage.md")]);
+}

@@ -65,7 +65,19 @@ pub trait NoteStore: Send + Sync + Debug {
     /// [`StoreError::AlreadyExists`] si le nouveau nom (ou son dossier de pièces jointes)
     /// est pris, [`StoreError::NotFound`] si la note n'existe pas,
     /// [`StoreError::Unavailable`] si le stockage ne répond pas.
-    fn rename(&self, from: &NotePath, to: &FileName) -> Result<(), StoreError>;
+    fn rename(&self, from: &NotePath, to: &FileName) -> Result<(), StoreError> {
+        self.move_note(from, &from.renamed(to.clone()))
+    }
+
+    /// Déplace la note et son dossier de pièces jointes au chemin `to`, dans le même dossier
+    /// ou dans un autre ; ses pièces jointes restent à côté d'elle.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::AlreadyExists`] si `to` (ou son dossier de pièces jointes) est pris,
+    /// [`StoreError::NotFound`] si la note n'existe pas, [`StoreError::FolderNotFound`] si le
+    /// dossier de `to` n'existe pas, [`StoreError::Unavailable`] si le stockage ne répond pas.
+    fn move_note(&self, from: &NotePath, to: &NotePath) -> Result<(), StoreError>;
 
     /// Les noms des notes du dossier, sans lire leur contenu.
     ///

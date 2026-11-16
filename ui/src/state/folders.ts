@@ -34,8 +34,11 @@ export function movedPath(path: string, from: string, to: string): string {
   return path.startsWith(from + SEPARATOR) ? to + path.slice(from.length) : path;
 }
 
-/** Vrai si le dossier peut aller dans `into` : ni en lui-même, ni dans ses sous-dossiers, ni là où il est. */
-export function canMoveInto(folder: string, into: string): boolean {
-  const inside = into === folder || into.startsWith(folder + SEPARATOR);
-  return !inside && parentOf(folder) !== into;
+/**
+ * Vrai si le dossier ou la note à ce chemin peut aller dans le dossier `into` : ni là où il est,
+ * ni (pour un dossier) en lui-même ou dans ses sous-dossiers.
+ */
+export function canMoveInto(path: string, into: string): boolean {
+  const inside = into === path || into.startsWith(path + SEPARATOR);
+  return !inside && parentOf(path) !== into;
 }

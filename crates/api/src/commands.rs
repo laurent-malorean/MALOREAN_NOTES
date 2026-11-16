@@ -178,6 +178,21 @@ pub async fn move_folder(
     in_background(move || session.move_folder(&path, &into)).await
 }
 
+/// Déplace une note dans un dossier (`""` pour la racine) ; rend son nouveau chemin.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn move_note(
+    session: SharedSession<'_>,
+    path: String,
+    into: String,
+) -> Result<SavedNote, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.move_note(&path, &into)).await
+}
+
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
@@ -191,5 +206,6 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         create_folder,
         rename_folder,
         move_folder,
+        move_note,
     ]
 }

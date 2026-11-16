@@ -36,3 +36,5 @@ export const renameFolder = (path: string, name: string) =>
 /** Déplace un dossier dans `into` ; rend son nouveau chemin. */
 export const moveFolder = (path: string, into: string) =>
   invoke<string>("move_folder", { path, into });
+export const moveNote = (path: string, into: string) =>
+  invoke<SavedNote>("move_note", { path, into });

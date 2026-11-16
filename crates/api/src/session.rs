@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::{Arc, PoisonError, RwLock};
 
 use application::use_cases::{
-    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, OpenLibrary, ReadNote,
+    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenLibrary, ReadNote,
     RenameFolder, ReopenLastLibrary, SaveNote,
 };
 use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences};
@@ -118,6 +118,21 @@ impl Session {
         let saved = SaveNote::new(&*store).execute(&NotePath::parse(path)?, content)?;
         Ok(SavedNote {
             path: saved.to_path(),
+        })
+    }
+
+    /// Déplace la note dans le dossier `into` (`""` pour la racine) ; rend son nouveau chemin.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note ou
+    /// dossier absent, note illisible, nom pris, aucune bibliothèque ouverte.
+    pub fn move_note(&self, path: &str, into: &str) -> Result<SavedNote, ApiError> {
+        let store = self.store()?;
+        let moved =
+            MoveNote::new(&*store).execute(&NotePath::parse(path)?, &Folder::parse(into)?)?;
+        Ok(SavedNote {
+            path: moved.to_path(),
         })
     }
 

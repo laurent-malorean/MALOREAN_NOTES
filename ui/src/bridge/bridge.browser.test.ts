@@ -96,3 +96,11 @@ describe("pont vers Rust : fichiers de la bibliothèque", () => {
     );
   });
 });
+
+describe("pont vers Rust : déplacer une note", () => {
+  it("déplace une note dans un dossier et rend son nouveau chemin", async () => {
+    const calls = recordCalls({ path: "Perso/a.md" });
+    expect(await bridge.moveNote("a.md", "Perso")).toEqual({ path: "Perso/a.md" });
+    expect(calls).toEqual([{ command: "move_note", args: { path: "a.md", into: "Perso" } }]);
+  });
+});

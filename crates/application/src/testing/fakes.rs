@@ -86,17 +86,20 @@ impl NoteStore for InMemoryNoteStore {
         Ok(())
     }
 
-    fn rename(&self, from: &NotePath, to: &FileName) -> Result<(), StoreError> {
+    fn move_note(&self, from: &NotePath, to: &NotePath) -> Result<(), StoreError> {
         let mut state = self.state();
-        let to = from.renamed(to.clone());
-        if state.notes.contains_key(&to) {
-            return Err(StoreError::AlreadyExists(to));
+        if !state.notes.contains_key(from) {
+            return Err(StoreError::NotFound(from.clone()));
         }
-        let note = state
-            .notes
-            .remove(from)
-            .ok_or_else(|| StoreError::NotFound(from.clone()))?;
-        state.notes.insert(to, note);
+        if !state.has_folder(to.folder()) {
+            return Err(StoreError::FolderNotFound(to.folder().clone()));
+        }
+        if state.notes.contains_key(to) {
+            return Err(StoreError::AlreadyExists(to.clone()));
+        }
+        if let Some(note) = state.notes.remove(from) {
+            state.notes.insert(to.clone(), note);
+        }
         Ok(())
     }
 

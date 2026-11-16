@@ -39,6 +39,44 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     a_folder_is_renamed_by_moving_it_beside_itself(&empty_store());
     moving_onto_an_existing_folder_is_refused(&empty_store());
     moving_a_missing_folder_or_into_a_missing_one_is_refused(&empty_store());
+    a_moved_note_leaves_its_folder_for_the_new_one(&empty_store());
+    moving_a_note_onto_a_taken_name_is_refused(&empty_store());
+    moving_a_missing_note_or_into_a_missing_folder_is_refused(&empty_store());
+}
+
+fn a_moved_note_leaves_its_folder_for_the_new_one(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    store.create_folder(&folder("a/b")).unwrap();
+    store.write(&name("x.md"), "X").unwrap();
+    store.move_note(&name("x.md"), &name("a/b/x.md")).unwrap();
+    assert!(store.names(&root()).unwrap().is_empty());
+    assert_eq!(store.read(&name("a/b/x.md")).unwrap().content, "X");
+}
+
+fn moving_a_note_onto_a_taken_name_is_refused(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    store.write(&name("x.md"), "racine").unwrap();
+    store.write(&name("a/x.md"), "dossier").unwrap();
+    assert_eq!(
+        store.move_note(&name("x.md"), &name("a/x.md")),
+        Err(StoreError::AlreadyExists(name("a/x.md")))
+    );
+    assert_eq!(store.read(&name("x.md")).unwrap().content, "racine");
+    assert_eq!(store.read(&name("a/x.md")).unwrap().content, "dossier");
+}
+
+fn moving_a_missing_note_or_into_a_missing_folder_is_refused(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    assert_eq!(
+        store.move_note(&name("absente.md"), &name("a/absente.md")),
+        Err(StoreError::NotFound(name("absente.md")))
+    );
+    store.write(&name("x.md"), "X").unwrap();
+    assert_eq!(
+        store.move_note(&name("x.md"), &name("z/x.md")),
+        Err(StoreError::FolderNotFound(folder("z")))
+    );
+    assert_eq!(store.read(&name("x.md")).unwrap().content, "X");
 }
 
 fn folder(path: &str) -> Folder {

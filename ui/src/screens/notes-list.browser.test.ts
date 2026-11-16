@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { dragged, stopDragging } from "./dragging";
 import { renderNotesList } from "./notes-list";
 
 const notes = [
@@ -62,5 +63,22 @@ describe("liste des notes", () => {
     renderNotesList(container, notes, null, () => {});
     renderNotesList(container, [], null, () => {});
     expect(container.children).toHaveLength(0);
+  });
+});
+
+describe("glisser une note", () => {
+  const drag = (target: Element, type: string) =>
+    target.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true }));
+
+  it("une note se glisse vers un dossier, et le glissement s'oublie à la fin", () => {
+    const container = list();
+    renderNotesList(container, notes, null, () => {});
+    const item = container.querySelectorAll<HTMLElement>(".note-item")[1] as HTMLElement;
+    expect(item.draggable).toBe(true);
+    drag(item, "dragstart");
+    expect(dragged()).toEqual({ kind: "note", path: "a.md" });
+    drag(item, "dragend");
+    expect(dragged()).toBeNull();
+    stopDragging();
   });
 });

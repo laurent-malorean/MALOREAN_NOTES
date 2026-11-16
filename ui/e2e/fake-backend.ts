@@ -112,6 +112,15 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   rename_folder: ({ path = "", name = "" }) => moveFolder(path, inFolder(folderOf(path), name)),
   move_folder: ({ path = "", into = "" }) =>
     moveFolder(path, inFolder(into, path.split("/").at(-1) ?? "")),
+  move_note: ({ path = "", into = "" }) => {
+    const note = backend.notes[path];
+    if (!note) throw { message: `la note « ${path} » n'existe pas` };
+    if (folderOf(path) === into) return { path };
+    const target = freeName(into, (path.split("/").at(-1) ?? "").replace(/\.md$/, ""));
+    Reflect.deleteProperty(backend.notes, path);
+    backend.notes[target] = note;
+    return { path: target };
+  },
   create_note: ({ folder = "" }) => {
     const path = freeName(folder, "sans-titre");
     backend.notes[path] = { content: "", modified: (clock += 1) };

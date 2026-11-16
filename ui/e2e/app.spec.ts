@@ -187,3 +187,38 @@ test("une image d'une note rangée dans un dossier est cherchée à côté d'ell
     "asset://localhost/%2FUsers%2Fmoi%2FNotes%2FVoyages%2Flisbonne.assets%2Fvue.png",
   );
 });
+
+test("glisser une note sur un dossier l'y range, et le nom pris reçoit un suffixe", async ({
+  page,
+}) => {
+  await launch(page, {
+    notes: { ...LIBRARY, "Perso/idee.md": { content: "# Idée\nautre", modified: 5 } },
+    folders: ["Perso"],
+  });
+  await page.locator(".note-item", { hasText: "Idée" }).dragTo(folderItem(page, "Perso"));
+  await expect(titles(page)).toHaveText(["Courses", "Vieille note"]);
+  await folderItem(page, "Perso").click();
+  await expect(titles(page)).toHaveText(["Idée", "Idée"]);
+  expect(await paths(page)).toEqual([
+    "Perso/idee-2.md",
+    "Perso/idee.md",
+    "courses.md",
+    "vieille-note.md",
+  ]);
+});
+
+test("la note ouverte glissée dans un dossier reste ouverte, avec ce qu'on vient de taper", async ({
+  page,
+}) => {
+  await launch(page, { folders: ["Perso"] });
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await editorLines(page).last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" ajouté");
+  await page.locator(".note-item", { hasText: "Vieille note" }).dragTo(folderItem(page, "Perso"));
+  await expect
+    .poll(() => savedContent(page, "Perso/vieille-note.md"))
+    .toBe("# Vieille note\ntexte ajouté");
+  await expect(editorLines(page).last()).toHaveText("texte ajouté");
+  await expect(titles(page)).toHaveText(["Courses", "Idée"]);
+});

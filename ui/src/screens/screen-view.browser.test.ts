@@ -9,6 +9,7 @@ const ignore: ScreenActions = {
   create: () => {},
   rename: () => {},
   move: () => {},
+  moveNote: () => {},
 };
 
 function layout() {

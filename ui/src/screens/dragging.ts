@@ -1,10 +1,16 @@
 // Ce que l'utilisateur est en train de glisser d'une colonne à l'autre, s'il glisse quelque chose.
 
-let current: string | null = null;
+/** Un dossier ou une note en cours de glissement, désigné par son chemin. */
+export interface Dragged {
+  readonly kind: "folder" | "note";
+  readonly path: string;
+}
 
-/** Le glissement du dossier `path` commence. */
-export function startDragging(path: string): void {
-  current = path;
+let current: Dragged | null = null;
+
+/** Le glissement commence. */
+export function startDragging(dragged: Dragged): void {
+  current = dragged;
 }
 
 /** Le glissement s'arrête, déposé ou abandonné. */
@@ -12,7 +18,7 @@ export function stopDragging(): void {
   current = null;
 }
 
-/** Le chemin de ce qui est en cours de glissement, s'il y a quelque chose. */
-export function dragged(): string | null {
+/** Ce qui est en cours de glissement, s'il y a quelque chose. */
+export function dragged(): Dragged | null {
   return current;
 }

@@ -213,3 +213,34 @@ fn folders_are_handled_with_the_argument_names_used_by_the_page() {
     ));
     assert_eq!(notes[0].path, "Maison/Travail/a.md");
 }
+
+#[test]
+fn a_note_is_moved_into_a_folder_by_the_names_used_by_the_page() {
+    let window = window(&[("a.md", "# Alpha"), ("Perso/b.md", "# Bêta")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let moved: SavedNote = ok(call(
+        &window,
+        "move_note",
+        json!({ "path": "a.md", "into": "Perso" }),
+    ));
+    assert_eq!(moved.path, "Perso/a.md");
+    let notes: Vec<NoteListItem> = ok(call(&window, "list_notes", json!({ "folder": "Perso" })));
+    let mut paths: Vec<_> = notes.into_iter().map(|n| n.path).collect();
+    paths.sort();
+    assert_eq!(paths, ["Perso/a.md", "Perso/b.md"]);
+}
+
+#[test]
+fn moving_a_note_into_a_folder_with_a_bad_name_is_refused() {
+    let window = window(&[("a.md", "# Alpha")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let error = error_message(call(
+        &window,
+        "move_note",
+        json!({ "path": "a.md", "into": "../dehors" }),
+    ));
+    assert!(
+        error.contains("../dehors") || error.contains(".."),
+        "{error}"
+    );
+}

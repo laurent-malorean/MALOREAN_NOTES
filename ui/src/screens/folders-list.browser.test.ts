@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { startDragging, stopDragging } from "./dragging";
 import { type FolderActions, renderFoldersList, startFolderCreation } from "./folders-list";
 
 type Call = readonly [string, ...string[]];
@@ -15,6 +16,7 @@ function column(
     create: (parent, name) => calls.push(["create", parent, name]),
     rename: (path, name) => calls.push(["rename", path, name]),
     move: (path, into) => calls.push(["move", path, into]),
+    moveNote: (path, into) => calls.push(["moveNote", path, into]),
   };
   renderFoldersList(container, "Notes", folders, selected, actions);
   return { container, calls, actions };
@@ -191,5 +193,43 @@ describe("déplacer un dossier", () => {
   it("la bibliothèque elle-même ne se déplace pas", () => {
     const { container } = column();
     expect(item(container, "").draggable).toBe(false);
+  });
+});
+
+describe("déplacer une note dans un dossier", () => {
+  it("poser une note sur un dossier l'y déplace", () => {
+    const { container, calls } = column();
+    startDragging({ kind: "note", path: "Perso/courses.md" });
+    expect(drag(item(container, "Travail"), "dragover").defaultPrevented).toBe(true);
+    expect(item(container, "Travail").classList.contains("drop-target")).toBe(true);
+    expect(drag(item(container, "Travail"), "drop").defaultPrevented).toBe(true);
+    expect(calls).toEqual([["moveNote", "Perso/courses.md", "Travail"]]);
+  });
+
+  it("la pose à la racine", () => {
+    const { container, calls } = column();
+    startDragging({ kind: "note", path: "Travail/Réunions/lundi.md" });
+    drag(item(container, ""), "drop");
+    expect(calls).toEqual([["moveNote", "Travail/Réunions/lundi.md", ""]]);
+  });
+
+  it("ne fait rien sur le dossier où elle se trouve déjà", () => {
+    const { container, calls } = column();
+    startDragging({ kind: "note", path: "Perso/courses.md" });
+    expect(drag(item(container, "Perso"), "dragover").defaultPrevented).toBe(false);
+    expect(drag(item(container, "Perso"), "drop").defaultPrevented).toBe(false);
+    stopDragging();
+    startDragging({ kind: "note", path: "courses.md" });
+    expect(drag(item(container, ""), "drop").defaultPrevented).toBe(false);
+    stopDragging();
+    expect(calls).toEqual([]);
+  });
+
+  it("oublie la note une fois déposée", () => {
+    const { container, calls } = column();
+    startDragging({ kind: "note", path: "courses.md" });
+    drag(item(container, "Perso"), "drop");
+    drag(item(container, "Travail"), "drop");
+    expect(calls).toEqual([["moveNote", "courses.md", "Perso"]]);
   });
 });

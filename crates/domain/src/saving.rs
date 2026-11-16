@@ -1,7 +1,7 @@
 //! Décider ce que devient une note qu'on enregistre ou qu'on crée : son nom et son contenu.
 
 use crate::attachments::relink;
-use crate::{FileName, Title};
+use crate::{FileName, Folder, NotePath, Title};
 
 /// Ce que devient une note enregistrée : le nom de fichier qu'elle doit porter
 /// et le contenu à écrire (liens vers ses pièces jointes déjà mis à jour).
@@ -40,6 +40,17 @@ pub fn plan_save(current: &FileName, content: &str, existing: &[FileName]) -> Sa
         relink(content, current, &file_name)
     };
     SavePlan { file_name, content }
+}
+
+/// Le chemin d'une note déplacée dans `into`, où se trouvent déjà les notes `existing` :
+/// elle garde son nom, ou reçoit le premier suffixe `-2`, `-3`… libre.
+#[must_use]
+pub fn moved_note(note: &NotePath, into: &Folder, existing: &[FileName]) -> NotePath {
+    let name = note
+        .name()
+        .clone()
+        .deduplicated(|candidate| existing.contains(candidate));
+    NotePath::new(into.clone(), name)
 }
 
 /// Le nom d'une nouvelle note vide : `sans-titre.md`, ou le premier suffixe libre.
@@ -108,6 +119,27 @@ mod tests {
     fn removing_the_title_makes_the_note_untitled() {
         let plan = plan_save(&name("courses.md"), "plus de titre", &[name("courses.md")]);
         assert_eq!(plan.file_name(), &name("sans-titre.md"));
+    }
+
+    fn path(text: &str) -> NotePath {
+        NotePath::parse(text).unwrap()
+    }
+
+    fn folder(text: &str) -> Folder {
+        Folder::parse(text).unwrap()
+    }
+
+    #[test]
+    fn a_moved_note_keeps_its_name_in_its_new_folder() {
+        let moved = moved_note(&path("courses.md"), &folder("Perso"), &[name("idee.md")]);
+        assert_eq!(moved, path("Perso/courses.md"));
+    }
+
+    #[test]
+    fn a_moved_note_whose_name_is_taken_gets_a_numbered_suffix() {
+        let existing = [name("courses.md"), name("courses-2.md")];
+        let moved = moved_note(&path("Travail/courses.md"), &Folder::root(), &existing);
+        assert_eq!(moved, path("courses-3.md"));
     }
 
     #[test]

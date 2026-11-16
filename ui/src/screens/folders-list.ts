@@ -1,7 +1,8 @@
 // Colonne des dossiers : la racine (nom de la bibliothèque) puis l'arbre des dossiers.
-// Créer, renommer (double-clic) et déplacer (glisser-déposer) passent par un champ ou un geste.
+// Créer, renommer (double-clic) et déplacer (glisser-déposer) passent par un champ ou un geste ;
+// une note glissée depuis la liste se dépose aussi sur un dossier.
 import { canMoveInto, folderTree } from "../state/folders";
-import { dragged, startDragging, stopDragging } from "./dragging";
+import { type Dragged, dragged, startDragging, stopDragging } from "./dragging";
 
 /** Ce que l'utilisateur peut demander depuis la colonne des dossiers. */
 export interface FolderActions {
@@ -9,6 +10,7 @@ export interface FolderActions {
   readonly create: (parent: string, name: string) => void;
   readonly rename: (path: string, name: string) => void;
   readonly move: (path: string, into: string) => void;
+  readonly moveNote: (path: string, into: string) => void;
 }
 
 const ROOT = "";
@@ -32,7 +34,7 @@ function item(path: string, name: string, depth: number, selected: string, actio
   acceptDrops(button, path, actions);
   if (path !== ROOT) {
     button.draggable = true;
-    button.addEventListener("dragstart", () => startDragging(path));
+    button.addEventListener("dragstart", () => startDragging({ kind: "folder", path }));
     button.addEventListener("dragend", stopDragging);
     button.addEventListener("dblclick", () => {
       const input = nameInput(
@@ -47,26 +49,28 @@ function item(path: string, name: string, depth: number, selected: string, actio
   return button;
 }
 
-/** Le dossier glissé, s'il peut aller dans le dossier `into`. */
-function folderMovableInto(into: string): string | null {
+/** Ce qui est glissé (dossier ou note), s'il peut aller dans le dossier `into` : ni là où il
+ * est déjà, ni, pour un dossier, en lui-même ou dans ses sous-dossiers. */
+function movableInto(into: string): Dragged | null {
   const moving = dragged();
-  return moving !== null && canMoveInto(moving, into) ? moving : null;
+  return moving !== null && canMoveInto(moving.path, into) ? moving : null;
 }
 
 function acceptDrops(target: HTMLElement, path: string, actions: FolderActions) {
   target.addEventListener("dragover", (event) => {
-    if (folderMovableInto(path) === null) return;
+    if (movableInto(path) === null) return;
     event.preventDefault();
     target.classList.add(DROP_TARGET_CLASS);
   });
   target.addEventListener("dragleave", () => target.classList.remove(DROP_TARGET_CLASS));
   target.addEventListener("drop", (event) => {
     target.classList.remove(DROP_TARGET_CLASS);
-    const moving = folderMovableInto(path);
+    const moving = movableInto(path);
     if (moving === null) return;
     event.preventDefault();
     stopDragging();
-    actions.move(moving, path);
+    if (moving.kind === "folder") actions.move(moving.path, path);
+    else actions.moveNote(moving.path, path);
   });
 }
 

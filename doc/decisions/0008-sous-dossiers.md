@@ -20,4 +20,5 @@ Jusqu'ici, une bibliothèque n'avait qu'un niveau : une note était désignée p
 
 - Une image relative est cherchée à côté de la note, dans son dossier.
 - Déplacer ou renommer un dossier change le chemin des notes qu'il contient : la page enregistre d'abord la note ouverte, puis suit son nouveau chemin.
-- Déplacer une note d'un dossier à l'autre s'ajoutera sur le même port (fiche à part si une règle nouvelle apparaît).
+- Déplacer une note d'un dossier à l'autre passe par le même port (`move_note`, dont le renommage dans son dossier est un cas particulier). La note emporte son dossier de pièces jointes, qui reste à côté d'elle : ses liens relatifs restent justes. Si son nom est pris dans le dossier d'arrivée, elle reçoit le premier suffixe libre (`-2`, `-3`…) et ses liens vers ses pièces jointes suivent ; la poser sur son propre dossier ne fait rien.
+- Après un déplacement de note, la liste reste sur le dossier affiché (la note en disparaît). Si c'était la note ouverte, ce qui vient d'être tapé est enregistré d'abord, puis elle reste ouverte sous son nouveau chemin.
