@@ -48,7 +48,7 @@ check_file_length() {
   step "Longueur des fichiers (${MAX_FILE_LINES} lignes au plus)"
   local too_long
   too_long=$(find . \( -name '*.rs' -o -name '*.ts' \) \
-      -not -path '*/target/*' -not -path '*/node_modules/*' -not -path "./${GENERATED_TYPES}/*" \
+      -not -path '*/target/*' -not -path '*/node_modules/*' -not -path '*/.vitest/*' -not -path '*/.stryker-tmp/*' -not -path "./${GENERATED_TYPES}/*" \
       -exec wc -l {} + \
     | awk -v max="$MAX_FILE_LINES" '$2 != "total" && $1 > max')
   [ -z "$too_long" ] || fail "fichiers trop longs :

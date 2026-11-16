@@ -10,3 +10,6 @@ ui/test-results/
 ui/playwright-report/
 ui/coverage/
 mutants.out*/
+ui/reports/
+ui/.stryker-tmp/
+ui/.vitest/
