@@ -1,7 +1,7 @@
 # 0006 — Seuils qui ne baissent jamais, test de mutation à chaque envoi
 
 - **Date** : 2026-11-16
-- **Statut** : acceptée ; remplace la partie « Mesures » de `0004-strategie-de-tests.md`
+- **Statut** : acceptée ; remplace la partie « Mesures » de `0004-strategie-de-tests.md` ; le moment du test de mutation est remplacé par la fiche 0015
 
 ## Contexte
 

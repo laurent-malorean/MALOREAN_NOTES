@@ -18,10 +18,11 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 - **TDD** : écrire le test qui échoue, puis le code minimal qui le fait passer, puis nettoyer. Pas de code de production sans test qui l'exige.
 - Documentation à jour dans le même commit que l'évolution.
 
-## Mini CI avant push
+## Mini CI avant chaque commit
 
-- Avant chaque push, lancer `./scripts/ci.sh` : secrets exclus, longueur des fichiers, mise en forme, lints sans avertissement, **tous les tests** (Rust et interface), dépendances.
-- Si un contrôle échoue : ne pas pousser, corriger, relancer. Jamais de contournement (`--no-verify`, test désactivé, lint levé sans raison).
+- Avant chaque commit, lancer `./scripts/ci.sh` : secrets exclus, longueur des fichiers, mise en forme, lints sans avertissement, **tous les tests** (Rust et interface), dépendances, test de mutation du code modifié.
+- Si un contrôle échoue : ne pas commiter, corriger, relancer. Jamais de contournement (`--no-verify`, test désactivé, lint levé sans raison).
+- L'envoi (push) ne relance pas la CI : ce qui part a déjà passé tous les contrôles.
 
 ## Secrets
 

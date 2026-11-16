@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Mini CI locale : lancée automatiquement avant chaque push (.githooks/pre-push).
-# S'arrête au premier contrôle raté ; un push n'a lieu que si tout réussit.
-#   scripts/ci.sh                        tous les contrôles
-#   scripts/ci.sh --mutations-depuis SHA  + test de mutation du code Rust modifié depuis SHA
-#   scripts/ci.sh --complet              + test de mutation de tout le code Rust (avant de livrer)
+# Mini CI locale : lancée avant chaque commit, sur le code tel qu'il sera commité.
+# S'arrête au premier contrôle raté ; on ne commite que si tout réussit.
+# L'envoi (push) ne relance rien : le contenu envoyé est celui qui a passé la CI.
+#   scripts/ci.sh            tous les contrôles, test de mutation du code Rust pas encore commité
+#   scripts/ci.sh --complet  tous les contrôles, test de mutation de tout le code Rust (avant de livrer)
 # Les seuils ne baissent jamais : on les relève quand la couverture monte.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -112,12 +112,14 @@ check_mutations() {
   run_mutants --no-shuffle
 }
 
-check_mutations_since() {
+check_uncommitted_mutations() {
   require cargo mutants --version
   local diff
   diff=$(mktemp)
-  git diff "$1" HEAD -- '*.rs' > "$diff"
-  step "Rust : test de mutation du code modifié depuis ${1:0:7}"
+  # Le code Rust qui sera commité : les changements suivis, plus les nouveaux fichiers.
+  git add --intent-to-add -- '*.rs' 2>/dev/null || true
+  git diff HEAD -- '*.rs' > "$diff"
+  step "Rust : test de mutation du code pas encore commité"
   if [ ! -s "$diff" ]; then
     printf '(aucun code Rust modifié)\n'
   else
@@ -132,8 +134,7 @@ if [ -f Cargo.toml ]; then check_rust; else printf '\n(pas de projet Rust : cont
 if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : contrôles interface sautés)\n'; fi
 case "${1:-}" in
   --complet) check_mutations ;;
-  --mutations-depuis) check_mutations_since "${2:?SHA attendu}" ;;
-  "") ;;
+  "") check_uncommitted_mutations ;;
   *) fail "option inconnue : $1" ;;
 esac
 
