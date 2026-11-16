@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "tauri": "tauri",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "mutation": "stryker run"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

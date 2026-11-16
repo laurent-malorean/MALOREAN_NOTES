@@ -86,6 +86,9 @@ check_ui() {
 
   step "Interface : parcours utilisateur complets (WebKit)"
   (cd ui && npx --no-install playwright test)
+
+  step "Interface : test de mutation (chaque erreur introduite doit être attrapée)"
+  (cd ui && npx --no-install stryker run)
 }
 
 check_mutations() {

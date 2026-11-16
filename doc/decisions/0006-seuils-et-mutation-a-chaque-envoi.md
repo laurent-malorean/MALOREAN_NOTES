@@ -18,4 +18,4 @@ Après les rangements imposés par le guide de code, la couverture a légèremen
 - Un code ajouté sans vrai test est refusé au moment du push, pas des semaines plus tard.
 - Le push prend quelques minutes de plus quand du code Rust change (environ 4 minutes pour une quarantaine d'erreurs introduites).
 - Des seuils élevés obligent à tester aussi les cas d'erreur et les parties défensives, ou à les simplifier.
-- L'interface n'a pas encore de test de mutation (outil à choisir, par exemple Stryker).
+- L'interface a son test de mutation (Stryker), lancé à chaque push avec un seuil de 100 %. Stryker ne voit qu'un groupe de tests : pour lui, tous les tests de l'interface sont joués ensemble dans WebKit.
