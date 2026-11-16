@@ -180,6 +180,14 @@ describe("déplacer un dossier", () => {
     expect(calls).toEqual([]);
   });
 
+  it("oublie le dossier une fois déposé, même si sa fin de glissement ne vient jamais", () => {
+    const { container, calls } = column();
+    drag(item(container, "Perso"), "dragstart");
+    drag(item(container, "Travail"), "drop");
+    drag(item(container, "Travail/Réunions"), "drop");
+    expect(calls).toEqual([["move", "Perso", "Travail"]]);
+  });
+
   it("la bibliothèque elle-même ne se déplace pas", () => {
     const { container } = column();
     expect(item(container, "").draggable).toBe(false);
