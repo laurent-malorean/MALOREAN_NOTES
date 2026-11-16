@@ -19,14 +19,7 @@ fn main() {
             app.manage(Arc::new(session));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            commands::reopen_last_library,
-            commands::choose_library,
-            commands::list_notes,
-            commands::read_note,
-            commands::save_note,
-            commands::create_note,
-        ])
+        .invoke_handler(commands::invoke_handler())
         .run(tauri::generate_context!());
     if let Err(error) = started {
         tracing::error!(%error, "l'application n'a pas pu démarrer");

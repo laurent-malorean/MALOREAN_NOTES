@@ -2,7 +2,8 @@
 
 use std::sync::Arc;
 
-use tauri::{AppHandle, State};
+use tauri::ipc::Invoke;
+use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 
 use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote, Session};
@@ -28,8 +29,8 @@ pub async fn reopen_last_library(
 
 /// Demande un dossier à l'utilisateur et l'ouvre ; rien s'il annule.
 #[tauri::command]
-pub async fn choose_library(
-    app: AppHandle,
+pub async fn choose_library<R: Runtime>(
+    app: AppHandle<R>,
     session: SharedSession<'_>,
 ) -> Result<Option<LibraryInfo>, ApiError> {
     let session = Arc::clone(&session);
@@ -72,4 +73,16 @@ pub async fn save_note(
 pub async fn create_note(session: SharedSession<'_>) -> Result<SavedNote, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.create_note()).await
+}
+
+/// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
+pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
+    tauri::generate_handler![
+        reopen_last_library,
+        choose_library,
+        list_notes,
+        read_note,
+        save_note,
+        create_note,
+    ]
 }
