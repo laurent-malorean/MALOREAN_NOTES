@@ -3,6 +3,7 @@
 
 pub mod attachment_name;
 pub mod attachments;
+pub mod conflict;
 pub mod file_name;
 pub mod folder;
 pub mod front_matter;
@@ -14,6 +15,7 @@ pub mod title;
 pub use attachment_name::{
     AttachmentKind, AttachmentName, InvalidMoment, Moment, RefusedAttachment,
 };
+pub use conflict::{Fingerprint, InvalidFingerprint};
 pub use file_name::{FileName, InvalidFileName};
 pub use folder::{Folder, FolderName, InvalidFolderName, NotePath};
 pub use note::{Modified, NoteSummary};

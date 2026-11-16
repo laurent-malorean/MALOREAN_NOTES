@@ -11,4 +11,9 @@ path: string,
 /**
  * Le contenu Markdown complet.
  */
-content: string, };
+content: string, 
+/**
+ * L'empreinte de ce contenu, à renvoyer à l'enregistrement : si le fichier a changé
+ * ailleurs entre-temps, sa version est gardée dans une copie de conflit.
+ */
+fingerprint: string, };

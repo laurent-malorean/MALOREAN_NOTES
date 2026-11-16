@@ -20,6 +20,6 @@ pub use list_notes::ListNotes;
 pub use move_note::MoveNote;
 pub use pin_note::PinNote;
 pub use read_note::ReadNote;
-pub use save_note::SaveNote;
+pub use save_note::{SaveNote, SaveOutcome};
 pub use search_notes::{MAX_RESULTS, SearchNotes, SearchResult};
 pub use trash::{Trash, TrashView};

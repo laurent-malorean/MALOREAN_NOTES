@@ -7,14 +7,17 @@
 
 use std::sync::Arc;
 
-use api::commands::invoke_handler;
 use api::commands::{FILE_NAME_HEADER, MEDIA_TYPE_HEADER, NOTE_HEADER};
+use api::commands::{LIBRARY_CHANGED_EVENT, invoke_handler};
 use api::{
-    AttachedFile, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem, Session,
-    TrashInfo,
+    AttachedFile, LibraryChanged, LibraryInfo, NoteContent, NoteListItem, SaveResult, SavedNote,
+    SearchResultItem, Session, TrashInfo,
 };
-use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
-use application::{LibraryLocation, Preferences};
+use application::testing::{
+    FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore,
+};
+use application::{LibraryChange, LibraryLocation, LibraryWatcher, Preferences};
+use domain::NotePath;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use tauri::ipc::{CallbackFn, InvokeBody};
@@ -22,12 +25,20 @@ use tauri::test::{
     INVOKE_KEY, MockRuntime, get_ipc_response, mock_builder, mock_context, noop_assets,
 };
 use tauri::webview::InvokeRequest;
-use tauri::{Manager, WebviewWindow, WebviewWindowBuilder};
+use tauri::{Listener, Manager, WebviewWindow, WebviewWindowBuilder};
 
 const BRIDGE_SOURCE: &str = include_str!("../../../ui/src/bridge/index.ts");
 
 /// Une fenêtre simulée, branchée sur une bibliothèque en mémoire déjà rouvrable.
 fn window(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
+    window_watched_by(notes, Arc::new(FakeWatcher::default()))
+}
+
+/// La même fenêtre, dont la bibliothèque est surveillée par `watcher`.
+fn window_watched_by(
+    notes: &[(&str, &str)],
+    watcher: Arc<FakeWatcher>,
+) -> WebviewWindow<MockRuntime> {
     let preferences = FakePreferences::default();
     preferences
         .remember_library(&LibraryLocation::new("/Users/moi/Notes").unwrap())
@@ -37,7 +48,8 @@ fn window(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
         Arc::new(opener),
         Arc::new(preferences),
         Arc::new(FixedClock::default()),
-    );
+    )
+    .with_watcher(watcher as Arc<dyn LibraryWatcher>);
     let app = mock_builder()
         .manage(Arc::new(session))
         .invoke_handler(invoke_handler())
@@ -116,12 +128,51 @@ fn a_note_is_read_with_the_argument_names_used_by_the_page() {
 fn saving_a_new_title_renames_the_file() {
     let window = window(&[("a.md", "# Alpha")]);
     call(&window, "reopen_last_library", json!({})).unwrap();
-    let saved: SavedNote = ok(call(
+    let read: NoteContent = ok(call(&window, "read_note", json!({ "path": "a.md" })));
+    let saved: SaveResult = ok(call(
         &window,
         "save_note",
-        json!({ "path": "a.md", "content": "# Bêta" }),
+        json!({ "path": "a.md", "content": "# Bêta", "fingerprint": read.fingerprint }),
     ));
     assert_eq!(saved.path, "beta.md");
+    assert_eq!(saved.conflict_copy, None);
+}
+
+#[test]
+fn saving_over_a_version_changed_elsewhere_keeps_it_in_a_conflict_copy() {
+    let window = window(&[("a.md", "# Alpha\nailleurs")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let saved: SaveResult = ok(call(
+        &window,
+        "save_note",
+        json!({ "path": "a.md", "content": "# Alpha\nici", "fingerprint": "cbf29ce484222325" }),
+    ));
+    assert_eq!(
+        saved.conflict_copy.as_deref(),
+        Some("a (conflit 2026-11-16 18h30).md")
+    );
+}
+
+#[test]
+fn changes_made_outside_the_app_reach_the_page_as_an_event() {
+    let watcher = Arc::new(FakeWatcher::default());
+    let window = window_watched_by(&[], Arc::clone(&watcher));
+    let (sender, received) = std::sync::mpsc::channel();
+    window
+        .app_handle()
+        .listen_any(LIBRARY_CHANGED_EVENT, move |event| {
+            let _sent = sender.send(event.payload().to_owned());
+        });
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    watcher.announce(LibraryChange {
+        notes: vec![NotePath::parse("Travail/lundi.md").unwrap()],
+    });
+    let payload = received
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .unwrap();
+    let change: LibraryChanged = serde_json::from_str(&payload).unwrap();
+    assert_eq!(change.notes, ["Travail/lundi.md"]);
+    assert!(BRIDGE_SOURCE.contains(&format!("\"{LIBRARY_CHANGED_EVENT}\"")));
 }
 
 #[test]

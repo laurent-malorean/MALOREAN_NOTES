@@ -59,7 +59,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 | Trousseau macOS | secrets éventuels | non |
 
 - Toute écriture dans la bibliothèque est atomique (fichier temporaire puis renommage) : un fichier n'est jamais à moitié écrit.
-- La surveillance des fichiers détecte les modifications extérieures ; l'application recharge la note, ou signale un conflit sans rien perdre.
+- La surveillance des fichiers (port `LibraryWatcher`, adaptateur FSEvents dans `infrastructure`) détecte les modifications extérieures ; `api` les relaie à la page par l'événement `library-changed`. L'application recharge la note, ou garde l'autre version dans une copie de conflit : rien n'est perdu (fiche 0014).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
 ## Décisions d'architecture

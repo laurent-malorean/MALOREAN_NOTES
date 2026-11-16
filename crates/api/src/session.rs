@@ -1,21 +1,24 @@
 //! La bibliothèque ouverte et les cas d'usage qu'on lui applique.
 
 mod attachments;
+mod saving;
 mod trash;
+mod watching;
 
 use std::path::Path;
-use std::sync::{Arc, PoisonError, RwLock};
+use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use application::use_cases::{
     CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenLibrary, PinNote,
-    ReadNote, RenameFolder, ReopenLastLibrary, SaveNote, SearchNotes, SearchResult,
+    ReadNote, RenameFolder, ReopenLastLibrary, SearchNotes, SearchResult,
 };
 use application::{
-    AppError, Clock, LibraryLocation, LibraryOpener, NoteStore, Preferences, StoredNote,
+    AppError, Clock, LibraryLocation, LibraryOpener, LibraryWatcher, NoteStore, Preferences,
+    StoredNote, Watching,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
-use domain::{Folder, FolderName, NotePath};
+use domain::{Fingerprint, Folder, FolderName, NotePath};
 
 use crate::{
     ApiError, ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
@@ -27,7 +30,16 @@ pub struct Session {
     opener: Arc<dyn LibraryOpener>,
     preferences: Arc<dyn Preferences>,
     clock: Arc<dyn Clock>,
-    library: RwLock<Option<Arc<dyn NoteStore>>>,
+    library: RwLock<Option<OpenLibraryState>>,
+    watcher: Option<Arc<dyn LibraryWatcher>>,
+    watching: Mutex<Option<Box<dyn Watching>>>,
+}
+
+/// La bibliothèque ouverte : où elle est, et ses notes.
+#[derive(Debug, Clone)]
+struct OpenLibraryState {
+    location: LibraryLocation,
+    store: Arc<dyn NoteStore>,
 }
 
 impl Session {
@@ -43,6 +55,8 @@ impl Session {
             preferences,
             clock,
             library: RwLock::new(None),
+            watcher: None,
+            watching: Mutex::new(None),
         }
     }
 
@@ -134,20 +148,6 @@ impl Session {
         Ok(note_content(
             ReadNote::new(&*store).execute(&NotePath::parse(path)?)?,
         ))
-    }
-
-    /// Enregistre une note ; rend son chemin, dont le nom a peut-être changé avec le titre.
-    ///
-    /// # Errors
-    ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, nom pris,
-    /// stockage indisponible, aucune bibliothèque ouverte.
-    pub fn save_note(&self, path: &str, content: &str) -> Result<SavedNote, ApiError> {
-        let store = self.store()?;
-        let saved = SaveNote::new(&*store).execute(&NotePath::parse(path)?, content)?;
-        Ok(SavedNote {
-            path: saved.to_path(),
-        })
     }
 
     /// Déplace la note dans le dossier `into` (`""` pour la racine) ; rend son nouveau chemin.
@@ -256,15 +256,23 @@ impl Session {
     }
 
     fn keep(&self, location: &LibraryLocation, store: Arc<dyn NoteStore>) -> LibraryInfo {
-        *self.library.write().unwrap_or_else(PoisonError::into_inner) = Some(store);
+        let opened = OpenLibraryState {
+            location: location.clone(),
+            store,
+        };
+        *self.library.write().unwrap_or_else(PoisonError::into_inner) = Some(opened);
         library_info(location)
     }
 
-    fn store(&self) -> Result<Arc<dyn NoteStore>, ApiError> {
+    fn opened(&self) -> Result<OpenLibraryState, ApiError> {
         let library = self.library.read().unwrap_or_else(PoisonError::into_inner);
         library
             .clone()
             .ok_or_else(|| AppError::NoLibraryOpen.into())
+    }
+
+    fn store(&self) -> Result<Arc<dyn NoteStore>, ApiError> {
+        Ok(self.opened()?.store)
     }
 }
 
@@ -296,6 +304,7 @@ fn search_result_item(result: SearchResult) -> SearchResultItem {
 fn note_content(note: StoredNote) -> NoteContent {
     NoteContent {
         path: note.path.to_path(),
+        fingerprint: Fingerprint::of(&note.content).as_str().to_owned(),
         content: note.content,
     }
 }
@@ -442,14 +451,6 @@ mod tests {
         let session = opened(&[]);
         assert!(session.pin_note("../x.md").is_err());
         assert!(session.unpin_note("../x.md").is_err());
-    }
-
-    #[test]
-    fn a_note_is_read_and_saved_with_renaming() {
-        let session = opened(&[("a.md", "# Alpha")]);
-        assert_eq!(session.read_note("a.md").unwrap().content, "# Alpha");
-        let saved = session.save_note("a.md", "# Bêta").unwrap();
-        assert_eq!(saved.path, "beta.md");
     }
 
     #[test]

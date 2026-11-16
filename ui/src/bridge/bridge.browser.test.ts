@@ -1,4 +1,5 @@
 import { clearMocks, mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
+import { emit } from "@tauri-apps/api/event";
 import { afterEach, describe, expect, it } from "vitest";
 import * as bridge from "./index";
 
@@ -49,10 +50,13 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     expect(calls).toEqual([{ command: "read_note", args: { path: "a.md" } }]);
   });
 
-  it("enregistre une note avec son nom et son contenu", async () => {
-    const calls = recordCalls({ path: "b.md" });
-    expect(await bridge.saveNote("a.md", "# B")).toEqual({ path: "b.md" });
-    expect(calls).toEqual([{ command: "save_note", args: { path: "a.md", content: "# B" } }]);
+  it("enregistre une note avec son nom, son contenu et l'empreinte connue", async () => {
+    const answer = { path: "b.md", fingerprint: "f2", conflictCopy: null };
+    const calls = recordCalls(answer);
+    expect(await bridge.saveNote("a.md", "# B", "f1")).toEqual(answer);
+    expect(calls).toEqual([
+      { command: "save_note", args: { path: "a.md", content: "# B", fingerprint: "f1" } },
+    ]);
   });
 
   it("crée une note", async () => {
@@ -151,6 +155,16 @@ describe("pont vers Rust : fenêtre", () => {
     await bridge.onWindowResized(() => {});
     expect(calls[0]?.command).toBe("plugin:event|listen");
     expect(calls[0]?.args).toMatchObject({ event: "tauri://resize" });
+  });
+});
+
+describe("pont vers Rust : changements hors de l'application", () => {
+  it("transmet chaque changement de la bibliothèque annoncé par Rust", async () => {
+    mockIPC(() => null, { shouldMockEvents: true });
+    const received: string[][] = [];
+    await bridge.onLibraryChanged((change) => received.push(change.notes));
+    await emit("library-changed", { notes: ["Travail/lundi.md"] });
+    expect(received).toEqual([["Travail/lundi.md"]]);
   });
 });
 

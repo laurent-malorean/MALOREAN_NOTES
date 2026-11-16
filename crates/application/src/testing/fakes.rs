@@ -6,8 +6,8 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 
 use crate::{
-    AttachmentLocation, Clock, LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError,
-    StoredNote, TrashContents,
+    AttachmentLocation, ChangeListener, Clock, LibraryChange, LibraryLocation, LibraryOpener,
+    LibraryWatcher, NoteStore, Preferences, StoreError, StoredNote, TrashContents, Watching,
 };
 
 /// Emplacement fictif d'une pièce jointe en mémoire.
@@ -477,5 +477,59 @@ impl Default for FixedClock {
 impl Clock for FixedClock {
     fn now(&self) -> Moment {
         self.moment
+    }
+}
+
+/// Surveillance simulée : le test annonce lui-même les changements avec [`FakeWatcher::announce`].
+#[derive(Default)]
+pub struct FakeWatcher {
+    listener: Mutex<Option<(LibraryLocation, ChangeListener)>>,
+}
+
+impl std::fmt::Debug for FakeWatcher {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FakeWatcher")
+            .field("watched", &self.watched())
+            .finish()
+    }
+}
+
+/// La surveillance simulée en cours.
+#[derive(Debug)]
+struct FakeWatching;
+
+impl Watching for FakeWatching {}
+
+impl FakeWatcher {
+    /// La bibliothèque surveillée en ce moment, s'il y en a une.
+    #[must_use]
+    pub fn watched(&self) -> Option<LibraryLocation> {
+        self.lock().as_ref().map(|(location, _)| location.clone())
+    }
+
+    /// Annonce un changement fait hors de l'application ; rien si aucune bibliothèque n'est surveillée.
+    pub fn announce(&self, change: LibraryChange) {
+        let listener = self
+            .lock()
+            .as_ref()
+            .map(|(_, listener)| Arc::clone(listener));
+        if let Some(listener) = listener {
+            listener(change);
+        }
+    }
+
+    fn lock(&self) -> MutexGuard<'_, Option<(LibraryLocation, ChangeListener)>> {
+        self.listener.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+impl LibraryWatcher for FakeWatcher {
+    fn watch(
+        &self,
+        location: &LibraryLocation,
+        listener: ChangeListener,
+    ) -> Result<Box<dyn Watching>, StoreError> {
+        *self.lock() = Some((location.clone(), listener));
+        Ok(Box::new(FakeWatching))
     }
 }

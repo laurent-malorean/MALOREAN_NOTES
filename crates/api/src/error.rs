@@ -1,7 +1,7 @@
 //! Traduction des erreurs en message pour l'interface : le seul endroit où cela se fait.
 
 use application::{AppError, EmptyLocation};
-use domain::{InvalidFileName, InvalidFolderName};
+use domain::{InvalidFileName, InvalidFingerprint, InvalidFolderName};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -46,6 +46,14 @@ impl From<AppError> for ApiError {
 
 impl From<EmptyLocation> for ApiError {
     fn from(error: EmptyLocation) -> Self {
+        Self {
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<InvalidFingerprint> for ApiError {
+    fn from(error: InvalidFingerprint) -> Self {
         Self {
             message: error.to_string(),
         }

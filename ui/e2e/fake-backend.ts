@@ -23,6 +23,8 @@ export interface FakeBackend {
   opened: string[];
   /** Le plein écran demandé par le Mac lui-même (bouton vert, menu). */
   enterFullScreenFromTheSystem: () => Promise<void>;
+  /** Une note modifiée (ou supprimée, avec `null`) hors de l'application, puis annoncée. */
+  changeOutside: (path: string, content: string | null) => Promise<void>;
 }
 
 declare global {
@@ -45,6 +47,11 @@ const backend: FakeBackend = {
   enterFullScreenFromTheSystem: async () => {
     backend.fullScreen = true;
     await emit("tauri://resize", { width: 1440, height: 900 });
+  },
+  changeOutside: async (path, content) => {
+    if (content === null) Reflect.deleteProperty(backend.notes, path);
+    else backend.notes[path] = { content, modified: (clock += 1) };
+    await emit("library-changed", { notes: [path] });
   },
 };
 window.backend = backend;
@@ -72,15 +79,36 @@ function freeName(folder: string, wanted: string, current?: string): string {
   return path;
 }
 
-function save(path: string, content: string) {
+/** Empreinte d'un contenu : la page la renvoie telle quelle, sa forme ne compte pas. */
+const fingerprintOf = (content: string) =>
+  [...content].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 7).toString(16);
+
+const noteContent = (path: string, content: string) => ({
+  path,
+  content,
+  fingerprint: fingerprintOf(content),
+});
+
+/** Comme Rust : la version changée ailleurs est gardée dans une copie de conflit (moment figé). */
+function keepChangedVersion(path: string, content: string, fingerprint: string) {
+  const disk = backend.notes[path];
+  if (!disk || fingerprintOf(disk.content) === fingerprint || disk.content === content) return null;
+  const stem = path.replace(/^.*\//, "").replace(/\.md$/, "");
+  const copy = inFolder(folderOf(path), `${stem} (conflit 2026-11-16 18h30).md`);
+  backend.notes[copy] = { content: disk.content, modified: (clock += 1) };
+  return copy;
+}
+
+function save(path: string, content: string, fingerprint: string) {
   if (backend.failNextSave) {
     backend.failNextSave = false;
     throw { message: "stockage indisponible : disque plein" };
   }
+  const conflictCopy = keepChangedVersion(path, content, fingerprint);
   const target = freeName(folderOf(path), slug(titleOf(content)), path);
   Reflect.deleteProperty(backend.notes, path);
   backend.notes[target] = { content, modified: (clock += 1) };
-  return { path: target };
+  return { path: target, fingerprint: fingerprintOf(content), conflictCopy };
 }
 
 const moved = (path: string, from: string, to: string) =>
@@ -132,7 +160,7 @@ function rewritePin(path: string, change: (content: string) => string) {
   const note = backend.notes[path];
   if (!note) throw { message: `la note « ${path} » n'existe pas` };
   note.content = change(note.content);
-  return { path, content: note.content };
+  return noteContent(path, note.content);
 }
 
 const within = (path: string, folder: string) => path === folder || path.startsWith(`${folder}/`);
@@ -234,9 +262,9 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   read_note: ({ path = "" }) => {
     const note = backend.notes[path];
     if (!note) throw { message: `la note « ${path} » n'existe pas` };
-    return { path, content: note.content };
+    return noteContent(path, note.content);
   },
-  save_note: ({ path = "", content = "" }) => save(path, content),
+  save_note: ({ path = "", content = "", fingerprint = "" }) => save(path, content, fingerprint),
   list_folders: () => [...backend.folders].sort(treeOrder),
   create_folder: ({ parent = "", name = "" }) => {
     const path = inFolder(parent, name);

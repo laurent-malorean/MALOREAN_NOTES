@@ -68,6 +68,33 @@ pub struct NoteContent {
     pub path: String,
     /// Le contenu Markdown complet.
     pub content: String,
+    /// L'empreinte de ce contenu, à renvoyer à l'enregistrement : si le fichier a changé
+    /// ailleurs entre-temps, sa version est gardée dans une copie de conflit.
+    pub fingerprint: String,
+}
+
+/// Ce qu'a donné l'enregistrement d'une note.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SaveResult {
+    /// Le chemin de la note, dont le nom a peut-être changé avec le titre.
+    pub path: String,
+    /// L'empreinte de ce qui vient d'être écrit, à renvoyer au prochain enregistrement.
+    pub fingerprint: String,
+    /// Le chemin de la copie de conflit qui garde la version trouvée sur le disque,
+    /// si la note avait changé hors de l'application.
+    pub conflict_copy: Option<String>,
+}
+
+/// Changement fait dans la bibliothèque hors de l'application, annoncé à la page.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LibraryChanged {
+    /// Les chemins des notes créées, modifiées, supprimées ou renommées ; vide si seuls
+    /// des dossiers ont changé.
+    pub notes: Vec<String>,
 }
 
 /// Le chemin d'une note après enregistrement ou création.

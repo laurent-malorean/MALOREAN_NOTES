@@ -88,6 +88,14 @@ impl Moment {
             Err(InvalidMoment)
         }
     }
+
+    /// Le moment tel qu'on le lit : `2026-11-16 18h30`.
+    pub(crate) fn label(&self) -> String {
+        format!(
+            "{:04}-{:02}-{:02} {:02}h{:02}",
+            self.year, self.month, self.day, self.hour, self.minute
+        )
+    }
 }
 
 /// Fichier refusé comme pièce jointe.

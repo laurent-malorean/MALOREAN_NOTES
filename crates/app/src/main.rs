@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use api::{Session, commands};
-use infrastructure::{FsLibraryOpener, JsonPreferences, SystemClock};
+use infrastructure::{FsLibraryOpener, FsLibraryWatcher, JsonPreferences, SystemClock};
 use tauri::Manager;
 
 const PREFERENCES_FILE: &str = "preferences.json";
@@ -20,7 +20,8 @@ fn main() {
                 Arc::new(FsLibraryOpener),
                 Arc::new(preferences),
                 Arc::new(SystemClock),
-            );
+            )
+            .with_watcher(Arc::new(FsLibraryWatcher));
             app.manage(Arc::new(session));
             Ok(())
         })

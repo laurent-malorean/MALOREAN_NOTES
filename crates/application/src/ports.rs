@@ -242,6 +242,36 @@ impl AttachmentLocation {
     }
 }
 
+/// Ce qui a changé dans la bibliothèque hors de l'application.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct LibraryChange {
+    /// Les notes créées, modifiées, supprimées ou renommées. Vide quand seuls des dossiers
+    /// ont changé : il faut tout de même relire les dossiers et la liste.
+    pub notes: Vec<NotePath>,
+}
+
+/// Reçoit chaque changement de la bibliothèque, depuis un fil de la surveillance.
+pub type ChangeListener = Arc<dyn Fn(LibraryChange) + Send + Sync>;
+
+/// Une surveillance en cours ; elle s'arrête quand on la lâche.
+pub trait Watching: Send + Sync + Debug {}
+
+/// Écoute les changements faits dans la bibliothèque hors de l'application : fichiers
+/// cachés, corbeille et dossiers de pièces jointes exceptés.
+pub trait LibraryWatcher: Send + Sync + Debug {
+    /// Commence à surveiller la bibliothèque située à `location` ; chaque changement
+    /// (regroupé avec ceux qui le suivent de près) est passé à `listener`.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si le dossier ne peut pas être surveillé.
+    fn watch(
+        &self,
+        location: &LibraryLocation,
+        listener: ChangeListener,
+    ) -> Result<Box<dyn Watching>, StoreError>;
+}
+
 /// Donne le moment présent.
 pub trait Clock: Send + Sync + Debug {
     /// La date et l'heure locales, à la minute.

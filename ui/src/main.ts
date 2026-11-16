@@ -11,6 +11,7 @@ import { connectSearchField } from "./screens/search-field";
 import { renderScreen, type ScreenActions } from "./screens/screen-view";
 import { type Autosave, createAutosave, timerScheduler } from "./state/autosave";
 import { createDebouncer, SEARCH_DELAY_MS } from "./state/debounce";
+import { reactionToChange, touchesNote } from "./state/external-change";
 import {
   currentFolder,
   folderMoved,
@@ -70,11 +71,13 @@ const editor = createEditor(
   attachmentActions,
 );
 
-function showError(error: unknown) {
-  layout.status.textContent = bridge.errorMessage(error);
+function showMessage(message: string) {
+  layout.status.textContent = message;
   layout.status.classList.add("visible");
   setTimeout(() => layout.status.classList.remove("visible"), STATUS_DURATION_MS);
 }
+
+const showError = (error: unknown) => showMessage(bridge.errorMessage(error));
 
 const run = (action: Promise<unknown>) => void action.catch(showError);
 
@@ -217,15 +220,22 @@ async function changeTrash(change: Promise<unknown>) {
   await showTrash();
 }
 
-function editNote(path: string): Autosave {
-  let current = path;
+function editNote(note: bridge.NoteContent): Autosave {
+  let current = note.path;
   return createAutosave({
     path: current,
+    fingerprint: note.fingerprint,
     scheduler: timerScheduler(),
     save: bridge.saveNote,
     onSaved: (saved) => {
-      show(noteRenamed(screen, current, saved));
-      current = saved;
+      show(noteRenamed(screen, current, saved.path));
+      current = saved.path;
+      if (saved.conflictCopy !== null) {
+        showMessage(
+          `Cette note a aussi changé hors de l'application : l'autre version est gardée dans « ${saved.conflictCopy} ».`,
+        );
+        void refreshFolders().catch(showError);
+      }
       void refreshList().catch(showError);
     },
     onError: showError,
@@ -238,8 +248,42 @@ async function openNote(path: string | null) {
   show(noteSelected(screen, path));
   if (path === null) return editor.show("");
   const note = await bridge.readNote(path);
-  autosave = editNote(note.path);
+  autosave = editNote(note);
   editor.show(note.content);
+}
+
+async function refreshFolders() {
+  show(foldersRefreshed(screen, await bridge.listFolders()));
+}
+
+/** La bibliothèque a changé hors de l'application : dossiers, liste et note ouverte suivent. */
+async function followLibraryChange(change: bridge.LibraryChanged) {
+  if (screen.kind !== "library") return;
+  await refreshFolders();
+  await refreshList();
+  const open = selectedNote(screen);
+  if (touchesNote(change.notes, open) && open !== null) await followOpenNote(open);
+}
+
+/** La note ouverte a changé sur le disque : voir la fiche de décision 0014. */
+async function followOpenNote(path: string) {
+  const editing = autosave;
+  if (editing === null) return;
+  const disk = await bridge.readNote(path).catch(() => null);
+  const reaction = reactionToChange(disk, editing.fingerprint(), editing.isIdle());
+  switch (reaction.kind) {
+    case "ignore":
+      return;
+    case "reload":
+      editing.adopt(reaction.fingerprint);
+      return editor.reload(reaction.content);
+    case "conflict":
+      return editing.flush();
+    case "deleted":
+      return showMessage(
+        "Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
+      );
+  }
 }
 
 async function showLibrary(library: bridge.LibraryInfo) {
@@ -308,6 +352,8 @@ document.addEventListener("keydown", (event) => {
   const shortcut = shortcutFor(event);
   if (shortcut && SHORTCUT_ACTIONS[shortcut]()) event.preventDefault();
 });
+
+void bridge.onLibraryChanged((change) => run(followLibraryChange(change))).catch(showError);
 
 show(welcome);
 bridge

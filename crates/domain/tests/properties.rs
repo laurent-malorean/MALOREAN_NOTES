@@ -1,10 +1,11 @@
 //! Propriétés vérifiées sur des milliers de textes générés au hasard.
 
 use domain::attachments::relink;
+use domain::conflict::conflict_copy_name;
 use domain::front_matter::{is_pinned, pinned, split, unpinned};
 use domain::search::{ExcerptPart, SearchQuery, search};
 use domain::title::displayed_title;
-use domain::{AttachmentName, FileName, Folder, NotePath, Title};
+use domain::{AttachmentName, FileName, Fingerprint, Folder, Moment, NotePath, Title};
 use proptest::prelude::*;
 
 /// Une ligne de note plausible : titres, blocs de code, délimiteurs d'en-tête, texte libre.
@@ -219,5 +220,29 @@ proptest! {
         }).collect();
         prop_assert!(!matches.is_empty());
         prop_assert!(matches.iter().any(|m| m.to_lowercase().contains(&wanted.to_lowercase())));
+    }
+
+    #[test]
+    fn a_fingerprint_changes_with_the_content(a in any::<String>(), b in any::<String>()) {
+        prop_assume!(a != b);
+        prop_assert_ne!(Fingerprint::of(&a), Fingerprint::of(&b));
+        prop_assert_eq!(Fingerprint::parse(Fingerprint::of(&a).as_str()), Ok(Fingerprint::of(&a)));
+    }
+
+    #[test]
+    fn a_conflict_copy_never_takes_an_existing_name(
+        stem in "[a-zé 0-9-]{1,20}", copies in 0usize..4, hour in 0u32..24, minute in 0u32..60,
+    ) {
+        let original = FileName::parse(&format!("{stem}.md")).unwrap();
+        let at = Moment::new(2026, 11, 16, hour, minute).unwrap();
+        let mut existing = vec![original.clone()];
+        for _ in 0..copies {
+            existing.push(conflict_copy_name(&original, &at, &existing));
+        }
+        let copy = conflict_copy_name(&original, &at, &existing);
+        prop_assert!(!existing.contains(&copy));
+        let expected_start = format!("{stem} (conflit 2026-11-16 ");
+        prop_assert!(copy.as_str().starts_with(&expected_start));
+        prop_assert_eq!(FileName::parse(copy.as_str()), Ok(copy.clone()));
     }
 }

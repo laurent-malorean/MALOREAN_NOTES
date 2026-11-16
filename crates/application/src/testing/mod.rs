@@ -5,4 +5,4 @@ pub mod contract;
 mod fakes;
 mod trash_contract;
 
-pub use fakes::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
+pub use fakes::{FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore};

@@ -29,6 +29,9 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Extrait | `Excerpt` | Court passage d'une note trouvée, autour du premier mot cherché, mots trouvés mis en évidence. |
 | Index | `SearchIndex` | Cache de recherche, reconstructible à partir des fichiers. |
 | Conflit | `Conflict` | Une note modifiée à la fois dans l'application et hors de l'application. |
+| Empreinte | `Fingerprint` | Résumé court du contenu d'une note tel que l'application l'a lu ou écrit ; si le fichier n'a plus la même, il a changé ailleurs entre-temps. |
+| Copie de conflit | `ConflictCopy` | Note créée à côté de l'original, `<nom> (conflit <date> <heure>).md`, qui garde la version trouvée sur le disque quand elle aurait été écrasée. |
+| Surveillance | `LibraryWatcher` | Écoute des changements faits dans le dossier de la bibliothèque hors de l'application. |
 | Aperçu en direct | `livePreview` | Affichage de la note mise en forme dans l'éditeur : la syntaxe Markdown est masquée, sauf là où se trouve le curseur ; le fichier n'est jamais modifié. |
 | Tableau | `Table` | Tableau Markdown : ligne d'en-tête, ligne d'alignement, puis les lignes ; dessiné par l'aperçu en direct. |
 | Thème | `theme` | Couleurs, polices et tailles de lecture de l'interface, réunies dans un seul fichier. |

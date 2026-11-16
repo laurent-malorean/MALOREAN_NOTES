@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { SaveResult } from "../bridge/generated/SaveResult";
 import { AUTOSAVE_DELAY_MS, createAutosave, type Scheduler, timerScheduler } from "./autosave";
 
 /** Horloge manuelle : les délais ne s'écoulent que quand le test le décide. */
@@ -17,16 +18,24 @@ function manualScheduler() {
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+/** La réponse de Rust à un enregistrement, sans conflit. */
+const result = (path: string, fingerprint = "f-enregistree"): SaveResult => ({
+  path,
+  fingerprint,
+  conflictCopy: null,
+});
+
 describe("enregistrement automatique", () => {
   it("enregistre seulement après une pause dans la frappe", async () => {
     const saves: string[] = [];
     const { scheduler, elapse } = manualScheduler();
     const autosave = createAutosave({
       path: "a.md",
+      fingerprint: "f-lue",
       scheduler,
       save: async (_name, content) => {
         saves.push(content);
-        return { path: "a.md" };
+        return result("a.md");
       },
       onSaved: () => {},
     });
@@ -43,10 +52,11 @@ describe("enregistrement automatique", () => {
     const { scheduler, elapse } = manualScheduler();
     const autosave = createAutosave({
       path: "ancien.md",
+      fingerprint: "f-lue",
       scheduler,
       save: async (name, content) => {
         calls.push(name);
-        return { path: content.startsWith("# Nouveau") ? "nouveau.md" : name };
+        return result(content.startsWith("# Nouveau") ? "nouveau.md" : name);
       },
       onSaved: () => {},
     });
@@ -65,11 +75,12 @@ describe("enregistrement automatique", () => {
     const { scheduler, elapse } = manualScheduler();
     const autosave = createAutosave({
       path: "a.md",
+      fingerprint: "f-lue",
       scheduler,
       save: (_name, content) => {
         calls.push(content);
         return new Promise((resolve) => {
-          release = () => resolve({ path: "a.md" });
+          release = () => resolve(result("a.md"));
         });
       },
       onSaved: () => {},
@@ -91,10 +102,11 @@ describe("enregistrement automatique", () => {
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
       path: "a.md",
+      fingerprint: "f-lue",
       scheduler,
       save: async (_name, content) => {
         saves.push(content);
-        return { path: "a.md" };
+        return result("a.md");
       },
       onSaved: () => {},
     });
@@ -108,9 +120,10 @@ describe("enregistrement automatique", () => {
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
       path: "a.md",
+      fingerprint: "f-lue",
       scheduler,
-      save: async () => ({ path: "b.md" }),
-      onSaved: (name) => saved.push(name),
+      save: async () => result("b.md"),
+      onSaved: (done) => saved.push(done.path),
     });
     autosave.edit("# B");
     await autosave.flush();
@@ -126,11 +139,12 @@ describe("enregistrement automatique : échecs et délai", () => {
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
       path: "a.md",
+      fingerprint: "f-lue",
       scheduler,
       save: async (_name, content) => {
         if (fail) throw new Error("disque plein");
         saves.push(content);
-        return { path: "a.md" };
+        return result("a.md");
       },
       onSaved: () => {},
       onError: (error) => errors.push(error),
@@ -149,6 +163,7 @@ describe("enregistrement automatique : échecs et délai", () => {
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
       path: "a.md",
+      fingerprint: "f-lue",
       scheduler,
       save: async (_name, content) => {
         attempt += 1;
@@ -157,7 +172,7 @@ describe("enregistrement automatique : échecs et délai", () => {
           throw new Error("échec");
         }
         saves.push(content);
-        return { path: "a.md" };
+        return result("a.md");
       },
       onSaved: () => {},
     });
@@ -172,10 +187,11 @@ describe("enregistrement automatique : échecs et délai", () => {
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
       path: "a.md",
+      fingerprint: "f-lue",
       scheduler,
       save: async (_name, content) => {
         saves.push(content);
-        return { path: "a.md" };
+        return result("a.md");
       },
       onSaved: () => {},
     });
@@ -214,5 +230,80 @@ describe("enregistrement automatique : échecs et délai", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("enregistrement automatique : empreinte de la note", () => {
+  it("envoie l'empreinte lue, puis celle du dernier enregistrement", async () => {
+    const sent: string[] = [];
+    let count = 0;
+    const autosave = createAutosave({
+      path: "a.md",
+      fingerprint: "f-lue",
+      scheduler: manualScheduler().scheduler,
+      save: async (_path, _content, fingerprint) => {
+        sent.push(fingerprint);
+        count += 1;
+        return result("a.md", `f-${count}`);
+      },
+      onSaved: () => {},
+    });
+    autosave.edit("v1");
+    await autosave.flush();
+    autosave.edit("v2");
+    await autosave.flush();
+    expect(sent).toEqual(["f-lue", "f-1"]);
+    expect(autosave.fingerprint()).toBe("f-2");
+  });
+
+  it("adopte l'empreinte d'une version relue sur le disque", async () => {
+    const sent: string[] = [];
+    const autosave = createAutosave({
+      path: "a.md",
+      fingerprint: "f-lue",
+      scheduler: manualScheduler().scheduler,
+      save: async (_path, _content, fingerprint) => {
+        sent.push(fingerprint);
+        return result("a.md");
+      },
+      onSaved: () => {},
+    });
+    autosave.adopt("f-relue");
+    autosave.edit("v1");
+    await autosave.flush();
+    expect(sent).toEqual(["f-relue"]);
+  });
+
+  it("transmet la copie de conflit faite par Rust", async () => {
+    const copies: (string | null)[] = [];
+    const autosave = createAutosave({
+      path: "a.md",
+      fingerprint: "f-lue",
+      scheduler: manualScheduler().scheduler,
+      save: async () => ({ path: "a.md", fingerprint: "f", conflictCopy: "a (conflit).md" }),
+      onSaved: (done) => copies.push(done.conflictCopy),
+    });
+    autosave.edit("v1");
+    await autosave.flush();
+    expect(copies).toEqual(["a (conflit).md"]);
+  });
+
+  it("n'est au repos que sans frappe en attente ni enregistrement en cours", async () => {
+    let release: () => void = () => {};
+    const autosave = createAutosave({
+      path: "a.md",
+      fingerprint: "f-lue",
+      scheduler: manualScheduler().scheduler,
+      save: () => new Promise((resolve) => (release = () => resolve(result("a.md")))),
+      onSaved: () => {},
+    });
+    expect(autosave.isIdle()).toBe(true);
+    autosave.edit("v1");
+    expect(autosave.isIdle()).toBe(false);
+    const saving = autosave.flush();
+    expect(autosave.isIdle()).toBe(false);
+    release();
+    await saving;
+    expect(autosave.isIdle()).toBe(true);
   });
 });

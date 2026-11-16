@@ -5,14 +5,18 @@ use std::sync::Arc;
 use application::use_cases::AttachmentSource;
 use percent_encoding::percent_decode_str;
 use tauri::ipc::{Invoke, InvokeBody, Request};
-use tauri::{AppHandle, Manager, Runtime, State};
+use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
-    ApiError, AttachedFile, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
-    Session, TrashInfo,
+    ApiError, AttachedFile, LibraryInfo, NoteContent, NoteListItem, SaveResult, SavedNote,
+    SearchResultItem, Session, TrashInfo,
 };
+
+/// Événement envoyé à la page quand la bibliothèque change hors de l'application ;
+/// il porte un [`crate::LibraryChanged`].
+pub const LIBRARY_CHANGED_EVENT: &str = "library-changed";
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
 
@@ -24,18 +28,31 @@ async fn in_background<T: Send + 'static>(
         .map_err(|e| ApiError::internal(&e))?
 }
 
-/// La fenêtre peut charger les fichiers de la bibliothèque ouverte (images des notes), rien d'autre.
+/// Une bibliothèque vient d'être ouverte : la fenêtre peut charger ses fichiers (images des
+/// notes), rien d'autre, et la page apprend ce qui y change hors de l'application.
 /// Une bibliothèque ouverte auparavant reste lisible jusqu'à la fermeture de l'application.
-fn let_window_load_files<R: Runtime>(
+/// Une surveillance impossible n'empêche pas d'ouvrir la bibliothèque : elle est journalisée.
+fn follow_library<R: Runtime>(
     app: &AppHandle<R>,
+    session: &Session,
     library: Option<LibraryInfo>,
 ) -> Result<Option<LibraryInfo>, ApiError> {
-    if let Some(library) = &library {
-        app.asset_protocol_scope()
-            .allow_directory(&library.path, true)
-            .map_err(|e| ApiError::internal(&e))?;
+    let Some(library) = library else {
+        return Ok(None);
+    };
+    app.asset_protocol_scope()
+        .allow_directory(&library.path, true)
+        .map_err(|e| ApiError::internal(&e))?;
+    let page = app.clone();
+    let watched = session.watch_library(move |change| {
+        if let Err(error) = page.emit(LIBRARY_CHANGED_EVENT, change) {
+            tracing::warn!(%error, "changement de la bibliothèque non transmis à la page");
+        }
+    });
+    if let Err(error) = watched {
+        tracing::warn!(message = %error.message, "bibliothèque ouverte sans surveillance");
     }
-    Ok(library)
+    Ok(Some(library))
 }
 
 /// Rouvre la dernière bibliothèque au lancement ; rien au premier lancement.
@@ -49,7 +66,7 @@ pub async fn reopen_last_library<R: Runtime>(
     session: SharedSession<'_>,
 ) -> Result<Option<LibraryInfo>, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || let_window_load_files(&app, session.reopen_last_library()?)).await
+    in_background(move || follow_library(&app, &session, session.reopen_last_library()?)).await
 }
 
 /// Demande un dossier à l'utilisateur et l'ouvre ; rien s'il annule.
@@ -69,7 +86,11 @@ pub async fn choose_library<R: Runtime>(
         let folder = chosen
             .map(|folder| folder.into_path().map_err(|e| ApiError::internal(&e)))
             .transpose()?;
-        let_window_load_files(&app, session.open_chosen_folder(folder.as_deref())?)
+        follow_library(
+            &app,
+            &session,
+            session.open_chosen_folder(folder.as_deref())?,
+        )
     })
     .await
 }
@@ -113,7 +134,8 @@ pub async fn read_note(session: SharedSession<'_>, path: String) -> Result<NoteC
     in_background(move || session.read_note(&path)).await
 }
 
-/// Enregistre une note ; rend son chemin, dont le nom a peut-être changé avec le titre.
+/// Enregistre une note, lue ou enregistrée avec l'empreinte `fingerprint` ; rend son chemin,
+/// dont le nom a peut-être changé avec le titre, et la copie de conflit éventuelle.
 ///
 /// # Errors
 ///
@@ -123,9 +145,10 @@ pub async fn save_note(
     session: SharedSession<'_>,
     path: String,
     content: String,
-) -> Result<SavedNote, ApiError> {
+    fingerprint: String,
+) -> Result<SaveResult, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.save_note(&path, &content)).await
+    in_background(move || session.save_note(&path, &content, &fingerprint)).await
 }
 
 /// Crée une note vide, sans titre, dans un dossier (`""` pour la racine).

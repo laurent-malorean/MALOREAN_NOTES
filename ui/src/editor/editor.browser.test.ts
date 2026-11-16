@@ -137,3 +137,124 @@ describe("éditeur : aperçu en direct dans la fenêtre", () => {
     expect(parent.querySelectorAll(".cm-line").length).toBeLessThan(3000);
   });
 });
+
+describe("éditeur : version relue sur le disque", () => {
+  it("montre la nouvelle version sans la signaler comme modifiée", () => {
+    const { parent, editor, changes } = mount();
+    editor.show("# Titre\nancien");
+    editor.reload("# Titre\nnouveau");
+    expect(visibleText(parent)).toBe("Titre\nnouveau");
+    expect(changes).toEqual([]);
+  });
+
+  it("garde le curseur à la même ligne et à la même colonne", () => {
+    const { editor, view } = mount();
+    editor.show("un\ndeux\ntrois");
+    view.dispatch({ selection: { anchor: "un\nde".length } });
+    editor.reload("UN\nDEUX\nTROIS");
+    expect(view.state.selection.main.head).toBe("UN\nDE".length);
+  });
+
+  it("ne met pas la relecture dans l'historique d'annulation", () => {
+    const { editor, view } = mount();
+    editor.show("ancien");
+    editor.reload("nouveau");
+    expect(undoDepth(view.state)).toBe(0);
+    undo(view);
+    expect(view.state.doc.toString()).toBe("nouveau");
+  });
+
+  it("ne signale pas un simple déplacement du curseur", () => {
+    const { editor, view, changes } = mount();
+    editor.show("abc");
+    view.dispatch({ selection: { anchor: 2 } });
+    expect(changes).toEqual([]);
+  });
+
+  it("indente avec la touche Tab et annule avec Cmd+Z", async () => {
+    const { editor, view } = mount();
+    editor.show("ligne");
+    view.focus();
+    view.dispatch({ selection: { anchor: 0 } });
+    await userEvent.keyboard("{Tab}");
+    expect(view.state.doc.toString()).not.toBe("ligne");
+    await userEvent.keyboard("{Meta>}z{/Meta}");
+    expect(view.state.doc.toString()).toBe("ligne");
+  });
+
+  it("active le correcteur orthographique en français", () => {
+    const { view } = mount();
+    expect([
+      view.contentDOM.getAttribute("spellcheck"),
+      view.contentDOM.getAttribute("lang"),
+    ]).toEqual(["true", "fr"]);
+  });
+
+  it("invite à écrire un titre dans une note vide", () => {
+    const { parent, editor } = mount();
+    editor.show("");
+    expect(parent.querySelector(".cm-placeholder")?.textContent).toBe("# Titre de la note");
+  });
+
+  it("reste fluide sur une très longue note", () => {
+    const { parent, editor } = mount();
+    const long = Array.from({ length: 3000 }, (_, i) => `## Section ${i}\n**gras** ${i}`).join(
+      "\n",
+    );
+    const start = performance.now();
+    editor.show(long);
+    expect(performance.now() - start).toBeLessThan(500);
+    expect(parent.querySelectorAll(".cm-line").length).toBeLessThan(3000);
+  });
+});
+
+describe("éditeur : version relue sur le disque", () => {
+  it("montre la nouvelle version sans la signaler comme modifiée", () => {
+    const { parent, editor, changes } = mount();
+    editor.show("# Titre\nancien");
+    editor.reload("# Titre\nnouveau");
+    expect(visibleText(parent)).toBe("Titre\nnouveau");
+    expect(changes).toEqual([]);
+  });
+
+  it("garde le curseur à la même ligne et à la même colonne", () => {
+    const { editor, view } = mount();
+    editor.show("un\ndeux\ntrois");
+    view.dispatch({ selection: { anchor: "un\nde".length } });
+    editor.reload("UN\nDEUX\nTROIS");
+    expect(view.state.selection.main.head).toBe("UN\nDE".length);
+  });
+
+  it("ne met pas la relecture dans l'historique d'annulation", () => {
+    const { editor, view } = mount();
+    editor.show("ancien");
+    editor.reload("nouveau");
+    expect(undoDepth(view.state)).toBe(0);
+    undo(view);
+    expect(view.state.doc.toString()).toBe("nouveau");
+  });
+
+  it("signale une frappe arrivée avec un simple déplacement du curseur", () => {
+    const { editor, view, changes } = mount();
+    editor.show("texte");
+    const moved = view.state.update({ selection: { anchor: 1 } });
+    const typed = moved.state.update({ changes: { from: 0, insert: "!" } });
+    view.dispatch(moved, typed);
+    expect(changes).toEqual(["!texte"]);
+  });
+
+  it("ne signale pas un simple déplacement du curseur", () => {
+    const { editor, view, changes } = mount();
+    editor.show("texte");
+    view.dispatch({ selection: { anchor: 2 } });
+    expect(changes).toEqual([]);
+  });
+
+  it("signale encore les frappes qui suivent", () => {
+    const { editor, view, changes } = mount();
+    editor.show("ancien");
+    editor.reload("nouveau");
+    view.dispatch({ changes: { from: 0, insert: "!" } });
+    expect(changes).toEqual(["!nouveau"]);
+  });
+});

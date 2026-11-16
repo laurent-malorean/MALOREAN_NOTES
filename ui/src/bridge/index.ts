@@ -1,11 +1,14 @@
 // Seul module qui parle à Rust. Les types viennent de `generated/`, produits par `cargo test`.
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
 import type { AttachedFile } from "./generated/AttachedFile";
+import type { LibraryChanged } from "./generated/LibraryChanged";
 import type { LibraryInfo } from "./generated/LibraryInfo";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
+import type { SaveResult } from "./generated/SaveResult";
 import type { SavedNote } from "./generated/SavedNote";
 import type { SearchResultItem } from "./generated/SearchResultItem";
 import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
@@ -13,9 +16,11 @@ import type { TrashInfo } from "./generated/TrashInfo";
 
 export type {
   AttachedFile,
+  LibraryChanged,
   LibraryInfo,
   NoteContent,
   NoteListItem,
+  SaveResult,
   SavedNote,
   SearchResultItem,
   TrashedNoteItem,
@@ -37,8 +42,9 @@ export const listNotes = (folder: string) => invoke<NoteListItem[]>("list_notes"
 /** Les notes de toute la bibliothèque qui contiennent tous les mots de `query`. */
 export const searchNotes = (query: string) => invoke<SearchResultItem[]>("search_notes", { query });
 export const readNote = (path: string) => invoke<NoteContent>("read_note", { path });
-export const saveNote = (path: string, content: string) =>
-  invoke<SavedNote>("save_note", { path, content });
+/** Enregistre une note lue ou enregistrée avec l'empreinte `fingerprint` (voir la fiche 0014). */
+export const saveNote = (path: string, content: string, fingerprint: string) =>
+  invoke<SaveResult>("save_note", { path, content, fingerprint });
 export const createNote = (folder: string) => invoke<SavedNote>("create_note", { folder });
 /** L'adresse qui charge dans la fenêtre un fichier de la bibliothèque, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);
@@ -75,6 +81,12 @@ export const emptyTrash = () => invoke<null>("empty_trash");
 export const setFullScreen = (on: boolean) => getCurrentWindow().setFullscreen(on);
 /** La fenêtre est-elle en plein écran (y compris par le bouton vert ou le menu du Mac) ? */
 export const isFullScreen = () => getCurrentWindow().isFullscreen();
+/** Même nom côté Rust (`LIBRARY_CHANGED_EVENT`). */
+const LIBRARY_CHANGED_EVENT = "library-changed";
+/** Prévient de chaque changement fait dans la bibliothèque hors de l'application. */
+export const onLibraryChanged = (handler: (change: LibraryChanged) => void) =>
+  listen<LibraryChanged>(LIBRARY_CHANGED_EVENT, (event) => handler(event.payload));
+
 /** Prévient à chaque changement de taille de la fenêtre, entrée et sortie du plein écran comprises. */
 export const onWindowResized = (handler: () => void) => getCurrentWindow().onResized(handler);
 
