@@ -20,7 +20,7 @@ describe("affichage de l'écran", () => {
 
   it("montre la bibliothèque, son nom et ses notes", () => {
     const view = layout();
-    const screen = libraryOpened(library, [{ fileName: "a.md", title: "Alpha", modified: 0 }]);
+    const screen = libraryOpened(library, [{ path: "a.md", title: "Alpha", modified: 0 }]);
     renderScreen(view, screen, () => {});
     expect([view.welcome.hidden, view.workspace.hidden]).toEqual([true, false]);
     expect(view.libraryName.textContent).toBe("Notes");

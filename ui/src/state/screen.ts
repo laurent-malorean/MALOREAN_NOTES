@@ -25,8 +25,8 @@ export function notesRefreshed(screen: Screen, notes: readonly NoteListItem[]): 
 }
 
 /** La même bibliothèque, avec une autre note sélectionnée (ou aucune). */
-export function noteSelected(screen: Screen, fileName: string | null): Screen {
-  return screen.kind === "library" ? { ...screen, selected: fileName } : screen;
+export function noteSelected(screen: Screen, path: string | null): Screen {
+  return screen.kind === "library" ? { ...screen, selected: path } : screen;
 }
 
 /** La même bibliothèque, après le renommage d'un fichier de note. */

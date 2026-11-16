@@ -3,11 +3,13 @@
 
 pub mod attachments;
 pub mod file_name;
+pub mod folder;
 pub mod front_matter;
 pub mod note;
 pub mod saving;
 pub mod title;
 
 pub use file_name::{FileName, InvalidFileName};
+pub use folder::{Folder, FolderName, InvalidFolderName, NotePath};
 pub use note::{Modified, NoteSummary};
 pub use title::Title;

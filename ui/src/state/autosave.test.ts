@@ -22,11 +22,11 @@ describe("enregistrement automatique", () => {
     const saves: string[] = [];
     const { scheduler, elapse } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "a.md",
+      path: "a.md",
       scheduler,
       save: async (_name, content) => {
         saves.push(content);
-        return { fileName: "a.md" };
+        return { path: "a.md" };
       },
       onSaved: () => {},
     });
@@ -42,11 +42,11 @@ describe("enregistrement automatique", () => {
     const calls: string[] = [];
     const { scheduler, elapse } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "ancien.md",
+      path: "ancien.md",
       scheduler,
       save: async (name, content) => {
         calls.push(name);
-        return { fileName: content.startsWith("# Nouveau") ? "nouveau.md" : name };
+        return { path: content.startsWith("# Nouveau") ? "nouveau.md" : name };
       },
       onSaved: () => {},
     });
@@ -64,12 +64,12 @@ describe("enregistrement automatique", () => {
     let release: () => void = () => {};
     const { scheduler, elapse } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "a.md",
+      path: "a.md",
       scheduler,
       save: (_name, content) => {
         calls.push(content);
         return new Promise((resolve) => {
-          release = () => resolve({ fileName: "a.md" });
+          release = () => resolve({ path: "a.md" });
         });
       },
       onSaved: () => {},
@@ -90,11 +90,11 @@ describe("enregistrement automatique", () => {
     const saves: string[] = [];
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "a.md",
+      path: "a.md",
       scheduler,
       save: async (_name, content) => {
         saves.push(content);
-        return { fileName: "a.md" };
+        return { path: "a.md" };
       },
       onSaved: () => {},
     });
@@ -107,9 +107,9 @@ describe("enregistrement automatique", () => {
     const saved: string[] = [];
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "a.md",
+      path: "a.md",
       scheduler,
-      save: async () => ({ fileName: "b.md" }),
+      save: async () => ({ path: "b.md" }),
       onSaved: (name) => saved.push(name),
     });
     autosave.edit("# B");
@@ -125,12 +125,12 @@ describe("enregistrement automatique : échecs et délai", () => {
     let fail = true;
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "a.md",
+      path: "a.md",
       scheduler,
       save: async (_name, content) => {
         if (fail) throw new Error("disque plein");
         saves.push(content);
-        return { fileName: "a.md" };
+        return { path: "a.md" };
       },
       onSaved: () => {},
       onError: (error) => errors.push(error),
@@ -148,7 +148,7 @@ describe("enregistrement automatique : échecs et délai", () => {
     let attempt = 0;
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "a.md",
+      path: "a.md",
       scheduler,
       save: async (_name, content) => {
         attempt += 1;
@@ -157,7 +157,7 @@ describe("enregistrement automatique : échecs et délai", () => {
           throw new Error("échec");
         }
         saves.push(content);
-        return { fileName: "a.md" };
+        return { path: "a.md" };
       },
       onSaved: () => {},
     });
@@ -171,11 +171,11 @@ describe("enregistrement automatique : échecs et délai", () => {
     const saves: string[] = [];
     const { scheduler } = manualScheduler();
     const autosave = createAutosave({
-      fileName: "a.md",
+      path: "a.md",
       scheduler,
       save: async (_name, content) => {
         saves.push(content);
-        return { fileName: "a.md" };
+        return { path: "a.md" };
       },
       onSaved: () => {},
     });

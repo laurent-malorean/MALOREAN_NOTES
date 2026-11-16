@@ -79,7 +79,7 @@ fn error_message(result: Result<Value, Value>) -> String {
 fn nothing_can_be_listed_before_a_library_is_open() {
     let window = window(&[]);
     assert_eq!(
-        error_message(call(&window, "list_notes", json!({}))),
+        error_message(call(&window, "list_notes", json!({ "folder": "" }))),
         "aucune bibliothèque n'est ouverte"
     );
 }
@@ -89,7 +89,7 @@ fn the_last_library_is_reopened_then_listed() {
     let window = window(&[("a.md", "# Alpha")]);
     let library: Option<LibraryInfo> = ok(call(&window, "reopen_last_library", json!({})));
     assert_eq!(library.map(|l| l.name), Some("Notes".into()));
-    let notes: Vec<NoteListItem> = ok(call(&window, "list_notes", json!({})));
+    let notes: Vec<NoteListItem> = ok(call(&window, "list_notes", json!({ "folder": "" })));
     assert_eq!(
         notes.iter().map(|n| n.title.as_str()).collect::<Vec<_>>(),
         ["Alpha"]
@@ -100,7 +100,7 @@ fn the_last_library_is_reopened_then_listed() {
 fn a_note_is_read_with_the_argument_names_used_by_the_page() {
     let window = window(&[("a.md", "# Alpha\ntexte")]);
     call(&window, "reopen_last_library", json!({})).unwrap();
-    let note: NoteContent = ok(call(&window, "read_note", json!({ "fileName": "a.md" })));
+    let note: NoteContent = ok(call(&window, "read_note", json!({ "path": "a.md" })));
     assert_eq!(note.content, "# Alpha\ntexte");
 }
 
@@ -111,17 +111,17 @@ fn saving_a_new_title_renames_the_file() {
     let saved: SavedNote = ok(call(
         &window,
         "save_note",
-        json!({ "fileName": "a.md", "content": "# Bêta" }),
+        json!({ "path": "a.md", "content": "# Bêta" }),
     ));
-    assert_eq!(saved.file_name, "beta.md");
+    assert_eq!(saved.path, "beta.md");
 }
 
 #[test]
 fn a_created_note_is_untitled() {
     let window = window(&[]);
     call(&window, "reopen_last_library", json!({})).unwrap();
-    let created: SavedNote = ok(call(&window, "create_note", json!({})));
-    assert_eq!(created.file_name, "sans-titre.md");
+    let created: SavedNote = ok(call(&window, "create_note", json!({ "folder": "" })));
+    assert_eq!(created.path, "sans-titre.md");
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn a_dangerous_name_sent_by_the_page_is_refused() {
     let error = error_message(call(
         &window,
         "read_note",
-        json!({ "fileName": "../secret.md" }),
+        json!({ "path": "../secret.md" }),
     ));
     assert_eq!(error, "nom de note invalide : « ../secret.md »");
 }

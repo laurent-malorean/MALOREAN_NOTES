@@ -68,15 +68,18 @@ pub async fn choose_library<R: Runtime>(
     .await
 }
 
-/// Les notes de la bibliothèque ouverte, la plus récente en premier.
+/// Les notes d'un dossier (`""` pour la racine), la plus récente en premier.
 ///
 /// # Errors
 ///
 /// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
-pub async fn list_notes(session: SharedSession<'_>) -> Result<Vec<NoteListItem>, ApiError> {
+pub async fn list_notes(
+    session: SharedSession<'_>,
+    folder: String,
+) -> Result<Vec<NoteListItem>, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.list_notes()).await
+    in_background(move || session.list_notes(&folder)).await
 }
 
 /// Le contenu d'une note.
@@ -85,15 +88,12 @@ pub async fn list_notes(session: SharedSession<'_>) -> Result<Vec<NoteListItem>,
 ///
 /// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
-pub async fn read_note(
-    session: SharedSession<'_>,
-    file_name: String,
-) -> Result<NoteContent, ApiError> {
+pub async fn read_note(session: SharedSession<'_>, path: String) -> Result<NoteContent, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.read_note(&file_name)).await
+    in_background(move || session.read_note(&path)).await
 }
 
-/// Enregistre une note ; rend son nom de fichier, peut-être changé par le titre.
+/// Enregistre une note ; rend son chemin, dont le nom a peut-être changé avec le titre.
 ///
 /// # Errors
 ///
@@ -101,22 +101,25 @@ pub async fn read_note(
 #[tauri::command]
 pub async fn save_note(
     session: SharedSession<'_>,
-    file_name: String,
+    path: String,
     content: String,
 ) -> Result<SavedNote, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.save_note(&file_name, &content)).await
+    in_background(move || session.save_note(&path, &content)).await
 }
 
-/// Crée une note vide, sans titre.
+/// Crée une note vide, sans titre, dans un dossier (`""` pour la racine).
 ///
 /// # Errors
 ///
 /// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
-pub async fn create_note(session: SharedSession<'_>) -> Result<SavedNote, ApiError> {
+pub async fn create_note(
+    session: SharedSession<'_>,
+    folder: String,
+) -> Result<SavedNote, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.create_note()).await
+    in_background(move || session.create_note(&folder)).await
 }
 
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.

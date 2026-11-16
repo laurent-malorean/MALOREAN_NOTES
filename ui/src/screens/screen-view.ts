@@ -3,11 +3,7 @@ import type { Layout } from "./layout";
 import { renderNotesList } from "./notes-list";
 
 /** Met la fenêtre en accord avec l'état de l'écran ; chaque cas est traité. */
-export function renderScreen(
-  layout: Layout,
-  screen: Screen,
-  onOpen: (fileName: string) => void,
-): void {
+export function renderScreen(layout: Layout, screen: Screen, onOpen: (path: string) => void): void {
   switch (screen.kind) {
     case "welcome":
       layout.welcome.hidden = false;

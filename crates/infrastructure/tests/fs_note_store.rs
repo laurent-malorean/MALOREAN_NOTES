@@ -10,7 +10,7 @@ use std::os::unix::fs::PermissionsExt;
 
 use application::testing::contract::note_store_contract;
 use application::{LibraryLocation, LibraryOpener, NoteStore, StoreError};
-use domain::FileName;
+use domain::{FileName, Folder, NotePath};
 use infrastructure::{FsLibraryOpener, FsNoteStore};
 use tempfile::TempDir;
 
@@ -19,8 +19,16 @@ const WRITABLE_FOLDER: u32 = 0o755;
 const NO_PERMISSION: u32 = 0o000;
 const READ_WRITE_FILE: u32 = 0o644;
 
-fn name(text: &str) -> FileName {
+fn name(text: &str) -> NotePath {
+    NotePath::parse(text).unwrap()
+}
+
+fn file(text: &str) -> FileName {
     FileName::parse(text).unwrap()
+}
+
+fn root() -> Folder {
+    Folder::root()
 }
 
 fn location(path: &std::path::Path) -> LibraryLocation {
@@ -53,10 +61,10 @@ fn only_markdown_files_of_the_library_folder_are_listed() {
     fs::write(dir.path().join("archives/vieille.md"), "# Vieille").unwrap();
     fs::create_dir(dir.path().join("note.assets")).unwrap();
     let names: Vec<_> = store
-        .list()
+        .list(&root())
         .unwrap()
         .into_iter()
-        .map(|n| n.file_name)
+        .map(|n| n.path)
         .collect();
     assert_eq!(names, [name("note.md")]);
 }
@@ -81,7 +89,7 @@ fn renaming_moves_the_attachment_folder() {
     fs::create_dir(dir.path().join("voyage.assets")).unwrap();
     fs::write(dir.path().join("voyage.assets/vue.png"), [1, 2, 3]).unwrap();
     store
-        .rename(&name("voyage.md"), &name("lisbonne.md"))
+        .rename(&name("voyage.md"), &file("lisbonne.md"))
         .unwrap();
     assert!(!dir.path().join("voyage.assets").exists());
     assert_eq!(
@@ -94,15 +102,15 @@ fn renaming_moves_the_attachment_folder() {
 fn renaming_only_the_letter_case_is_allowed() {
     let (dir, store) = library();
     fs::write(dir.path().join("Courses.md"), "# Courses").unwrap();
-    assert_eq!(store.names().unwrap(), [name("Courses.md")]);
+    assert_eq!(store.names(&root()).unwrap(), [file("Courses.md")]);
     store
-        .rename(&name("Courses.md"), &name("courses.md"))
+        .rename(&name("Courses.md"), &file("courses.md"))
         .unwrap();
     let names: Vec<_> = store
-        .list()
+        .list(&root())
         .unwrap()
         .into_iter()
-        .map(|n| n.file_name)
+        .map(|n| n.path)
         .collect();
     assert_eq!(names, [name("courses.md")]);
 }
@@ -122,7 +130,7 @@ fn opening_an_existing_folder_gives_its_notes() {
     let dir = TempDir::new().unwrap();
     fs::write(dir.path().join("a.md"), "# A").unwrap();
     let store = FsLibraryOpener.open(&location(dir.path())).unwrap();
-    assert_eq!(store.list().unwrap().len(), 1);
+    assert_eq!(store.list(&root()).unwrap().len(), 1);
 }
 
 #[test]
@@ -135,10 +143,10 @@ fn a_note_that_is_not_utf8_text_does_not_break_the_list() {
     )
     .unwrap();
     let mut names: Vec<_> = store
-        .list()
+        .list(&root())
         .unwrap()
         .into_iter()
-        .map(|n| n.file_name)
+        .map(|n| n.path)
         .collect();
     names.sort();
     assert_eq!(names, [name("binaire.md"), name("ok.md")]);
@@ -170,7 +178,10 @@ fn writing_into_a_read_only_library_fails_cleanly() {
 fn a_library_folder_deleted_while_open_is_reported() {
     let (dir, store) = library();
     fs::remove_dir(dir.path()).unwrap();
-    assert!(matches!(store.list(), Err(StoreError::Unavailable(_))));
+    assert!(matches!(
+        store.list(&root()),
+        Err(StoreError::Unavailable(_))
+    ));
     assert!(matches!(
         store.write(&name("a.md"), "x"),
         Err(StoreError::Unavailable(_))
@@ -184,10 +195,10 @@ fn renaming_refuses_when_the_target_attachment_folder_exists() {
     fs::create_dir(dir.path().join("voyage.assets")).unwrap();
     fs::create_dir(dir.path().join("lisbonne.assets")).unwrap();
     assert_eq!(
-        store.rename(&name("voyage.md"), &name("lisbonne.md")),
+        store.rename(&name("voyage.md"), &file("lisbonne.md")),
         Err(StoreError::AlreadyExists(name("lisbonne.md")))
     );
-    assert_eq!(store.names().unwrap(), [name("voyage.md")]);
+    assert_eq!(store.names(&root()).unwrap(), [file("voyage.md")]);
     assert!(dir.path().join("voyage.assets").is_dir());
 }
 
@@ -195,7 +206,7 @@ fn renaming_refuses_when_the_target_attachment_folder_exists() {
 fn renaming_a_missing_note_is_reported() {
     let (_dir, store) = library();
     assert_eq!(
-        store.rename(&name("absente.md"), &name("b.md")),
+        store.rename(&name("absente.md"), &file("b.md")),
         Err(StoreError::NotFound(name("absente.md")))
     );
 }

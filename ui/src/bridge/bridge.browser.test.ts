@@ -33,26 +33,26 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
 
   it("liste les notes", async () => {
     const calls = recordCalls([]);
-    expect(await bridge.listNotes()).toEqual([]);
-    expect(calls).toEqual([{ command: "list_notes", args: {} }]);
+    expect(await bridge.listNotes("Travail")).toEqual([]);
+    expect(calls).toEqual([{ command: "list_notes", args: { folder: "Travail" } }]);
   });
 
   it("lit une note par son nom de fichier", async () => {
-    const calls = recordCalls({ fileName: "a.md", content: "# A" });
+    const calls = recordCalls({ path: "a.md", content: "# A" });
     await bridge.readNote("a.md");
-    expect(calls).toEqual([{ command: "read_note", args: { fileName: "a.md" } }]);
+    expect(calls).toEqual([{ command: "read_note", args: { path: "a.md" } }]);
   });
 
   it("enregistre une note avec son nom et son contenu", async () => {
-    const calls = recordCalls({ fileName: "b.md" });
-    expect(await bridge.saveNote("a.md", "# B")).toEqual({ fileName: "b.md" });
-    expect(calls).toEqual([{ command: "save_note", args: { fileName: "a.md", content: "# B" } }]);
+    const calls = recordCalls({ path: "b.md" });
+    expect(await bridge.saveNote("a.md", "# B")).toEqual({ path: "b.md" });
+    expect(calls).toEqual([{ command: "save_note", args: { path: "a.md", content: "# B" } }]);
   });
 
   it("crée une note", async () => {
-    const calls = recordCalls({ fileName: "sans-titre.md" });
-    await bridge.createNote();
-    expect(calls).toEqual([{ command: "create_note", args: {} }]);
+    const calls = recordCalls({ path: "sans-titre.md" });
+    await bridge.createNote("Travail");
+    expect(calls).toEqual([{ command: "create_note", args: { folder: "Travail" } }]);
   });
 });
 

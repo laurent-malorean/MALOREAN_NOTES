@@ -3,7 +3,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use domain::{FileName, Modified};
+use domain::{FileName, Folder, Modified, NotePath};
 
 use crate::{LibraryLocation, LibraryOpener, NoteStore, Preferences, StoreError, StoredNote};
 
@@ -15,17 +15,17 @@ pub struct InMemoryNoteStore {
 
 #[derive(Debug, Default)]
 struct State {
-    notes: BTreeMap<FileName, (String, Modified)>,
+    notes: BTreeMap<NotePath, (String, Modified)>,
     tick: u64,
 }
 
 impl InMemoryNoteStore {
-    /// Une bibliothèque qui contient déjà ces notes (nom, contenu).
+    /// Une bibliothèque qui contient déjà ces notes (chemin, contenu).
     #[must_use]
     pub fn with_notes(notes: &[(&str, &str)]) -> Self {
         let store = Self::default();
         for (name, content) in notes {
-            let name = FileName::parse(name).unwrap_or_else(|e| unreachable!("{e}"));
+            let name = NotePath::parse(name).unwrap_or_else(|e| unreachable!("{e}"));
             store
                 .write(&name, content)
                 .unwrap_or_else(|e| unreachable!("{e:?}"));
@@ -39,16 +39,17 @@ impl InMemoryNoteStore {
 }
 
 impl NoteStore for InMemoryNoteStore {
-    fn list(&self) -> Result<Vec<StoredNote>, StoreError> {
+    fn list(&self, folder: &Folder) -> Result<Vec<StoredNote>, StoreError> {
         let state = self.state();
         Ok(state
             .notes
             .iter()
+            .filter(|(name, _)| name.folder() == folder)
             .map(|(name, (c, m))| stored(name, c, *m))
             .collect())
     }
 
-    fn read(&self, name: &FileName) -> Result<StoredNote, StoreError> {
+    fn read(&self, name: &NotePath) -> Result<StoredNote, StoreError> {
         let state = self.state();
         let (content, modified) = state
             .notes
@@ -57,7 +58,7 @@ impl NoteStore for InMemoryNoteStore {
         Ok(stored(name, content, *modified))
     }
 
-    fn write(&self, name: &FileName, content: &str) -> Result<(), StoreError> {
+    fn write(&self, name: &NotePath, content: &str) -> Result<(), StoreError> {
         let mut state = self.state();
         state.tick += 1;
         let modified = Modified(state.tick);
@@ -67,27 +68,34 @@ impl NoteStore for InMemoryNoteStore {
         Ok(())
     }
 
-    fn rename(&self, from: &FileName, to: &FileName) -> Result<(), StoreError> {
+    fn rename(&self, from: &NotePath, to: &FileName) -> Result<(), StoreError> {
         let mut state = self.state();
-        if state.notes.contains_key(to) {
-            return Err(StoreError::AlreadyExists(to.clone()));
+        let to = from.renamed(to.clone());
+        if state.notes.contains_key(&to) {
+            return Err(StoreError::AlreadyExists(to));
         }
         let note = state
             .notes
             .remove(from)
             .ok_or_else(|| StoreError::NotFound(from.clone()))?;
-        state.notes.insert(to.clone(), note);
+        state.notes.insert(to, note);
         Ok(())
     }
 
-    fn names(&self) -> Result<Vec<FileName>, StoreError> {
-        Ok(self.state().notes.keys().cloned().collect())
+    fn names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError> {
+        Ok(self
+            .state()
+            .notes
+            .keys()
+            .filter(|name| name.folder() == folder)
+            .map(|name| name.name().clone())
+            .collect())
     }
 }
 
-fn stored(name: &FileName, content: &str, modified: Modified) -> StoredNote {
+fn stored(name: &NotePath, content: &str, modified: Modified) -> StoredNote {
     StoredNote {
-        file_name: name.clone(),
+        path: name.clone(),
         content: content.to_owned(),
         modified,
     }

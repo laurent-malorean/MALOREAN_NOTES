@@ -16,11 +16,11 @@ export const timerScheduler = (delayMs = AUTOSAVE_DELAY_MS): Scheduler => ({
 });
 
 export interface AutosaveOptions {
-  readonly fileName: string;
+  readonly path: string;
   readonly scheduler: Scheduler;
-  readonly save: (fileName: string, content: string) => Promise<SavedNote>;
+  readonly save: (path: string, content: string) => Promise<SavedNote>;
   /** Appelé après chaque enregistrement, avec le nom de fichier (peut-être renommé). */
-  readonly onSaved: (fileName: string) => void;
+  readonly onSaved: (path: string) => void;
   readonly onError?: (error: unknown) => void;
 }
 
@@ -36,7 +36,7 @@ export interface Autosave {
  * toujours la dernière version, sous le nom de fichier le plus récent.
  */
 export function createAutosave(options: AutosaveOptions): Autosave {
-  let fileName = options.fileName;
+  let path = options.path;
   let unsaved: string | null = null;
   let cancelTimer: (() => void) | null = null;
   let running: Promise<void> | null = null;
@@ -46,8 +46,8 @@ export function createAutosave(options: AutosaveOptions): Autosave {
       const content = unsaved;
       unsaved = null;
       try {
-        fileName = (await options.save(fileName, content)).fileName;
-        options.onSaved(fileName);
+        path = (await options.save(path, content)).path;
+        options.onSaved(path);
       } catch (error) {
         unsaved ??= content;
         options.onError?.(error);

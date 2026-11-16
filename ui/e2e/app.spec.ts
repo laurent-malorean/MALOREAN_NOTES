@@ -18,9 +18,9 @@ async function launch(page: Page, options: { notes?: Notes; remembered?: boolean
 
 const titles = (page: Page) => page.locator(".note-title");
 const editorLines = (page: Page) => page.locator(".cm-line");
-const savedContent = (page: Page, fileName: string) =>
-  page.evaluate((name) => window.backend.notes[name]?.content ?? null, fileName);
-const fileNames = (page: Page) => page.evaluate(() => Object.keys(window.backend.notes).sort());
+const savedContent = (page: Page, path: string) =>
+  page.evaluate((name) => window.backend.notes[name]?.content ?? null, path);
+const paths = (page: Page) => page.evaluate(() => Object.keys(window.backend.notes).sort());
 
 test("au premier lancement, l'accueil propose de choisir un dossier", async ({ page }) => {
   await launch(page, { remembered: false });
@@ -63,9 +63,7 @@ test("changer le titre renomme le fichier et la note reste sélectionnée", asyn
   await editorLines(page).first().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" relue");
-  await expect
-    .poll(() => fileNames(page))
-    .toEqual(["courses.md", "idee.md", "vieille-note-relue.md"]);
+  await expect.poll(() => paths(page)).toEqual(["courses.md", "idee.md", "vieille-note-relue.md"]);
   await expect(page.locator(".note-item.selected .note-title")).toHaveText("Vieille note relue");
   await page.keyboard.type(" encore");
   await expect

@@ -19,8 +19,8 @@ pub struct LibraryInfo {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteListItem {
-    /// Le nom du fichier de la note.
-    pub file_name: String,
+    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    pub path: String,
     /// Le titre affiché.
     pub title: String,
     /// Millisecondes depuis le 1er janvier 1970.
@@ -33,17 +33,17 @@ pub struct NoteListItem {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteContent {
-    /// Le nom du fichier de la note.
-    pub file_name: String,
+    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    pub path: String,
     /// Le contenu Markdown complet.
     pub content: String,
 }
 
-/// Le nom de fichier d'une note après enregistrement ou création.
+/// Le chemin d'une note après enregistrement ou création.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct SavedNote {
-    /// Le nom du fichier, peut-être changé par le titre.
-    pub file_name: String,
+    /// Le chemin de la note, dont le nom a peut-être changé avec le titre.
+    pub path: String,
 }

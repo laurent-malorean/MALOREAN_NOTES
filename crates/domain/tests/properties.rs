@@ -3,7 +3,7 @@
 use domain::attachments::relink;
 use domain::front_matter::split;
 use domain::title::displayed_title;
-use domain::{FileName, Title};
+use domain::{FileName, Folder, NotePath, Title};
 use proptest::prelude::*;
 
 /// Une ligne de note plausible : titres, blocs de code, délimiteurs d'en-tête, texte libre.
@@ -39,6 +39,26 @@ proptest! {
             prop_assert!(!parsed.as_str().contains(['/', '\\', '\0']));
             prop_assert!(!parsed.as_str().starts_with('.'));
             prop_assert!(parsed.as_str().to_ascii_lowercase().ends_with(".md"));
+        }
+    }
+
+    #[test]
+    fn a_folder_path_reads_back_as_written(path in "([A-Za-zé0-9]([A-Za-zé0-9 ]{0,5}[A-Za-zé0-9])?/){0,3}[A-Za-zé0-9]{1,6}") {
+        let folder = Folder::parse(&path).unwrap();
+        prop_assert_eq!(folder.to_path(), path.clone());
+        let note = NotePath::parse(&format!("{path}/note.md")).unwrap();
+        prop_assert_eq!(note.folder(), &folder);
+        prop_assert_eq!(note.to_path(), format!("{path}/note.md"));
+    }
+
+    #[test]
+    fn a_folder_or_note_path_never_leaves_the_library(path in any::<String>()) {
+        if let Ok(folder) = Folder::parse(&path) {
+            prop_assert!(folder.names().iter().all(|n| !n.as_str().starts_with('.') && !n.as_str().contains(['/', '\\', '\0'])));
+            prop_assert_eq!(folder.to_path(), path.clone());
+        }
+        if let Ok(note) = NotePath::parse(&path) {
+            prop_assert_eq!(note.to_path(), path);
         }
     }
 

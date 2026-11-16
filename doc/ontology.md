@@ -6,6 +6,9 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 |---|---|---|
 | Bibliothèque | `Library` | Dossier racine choisi par l'utilisateur, qui contient toutes ses notes. |
 | Dossier | `Folder` | Dossier sur le disque, dans la bibliothèque, qui range des notes et d'autres dossiers. |
+| Racine | `Folder::root` | La bibliothèque elle-même, vue comme le premier des dossiers. |
+| Nom de dossier | `FolderName` | Nom d'un dossier, tel que l'utilisateur l'a écrit ; jamais caché ni terminé par `.assets`. |
+| Chemin de note | `NotePath` | Dossier et nom de fichier d'une note, écrits `dossier/sous-dossier/nom.md` depuis la racine. |
 | Note | `Note` | Un fichier `.md` de la bibliothèque. |
 | Contenu | `Body` | Le texte Markdown de la note, sans l'en-tête. |
 | En-tête | `FrontMatter` | Bloc YAML optionnel en tête de fichier, qui porte les métadonnées. |

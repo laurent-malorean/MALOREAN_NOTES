@@ -1,7 +1,7 @@
 //! Traduction des erreurs en message pour l'interface : le seul endroit où cela se fait.
 
 use application::{AppError, EmptyLocation};
-use domain::InvalidFileName;
+use domain::{InvalidFileName, InvalidFolderName};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -47,6 +47,14 @@ impl From<EmptyLocation> for ApiError {
 
 impl From<InvalidFileName> for ApiError {
     fn from(error: InvalidFileName) -> Self {
+        Self {
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<InvalidFolderName> for ApiError {
+    fn from(error: InvalidFolderName) -> Self {
         Self {
             message: error.to_string(),
         }

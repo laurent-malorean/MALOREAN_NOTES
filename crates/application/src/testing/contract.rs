@@ -5,12 +5,20 @@
     reason = "code de test : un échec doit arrêter le test"
 )]
 
-use domain::FileName;
+use domain::{FileName, Folder, NotePath};
 
 use crate::{NoteStore, StoreError};
 
-fn name(text: &str) -> FileName {
+fn name(text: &str) -> NotePath {
+    NotePath::parse(text).unwrap_or_else(|e| unreachable!("{e}"))
+}
+
+fn file(text: &str) -> FileName {
     FileName::parse(text).unwrap_or_else(|e| unreachable!("{e}"))
+}
+
+fn root() -> Folder {
+    Folder::root()
 }
 
 /// Joue tout le contrat ; `empty_store` fabrique une bibliothèque vide à chaque appel.
@@ -42,10 +50,10 @@ fn list_returns_every_note(store: &impl NoteStore) {
     store.write(&name("a.md"), "A").unwrap();
     store.write(&name("b.md"), "B").unwrap();
     let mut names: Vec<_> = store
-        .list()
+        .list(&root())
         .unwrap()
         .into_iter()
-        .map(|n| n.file_name)
+        .map(|n| n.path)
         .collect();
     names.sort();
     assert_eq!(names, [name("a.md"), name("b.md")]);
@@ -61,15 +69,15 @@ fn missing_note_is_not_found(store: &impl NoteStore) {
 fn names_are_those_of_every_note(store: &impl NoteStore) {
     store.write(&name("a.md"), "A").unwrap();
     store.write(&name("b.md"), "B").unwrap();
-    let mut names = store.names().unwrap();
+    let mut names = store.names(&root()).unwrap();
     names.sort();
-    assert_eq!(names, [name("a.md"), name("b.md")]);
+    assert_eq!(names, [file("a.md"), file("b.md")]);
 }
 
 fn renamed_note_moves_to_its_new_name(store: &impl NoteStore) {
     store.write(&name("a.md"), "A").unwrap();
-    store.rename(&name("a.md"), &name("b.md")).unwrap();
-    assert_eq!(store.names().unwrap(), [name("b.md")]);
+    store.rename(&name("a.md"), &file("b.md")).unwrap();
+    assert_eq!(store.names(&root()).unwrap(), [file("b.md")]);
     assert_eq!(store.read(&name("b.md")).unwrap().content, "A");
 }
 
@@ -77,7 +85,7 @@ fn rename_refuses_a_taken_name(store: &impl NoteStore) {
     store.write(&name("a.md"), "A").unwrap();
     store.write(&name("b.md"), "B").unwrap();
     assert_eq!(
-        store.rename(&name("a.md"), &name("b.md")),
+        store.rename(&name("a.md"), &file("b.md")),
         Err(StoreError::AlreadyExists(name("b.md")))
     );
     assert_eq!(store.read(&name("b.md")).unwrap().content, "B");

@@ -18,10 +18,11 @@ export function errorMessage(error: unknown): string {
 
 export const reopenLastLibrary = () => invoke<LibraryInfo | null>("reopen_last_library");
 export const chooseLibrary = () => invoke<LibraryInfo | null>("choose_library");
-export const listNotes = () => invoke<NoteListItem[]>("list_notes");
-export const readNote = (fileName: string) => invoke<NoteContent>("read_note", { fileName });
-export const saveNote = (fileName: string, content: string) =>
-  invoke<SavedNote>("save_note", { fileName, content });
-export const createNote = () => invoke<SavedNote>("create_note");
+/** Les notes d'un dossier, désigné par son chemin (`""` pour la racine de la bibliothèque). */
+export const listNotes = (folder: string) => invoke<NoteListItem[]>("list_notes", { folder });
+export const readNote = (path: string) => invoke<NoteContent>("read_note", { path });
+export const saveNote = (path: string, content: string) =>
+  invoke<SavedNote>("save_note", { path, content });
+export const createNote = (folder: string) => invoke<SavedNote>("create_note", { folder });
 /** L'adresse qui charge dans la fenêtre un fichier de la bibliothèque, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);

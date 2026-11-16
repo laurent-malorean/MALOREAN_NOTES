@@ -3,13 +3,13 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use domain::{FileName, Modified};
+use domain::{FileName, Folder, Modified, NotePath};
 
-/// Une note telle qu'elle est gardée : nom, contenu Markdown, date de modification.
+/// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StoredNote {
-    /// Le nom du fichier de la note.
-    pub file_name: FileName,
+    /// Le dossier et le nom de fichier de la note.
+    pub path: NotePath,
     /// Le contenu Markdown complet, en-tête compris.
     pub content: String,
     /// La date de dernière modification.
@@ -20,55 +20,55 @@ pub struct StoredNote {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StoreError {
     /// Aucune note ne porte ce nom.
-    NotFound(FileName),
+    NotFound(NotePath),
     /// Une note (ou son dossier de pièces jointes) porte déjà ce nom.
-    AlreadyExists(FileName),
+    AlreadyExists(NotePath),
     /// Le fichier n'est pas du texte UTF-8 : on ne l'ouvre pas, pour ne pas l'abîmer.
-    Unreadable(FileName),
+    Unreadable(NotePath),
     /// Le stockage ne répond pas (dossier absent, droits, disque plein) ; la cause est lisible.
     Unavailable(String),
 }
 
-/// Les notes d'une bibliothèque (un seul niveau de dossier).
+/// Les notes d'une bibliothèque, rangées dans ses dossiers.
 pub trait NoteStore: Send + Sync + Debug {
-    /// Toutes les notes de la bibliothèque. Une note qui n'est pas du texte UTF-8
-    /// y figure quand même, avec ce qui en est lisible.
+    /// Les notes du dossier, sans celles de ses sous-dossiers. Une note qui n'est pas
+    /// du texte UTF-8 y figure quand même, avec ce qui en est lisible.
     ///
     /// # Errors
     ///
-    /// [`StoreError::Unavailable`] si la bibliothèque ne peut pas être lue.
-    fn list(&self) -> Result<Vec<StoredNote>, StoreError>;
+    /// [`StoreError::Unavailable`] si le dossier ne peut pas être lu.
+    fn list(&self, folder: &Folder) -> Result<Vec<StoredNote>, StoreError>;
 
-    /// La note qui porte ce nom.
+    /// La note à ce chemin.
     ///
     /// # Errors
     ///
     /// [`StoreError::NotFound`] si elle n'existe pas, [`StoreError::Unreadable`] si elle
     /// n'est pas du texte UTF-8, [`StoreError::Unavailable`] si le stockage ne répond pas.
-    fn read(&self, name: &FileName) -> Result<StoredNote, StoreError>;
+    fn read(&self, note: &NotePath) -> Result<StoredNote, StoreError>;
 
     /// Écrit la note entière, en la créant si besoin ; jamais de fichier à moitié écrit.
     ///
     /// # Errors
     ///
     /// [`StoreError::Unavailable`] si l'écriture échoue ; l'ancienne version reste intacte.
-    fn write(&self, name: &FileName, content: &str) -> Result<(), StoreError>;
+    fn write(&self, note: &NotePath, content: &str) -> Result<(), StoreError>;
 
-    /// Renomme la note et son dossier de pièces jointes.
+    /// Renomme la note et son dossier de pièces jointes, dans le même dossier.
     ///
     /// # Errors
     ///
     /// [`StoreError::AlreadyExists`] si le nouveau nom (ou son dossier de pièces jointes)
     /// est pris, [`StoreError::NotFound`] si la note n'existe pas,
     /// [`StoreError::Unavailable`] si le stockage ne répond pas.
-    fn rename(&self, from: &FileName, to: &FileName) -> Result<(), StoreError>;
+    fn rename(&self, from: &NotePath, to: &FileName) -> Result<(), StoreError>;
 
-    /// Les noms de toutes les notes, sans lire leur contenu.
+    /// Les noms des notes du dossier, sans lire leur contenu.
     ///
     /// # Errors
     ///
-    /// [`StoreError::Unavailable`] si la bibliothèque ne peut pas être lue.
-    fn names(&self) -> Result<Vec<FileName>, StoreError>;
+    /// [`StoreError::Unavailable`] si le dossier ne peut pas être lu.
+    fn names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError>;
 }
 
 /// Emplacement d'une bibliothèque, tel que l'utilisateur l'a choisi.

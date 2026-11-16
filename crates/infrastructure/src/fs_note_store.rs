@@ -1,4 +1,4 @@
-//! Bibliothèque Markdown sur disque : un fichier `.md` par note, un seul niveau.
+//! Bibliothèque Markdown sur disque : un fichier `.md` par note, rangé dans des dossiers.
 
 use std::fs;
 use std::io;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 
 use application::{LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote};
-use domain::{FileName, Modified};
+use domain::{FileName, Folder, Modified, NotePath};
 
 const TEMPORARY_PREFIX: &str = ".";
 const TEMPORARY_SUFFIX: &str = ".enregistrement";
@@ -25,14 +25,20 @@ impl FsNoteStore {
         Self { root }
     }
 
-    fn path(&self, name: &FileName) -> PathBuf {
-        self.root.join(name.as_str())
+    fn folder_path(&self, folder: &Folder) -> PathBuf {
+        let mut path = self.root.clone();
+        path.extend(folder.names().iter().map(domain::FolderName::as_str));
+        path
+    }
+
+    fn path(&self, note: &NotePath) -> PathBuf {
+        self.folder_path(note.folder()).join(note.name().as_str())
     }
 
     /// Les noms exacts des notes : la casse compte, même sur un disque qui l'ignore.
-    fn note_names(&self) -> Result<Vec<FileName>, StoreError> {
+    fn note_names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError> {
         let mut names = Vec::new();
-        for entry in fs::read_dir(&self.root).map_err(unavailable)? {
+        for entry in fs::read_dir(self.folder_path(folder)).map_err(unavailable)? {
             let entry = entry.map_err(unavailable)?;
             let is_file = entry.file_type().map_err(unavailable)?.is_file();
             let parsed = entry.file_name().to_str().map(FileName::parse);
@@ -44,7 +50,7 @@ impl FsNoteStore {
     }
 
     /// Le contenu et la date de la note ; en erreur, la version lisible d'un contenu qui n'est pas en UTF-8.
-    fn read_raw(&self, name: &FileName) -> Result<(Result<String, String>, Modified), StoreError> {
+    fn read_raw(&self, name: &NotePath) -> Result<(Result<String, String>, Modified), StoreError> {
         let path = self.path(name);
         let bytes = fs::read(&path).map_err(|e| not_found_or(name, e))?;
         let modified = modified(&path).map_err(|e| not_found_or(name, e))?;
@@ -56,13 +62,14 @@ impl FsNoteStore {
 
 impl NoteStore for FsNoteStore {
     /// Une note qui n'est pas en UTF-8 reste listée, avec un titre tiré de ce qui est lisible.
-    fn list(&self) -> Result<Vec<StoredNote>, StoreError> {
+    fn list(&self, folder: &Folder) -> Result<Vec<StoredNote>, StoreError> {
         let mut notes = Vec::new();
-        for name in self.note_names()? {
+        for name in self.note_names(folder)? {
+            let name = NotePath::new(folder.clone(), name);
             let (content, modified) = self.read_raw(&name)?;
             let content = content.unwrap_or_else(|lossy| lossy);
             notes.push(StoredNote {
-                file_name: name,
+                path: name,
                 content,
                 modified,
             });
@@ -70,23 +77,23 @@ impl NoteStore for FsNoteStore {
         Ok(notes)
     }
 
-    fn read(&self, name: &FileName) -> Result<StoredNote, StoreError> {
-        if !self.note_names()?.contains(name) {
+    fn read(&self, name: &NotePath) -> Result<StoredNote, StoreError> {
+        if !self.note_names(name.folder())?.contains(name.name()) {
             return Err(StoreError::NotFound(name.clone()));
         }
         let (content, modified) = self.read_raw(name)?;
         let content = content.map_err(|_| StoreError::Unreadable(name.clone()))?;
         Ok(StoredNote {
-            file_name: name.clone(),
+            path: name.clone(),
             content,
             modified,
         })
     }
 
-    fn write(&self, name: &FileName, content: &str) -> Result<(), StoreError> {
-        let temporary = self.root.join(format!(
+    fn write(&self, name: &NotePath, content: &str) -> Result<(), StoreError> {
+        let temporary = self.folder_path(name.folder()).join(format!(
             "{TEMPORARY_PREFIX}{}{TEMPORARY_SUFFIX}",
-            name.as_str()
+            name.name().as_str()
         ));
         let written =
             fs::write(&temporary, content).and_then(|()| fs::rename(&temporary, self.path(name)));
@@ -99,21 +106,23 @@ impl NoteStore for FsNoteStore {
         })
     }
 
-    fn rename(&self, from: &FileName, to: &FileName) -> Result<(), StoreError> {
-        let new_assets = self.root.join(to.attachment_folder());
-        if self.note_names()?.contains(to) || new_assets.exists() {
-            return Err(StoreError::AlreadyExists(to.clone()));
+    fn rename(&self, from: &NotePath, to: &FileName) -> Result<(), StoreError> {
+        let folder = self.folder_path(from.folder());
+        let new_assets = folder.join(to.attachment_folder());
+        let target = from.renamed(to.clone());
+        if self.note_names(from.folder())?.contains(to) || new_assets.exists() {
+            return Err(StoreError::AlreadyExists(target));
         }
-        fs::rename(self.path(from), self.path(to)).map_err(|e| not_found_or(from, e))?;
-        let old_assets = self.root.join(from.attachment_folder());
+        fs::rename(self.path(from), self.path(&target)).map_err(|e| not_found_or(from, e))?;
+        let old_assets = folder.join(from.name().attachment_folder());
         if old_assets.is_dir() {
             fs::rename(old_assets, new_assets).map_err(unavailable)?;
         }
         Ok(())
     }
 
-    fn names(&self) -> Result<Vec<FileName>, StoreError> {
-        self.note_names()
+    fn names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError> {
+        self.note_names(folder)
     }
 }
 
@@ -144,7 +153,7 @@ fn modified(path: &Path) -> io::Result<Modified> {
     ))
 }
 
-fn not_found_or(name: &FileName, error: io::Error) -> StoreError {
+fn not_found_or(name: &NotePath, error: io::Error) -> StoreError {
     if error.kind() == io::ErrorKind::NotFound {
         StoreError::NotFound(name.clone())
     } else {

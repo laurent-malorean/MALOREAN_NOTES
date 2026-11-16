@@ -1,7 +1,7 @@
 //! Lister les notes de la bibliothèque.
 
-use domain::NoteSummary;
 use domain::note::sort_by_recent;
+use domain::{Folder, NoteSummary};
 
 use crate::{AppError, NoteStore};
 
@@ -18,16 +18,16 @@ impl<'a> ListNotes<'a> {
         Self { store }
     }
 
-    /// Le résumé de chaque note, la plus récemment modifiée en premier.
+    /// Le résumé de chaque note du dossier, la plus récemment modifiée en premier.
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
-    pub fn execute(&self) -> Result<Vec<NoteSummary>, AppError> {
-        let notes = self.store.list()?;
+    /// [`AppError::StorageUnavailable`] si le dossier ne peut pas être lu.
+    pub fn execute(&self, folder: &Folder) -> Result<Vec<NoteSummary>, AppError> {
+        let notes = self.store.list(folder)?;
         let summaries = notes
             .into_iter()
-            .map(|n| NoteSummary::new(n.file_name, &n.content, n.modified))
+            .map(|n| NoteSummary::new(n.path, &n.content, n.modified))
             .collect();
         Ok(sort_by_recent(summaries))
     }
@@ -41,7 +41,7 @@ mod tests {
     #[test]
     fn notes_are_listed_by_title_most_recent_first() {
         let store = InMemoryNoteStore::with_notes(&[("a.md", "# Alpha"), ("b.md", "texte")]);
-        let notes = ListNotes::new(&store).execute().unwrap();
+        let notes = ListNotes::new(&store).execute(&Folder::root()).unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
         assert_eq!(titles, ["Sans titre", "Alpha"]);
     }

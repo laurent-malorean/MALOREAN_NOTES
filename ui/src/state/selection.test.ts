@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { NoteListItem } from "../bridge/generated/NoteListItem";
 import { followRename, initialSelection } from "./selection";
 
-const note = (fileName: string, modified: number): NoteListItem => ({
-  fileName,
-  title: fileName,
+const note = (path: string, modified: number): NoteListItem => ({
+  path,
+  title: path,
   modified,
 });
 

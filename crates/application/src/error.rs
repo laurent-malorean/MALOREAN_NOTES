@@ -1,6 +1,6 @@
 //! Erreurs des cas d'usage.
 
-use domain::FileName;
+use domain::NotePath;
 
 use crate::StoreError;
 
@@ -11,14 +11,14 @@ pub enum AppError {
     #[error("aucune bibliothèque n'est ouverte")]
     NoLibraryOpen,
     /// Aucune note ne porte ce nom.
-    #[error("la note « {} » n'existe pas", .0.as_str())]
-    NoteNotFound(FileName),
+    #[error("la note « {} » n'existe pas", .0.to_path())]
+    NoteNotFound(NotePath),
     /// Une autre note porte déjà ce nom.
-    #[error("le nom « {} » est déjà pris", .0.as_str())]
-    NameTaken(FileName),
+    #[error("le nom « {} » est déjà pris", .0.to_path())]
+    NameTaken(NotePath),
     /// La note n'est pas du texte UTF-8 ; on ne l'ouvre pas, pour ne pas l'abîmer.
-    #[error("la note « {} » n'est pas un texte lisible (UTF-8) : elle n'est pas ouverte, pour ne pas l'abîmer", .0.as_str())]
-    NoteUnreadable(FileName),
+    #[error("la note « {} » n'est pas un texte lisible (UTF-8) : elle n'est pas ouverte, pour ne pas l'abîmer", .0.to_path())]
+    NoteUnreadable(NotePath),
     /// Le stockage ne répond pas ; la cause est lisible.
     #[error("stockage indisponible : {0}")]
     StorageUnavailable(String),
@@ -39,8 +39,8 @@ impl From<StoreError> for AppError {
 mod tests {
     use super::*;
 
-    fn name() -> FileName {
-        FileName::parse("note.md").unwrap()
+    fn name() -> NotePath {
+        NotePath::parse("note.md").unwrap()
     }
 
     #[test]

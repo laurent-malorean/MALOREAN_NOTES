@@ -1,6 +1,6 @@
 //! Ouvrir une note pour l'éditer.
 
-use domain::FileName;
+use domain::NotePath;
 
 use crate::{AppError, NoteStore, StoredNote};
 
@@ -17,13 +17,13 @@ impl<'a> ReadNote<'a> {
         Self { store }
     }
 
-    /// La note qui porte ce nom.
+    /// La note à ce chemin.
     ///
     /// # Errors
     ///
     /// [`AppError::NoteNotFound`] si elle n'existe pas, [`AppError::NoteUnreadable`] si elle
     /// n'est pas du texte UTF-8, [`AppError::StorageUnavailable`] si le stockage ne répond pas.
-    pub fn execute(&self, name: &FileName) -> Result<StoredNote, AppError> {
+    pub fn execute(&self, name: &NotePath) -> Result<StoredNote, AppError> {
         Ok(self.store.read(name)?)
     }
 }
@@ -38,7 +38,7 @@ mod tests {
     fn note_content_is_returned() {
         let store = InMemoryNoteStore::with_notes(&[("a.md", "# Alpha\ntexte")]);
         let note = ReadNote::new(&store)
-            .execute(&FileName::parse("a.md").unwrap())
+            .execute(&NotePath::parse("a.md").unwrap())
             .unwrap();
         assert_eq!(note.content, "# Alpha\ntexte");
     }
@@ -46,7 +46,7 @@ mod tests {
     #[test]
     fn missing_note_is_reported() {
         let store = InMemoryNoteStore::default();
-        let name = FileName::parse("x.md").unwrap();
+        let name = NotePath::parse("x.md").unwrap();
         assert_eq!(
             ReadNote::new(&store).execute(&name),
             Err(AppError::NoteNotFound(name))

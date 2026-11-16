@@ -10,9 +10,9 @@ import {
 } from "./screen";
 
 const library = { name: "Notes", path: "/Users/moi/Notes" };
-const note = (fileName: string, modified: number): NoteListItem => ({
-  fileName,
-  title: fileName,
+const note = (path: string, modified: number): NoteListItem => ({
+  path,
+  title: path,
   modified,
 });
 

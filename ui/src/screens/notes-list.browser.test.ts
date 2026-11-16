@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { renderNotesList } from "./notes-list";
 
 const notes = [
-  { fileName: "b.md", title: "Bêta", modified: Date.UTC(2026, 10, 16, 14, 30) },
-  { fileName: "a.md", title: "Alpha", modified: Date.UTC(2026, 10, 15, 9, 0) },
+  { path: "b.md", title: "Bêta", modified: Date.UTC(2026, 10, 16, 14, 30) },
+  { path: "a.md", title: "Alpha", modified: Date.UTC(2026, 10, 15, 9, 0) },
 ];
 
 function list() {
@@ -38,7 +38,7 @@ describe("liste des notes", () => {
   it("ouvre la note cliquée", () => {
     const container = list();
     const opened: string[] = [];
-    renderNotesList(container, notes, null, (fileName) => opened.push(fileName));
+    renderNotesList(container, notes, null, (path) => opened.push(path));
     (container.querySelectorAll<HTMLButtonElement>(".note-item")[1] as HTMLButtonElement).click();
     expect(opened).toEqual(["a.md"]);
   });
@@ -47,7 +47,7 @@ describe("liste des notes", () => {
     const container = list();
     renderNotesList(
       container,
-      [{ fileName: "x.md", title: "<img src=x onerror=alert(1)>", modified: 0 }],
+      [{ path: "x.md", title: "<img src=x onerror=alert(1)>", modified: 0 }],
       null,
       () => {},
     );

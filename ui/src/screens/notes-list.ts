@@ -7,13 +7,13 @@ export function renderNotesList(
   container: HTMLElement,
   notes: readonly NoteListItem[],
   selected: string | null,
-  onOpen: (fileName: string) => void,
+  onOpen: (path: string) => void,
 ): void {
   container.replaceChildren(
     ...notes.map((note) => {
       const item = document.createElement("button");
       item.className = "note-item";
-      item.classList.toggle("selected", note.fileName === selected);
+      item.classList.toggle("selected", note.path === selected);
       const title = document.createElement("span");
       title.className = "note-title";
       title.textContent = note.title;
@@ -21,7 +21,7 @@ export function renderNotesList(
       date.className = "note-date";
       date.textContent = dateFormat.format(new Date(note.modified));
       item.append(title, date);
-      item.addEventListener("click", () => onOpen(note.fileName));
+      item.addEventListener("click", () => onOpen(note.path));
       return item;
     }),
   );

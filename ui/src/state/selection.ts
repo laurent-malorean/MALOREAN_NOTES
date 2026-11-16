@@ -2,7 +2,7 @@ import type { NoteListItem } from "../bridge/generated/NoteListItem";
 
 /** La note ouverte au chargement : la première de la liste, déjà triée par date. */
 export function initialSelection(notes: readonly NoteListItem[]): string | null {
-  return notes[0]?.fileName ?? null;
+  return notes[0]?.path ?? null;
 }
 
 /** La note sélectionnée après le renommage d'un fichier. */

@@ -1,7 +1,7 @@
 //! Créer une note vide.
 
-use domain::FileName;
 use domain::saving::new_note_name;
+use domain::{Folder, NotePath};
 
 use crate::{AppError, NoteStore};
 
@@ -18,16 +18,16 @@ impl<'a> CreateNote<'a> {
         Self { store }
     }
 
-    /// Le nom de fichier de la note créée.
+    /// Le chemin de la note créée dans `folder`.
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue ou écrite.
-    pub fn execute(&self) -> Result<FileName, AppError> {
-        let existing = self.store.names()?;
-        let name = new_note_name(&existing);
-        self.store.write(&name, "")?;
-        Ok(name)
+    /// [`AppError::StorageUnavailable`] si le dossier ne peut pas être lu ou écrit.
+    pub fn execute(&self, folder: &Folder) -> Result<NotePath, AppError> {
+        let existing = self.store.names(folder)?;
+        let note = NotePath::new(folder.clone(), new_note_name(&existing));
+        self.store.write(&note, "")?;
+        Ok(note)
     }
 }
 
@@ -39,17 +39,17 @@ mod tests {
     #[test]
     fn new_note_is_an_empty_untitled_file() {
         let store = InMemoryNoteStore::default();
-        let name = CreateNote::new(&store).execute().unwrap();
-        assert_eq!(name.as_str(), "sans-titre.md");
+        let name = CreateNote::new(&store).execute(&Folder::root()).unwrap();
+        assert_eq!(name.to_path(), "sans-titre.md");
         assert_eq!(store.read(&name).unwrap().content, "");
     }
 
     #[test]
     fn new_note_never_overwrites_another_untitled_note() {
         let store = InMemoryNoteStore::with_notes(&[("sans-titre.md", "garde-moi")]);
-        let name = CreateNote::new(&store).execute().unwrap();
-        assert_eq!(name.as_str(), "sans-titre-2.md");
-        let kept = FileName::parse("sans-titre.md").unwrap();
+        let name = CreateNote::new(&store).execute(&Folder::root()).unwrap();
+        assert_eq!(name.to_path(), "sans-titre-2.md");
+        let kept = NotePath::parse("sans-titre.md").unwrap();
         assert_eq!(store.read(&kept).unwrap().content, "garde-moi");
     }
 }

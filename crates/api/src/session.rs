@@ -8,7 +8,7 @@ use application::use_cases::{
 };
 use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences};
 
-use domain::FileName;
+use domain::{Folder, NotePath};
 
 use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote};
 
@@ -72,65 +72,65 @@ impl Session {
         self.open_library(LibraryLocation::new(location)?).map(Some)
     }
 
-    /// Les notes de la bibliothèque ouverte, la plus récente en premier.
+    /// Les notes du dossier reçu de la page (`""` pour la racine), la plus récente en premier.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucune bibliothèque
-    /// ouverte, bibliothèque illisible.
-    pub fn list_notes(&self) -> Result<Vec<NoteListItem>, ApiError> {
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier invalide, aucune
+    /// bibliothèque ouverte, dossier illisible.
+    pub fn list_notes(&self, folder: &str) -> Result<Vec<NoteListItem>, ApiError> {
         let store = self.store()?;
-        let notes = ListNotes::new(&*store).execute()?;
+        let notes = ListNotes::new(&*store).execute(&Folder::parse(folder)?)?;
         Ok(notes
             .into_iter()
             .map(|n| NoteListItem {
-                file_name: n.file_name().as_str().to_owned(),
+                path: n.path().to_path(),
                 title: n.title().to_owned(),
                 modified: n.modified().0,
             })
             .collect())
     }
 
-    /// Le contenu d'une note, désignée par le nom reçu de la page.
+    /// Le contenu d'une note, désignée par le chemin reçu de la page.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom invalide, note
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note
     /// absente ou illisible, aucune bibliothèque ouverte.
-    pub fn read_note(&self, file_name: &str) -> Result<NoteContent, ApiError> {
+    pub fn read_note(&self, path: &str) -> Result<NoteContent, ApiError> {
         let store = self.store()?;
-        let note = ReadNote::new(&*store).execute(&FileName::parse(file_name)?)?;
+        let note = ReadNote::new(&*store).execute(&NotePath::parse(path)?)?;
         Ok(NoteContent {
-            file_name: note.file_name.as_str().to_owned(),
+            path: note.path.to_path(),
             content: note.content,
         })
     }
 
-    /// Enregistre une note ; rend son nom de fichier, peut-être changé par le titre.
+    /// Enregistre une note ; rend son chemin, dont le nom a peut-être changé avec le titre.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom invalide, nom pris,
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, nom pris,
     /// stockage indisponible, aucune bibliothèque ouverte.
-    pub fn save_note(&self, file_name: &str, content: &str) -> Result<SavedNote, ApiError> {
+    pub fn save_note(&self, path: &str, content: &str) -> Result<SavedNote, ApiError> {
         let store = self.store()?;
-        let saved = SaveNote::new(&*store).execute(&FileName::parse(file_name)?, content)?;
+        let saved = SaveNote::new(&*store).execute(&NotePath::parse(path)?, content)?;
         Ok(SavedNote {
-            file_name: saved.as_str().to_owned(),
+            path: saved.to_path(),
         })
     }
 
-    /// Crée une note vide, sans titre.
+    /// Crée une note vide, sans titre, dans le dossier reçu de la page.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; stockage indisponible,
-    /// aucune bibliothèque ouverte.
-    pub fn create_note(&self) -> Result<SavedNote, ApiError> {
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier invalide, stockage
+    /// indisponible, aucune bibliothèque ouverte.
+    pub fn create_note(&self, folder: &str) -> Result<SavedNote, ApiError> {
         let store = self.store()?;
-        let created = CreateNote::new(&*store).execute()?;
+        let created = CreateNote::new(&*store).execute(&Folder::parse(folder)?)?;
         Ok(SavedNote {
-            file_name: created.as_str().to_owned(),
+            path: created.to_path(),
         })
     }
 
@@ -183,7 +183,7 @@ mod tests {
     fn nothing_works_before_a_library_is_open() {
         let session = session_with(&[]);
         assert_eq!(
-            session.list_notes().unwrap_err().message,
+            session.list_notes("").unwrap_err().message,
             "aucune bibliothèque n'est ouverte"
         );
     }
@@ -202,7 +202,7 @@ mod tests {
     fn cancelling_the_folder_picker_opens_nothing() {
         let session = session_with(&[]);
         assert_eq!(session.open_chosen_folder(None).unwrap(), None);
-        assert!(session.list_notes().is_err());
+        assert!(session.list_notes("").is_err());
     }
 
     #[test]
@@ -246,14 +246,14 @@ mod tests {
             session.reopen_last_library().unwrap().map(|i| i.name),
             Some("Notes".into())
         );
-        assert!(session.list_notes().is_ok());
+        assert!(session.list_notes("").is_ok());
     }
 
     #[test]
     fn notes_are_listed_with_their_title() {
         let session = opened(&[("a.md", "# Alpha")]);
-        let notes = session.list_notes().unwrap();
-        assert_eq!(notes[0].file_name, "a.md");
+        let notes = session.list_notes("").unwrap();
+        assert_eq!(notes[0].path, "a.md");
         assert_eq!(notes[0].title, "Alpha");
     }
 
@@ -262,13 +262,13 @@ mod tests {
         let session = opened(&[("a.md", "# Alpha")]);
         assert_eq!(session.read_note("a.md").unwrap().content, "# Alpha");
         let saved = session.save_note("a.md", "# Bêta").unwrap();
-        assert_eq!(saved.file_name, "beta.md");
+        assert_eq!(saved.path, "beta.md");
     }
 
     #[test]
     fn created_note_is_untitled() {
         let session = opened(&[]);
-        assert_eq!(session.create_note().unwrap().file_name, "sans-titre.md");
+        assert_eq!(session.create_note("").unwrap().path, "sans-titre.md");
     }
 
     #[test]

@@ -1,6 +1,6 @@
 //! Enregistrer une note ; son nom de fichier suit son titre.
 
-use domain::FileName;
+use domain::NotePath;
 use domain::saving::plan_save;
 
 use crate::{AppError, NoteStore};
@@ -18,21 +18,21 @@ impl<'a> SaveNote<'a> {
         Self { store }
     }
 
-    /// Le nom de fichier de la note après enregistrement.
+    /// Le chemin de la note après enregistrement ; elle reste dans son dossier.
     ///
     /// # Errors
     ///
     /// [`AppError::NameTaken`] si le nouveau nom est pris entre-temps,
     /// [`AppError::NoteNotFound`] si la note a disparu, [`AppError::StorageUnavailable`]
     /// si le stockage ne répond pas.
-    pub fn execute(&self, current: &FileName, content: &str) -> Result<FileName, AppError> {
-        let existing = self.store.names()?;
-        let plan = plan_save(current, content, &existing);
+    pub fn execute(&self, current: &NotePath, content: &str) -> Result<NotePath, AppError> {
+        let existing = self.store.names(current.folder())?;
+        let plan = plan_save(current.name(), content, &existing);
         self.store.write(current, plan.content())?;
-        if plan.file_name() != current {
+        if plan.file_name() != current.name() {
             self.store.rename(current, plan.file_name())?;
         }
-        Ok(plan.file_name().clone())
+        Ok(current.renamed(plan.file_name().clone()))
     }
 }
 
@@ -41,8 +41,8 @@ mod tests {
     use super::*;
     use crate::testing::InMemoryNoteStore;
 
-    fn name(text: &str) -> FileName {
-        FileName::parse(text).unwrap()
+    fn name(text: &str) -> NotePath {
+        NotePath::parse(text).unwrap()
     }
 
     #[test]
@@ -62,7 +62,10 @@ mod tests {
             .execute(&name("ancien-nom.md"), "# Mon idée")
             .unwrap();
         assert_eq!(saved, name("mon-idee.md"));
-        assert_eq!(store.names().unwrap(), [name("mon-idee.md")]);
+        assert_eq!(
+            store.names(&domain::Folder::root()).unwrap(),
+            [domain::FileName::parse("mon-idee.md").unwrap()]
+        );
         assert_eq!(store.read(&saved).unwrap().content, "# Mon idée");
     }
 

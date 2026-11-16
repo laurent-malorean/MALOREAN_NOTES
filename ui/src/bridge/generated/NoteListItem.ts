@@ -5,9 +5,9 @@
  */
 export type NoteListItem = { 
 /**
- * Le nom du fichier de la note.
+ * Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
  */
-fileName: string, 
+path: string, 
 /**
  * Le titre affiché.
  */

@@ -41,44 +41,50 @@ const slug = (title: string | null) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "") || "sans-titre";
 
-function freeName(wanted: string, current?: string): string {
-  let name = `${wanted}.md`;
-  for (let n = 2; name !== current && name in backend.notes; n++) name = `${wanted}-${n}.md`;
-  return name;
+const folderOf = (path: string) => path.slice(0, Math.max(path.lastIndexOf("/"), 0));
+const inFolder = (folder: string, name: string) => (folder ? `${folder}/${name}` : name);
+
+function freeName(folder: string, wanted: string, current?: string): string {
+  let path = inFolder(folder, `${wanted}.md`);
+  for (let n = 2; path !== current && path in backend.notes; n++) {
+    path = inFolder(folder, `${wanted}-${n}.md`);
+  }
+  return path;
 }
 
-function save(fileName: string, content: string) {
+function save(path: string, content: string) {
   if (backend.failNextSave) {
     backend.failNextSave = false;
     throw { message: "stockage indisponible : disque plein" };
   }
-  const target = freeName(slug(titleOf(content)), fileName);
-  Reflect.deleteProperty(backend.notes, fileName);
+  const target = freeName(folderOf(path), slug(titleOf(content)), path);
+  Reflect.deleteProperty(backend.notes, path);
   backend.notes[target] = { content, modified: (clock += 1) };
-  return { fileName: target };
+  return { path: target };
 }
 
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
   choose_library: () => library,
-  list_notes: () =>
+  list_notes: ({ folder = "" }) =>
     Object.entries(backend.notes)
-      .map(([fileName, n]) => ({
-        fileName,
+      .filter(([path]) => folderOf(path) === folder)
+      .map(([path, n]) => ({
+        path,
         title: titleOf(n.content) ?? "Sans titre",
         modified: n.modified,
       }))
       .sort((a, b) => b.modified - a.modified),
-  read_note: ({ fileName = "" }) => {
-    const note = backend.notes[fileName];
-    if (!note) throw { message: `la note « ${fileName} » n'existe pas` };
-    return { fileName, content: note.content };
+  read_note: ({ path = "" }) => {
+    const note = backend.notes[path];
+    if (!note) throw { message: `la note « ${path} » n'existe pas` };
+    return { path, content: note.content };
   },
-  save_note: ({ fileName = "", content = "" }) => save(fileName, content),
-  create_note: () => {
-    const fileName = freeName("sans-titre");
-    backend.notes[fileName] = { content: "", modified: (clock += 1) };
-    return { fileName };
+  save_note: ({ path = "", content = "" }) => save(path, content),
+  create_note: ({ folder = "" }) => {
+    const path = freeName(folder, "sans-titre");
+    backend.notes[path] = { content: "", modified: (clock += 1) };
+    return { path };
   },
 };
 

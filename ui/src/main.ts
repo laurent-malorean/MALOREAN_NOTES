@@ -38,17 +38,17 @@ function showError(error: unknown) {
 
 function show(next: Screen) {
   screen = next;
-  renderScreen(layout, screen, (fileName) => void openNote(fileName).catch(showError));
+  renderScreen(layout, screen, (path) => void openNote(path).catch(showError));
 }
 
 async function refreshList() {
-  show(notesRefreshed(screen, await bridge.listNotes()));
+  show(notesRefreshed(screen, await bridge.listNotes("")));
 }
 
-function editNote(fileName: string): Autosave {
-  let current = fileName;
+function editNote(path: string): Autosave {
+  let current = path;
   return createAutosave({
-    fileName: current,
+    path: current,
     scheduler: timerScheduler(),
     save: bridge.saveNote,
     onSaved: (saved) => {
@@ -60,19 +60,19 @@ function editNote(fileName: string): Autosave {
   });
 }
 
-async function openNote(fileName: string | null) {
+async function openNote(path: string | null) {
   await autosave?.flush();
   autosave = null;
-  show(noteSelected(screen, fileName));
-  if (fileName === null) return editor.show("");
-  const note = await bridge.readNote(fileName);
-  autosave = editNote(note.fileName);
+  show(noteSelected(screen, path));
+  if (path === null) return editor.show("");
+  const note = await bridge.readNote(path);
+  autosave = editNote(note.path);
   editor.show(note.content);
 }
 
 async function showLibrary(library: bridge.LibraryInfo) {
   libraryPath = library.path;
-  show(libraryOpened(library, await bridge.listNotes()));
+  show(libraryOpened(library, await bridge.listNotes("")));
   await openNote(selectedNote(screen));
 }
 
@@ -82,9 +82,9 @@ async function chooseLibrary() {
 }
 
 async function createNote() {
-  const created = await bridge.createNote();
+  const created = await bridge.createNote("");
   await refreshList();
-  await openNote(created.fileName);
+  await openNote(created.path);
   editor.focus();
 }
 
