@@ -1,13 +1,13 @@
 /** Les éléments de la fenêtre, cherchés une seule fois. */
 export interface Layout {
-  welcome: HTMLElement;
-  workspace: HTMLElement;
-  libraryName: HTMLElement;
-  notesList: HTMLElement;
-  editor: HTMLElement;
-  status: HTMLElement;
-  chooseButtons: HTMLButtonElement[];
-  newNoteButton: HTMLButtonElement;
+  readonly welcome: HTMLElement;
+  readonly workspace: HTMLElement;
+  readonly libraryName: HTMLElement;
+  readonly notesList: HTMLElement;
+  readonly editor: HTMLElement;
+  readonly status: HTMLElement;
+  readonly chooseButtons: readonly HTMLButtonElement[];
+  readonly newNoteButton: HTMLButtonElement;
 }
 
 export function createLayout(root: HTMLElement): Layout {

@@ -16,12 +16,12 @@ export const timerScheduler = (delayMs = AUTOSAVE_DELAY_MS): Scheduler => ({
 });
 
 export interface AutosaveOptions {
-  fileName: string;
-  scheduler: Scheduler;
-  save: (fileName: string, content: string) => Promise<SavedNote>;
+  readonly fileName: string;
+  readonly scheduler: Scheduler;
+  readonly save: (fileName: string, content: string) => Promise<SavedNote>;
   /** Appelé après chaque enregistrement, avec le nom de fichier (peut-être renommé). */
-  onSaved: (fileName: string) => void;
-  onError?: (error: unknown) => void;
+  readonly onSaved: (fileName: string) => void;
+  readonly onError?: (error: unknown) => void;
 }
 
 export interface Autosave {

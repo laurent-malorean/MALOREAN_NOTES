@@ -10,8 +10,8 @@ export type Conceal =
   | { kind: "rule"; from: number; to: number };
 
 export interface LineStyle {
-  from: number;
-  className: string;
+  readonly from: number;
+  readonly className: string;
 }
 
 export interface Preview {
@@ -20,12 +20,12 @@ export interface Preview {
 }
 
 export interface PreviewInput {
-  doc: Text;
-  tree: Tree;
+  readonly doc: Text;
+  readonly tree: Tree;
   /** Numéros des lignes où se trouve le curseur : leur syntaxe reste visible. */
-  activeLines: ReadonlySet<number>;
-  from?: number;
-  to?: number;
+  readonly activeLines: ReadonlySet<number>;
+  readonly from?: number;
+  readonly to?: number;
 }
 
 export const FRONT_MATTER_CLASS = "cm-lp-front-matter";
