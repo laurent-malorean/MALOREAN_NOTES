@@ -1,0 +1,119 @@
+import { expect, type Page, test } from "@playwright/test";
+
+type Notes = Record<string, { content: string; modified: number }>;
+
+const LIBRARY: Notes = {
+  "courses.md": { content: "# Courses\n- [ ] pain\n- lait", modified: 30 },
+  "idee.md": { content: "# Idée\nUne **bonne** idée.", modified: 20 },
+  "vieille-note.md": { content: "# Vieille note\ntexte", modified: 10 },
+};
+
+async function launch(page: Page, options: { notes?: Notes; remembered?: boolean } = {}) {
+  const params = new URLSearchParams({
+    notes: JSON.stringify(options.notes ?? LIBRARY),
+    remembered: options.remembered === false ? "0" : "1",
+  });
+  await page.goto(`/e2e/app.html?${params.toString()}`);
+}
+
+const titles = (page: Page) => page.locator(".note-title");
+const editorLines = (page: Page) => page.locator(".cm-line");
+const savedContent = (page: Page, fileName: string) =>
+  page.evaluate((name) => window.backend.notes[name]?.content ?? null, fileName);
+const fileNames = (page: Page) => page.evaluate(() => Object.keys(window.backend.notes).sort());
+
+test("au premier lancement, l'accueil propose de choisir un dossier", async ({ page }) => {
+  await launch(page, { remembered: false });
+  await expect(page.getByText("Choisir un dossier de notes")).toBeVisible();
+  await page.getByRole("button", { name: "Choisir un dossier de notes" }).click();
+  await expect(page.locator(".library-name")).toHaveText("Notes");
+  await expect(titles(page)).toHaveText(["Courses", "Idée", "Vieille note"]);
+});
+
+test("la dernière bibliothèque est rouverte et la note la plus récente est ouverte", async ({
+  page,
+}) => {
+  await launch(page);
+  await expect(titles(page)).toHaveText(["Courses", "Idée", "Vieille note"]);
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Courses");
+  await expect(editorLines(page).first()).toHaveText("Courses");
+});
+
+test("cliquer une note l'ouvre, mise en forme et sans syntaxe", async ({ page }) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await expect(editorLines(page)).toHaveText(["Idée", "Une bonne idée."]);
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Idée");
+});
+
+test("ce qu'on tape est enregistré automatiquement", async ({ page }) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await editorLines(page).last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" ajouté");
+  await expect
+    .poll(() => savedContent(page, "vieille-note.md"))
+    .toBe("# Vieille note\ntexte ajouté");
+});
+
+test("changer le titre renomme le fichier et la note reste sélectionnée", async ({ page }) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await editorLines(page).first().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" relue");
+  await expect
+    .poll(() => fileNames(page))
+    .toEqual(["courses.md", "idee.md", "vieille-note-relue.md"]);
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Vieille note relue");
+  await page.keyboard.type(" encore");
+  await expect
+    .poll(() => savedContent(page, "vieille-note-relue-encore.md"))
+    .toContain("# Vieille note relue encore");
+});
+
+test("une nouvelle note s'ouvre vide et prend le nom de son titre", async ({ page }) => {
+  await launch(page);
+  await page.getByTitle("Nouvelle note").click();
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Sans titre");
+  await page.keyboard.type("# Liste de Noël");
+  await expect.poll(() => savedContent(page, "liste-de-noel.md")).toBe("# Liste de Noël");
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Liste de Noël");
+});
+
+test("changer de note enregistre tout de suite ce qui ne l'était pas", async ({ page }) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await editorLines(page).last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type("!");
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  expect(await savedContent(page, "vieille-note.md")).toBe("# Vieille note\ntexte!");
+});
+
+test("cocher une case enregistre la tâche cochée", async ({ page }) => {
+  await launch(page);
+  await page.locator("input.cm-lp-checkbox").dispatchEvent("mousedown");
+  await expect.poll(() => savedContent(page, "courses.md")).toBe("# Courses\n- [x] pain\n- lait");
+});
+
+test("un échec d'enregistrement est affiché, puis rattrapé", async ({ page }) => {
+  await launch(page);
+  await page.evaluate(() => (window.backend.failNextSave = true));
+  await editorLines(page).last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" bio");
+  await expect(page.getByRole("status")).toHaveText("stockage indisponible : disque plein");
+  await page.keyboard.type("!");
+  await expect
+    .poll(() => savedContent(page, "courses.md"))
+    .toBe("# Courses\n- [ ] pain\n- lait bio!");
+});
+
+test("une bibliothèque vide s'ouvre sans erreur", async ({ page }) => {
+  await launch(page, { notes: {} });
+  await expect(page.locator(".library-name")).toHaveText("Notes");
+  await expect(titles(page)).toHaveCount(0);
+  await expect(page.getByRole("status")).toHaveText("");
+});

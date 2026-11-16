@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { createAutosave, type Scheduler } from "./autosave";
+import { describe, expect, it, vi } from "vitest";
+import { createAutosave, type Scheduler, timerScheduler } from "./autosave";
 
 /** Horloge manuelle : les délais ne s'écoulent que quand le test le décide. */
 function manualScheduler() {
@@ -115,5 +115,90 @@ describe("enregistrement automatique", () => {
     autosave.edit("# B");
     await autosave.flush();
     expect(saved).toEqual(["b.md"]);
+  });
+});
+
+describe("enregistrement automatique : échecs et délai", () => {
+  it("signale un échec et garde le texte pour le prochain essai", async () => {
+    const errors: unknown[] = [];
+    const saves: string[] = [];
+    let fail = true;
+    const { scheduler } = manualScheduler();
+    const autosave = createAutosave({
+      fileName: "a.md",
+      scheduler,
+      save: async (_name, content) => {
+        if (fail) throw new Error("disque plein");
+        saves.push(content);
+        return { fileName: "a.md" };
+      },
+      onSaved: () => {},
+      onError: (error) => errors.push(error),
+    });
+    autosave.edit("précieux");
+    await autosave.flush();
+    expect(errors).toHaveLength(1);
+    fail = false;
+    await autosave.flush();
+    expect(saves).toEqual(["précieux"]);
+  });
+
+  it("garde la frappe la plus récente si elle arrive pendant un échec", async () => {
+    const saves: string[] = [];
+    let attempt = 0;
+    const { scheduler } = manualScheduler();
+    const autosave = createAutosave({
+      fileName: "a.md",
+      scheduler,
+      save: async (_name, content) => {
+        attempt += 1;
+        if (attempt === 1) {
+          autosave.edit("plus récent");
+          throw new Error("échec");
+        }
+        saves.push(content);
+        return { fileName: "a.md" };
+      },
+      onSaved: () => {},
+    });
+    autosave.edit("ancien");
+    await autosave.flush();
+    await autosave.flush();
+    expect(saves).toEqual(["plus récent"]);
+  });
+
+  it("n'enregistre rien s'il n'y a rien de nouveau", async () => {
+    const saves: string[] = [];
+    const { scheduler } = manualScheduler();
+    const autosave = createAutosave({
+      fileName: "a.md",
+      scheduler,
+      save: async (_name, content) => {
+        saves.push(content);
+        return { fileName: "a.md" };
+      },
+      onSaved: () => {},
+    });
+    await autosave.flush();
+    expect(saves).toEqual([]);
+  });
+
+  it("attend le délai prévu après la dernière frappe", () => {
+    vi.useFakeTimers();
+    try {
+      let ran = 0;
+      const cancel = timerScheduler(600).schedule(() => (ran += 1));
+      vi.advanceTimersByTime(599);
+      expect(ran).toBe(0);
+      vi.advanceTimersByTime(1);
+      expect(ran).toBe(1);
+      cancel();
+      const cancelled = timerScheduler(600).schedule(() => (ran += 1));
+      cancelled();
+      vi.advanceTimersByTime(1000);
+      expect(ran).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

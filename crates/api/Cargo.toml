@@ -16,6 +16,8 @@ ts-rs.workspace = true
 
 [dev-dependencies]
 application = { workspace = true, features = ["testing"] }
+serde_json.workspace = true
+tauri = { workspace = true, features = ["test"] }
 
 [lints]
 workspace = true

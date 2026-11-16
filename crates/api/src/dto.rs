@@ -1,10 +1,10 @@
 //! Données échangées avec l'interface ; leurs types TypeScript sont générés par `cargo test`.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 /// La bibliothèque ouverte.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct LibraryInfo {
@@ -13,7 +13,7 @@ pub struct LibraryInfo {
 }
 
 /// Une ligne de la liste des notes.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteListItem {
@@ -25,7 +25,7 @@ pub struct NoteListItem {
 }
 
 /// Une note ouverte dans l'éditeur.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteContent {
@@ -34,7 +34,7 @@ pub struct NoteContent {
 }
 
 /// Le nom de fichier d'une note après enregistrement ou création.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct SavedNote {
