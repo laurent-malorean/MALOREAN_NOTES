@@ -12,6 +12,7 @@ readonly MAX_FILE_LINES=600
 readonly RUST_MIN_LINE_COVERAGE=95
 readonly PRIVATE_PATHS=(_SECRET CLAUDE.local.md)
 readonly GENERATED_TYPES=ui/src/bridge/generated
+readonly THEME_FILE=ui/src/theme.css
 # Assemblage : couvert par les tests des commandes et les parcours complets, pas par des tests unitaires.
 readonly COVERAGE_IGNORED='crates/app/src/main\.rs'
 
@@ -55,6 +56,19 @@ check_file_length() {
 $too_long"
 }
 
+check_theme() {
+  step "Interface : couleurs et polices écrites seulement dans le thème (${THEME_FILE})"
+  local hard_coded
+  hard_coded=$( {
+    grep -rnE '#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|: *(white|black) *[;}]|font-family: *[^v ]' \
+      --include='*.css' ui/src | grep -v "^${THEME_FILE}:" || true
+    grep -rnE "rgba?\(|hsla?\(|[\"'\`]#[0-9a-fA-F]{3,8}[\"'\`]" --include='*.ts' ui/src \
+      | grep -vE '\.test\.ts:' || true
+  } )
+  [ -z "$hard_coded" ] || fail "valeurs d'apparence écrites en dur, à déplacer dans ${THEME_FILE} :
+$hard_coded"
+}
+
 check_rust() {
   require cargo llvm-cov --version
   require cargo deny --version
@@ -75,6 +89,7 @@ check_rust() {
 }
 
 check_ui() {
+  check_theme
   step "Interface : types partagés à jour (générés par les tests Rust)"
   git diff --exit-code -- "$GENERATED_TYPES" || fail "types générés modifiés : les commiter"
 

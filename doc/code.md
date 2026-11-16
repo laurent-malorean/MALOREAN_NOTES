@@ -52,7 +52,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Pas de paramètre booléen qui change le comportement** : `save(note, true)` ne se lit pas. On écrit deux fonctions ou on passe un `enum` nommé. *Vérifié par : Clippy (`fn_params_excessive_bools`, à activer).*
 - **Modules profonds** : un module offre une interface petite et cache beaucoup de travail. Il cache une décision (format du fichier, ordre de tri) que le reste du code n'a pas à connaître. Visibilité la plus étroite possible : privé par défaut, `pub(crate)` ensuite, `pub` seulement pour ce qu'une autre crate appelle. *Vérifié par : lint `unreachable_pub` (à activer).*
 - **Pas de passe-plat** : une fonction ou un type qui ne fait que transmettre à un autre, sans rien ajouter, est supprimé. On découpe une fonction quand la partie extraite a un nom de l'ontologie et un sens seul, pas seulement pour passer sous un seuil.
- : une constante nommée pour chaque seuil, statut ou chaîne qui porte un sens.
+- **Pas de valeur en dur** : une constante nommée pour chaque seuil, statut ou chaîne qui porte un sens. Une valeur qu'on voudrait régler sans toucher au code (apparence, limites, réglages par défaut) vit dans un fichier de configuration ou de thème, à un seul endroit.
 - **Pas de code mort** : fonction, import, variable non utilisés sont supprimés. *Vérifié par : lints `unused` en erreur.*
 - **Commentaires** : disent **pourquoi** et **l'intention**, pas ce que fait la ligne. Le `///` d'un élément public décrit ce qu'on obtient, dans le vocabulaire de l'ontologie, et une section `# Errors` dit dans quels cas il échoue. On écrit ce commentaire **avant** le code : s'il est difficile à écrire, l'interface est mal pensée. *Vérifié par : lints `missing_docs` et Clippy `missing_errors_doc` (à activer).*
 - **Pas de duplication de règle** : la même règle écrite deux fois sera un jour écrite différemment. Mais on factorise une **règle**, pas une **ressemblance** : deux codes semblables qui répondent à deux besoins différents restent séparés. Une abstraction qui demande un nouveau paramètre ou un nouveau cas à chaque usage est mauvaise : on la défait (on recopie le code chez chaque appelant) puis on cherche la bonne.
@@ -120,6 +120,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Un module = un écran ou un sujet.** Éditeur : une extension CodeMirror par fonctionnalité (mise en forme en direct, mode focus, collage d'images) dans `ui/src/editor/`.
 - **Logique hors du navigateur** : état d'écran, transitions et calculs dans des modules sans DOM, testés avec Vitest.
 - **Aucune règle métier** dans l'interface : elle appelle les commandes.
+- **Apparence dans le thème** : couleurs (thème clair et sombre), polices et tailles de lecture ne s'écrivent que dans `ui/src/theme.css`, sous forme de variables CSS. Feuilles de style et extensions CodeMirror n'emploient que ces variables (`var(--accent)`), y compris les couleurs de la coloration du code par langage. *Vérifié par : `scripts/ci.sh` (aucune couleur ni police écrite ailleurs).*
 - **Mise en forme** : Prettier. *Vérifié par : `prettier --check`.*
 
 ## 9. Changer le code
@@ -221,7 +222,7 @@ disallowed-methods = [
 
 | Quand | Quoi |
 |---|---|
-| Avant chaque push : mini CI lancée automatiquement par `.githooks/pre-push` | fichiers privés exclus ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 95 %, dépendances, test de mutation du code Rust qui part (`scripts/ci.sh --mutations-depuis <dernier envoi>` ; tout le code au premier envoi) ; interface : types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec les seuils de couverture, parcours complets, test de mutation (score 100 %) |
+| Avant chaque push : mini CI lancée automatiquement par `.githooks/pre-push` | fichiers privés exclus ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 95 %, dépendances, test de mutation du code Rust qui part (`scripts/ci.sh --mutations-depuis <dernier envoi>` ; tout le code au premier envoi) ; interface : couleurs et polices seulement dans le thème, types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec les seuils de couverture, parcours complets, test de mutation (score 100 %) |
 | Avant de livrer : `scripts/ci.sh --complet` | tout ce qui précède, plus le test de mutation ; benchmarks si la lecture a changé ; build `release` signé et notarisé |
 
 Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov cargo-deny cargo-mutants --locked`, puis dans `ui/` : `npm install` et `npx playwright install webkit`. Le garde-fou s'active avec `git config --local core.hooksPath .githooks`.
