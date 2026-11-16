@@ -31,9 +31,12 @@ impl std::error::Error for InvalidFileName {}
 impl FileName {
     /// Accepte un nom existant s'il est sûr : pas de séparateur, pas caché, extension `.md`.
     pub fn parse(name: &str) -> Result<Self, InvalidFileName> {
-        let has_md_extension = name.len() > EXTENSION.len()
-            && name.is_char_boundary(name.len() - EXTENSION.len())
-            && name[name.len() - EXTENSION.len()..].eq_ignore_ascii_case(EXTENSION);
+        // `.md` seul est refusé par la règle des fichiers cachés : pas besoin de l'exclure ici.
+        let has_md_extension = name
+            .len()
+            .checked_sub(EXTENSION.len())
+            .and_then(|stem_end| name.get(stem_end..))
+            .is_some_and(|extension| extension.eq_ignore_ascii_case(EXTENSION));
         let is_safe = !name.starts_with('.') && !name.contains(['/', '\\', '\0']);
         if has_md_extension && is_safe {
             Ok(Self(name.to_owned()))
