@@ -122,6 +122,62 @@ pub async fn create_note(
     in_background(move || session.create_note(&folder)).await
 }
 
+/// Les chemins de tous les dossiers, dans l'ordre de l'arbre.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn list_folders(session: SharedSession<'_>) -> Result<Vec<String>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.list_folders()).await
+}
+
+/// Crée un dossier dans un autre (`""` pour la racine) ; rend son chemin.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn create_folder(
+    session: SharedSession<'_>,
+    parent: String,
+    name: String,
+) -> Result<String, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.create_folder(&parent, &name)).await
+}
+
+/// Renomme un dossier ; rend son nouveau chemin.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn rename_folder(
+    session: SharedSession<'_>,
+    path: String,
+    name: String,
+) -> Result<String, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.rename_folder(&path, &name)).await
+}
+
+/// Déplace un dossier dans un autre (`""` pour la racine) ; rend son nouveau chemin.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn move_folder(
+    session: SharedSession<'_>,
+    path: String,
+    into: String,
+) -> Result<String, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.move_folder(&path, &into)).await
+}
+
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
@@ -131,5 +187,9 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         read_note,
         save_note,
         create_note,
+        list_folders,
+        create_folder,
+        rename_folder,
+        move_folder,
     ]
 }

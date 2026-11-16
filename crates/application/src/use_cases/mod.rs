@@ -1,12 +1,14 @@
 //! Un type par intention de l'utilisateur.
 
 mod create_note;
+mod folders;
 mod library;
 mod list_notes;
 mod read_note;
 mod save_note;
 
 pub use create_note::CreateNote;
+pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use library::{OpenLibrary, OpenedLibrary, ReopenLastLibrary};
 pub use list_notes::ListNotes;
 pub use read_note::ReadNote;

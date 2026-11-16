@@ -51,14 +51,14 @@ impl FolderName {
 }
 
 /// Un dossier de la bibliothèque, désigné par son chemin depuis la racine (la bibliothèque elle-même).
-#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Folder(Vec<FolderName>);
 
 impl Folder {
     /// La racine : la bibliothèque elle-même.
     #[must_use]
     pub fn root() -> Self {
-        Self::default()
+        Self(Vec::new())
     }
 
     /// Le dossier désigné par `a/b/c` ; la chaîne vide désigne la racine.
@@ -127,6 +127,21 @@ impl Folder {
         let names: Vec<&str> = self.0.iter().map(FolderName::as_str).collect();
         names.join("/")
     }
+}
+
+/// Les dossiers dans l'ordre de l'arbre : chaque dossier suivi de ses sous-dossiers,
+/// les frères par ordre alphabétique sans tenir compte de la casse.
+#[must_use]
+pub fn sort_for_display(mut folders: Vec<Folder>) -> Vec<Folder> {
+    let key = |folder: &Folder| -> Vec<(String, String)> {
+        folder
+            .names()
+            .iter()
+            .map(|n| (n.as_str().to_lowercase(), n.as_str().to_owned()))
+            .collect()
+    };
+    folders.sort_by_cached_key(key);
+    folders
 }
 
 /// Une note désignée par son dossier et son nom de fichier.
@@ -278,6 +293,19 @@ mod tests {
         assert_eq!(folder("a/b").moved(&from, &to), folder("x/y/b"));
         assert_eq!(folder("a").moved(&from, &to), folder("x/y"));
         assert_eq!(folder("c").moved(&from, &to), folder("c"));
+    }
+
+    #[test]
+    fn folders_are_shown_as_a_tree_in_alphabetical_order() {
+        let sorted = sort_for_display(vec![
+            folder("b"),
+            folder("A/z"),
+            folder("a"),
+            folder("A"),
+            folder("A/b"),
+        ]);
+        let paths: Vec<String> = sorted.iter().map(Folder::to_path).collect();
+        assert_eq!(paths, ["A", "A/b", "A/z", "a", "b"]);
     }
 
     #[test]

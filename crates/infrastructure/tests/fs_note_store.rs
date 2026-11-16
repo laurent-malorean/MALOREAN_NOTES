@@ -232,3 +232,90 @@ fn a_note_without_read_permission_is_reported_as_unavailable() {
     fs::set_permissions(&file, fs::Permissions::from_mode(READ_WRITE_FILE)).unwrap();
     assert!(matches!(result, Err(StoreError::Unavailable(_))));
 }
+
+fn folder(path: &str) -> Folder {
+    Folder::parse(path).unwrap()
+}
+
+#[test]
+fn hidden_attachment_and_linked_folders_are_not_note_folders() {
+    let (dir, store) = library();
+    for sub in [
+        "Travail",
+        "Travail/Réunions",
+        ".git",
+        "voyage.assets",
+        "Travail/.cache",
+    ] {
+        fs::create_dir(dir.path().join(sub)).unwrap();
+    }
+    std::os::unix::fs::symlink(dir.path().join("Travail"), dir.path().join("Raccourci")).unwrap();
+    fs::write(dir.path().join("pas-un-dossier"), "x").unwrap();
+    let mut folders: Vec<String> = store
+        .folders()
+        .unwrap()
+        .iter()
+        .map(Folder::to_path)
+        .collect();
+    folders.sort();
+    assert_eq!(folders, ["Travail", "Travail/Réunions"]);
+}
+
+#[test]
+fn a_folder_whose_name_is_not_text_is_skipped() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+    let (dir, store) = library();
+    let created = fs::create_dir(dir.path().join(OsStr::from_bytes(b"illisible-\xff")));
+    if created.is_ok() {
+        assert!(store.folders().unwrap().is_empty());
+    }
+}
+
+#[test]
+fn a_folder_is_only_found_under_its_exact_name() {
+    let (dir, store) = library();
+    fs::create_dir(dir.path().join("Travail")).unwrap();
+    assert_eq!(
+        store.create_folder(&folder("travail/Réunions")),
+        Err(StoreError::FolderNotFound(folder("travail")))
+    );
+    assert_eq!(
+        store.move_folder(&folder("travail"), &folder("Perso")),
+        Err(StoreError::FolderNotFound(folder("travail")))
+    );
+}
+
+#[test]
+fn a_folder_cannot_be_created_where_a_file_stands() {
+    let (dir, store) = library();
+    fs::write(dir.path().join("Travail"), "fichier").unwrap();
+    assert_eq!(
+        store.create_folder(&folder("Travail")),
+        Err(StoreError::FolderAlreadyExists(folder("Travail")))
+    );
+}
+
+#[test]
+fn a_folder_in_a_read_only_folder_cannot_be_created() {
+    let (dir, store) = library();
+    fs::set_permissions(dir.path(), fs::Permissions::from_mode(READ_ONLY_FOLDER)).unwrap();
+    let result = store.create_folder(&folder("Travail"));
+    fs::set_permissions(dir.path(), fs::Permissions::from_mode(WRITABLE_FOLDER)).unwrap();
+    assert!(matches!(result, Err(StoreError::Unavailable(_))));
+}
+
+#[test]
+fn a_folder_is_moved_on_disk_with_its_attachments() {
+    let (dir, store) = library();
+    store.create_folder(&folder("a")).unwrap();
+    store.create_folder(&folder("b")).unwrap();
+    store
+        .write(&name("a/voyage.md"), "![x](voyage.assets/x.png)")
+        .unwrap();
+    fs::create_dir(dir.path().join("a/voyage.assets")).unwrap();
+    fs::write(dir.path().join("a/voyage.assets/x.png"), "png").unwrap();
+    store.move_folder(&folder("a"), &folder("b/a")).unwrap();
+    assert!(dir.path().join("b/a/voyage.assets/x.png").is_file());
+    assert!(!dir.path().join("a").exists());
+}

@@ -46,13 +46,57 @@ button {
 .workspace {
   height: 100%;
   display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-columns: var(--folders-width) var(--sidebar-width) 1fr;
 }
 .workspace[hidden],
 .welcome[hidden] {
   display: none;
 }
 
+.folders {
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.folders-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0.5rem;
+}
+.folder-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  padding-left: calc(0.6rem + var(--depth) * var(--folder-indent));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.folder-item:hover {
+  background: color-mix(in srgb, var(--selected) 50%, transparent);
+}
+.folder-item.selected {
+  background: var(--selected);
+  font-weight: 600;
+}
+.folder-item.drop-target {
+  outline: 2px solid var(--accent);
+}
+.folder-input {
+  width: 100%;
+  font: inherit;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
 .sidebar {
   background: var(--sidebar);
   border-right: 1px solid var(--border);

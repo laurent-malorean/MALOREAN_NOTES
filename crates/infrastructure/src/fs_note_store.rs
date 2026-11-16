@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::UNIX_EPOCH;
 
 use application::{LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote};
-use domain::{FileName, Folder, Modified, NotePath};
+use domain::{FileName, Folder, FolderName, Modified, NotePath};
 
 const TEMPORARY_PREFIX: &str = ".";
 const TEMPORARY_SUFFIX: &str = ".enregistrement";
@@ -27,7 +27,7 @@ impl FsNoteStore {
 
     fn folder_path(&self, folder: &Folder) -> PathBuf {
         let mut path = self.root.clone();
-        path.extend(folder.names().iter().map(domain::FolderName::as_str));
+        path.extend(folder.names().iter().map(FolderName::as_str));
         path
     }
 
@@ -47,6 +47,33 @@ impl FsNoteStore {
             }
         }
         Ok(names)
+    }
+
+    /// Les noms exacts des sous-dossiers de `folder` : ni cachés, ni pièces jointes, ni liens.
+    fn sub_folders(&self, folder: &Folder) -> Result<Vec<Folder>, StoreError> {
+        let mut folders = Vec::new();
+        for entry in fs::read_dir(self.folder_path(folder)).map_err(unavailable)? {
+            let entry = entry.map_err(unavailable)?;
+            let is_dir = entry.file_type().map_err(unavailable)?.is_dir();
+            let name = entry.file_name();
+            let parsed = name.to_str().map(|n| (n, FolderName::parse(n)));
+            if let (true, Some((written, Ok(name)))) = (is_dir, parsed)
+                && name.as_str() == written
+            {
+                folders.push(folder.join(name));
+            }
+        }
+        Ok(folders)
+    }
+
+    /// Vrai si le dossier existe sous ce nom exact (la casse compte).
+    fn has_folder(&self, folder: &Folder) -> Result<bool, StoreError> {
+        match folder.parent() {
+            None => Ok(true),
+            Some(parent) => {
+                Ok(self.has_folder(&parent)? && self.sub_folders(&parent)?.contains(folder))
+            }
+        }
     }
 
     /// Le contenu et la date de la note ; en erreur, la version lisible d'un contenu qui n'est pas en UTF-8.
@@ -123,6 +150,51 @@ impl NoteStore for FsNoteStore {
 
     fn names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError> {
         self.note_names(folder)
+    }
+
+    fn folders(&self) -> Result<Vec<Folder>, StoreError> {
+        let mut found = Vec::new();
+        let mut to_visit = vec![Folder::root()];
+        while let Some(folder) = to_visit.pop() {
+            for sub in self.sub_folders(&folder)? {
+                to_visit.push(sub.clone());
+                found.push(sub);
+            }
+        }
+        Ok(found)
+    }
+
+    fn create_folder(&self, folder: &Folder) -> Result<(), StoreError> {
+        let parent = folder.parent().unwrap_or_else(Folder::root);
+        if !self.has_folder(&parent)? {
+            return Err(StoreError::FolderNotFound(parent));
+        }
+        fs::create_dir(self.folder_path(folder)).map_err(|error| {
+            if error.kind() == io::ErrorKind::AlreadyExists {
+                StoreError::FolderAlreadyExists(folder.clone())
+            } else {
+                unavailable(error)
+            }
+        })
+    }
+
+    /// Un dossier renommé en changeant seulement la casse (`travail` → `Travail`) n'est pas
+    /// un dossier pris, même sur un disque qui ignore la casse.
+    fn move_folder(&self, from: &Folder, to: &Folder) -> Result<(), StoreError> {
+        let parent = to.parent().unwrap_or_else(Folder::root);
+        if !self.has_folder(from)? {
+            return Err(StoreError::FolderNotFound(from.clone()));
+        }
+        if !self.has_folder(&parent)? {
+            return Err(StoreError::FolderNotFound(parent));
+        }
+        let target = self.folder_path(to);
+        let same_entry =
+            fs::canonicalize(&target).ok() == fs::canonicalize(self.folder_path(from)).ok();
+        if target.exists() && !same_entry {
+            return Err(StoreError::FolderAlreadyExists(to.clone()));
+        }
+        fs::rename(self.folder_path(from), target).map_err(unavailable)
     }
 }
 

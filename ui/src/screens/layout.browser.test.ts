@@ -16,6 +16,8 @@ describe("mise en page", () => {
     const layout = createLayout(root);
     for (const element of [
       layout.libraryName,
+      layout.foldersList,
+      layout.newFolderButton,
       layout.notesList,
       layout.editor,
       layout.status,

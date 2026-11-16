@@ -1,6 +1,6 @@
 //! Faux stockage en mémoire, qui se comporte comme le vrai (voir `contract`).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use domain::{FileName, Folder, Modified, NotePath};
@@ -16,7 +16,24 @@ pub struct InMemoryNoteStore {
 #[derive(Debug, Default)]
 struct State {
     notes: BTreeMap<NotePath, (String, Modified)>,
+    /// Les sous-dossiers, racine exclue.
+    folders: BTreeSet<Folder>,
     tick: u64,
+}
+
+impl State {
+    fn has_folder(&self, folder: &Folder) -> bool {
+        folder.parent().is_none() || self.folders.contains(folder)
+    }
+
+    /// Le dossier et tous ses parents existent désormais.
+    fn add_folder(&mut self, folder: &Folder) {
+        let mut current = folder.clone();
+        while let Some(parent) = current.parent() {
+            self.folders.insert(current);
+            current = parent;
+        }
+    }
 }
 
 impl InMemoryNoteStore {
@@ -60,6 +77,7 @@ impl NoteStore for InMemoryNoteStore {
 
     fn write(&self, name: &NotePath, content: &str) -> Result<(), StoreError> {
         let mut state = self.state();
+        state.add_folder(name.folder());
         state.tick += 1;
         let modified = Modified(state.tick);
         state
@@ -90,6 +108,66 @@ impl NoteStore for InMemoryNoteStore {
             .filter(|name| name.folder() == folder)
             .map(|name| name.name().clone())
             .collect())
+    }
+
+    fn folders(&self) -> Result<Vec<Folder>, StoreError> {
+        Ok(self.state().folders.iter().cloned().collect())
+    }
+
+    fn create_folder(&self, folder: &Folder) -> Result<(), StoreError> {
+        let mut state = self.state();
+        let parent = folder.parent().unwrap_or_else(Folder::root);
+        if state.has_folder(folder) {
+            return Err(StoreError::FolderAlreadyExists(folder.clone()));
+        }
+        if !state.has_folder(&parent) {
+            return Err(StoreError::FolderNotFound(parent));
+        }
+        state.folders.insert(folder.clone());
+        Ok(())
+    }
+
+    fn move_folder(&self, from: &Folder, to: &Folder) -> Result<(), StoreError> {
+        let mut state = self.state();
+        let parent = to.parent().unwrap_or_else(Folder::root);
+        if !state.has_folder(from) {
+            return Err(StoreError::FolderNotFound(from.clone()));
+        }
+        if !state.has_folder(&parent) {
+            return Err(StoreError::FolderNotFound(parent));
+        }
+        if state.has_folder(to) {
+            return Err(StoreError::FolderAlreadyExists(to.clone()));
+        }
+        Self::move_folder_contents(&mut state, from, to);
+        Ok(())
+    }
+}
+
+impl InMemoryNoteStore {
+    fn move_folder_contents(state: &mut State, from: &Folder, to: &Folder) {
+        let moved: Vec<Folder> = state
+            .folders
+            .iter()
+            .filter(|f| f.is_within(from))
+            .cloned()
+            .collect();
+        for folder in moved {
+            state.folders.remove(&folder);
+            state.folders.insert(folder.moved(from, to));
+        }
+        let notes: Vec<NotePath> = state
+            .notes
+            .keys()
+            .filter(|n| n.folder().is_within(from))
+            .cloned()
+            .collect();
+        for note in notes {
+            if let Some(value) = state.notes.remove(&note) {
+                let path = NotePath::new(note.folder().moved(from, to), note.name().clone());
+                state.notes.insert(path, value);
+            }
+        }
     }
 }
 

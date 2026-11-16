@@ -3,6 +3,8 @@ export interface Layout {
   readonly welcome: HTMLElement;
   readonly workspace: HTMLElement;
   readonly libraryName: HTMLElement;
+  readonly foldersList: HTMLElement;
+  readonly newFolderButton: HTMLButtonElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
   readonly status: HTMLElement;
@@ -18,6 +20,13 @@ export function createLayout(root: HTMLElement): Layout {
       <button class="primary" data-choose>Choisir un dossier de notes</button>
     </section>
     <section class="workspace" hidden>
+      <aside class="folders">
+        <header class="sidebar-header">
+          <span>Dossiers</span>
+          <button class="icon" data-new-folder title="Nouveau dossier">＋</button>
+        </header>
+        <nav class="folders-list"></nav>
+      </aside>
       <aside class="sidebar">
         <header class="sidebar-header">
           <span class="library-name"></span>
@@ -34,6 +43,8 @@ export function createLayout(root: HTMLElement): Layout {
     welcome: find(".welcome"),
     workspace: find(".workspace"),
     libraryName: find(".library-name"),
+    foldersList: find(".folders-list"),
+    newFolderButton: find("[data-new-folder]"),
     notesList: find(".notes-list"),
     editor: find(".editor"),
     status: find(".status"),

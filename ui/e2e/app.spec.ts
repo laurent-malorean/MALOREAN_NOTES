@@ -8,9 +8,13 @@ const LIBRARY: Notes = {
   "vieille-note.md": { content: "# Vieille note\ntexte", modified: 10 },
 };
 
-async function launch(page: Page, options: { notes?: Notes; remembered?: boolean } = {}) {
+async function launch(
+  page: Page,
+  options: { notes?: Notes; folders?: string[]; remembered?: boolean } = {},
+) {
   const params = new URLSearchParams({
     notes: JSON.stringify(options.notes ?? LIBRARY),
+    folders: JSON.stringify(options.folders ?? []),
     remembered: options.remembered === false ? "0" : "1",
   });
   await page.goto(`/e2e/app.html?${params.toString()}`);
@@ -126,4 +130,60 @@ test("une image de la note s'affiche à la place de sa syntaxe", async ({ page }
     "asset://localhost/%2FUsers%2Fmoi%2FNotes%2Fvoyage.assets%2Fmer.png",
   );
   await expect(image).toHaveAttribute("alt", "La mer");
+});
+
+const folderItem = (page: Page, name: string) => page.locator(".folder-item", { hasText: name });
+
+test("on range ses notes dans des dossiers : créer, renommer, déplacer", async ({ page }) => {
+  await launch(page, {
+    notes: {
+      "idee.md": { content: "# Idée", modified: 2 },
+      "Travail/reunion.md": { content: "# Réunion", modified: 1 },
+    },
+    folders: ["Travail"],
+  });
+  await expect(page.locator(".folder-item")).toHaveText(["Notes", "Travail"]);
+  await expect(titles(page)).toHaveText(["Idée"]);
+
+  await folderItem(page, "Travail").click();
+  await expect(titles(page)).toHaveText(["Réunion"]);
+  await expect(editorLines(page).first()).toHaveText("Réunion");
+
+  await page.getByTitle("Nouveau dossier").click();
+  await page.keyboard.type("Projets");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".folder-item")).toHaveText(["Notes", "Travail", "Projets"]);
+  await expect(page.locator(".folder-item.selected")).toHaveText("Projets");
+  await expect(titles(page)).toHaveCount(0);
+
+  await page.getByTitle("Nouvelle note").click();
+  await expect.poll(() => paths(page)).toContain("Travail/Projets/sans-titre.md");
+
+  await folderItem(page, "Projets").dblclick();
+  await page.keyboard.press("Meta+A");
+  await page.keyboard.type("Chantiers");
+  await page.keyboard.press("Enter");
+  await expect.poll(() => paths(page)).toContain("Travail/Chantiers/sans-titre.md");
+  await expect(page.locator(".folder-item.selected")).toHaveText("Chantiers");
+
+  await folderItem(page, "Chantiers").dragTo(folderItem(page, "Notes"));
+  await expect.poll(() => paths(page)).toContain("Chantiers/sans-titre.md");
+  await expect(page.locator(".folder-item")).toHaveText(["Notes", "Chantiers", "Travail"]);
+});
+
+test("une image d'une note rangée dans un dossier est cherchée à côté d'elle", async ({ page }) => {
+  await launch(page, {
+    notes: {
+      "Voyages/lisbonne.md": {
+        content: "# Lisbonne\n![vue](lisbonne.assets/vue.png)",
+        modified: 1,
+      },
+    },
+    folders: ["Voyages"],
+  });
+  await folderItem(page, "Voyages").click();
+  await expect(page.locator(".cm-editor img.cm-lp-image")).toHaveAttribute(
+    "src",
+    "asset://localhost/%2FUsers%2Fmoi%2FNotes%2FVoyages%2Flisbonne.assets%2Fvue.png",
+  );
 });

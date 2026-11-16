@@ -1,6 +1,6 @@
 //! Erreurs des cas d'usage.
 
-use domain::NotePath;
+use domain::{Folder, NotePath};
 
 use crate::StoreError;
 
@@ -19,6 +19,18 @@ pub enum AppError {
     /// La note n'est pas du texte UTF-8 ; on ne l'ouvre pas, pour ne pas l'abîmer.
     #[error("la note « {} » n'est pas un texte lisible (UTF-8) : elle n'est pas ouverte, pour ne pas l'abîmer", .0.to_path())]
     NoteUnreadable(NotePath),
+    /// Aucun dossier n'existe à ce chemin.
+    #[error("le dossier « {} » n'existe pas", .0.to_path())]
+    FolderNotFound(Folder),
+    /// Un autre dossier porte déjà ce chemin.
+    #[error("un dossier « {} » existe déjà", .0.to_path())]
+    FolderNameTaken(Folder),
+    /// Un dossier ne peut pas aller dans lui-même ni dans l'un de ses sous-dossiers.
+    #[error("le dossier « {} » ne peut pas aller dans lui-même ni dans l'un de ses sous-dossiers", .0.to_path())]
+    FolderInsideItself(Folder),
+    /// La racine (la bibliothèque elle-même) ne se renomme ni ne se déplace dans l'application.
+    #[error("la bibliothèque elle-même ne peut être ni renommée ni déplacée")]
+    RootIsFixed,
     /// Le stockage ne répond pas ; la cause est lisible.
     #[error("stockage indisponible : {0}")]
     StorageUnavailable(String),
@@ -30,6 +42,8 @@ impl From<StoreError> for AppError {
             StoreError::NotFound(name) => Self::NoteNotFound(name),
             StoreError::AlreadyExists(name) => Self::NameTaken(name),
             StoreError::Unreadable(name) => Self::NoteUnreadable(name),
+            StoreError::FolderNotFound(folder) => Self::FolderNotFound(folder),
+            StoreError::FolderAlreadyExists(folder) => Self::FolderNameTaken(folder),
             StoreError::Unavailable(reason) => Self::StorageUnavailable(reason),
         }
     }
@@ -61,6 +75,26 @@ mod tests {
         assert_eq!(
             message,
             "la note « note.md » n'est pas un texte lisible (UTF-8) : elle n'est pas ouverte, pour ne pas l'abîmer"
+        );
+    }
+
+    fn folder(path: &str) -> Folder {
+        Folder::parse(path).unwrap()
+    }
+
+    #[test]
+    fn folder_errors_are_reported_by_path() {
+        let missing = AppError::from(StoreError::FolderNotFound(folder("a/b"))).to_string();
+        assert_eq!(missing, "le dossier « a/b » n'existe pas");
+        let taken = AppError::from(StoreError::FolderAlreadyExists(folder("a"))).to_string();
+        assert_eq!(taken, "un dossier « a » existe déjà");
+        assert_eq!(
+            AppError::FolderInsideItself(folder("a")).to_string(),
+            "le dossier « a » ne peut pas aller dans lui-même ni dans l'un de ses sous-dossiers"
+        );
+        assert_eq!(
+            AppError::RootIsFixed.to_string(),
+            "la bibliothèque elle-même ne peut être ni renommée ni déplacée"
         );
     }
 

@@ -68,6 +68,26 @@ describe("pont vers Rust : message d'erreur", () => {
   });
 });
 
+describe("pont vers Rust : dossiers", () => {
+  it("liste les dossiers", async () => {
+    const calls = recordCalls(["Travail"]);
+    expect(await bridge.listFolders()).toEqual(["Travail"]);
+    expect(calls).toEqual([{ command: "list_folders", args: {} }]);
+  });
+
+  it("crée, renomme et déplace un dossier", async () => {
+    const calls = recordCalls("x");
+    await bridge.createFolder("Travail", "Projets");
+    await bridge.renameFolder("Travail", "Boulot");
+    await bridge.moveFolder("Boulot", "Perso");
+    expect(calls).toEqual([
+      { command: "create_folder", args: { parent: "Travail", name: "Projets" } },
+      { command: "rename_folder", args: { path: "Travail", name: "Boulot" } },
+      { command: "move_folder", args: { path: "Boulot", into: "Perso" } },
+    ]);
+  });
+});
+
 describe("pont vers Rust : fichiers de la bibliothèque", () => {
   it("donne l'adresse qui charge un fichier du disque dans la fenêtre", () => {
     mockConvertFileSrc("macos");

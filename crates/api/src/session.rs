@@ -4,11 +4,12 @@ use std::path::Path;
 use std::sync::{Arc, PoisonError, RwLock};
 
 use application::use_cases::{
-    CreateNote, ListNotes, OpenLibrary, ReadNote, ReopenLastLibrary, SaveNote,
+    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, OpenLibrary, ReadNote,
+    RenameFolder, ReopenLastLibrary, SaveNote,
 };
 use application::{AppError, LibraryLocation, LibraryOpener, NoteStore, Preferences};
 
-use domain::{Folder, NotePath};
+use domain::{Folder, FolderName, NotePath};
 
 use crate::{ApiError, LibraryInfo, NoteContent, NoteListItem, SavedNote};
 
@@ -132,6 +133,57 @@ impl Session {
         Ok(SavedNote {
             path: created.to_path(),
         })
+    }
+
+    /// Les chemins de tous les dossiers de la bibliothèque, dans l'ordre de l'arbre.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucune bibliothèque
+    /// ouverte, bibliothèque illisible.
+    pub fn list_folders(&self) -> Result<Vec<String>, ApiError> {
+        let store = self.store()?;
+        let folders = ListFolders::new(&*store).execute()?;
+        Ok(folders.iter().map(Folder::to_path).collect())
+    }
+
+    /// Crée le dossier `name` dans `parent` ; rend son chemin.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom ou chemin invalide,
+    /// dossier déjà existant, parent absent, aucune bibliothèque ouverte.
+    pub fn create_folder(&self, parent: &str, name: &str) -> Result<String, ApiError> {
+        let store = self.store()?;
+        let created = CreateFolder::new(&*store)
+            .execute(&Folder::parse(parent)?, FolderName::parse(name)?)?;
+        Ok(created.to_path())
+    }
+
+    /// Renomme le dossier ; rend son nouveau chemin.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom ou chemin invalide,
+    /// racine, nom déjà pris, dossier absent, aucune bibliothèque ouverte.
+    pub fn rename_folder(&self, path: &str, name: &str) -> Result<String, ApiError> {
+        let store = self.store()?;
+        let renamed =
+            RenameFolder::new(&*store).execute(&Folder::parse(path)?, FolderName::parse(name)?)?;
+        Ok(renamed.to_path())
+    }
+
+    /// Déplace le dossier dans `into` ; rend son nouveau chemin.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, racine,
+    /// déplacement dans lui-même, nom déjà pris, dossier absent, aucune bibliothèque ouverte.
+    pub fn move_folder(&self, path: &str, into: &str) -> Result<String, ApiError> {
+        let store = self.store()?;
+        let moved =
+            MoveFolder::new(&*store).execute(&Folder::parse(path)?, &Folder::parse(into)?)?;
+        Ok(moved.to_path())
     }
 
     fn keep(&self, location: &LibraryLocation, store: Arc<dyn NoteStore>) -> LibraryInfo {
@@ -269,6 +321,44 @@ mod tests {
     fn created_note_is_untitled() {
         let session = opened(&[]);
         assert_eq!(session.create_note("").unwrap().path, "sans-titre.md");
+    }
+
+    #[test]
+    fn folders_are_created_renamed_moved_and_listed() {
+        let session = opened(&[("Travail/a.md", "# A")]);
+        assert_eq!(
+            session.create_folder("Travail", "Projets").unwrap(),
+            "Travail/Projets"
+        );
+        assert_eq!(session.create_folder("", "Perso").unwrap(), "Perso");
+        assert_eq!(
+            session
+                .rename_folder("Travail/Projets", "Chantiers")
+                .unwrap(),
+            "Travail/Chantiers"
+        );
+        assert_eq!(
+            session.move_folder("Travail", "Perso").unwrap(),
+            "Perso/Travail"
+        );
+        assert_eq!(
+            session.list_folders().unwrap(),
+            ["Perso", "Perso/Travail", "Perso/Travail/Chantiers"]
+        );
+        assert_eq!(session.list_notes("Perso/Travail").unwrap()[0].title, "A");
+    }
+
+    #[test]
+    fn invalid_folder_names_from_the_page_are_refused() {
+        let session = opened(&[]);
+        assert_eq!(
+            session.create_folder("", ".cache").unwrap_err().message,
+            "nom de dossier invalide : « .cache »"
+        );
+        assert_eq!(
+            session.list_notes("../x").unwrap_err().message,
+            "nom de dossier invalide : « ../x »"
+        );
     }
 
     #[test]

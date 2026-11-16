@@ -181,3 +181,35 @@ fn the_window_can_load_the_files_of_the_open_library_only() {
     assert!(scope.is_allowed(image));
     assert!(!scope.is_allowed("/Users/moi/Documents/secret.png"));
 }
+
+#[test]
+fn folders_are_handled_with_the_argument_names_used_by_the_page() {
+    let window = window(&[("Travail/a.md", "# A")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let created: String = ok(call(
+        &window,
+        "create_folder",
+        json!({ "parent": "", "name": "Perso" }),
+    ));
+    assert_eq!(created, "Perso");
+    let renamed: String = ok(call(
+        &window,
+        "rename_folder",
+        json!({ "path": "Perso", "name": "Maison" }),
+    ));
+    assert_eq!(renamed, "Maison");
+    let moved: String = ok(call(
+        &window,
+        "move_folder",
+        json!({ "path": "Travail", "into": "Maison" }),
+    ));
+    assert_eq!(moved, "Maison/Travail");
+    let folders: Vec<String> = ok(call(&window, "list_folders", json!({})));
+    assert_eq!(folders, ["Maison", "Maison/Travail"]);
+    let notes: Vec<NoteListItem> = ok(call(
+        &window,
+        "list_notes",
+        json!({ "folder": "Maison/Travail" }),
+    ));
+    assert_eq!(notes[0].path, "Maison/Travail/a.md");
+}

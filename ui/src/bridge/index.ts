@@ -26,3 +26,13 @@ export const saveNote = (path: string, content: string) =>
 export const createNote = (folder: string) => invoke<SavedNote>("create_note", { folder });
 /** L'adresse qui charge dans la fenêtre un fichier de la bibliothèque, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);
+export const listFolders = () => invoke<string[]>("list_folders");
+/** Crée le dossier `name` dans `parent` ; rend son chemin. */
+export const createFolder = (parent: string, name: string) =>
+  invoke<string>("create_folder", { parent, name });
+/** Renomme un dossier ; rend son nouveau chemin. */
+export const renameFolder = (path: string, name: string) =>
+  invoke<string>("rename_folder", { path, name });
+/** Déplace un dossier dans `into` ; rend son nouveau chemin. */
+export const moveFolder = (path: string, into: string) =>
+  invoke<string>("move_folder", { path, into });

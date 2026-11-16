@@ -1,0 +1,23 @@
+# 0008 — Sous-dossiers : une note est désignée par son chemin depuis la bibliothèque
+
+- **Date** : 2026-11-16
+- **Statut** : acceptée
+
+## Contexte
+
+Jusqu'ici, une bibliothèque n'avait qu'un niveau : une note était désignée par son seul nom de fichier. On veut ranger les notes dans de vrais dossiers du disque, à toute profondeur, les créer, les renommer et les déplacer depuis une colonne de dossiers.
+
+## Décision
+
+- Le domaine connaît trois valeurs : **nom de dossier** (`FolderName`, tel que l'utilisateur l'a écrit, jamais caché ni terminé par `.assets`), **dossier** (`Folder`, suite de noms ; la racine est la bibliothèque) et **chemin de note** (`NotePath`, dossier + nom de fichier). Tout ce qui vient de la page est converti en l'une d'elles à l'entrée ; un chemin qui sortirait de la bibliothèque ne peut pas s'écrire.
+- Entre la page et Rust, une note ou un dossier voyage sous forme de chemin relatif : `Travail/Réunions/lundi.md`, `Travail/Réunions`, `""` pour la racine.
+- Le nom d'une note suit toujours son titre, mais seulement parmi les notes de **son** dossier : deux dossiers peuvent contenir chacun `idee.md`.
+- Le port de stockage liste les notes d'un dossier (sans ses sous-dossiers), tous les dossiers, crée un dossier et **déplace** un dossier. Renommer un dossier, c'est le déplacer à côté de lui-même : une seule opération à tester. Les règles (pas de dossier dans lui-même, la racine ne bouge pas) sont dans les cas d'usage, pas dans le stockage.
+- Sur le disque, les dossiers cachés, les dossiers de pièces jointes et les liens symboliques ne sont pas des dossiers de notes. Les noms sont comparés à l'identique : sur un disque qui ignore la casse, renommer `travail` en `Travail` fonctionne.
+- Le glisser-déposer de la fenêtre est laissé à la page (`dragDropEnabled: false`) : c'est elle qui gère le déplacement des dossiers, et plus tard celui des notes et des images.
+
+## Conséquences
+
+- Une image relative est cherchée à côté de la note, dans son dossier.
+- Déplacer ou renommer un dossier change le chemin des notes qu'il contient : la page enregistre d'abord la note ouverte, puis suit son nouveau chemin.
+- Déplacer une note d'un dossier à l'autre s'ajoutera sur le même port (fiche à part si une règle nouvelle apparaît).

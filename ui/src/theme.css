@@ -48,6 +48,8 @@
   --code-block-text-size: 0.85em;
 
   /* Fenêtre */
+  --folders-width: 200px;
+  --folder-indent: 0.9rem;
   --sidebar-width: 280px;
 }
 

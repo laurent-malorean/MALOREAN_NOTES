@@ -25,6 +25,10 @@ pub enum StoreError {
     AlreadyExists(NotePath),
     /// Le fichier n'est pas du texte UTF-8 : on ne l'ouvre pas, pour ne pas l'abîmer.
     Unreadable(NotePath),
+    /// Aucun dossier n'existe à ce chemin.
+    FolderNotFound(Folder),
+    /// Un dossier existe déjà à ce chemin.
+    FolderAlreadyExists(Folder),
     /// Le stockage ne répond pas (dossier absent, droits, disque plein) ; la cause est lisible.
     Unavailable(String),
 }
@@ -69,6 +73,31 @@ pub trait NoteStore: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si le dossier ne peut pas être lu.
     fn names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError>;
+
+    /// Tous les dossiers de la bibliothèque, à toute profondeur, sans la racine. Ni les
+    /// dossiers cachés ni les dossiers de pièces jointes n'en font partie.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si la bibliothèque ne peut pas être lue.
+    fn folders(&self) -> Result<Vec<Folder>, StoreError>;
+
+    /// Crée le dossier, vide, dans son dossier parent.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::FolderAlreadyExists`] s'il existe déjà, [`StoreError::FolderNotFound`]
+    /// si son parent n'existe pas, [`StoreError::Unavailable`] si le stockage ne répond pas.
+    fn create_folder(&self, folder: &Folder) -> Result<(), StoreError>;
+
+    /// Déplace (ou renomme) le dossier `from` en `to`, avec tout ce qu'il contient.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::FolderNotFound`] si `from` ou le parent de `to` n'existe pas,
+    /// [`StoreError::FolderAlreadyExists`] si `to` est pris, [`StoreError::Unavailable`]
+    /// si le stockage ne répond pas.
+    fn move_folder(&self, from: &Folder, to: &Folder) -> Result<(), StoreError>;
 }
 
 /// Emplacement d'une bibliothèque, tel que l'utilisateur l'a choisi.

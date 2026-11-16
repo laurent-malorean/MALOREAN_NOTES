@@ -30,6 +30,125 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     names_are_those_of_every_note(&empty_store());
     renamed_note_moves_to_its_new_name(&empty_store());
     rename_refuses_a_taken_name(&empty_store());
+    created_folders_are_listed_at_any_depth(&empty_store());
+    a_folder_lists_its_own_notes_only(&empty_store());
+    a_note_is_renamed_inside_its_folder(&empty_store());
+    creating_an_existing_folder_is_refused(&empty_store());
+    creating_a_folder_in_a_missing_parent_is_refused(&empty_store());
+    a_moved_folder_takes_its_notes_and_sub_folders(&empty_store());
+    a_folder_is_renamed_by_moving_it_beside_itself(&empty_store());
+    moving_onto_an_existing_folder_is_refused(&empty_store());
+    moving_a_missing_folder_or_into_a_missing_one_is_refused(&empty_store());
+}
+
+fn folder(path: &str) -> Folder {
+    Folder::parse(path).unwrap_or_else(|e| unreachable!("{e}"))
+}
+
+fn sorted_folders(store: &impl NoteStore) -> Vec<String> {
+    let mut folders: Vec<String> = store
+        .folders()
+        .unwrap()
+        .iter()
+        .map(Folder::to_path)
+        .collect();
+    folders.sort();
+    folders
+}
+
+fn created_folders_are_listed_at_any_depth(store: &impl NoteStore) {
+    store.create_folder(&folder("Travail")).unwrap();
+    store.create_folder(&folder("Travail/Réunions")).unwrap();
+    store.create_folder(&folder("Perso")).unwrap();
+    assert_eq!(
+        sorted_folders(store),
+        ["Perso", "Travail", "Travail/Réunions"]
+    );
+}
+
+fn a_folder_lists_its_own_notes_only(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    store.create_folder(&folder("a/b")).unwrap();
+    store.write(&name("a/x.md"), "X").unwrap();
+    store.write(&name("a/b/y.md"), "Y").unwrap();
+    store.write(&name("z.md"), "Z").unwrap();
+    let listed: Vec<_> = store
+        .list(&folder("a"))
+        .unwrap()
+        .into_iter()
+        .map(|n| n.path)
+        .collect();
+    assert_eq!(listed, [name("a/x.md")]);
+    assert_eq!(store.names(&folder("a")).unwrap(), [file("x.md")]);
+    assert_eq!(store.names(&root()).unwrap(), [file("z.md")]);
+    assert_eq!(store.read(&name("a/b/y.md")).unwrap().content, "Y");
+}
+
+fn a_note_is_renamed_inside_its_folder(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    store.write(&name("a/x.md"), "X").unwrap();
+    store.rename(&name("a/x.md"), &file("y.md")).unwrap();
+    assert_eq!(store.names(&folder("a")).unwrap(), [file("y.md")]);
+    assert!(store.names(&root()).unwrap().is_empty());
+}
+
+fn creating_an_existing_folder_is_refused(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    assert_eq!(
+        store.create_folder(&folder("a")),
+        Err(StoreError::FolderAlreadyExists(folder("a")))
+    );
+}
+
+fn creating_a_folder_in_a_missing_parent_is_refused(store: &impl NoteStore) {
+    assert_eq!(
+        store.create_folder(&folder("absent/a")),
+        Err(StoreError::FolderNotFound(folder("absent")))
+    );
+    assert!(sorted_folders(store).is_empty());
+}
+
+fn a_moved_folder_takes_its_notes_and_sub_folders(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    store.create_folder(&folder("a/b")).unwrap();
+    store.write(&name("a/b/n.md"), "N").unwrap();
+    store.create_folder(&folder("x")).unwrap();
+    store.move_folder(&folder("a"), &folder("x/a")).unwrap();
+    assert_eq!(sorted_folders(store), ["x", "x/a", "x/a/b"]);
+    assert_eq!(store.read(&name("x/a/b/n.md")).unwrap().content, "N");
+}
+
+fn a_folder_is_renamed_by_moving_it_beside_itself(store: &impl NoteStore) {
+    store.create_folder(&folder("travail")).unwrap();
+    store.write(&name("travail/n.md"), "N").unwrap();
+    store
+        .move_folder(&folder("travail"), &folder("Travail"))
+        .unwrap();
+    assert_eq!(sorted_folders(store), ["Travail"]);
+    assert_eq!(store.read(&name("Travail/n.md")).unwrap().content, "N");
+}
+
+fn moving_onto_an_existing_folder_is_refused(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    store.create_folder(&folder("b")).unwrap();
+    assert_eq!(
+        store.move_folder(&folder("a"), &folder("b")),
+        Err(StoreError::FolderAlreadyExists(folder("b")))
+    );
+    assert_eq!(sorted_folders(store), ["a", "b"]);
+}
+
+fn moving_a_missing_folder_or_into_a_missing_one_is_refused(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    assert_eq!(
+        store.move_folder(&folder("absent"), &folder("b")),
+        Err(StoreError::FolderNotFound(folder("absent")))
+    );
+    assert_eq!(
+        store.move_folder(&folder("a"), &folder("absent/a")),
+        Err(StoreError::FolderNotFound(folder("absent")))
+    );
+    assert_eq!(sorted_folders(store), ["a"]);
 }
 
 fn written_note_can_be_read_back(store: &impl NoteStore) {

@@ -9,6 +9,7 @@ interface FakeNote {
 
 export interface FakeBackend {
   notes: Record<string, FakeNote>;
+  folders: string[];
   rememberedLibrary: boolean;
   failNextSave: boolean;
   calls: string[];
@@ -23,6 +24,7 @@ declare global {
 const params = new URLSearchParams(location.search);
 const backend: FakeBackend = {
   notes: JSON.parse(params.get("notes") ?? "{}") as Record<string, FakeNote>,
+  folders: JSON.parse(params.get("folders") ?? "[]") as string[],
   rememberedLibrary: params.get("remembered") === "1",
   failNextSave: false,
   calls: [],
@@ -63,6 +65,25 @@ function save(path: string, content: string) {
   return { path: target };
 }
 
+const moved = (path: string, from: string, to: string) =>
+  path === from || path.startsWith(`${from}/`) ? to + path.slice(from.length) : path;
+
+function moveFolder(from: string, to: string) {
+  if (backend.folders.includes(to)) throw { message: `un dossier « ${to} » existe déjà` };
+  backend.folders = backend.folders.map((f) => moved(f, from, to));
+  backend.notes = Object.fromEntries(
+    Object.entries(backend.notes).map(([path, note]) => [moved(path, from, to), note]),
+  );
+  return to;
+}
+
+const treeOrder = (a: string, b: string) =>
+  a
+    .toLowerCase()
+    .split("/")
+    .join("\u0000")
+    .localeCompare(b.toLowerCase().split("/").join("\u0000"));
+
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
   choose_library: () => library,
@@ -81,6 +102,16 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
     return { path, content: note.content };
   },
   save_note: ({ path = "", content = "" }) => save(path, content),
+  list_folders: () => [...backend.folders].sort(treeOrder),
+  create_folder: ({ parent = "", name = "" }) => {
+    const path = inFolder(parent, name);
+    if (backend.folders.includes(path)) throw { message: `un dossier « ${path} » existe déjà` };
+    backend.folders.push(path);
+    return path;
+  },
+  rename_folder: ({ path = "", name = "" }) => moveFolder(path, inFolder(folderOf(path), name)),
+  move_folder: ({ path = "", into = "" }) =>
+    moveFolder(path, inFolder(into, path.split("/").at(-1) ?? "")),
   create_note: ({ folder = "" }) => {
     const path = freeName(folder, "sans-titre");
     backend.notes[path] = { content: "", modified: (clock += 1) };
