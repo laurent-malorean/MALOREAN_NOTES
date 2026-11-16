@@ -1,6 +1,7 @@
 // Assemblage de l'interface : relie l'état de l'écran, l'éditeur et le pont vers Rust.
 import * as bridge from "./bridge";
 import { createEditor } from "./editor/editor";
+import type { FocusUnit } from "./editor/focus/focus-range";
 import { imageAddress } from "./editor/image-address";
 import { folderOf } from "./state/folders";
 import { createLayout } from "./screens/layout";
@@ -24,6 +25,9 @@ import {
   selectedNote,
   welcome,
 } from "./state/screen";
+import { showFocusUnit } from "./screens/editor-tools";
+import { shortcutFor } from "./screens/shortcuts";
+import { loadFocusUnit, nextFocusUnit, saveFocusUnit } from "./state/focus-preference";
 import "./theme.css";
 import "./style.css";
 
@@ -188,6 +192,22 @@ connectSearchField(layout.searchField, typeSearch);
 layout.newFolderButton.addEventListener("click", () =>
   startFolderCreation(layout.foldersList, currentFolder(screen), actions.create),
 );
+
+let focusUnit = loadFocusUnit(localStorage);
+function applyFocusUnit(unit: FocusUnit | null) {
+  focusUnit = unit;
+  editor.setFocusMode(unit);
+  showFocusUnit(layout.focusButton, unit);
+  saveFocusUnit(localStorage, unit);
+}
+const toggleFocus = () => applyFocusUnit(nextFocusUnit(focusUnit));
+layout.focusButton.addEventListener("click", toggleFocus);
+document.addEventListener("keydown", (event) => {
+  if (shortcutFor(event) !== "toggle-focus") return;
+  event.preventDefault();
+  toggleFocus();
+});
+applyFocusUnit(focusUnit);
 
 show(welcome);
 bridge

@@ -275,3 +275,25 @@ test("épingler une note par clic droit la met en tête, sans perdre ce qu'on ta
   // Ce qu'on a tapé l'a rendue la plus récente.
   await expect(editorLines(page).first()).toHaveText("Vieille note");
 });
+
+test("le mode focus estompe tout sauf la phrase en cours, et reste réglé au relancement", async ({
+  page,
+}) => {
+  await launch(page, {
+    notes: { "idee.md": { content: "# Idée\nUne phrase. Une autre.", modified: 1 } },
+  });
+  await editorLines(page).last().click();
+  await page.keyboard.press("End");
+  const focus = page.getByRole("button", { name: /^Focus/ });
+  await focus.click();
+  await expect(focus).toHaveText("Focus : phrase");
+  await expect(page.locator(".cm-focus-dimmed").first()).toBeVisible();
+  await expect(page.locator(".cm-focus-dimmed", { hasText: "Une autre." })).toHaveCount(0);
+  await page.keyboard.press("Meta+Shift+F");
+  await expect(focus).toHaveText("Focus : paragraphe");
+  await page.reload();
+  await expect(page.getByRole("button", { name: /^Focus/ })).toHaveText("Focus : paragraphe");
+  await page.keyboard.press("Meta+Shift+F");
+  await expect(page.getByRole("button", { name: /^Focus/ })).toHaveText("Focus");
+  await expect(page.locator(".cm-focus-dimmed")).toHaveCount(0);
+});

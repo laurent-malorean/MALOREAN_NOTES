@@ -8,6 +8,7 @@ export interface Layout {
   readonly searchField: HTMLInputElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
+  readonly focusButton: HTMLButtonElement;
   readonly status: HTMLElement;
   readonly chooseButtons: readonly HTMLButtonElement[];
   readonly newNoteButton: HTMLButtonElement;
@@ -37,7 +38,11 @@ export function createLayout(root: HTMLElement): Layout {
         <nav class="notes-list"></nav>
         <footer class="sidebar-footer"><button class="link" data-choose>Changer de dossier</button></footer>
       </aside>
-      <main class="editor"></main>
+      <main class="editor">
+        <div class="editor-tools">
+          <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
+        </div>
+      </main>
     </section>
     <div class="status" role="status"></div>`;
   const find = <T extends HTMLElement>(selector: string) => root.querySelector(selector) as T;
@@ -50,6 +55,7 @@ export function createLayout(root: HTMLElement): Layout {
     searchField: find(".search-field"),
     notesList: find(".notes-list"),
     editor: find(".editor"),
+    focusButton: find("[data-focus]"),
     status: find(".status"),
     chooseButtons: [...root.querySelectorAll<HTMLButtonElement>("[data-choose]")],
     newNoteButton: find("[data-new]"),

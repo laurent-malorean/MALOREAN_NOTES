@@ -244,8 +244,36 @@ button {
 }
 
 .editor {
+  position: relative;
   min-height: 0;
   overflow: hidden;
+}
+.editor-tools {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.8rem;
+  z-index: 1;
+  display: flex;
+  gap: 0.4rem;
+}
+.tool {
+  font: inherit;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+.tool[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.editor .cm-focus-dimmed {
+  opacity: var(--focus-dimmed-opacity);
+  transition: opacity 0.15s;
 }
 .editor .cm-editor {
   height: 100%;
