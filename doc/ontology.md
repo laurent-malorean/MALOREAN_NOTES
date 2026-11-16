@@ -18,4 +18,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Corbeille | `Trash` | Endroit où va une note ou un dossier supprimé, d'où on peut le restaurer. |
 | Index | `SearchIndex` | Cache de recherche, reconstructible à partir des fichiers. |
 | Conflit | `Conflict` | Une note modifiée à la fois dans l'application et hors de l'application. |
+| Aperçu en direct | `livePreview` | Affichage de la note mise en forme dans l'éditeur : la syntaxe Markdown est masquée, sauf là où se trouve le curseur ; le fichier n'est jamais modifié. |
+| Tableau | `Table` | Tableau Markdown : ligne d'en-tête, ligne d'alignement, puis les lignes ; dessiné par l'aperçu en direct. |
+| Thème | `theme` | Couleurs, polices et tailles de lecture de l'interface, réunies dans un seul fichier. |
 | Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. |

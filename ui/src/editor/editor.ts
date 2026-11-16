@@ -5,6 +5,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { liveFormatting } from "./live-formatting";
 import { type ImageResolver, imageResolver, livePreview } from "./live-preview/plugin";
+import { liveTables } from "./live-preview/tables";
 
 export interface Editor {
   /** Affiche une autre note, sans la signaler comme modifiée. */
@@ -24,6 +25,7 @@ export function createEditor(
     markdown({ base: markdownLanguage }),
     liveFormatting,
     livePreview,
+    liveTables,
     EditorView.lineWrapping,
     EditorView.contentAttributes.of({ spellcheck: "true", lang: "fr" }),
     placeholder("# Titre de la note"),
