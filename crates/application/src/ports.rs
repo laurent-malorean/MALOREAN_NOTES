@@ -130,3 +130,19 @@ pub trait Preferences: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
     fn remember_library(&self, location: &LibraryLocation) -> Result<(), StoreError>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_location_is_given_back_as_chosen() {
+        let location = LibraryLocation::new("/Users/moi/Notes").unwrap();
+        assert_eq!(location.as_str(), "/Users/moi/Notes");
+    }
+
+    #[test]
+    fn an_empty_location_is_refused() {
+        assert_eq!(LibraryLocation::new(""), Err(EmptyLocation));
+    }
+}
