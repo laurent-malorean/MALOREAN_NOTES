@@ -31,8 +31,12 @@ export interface PreviewInput {
 export const FRONT_MATTER_CLASS = "cm-lp-front-matter";
 export const QUOTE_CLASS = "cm-lp-quote";
 
+/** Un en-tête YAML doit se fermer dans ces premiers caractères : au-delà, ce n'en est pas un. */
+const FRONT_MATTER_SCAN_LIMIT = 10_000;
 const FRONT_MATTER = /^---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/;
-const UNTOUCHED_BLOCKS = new Set(["FencedCode", "CodeBlock", "HTMLBlock", "CommentBlock"]);
+// Seul un bloc de code délimité contient des marques que l'aperçu cacherait (ses ```) :
+// les blocs indentés, HTML et commentaires ne contiennent aucune marque Markdown.
+const FENCED_CODE = "FencedCode";
 const LINK_TEXT_END = "]";
 const CHECKED = /\[[xX]\]/;
 
@@ -49,6 +53,7 @@ interface Context {
 type Handler = (node: SyntaxNode, context: Context) => void;
 
 const withSpace = (doc: Text, to: number) => (doc.sliceString(to, to + 1) === " " ? to + 1 : to);
+// Stryker disable next-line OptionalChaining,StringLiteral: une marque a toujours un parent ; TypeScript exige le cas contraire.
 const parentName = (node: SyntaxNode) => node.parent?.name ?? "";
 
 function hide(context: Context, from: number, to: number) {
@@ -77,6 +82,7 @@ const HANDLERS: Record<string, Handler> = {
 function listMark(node: SyntaxNode, context: Context) {
   const item = node.parent;
   const to = withSpace(context.doc, node.to);
+  // Stryker disable next-line OptionalChaining: une marque de liste a toujours un élément parent.
   if (item?.getChild("Task")) return hide(context, node.from, to);
   if (parentName(item ?? node) === "BulletList") {
     context.preview.conceals.push({ kind: "bullet", from: node.from, to });
@@ -95,8 +101,9 @@ function isActive(input: PreviewInput, node: SyntaxNodeRef): boolean {
 }
 
 function visit(node: SyntaxNodeRef, input: PreviewInput, context: Context, frontMatterEnd: number) {
-  if (node.to <= frontMatterEnd && node.name !== "Document") return false;
-  if (UNTOUCHED_BLOCKS.has(node.name)) return false;
+  // Stryker disable next-line BooleanLiteral: descendre ne changerait rien, chaque enfant serait écarté à son tour.
+  if (node.to <= frontMatterEnd) return false;
+  if (node.name === FENCED_CODE) return false;
   if (node.name === "Blockquote") styleLines(context, node.from, node.to, QUOTE_CLASS);
   if (isActive(input, node)) return true;
   HANDLERS[node.name]?.(node.node, context);
@@ -109,6 +116,7 @@ function link(node: SyntaxNode, context: Context) {
   const textEnd = node
     .getChildren("LinkMark")
     .find((mark) => context.doc.sliceString(mark.from, mark.to) === LINK_TEXT_END);
+  // Stryker disable next-line ConditionalExpression,LogicalOperator: un lien a toujours `[` et `]` ; TypeScript exige le cas contraire.
   if (!opening || !textEnd) return;
   hide(context, opening.from, opening.to);
   hide(context, textEnd.from, node.to);
@@ -118,13 +126,13 @@ function link(node: SyntaxNode, context: Context) {
 export function computePreview(input: PreviewInput): Preview {
   const context: Context = { doc: input.doc, preview: { conceals: [], lineStyles: [] } };
   const frontMatter = FRONT_MATTER.exec(
-    input.doc.sliceString(0, Math.min(input.doc.length, 10_000)),
+    input.doc.sliceString(0, Math.min(input.doc.length, FRONT_MATTER_SCAN_LIMIT)),
   );
-  const frontMatterEnd = frontMatter ? frontMatter[0].replace(/\r?\n$/, "").length : -1;
+  const frontMatterEnd = frontMatter ? frontMatter[0].trimEnd().length : -1;
   if (frontMatter) styleLines(context, 0, frontMatterEnd, FRONT_MATTER_CLASS);
   input.tree.iterate({
-    from: input.from ?? 0,
-    to: input.to ?? input.doc.length,
+    from: input.from,
+    to: input.to,
     enter: (node) => visit(node, input, context, frontMatterEnd),
   });
   context.preview.conceals.sort((a, b) => a.from - b.from);

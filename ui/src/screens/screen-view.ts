@@ -19,10 +19,12 @@ export function renderScreen(
       layout.libraryName.textContent = screen.library.name;
       renderNotesList(layout.notesList, screen.notes, screen.selected, onOpen);
       return;
+    // Stryker disable all: cas impossible, le compilateur vérifie que tous les cas sont traités.
     /* istanbul ignore next -- cas impossible : le compilateur vérifie que tous les cas sont traités */
     default: {
       const unhandled: never = screen;
       return unhandled;
     }
+    // Stryker restore all
   }
 }

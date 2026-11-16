@@ -25,9 +25,6 @@ export class CheckboxWidget extends WidgetType {
   constructor(readonly checked: boolean) {
     super();
   }
-  override eq(other: CheckboxWidget) {
-    return other.checked === this.checked;
-  }
   toDOM(view: EditorView) {
     const box = document.createElement("input");
     box.type = "checkbox";

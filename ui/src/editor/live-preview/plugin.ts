@@ -60,6 +60,19 @@ function build(view: EditorView): DecorationSet {
   return Decoration.set(ranges, true);
 }
 
+// Stryker disable all: optimisation — tout recalculer à chaque mise à jour donnerait le même affichage, en plus lent.
+/** L'affichage ne change que si le texte, le curseur, la partie visible, le focus ou l'analyse changent. */
+function needsRebuild(update: ViewUpdate): boolean {
+  return (
+    update.docChanged ||
+    update.selectionSet ||
+    update.viewportChanged ||
+    update.focusChanged ||
+    syntaxTree(update.startState) !== syntaxTree(update.state)
+  );
+}
+// Stryker restore all
+
 export const livePreview = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
@@ -67,12 +80,8 @@ export const livePreview = ViewPlugin.fromClass(
       this.decorations = build(view);
     }
     update(update: ViewUpdate) {
-      const treeChanged = syntaxTree(update.startState) !== syntaxTree(update.state);
-      if (update.docChanged || update.selectionSet || update.viewportChanged) {
-        this.decorations = build(update.view);
-      } else if (update.focusChanged || treeChanged) {
-        this.decorations = build(update.view);
-      }
+      // Stryker disable next-line ConditionalExpression: optimisation, même affichage si l'on recalcule toujours.
+      if (needsRebuild(update)) this.decorations = build(update.view);
     }
   },
   { decorations: (plugin) => plugin.decorations },
