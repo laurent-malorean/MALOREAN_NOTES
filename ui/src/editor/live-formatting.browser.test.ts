@@ -2,16 +2,20 @@ import { EditorView } from "@codemirror/view";
 import { afterEach, describe, expect, it } from "vitest";
 import { createEditor } from "./editor";
 
-const COLORS = {
+/** Valeurs de thème reconnaissables : le style doit les reprendre telles quelles. */
+const THEME = {
   "--marker": "rgb(1, 2, 3)",
   "--code": "rgb(4, 5, 6)",
   "--accent": "rgb(7, 8, 9)",
   "--muted": "rgb(10, 11, 12)",
   "--mono": "Courier",
+  "--heading1-size": "1.8em",
+  "--heading2-size": "1.45em",
+  "--heading3-size": "1.2em",
 };
 
 function mount(content: string) {
-  for (const [name, value] of Object.entries(COLORS))
+  for (const [name, value] of Object.entries(THEME))
     document.documentElement.style.setProperty(name, value);
   const parent = document.createElement("div");
   parent.style.fontSize = "10px";

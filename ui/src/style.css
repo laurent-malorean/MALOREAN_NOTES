@@ -1,33 +1,4 @@
-:root {
-  --bg: #fbfaf7;
-  --sidebar: #f2f0eb;
-  --text: #1f1f1f;
-  --muted: #6b6b6b;
-  --marker: #b3b0a8;
-  --accent: #2f6fdf;
-  --code: #9a3b26;
-  --selected: #e4e1d9;
-  --border: #e2dfd7;
-  --serif: "Iowan Old Style", "Charter", Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  --mono: "SF Mono", ui-monospace, Menlo, monospace;
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1c1e;
-    --sidebar: #242426;
-    --text: #e8e6e1;
-    --muted: #9a9890;
-    --marker: #5f5d58;
-    --accent: #6fa0ff;
-    --code: #e39a7f;
-    --selected: #34343a;
-    --border: #333336;
-  }
-}
-
+/* Mise en page. Couleurs, polices et tailles de lecture : voir theme.css. */
 * {
   box-sizing: border-box;
 }
@@ -66,7 +37,7 @@ button {
 }
 .primary {
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   border: 0;
   border-radius: 8px;
   padding: 0.6rem 1.2rem;
@@ -75,7 +46,7 @@ button {
 .workspace {
   height: 100%;
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: var(--sidebar-width) 1fr;
 }
 .workspace[hidden],
 .welcome[hidden] {
@@ -169,12 +140,12 @@ button {
 }
 .editor .cm-scroller {
   font-family: var(--serif);
-  font-size: 18px;
-  line-height: 1.65;
+  font-size: var(--text-size);
+  line-height: var(--line-height);
   padding: 3rem 0;
 }
 .editor .cm-content {
-  max-width: 42rem;
+  max-width: var(--text-width);
   margin: 0 auto;
   padding: 0 2rem;
   caret-color: var(--accent);
@@ -195,8 +166,8 @@ button {
   bottom: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  background: #c0392b;
-  color: white;
+  background: var(--danger);
+  color: var(--on-danger);
   padding: 0.5rem 1rem;
   border-radius: 8px;
   opacity: 0;

@@ -13,6 +13,7 @@ import {
   selectedNote,
   welcome,
 } from "./state/screen";
+import "./theme.css";
 import "./style.css";
 
 const STATUS_DURATION_MS = 4000;

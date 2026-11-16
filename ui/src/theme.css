@@ -1,0 +1,54 @@
+/*
+ * Thème : seul endroit où s'écrivent les couleurs, les polices et les tailles de lecture.
+ * Le reste de l'interface n'emploie que ces variables.
+ */
+:root {
+  color-scheme: light dark;
+
+  /* Couleurs */
+  --bg: #fbfaf7;
+  --sidebar: #f2f0eb;
+  --text: #1f1f1f;
+  --muted: #6b6b6b;
+  --marker: #b3b0a8;
+  --accent: #2f6fdf;
+  --on-accent: #ffffff;
+  --code: #9a3b26;
+  --selected: #e4e1d9;
+  --border: #e2dfd7;
+  --danger: #c0392b;
+  --on-danger: #ffffff;
+
+  /* Polices */
+  --serif: "Iowan Old Style", "Charter", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --mono: "SF Mono", ui-monospace, Menlo, monospace;
+
+  /* Lecture */
+  --text-size: 18px;
+  --line-height: 1.65;
+  --text-width: 42rem;
+  --heading1-size: 1.8em;
+  --heading2-size: 1.45em;
+  --heading3-size: 1.2em;
+
+  /* Fenêtre */
+  --sidebar-width: 280px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --sidebar: #242426;
+    --text: #e8e6e1;
+    --muted: #9a9890;
+    --marker: #5f5d58;
+    --accent: #6fa0ff;
+    --on-accent: #ffffff;
+    --code: #e39a7f;
+    --selected: #34343a;
+    --border: #333336;
+    --danger: #c0392b;
+    --on-danger: #ffffff;
+  }
+}
