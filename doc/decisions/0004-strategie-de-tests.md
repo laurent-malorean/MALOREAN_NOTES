@@ -1,7 +1,7 @@
 # 0004 — Stratégie de tests et garde-fou avant envoi
 
 - **Date** : 2026-11-16
-- **Statut** : acceptée
+- **Statut** : remplacée en partie par `0006-seuils-et-mutation-a-chaque-envoi.md` (seuils et moment du test de mutation)
 
 ## Contexte
 

@@ -103,8 +103,8 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 | Parcours utilisateur complets, partie Rust remplacée par un faux | `ui/e2e/` | Playwright, WebKit |
 | Solidité des tests : erreurs introduites volontairement | tout le Rust | `cargo mutants` |
 
-- **Seuils de couverture** (lignes exécutées par les tests) : Rust ≥ 93 %, interface ≥ 90 %. L'assemblage (`crates/app/src/main.rs`, `ui/src/main.ts`) est couvert par les tests des commandes et les parcours complets.
-- **Test de mutation** : aucune erreur introduite ne doit passer inaperçue. Une mutation « équivalente » (qui ne change rien) se supprime en simplifiant le code.
+- **Seuils de couverture** (lignes exécutées par les tests) : Rust ≥ 95 % ; interface ≥ 98 % des lignes, instructions et fonctions, ≥ 94 % des branches. L'assemblage (`crates/app/src/main.rs`, `ui/src/main.ts`) est couvert par les tests des commandes et les parcours complets. **Un seuil ne baisse jamais** : quand la couverture monte, on le relève.
+- **Test de mutation** : aucune erreur introduite ne doit passer inaperçue. À chaque push, il porte sur le code Rust qui part ; avant de livrer, sur tout le code. Une mutation « équivalente » (qui ne change rien) se supprime en simplifiant le code. Une mutation qui fait tourner un test jusqu'au délai maximal compte comme remarquée.
 
 ## 8. Interface (ui/, TypeScript + CodeMirror 6)
 
@@ -220,7 +220,7 @@ disallowed-methods = [
 
 | Quand | Quoi |
 |---|---|
-| Avant chaque push : mini CI `scripts/ci.sh`, lancée automatiquement par `.githooks/pre-push` | fichiers privés exclus ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 93 %, dépendances ; interface : types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec couverture ≥ 90 %, parcours complets |
+| Avant chaque push : mini CI lancée automatiquement par `.githooks/pre-push` | fichiers privés exclus ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 95 %, dépendances, test de mutation du code Rust qui part (`scripts/ci.sh --mutations-depuis <dernier envoi>` ; tout le code au premier envoi) ; interface : types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec les seuils de couverture, parcours complets |
 | Avant de livrer : `scripts/ci.sh --complet` | tout ce qui précède, plus le test de mutation ; benchmarks si la lecture a changé ; build `release` signé et notarisé |
 
 Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov cargo-deny cargo-mutants --locked`, puis dans `ui/` : `npm install` et `npx playwright install webkit`. Le garde-fou s'active avec `git config --local core.hooksPath .githooks`.

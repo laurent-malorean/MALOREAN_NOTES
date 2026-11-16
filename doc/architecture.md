@@ -73,6 +73,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0003-apercu-en-direct-par-masquage.md` | Aperçu en direct : syntaxe masquée hors de la ligne en cours |
 | `0004-strategie-de-tests.md` | Niveaux de tests, seuils, mutation, garde-fou avant envoi |
 | `0005-aide-ecriture-modele-apple.md` | Aide à l'écriture par le modèle d'IA du Mac (proposée) |
+| `0006-seuils-et-mutation-a-chaque-envoi.md` | Seuils qui ne baissent jamais, test de mutation à chaque envoi |
 
 ## Décisions ouvertes
 

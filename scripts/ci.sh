@@ -1,18 +1,35 @@
 #!/usr/bin/env bash
 # Mini CI locale : lancée automatiquement avant chaque push (.githooks/pre-push).
 # S'arrête au premier contrôle raté ; un push n'a lieu que si tout réussit.
-# `scripts/ci.sh --complet` ajoute le test de mutation (plusieurs minutes), avant de livrer.
+#   scripts/ci.sh                        tous les contrôles
+#   scripts/ci.sh --mutations-depuis SHA  + test de mutation du code Rust modifié depuis SHA
+#   scripts/ci.sh --complet              + test de mutation de tout le code Rust (avant de livrer)
+# Les seuils ne baissent jamais : on les relève quand la couverture monte.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 readonly MAX_FILE_LINES=600
-readonly RUST_MIN_LINE_COVERAGE=93
+readonly RUST_MIN_LINE_COVERAGE=95
 readonly PRIVATE_PATHS=(_SECRET CLAUDE.local.md)
 readonly GENERATED_TYPES=ui/src/bridge/generated
 # Assemblage : couvert par les tests des commandes et les parcours complets, pas par des tests unitaires.
 readonly COVERAGE_IGNORED='crates/app/src/main\.rs'
 
 step() { printf '\n▶ %s\n' "$1"; }
+
+# Codes de sortie de cargo-mutants : 2 = erreur introduite passée inaperçue (refus) ;
+# 3 = un test a tourné jusqu'au délai maximal : l'erreur a bien été remarquée (accepté).
+readonly MUTANTS_MISSED=2
+readonly MUTANTS_TIMEOUT=3
+run_mutants() {
+  local status=0
+  cargo mutants --workspace --all-features --exclude "$COVERAGE_IGNORED" --jobs 4 "$@" || status=$?
+  case "$status" in
+    0 | "$MUTANTS_TIMEOUT") ;;
+    "$MUTANTS_MISSED") fail "une erreur introduite dans le code n'est attrapée par aucun test (voir mutants.out/missed.txt)" ;;
+    *) fail "le test de mutation n'a pas pu tourner (code $status)" ;;
+  esac
+}
 fail() { printf '✗ %s\n' "$1" >&2; exit 1; }
 require() { "$@" >/dev/null 2>&1 || fail "outil manquant : $* (voir doc/code.md, « Contrôles automatiques »)"; }
 
@@ -73,14 +90,33 @@ check_ui() {
 
 check_mutations() {
   require cargo mutants --version
-  step "Rust : test de mutation (chaque erreur introduite doit être attrapée)"
-  cargo mutants --workspace --all-features --exclude "$COVERAGE_IGNORED" --jobs 4 --no-shuffle
+  step "Rust : test de mutation de tout le code (chaque erreur introduite doit être attrapée)"
+  run_mutants --no-shuffle
+}
+
+check_mutations_since() {
+  require cargo mutants --version
+  local diff
+  diff=$(mktemp)
+  git diff "$1" HEAD -- '*.rs' > "$diff"
+  step "Rust : test de mutation du code modifié depuis ${1:0:7}"
+  if [ ! -s "$diff" ]; then
+    printf '(aucun code Rust modifié)\n'
+  else
+    run_mutants --in-diff "$diff"
+  fi
+  rm -f "$diff"
 }
 
 check_private_files
 check_file_length
 if [ -f Cargo.toml ]; then check_rust; else printf '\n(pas de projet Rust : contrôles Rust sautés)\n'; fi
 if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : contrôles interface sautés)\n'; fi
-if [ "${1:-}" = "--complet" ]; then check_mutations; fi
+case "${1:-}" in
+  --complet) check_mutations ;;
+  --mutations-depuis) check_mutations_since "${2:?SHA attendu}" ;;
+  "") ;;
+  *) fail "option inconnue : $1" ;;
+esac
 
 printf '\n✓ Mini CI réussie\n'

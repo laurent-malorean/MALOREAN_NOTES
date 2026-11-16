@@ -37,7 +37,8 @@ export default defineConfig({
       include: ["src/**/*.ts"],
       exclude: ["src/**/*.test.ts", "src/bridge/generated/**", "src/main.ts"],
       // main.ts (assemblage) est couvert par les parcours complets (e2e/).
-      thresholds: { lines: 90, statements: 90, branches: 80, functions: 80 },
+      // Seuils qui ne baissent jamais : on les relève quand la couverture monte.
+      thresholds: { lines: 98, statements: 98, branches: 94, functions: 98 },
     },
   },
 });
