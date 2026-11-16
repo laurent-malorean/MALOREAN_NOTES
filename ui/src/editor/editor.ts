@@ -10,6 +10,7 @@ import type { FocusUnit } from "./focus/focus-range";
 import { liveFormatting } from "./live-formatting";
 import { type ImageResolver, imageResolver, livePreview } from "./live-preview/plugin";
 import { liveTables } from "./live-preview/tables";
+import { listContinuation } from "./writing/lists";
 import { keptPosition } from "../state/external-change";
 
 /** Marque une transaction qui montre la version du disque : ce n'est pas une modification. */
@@ -38,6 +39,7 @@ export function createEditor(
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
     history(),
+    listContinuation,
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.
     markdown({ base: markdownLanguage, codeLanguages: languages }),
