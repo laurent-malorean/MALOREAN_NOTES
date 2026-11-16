@@ -54,6 +54,14 @@ describe("titres, gras, italique, barré", () => {
     expect(seen("# Titre\n**gras**", [1])).toBe("# Titre\ngras");
   });
 
+  it("cache aussi les dièses fermants d'un titre", () => {
+    expect(seen("## Titre ##")).toBe("Titre ");
+  });
+
+  it("laisse visible le soulignement d'un titre souligné", () => {
+    expect(seen("Titre\n=====")).toBe("Titre\n=====");
+  });
+
   it("cache les marques de gras, d'italique, de gras italique et de barré", () => {
     expect(seen("**g** *i* _i_ __g__ ***gi*** ~~b~~")).toBe("g i i g gi b");
   });
@@ -93,6 +101,10 @@ describe("listes, cases à cocher, citations", () => {
   it("cache le chevron d'une citation et la met en forme", () => {
     expect(seen("> une citation\n> suite")).toBe("une citation\nsuite");
     expect(lineStyles("> une citation\n> suite")).toEqual(["1:cm-lp-quote", "2:cm-lp-quote"]);
+  });
+
+  it("cache le chevron d'une citation même sans espace après", () => {
+    expect(seen(">collée")).toBe("collée");
   });
 
   it("dessine un séparateur", () => {

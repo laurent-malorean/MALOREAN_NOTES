@@ -162,6 +162,8 @@ mod tests {
     use application::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
     use application::{LibraryLocation, Preferences};
 
+    use std::path::Path;
+
     use super::*;
 
     fn session_with(notes: &[(&str, &str)]) -> Session {
@@ -194,6 +196,42 @@ mod tests {
             .unwrap();
         assert_eq!(info.name, "Notes");
         assert_eq!(info.path, "/Users/moi/Notes");
+    }
+
+    #[test]
+    fn cancelling_the_folder_picker_opens_nothing() {
+        let session = session_with(&[]);
+        assert_eq!(session.open_chosen_folder(None).unwrap(), None);
+        assert!(session.list_notes().is_err());
+    }
+
+    #[test]
+    fn the_chosen_folder_becomes_the_open_library() {
+        let session = session_with(&[]);
+        let info = session
+            .open_chosen_folder(Some(Path::new("/Users/moi/Notes")))
+            .unwrap();
+        assert_eq!(info.map(|i| i.name), Some("Notes".into()));
+    }
+
+    #[test]
+    fn a_folder_name_that_is_not_text_is_refused() {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+        let session = session_with(&[]);
+        let folder = Path::new(OsStr::from_bytes(b"/Users/moi/\xff"));
+        let error = session.open_chosen_folder(Some(folder)).unwrap_err();
+        assert_eq!(
+            error.message,
+            "le nom du dossier « /Users/moi/\u{FFFD} » est illisible"
+        );
+    }
+
+    #[test]
+    fn an_empty_folder_path_is_refused() {
+        let session = session_with(&[]);
+        let error = session.open_chosen_folder(Some(Path::new(""))).unwrap_err();
+        assert_eq!(error.message, "l'emplacement de la bibliothèque est vide");
     }
 
     #[test]

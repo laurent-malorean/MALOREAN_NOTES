@@ -70,6 +70,23 @@ describe("éditeur : aperçu en direct dans la fenêtre", () => {
     expect(view.state.doc.toString()).toBe("seconde");
   });
 
+  it("donne le focus à l'éditeur", () => {
+    const { editor, view } = mount();
+    editor.focus();
+    expect(view.hasFocus).toBe(true);
+  });
+
+  it("garde les mêmes puces et séparateurs quand le curseur se déplace ailleurs", () => {
+    const { parent, editor, view } = mount();
+    editor.show("- un\n\n---\n\ntexte");
+    const bullet = parent.querySelector(".cm-lp-bullet");
+    const rule = parent.querySelector(".cm-lp-rule");
+    view.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    expect(parent.querySelector(".cm-lp-bullet")).toBe(bullet);
+    expect(parent.querySelector(".cm-lp-rule")).toBe(rule);
+  });
+
   it("reste fluide sur une très longue note", () => {
     const { parent, editor } = mount();
     const long = Array.from({ length: 3000 }, (_, i) => `## Section ${i}\n**gras** ${i}`).join(

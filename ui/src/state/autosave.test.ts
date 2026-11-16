@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createAutosave, type Scheduler, timerScheduler } from "./autosave";
+import { AUTOSAVE_DELAY_MS, createAutosave, type Scheduler, timerScheduler } from "./autosave";
 
 /** Horloge manuelle : les délais ne s'écoulent que quand le test le décide. */
 function manualScheduler() {
@@ -181,6 +181,20 @@ describe("enregistrement automatique : échecs et délai", () => {
     });
     await autosave.flush();
     expect(saves).toEqual([]);
+  });
+
+  it("attend par défaut le délai d'enregistrement automatique", () => {
+    vi.useFakeTimers();
+    try {
+      let ran = 0;
+      timerScheduler().schedule(() => (ran += 1));
+      vi.advanceTimersByTime(AUTOSAVE_DELAY_MS - 1);
+      expect(ran).toBe(0);
+      vi.advanceTimersByTime(1);
+      expect(ran).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("attend le délai prévu après la dernière frappe", () => {
