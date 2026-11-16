@@ -25,6 +25,14 @@ scripts/ci.sh         mini CI locale, avant chaque push
 
 Sens des dépendances : `api` → `application` → `domain` ; `infrastructure` → `application` → `domain` ; `app` → tout ; `ui/` → commandes de `api` uniquement.
 
+## Principes
+
+- **Les dépendances vont vers le stable** : le domaine change le moins et ne dépend de rien ; ce qui change souvent (interface, stockage, système macOS) dépend de lui, jamais l'inverse.
+- **Ports et adaptateurs** : un **port d'entrée** est un cas d'usage, appelé par `api` ; un **port de sortie** est un trait défini par `application` dans ses propres mots, implémenté par `infrastructure`. Changer de format de fichier ou d'interface ne touche ni le domaine ni les cas d'usage.
+- **Cœur pur, coque mince** : les décisions sont des fonctions pures du domaine ; les effets (disque, horloge, événements) restent en bordure, dans les cas d'usage et les adaptateurs.
+- **Ce qui change ensemble vit ensemble** : un module regroupe le code qui évolue pour une même raison. Une évolution qui oblige à toucher beaucoup de modules signale un mauvais découpage.
+- **Convertir à la frontière** : une donnée venue du dehors (page, fichier) devient un type du domaine dès son entrée dans `api` ou `infrastructure`. À l'intérieur, tout est déjà valide.
+
 ## Parcours d'une action
 
 1. L'utilisateur agit (frappe, clic, raccourci, menu). L'écran appelle une fonction de `ui/src/bridge/`.
@@ -54,9 +62,13 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 - La surveillance des fichiers détecte les modifications extérieures ; l'application recharge la note, ou signale un conflit sans rien perdre.
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
-## Technologie d'interface
+## Décisions d'architecture
 
-**Tauri 2 + CodeMirror 6**, interface en TypeScript (Vite). Choix fait pour la qualité de l'éditeur Markdown, cœur du produit ; l'apparence « native Mac » n'est pas un objectif.
+Chaque décision qui engage la structure (technologie, format des données, découpage, dépendance importante) a sa fiche dans `doc/decisions/`, numérotée et datée : `NNNN-titre-en-kebab-case.md`. Une fiche contient quatre parties : **Contexte** (le problème et ses contraintes), **Décision**, **Conséquences** (ce qu'on gagne, ce qu'on perd), **Statut** (proposée, acceptée, remplacée par…). Une décision acceptée ne se modifie pas : on écrit une nouvelle fiche qui la remplace.
+
+| Fiche | Décision |
+|---|---|
+| `0001-tauri-codemirror.md` | Interface Tauri 2 + CodeMirror 6 |
 
 ## Décisions ouvertes
 
