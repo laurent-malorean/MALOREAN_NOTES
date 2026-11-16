@@ -10,6 +10,7 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 - `doc/architecture.md` (+ `architecture.svg`) : couches, organisation du projet, parcours d'une action.
 - `doc/code.md` : règles de qualité et leurs contrôles.
 - `doc/ontology.md` : vocabulaire, à employer partout.
+- `doc/decisions/` : fiches des décisions d'architecture.
 
 ## Méthode
 
