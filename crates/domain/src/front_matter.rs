@@ -142,8 +142,10 @@ pub fn unpinned(content: &str) -> String {
         .lines()
         .filter(|line| pinned_value(line).is_none())
         .collect();
-    if yaml.trim().is_empty() {
-        content[header.close_end..].to_owned()
+    let rest = &content[header.close_end..];
+    // Un en-tête vide est retiré, sauf si le texte en dessous passerait alors pour un en-tête.
+    if yaml.trim().is_empty() && Header::of(rest).is_none() {
+        rest.to_owned()
     } else {
         header.with_yaml(&yaml)
     }
@@ -158,6 +160,12 @@ fn strip_delimiter_line(content: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unpinning_keeps_an_empty_header_when_the_text_below_would_pass_for_one() {
+        let note = "---\npinned: true\n---\n---\n# T\n---";
+        assert_eq!(unpinned(note), "---\n---\n---\n# T\n---");
+    }
 
     #[test]
     fn a_note_is_pinned_by_its_header() {
