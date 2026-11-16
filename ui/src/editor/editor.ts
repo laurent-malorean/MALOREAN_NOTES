@@ -1,9 +1,10 @@
-// Éditeur Markdown : CodeMirror 6, Markdown GitHub, mise en forme en direct.
+// Éditeur Markdown : CodeMirror 6, Markdown GitHub, mise en forme et aperçu en direct.
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { liveFormatting } from "./live-formatting";
+import { livePreview } from "./live-preview/plugin";
 
 export interface Editor {
   /** Affiche une autre note, sans la signaler comme modifiée. */
@@ -18,6 +19,7 @@ export function createEditor(parent: HTMLElement, onChange: (content: string) =>
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     markdown({ base: markdownLanguage }),
     liveFormatting,
+    livePreview,
     EditorView.lineWrapping,
     EditorView.contentAttributes.of({ spellcheck: "true", lang: "fr" }),
     placeholder("# Titre de la note"),

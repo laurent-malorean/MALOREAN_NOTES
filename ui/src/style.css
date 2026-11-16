@@ -206,3 +206,32 @@ button {
 .status.visible {
   opacity: 1;
 }
+
+/* Aperçu en direct */
+.editor .cm-lp-bullet {
+  color: var(--muted);
+  display: inline-block;
+  width: 1.1em;
+}
+.editor .cm-lp-rule {
+  display: inline-block;
+  width: 100%;
+  vertical-align: middle;
+  border-top: 1px solid var(--border);
+}
+.editor .cm-lp-checkbox {
+  accent-color: var(--accent);
+  margin: 0 0.45em 0 0;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.editor .cm-lp-quote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em !important;
+  color: var(--muted);
+}
+.editor .cm-lp-front-matter {
+  font-family: var(--mono);
+  font-size: 0.8em;
+  color: var(--marker);
+}
