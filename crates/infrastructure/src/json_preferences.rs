@@ -25,7 +25,11 @@ impl JsonPreferences {
 
     fn load(&self) -> Result<Stored, StoreError> {
         match fs::read_to_string(&self.file) {
-            Ok(text) => serde_json::from_str(&text).map_err(|e| unavailable(&e)),
+            // Des préférences abîmées ne doivent pas empêcher le lancement : on repart de zéro.
+            Ok(text) => Ok(serde_json::from_str(&text).unwrap_or_else(|error| {
+                tracing::warn!(%error, "préférences illisibles, ignorées");
+                Stored::default()
+            })),
             Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Stored::default()),
             Err(error) => Err(unavailable(&error)),
         }

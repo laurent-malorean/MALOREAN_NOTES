@@ -18,6 +18,8 @@ pub struct StoredNote {
 pub enum StoreError {
     NotFound(FileName),
     AlreadyExists(FileName),
+    /// Le fichier n'est pas du texte UTF-8 : on ne l'ouvre pas, pour ne pas l'abîmer.
+    Unreadable(FileName),
     Unavailable(String),
 }
 

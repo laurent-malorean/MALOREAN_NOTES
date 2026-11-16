@@ -41,31 +41,44 @@ impl FsNoteStore {
         Ok(names)
     }
 
-    fn read_existing(&self, name: &FileName) -> Result<StoredNote, StoreError> {
+    /// Le contenu et la date de la note ; en erreur, la version lisible d'un contenu qui n'est pas en UTF-8.
+    fn read_raw(&self, name: &FileName) -> Result<(Result<String, String>, Modified), StoreError> {
         let path = self.path(name);
-        let content = fs::read_to_string(&path).map_err(|e| not_found_or(name, e))?;
+        let bytes = fs::read(&path).map_err(|e| not_found_or(name, e))?;
         let modified = modified(&path).map_err(|e| not_found_or(name, e))?;
-        Ok(StoredNote {
-            file_name: name.clone(),
-            content,
-            modified,
-        })
+        let content = String::from_utf8(bytes)
+            .map_err(|e| String::from_utf8_lossy(e.as_bytes()).into_owned());
+        Ok((content, modified))
     }
 }
 
 impl NoteStore for FsNoteStore {
+    /// Une note qui n'est pas en UTF-8 reste listée, avec un titre tiré de ce qui est lisible.
     fn list(&self) -> Result<Vec<StoredNote>, StoreError> {
-        self.note_names()?
-            .iter()
-            .map(|name| self.read_existing(name))
-            .collect()
+        let mut notes = Vec::new();
+        for name in self.note_names()? {
+            let (content, modified) = self.read_raw(&name)?;
+            let content = content.unwrap_or_else(|lossy| lossy);
+            notes.push(StoredNote {
+                file_name: name,
+                content,
+                modified,
+            });
+        }
+        Ok(notes)
     }
 
     fn read(&self, name: &FileName) -> Result<StoredNote, StoreError> {
         if !self.exists(name)? {
             return Err(StoreError::NotFound(name.clone()));
         }
-        self.read_existing(name)
+        let (content, modified) = self.read_raw(name)?;
+        let content = content.map_err(|_| StoreError::Unreadable(name.clone()))?;
+        Ok(StoredNote {
+            file_name: name.clone(),
+            content,
+            modified,
+        })
     }
 
     fn write(&self, name: &FileName, content: &str) -> Result<(), StoreError> {
@@ -85,13 +98,14 @@ impl NoteStore for FsNoteStore {
     }
 
     fn rename(&self, from: &FileName, to: &FileName) -> Result<(), StoreError> {
-        if self.exists(to)? {
+        let new_assets = self.root.join(to.attachment_folder());
+        if self.exists(to)? || new_assets.exists() {
             return Err(StoreError::AlreadyExists(to.clone()));
         }
         fs::rename(self.path(from), self.path(to)).map_err(|e| not_found_or(from, e))?;
         let old_assets = self.root.join(from.attachment_folder());
         if old_assets.is_dir() {
-            fs::rename(old_assets, self.root.join(to.attachment_folder())).map_err(unavailable)?;
+            fs::rename(old_assets, new_assets).map_err(unavailable)?;
         }
         Ok(())
     }

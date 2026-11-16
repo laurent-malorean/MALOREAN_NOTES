@@ -24,3 +24,15 @@ fn remembered_library_is_read_back_after_restart() {
         Some(location)
     );
 }
+
+#[test]
+fn damaged_preferences_do_not_block_the_launch() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("preferences.json");
+    std::fs::write(&file, "{ pas du json").unwrap();
+    let preferences = JsonPreferences::new(file);
+    assert_eq!(preferences.last_library().unwrap(), None);
+    let location = LibraryLocation("/Users/moi/Notes".into());
+    preferences.remember_library(&location).unwrap();
+    assert_eq!(preferences.last_library().unwrap(), Some(location));
+}

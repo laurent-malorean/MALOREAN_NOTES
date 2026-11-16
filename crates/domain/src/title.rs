@@ -18,7 +18,7 @@ impl Title {
     pub fn of(content: &str) -> Option<Self> {
         let (_, body) = front_matter::split(content);
         let mut in_code = false;
-        for line in body.lines() {
+        for line in body.split(['\n', '\r']) {
             if CODE_FENCES
                 .iter()
                 .any(|fence| line.trim_start().starts_with(fence))
@@ -30,7 +30,7 @@ impl Title {
                 continue;
             }
             if let Some(text) = heading_text(line) {
-                return Some(Self(text.to_owned()));
+                return Some(Self(text));
             }
         }
         None
@@ -42,12 +42,13 @@ impl Title {
     }
 }
 
-fn heading_text(line: &str) -> Option<&str> {
-    let text = line
+/// Le texte d'un titre `#`, espaces et tabulations ramenés à une seule espace.
+fn heading_text(line: &str) -> Option<String> {
+    let raw = line
         .strip_prefix(HEADING_PREFIX)?
         .trim()
-        .trim_end_matches('#')
-        .trim_end();
+        .trim_end_matches('#');
+    let text = raw.split_whitespace().collect::<Vec<_>>().join(" ");
     (!text.is_empty()).then_some(text)
 }
 
@@ -106,6 +107,22 @@ mod tests {
     #[test]
     fn empty_heading_is_not_a_title() {
         assert_eq!(Title::of("# \ntexte"), None);
+    }
+
+    #[test]
+    fn title_stops_at_a_lone_carriage_return() {
+        assert_eq!(
+            Title::of("# Haut\rBas").map(|t| t.as_str().to_owned()),
+            Some("Haut".into())
+        );
+    }
+
+    #[test]
+    fn tabs_inside_the_title_are_kept_as_spaces() {
+        assert_eq!(
+            Title::of("# A\tB").map(|t| t.as_str().to_owned()),
+            Some("A B".into())
+        );
     }
 
     #[test]
