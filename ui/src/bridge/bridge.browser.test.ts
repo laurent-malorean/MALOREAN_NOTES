@@ -1,4 +1,4 @@
-import { clearMocks, mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
+import { clearMocks, mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { afterEach, describe, expect, it } from "vitest";
 import * as bridge from "./index";
 
@@ -123,5 +123,33 @@ describe("pont vers Rust : déplacer une note", () => {
     const calls = recordCalls({ path: "Perso/a.md" });
     expect(await bridge.moveNote("a.md", "Perso")).toEqual({ path: "Perso/a.md" });
     expect(calls).toEqual([{ command: "move_note", args: { path: "a.md", into: "Perso" } }]);
+  });
+});
+
+describe("pont vers Rust : fenêtre", () => {
+  it("passe la fenêtre en plein écran et l'en fait sortir", async () => {
+    mockWindows("main");
+    const calls = recordCalls(null);
+    await bridge.setFullScreen(true);
+    await bridge.setFullScreen(false);
+    expect(calls).toEqual([
+      { command: "plugin:window|set_fullscreen", args: { label: "main", value: true } },
+      { command: "plugin:window|set_fullscreen", args: { label: "main", value: false } },
+    ]);
+  });
+
+  it("demande si la fenêtre est en plein écran", async () => {
+    mockWindows("main");
+    const calls = recordCalls(true);
+    expect(await bridge.isFullScreen()).toBe(true);
+    expect(calls).toEqual([{ command: "plugin:window|is_fullscreen", args: { label: "main" } }]);
+  });
+
+  it("prévient quand la fenêtre change de taille", async () => {
+    mockWindows("main");
+    const calls = recordCalls(1);
+    await bridge.onWindowResized(() => {});
+    expect(calls[0]?.command).toBe("plugin:event|listen");
+    expect(calls[0]?.args).toMatchObject({ event: "tauri://resize" });
   });
 });

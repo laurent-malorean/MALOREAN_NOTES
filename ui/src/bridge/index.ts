@@ -1,5 +1,6 @@
 // Seul module qui parle à Rust. Les types viennent de `generated/`, produits par `cargo test`.
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
 import type { LibraryInfo } from "./generated/LibraryInfo";
 import type { NoteContent } from "./generated/NoteContent";
@@ -45,3 +46,10 @@ export const moveNote = (path: string, into: string) =>
 export const pinNote = (path: string) => invoke<NoteContent>("pin_note", { path });
 /** Désépingle une note ; rend son nouveau contenu. */
 export const unpinNote = (path: string) => invoke<NoteContent>("unpin_note", { path });
+
+/** Passe la fenêtre en plein écran, ou l'en fait sortir. */
+export const setFullScreen = (on: boolean) => getCurrentWindow().setFullscreen(on);
+/** La fenêtre est-elle en plein écran (y compris par le bouton vert ou le menu du Mac) ? */
+export const isFullScreen = () => getCurrentWindow().isFullscreen();
+/** Prévient à chaque changement de taille de la fenêtre, entrée et sortie du plein écran comprises. */
+export const onWindowResized = (handler: () => void) => getCurrentWindow().onResized(handler);

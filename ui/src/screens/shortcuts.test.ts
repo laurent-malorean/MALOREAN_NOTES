@@ -18,4 +18,17 @@ describe("raccourcis clavier", () => {
     expect(key("g", { metaKey: true, shiftKey: true })).toBeNull();
     expect(key("f", { metaKey: true, shiftKey: true, ctrlKey: true })).toBeNull();
   });
+
+  it("Ctrl+Cmd+F bascule le plein écran", () => {
+    expect(key("f", { metaKey: true, ctrlKey: true })).toBe("toggle-full-screen");
+    expect(key("f", { metaKey: true, ctrlKey: true, shiftKey: true })).toBeNull();
+    expect(key("f", { ctrlKey: true })).toBeNull();
+  });
+
+  it("Échap quitte le plein écran", () => {
+    expect(key("Escape")).toBe("leave-full-screen");
+    expect(key("Escape", { metaKey: true })).toBeNull();
+    expect(key("Escape", { ctrlKey: true })).toBeNull();
+    expect(key("Escape", { shiftKey: true })).toBeNull();
+  });
 });

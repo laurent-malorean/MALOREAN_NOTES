@@ -1,6 +1,7 @@
 // Partie Rust simulée pour les parcours de test : une bibliothèque en mémoire.
 // Doublure volontairement simple ; les vraies règles sont testées côté Rust.
-import { mockConvertFileSrc, mockIPC } from "@tauri-apps/api/mocks";
+import { emit } from "@tauri-apps/api/event";
+import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 
 interface FakeNote {
   content: string;
@@ -13,6 +14,9 @@ export interface FakeBackend {
   rememberedLibrary: boolean;
   failNextSave: boolean;
   calls: string[];
+  fullScreen: boolean;
+  /** Le plein écran demandé par le Mac lui-même (bouton vert, menu). */
+  enterFullScreenFromTheSystem: () => Promise<void>;
 }
 
 declare global {
@@ -28,6 +32,11 @@ const backend: FakeBackend = {
   rememberedLibrary: params.get("remembered") === "1",
   failNextSave: false,
   calls: [],
+  fullScreen: false,
+  enterFullScreenFromTheSystem: async () => {
+    backend.fullScreen = true;
+    await emit("tauri://resize", { width: 1440, height: 900 });
+  },
 };
 window.backend = backend;
 let clock = 1_000;
@@ -167,11 +176,22 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   },
 };
 
-mockIPC((command, args) => {
-  backend.calls.push(command);
-  const handler = commands[command];
-  if (!handler) throw { message: `commande inconnue : ${command}` };
-  return handler((args ?? {}) as Record<string, string>);
-});
+const windowCommands: Record<string, (args: Record<string, unknown>) => unknown> = {
+  "plugin:window|set_fullscreen": ({ value }) => void (backend.fullScreen = value === true),
+  "plugin:window|is_fullscreen": () => backend.fullScreen,
+};
+
+mockWindows("main");
+mockIPC(
+  (command, args) => {
+    backend.calls.push(command);
+    const windowCommand = windowCommands[command];
+    if (windowCommand) return windowCommand((args ?? {}) as Record<string, unknown>);
+    const handler = commands[command];
+    if (!handler) throw { message: `commande inconnue : ${command}` };
+    return handler((args ?? {}) as Record<string, string>);
+  },
+  { shouldMockEvents: true },
+);
 
 mockConvertFileSrc("macos");

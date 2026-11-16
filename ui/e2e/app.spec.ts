@@ -297,3 +297,30 @@ test("le mode focus estompe tout sauf la phrase en cours, et reste réglé au re
   await expect(page.getByRole("button", { name: /^Focus/ })).toHaveText("Focus");
   await expect(page.locator(".cm-focus-dimmed")).toHaveCount(0);
 });
+
+test("le plein écran ne laisse que le texte, et Échap en sort", async ({ page }) => {
+  await launch(page);
+  const folders = page.locator(".folders");
+  const notes = page.locator(".sidebar");
+  await expect(folders).toBeVisible();
+  await page.getByRole("button", { name: "Plein écran" }).click();
+  await expect(folders).toBeHidden();
+  await expect(notes).toBeHidden();
+  await expect(editorLines(page).first()).toBeVisible();
+  expect(await page.evaluate(() => window.backend.fullScreen)).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(folders).toBeVisible();
+  expect(await page.evaluate(() => window.backend.fullScreen)).toBe(false);
+  await page.keyboard.press("Control+Meta+F");
+  await expect(notes).toBeHidden();
+  await page.keyboard.press("Control+Meta+F");
+  await expect(notes).toBeVisible();
+});
+
+test("le plein écran demandé par le Mac cache aussi les colonnes", async ({ page }) => {
+  await launch(page);
+  await expect(page.locator(".folders")).toBeVisible();
+  await page.evaluate(() => window.backend.enterFullScreenFromTheSystem());
+  await expect(page.locator(".folders")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Quitter le plein écran" })).toBeVisible();
+});

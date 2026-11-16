@@ -25,8 +25,8 @@ import {
   selectedNote,
   welcome,
 } from "./state/screen";
-import { showFocusUnit } from "./screens/editor-tools";
-import { shortcutFor } from "./screens/shortcuts";
+import { showFocusUnit, showFullScreen } from "./screens/editor-tools";
+import { type Shortcut, shortcutFor } from "./screens/shortcuts";
 import { loadFocusUnit, nextFocusUnit, saveFocusUnit } from "./state/focus-preference";
 import "./theme.css";
 import "./style.css";
@@ -202,12 +202,35 @@ function applyFocusUnit(unit: FocusUnit | null) {
 }
 const toggleFocus = () => applyFocusUnit(nextFocusUnit(focusUnit));
 layout.focusButton.addEventListener("click", toggleFocus);
-document.addEventListener("keydown", (event) => {
-  if (shortcutFor(event) !== "toggle-focus") return;
-  event.preventDefault();
-  toggleFocus();
-});
 applyFocusUnit(focusUnit);
+
+let fullScreen = false;
+function showWindowState(on: boolean) {
+  fullScreen = on;
+  showFullScreen(layout.workspace, layout.fullScreenButton, on);
+}
+async function setFullScreen(on: boolean) {
+  await bridge.setFullScreen(on);
+  showWindowState(on);
+}
+layout.fullScreenButton.addEventListener(
+  "click",
+  () => void setFullScreen(!fullScreen).catch(showError),
+);
+// Le plein écran peut aussi venir du bouton vert ou du menu du Mac : la fenêtre fait foi.
+void bridge
+  .onWindowResized(() => void bridge.isFullScreen().then(showWindowState).catch(showError))
+  .catch(showError);
+
+const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
+  "toggle-focus": () => (toggleFocus(), true),
+  "toggle-full-screen": () => (void setFullScreen(!fullScreen).catch(showError), true),
+  "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
+};
+document.addEventListener("keydown", (event) => {
+  const shortcut = shortcutFor(event);
+  if (shortcut && SHORTCUT_ACTIONS[shortcut]()) event.preventDefault();
+});
 
 show(welcome);
 bridge

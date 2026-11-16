@@ -1,6 +1,12 @@
 // Raccourcis clavier de la fenêtre, valables où que soit le curseur.
 
-export type Shortcut = "toggle-focus";
+export type Shortcut = "toggle-focus" | "toggle-full-screen" | "leave-full-screen";
+
+const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
+  "cmd+shift+f": "toggle-focus",
+  "cmd+ctrl+f": "toggle-full-screen",
+  escape: "leave-full-screen",
+};
 
 /** Ce qu'il faut savoir d'une touche pressée. */
 export interface KeyPress {
@@ -12,7 +18,6 @@ export interface KeyPress {
 
 /** L'action demandée par la touche, ou rien. */
 export function shortcutFor(press: KeyPress): Shortcut | null {
-  const letter = press.key.toLowerCase();
-  if (letter === "f" && press.metaKey && press.shiftKey && !press.ctrlKey) return "toggle-focus";
-  return null;
+  const modifiers = `${press.metaKey ? "cmd+" : ""}${press.ctrlKey ? "ctrl+" : ""}${press.shiftKey ? "shift+" : ""}`;
+  return SHORTCUTS[`${modifiers}${press.key.toLowerCase()}`] ?? null;
 }

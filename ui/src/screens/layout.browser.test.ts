@@ -22,6 +22,7 @@ describe("mise en page", () => {
       layout.notesList,
       layout.editor,
       layout.focusButton,
+      layout.fullScreenButton,
       layout.status,
       layout.newNoteButton,
     ]) {
