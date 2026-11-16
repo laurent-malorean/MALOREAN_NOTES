@@ -533,3 +533,35 @@ impl LibraryWatcher for FakeWatcher {
         Ok(Box::new(FakeWatching))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Mutex;
+
+    use domain::NotePath;
+
+    use super::*;
+
+    #[test]
+    fn the_fake_watcher_announces_changes_of_the_watched_library_only() {
+        let watcher = FakeWatcher::default();
+        watcher.announce(LibraryChange::default());
+        assert_eq!(watcher.watched(), None);
+        let heard = Arc::new(Mutex::new(Vec::new()));
+        let kept = Arc::clone(&heard);
+        let location = LibraryLocation::new("/Users/moi/Notes").unwrap();
+        let _watching = watcher
+            .watch(
+                &location,
+                Arc::new(move |change| kept.lock().unwrap().push(change)),
+            )
+            .unwrap();
+        let change = LibraryChange {
+            notes: vec![NotePath::parse("a.md").unwrap()],
+        };
+        watcher.announce(change.clone());
+        assert_eq!(watcher.watched(), Some(location));
+        assert_eq!(*heard.lock().unwrap(), [change]);
+        assert!(format!("{watcher:?}").contains("/Users/moi/Notes"));
+    }
+}
