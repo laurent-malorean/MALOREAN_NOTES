@@ -70,6 +70,18 @@ describe("titres, gras, italique, barré", () => {
     expect(seen("du `code` ici")).toBe("du code ici");
   });
 
+  it("ne touche à rien dans un bloc de code indenté", () => {
+    expect(seen("texte\n\n    # pas un titre **x**")).toBe("texte\n\n    # pas un titre **x**");
+  });
+
+  it("ne touche à rien dans un bloc HTML", () => {
+    expect(seen("<div>\n**x**\n</div>")).toBe("<div>\n**x**\n</div>");
+  });
+
+  it("ne touche à rien dans un commentaire", () => {
+    expect(seen("<!-- **x** -->")).toBe("<!-- **x** -->");
+  });
+
   it("ne touche à rien dans un bloc de code", () => {
     expect(seen("```\n# pas un titre **x**\n```")).toBe("```\n# pas un titre **x**\n```");
   });
@@ -82,6 +94,37 @@ describe("titres, gras, italique, barré", () => {
       "2:cm-lp-front-matter",
       "3:cm-lp-front-matter",
     ]);
+  });
+});
+
+describe("en-tête YAML", () => {
+  it("ne dessine pas de séparateur dans un en-tête qui contient une ligne vide", () => {
+    expect(seen("---\na: 1\n\n---\ntexte")).toBe("---\na: 1\n\n---\ntexte");
+  });
+
+  it("accepte des espaces après le délimiteur de fin", () => {
+    expect(lineStyles("---\na: 1\n---  \n# T")).toEqual([
+      "1:cm-lp-front-matter",
+      "2:cm-lp-front-matter",
+      "3:cm-lp-front-matter",
+    ]);
+  });
+
+  it("reconnaît un en-tête qui termine la note", () => {
+    expect(lineStyles("---\na: 1\n---")).toEqual([
+      "1:cm-lp-front-matter",
+      "2:cm-lp-front-matter",
+      "3:cm-lp-front-matter",
+    ]);
+  });
+
+  it("n'est un en-tête qu'en tout début de note", () => {
+    expect(lineStyles("texte\n---\na: 1\n---")).toEqual([]);
+  });
+
+  it("doit se fermer dans les 10 000 premiers caractères", () => {
+    const long = `---\n${"a".repeat(10_000)}\n---\n`;
+    expect(lineStyles(long)).toEqual([]);
   });
 });
 
@@ -115,6 +158,20 @@ describe("listes, cases à cocher, citations", () => {
 describe("liens", () => {
   it("ne montre que le texte d'un lien", () => {
     expect(seen("un [site](https://example.com) ici")).toBe("un site ici");
+  });
+
+  it("ne montre que le texte d'un lien, même mis en forme", () => {
+    expect(seen("[**gras**](https://example.com)")).toBe("gras");
+  });
+
+  it("ne montre que le texte d'un lien qui a un titre", () => {
+    expect(seen('un [site](https://example.com "Le site") ici')).toBe("un site ici");
+  });
+
+  it("ne montre que le texte d'un lien par référence", () => {
+    expect(seen("un [site][ref] ici\n\n[ref]: https://example.com")).toBe(
+      "un site ici\n\n[ref]: https://example.com",
+    );
   });
 
   it("laisse une adresse brute visible", () => {

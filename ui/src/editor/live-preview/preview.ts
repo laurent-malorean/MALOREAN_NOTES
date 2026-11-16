@@ -33,7 +33,7 @@ export const QUOTE_CLASS = "cm-lp-quote";
 
 const FRONT_MATTER = /^---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)/;
 const UNTOUCHED_BLOCKS = new Set(["FencedCode", "CodeBlock", "HTMLBlock", "CommentBlock"]);
-const LINK_PARTS = new Set(["LinkMark", "URL", "LinkTitle", "LinkLabel"]);
+const LINK_TEXT_END = "]";
 const CHECKED = /\[[xX]\]/;
 
 /** La case cochée devient décochée, et inversement. */
@@ -69,6 +69,7 @@ const HANDLERS: Record<string, Handler> = {
     const checked = CHECKED.test(c.doc.sliceString(node.from, node.to));
     c.preview.conceals.push({ kind: "checkbox", from: node.from, to: node.to, checked });
   },
+  Link: (node, c) => link(node, c),
   HorizontalRule: (node, c) =>
     c.preview.conceals.push({ kind: "rule", from: node.from, to: node.to }),
 };
@@ -98,14 +99,20 @@ function visit(node: SyntaxNodeRef, input: PreviewInput, context: Context, front
   if (UNTOUCHED_BLOCKS.has(node.name)) return false;
   if (node.name === "Blockquote") styleLines(context, node.from, node.to, QUOTE_CLASS);
   if (isActive(input, node)) return true;
-  const handler = LINK_PARTS.has(node.name) ? linkPart : HANDLERS[node.name];
-  handler?.(node.node, context);
+  HANDLERS[node.name]?.(node.node, context);
   return true;
 }
 
-const linkPart: Handler = (node, c) => {
-  if (parentName(node) === "Link") hide(c, node.from, node.to);
-};
+/** Un lien ne montre que son texte : `[` caché, et tout ce qui suit `]` (adresse, titre, référence). */
+function link(node: SyntaxNode, context: Context) {
+  const opening = node.firstChild;
+  const textEnd = node
+    .getChildren("LinkMark")
+    .find((mark) => context.doc.sliceString(mark.from, mark.to) === LINK_TEXT_END);
+  if (!opening || !textEnd) return;
+  hide(context, opening.from, opening.to);
+  hide(context, textEnd.from, node.to);
+}
 
 /** Ce qu'il faut masquer ou dessiner entre `from` et `to`, triés par position. */
 export function computePreview(input: PreviewInput): Preview {
