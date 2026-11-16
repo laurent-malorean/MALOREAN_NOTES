@@ -1,0 +1,13 @@
+[package]
+name = "domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+# Retirer les accents d'un titre pour former un nom de fichier (décomposition Unicode).
+unicode-normalization.workspace = true
+
+[lints]
+workspace = true

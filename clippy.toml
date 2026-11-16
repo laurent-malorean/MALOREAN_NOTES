@@ -1,0 +1,10 @@
+too-many-lines-threshold = 60
+cognitive-complexity-threshold = 10
+too-many-arguments-threshold = 6
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+disallowed-methods = [
+  { path = "std::time::SystemTime::now", reason = "utiliser le port Clock" },
+  { path = "std::time::Instant::now", reason = "utiliser le port Clock" },
+]

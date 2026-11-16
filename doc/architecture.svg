@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 20 1100 845" font-family="-apple-system, Helvetica, Arial, sans-serif" font-size="13">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#475569"/>
+    </marker>
+    <style>
+      .t{font-size:18px;font-weight:700;fill:#0f172a}
+      .h{font-weight:700;fill:#0f172a}
+      .s{fill:#334155;font-size:12px}
+      .lbl{fill:#475569;font-size:11px;font-style:italic}
+      .ar{stroke:#475569;stroke-width:1.6;fill:none;marker-end:url(#a)}
+      .ard{stroke:#475569;stroke-width:1.6;fill:none;stroke-dasharray:5 4;marker-end:url(#a)}
+    </style>
+  </defs>
+  <rect y="20" width="1100" height="845" fill="#ffffff"/>
+  <text x="30" y="44" class="t">MALOREAN Notes — architecture (Tauri 2 + Rust + CodeMirror 6)</text>
+
+  <!-- Interface -->
+  <rect x="30" y="60" width="1040" height="120" rx="10" fill="#eff6ff" stroke="#3b82f6"/>
+  <text x="46" y="82" class="h">Interface — ui/ (TypeScript, Vite)</text>
+  <text x="1054" y="82" class="s" text-anchor="end">aucune règle métier · aucun accès disque</text>
+  <rect x="50" y="95" width="340" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
+  <text x="62" y="116" class="h">Écrans et éditeur</text>
+  <text x="62" y="134" class="s">dossiers, liste des notes ; CodeMirror 6 :</text>
+  <text x="62" y="150" class="s">mise en forme en direct, mode focus</text>
+  <rect x="410" y="95" width="320" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
+  <text x="422" y="116" class="h">État d'écran</text>
+  <text x="422" y="134" class="s">état + transitions, sans DOM,</text>
+  <text x="422" y="150" class="s">testés avec Vitest</text>
+  <rect x="750" y="95" width="300" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
+  <text x="762" y="116" class="h">bridge/</text>
+  <text x="762" y="134" class="s">seul module qui appelle Rust ;</text>
+  <text x="762" y="150" class="s">types générés depuis Rust (ts-rs)</text>
+
+  <!-- WebView ↔ Rust -->
+  <rect x="30" y="187" width="1040" height="22" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="6 4"/>
+  <text x="387" y="202" text-anchor="middle" class="lbl">WebView ↔ Rust</text>
+  <text x="812" y="202" text-anchor="middle" class="lbl">commandes (invoke) ↓, événements ↑, en JSON — toujours asynchrone</text>
+
+  <!-- API -->
+  <rect x="30" y="230" width="1040" height="125" rx="10" fill="#f0fdf4" stroke="#22c55e"/>
+  <text x="46" y="252" class="h">Pont — crate api (commandes et événements Tauri)</text>
+  <text x="1054" y="252" class="s" text-anchor="end">dépend de : application, domain</text>
+  <text x="46" y="269" class="s">Chaque commande : lit la requête, appelle un cas d'usage, met la réponse en forme. Aucune règle métier.</text>
+  <rect x="50" y="282" width="190" height="58" rx="6" fill="#fff" stroke="#22c55e"/>
+  <text x="60" y="302" class="h">Commandes</text>
+  <text x="60" y="318" class="s">une par intention :</text>
+  <text x="60" y="332" class="s">create_note, move_note…</text>
+  <rect x="255" y="282" width="190" height="58" rx="6" fill="#fff" stroke="#22c55e"/>
+  <text x="265" y="302" class="h">Validation</text>
+  <text x="265" y="318" class="s">tout ce que la page envoie</text>
+  <text x="265" y="332" class="s">est vérifié (chemins, tailles)</text>
+  <rect x="460" y="282" width="190" height="58" rx="6" fill="#fff" stroke="#22c55e"/>
+  <text x="470" y="302" class="h">Événements</text>
+  <text x="470" y="318" class="s">note changée, conflit,</text>
+  <text x="470" y="332" class="s">relayés à la page</text>
+  <rect x="665" y="282" width="190" height="58" rx="6" fill="#fff" stroke="#22c55e"/>
+  <text x="675" y="302" class="h">Erreurs</text>
+  <text x="675" y="318" class="s">erreur typée → message,</text>
+  <text x="675" y="332" class="s">à un seul endroit</text>
+  <text x="872" y="302" class="s">Permissions Tauri au plus</text>
+  <text x="872" y="318" class="s">juste : pas de disque ni de</text>
+  <text x="872" y="334" class="s">shell depuis la page.</text>
+
+  <!-- Application -->
+  <rect x="30" y="375" width="1040" height="135" rx="10" fill="#fefce8" stroke="#eab308"/>
+  <text x="46" y="397" class="h">Application — crate application (cas d'usage)</text>
+  <text x="1054" y="397" class="s" text-anchor="end">dépend de : domain</text>
+  <text x="46" y="414" class="s">Chaque action de l'utilisateur = un type nommé par un verbe. Ne parle au stockage et au système que par les ports. Ignore Tauri et les fichiers.</text>
+  <rect x="50" y="427" width="190" height="62" rx="6" fill="#fff" stroke="#eab308"/>
+  <text x="60" y="447" class="h">Cas d'usage</text>
+  <text x="60" y="463" class="s">un type par intention</text>
+  <text x="60" y="478" class="s">CreateNote, MoveNote…</text>
+  <rect x="255" y="427" width="190" height="62" rx="6" fill="#fff" stroke="#eab308"/>
+  <text x="265" y="447" class="h">Lectures</text>
+  <text x="265" y="463" class="s">vues prêtes à afficher,</text>
+  <text x="265" y="478" class="s">jamais tout parcourir</text>
+  <rect x="460" y="427" width="190" height="62" rx="6" fill="#fff" stroke="#eab308"/>
+  <text x="470" y="447" class="h">Événements</text>
+  <text x="470" y="463" class="s">ce qui a changé</text>
+  <text x="470" y="478" class="s">(dans l'app ou au dehors)</text>
+  <rect x="665" y="427" width="190" height="62" rx="6" fill="#fff" stroke="#eab308"/>
+  <text x="675" y="447" class="h">Erreurs</text>
+  <text x="675" y="463" class="s">un enum par crate,</text>
+  <text x="675" y="478" class="s">une variante par cas</text>
+  <rect x="870" y="427" width="185" height="62" rx="6" fill="#fff" stroke="#eab308" stroke-width="2"/>
+  <text x="880" y="447" class="h">Ports (traits)</text>
+  <text x="880" y="463" class="s">NoteStore, Trash, Search,</text>
+  <text x="880" y="478" class="s">Watcher, Clock, Events…</text>
+
+  <!-- Domaine -->
+  <rect x="30" y="545" width="500" height="130" rx="10" fill="#faf5ff" stroke="#a855f7"/>
+  <text x="46" y="567" class="h">Domaine — crate domain (règles pures)</text>
+  <text x="46" y="589" class="s">Types : Library, Folder, Note, FrontMatter, Tag…</text>
+  <text x="46" y="607" class="s">Règles : titre → nom de fichier kebab-case, pièces jointes</text>
+  <text x="46" y="625" class="s">Erreurs métier : un enum, une variante par cas</text>
+  <text x="46" y="655" class="s">Ne dépend de rien : ni fichiers, ni horloge, ni async, ni unsafe.</text>
+
+  <!-- Infrastructure -->
+  <rect x="560" y="545" width="510" height="175" rx="10" fill="#fff7ed" stroke="#f97316"/>
+  <text x="576" y="567" class="h">Infrastructure — crate infrastructure</text>
+  <text x="1054" y="567" class="s" text-anchor="end">dépend de : application, domain</text>
+  <rect x="576" y="579" width="230" height="126" rx="6" fill="#fff" stroke="#f97316"/>
+  <text x="586" y="598" class="h">Stockage Markdown</text>
+  <text x="586" y="616" class="s">implémente NoteStore, Trash</text>
+  <text x="586" y="631" class="s">écriture atomique</text>
+  <text x="586" y="646" class="s">(temporaire → renommage)</text>
+  <text x="586" y="661" class="s">en-tête YAML, index</text>
+  <text x="586" y="676" class="s">dossiers .assets</text>
+  <text x="586" y="691" class="s">corbeille</text>
+  <rect x="820" y="579" width="238" height="126" rx="6" fill="#fff" stroke="#f97316"/>
+  <text x="830" y="598" class="h">Système et services</text>
+  <text x="830" y="616" class="s">surveillance des fichiers (FSEvents)</text>
+  <text x="830" y="631" class="s">recherche plein texte</text>
+  <text x="830" y="646" class="s">horloge réelle, identifiants</text>
+  <text x="830" y="661" class="s">journal (tracing)</text>
+  <text x="830" y="676" class="s">tâches de fond</text>
+  <text x="830" y="691" class="s">FFI isolée : seul unsafe permis</text>
+
+  <!-- Disque -->
+  <rect x="560" y="750" width="510" height="95" rx="10" fill="#f1f5f9" stroke="#64748b"/>
+  <text x="576" y="772" class="h">Disque</text>
+  <text x="576" y="791" class="s">Bibliothèque (dossier choisi, iCloud possible) : .md + .assets/</text>
+  <text x="576" y="808" class="s">~/Library/Caches/&lt;app&gt;/ : index de recherche (reconstructible)</text>
+  <text x="576" y="825" class="s">~/Library/Application Support/&lt;app&gt;/ : préférences · Logs : journaux</text>
+
+  <!-- Assemblage -->
+  <rect x="30" y="705" width="500" height="140" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="6 4"/>
+  <text x="46" y="727" class="h">Assemblage — crate app (binaire Tauri)</text>
+  <text x="46" y="747" class="s">Seule crate qui connaît toutes les autres.</text>
+  <text x="46" y="765" class="s">Lit la configuration, crée les adaptateurs, les injecte</text>
+  <text x="46" y="783" class="s">dans les cas d'usage, enregistre les commandes de api,</text>
+  <text x="46" y="801" class="s">déclare les permissions et ouvre la fenêtre.</text>
+  <text x="46" y="819" class="s">Au démarrage : dernière bibliothèque rouverte, index à jour.</text>
+
+  <!-- Flèches -->
+  <path class="ar" d="M220 165V230"/>
+  <text x="228" y="224" class="lbl">appelle</text>
+  <path class="ar" d="M555 230V165"/>
+  <text x="563" y="224" class="lbl">événements</text>
+  <path class="ar" d="M145 340V375"/>
+  <text x="153" y="367" class="lbl">appelle</text>
+  <path class="ar" d="M555 375V340"/>
+  <text x="563" y="367" class="lbl">événements</text>
+  <path class="ar" d="M280 510V545"/>
+  <text x="290" y="533" class="lbl">utilise</text>
+  <path class="ard" d="M962 545V489"/>
+  <text x="970" y="525" class="lbl">implémente</text>
+  <path class="ar" d="M815 720V750"/>
+  <path class="ard" d="M560 610H530"/>
+</svg>

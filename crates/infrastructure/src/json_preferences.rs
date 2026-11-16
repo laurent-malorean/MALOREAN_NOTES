@@ -1,0 +1,60 @@
+//! Préférences dans un petit fichier JSON, dans le dossier de configuration de l'application.
+
+use std::fs;
+use std::io;
+use std::path::PathBuf;
+
+use application::{LibraryLocation, Preferences, StoreError};
+use serde::{Deserialize, Serialize};
+
+#[derive(Default, Serialize, Deserialize)]
+struct Stored {
+    last_library: Option<PathBuf>,
+}
+
+/// Préférences gardées dans un fichier JSON.
+pub struct JsonPreferences {
+    file: PathBuf,
+}
+
+impl JsonPreferences {
+    #[must_use]
+    pub fn new(file: PathBuf) -> Self {
+        Self { file }
+    }
+
+    fn load(&self) -> Result<Stored, StoreError> {
+        match fs::read_to_string(&self.file) {
+            Ok(text) => serde_json::from_str(&text).map_err(|e| unavailable(&e)),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(Stored::default()),
+            Err(error) => Err(unavailable(&error)),
+        }
+    }
+
+    fn save(&self, stored: &Stored) -> Result<(), StoreError> {
+        if let Some(parent) = self.file.parent() {
+            fs::create_dir_all(parent).map_err(|e| unavailable(&e))?;
+        }
+        let text = serde_json::to_string_pretty(stored).map_err(|e| unavailable(&e))?;
+        let temporary = self.file.with_extension("json.enregistrement");
+        fs::write(&temporary, text)
+            .and_then(|()| fs::rename(&temporary, &self.file))
+            .map_err(|e| unavailable(&e))
+    }
+}
+
+impl Preferences for JsonPreferences {
+    fn last_library(&self) -> Result<Option<LibraryLocation>, StoreError> {
+        Ok(self.load()?.last_library.map(LibraryLocation))
+    }
+
+    fn remember_library(&self, location: &LibraryLocation) -> Result<(), StoreError> {
+        let mut stored = self.load()?;
+        stored.last_library = Some(location.0.clone());
+        self.save(&stored)
+    }
+}
+
+fn unavailable(error: &dyn std::error::Error) -> StoreError {
+    StoreError::Unavailable(error.to_string())
+}

@@ -1,0 +1,35 @@
+//! Assemblage : seul endroit qui connaît toutes les couches.
+
+use std::sync::Arc;
+
+use api::{Session, commands};
+use infrastructure::{FsLibraryOpener, JsonPreferences};
+use tauri::Manager;
+
+const PREFERENCES_FILE: &str = "preferences.json";
+
+fn main() {
+    tracing_subscriber::fmt::init();
+    let started = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            let preferences =
+                JsonPreferences::new(app.path().app_config_dir()?.join(PREFERENCES_FILE));
+            let session = Session::new(Arc::new(FsLibraryOpener), Arc::new(preferences));
+            app.manage(Arc::new(session));
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::reopen_last_library,
+            commands::choose_library,
+            commands::list_notes,
+            commands::read_note,
+            commands::save_note,
+            commands::create_note,
+        ])
+        .run(tauri::generate_context!());
+    if let Err(error) = started {
+        tracing::error!(%error, "l'application n'a pas pu démarrer");
+        std::process::exit(1);
+    }
+}
