@@ -182,7 +182,8 @@ mod tests {
     #[test]
     fn a_file_over_the_limit_is_refused_and_one_at_the_limit_is_kept() {
         let store = InMemoryNoteStore::with_notes(&[("voyage.md", "# Voyage")]);
-        let limit = MAX_ATTACHMENT_MEGABYTES * BYTES_PER_MEGABYTE;
+        // 50 Mo, comptés en octets : 50 × 1 048 576.
+        let limit = 52_428_800;
         let source = AttachmentSource::Dropped { file_name: "a.png" };
         let too_big = AttachFile::new(&store, &clock()).execute(
             &path("voyage.md"),
