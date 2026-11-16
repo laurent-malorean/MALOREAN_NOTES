@@ -16,6 +16,8 @@ use tempfile::TempDir;
 
 const READ_ONLY_FOLDER: u32 = 0o555;
 const WRITABLE_FOLDER: u32 = 0o755;
+const NO_PERMISSION: u32 = 0o000;
+const READ_WRITE_FILE: u32 = 0o644;
 
 fn name(text: &str) -> FileName {
     FileName::parse(text).unwrap()
@@ -207,4 +209,15 @@ fn opening_a_file_instead_of_a_folder_fails() {
         FsLibraryOpener.open(&location(&file)),
         Err(StoreError::Unavailable(_))
     ));
+}
+
+#[test]
+fn a_note_without_read_permission_is_reported_as_unavailable() {
+    let (dir, store) = library();
+    let file = dir.path().join("secret.md");
+    fs::write(&file, "# Secret").unwrap();
+    fs::set_permissions(&file, fs::Permissions::from_mode(NO_PERMISSION)).unwrap();
+    let result = store.read(&name("secret.md"));
+    fs::set_permissions(&file, fs::Permissions::from_mode(READ_WRITE_FILE)).unwrap();
+    assert!(matches!(result, Err(StoreError::Unavailable(_))));
 }
