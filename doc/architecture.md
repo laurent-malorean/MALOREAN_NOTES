@@ -69,6 +69,10 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | Fiche | Décision |
 |---|---|
 | `0001-tauri-codemirror.md` | Interface Tauri 2 + CodeMirror 6 |
+| `0002-notes-markdown-nom-tire-du-titre.md` | Notes en fichiers Markdown, nom tiré du titre, pièces jointes par note |
+| `0003-apercu-en-direct-par-masquage.md` | Aperçu en direct : syntaxe masquée hors de la ligne en cours |
+| `0004-strategie-de-tests.md` | Niveaux de tests, seuils, mutation, garde-fou avant envoi |
+| `0005-aide-ecriture-modele-apple.md` | Aide à l'écriture par le modèle d'IA du Mac (proposée) |
 
 ## Décisions ouvertes
 
