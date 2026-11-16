@@ -1,6 +1,7 @@
 import { undo, undoDepth } from "@codemirror/commands";
 import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { createEditor } from "./editor";
 
 function mount() {
@@ -85,6 +86,44 @@ describe("éditeur : aperçu en direct dans la fenêtre", () => {
     view.dispatch({ selection: { anchor: view.state.doc.length } });
     expect(parent.querySelector(".cm-lp-bullet")).toBe(bullet);
     expect(parent.querySelector(".cm-lp-rule")).toBe(rule);
+  });
+
+  it("signale la frappe même avant qu'une note soit ouverte", () => {
+    const { view, changes } = mount();
+    view.dispatch({ changes: { from: 0, insert: "a" } });
+    expect(changes).toEqual(["a"]);
+  });
+
+  it("ne signale pas un simple déplacement du curseur", () => {
+    const { editor, view, changes } = mount();
+    editor.show("abc");
+    view.dispatch({ selection: { anchor: 2 } });
+    expect(changes).toEqual([]);
+  });
+
+  it("indente avec la touche Tab et annule avec Cmd+Z", async () => {
+    const { editor, view } = mount();
+    editor.show("ligne");
+    view.focus();
+    view.dispatch({ selection: { anchor: 0 } });
+    await userEvent.keyboard("{Tab}");
+    expect(view.state.doc.toString()).not.toBe("ligne");
+    await userEvent.keyboard("{Meta>}z{/Meta}");
+    expect(view.state.doc.toString()).toBe("ligne");
+  });
+
+  it("active le correcteur orthographique en français", () => {
+    const { view } = mount();
+    expect([
+      view.contentDOM.getAttribute("spellcheck"),
+      view.contentDOM.getAttribute("lang"),
+    ]).toEqual(["true", "fr"]);
+  });
+
+  it("invite à écrire un titre dans une note vide", () => {
+    const { parent, editor } = mount();
+    editor.show("");
+    expect(parent.querySelector(".cm-placeholder")?.textContent).toBe("# Titre de la note");
   });
 
   it("reste fluide sur une très longue note", () => {

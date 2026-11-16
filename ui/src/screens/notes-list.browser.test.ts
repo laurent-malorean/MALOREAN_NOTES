@@ -23,7 +23,9 @@ describe("liste des notes", () => {
   it("affiche la date de modification", () => {
     const container = list();
     renderNotesList(container, notes, null, () => {});
-    expect(container.querySelector(".note-date")?.textContent).toMatch(/16\/11\/2026/);
+    expect(container.querySelector(".note-date")?.textContent).toMatch(
+      /^16\/11\/2026 \d{2}:\d{2}$/,
+    );
   });
 
   it("met en évidence la note ouverte, et elle seule", () => {
