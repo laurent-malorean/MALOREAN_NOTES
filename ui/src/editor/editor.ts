@@ -12,6 +12,7 @@ import { type ImageResolver, imageResolver, livePreview } from "./live-preview/p
 import { liveTables } from "./live-preview/tables";
 import { findReplace } from "./writing/find-replace";
 import { formattingShortcuts } from "./writing/formatting";
+import { type Today, todayShortcut } from "./writing/today";
 import { listContinuation } from "./writing/lists";
 import { keptPosition } from "../state/external-change";
 
@@ -33,6 +34,7 @@ export function createEditor(
   onChange: (content: string) => void,
   resolveImage?: ImageResolver,
   attachmentActions?: AttachmentActions,
+  today: Today = () => new Date(),
 ): Editor {
   const focus = new Compartment();
   let focusUnit: FocusUnit | null = null;
@@ -45,6 +47,7 @@ export function createEditor(
     findReplace,
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.
     formattingShortcuts,
+    todayShortcut(today),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.
     markdown({ base: markdownLanguage, codeLanguages: languages }),

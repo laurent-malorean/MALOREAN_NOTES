@@ -133,3 +133,62 @@ describe("écriture : raccourcis de mise en forme", () => {
     await expect.poll(() => view.scrollDOM.scrollTop).toBeGreaterThan(0);
   });
 });
+
+describe("écriture : date du jour", () => {
+  function withDate(content: string) {
+    const parent = document.createElement("div");
+    document.body.replaceChildren(parent);
+    createEditor(
+      parent,
+      () => {},
+      undefined,
+      undefined,
+      () => new Date(2026, 10, 16),
+    ).show(content);
+    const view = EditorView.findFromDOM(parent.querySelector(".cm-editor") as HTMLElement);
+    if (!view) throw new Error("éditeur introuvable");
+    view.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    return view;
+  }
+
+  it("Cmd+Maj+D insère la date du jour en toutes lettres, curseur après", async () => {
+    const view = withDate("Réunion du ");
+    await userEvent.keyboard("{Meta>}{Shift>}d{/Shift}{/Meta}");
+    expect(view.state.doc.toString()).toBe("Réunion du 16 novembre 2026");
+    expect(view.state.selection.main.head).toBe(view.state.doc.length);
+  });
+
+  it("garde le raccourci pour lui", () => {
+    const view = withDate("");
+    const press = new KeyboardEvent("keydown", {
+      key: "D",
+      code: "KeyD",
+      keyCode: 68,
+      metaKey: true,
+      shiftKey: true,
+    });
+    expect(runScopeHandlers(view, press, "editor")).toBe(true);
+  });
+
+  it("remplace la sélection par la date", async () => {
+    const view = withDate("le jour J");
+    view.dispatch({ selection: { anchor: 3, head: 9 } });
+    await userEvent.keyboard("{Meta>}{Shift>}d{/Shift}{/Meta}");
+    expect(view.state.doc.toString()).toBe("le 16 novembre 2026");
+  });
+
+  it("prend la vraie date sans horloge donnée", async () => {
+    const view = typing("");
+    await userEvent.keyboard("{Meta>}{Shift>}d{/Shift}{/Meta}");
+    expect(view.state.doc.toString()).toMatch(/^(1er|\d{1,2}) \p{L}+ \d{4}$/u);
+  });
+
+  it("ramène la date insérée à l'écran", async () => {
+    const view = withDate(`${"ligne\n".repeat(300)}fin`);
+    (view.dom as HTMLElement).style.height = "200px";
+    view.scrollDOM.scrollTop = 0;
+    await userEvent.keyboard("{Meta>}{Shift>}d{/Shift}{/Meta}");
+    await expect.poll(() => view.scrollDOM.scrollTop).toBeGreaterThan(0);
+  });
+});
