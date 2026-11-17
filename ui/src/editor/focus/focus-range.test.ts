@@ -11,11 +11,11 @@ function focused(marked: string, unit: "sentence" | "paragraph"): string {
 }
 
 describe("paragraphe en cours", () => {
-  it("est le bloc de lignes entre deux lignes vides", () => {
-    expect(focused("avant\n\nun |deux\ntrois\n\naprès", "paragraph")).toBe("un deux\ntrois");
+  it("est la ligne du curseur, même sans ligne vide autour", () => {
+    expect(focused("avant\nun |deux\ntrois\n\naprès", "paragraph")).toBe("un deux");
   });
 
-  it("va jusqu'au début et à la fin de la note", () => {
+  it("va jusqu'au début et à la fin de la ligne", () => {
     expect(focused("un |deux", "paragraph")).toBe("un deux");
   });
 
@@ -24,33 +24,14 @@ describe("paragraphe en cours", () => {
   });
 
   it("compte une ligne blanche faite d'espaces comme vide", () => {
-    expect(focused("un\n   \nde|ux", "paragraph")).toBe("deux");
+    expect(focusRange(Text.of(["un", "   ", "deux"]), 4, "paragraph")).toEqual({ from: 4, to: 4 });
   });
 
-  it("fait d'un titre un paragraphe à lui seul", () => {
+  it("fait d'un titre, d'un élément de liste, d'une tâche ou d'une ligne de citation un bloc", () => {
     expect(focused("# Ti|tre\ntexte", "paragraph")).toBe("# Titre");
-    expect(focused("# Titre\nte|xte", "paragraph")).toBe("texte");
-  });
-
-  it("ne prend pour titre qu'une ligne qui commence par un à six dièses suivis d'une espace", () => {
-    expect(focused("un|\n#collé", "paragraph")).toBe("un\n#collé");
-    expect(focused("un|\n####### sept", "paragraph")).toBe("un\n####### sept");
-    expect(focused("un|\na # b", "paragraph")).toBe("un\na # b");
-    expect(focused("un|\n### trois", "paragraph")).toBe("un");
-    expect(focused("un|\n##", "paragraph")).toBe("un");
-  });
-
-  it("ne prend pour élément de liste qu'une ligne qui commence par sa marque", () => {
-    expect(focused("un|\nx- y", "paragraph")).toBe("un\nx- y");
-    expect(focused("un|\na - b", "paragraph")).toBe("un\na - b");
-    expect(focused("- un\n  - so|us", "paragraph")).toBe("  - sous");
-    expect(focused("9. neuf\n10. d|ix", "paragraph")).toBe("10. dix");
-  });
-
-  it("fait de chaque élément de liste un paragraphe", () => {
-    expect(focused("- un\n- de|ux\n  suite\n- trois", "paragraph")).toBe("- deux\n  suite");
-    expect(focused("1. un\n2. de|ux", "paragraph")).toBe("2. deux");
-    expect(focused("* un\n+ de|ux", "paragraph")).toBe("+ deux");
+    expect(focused("- un\n- de|ux\n- trois", "paragraph")).toBe("- deux");
+    expect(focused("- [ ] un\n- [x] de|ux", "paragraph")).toBe("- [x] deux");
+    expect(focused("> un\n> de|ux", "paragraph")).toBe("> deux");
   });
 });
 
@@ -96,7 +77,7 @@ describe("phrase en cours", () => {
     expect(focused("J'en ai 3. Pu|is.", "sentence")).toBe("Puis.");
   });
 
-  it("trouve la phrase dans un paragraphe qui n'est pas le premier", () => {
+  it("trouve la phrase sur une ligne qui n'est pas la première", () => {
     expect(focused("Avant.\n\nUn. De|ux. Trois.", "sentence")).toBe("Deux.");
   });
 
@@ -108,12 +89,13 @@ describe("phrase en cours", () => {
     expect(focused("Il fait 3.5 de|grés.", "sentence")).toBe("Il fait 3.5 degrés.");
   });
 
-  it("s'arrête au bout du paragraphe, même sans ponctuation", () => {
+  it("s'arrête au bout de la ligne, même sans ponctuation", () => {
     expect(focused("un titre\n\nPhra|se sans fin\n\nautre", "sentence")).toBe("Phrase sans fin");
   });
 
-  it("continue sur la ligne suivante du même paragraphe", () => {
-    expect(focused("Début de\nla phra|se. Fin.", "sentence")).toBe("Début de\nla phrase.");
+  it("finit au retour à la ligne, même sans ponctuation", () => {
+    expect(focused("Début de\nla phra|se. Fin.", "sentence")).toBe("la phrase.");
+    expect(focused("Une ligne sans point|\nLa suivante", "sentence")).toBe("Une ligne sans point");
   });
 
   it("commence après la fin de la phrase précédente, sur une autre ligne", () => {

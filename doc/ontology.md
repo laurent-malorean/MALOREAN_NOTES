@@ -37,7 +37,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Tableau | `Table` | Tableau Markdown : ligne d'en-tête, ligne d'alignement, puis les lignes ; dessiné par l'aperçu en direct. |
 | Thème | `theme` | Couleurs, polices et tailles de lecture de l'interface, réunies dans un seul fichier. |
 | Plein écran | `fullScreen` | La fenêtre occupe tout l'écran et ne montre que les colonnes : listes des dossiers et des notes cachées. |
-| Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. |
+| Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. Un retour à la ligne termine l'une comme l'autre : le paragraphe en cours est la ligne du curseur. |
 | Lien entre notes | `NoteLink` | `[[titre]]` écrit dans une note : désigne la note qui porte ce titre, sans tenir compte des majuscules ni des accents ; `[[titre|texte]]` montre `texte`. Cmd+clic l'ouvre. |
 | Liens entrants | `Backlinks` | Les notes dont un lien entre notes désigne la note ouverte, montrées sous son texte. |
 | Ouverture rapide | `quickOpen` | Fenêtre ouverte au clavier (Cmd+O) où l'on tape quelques lettres du titre d'une note, de n'importe quel dossier, pour l'ouvrir. |
