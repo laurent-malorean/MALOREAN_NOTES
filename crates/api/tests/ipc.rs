@@ -10,8 +10,8 @@ use std::sync::Arc;
 use api::commands::{FILE_NAME_HEADER, MEDIA_TYPE_HEADER, NOTE_HEADER};
 use api::commands::{LIBRARY_CHANGED_EVENT, invoke_handler};
 use api::{
-    AttachedFile, LibraryChanged, LibraryInfo, LinkingNoteItem, NoteContent, NoteListItem,
-    SaveResult, SavedNote, SearchResultItem, Session, TrashInfo,
+    AttachedFile, LibraryChanged, LibraryInfo, LibraryNoteItem, LinkingNoteItem, NoteContent,
+    NoteListItem, SaveResult, SavedNote, SearchResultItem, Session, TrashInfo,
 };
 use application::testing::{
     FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore,
@@ -338,6 +338,17 @@ fn the_page_follows_links_between_notes_by_title_and_path() {
             .map(|n| n.title.as_str())
             .collect::<Vec<_>>(),
         ["Lundi"]
+    );
+}
+
+#[test]
+fn the_page_lists_every_note_of_the_library_for_quick_open() {
+    let window = window(&[("a.md", "# Alpha"), ("Travail/b.md", "# Bêta")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let notes: Vec<LibraryNoteItem> = ok(call(&window, "list_all_notes", json!({})));
+    assert_eq!(
+        notes.iter().map(|n| n.path.as_str()).collect::<Vec<_>>(),
+        ["Travail/b.md", "a.md"]
     );
 }
 

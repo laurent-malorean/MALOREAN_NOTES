@@ -155,3 +155,21 @@ test("un lien vers un titre absent le signale", async ({ page }) => {
     "Aucune note ne porte le titre « Nulle part ».",
   );
 });
+
+test("Cmd+O ouvre une note de n'importe quel dossier par quelques lettres de son titre", async ({
+  page,
+}) => {
+  await launch(page, {
+    "courses.md": { content: "# Courses\npain", modified: 2 },
+    "Cuisine/crepes.md": { content: "# Recette de crêpes\nfarine", modified: 1 },
+  });
+  await expect(page.locator(".cm-line").first()).toHaveText("Courses");
+  await page.keyboard.press("Meta+O");
+  const picker = page.getByRole("dialog", { name: "Ouvrir une note" });
+  await expect(picker.getByRole("option")).toHaveCount(2);
+  await page.keyboard.type("crepe");
+  await expect(picker.getByRole("option")).toHaveText(["Recette de crêpesCuisine"]);
+  await page.keyboard.press("Enter");
+  await expect(picker).toBeHidden();
+  await expect(page.locator(".cm-line").first()).toHaveText("Recette de crêpes");
+});

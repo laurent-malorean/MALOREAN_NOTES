@@ -17,7 +17,7 @@ pub use attachments::{AttachFile, AttachmentSource, MAX_ATTACHMENT_MEGABYTES, Op
 pub use create_note::CreateNote;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use library::{OpenLibrary, OpenedLibrary, ReopenLastLibrary};
-pub use list_notes::ListNotes;
+pub use list_notes::{ListAllNotes, ListNotes};
 pub use move_note::MoveNote;
 pub use note_links::{LinkingNote, NoteLinks};
 pub use pin_note::PinNote;

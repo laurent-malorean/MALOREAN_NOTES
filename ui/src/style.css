@@ -675,3 +675,57 @@ button {
   color: var(--muted);
   margin-left: 0.3rem;
 }
+
+/* Fenêtre de choix au clavier : ouverture rapide, palette de commandes */
+.picker {
+  width: min(36rem, 90vw);
+  margin-top: 12vh;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 10px 30px var(--shadow);
+  font-family: var(--sans);
+}
+.picker::backdrop {
+  background: var(--shadow);
+}
+.picker-input {
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;
+  padding: 0.7rem 0.9rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+.picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  max-height: var(--picker-max-height);
+  overflow-y: auto;
+}
+.picker-option {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.picker-option[aria-selected="true"] {
+  background: var(--selected);
+}
+.picker-detail,
+.picker-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.picker-empty {
+  display: block;
+  padding: 0.4rem 0.6rem;
+}

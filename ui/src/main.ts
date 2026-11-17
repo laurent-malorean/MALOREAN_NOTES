@@ -44,6 +44,8 @@ import { loadSettings, saveSettings, type Settings } from "./state/settings";
 import { openSettings } from "./screens/settings-view";
 import { showDisplay } from "./screens/display";
 import { renderBacklinks } from "./screens/backlinks-view";
+import { openPicker } from "./screens/picker";
+import { matchingNotes } from "./state/quick-open";
 import "./theme.css";
 import "./style.css";
 
@@ -383,6 +385,20 @@ const showSettings = () => openSettings(layout.settings, settings, applySettings
 layout.settingsButton.addEventListener("click", showSettings);
 applySettings(settings);
 
+/** Ouverture rapide : une note de n'importe quel dossier, par quelques lettres de son titre. */
+async function quickOpen() {
+  if (screen.kind !== "library") return;
+  const notes = await bridge.listAllNotes();
+  openPicker(layout.picker, {
+    label: "Ouvrir une note",
+    placeholder: "Titre de la note",
+    empty: "Aucune note ne correspond",
+    entries: (query) => matchingNotes(notes, query),
+    describe: (note) => ({ label: note.title, detail: note.folder }),
+    choose: (note) => run(openNote(note.path)),
+  });
+}
+
 let outlineDisplay: OutlineDisplay = "hidden";
 function toggleOutline() {
   outlineDisplay = outlineDisplay === "shown" ? "hidden" : "shown";
@@ -415,11 +431,12 @@ const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "toggle-full-screen": () => (void setFullScreen(!fullScreen).catch(showError), true),
   "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
   "open-settings": () => (showSettings(), true),
+  "quick-open": () => (run(quickOpen()), true),
 };
 document.addEventListener("keydown", (event) => {
   // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
-  // Les réglages ouverts gardent le clavier : Échap les ferme, sans quitter le plein écran.
-  if (event.defaultPrevented || layout.settings.open) return;
+  // Une fenêtre ouverte (réglages, choix) garde le clavier : Échap la ferme, sans quitter le plein écran.
+  if (event.defaultPrevented || document.querySelector("dialog[open]")) return;
   const shortcut = shortcutFor(event);
   if (shortcut && SHORTCUT_ACTIONS[shortcut]()) event.preventDefault();
 });

@@ -20,6 +20,8 @@ export interface Layout {
   readonly newNoteButton: HTMLButtonElement;
   readonly settingsButton: HTMLButtonElement;
   readonly settings: HTMLDialogElement;
+  /** La fenêtre de choix au clavier : ouverture rapide, palette de commandes. */
+  readonly picker: HTMLDialogElement;
 }
 
 /** La fenêtre : accueil, colonnes, éditeur et ses outils, message, réglages. */
@@ -62,7 +64,8 @@ const TEMPLATE = `
       </main>
     </section>
     <div class="status" role="status"></div>
-    <dialog class="settings" aria-label="Réglages"></dialog>`;
+    <dialog class="settings" aria-label="Réglages"></dialog>
+    <dialog class="picker"></dialog>`;
 
 export function createLayout(root: HTMLElement): Layout {
   root.innerHTML = TEMPLATE;
@@ -88,5 +91,6 @@ export function createLayout(root: HTMLElement): Layout {
     newNoteButton: find("[data-new]"),
     settingsButton: find("[data-settings]"),
     settings: find(".settings"),
+    picker: find(".picker"),
   };
 }

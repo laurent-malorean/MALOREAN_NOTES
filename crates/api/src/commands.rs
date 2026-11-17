@@ -10,8 +10,8 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
-    ApiError, AttachedFile, LibraryInfo, LinkingNoteItem, NoteContent, NoteListItem, SaveResult,
-    SavedNote, SearchResultItem, Session, TrashInfo,
+    ApiError, AttachedFile, LibraryInfo, LibraryNoteItem, LinkingNoteItem, NoteContent,
+    NoteListItem, SaveResult, SavedNote, SearchResultItem, Session, TrashInfo,
 };
 
 /// Événement envoyé à la page quand la bibliothèque change hors de l'application ;
@@ -135,6 +135,17 @@ pub async fn resolve_link(
 ) -> Result<Option<String>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.resolve_link(&title)).await
+}
+
+/// Toutes les notes de la bibliothèque, pour l'ouverture rapide.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn list_all_notes(session: SharedSession<'_>) -> Result<Vec<LibraryNoteItem>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.list_all_notes()).await
 }
 
 /// Les liens entrants d'une note.
@@ -428,6 +439,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         search_notes,
         resolve_link,
         list_backlinks,
+        list_all_notes,
         read_note,
         save_note,
         create_note,

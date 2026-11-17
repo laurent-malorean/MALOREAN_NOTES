@@ -39,6 +39,9 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. |
 | Lien entre notes | `NoteLink` | `[[titre]]` écrit dans une note : désigne la note qui porte ce titre, sans tenir compte des majuscules ni des accents ; `[[titre|texte]]` montre `texte`. Cmd+clic l'ouvre. |
 | Liens entrants | `Backlinks` | Les notes dont un lien entre notes désigne la note ouverte, montrées sous son texte. |
+| Ouverture rapide | `quickOpen` | Fenêtre ouverte au clavier (Cmd+O) où l'on tape quelques lettres du titre d'une note, de n'importe quel dossier, pour l'ouvrir. |
+| Palette de commandes | `commandPalette` | Fenêtre ouverte au clavier (Cmd+Maj+P) qui liste les actions de l'application avec leur raccourci ; on en tape le nom pour la lancer. |
+| Commande | `Command` | Une action de l'application proposée par la palette de commandes : son nom, son raccourci éventuel. |
 | Plan | `outline` | Liste des titres de la note, dans l'ordre et selon leur niveau, affichée à droite du texte ; un clic emmène au titre. |
 | Bandeau | `statusBar` | Ligne en bas de la note qui donne ses nombres de mots, de caractères et de pages, ou ceux de la sélection. |
 | Page | `page` | Feuillet de texte tel qu'on le lit (sans la syntaxe Markdown) : autant de caractères, espaces comprises, que le réglage « caractères par page ». |

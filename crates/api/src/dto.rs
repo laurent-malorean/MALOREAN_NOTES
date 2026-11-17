@@ -106,6 +106,19 @@ pub struct SavedNote {
     pub path: String,
 }
 
+/// Une note de la bibliothèque, proposée par l'ouverture rapide.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LibraryNoteItem {
+    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    pub path: String,
+    /// Le titre affiché.
+    pub title: String,
+    /// Le dossier de la note : `""` pour la racine.
+    pub folder: String,
+}
+
 /// Une note dont un lien désigne la note ouverte (lien entrant).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]

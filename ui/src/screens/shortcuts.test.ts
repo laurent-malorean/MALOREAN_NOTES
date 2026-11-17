@@ -19,7 +19,7 @@ describe("raccourcis clavier", () => {
 
   it("Cmd+Maj+O montre ou cache le plan", () => {
     expect(key("o", { metaKey: true, shiftKey: true })).toBe("toggle-outline");
-    expect(key("o", { metaKey: true })).toBeNull();
+    expect(key("o", { shiftKey: true })).toBeNull();
   });
 
   it("ne réagit pas aux autres touches", () => {
@@ -38,6 +38,11 @@ describe("raccourcis clavier", () => {
   it("Cmd+virgule ouvre les réglages", () => {
     expect(key(",", { metaKey: true })).toBe("open-settings");
     expect(key(",")).toBeNull();
+  });
+
+  it("Cmd+O ouvre une note par son titre", () => {
+    expect(key("o", { metaKey: true })).toBe("quick-open");
+    expect(key("O", { metaKey: true })).toBe("quick-open");
   });
 
   it("Échap quitte le plein écran", () => {

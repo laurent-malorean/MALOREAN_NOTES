@@ -269,6 +269,14 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
   search_notes: ({ query = "" }) => searchNotes(query),
   resolve_link: ({ title = "" }) => resolveLink(title),
+  list_all_notes: () =>
+    Object.entries(backend.notes)
+      .sort(([, a], [, b]) => b.modified - a.modified)
+      .map(([path, note]) => ({
+        path,
+        title: titleOf(note.content) ?? "Sans titre",
+        folder: folderOf(path),
+      })),
   list_backlinks: ({ path = "" }) => listBacklinks(path),
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
   choose_library: () => library,

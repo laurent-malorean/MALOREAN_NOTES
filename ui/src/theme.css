@@ -64,6 +64,7 @@
   --outline-text-size: 13px;
   --backlinks-text-size: 13px;
   --backlinks-max-height: 30%;
+  --picker-max-height: 50vh;
 
   /* Fenêtre */
   --folders-width: 200px;

@@ -32,6 +32,7 @@ describe("mise en page", () => {
     }
     expect(layout.chooseButtons).toHaveLength(2);
     expect(layout.settings).toBeInstanceOf(HTMLDialogElement);
+    expect(layout.picker).toBeInstanceOf(HTMLDialogElement);
     expect(layout.settings.getAttribute("aria-label")).toBe("Réglages");
     expect(layout.settingsButton.textContent).toBe("Réglages");
     expect(layout.backlinks.hidden).toBe(true);

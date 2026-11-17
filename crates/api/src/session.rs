@@ -2,6 +2,7 @@
 
 mod attachments;
 mod links;
+mod quick_open;
 mod saving;
 mod trash;
 mod watching;

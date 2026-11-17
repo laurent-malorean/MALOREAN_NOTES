@@ -6,6 +6,7 @@ import type { ApiError } from "./generated/ApiError";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { LibraryChanged } from "./generated/LibraryChanged";
 import type { LibraryInfo } from "./generated/LibraryInfo";
+import type { LibraryNoteItem } from "./generated/LibraryNoteItem";
 import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
@@ -19,6 +20,7 @@ export type {
   AttachedFile,
   LibraryChanged,
   LibraryInfo,
+  LibraryNoteItem,
   LinkingNoteItem,
   NoteContent,
   NoteListItem,
@@ -43,6 +45,8 @@ export const chooseLibrary = () => invoke<LibraryInfo | null>("choose_library");
 export const listNotes = (folder: string) => invoke<NoteListItem[]>("list_notes", { folder });
 /** Les notes de toute la bibliothèque qui contiennent tous les mots de `query`. */
 export const searchNotes = (query: string) => invoke<SearchResultItem[]>("search_notes", { query });
+/** Toutes les notes de la bibliothèque, la plus récente en premier : pour l'ouverture rapide. */
+export const listAllNotes = () => invoke<LibraryNoteItem[]>("list_all_notes");
 /** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */
 export const resolveLink = (title: string) => invoke<string | null>("resolve_link", { title });
 /** Les liens entrants de la note `path` : les notes qui pointent vers elle. */
