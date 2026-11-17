@@ -103,16 +103,65 @@ export function noteShown(columns: Columns, note: string | null): Columns {
  * actif. Si la note est déjà dans un onglet de la colonne, cet onglet devient actif.
  */
 export function noteOpened(columns: Columns, note: string): Columns {
+  const open = activeColumn(columns).tabs.find((tab) => tab.note === note);
+  return open ? tabActivated(columns, open.id) : tabAdded(columns, note);
+}
+
+/** Le titre de la note, si l'un de ses onglets le connaît déjà. */
+function knownTitle(columns: Columns, note: string): string | null {
+  const tabs = columns.list.flatMap((column) => column.tabs);
+  return tabs.find((tab) => tab.note === note && tab.title !== null)?.title ?? null;
+}
+
+/**
+ * Un nouvel onglet sur la note, juste après l'onglet actif de la colonne active, qui devient actif ;
+ * il prend le titre de la note si un autre onglet le connaît.
+ */
+function tabAdded(columns: Columns, note: string): Columns {
   const column = activeColumn(columns);
-  const open = column.tabs.find((tab) => tab.note === note);
-  if (open) return tabActivated(columns, open.id);
-  const tab: Tab = { id: columns.nextId, note, title: null };
+  const tab: Tab = { id: columns.nextId, note, title: knownTitle(columns, note) };
   const at = column.tabs.findIndex((t) => t.id === column.activeTab) + 1;
   const tabs = [...column.tabs.slice(0, at), tab, ...column.tabs.slice(at)];
   const next = changed(columns, (c) =>
     c.id === column.id ? { ...c, tabs, activeTab: tab.id } : c,
   );
   return { ...next, nextId: columns.nextId + 1 };
+}
+
+/** Où le menu d'une note l'ouvre : un nouvel onglet de la colonne active, ou la colonne voisine. */
+export type Placement = "newTab" | Side;
+
+/** Un côté de la colonne active. */
+type Side = "left" | "right";
+
+/**
+ * Ouvre la note à l'emplacement choisi. Dans un nouvel onglet : un onglet de plus dans la colonne
+ * active, même si la note y est déjà. À gauche ou à droite : dans la colonne voisine, qui devient
+ * active ; sans voisine de ce côté, une colonne s'y ouvre, ou, à trois colonnes, la note prend un
+ * nouvel onglet de la colonne active.
+ */
+export function notePlaced(columns: Columns, note: string, placement: Placement): Columns {
+  if (placement === "newTab") return tabAdded(columns, note);
+  const index = columns.list.findIndex((column) => column.id === columns.active);
+  const neighbour = columns.list[placement === "left" ? index - 1 : index + 1];
+  if (neighbour) return noteOpened(columnActivated(columns, neighbour.id), note);
+  if (columns.list.length >= MAX_COLUMNS) return tabAdded(columns, note);
+  return columnAdded(columns, placement, { note, title: knownTitle(columns, note) });
+}
+
+/** Le menu d'un onglet ouvre sa note, à partir de la colonne de l'onglet ; un onglet inconnu ne change rien. */
+export function tabPlaced(columns: Columns, tabId: number, placement: Placement): Columns {
+  for (const column of columns.list) {
+    const tab = column.tabs.find((t) => t.id === tabId);
+    if (tab) return notePlaced(columnActivated(columns, column.id), tab.note, placement);
+  }
+  return columns;
+}
+
+/** L'onglet de cette note dans la colonne active se ferme ; s'il n'y en a pas, rien ne change. */
+export function noteClosed(columns: Columns, note: string): Columns {
+  const tab = activeColumn(columns).tabs.find((t) => t.note === note);
+  return tab ? tabClosed(columns, tab.id) : columns;
 }
 
 /** La colonne où l'on vient de cliquer devient la colonne active ; un identifiant inconnu ne change rien. */
@@ -170,18 +219,32 @@ function columnClosed(columns: Columns, id: number): Columns {
 export function columnSplit(columns: Columns): Columns {
   if (columns.list.length >= MAX_COLUMNS) return columns;
   const source = activeColumn(columns);
+  return columnAdded(
+    columns,
+    "right",
+    source.tabs.find((tab) => tab.id === source.activeTab),
+  );
+}
+
+/**
+ * Une colonne s'ouvre du côté voulu de la colonne active, avec la moitié de sa largeur, et devient
+ * active ; elle a un onglet sur la note donnée, ou aucun.
+ */
+function columnAdded(columns: Columns, side: Side, shown: Omit<Tab, "id"> | undefined): Columns {
+  const source = activeColumn(columns);
   const half = source.width / 2;
-  const copied = source.tabs.find((tab) => tab.id === source.activeTab);
   const tabId = columns.nextId + 1;
   const added: Column = {
     id: columns.nextId,
-    tabs: copied ? [{ ...copied, id: tabId }] : [],
-    activeTab: copied ? tabId : null,
+    tabs: shown ? [{ ...shown, id: tabId }] : [],
+    activeTab: shown ? tabId : null,
     width: half,
   };
-  const list = columns.list.flatMap((column) =>
-    column.id === source.id ? [{ ...column, width: half }, added] : [column],
-  );
+  const list = columns.list.flatMap((column) => {
+    if (column.id !== source.id) return [column];
+    const halved = { ...column, width: half };
+    return side === "right" ? [halved, added] : [added, halved];
+  });
   return { list, active: added.id, nextId: columns.nextId + 2 };
 }
 

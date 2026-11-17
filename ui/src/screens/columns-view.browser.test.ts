@@ -26,6 +26,7 @@ function mount() {
     resize: (divider, delta) => resized.push({ divider, delta }),
     activateTab: (tab) => tabs.push(`activer ${tab}`),
     closeTab: (tab) => tabs.push(`fermer ${tab}`),
+    placeTab: (tab, placement) => tabs.push(`placer ${tab} ${placement}`),
   });
   return { container, view, created, removed, activated, resized, tabs, splits: () => splits };
 }
@@ -153,7 +154,11 @@ describe("colonnes à l'écran", () => {
     expect(labels).toEqual(["B×", "c×"]);
     second.querySelector<HTMLElement>('[role="tab"]')?.click();
     second.querySelector<HTMLElement>(".tab-close")?.click();
-    expect(tabs).toEqual(["activer 3", "fermer 3"]);
+    second
+      .querySelector<HTMLElement>('[role="tab"]')
+      ?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
+    expect(tabs).toEqual(["activer 3", "fermer 3", "placer 3 newTab"]);
     view.render({
       ...columns,
       list: [

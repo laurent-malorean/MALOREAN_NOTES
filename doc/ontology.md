@@ -60,3 +60,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Onglet | `Tab` | Une note ouverte dans une colonne, montrée par son titre dans la barre d'onglets en haut de la colonne. Fermer le dernier onglet d'une colonne ferme la colonne, sauf s'il n'en reste qu'une. |
 | Onglet actif | `activeTab` | L'onglet dont la colonne montre la note ; un clic sur un onglet le rend actif. |
 | Colonne active | `activeColumn` | La colonne où l'on a cliqué en dernier. Une note ouverte depuis la liste, la recherche, l'ouverture rapide ou un lien, ou une note créée, s'y ouvre dans un onglet ; le plan, la recherche dans la note et la note sélectionnée de la liste suivent son onglet actif. |
+| Nouvel onglet | `newTab` | Ouvrir une note dans un onglet de plus de la colonne active, juste après l'onglet actif, même si elle y est déjà ouverte. Choix du menu d'une note. |
+| Ouvrir à gauche, à droite | `left`, `right` | Ouvrir une note dans la colonne voisine de ce côté, qui devient active ; s'il n'y en a pas et qu'il reste de la place, une colonne s'y ouvre, avec la moitié de la largeur de sa voisine. |
+| Emplacement | `Placement` | Où le menu d'une note l'ouvre : nouvel onglet, à gauche ou à droite. |
+| Menu d'une note | `noteMenu` | Le clic droit sur une note de la liste ou sur un onglet : « Ouvrir dans un nouvel onglet », « Ouvrir à gauche », « Ouvrir à droite », « Fermer ». Fermer vise l'onglet cliqué, ou, depuis la liste, l'onglet de la note dans la colonne active. |

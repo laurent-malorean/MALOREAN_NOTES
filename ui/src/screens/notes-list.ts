@@ -1,5 +1,7 @@
 import type { NoteListItem } from "../bridge";
+import type { Placement } from "../state/columns";
 import { showContextMenu } from "./context-menu";
+import { noteMenu } from "./note-menu";
 import { startDragging, stopDragging } from "./dragging";
 
 /** Ce que l'utilisateur peut demander depuis la liste des notes. */
@@ -8,6 +10,10 @@ export interface NoteActions {
   readonly pin: (path: string) => void;
   readonly unpin: (path: string) => void;
   readonly trash: (path: string) => void;
+  /** Ouvrir la note à cet emplacement (menu de la note). */
+  readonly place: (path: string, placement: Placement) => void;
+  /** Fermer l'onglet de la note dans la colonne active. */
+  readonly closeNote: (path: string) => void;
 }
 
 /** Les touches qui placent la note choisie dans la corbeille. */
@@ -24,8 +30,9 @@ function pinMark(): HTMLElement {
 }
 
 /**
- * Le clic droit propose d'épingler la note (ou de la désépingler si elle l'est) et de la placer
- * dans la corbeille ; les touches Effacer et Suppr la placent aussi dans la corbeille.
+ * Le clic droit propose le menu de la note, puis de l'épingler (ou de la désépingler si elle
+ * l'est) et de la placer dans la corbeille ; les touches Effacer et Suppr la placent aussi dans
+ * la corbeille.
  */
 function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteActions) {
   item.addEventListener("contextmenu", (event) => {
@@ -34,7 +41,11 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
       ? { label: "Désépingler", run: () => actions.unpin(note.path) }
       : { label: "Épingler", run: () => actions.pin(note.path) };
     const trashing = { label: "Placer dans la corbeille", run: () => actions.trash(note.path) };
-    showContextMenu(event.clientX, event.clientY, [pinning, trashing]);
+    const placing = noteMenu({
+      place: (placement) => actions.place(note.path, placement),
+      close: () => actions.closeNote(note.path),
+    });
+    showContextMenu(event.clientX, event.clientY, [...placing, pinning, trashing]);
   });
   item.addEventListener("keydown", (event) => {
     if (!TRASH_KEYS.has(event.key)) return;

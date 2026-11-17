@@ -10,7 +10,9 @@ import {
   columnsStarted,
   MAX_COLUMNS,
   MIN_COLUMN_WIDTH,
+  noteClosed,
   noteOpened,
+  notePlaced,
   noteShown,
   notesMoved,
   notesRemoved,
@@ -18,6 +20,7 @@ import {
   shownNote,
   tabActivated,
   tabClosed,
+  tabPlaced,
 } from "./columns";
 
 const tab = (id: number, note: string, title: string | null = null) => ({ id, note, title });
@@ -273,5 +276,80 @@ describe("onglets", () => {
     expect(activeNote(again)).toBe("c.md");
     const elsewhere = noteOpened(three, "a.md");
     expect(notesOf(column(elsewhere, 1))).toEqual(["b.md", "a.md"]);
+  });
+
+  it("ouvrir dans un nouvel onglet ajoute un onglet après l'onglet actif, même si la note est déjà ouverte", () => {
+    const next = notePlaced(columnActivated(three, 0), "c.md", "newTab");
+    expect(column(next, 0).tabs).toEqual([tab(1, "a.md", "A"), tab(6, "c.md"), tab(2, "c.md")]);
+    expect(column(next, 0).activeTab).toBe(6);
+    expect(next.nextId).toBe(7);
+  });
+
+  it("un nouvel onglet ou une nouvelle colonne prend le titre de la note, si un autre onglet le connaît", () => {
+    expect(column(notePlaced(three, "a.md", "newTab"), 1).tabs[1]).toEqual(tab(6, "a.md", "A"));
+    expect(column(notePlaced(three, "c.md", "newTab"), 1).tabs[1]).toEqual(tab(6, "c.md"));
+    const untitledFirst: Columns = {
+      ...three,
+      list: [{ id: 7, tabs: [tab(8, "a.md")], activeTab: 8, width: 0.1 }, ...three.list],
+    };
+    expect(column(notePlaced(untitledFirst, "a.md", "newTab"), 2).tabs[1]?.title).toBe("A");
+    const alone: Columns = { list: [{ ...column(three, 0), width: 1 }], active: 0, nextId: 6 };
+    expect(column(notePlaced(alone, "a.md", "right"), 1).tabs).toEqual([tab(7, "a.md", "A")]);
+  });
+
+  it("ouvrir à droite ou à gauche ouvre la note dans la colonne voisine, qui devient active", () => {
+    const right = notePlaced(three, "a.md", "right");
+    expect(right.active).toBe(5);
+    expect(column(right, 2).tabs).toEqual([tab(6, "a.md", "A")]);
+    const left = notePlaced(three, "a.md", "left");
+    expect(left.active).toBe(0);
+    expect(column(left, 0).activeTab).toBe(1);
+    expect(left.list.map(notesOf)).toEqual(three.list.map(notesOf));
+    const added = notePlaced(three, "d.md", "left");
+    expect(notesOf(column(added, 0))).toEqual(["a.md", "d.md", "c.md"]);
+  });
+
+  it("sans voisine de ce côté, une colonne s'ouvre, avec la moitié de la largeur de la colonne active", () => {
+    const alone: Columns = {
+      list: [{ id: 0, tabs: [tab(1, "a.md")], activeTab: 1, width: 1 }],
+      active: 0,
+      nextId: 2,
+    };
+    const left = notePlaced(alone, "b.md", "left");
+    expect(left).toEqual({
+      list: [
+        { id: 2, tabs: [tab(3, "b.md")], activeTab: 3, width: 0.5 },
+        { id: 0, tabs: [tab(1, "a.md")], activeTab: 1, width: 0.5 },
+      ],
+      active: 2,
+      nextId: 4,
+    });
+    const right = notePlaced(alone, "b.md", "right");
+    expect(right.list.map((c) => c.id)).toEqual([0, 2]);
+    expect(right.active).toBe(2);
+    expect(notesOf(column(right, 1))).toEqual(["b.md"]);
+  });
+
+  it(`à ${MAX_COLUMNS} colonnes, sans voisine de ce côté, la note s'ouvre dans un nouvel onglet de la colonne active`, () => {
+    const next = notePlaced(columnActivated(three, 5), "b.md", "right");
+    expect(next.list).toHaveLength(MAX_COLUMNS);
+    expect(column(next, 2)).toEqual({ id: 5, tabs: [tab(6, "b.md")], activeTab: 6, width: 0.2 });
+    const left = notePlaced(columnActivated(three, 0), "b.md", "left");
+    expect(notesOf(column(left, 0))).toEqual(["a.md", "b.md", "c.md"]);
+  });
+
+  it("le menu d'un onglet ouvre sa note à partir de la colonne de l'onglet ; un onglet inconnu ne change rien", () => {
+    const next = tabPlaced(three, 2, "right");
+    expect(next.active).toBe(3);
+    expect(notesOf(column(next, 1))).toEqual(["b.md", "c.md"]);
+    expect(column(next, 0)).toBe(column(three, 0));
+    expect(tabPlaced(three, 9, "right")).toBe(three);
+  });
+
+  it("fermer une note ferme son onglet dans la colonne active, et là seulement", () => {
+    const both = noteOpened(three, "a.md");
+    const next = noteClosed(both, "a.md");
+    expect(next.list.map(notesOf)).toEqual([["a.md", "c.md"], ["b.md"], []]);
+    expect(noteClosed(three, "a.md")).toBe(three);
   });
 });

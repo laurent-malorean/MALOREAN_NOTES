@@ -187,3 +187,58 @@ test("fermer le dernier onglet d'une colonne la ferme, enregistre ce qui est tap
   await expect(firstLine(page, 0)).toHaveText("Courses");
   await expect(page.getByTitle("Diviser la colonne")).toBeVisible();
 });
+
+const menuChoice = (page: Page, label: string) =>
+  page.getByRole("menuitem", { name: label, exact: true }).click();
+
+test("le menu d'une note de la liste l'ouvre à droite ou à gauche, en créant la colonne s'il le faut", async ({
+  page,
+}) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Idée" }).click({ button: "right" });
+  await menuChoice(page, "Ouvrir à droite");
+  await expect(columns(page)).toHaveCount(2);
+  await expect(tabs(page, 0)).toHaveText(["Courses×"]);
+  await expect(tabs(page, 1)).toHaveText(["Idée×"]);
+  await expect(firstLine(page, 1)).toHaveText("Idée");
+  await page.locator(".note-item", { hasText: "Vieille note" }).click({ button: "right" });
+  await menuChoice(page, "Ouvrir à gauche");
+  await expect(columns(page)).toHaveCount(2);
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Vieille note×"]);
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Vieille note");
+  await page.locator(".note-item", { hasText: "Courses" }).click({ button: "right" });
+  await menuChoice(page, "Ouvrir à gauche");
+  await expect(columns(page)).toHaveCount(3);
+  await expect(tabs(page, 0)).toHaveText(["Courses×"]);
+});
+
+test("le menu d'un onglet ouvre sa note dans un nouvel onglet ou à côté, et le ferme", async ({
+  page,
+}) => {
+  await launch(page);
+  await tabs(page, 0).first().click({ button: "right" });
+  await menuChoice(page, "Ouvrir dans un nouvel onglet");
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×"]);
+  await tabs(page, 0).first().click({ button: "right" });
+  await menuChoice(page, "Ouvrir à droite");
+  await expect(tabs(page, 1)).toHaveText(["Courses×"]);
+  await tabs(page, 1).first().click({ button: "right" });
+  await menuChoice(page, "Fermer");
+  await expect(columns(page)).toHaveCount(1);
+  await tabs(page, 0).first().click({ button: "right" });
+  await menuChoice(page, "Fermer");
+  await expect(tabs(page, 0)).toHaveText(["Courses×"]);
+});
+
+test("« Fermer » dans le menu d'une note de la liste ferme son onglet dans la colonne active", async ({
+  page,
+}) => {
+  await launch(page);
+  await split(page).click();
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await firstLine(page, 0).click();
+  await page.locator(".note-item", { hasText: "Courses" }).click({ button: "right" });
+  await menuChoice(page, "Fermer");
+  await expect(columns(page)).toHaveCount(1);
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×"]);
+});

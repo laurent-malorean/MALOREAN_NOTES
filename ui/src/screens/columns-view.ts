@@ -1,5 +1,5 @@
 // Les colonnes d'édition à l'écran : une section par colonne, un séparateur entre deux voisines.
-import { type Columns, MAX_COLUMNS } from "../state/columns";
+import { type Columns, MAX_COLUMNS, type Placement } from "../state/columns";
 import { renderTabs } from "./tabs-view";
 
 /** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément et la place des liens entrants. */
@@ -20,6 +20,8 @@ export interface ColumnsHandlers {
   activateTab(tabId: number): void;
   /** Fermer un onglet. */
   closeTab(tabId: number): void;
+  /** Ouvrir la note d'un onglet à cet emplacement (menu de l'onglet). */
+  placeTab(tabId: number, placement: Placement): void;
   /** Diviser la colonne active. */
   split(): void;
   /** Le séparateur `divider` glisse de `delta`, en part de la zone d'édition. */
@@ -118,6 +120,7 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
         renderTabs(entry.tabs, column, {
           activate: handlers.activateTab,
           close: handlers.closeTab,
+          place: handlers.placeTab,
         });
         if (index === 0) return [entry.parts.element];
         entry.divider.dataset.index = String(index - 1);

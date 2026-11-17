@@ -51,7 +51,9 @@ import {
   columnSplit,
   columnsResized,
   columnsStarted,
+  noteClosed,
   noteOpened,
+  notePlaced,
   noteShown,
   notesMoved,
   notesRemoved,
@@ -59,6 +61,7 @@ import {
   shownNote,
   tabActivated,
   tabClosed,
+  tabPlaced,
 } from "./state/columns";
 import { type ColumnParts, createColumnsView } from "./screens/columns-view";
 import { createPane, type Pane } from "./screens/note-pane";
@@ -152,6 +155,8 @@ const actions: ScreenActions = {
   pin: (path) => run(changePin(path, bridge.pinNote)),
   unpin: (path) => run(changePin(path, bridge.unpinNote)),
   trash: (path) => run(trashNote(path)),
+  place: (path, placement) => run(changeColumns(notePlaced(columns, path, placement))),
+  closeNote: (path) => run(changeColumns(noteClosed(columns, path))),
   trashFolder: (path) => run(trashFolder(path)),
   restoreNote: (path) => run(changeTrash(bridge.restoreNote(path))),
   restoreFolder: (path) => run(changeTrash(bridge.restoreFolder(path))),
@@ -318,6 +323,7 @@ const columnsView = createColumnsView(layout.columns, {
   },
   activateTab: (tabId) => run(changeColumns(tabActivated(columns, tabId))),
   closeTab: (tabId) => run(changeColumns(tabClosed(columns, tabId))),
+  placeTab: (tabId, placement) => run(changeColumns(tabPlaced(columns, tabId, placement))),
   split: () => run(splitColumn()),
   resize: (divider, delta) => run(changeColumns(columnsResized(columns, divider, delta))),
 });

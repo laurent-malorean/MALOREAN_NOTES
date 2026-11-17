@@ -8,6 +8,8 @@ const noActions: NoteActions = {
   pin: () => {},
   unpin: () => {},
   trash: () => {},
+  place: () => {},
+  closeNote: () => {},
 };
 
 /** Les actions demandées, notées dans l'ordre : `ouvrir a.md`, `épingler a.md`… */
@@ -20,6 +22,8 @@ function recorded(): { readonly asked: string[]; readonly actions: NoteActions }
       pin: (path) => asked.push(`épingler ${path}`),
       unpin: (path) => asked.push(`désépingler ${path}`),
       trash: (path) => asked.push(`jeter ${path}`),
+      place: (path, placement) => asked.push(`placer ${path} ${placement}`),
+      closeNote: (path) => asked.push(`fermer ${path}`),
     },
   };
 }
@@ -105,8 +109,27 @@ describe("notes épinglées", () => {
     target.dispatchEvent(event);
     return event;
   };
-  const menuEntries = () =>
-    [...document.querySelectorAll(".context-menu button")].map((b) => b.textContent);
+  const menuButtons = () => [
+    ...document.querySelectorAll<HTMLButtonElement>(".context-menu button"),
+  ];
+  const menuEntries = () => menuButtons().map((b) => b.textContent);
+
+  it("un clic droit sur une note propose d'abord de l'ouvrir ailleurs ou de la fermer", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    renderNotesList(container, withPinned, null, actions);
+    rightClick(container.querySelectorAll(".note-item")[1] as Element);
+    expect(menuEntries().slice(0, 4)).toEqual([
+      "Ouvrir dans un nouvel onglet",
+      "Ouvrir à gauche",
+      "Ouvrir à droite",
+      "Fermer",
+    ]);
+    menuButtons()[1]?.click();
+    rightClick(container.querySelectorAll(".note-item")[1] as Element);
+    menuButtons()[3]?.click();
+    expect(asked).toEqual(["placer a.md left", "fermer a.md"]);
+  });
 
   it("marque d'une épingle les notes épinglées, et elles seules", () => {
     const container = list();
@@ -125,9 +148,9 @@ describe("notes épinglées", () => {
     renderNotesList(container, withPinned, null, actions);
     const event = rightClick(container.querySelectorAll(".note-item")[1] as Element);
     expect(event.defaultPrevented).toBe(true);
-    expect(menuEntries()).toEqual(["Épingler", "Placer dans la corbeille"]);
+    expect(menuEntries().slice(4)).toEqual(["Épingler", "Placer dans la corbeille"]);
     expect(document.querySelector<HTMLElement>(".context-menu")?.style.left).toBe("12px");
-    document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
+    menuButtons()[4]?.click();
     expect(asked).toEqual(["épingler a.md"]);
   });
 
@@ -136,8 +159,8 @@ describe("notes épinglées", () => {
     const { asked, actions } = recorded();
     renderNotesList(container, withPinned, null, actions);
     rightClick(container.querySelector(".note-item") as Element);
-    expect(menuEntries()).toEqual(["Désépingler", "Placer dans la corbeille"]);
-    document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
+    expect(menuEntries().slice(4)).toEqual(["Désépingler", "Placer dans la corbeille"]);
+    menuButtons()[4]?.click();
     expect(asked).toEqual(["désépingler p.md"]);
   });
 });

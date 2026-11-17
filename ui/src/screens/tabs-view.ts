@@ -1,6 +1,8 @@
 // La barre d'onglets d'une colonne : un onglet par note ouverte, l'onglet actif mis en avant.
-import type { Column, Tab } from "../state/columns";
+import type { Column, Placement, Tab } from "../state/columns";
 import { nameOf } from "../state/folders";
+import { showContextMenu } from "./context-menu";
+import { noteMenu } from "./note-menu";
 
 /** Ce qu'on peut demander depuis la barre d'onglets d'une colonne. */
 export interface TabActions {
@@ -8,6 +10,8 @@ export interface TabActions {
   activate(tabId: number): void;
   /** Fermer cet onglet. */
   close(tabId: number): void;
+  /** Ouvrir la note de cet onglet à cet emplacement. */
+  place(tabId: number, placement: Placement): void;
 }
 
 const NOTE_EXTENSION = ".md";
@@ -37,6 +41,14 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
     actions.close(tab.id);
   });
   element.addEventListener("click", () => actions.activate(tab.id));
+  element.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    const menu = noteMenu({
+      place: (placement) => actions.place(tab.id, placement),
+      close: () => actions.close(tab.id),
+    });
+    showContextMenu(event.clientX, event.clientY, menu);
+  });
   element.append(label, close);
   return element;
 }

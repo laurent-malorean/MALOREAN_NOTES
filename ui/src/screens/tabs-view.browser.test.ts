@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import type { Column } from "../state/columns";
+import { closeContextMenu } from "./context-menu";
 import { renderTabs, tabLabel } from "./tabs-view";
+
+afterEach(() => closeContextMenu());
 
 const column: Column = {
   id: 0,
@@ -19,6 +22,7 @@ function mount() {
   renderTabs(list, column, {
     activate: (tab) => asked.push(`activer ${tab}`),
     close: (tab) => asked.push(`fermer ${tab}`),
+    place: (tab, placement) => asked.push(`placer ${tab} ${placement}`),
   });
   const tabs = [...list.querySelectorAll<HTMLElement>('[role="tab"]')];
   return { list, asked, tabs };
@@ -59,8 +63,34 @@ describe("onglets d'une colonne", () => {
     renderTabs(
       list,
       { ...column, tabs: [], activeTab: null },
-      { activate: () => {}, close: () => {} },
+      { activate: () => {}, close: () => {}, place: () => {} },
     );
     expect(list.children).toHaveLength(0);
+  });
+
+  it("un clic droit sur l'onglet ouvre le menu de sa note, à l'endroit du clic", () => {
+    const { tabs, asked } = mount();
+    const event = new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+      clientX: 15,
+      clientY: 25,
+    });
+    tabs[0]?.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    const menu = document.querySelector<HTMLElement>(".context-menu") as HTMLElement;
+    expect(menu.style.left).toBe("15px");
+    expect(menu.style.top).toBe("25px");
+    const entries = () => [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
+    expect(entries().map((b) => b.textContent)).toEqual([
+      "Ouvrir dans un nouvel onglet",
+      "Ouvrir à gauche",
+      "Ouvrir à droite",
+      "Fermer",
+    ]);
+    entries()[2]?.click();
+    tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    entries()[3]?.click();
+    expect(asked).toEqual(["placer 1 right", "fermer 2"]);
   });
 });
