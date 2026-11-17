@@ -1,8 +1,9 @@
 import { undo, undoDepth } from "@codemirror/commands";
+import { type ChangeSet, Text } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { createEditor } from "./editor";
+import { createEditor, type Editor } from "./editor";
 
 function mount() {
   const parent = document.createElement("div");
@@ -279,5 +280,89 @@ describe("éditeur : position du texte à l'ouverture d'une note", () => {
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     expect(view.scrollDOM.scrollTop).toBe(0);
     expect(view.scrollDOM.querySelector(".cm-line")?.textContent).toBe("après 0");
+  });
+});
+
+describe("éditeur : la même note tapée dans une autre colonne", () => {
+  /** Deux éditeurs sur la même note ; ce qui est tapé dans l'un est suivi par l'autre. */
+  function mountPair(content: string) {
+    const typed: ChangeSet[] = [];
+    const parents = [document.createElement("div"), document.createElement("div")];
+    document.body.replaceChildren(...parents);
+    const [first, second] = parents.map((parent) =>
+      createEditor(parent, (text, changes) => typed.push(changes)),
+    ) as [Editor, Editor];
+    const [one, other] = parents.map((parent) =>
+      EditorView.findFromDOM(parent.querySelector(".cm-editor") as HTMLElement),
+    ) as [EditorView, EditorView];
+    first.show(content);
+    second.show(content);
+    return { first, second, one, other, typed };
+  }
+
+  it("signale chaque frappe avec ce qu'elle change, et donne son texte", () => {
+    const { first, one, typed } = mountPair("abc");
+    one.dispatch({ changes: { from: 1, insert: "X" } });
+    expect(typed).toHaveLength(1);
+    expect(typed[0]?.apply(Text.of(["abc"])).toString()).toBe("aXbc");
+    expect(first.content()).toBe("aXbc");
+  });
+
+  it("suit la frappe de l'autre colonne sans la signaler, curseur et sélection gardés", () => {
+    const { first, second, one, other, typed } = mountPair("un\ndeux\ntrois");
+    other.dispatch({ selection: { anchor: 8, head: 11 } });
+    one.dispatch({ changes: { from: 0, insert: "zéro\n" } });
+    second.follow(typed[0] as ChangeSet, first.content());
+    expect(second.content()).toBe("zéro\nun\ndeux\ntrois");
+    expect(
+      other.state.sliceDoc(other.state.selection.main.from, other.state.selection.main.to),
+    ).toBe("tro");
+    expect(typed).toHaveLength(1);
+  });
+
+  it("n'annule que ce qui a été tapé chez elle", () => {
+    const { first, second, one, other, typed } = mountPair("texte");
+    other.dispatch({ changes: { from: 5, insert: " B" } });
+    first.follow(typed[0] as ChangeSet, second.content());
+    one.dispatch({ changes: { from: 0, insert: "A " } });
+    second.follow(typed[1] as ChangeSet, first.content());
+    undo(other);
+    expect(second.content()).toBe("A texte");
+    expect(undoDepth(other.state)).toBe(0);
+  });
+
+  it("reprend tout le texte si ce qui change ne correspond plus au sien", () => {
+    const { first, second, one, typed } = mountPair("abc");
+    second.show("autre chose");
+    one.dispatch({ changes: { from: 3, insert: "!" } });
+    second.follow(typed[0] as ChangeSet, first.content());
+    expect(second.content()).toBe("abc!");
+  });
+
+  it("garde son texte à sa place à l'écran quand l'autre écrit au-dessus", async () => {
+    const lines = Array.from({ length: 200 }, (_, i) => `ligne ${i}`).join("\n");
+    const { first, second, one, other, typed } = mountPair(lines);
+    for (const view of [one, other]) view.dom.style.height = "300px";
+    other.dispatch({ selection: { anchor: other.state.doc.line(151).from }, scrollIntoView: true });
+    await expect.poll(() => other.scrollDOM.scrollTop).toBeGreaterThan(1000);
+    const line = () =>
+      [...other.dom.querySelectorAll(".cm-line")].find((l) => l.textContent === "ligne 150");
+    const before = line()?.getBoundingClientRect().top;
+    // Plusieurs frappes avant que l'écran ne soit redessiné, comme sur une machine chargée.
+    for (const text of ["nouvelle\n", "lignes\n", "en haut\n"]) {
+      one.dispatch({ changes: { from: 0, insert: text } });
+      second.follow(typed.at(-1) as ChangeSet, first.content());
+    }
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // À une fraction de pixel près : le défilement se fait en pixels entiers.
+    expect(Math.abs((line()?.getBoundingClientRect().top ?? 0) - (before ?? 0))).toBeLessThan(1);
+    expect(other.state.doc.lineAt(other.state.selection.main.head).text).toBe("ligne 150");
+    // Une fois l'écran redessiné, la position à garder est celle où l'on a défilé depuis.
+    other.scrollDOM.scrollTop = 0;
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    one.dispatch({ changes: { from: one.state.doc.length, insert: "\nfin" } });
+    second.follow(typed.at(-1) as ChangeSet, first.content());
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    expect(other.scrollDOM.scrollTop).toBe(0);
   });
 });

@@ -1,112 +1,8 @@
 import { EditorView } from "@codemirror/view";
 import { describe, expect, it, vi } from "vitest";
-import type { AttachmentOrigin } from "../bridge";
-import type { LinkingNoteItem } from "../bridge/generated/LinkingNoteItem";
-import type { SaveResult } from "../bridge/generated/SaveResult";
-import type { Scheduler } from "../state/autosave";
-import type { ColumnParts } from "./columns-view";
-import { createPane, type PaneBackend } from "./note-pane";
-
-/** Une bibliothèque en mémoire : chaque note, son contenu ; l'empreinte est le contenu même. */
-function fakeBackend(notes: Record<string, string>) {
-  const calls: string[] = [];
-  const backlinks: Record<string, LinkingNoteItem[]> = {};
-  /** Une réponse retenue jusqu'à ce que sa porte s'ouvre : « lire a.md », « liens a.md ». */
-  const gates: Record<string, Promise<void>> = {};
-  const backend: PaneBackend & { fail: boolean } = {
-    fail: false,
-    readNote: async (path) => {
-      calls.push(`lire ${path}`);
-      await gates[`lire ${path}`];
-      const content = notes[path];
-      if (content === undefined) throw new Error(`${path} absente`);
-      return { path, content, title: `titre de ${content}`, fingerprint: content };
-    },
-    saveNote: (path, content, fingerprint) => {
-      calls.push(`enregistrer ${path} ${fingerprint}`);
-      if (backend.fail) return Promise.reject(new Error("disque plein"));
-      const renamed = content.startsWith("# Nouveau") ? "nouveau.md" : path;
-      Reflect.deleteProperty(notes, path);
-      notes[renamed] = content;
-      const result: SaveResult = {
-        path: renamed,
-        title: content,
-        fingerprint: content,
-        conflictCopy: null,
-      };
-      return Promise.resolve(result);
-    },
-    listBacklinks: async (path) => {
-      calls.push(`liens ${path}`);
-      await gates[`liens ${path}`];
-      return backlinks[path] ?? [];
-    },
-    attachFile: (path: string, file: File, origin: AttachmentOrigin) => {
-      calls.push(`joindre ${path} ${file.name} ${origin.kind}`);
-      if (backend.fail) return Promise.reject(new Error("refusé"));
-      return Promise.resolve({ markdown: `![](${file.name})` });
-    },
-    openAttachment: (path, target) => {
-      calls.push(`ouvrir ${path} ${target}`);
-      return backend.fail ? Promise.reject(new Error("introuvable")) : Promise.resolve(null);
-    },
-  };
-  /** Retient la réponse `call` ; rend de quoi la laisser passer. */
-  const hold = (call: string) => {
-    let open = () => {};
-    gates[call] = new Promise((resolve) => (open = resolve));
-    return open;
-  };
-  return { backend, calls, notes, backlinks, hold };
-}
-
-/** Un minuteur qu'on déclenche à la main. */
-function manualScheduler() {
-  let pending: (() => void) | null = null;
-  const scheduler: Scheduler = {
-    schedule: (run) => {
-      pending = run;
-      return () => (pending = null);
-    },
-  };
-  return { scheduler, fire: () => pending?.() };
-}
-
-function mount(notes: Record<string, string> = { "a.md": "# A", "b.md": "# B" }) {
-  const element = document.createElement("section");
-  const backlinks = document.createElement("nav");
-  element.append(backlinks);
-  document.body.replaceChildren(element);
-  const parts: ColumnParts = { element, backlinks };
-  const fake = fakeBackend(notes);
-  const timer = manualScheduler();
-  const events: string[] = [];
-  const titles: string[] = [];
-  const errors: string[] = [];
-  const images: string[] = [];
-  const pane = createPane(parts, {
-    backend: fake.backend,
-    scheduler: timer.scheduler,
-    events: {
-      saved: (from, result) => events.push(`enregistrée ${from} → ${result.path}`),
-      titled: (path, title) => titles.push(`${path} : ${title}`),
-      openNote: (path) => events.push(`ouvrir ${path}`),
-      openLink: (title) => events.push(`lien ${title}`),
-      deleted: () => events.push("supprimée"),
-      error: (error) => errors.push((error as Error).message),
-    },
-    resolveImage: (src, note) => {
-      images.push(`${note ?? "aucune"} ${src}`);
-      return src;
-    },
-  });
-  const view = () => EditorView.findFromDOM(element.querySelector(".cm-editor") as HTMLElement);
-  const type = (text: string) => {
-    const editor = view() as EditorView;
-    editor.dispatch({ changes: { from: editor.state.doc.length, insert: text } });
-  };
-  return { pane, parts, ...fake, ...timer, events, titles, errors, images, view, type };
-}
+import { fakeBackend, mountColumns as mount } from "../../test-support/pane-fixture";
+import { createSharedNotes } from "./shared-notes";
+import { createPane } from "./note-pane";
 
 const text = (m: ReturnType<typeof mount>) => m.view()?.state.doc.toString();
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -202,18 +98,17 @@ describe("colonne : enregistrement de ce qu'on tape", () => {
     const backlinks = document.createElement("nav");
     document.body.replaceChildren(element);
     const fake = fakeBackend({ "a.md": "# A" });
+    const ignore = () => {};
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: ignore, titled: ignore, deleted: ignore, error: ignore },
+    });
     const pane = createPane(
       { element, backlinks },
       {
         backend: fake.backend,
-        events: {
-          saved: () => {},
-          titled: () => {},
-          openNote: () => {},
-          openLink: () => {},
-          deleted: () => {},
-          error: () => {},
-        },
+        shared,
+        events: { openNote: ignore, openLink: ignore, error: ignore },
         resolveImage: (src) => src,
       },
     );

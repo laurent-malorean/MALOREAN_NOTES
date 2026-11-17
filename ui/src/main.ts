@@ -70,6 +70,7 @@ import {
 } from "./state/columns";
 import { type ColumnParts, createColumnsView } from "./screens/columns-view";
 import { createPane, type Pane } from "./screens/note-pane";
+import { createSharedNotes } from "./screens/shared-notes";
 import "./theme.css";
 import "./style.css";
 
@@ -109,19 +110,28 @@ function noteSaved(from: string, saved: bridge.SaveResult) {
   run(refreshList());
 }
 
+/** Les notes montrées par les colonnes : une note ouverte deux fois n'a qu'un texte et un enregistrement. */
+const shared = createSharedNotes({
+  backend: bridge,
+  events: {
+    saved: noteSaved,
+    titled: (path, title) => run(changeColumns(noteTitled(columns, path, title))),
+    deleted: () =>
+      showMessage(
+        "Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
+      ),
+    error: (error) => showError(error),
+  },
+});
+
 /** L'éditeur d'une colonne qui vient d'apparaître, aux réglages en cours. */
 function paneIn(parts: ColumnParts): Pane {
   const pane = createPane(parts, {
     backend: bridge,
+    shared,
     events: {
-      saved: noteSaved,
-      titled: (path, title) => run(changeColumns(noteTitled(columns, path, title))),
       openNote: (path) => actions.open(path),
       openLink: (title) => run(followLink(title)),
-      deleted: () =>
-        showMessage(
-          "Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
-        ),
       error: showError,
     },
     // Une image relative est cherchée à côté de la note, dans son dossier.

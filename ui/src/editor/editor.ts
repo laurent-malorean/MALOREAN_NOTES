@@ -4,8 +4,10 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import {
   Annotation,
+  ChangeSet,
   Compartment,
   EditorState,
+  type StateEffect,
   type Extension,
   Transaction,
 } from "@codemirror/state";
@@ -29,14 +31,27 @@ import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
 import { keptPosition } from "../state/external-change";
 
-/** Marque une transaction qui montre la version du disque : ce n'est pas une modification. */
-const fromDisk = Annotation.define<boolean>();
+/**
+ * Marque une transaction venue d'ailleurs que de la frappe dans cet éditeur — version du disque,
+ * frappe dans une autre colonne : ce n'est pas une modification à signaler.
+ */
+const fromElsewhere = Annotation.define<boolean>();
+
+/** Une transaction venue d'ailleurs reste hors de l'historique d'annulation de cet éditeur. */
+const elsewhere = [fromElsewhere.of(true), Transaction.addToHistory.of(false)];
 
 export interface Editor {
   /** Affiche une autre note, sans la signaler comme modifiée. */
   show(content: string): void;
   /** Montre la version relue sur le disque, curseur gardé, sans la signaler comme modifiée. */
   reload(content: string): void;
+  /** Le texte montré. */
+  content(): string;
+  /**
+   * Suit ce qui a été tapé dans une autre colonne sur la même note, devenue `content` :
+   * curseur, sélection et défilement gardés, sans le signaler ni l'ajouter à l'historique.
+   */
+  follow(changes: ChangeSet, content: string): void;
   focus(): void;
   /** Met en avant la phrase ou le paragraphe en cours ; `null` arrête le mode focus. */
   setFocusMode(unit: FocusUnit | null): void;
@@ -108,9 +123,47 @@ function typewriterSwitch(view: EditorView, typewriter: ReturnType<typeof adjust
   };
 }
 
+/** Montre la version relue sur le disque, le curseur gardé à la même ligne et à la même colonne. */
+function reload(view: EditorView, content: string) {
+  const { doc, selection } = view.state;
+  const line = doc.lineAt(selection.main.head);
+  view.dispatch({
+    changes: { from: 0, to: doc.length, insert: content },
+    selection: { anchor: keptPosition(content, line.number, selection.main.head - line.from) },
+    annotations: elsewhere,
+  });
+}
+
+/**
+ * Suit ce qui a été tapé dans une autre colonne : le texte à l'écran reste en place, même si
+ * l'autre colonne écrit au-dessus. Par prudence, un changement qui ne correspond plus au texte
+ * montré est remplacé par le texte entier plutôt que refusé.
+ */
+function follower(view: EditorView) {
+  /** La position à retrouver, tant que l'écran n'a pas été redessiné. */
+  let pending: StateEffect<unknown> | undefined;
+  // Dès que l'écran est redessiné, la position est retrouvée : la suivante se prendra à neuf.
+  const settled = {
+    read: () => {
+      pending = undefined;
+    },
+  };
+  return (changes: ChangeSet, content: string) => {
+    const { length } = view.state.doc;
+    const change =
+      changes.length === length
+        ? changes
+        : ChangeSet.of({ from: 0, to: length, insert: content }, length);
+    // Une position prise avant que l'écran ait rattrapé la frappe précédente serait fausse.
+    pending = (pending ?? view.scrollSnapshot()).map(change);
+    view.dispatch({ changes: change, effects: pending, annotations: elsewhere });
+    view.requestMeasure(settled);
+  };
+}
+
 export function createEditor(
   parent: HTMLElement,
-  onChange: (content: string) => void,
+  onChange: (content: string, changes: ChangeSet) => void,
   options: EditorOptions = {},
 ): Editor {
   const { resolveImage, attachmentActions, today = () => new Date(), outline, openLink } = options;
@@ -142,8 +195,8 @@ export function createEditor(
     placeholder("# Titre de la note"),
     EditorView.updateListener.of((update) => {
       // Stryker disable next-line MethodExpression: l'éditeur applique ses transactions une à une ; « une » ou « toutes » revient au même.
-      const typed = update.transactions.some((t) => t.docChanged && !t.annotation(fromDisk));
-      if (typed) onChange(update.state.doc.toString());
+      const typed = update.transactions.some((t) => t.docChanged && !t.annotation(fromElsewhere));
+      if (typed) onChange(update.state.doc.toString(), update.changes);
     }),
   ];
   const view = new EditorView({ parent, state: EditorState.create({ extensions: extensions() }) });
@@ -154,15 +207,9 @@ export function createEditor(
       // Une note qu'on ouvre se montre depuis son début, pas là où l'on était dans la précédente.
       view.scrollDOM.scrollTop = 0;
     },
-    reload(content) {
-      const { doc, selection } = view.state;
-      const line = doc.lineAt(selection.main.head);
-      view.dispatch({
-        changes: { from: 0, to: doc.length, insert: content },
-        selection: { anchor: keptPosition(content, line.number, selection.main.head - line.from) },
-        annotations: [fromDisk.of(true), Transaction.addToHistory.of(false)],
-      });
-    },
+    reload: (content) => reload(view, content),
+    content: () => view.state.doc.toString(),
+    follow: follower(view),
     focus: () => view.focus(),
     setFocusMode: (unit) => view.dispatch({ effects: focus.change(unit) }),
     setTypewriter: typewriterSwitch(view, typewriter),
