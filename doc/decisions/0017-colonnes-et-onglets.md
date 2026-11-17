@@ -16,6 +16,7 @@ On veut voir une note pendant qu'on en écrit une autre, comme dans Obsidian : j
 - **L'interface accorde l'écran à l'état** : après chaque changement d'état, chaque colonne qui ne montre pas la note de son onglet actif la charge. Ouvrir, fermer, renommer se réduisent donc à « calculer l'état suivant ».
 - **La colonne active** est celle où l'on a cliqué (ou tapé) en dernier. Ce qui vise « la note ouverte » vise son onglet actif : la note sélectionnée dans la liste, le plan, la recherche dans la note, Joindre, l'épinglage, la corbeille. Le plan est un seul panneau, à droite de la zone d'édition, que seul l'éditeur actif remplit. Les réglages (focus, machine à écrire, caractères par page) valent pour tous les éditeurs.
 - **Ouvrir une note** depuis la liste, la recherche, l'ouverture rapide, un lien ou les liens entrants, ou créer une note, ajoute un onglet dans la colonne active, juste après l'onglet actif ; si la note y est déjà ouverte, son onglet devient actif. Choisir un dossier, mettre la note ouverte à la corbeille ou ouvrir la bibliothèque **remplace** la note de l'onglet actif, comme avant les onglets, pour ne pas multiplier les onglets sans le vouloir.
+- **Fermer le dernier onglet d'une colonne ferme la colonne** : ses voisines se partagent sa largeur (une seule voisine la prend toute) ; si elle était active, sa voisine de droite, sinon de gauche, le devient. La dernière colonne reste, vide. Une note mise à la corbeille ferme ses onglets sans fermer leur colonne.
 - **Le titre d'un onglet** vient de Rust : la lecture et l'enregistrement d'une note rendent aussi son titre affiché, que l'interface ne recalcule pas.
 
 ## Conséquences
@@ -23,5 +24,4 @@ On veut voir une note pendant qu'on en écrit une autre, comme dans Obsidian : j
 - L'état se teste sans navigateur, cas par cas ; les fonctions à venir (fermer une colonne, glisser un onglet, raccourcis, relancement) n'ont qu'à ajouter une transition et son test.
 - Un onglet qui n'est pas affiché ne garde ni la position du curseur ni l'historique d'annulation : ils sont perdus au changement d'onglet. Garder un état d'éditeur par onglet pourra venir ensuite.
 - La même note ouverte dans deux colonnes a deux enregistrements automatiques ; les garder identiques pendant la frappe est une étape suivante.
-- Fermer le dernier onglet d'une colonne la laisse vide, pour l'instant ; elle ne se ferme pas d'elle-même.
 - Les colonnes ne sont pas encore gardées d'un lancement à l'autre.

@@ -130,9 +130,37 @@ export function tabActivated(columns: Columns, tabId: number): Columns {
   };
 }
 
-/** L'onglet se ferme ; s'il était actif, son voisin de droite (sinon de gauche) le devient. */
+/**
+ * L'onglet se ferme ; s'il était actif, son voisin de droite (sinon de gauche) le devient. Fermer
+ * le dernier onglet d'une colonne ferme la colonne, sauf s'il ne reste qu'elle.
+ */
 export function tabClosed(columns: Columns, tabId: number): Columns {
-  return changed(columns, (column) => tabsKept(column, (tab) => tab.id !== tabId));
+  const next = changed(columns, (column) => tabsKept(column, (tab) => tab.id !== tabId));
+  const emptied = columns.list.find((column) => {
+    const [only, ...others] = column.tabs;
+    return only?.id === tabId && others.length === 0;
+  });
+  return emptied && columns.list.length > 1 ? columnClosed(next, emptied.id) : next;
+}
+
+/**
+ * La colonne se ferme : ses voisines se partagent sa largeur. Si elle était active, sa voisine de
+ * droite (sinon de gauche) le devient.
+ */
+function columnClosed(columns: Columns, id: number): Columns {
+  const index = columns.list.findIndex((column) => column.id === id);
+  const closed = columns.list[index] as Column;
+  const neighbours = [columns.list[index - 1], columns.list[index + 1]].filter(
+    (column) => column !== undefined,
+  );
+  const share = closed.width / neighbours.length;
+  const list = columns.list
+    .filter((column) => column.id !== id)
+    .map((column) =>
+      neighbours.includes(column) ? { ...column, width: column.width + share } : column,
+    );
+  const active = columns.active === id ? (neighbours.at(-1) as Column).id : columns.active;
+  return { ...columns, list, active };
 }
 
 /**

@@ -57,6 +57,6 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Largeur de colonne | `width` | Part de la zone d'édition qu'occupe une colonne ; réglée en glissant le séparateur, jamais sous un minimum. |
 | Séparateur | `divider` | Barre entre deux colonnes voisines, qu'on glisse pour partager autrement leur largeur. |
 | Diviser | `split` | Ouvrir une nouvelle colonne à droite de la colonne active, sur la même note ; elle prend la moitié de la largeur de sa voisine. Impossible au-delà de trois colonnes. |
-| Onglet | `Tab` | Une note ouverte dans une colonne, montrée par son titre dans la barre d'onglets en haut de la colonne. |
+| Onglet | `Tab` | Une note ouverte dans une colonne, montrée par son titre dans la barre d'onglets en haut de la colonne. Fermer le dernier onglet d'une colonne ferme la colonne, sauf s'il n'en reste qu'une. |
 | Onglet actif | `activeTab` | L'onglet dont la colonne montre la note ; un clic sur un onglet le rend actif. |
 | Colonne active | `activeColumn` | La colonne où l'on a cliqué en dernier. Une note ouverte depuis la liste, la recherche, l'ouverture rapide ou un lien, ou une note créée, s'y ouvre dans un onglet ; le plan, la recherche dans la note et la note sélectionnée de la liste suivent son onglet actif. |

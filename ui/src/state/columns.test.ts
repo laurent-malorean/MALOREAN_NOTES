@@ -173,12 +173,54 @@ describe("onglets", () => {
     expect(column(right, 0)).toEqual({ ...column(three, 0), tabs: [tab(1, "a.md", "A")] });
   });
 
-  it("fermer un autre onglet garde l'onglet actif ; le dernier onglet fermé laisse la colonne vide", () => {
+  it("fermer un autre onglet garde l'onglet actif", () => {
     const next = tabClosed(three, 2);
     expect(column(next, 0).activeTab).toBe(1);
     expect(notesOf(column(next, 0))).toEqual(["a.md"]);
-    const empty = tabClosed(three, 4);
-    expect(column(empty, 1)).toEqual({ id: 3, tabs: [], activeTab: null, width: 0.3 });
+  });
+
+  it("fermer le dernier onglet d'une colonne la ferme : ses deux voisines se partagent sa largeur", () => {
+    const next = tabClosed(three, 4);
+    expect(next.list.map((c) => c.id)).toEqual([0, 5]);
+    expectWidths(next, [0.65, 0.35]);
+    expect(next.nextId).toBe(three.nextId);
+  });
+
+  it("la colonne fermée, si elle était active, laisse la place à sa voisine de droite, sinon de gauche", () => {
+    expect(tabClosed(three, 4).active).toBe(5);
+    const two: Columns = { ...three, list: three.list.slice(0, 2) };
+    const left = tabClosed(two, 4);
+    expect(left.active).toBe(0);
+    expectWidths(left, [0.8]);
+    const first = tabClosed(tabClosed(columnActivated(three, 0), 1), 2);
+    expect(first.list.map((c) => c.id)).toEqual([3, 5]);
+    expect(first.active).toBe(3);
+    expectWidths(first, [0.8, 0.2]);
+  });
+
+  it("une colonne déjà vide ne se ferme pas quand on ferme le dernier onglet d'une autre", () => {
+    const reversed: Columns = { ...three, list: [...three.list].reverse() };
+    const next = tabClosed(reversed, 4);
+    expect(next.list.map((c) => c.id)).toEqual([5, 0]);
+  });
+
+  it("la colonne fermée sans être active laisse la colonne active telle quelle", () => {
+    const next = tabClosed(columnActivated(three, 0), 4);
+    expect(next.active).toBe(0);
+    expect(column(next, 0)).toEqual({ ...column(three, 0), width: 0.65 });
+  });
+
+  it("la dernière colonne reste, vide, quand on ferme son dernier onglet", () => {
+    const alone: Columns = {
+      list: [{ id: 0, tabs: [tab(1, "a.md")], activeTab: 1, width: 1 }],
+      active: 0,
+      nextId: 2,
+    };
+    expect(tabClosed(alone, 1)).toEqual({
+      list: [{ id: 0, tabs: [], activeTab: null, width: 1 }],
+      active: 0,
+      nextId: 2,
+    });
   });
 
   it("fermer un onglet qui n'existe pas ne change rien", () => {
