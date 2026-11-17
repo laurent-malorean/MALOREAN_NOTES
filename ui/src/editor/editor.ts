@@ -11,6 +11,7 @@ import { liveFormatting } from "./live-formatting";
 import { type ImageResolver, imageResolver, livePreview } from "./live-preview/plugin";
 import { liveTables } from "./live-preview/tables";
 import { findReplace } from "./writing/find-replace";
+import { formattingShortcuts } from "./writing/formatting";
 import { listContinuation } from "./writing/lists";
 import { keptPosition } from "../state/external-change";
 
@@ -42,6 +43,8 @@ export function createEditor(
     history(),
     listContinuation,
     findReplace,
+    // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.
+    formattingShortcuts,
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.
     markdown({ base: markdownLanguage, codeLanguages: languages }),

@@ -1,4 +1,4 @@
-import { EditorView } from "@codemirror/view";
+import { EditorView, runScopeHandlers } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { createEditor } from "../editor";
@@ -79,5 +79,57 @@ describe("écriture : passer à la ligne", () => {
     const view = typing("texte");
     await userEvent.keyboard("{Enter}");
     expect(view.state.doc.toString()).toBe("texte\n");
+  });
+});
+
+describe("écriture : raccourcis de mise en forme", () => {
+  /** Tape `keys` sur une note où `selected` est sélectionné, à la fin du texte. */
+  async function press(content: string, keys: string, selected = "") {
+    const view = typing(content);
+    const end = view.state.doc.length;
+    view.dispatch({ selection: { anchor: end - selected.length, head: end } });
+    await userEvent.keyboard(keys);
+    return view.state.doc.toString();
+  }
+
+  it("Cmd+B met en gras, Cmd+I en italique", async () => {
+    expect(await press("un mot", "{Meta>}b{/Meta}", "mot")).toBe("un **mot**");
+    expect(await press("un mot", "{Meta>}i{/Meta}", "mot")).toBe("un *mot*");
+  });
+
+  it("garde pour lui Cmd+I, que CodeMirror emploie aussi", () => {
+    const view = typing("un mot");
+    const press = new KeyboardEvent("keydown", {
+      key: "i",
+      code: "KeyI",
+      keyCode: 73,
+      metaKey: true,
+    });
+    expect(runScopeHandlers(view, press, "editor")).toBe(true);
+    expect(view.state.doc.toString()).toBe("un mot**");
+    expect(view.state.selection.main.head).toBe("un mot*".length);
+  });
+
+  it("Cmd+K fait un lien", async () => {
+    expect(await press("un site", "{Meta>}k{/Meta}", "site")).toBe("un [site](url)");
+  });
+
+  it("Cmd+1 à Cmd+3 font des titres", async () => {
+    expect(await press("Titre", "{Meta>}1{/Meta}")).toBe("# Titre");
+    expect(await press("Titre", "{Meta>}2{/Meta}")).toBe("## Titre");
+    expect(await press("Titre", "{Meta>}3{/Meta}")).toBe("### Titre");
+  });
+
+  it("Cmd+Maj+8 met une puce, Cmd+Maj+7 un numéro", async () => {
+    expect(await press("pain", "{Meta>}{Shift>}8{/Shift}{/Meta}")).toBe("- pain");
+    expect(await press("pain", "{Meta>}{Shift>}7{/Shift}{/Meta}")).toBe("1. pain");
+  });
+
+  it("ramène à l'écran le texte mis en forme", async () => {
+    const view = typing(`${"ligne\n".repeat(300)}fin`);
+    (view.dom as HTMLElement).style.height = "200px";
+    view.scrollDOM.scrollTop = 0;
+    await userEvent.keyboard("{Meta>}b{/Meta}");
+    await expect.poll(() => view.scrollDOM.scrollTop).toBeGreaterThan(0);
   });
 });
