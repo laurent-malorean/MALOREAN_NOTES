@@ -45,7 +45,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Commande | `Command` | Une action de l'application proposée par la palette de commandes : son nom, son raccourci éventuel. |
 | Plan | `outline` | Liste des titres de la note, dans l'ordre et selon leur niveau, affichée à droite du texte ; un clic emmène au titre. |
 | Bandeau | `statusBar` | Ligne en bas de la note qui donne ses nombres de mots, de caractères et de pages, ou ceux de la sélection. |
-| Page | `page` | Feuillet de texte tel qu'on le lit (sans la syntaxe Markdown) : autant de caractères, espaces comprises, que le réglage « caractères par page ». |
+| Page | `page` | Feuillet de texte tel qu'on le lit (sans la syntaxe Markdown) : autant de caractères, espaces comprises, que le réglage « caractères par page ». Le bandeau compte les pages commencées, en nombre entier (1 caractère = 1 page, une de plus dès qu'on dépasse une page pleine). |
 | Réglages | `Settings` | Choix de l'utilisateur qui valent pour toute l'application, gardés d'un lancement à l'autre ; modifiés dans l'écran de réglages. |
 | Caractères par page | `charactersPerPage` | Réglage : nombre de caractères d'une page, 1 500 par défaut (un feuillet). |
 | Police | `font` | Réglage d'affichage : la famille de caractères du texte des notes — avec empattements (par défaut), sans empattements, ou à chasse fixe. |

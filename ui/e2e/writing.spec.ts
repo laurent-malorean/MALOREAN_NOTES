@@ -63,10 +63,10 @@ test("le mode machine à écrire se met en marche, est gardé, puis s'arrête", 
 test("le bandeau compte les mots, les caractères et les pages de la note", async ({ page }) => {
   await launch(page, { "courses.md": { content: "# Courses\npain lait", modified: 1 } });
   const bar = page.locator(".cm-status-bar");
-  await expect(bar).toHaveText("3 mots · 16 caractères · 0 page");
+  await expect(bar).toHaveText("3 mots · 16 caractères · 1 page");
   await typeAtEnd(page);
   await page.keyboard.type(" œufs");
-  await expect(bar).toHaveText("4 mots · 21 caractères · 0 page");
+  await expect(bar).toHaveText("4 mots · 21 caractères · 1 page");
 });
 
 test("le plan liste les titres, emmène au titre cliqué, et reste en plein écran", async ({

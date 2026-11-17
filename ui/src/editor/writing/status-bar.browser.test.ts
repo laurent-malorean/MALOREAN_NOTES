@@ -21,28 +21,28 @@ const bar = (parent: HTMLElement) => parent.querySelector<HTMLElement>(".cm-stat
 describe("bandeau en bas de la note", () => {
   it("donne les mots, les caractères et les pages de la note, sans sa syntaxe", () => {
     const { parent } = mount("# Courses\n- **pain** frais");
-    expect(bar(parent)?.textContent).toBe("3 mots · 17 caractères · 0 page");
+    expect(bar(parent)?.textContent).toBe("3 mots · 17 caractères · 1 page");
     expect(parent.querySelector(".cm-panels-bottom .cm-status-bar")).not.toBeNull();
   });
 
   it("suit la frappe", () => {
     const { parent, view } = mount("un");
     view.dispatch({ changes: { from: 2, insert: " deux" } });
-    expect(bar(parent)?.textContent).toBe("2 mots · 7 caractères · 0 page");
+    expect(bar(parent)?.textContent).toBe("2 mots · 7 caractères · 1 page");
   });
 
   it("donne les comptes de la sélection quand il y en a une", () => {
     const { parent, view } = mount("un deux trois");
     view.dispatch({ selection: { anchor: 3, head: 13 } });
-    expect(bar(parent)?.textContent).toBe("Sélection : 2 mots · 10 caractères · 0 page");
+    expect(bar(parent)?.textContent).toBe("Sélection : 2 mots · 10 caractères · 1 page");
     view.dispatch({ selection: { anchor: 0 } });
-    expect(bar(parent)?.textContent).toBe("3 mots · 13 caractères · 0 page");
+    expect(bar(parent)?.textContent).toBe("3 mots · 13 caractères · 1 page");
   });
 
   it("se met à jour quand on ouvre une autre note", () => {
     const { parent, editor } = mount("un");
     editor.show("un deux trois quatre");
-    expect(bar(parent)?.textContent).toBe("4 mots · 20 caractères · 0 page");
+    expect(bar(parent)?.textContent).toBe("4 mots · 20 caractères · 1 page");
   });
 
   it("compte les pages selon le nombre de caractères réglé, même après avoir changé de note", () => {
@@ -51,7 +51,7 @@ describe("bandeau en bas de la note", () => {
     editor.setCharactersPerPage(1000);
     expect(bar(parent)?.textContent).toBe("1 mot · 3\u202f000 caractères · 3 pages");
     editor.show("a".repeat(500));
-    expect(bar(parent)?.textContent).toBe("1 mot · 500 caractères · 0,5 page");
+    expect(bar(parent)?.textContent).toBe("1 mot · 500 caractères · 1 page");
   });
 
   it("compte 1 500 caractères par page quand rien n'est réglé", () => {

@@ -112,35 +112,28 @@ describe("mots et caractères", () => {
 describe("description des comptes", () => {
   it("donne les mots, les caractères et les pages, en français", () => {
     expect(describeCounts({ words: 1234, characters: 5678 }, 1500)).toBe(
-      "1 234 mots · 5 678 caractères · 3,8 pages",
+      "1\u202f234 mots · 5\u202f678 caractères · 4 pages",
     );
   });
 
   it("met « page », « mot » et « caractère » au singulier en dessous de 2", () => {
-    expect(describeCounts({ words: 1, characters: 1 }, 1500)).toBe("1 mot · 1 caractère · 0 page");
-    expect(describeCounts({ words: 0, characters: 600 }, 1500)).toBe(
-      "0 mot · 600 caractères · 0,4 page",
-    );
-    expect(describeCounts({ words: 2, characters: 2250 }, 1500)).toBe(
-      "2 mots · 2 250 caractères · 1,5 page",
+    expect(describeCounts({ words: 0, characters: 0 }, 1500)).toBe("0 mot · 0 caractère · 0 page");
+    expect(describeCounts({ words: 1, characters: 1 }, 1500)).toBe("1 mot · 1 caractère · 1 page");
+    expect(describeCounts({ words: 2, characters: 1500 }, 1500)).toBe(
+      "2 mots · 1\u202f500 caractères · 1 page",
     );
   });
 
-  it("compte une page par tranche du nombre de caractères réglé, arrondi au dixième", () => {
-    expect(describeCounts({ words: 0, characters: 3000 }, 1000)).toBe(
-      "0 mot · 3\u202f000 caractères · 3 pages",
-    );
-    expect(describeCounts({ words: 0, characters: 3000 }, 1500)).toBe(
-      "0 mot · 3 000 caractères · 2 pages",
-    );
-    expect(describeCounts({ words: 0, characters: 2997 }, 1500)).toBe(
-      "0 mot · 2\u202f997 caractères · 2 pages",
-    );
-    expect(describeCounts({ words: 0, characters: 2924 }, 1500)).toBe(
-      "0 mot · 2\u202f924 caractères · 1,9 page",
-    );
-    expect(describeCounts({ words: 0, characters: 3074 }, 1500)).toBe(
-      "0 mot · 3 074 caractères · 2 pages",
-    );
+  it("compte les pages commencées, en nombre entier, par tranche du nombre de caractères réglé", () => {
+    const pages = (characters: number, perPage = 1500) =>
+      describeCounts({ words: 0, characters }, perPage).split(" · ")[2];
+    expect(pages(0)).toBe("0 page");
+    expect(pages(47)).toBe("1 page");
+    expect(pages(1500)).toBe("1 page");
+    expect(pages(1501)).toBe("2 pages");
+    expect(pages(1600)).toBe("2 pages");
+    expect(pages(3000)).toBe("2 pages");
+    expect(pages(3001)).toBe("3 pages");
+    expect(pages(3000, 1000)).toBe("3 pages");
   });
 });
