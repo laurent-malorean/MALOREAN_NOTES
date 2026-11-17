@@ -15,6 +15,7 @@ describe("palette de commandes", () => {
       ["toggle-typewriter", "Mode machine à écrire", "Cmd+Maj+T"],
       ["toggle-outline", "Plan de la note", "Cmd+Maj+O"],
       ["toggle-full-screen", "Plein écran", "Ctrl+Cmd+F"],
+      ["toggle-side-panels", "Panneaux latéraux", "Ctrl+Cmd+S"],
       ["new-tab", "Nouvel onglet", "Cmd+T"],
       ["close-tab", "Fermer l'onglet", "Cmd+W"],
       ["next-tab", "Onglet suivant", "Ctrl+Tab"],

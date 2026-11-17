@@ -11,6 +11,7 @@ export type CommandId =
   | "toggle-typewriter"
   | "toggle-outline"
   | "toggle-full-screen"
+  | "toggle-side-panels"
   | "new-tab"
   | "close-tab"
   | "next-tab"
@@ -38,6 +39,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },
   { id: "toggle-full-screen", label: "Plein écran", shortcut: "Ctrl+Cmd+F" },
+  { id: "toggle-side-panels", label: "Panneaux latéraux", shortcut: "Ctrl+Cmd+S" },
   { id: "new-tab", label: "Nouvel onglet", shortcut: "Cmd+T" },
   { id: "close-tab", label: "Fermer l'onglet", shortcut: "Cmd+W" },
   { id: "next-tab", label: "Onglet suivant", shortcut: "Ctrl+Tab" },

@@ -49,6 +49,10 @@ describe("raccourcis clavier", () => {
     expect(key("p", { metaKey: true })).toBeNull();
   });
 
+  it("Ctrl+Cmd+S cache ou montre les panneaux latéraux", () => {
+    expect(key("s", { metaKey: true, ctrlKey: true })).toBe("toggle-side-panels");
+  });
+
   it("Échap quitte le plein écran", () => {
     expect(key("Escape")).toBe("leave-full-screen");
     expect(key("Escape", { metaKey: true })).toBeNull();

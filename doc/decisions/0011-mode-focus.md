@@ -21,3 +21,4 @@ Le mode focus estompe tout sauf la phrase ou le paragraphe en cours, comme iA Wr
 - Aucun aller-retour avec Rust pendant la frappe.
 - Le réglage est perdu si le stockage de la page est effacé ; on le rebascule d'un clic.
 - La détection de phrase reste approximative (abréviation inconnue, phrase sans espace après le point).
+- Le choix des panneaux latéraux suit la même règle de stockage : voir la fiche 0018.

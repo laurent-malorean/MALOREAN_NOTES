@@ -48,10 +48,10 @@ button {
   display: grid;
   grid-template-columns: var(--folders-width) var(--sidebar-width) 1fr;
 }
-.workspace.full-screen {
+.workspace.panels-hidden {
   grid-template-columns: 1fr;
 }
-.workspace.full-screen > aside {
+.workspace.panels-hidden > aside {
   display: none;
 }
 .workspace[hidden],

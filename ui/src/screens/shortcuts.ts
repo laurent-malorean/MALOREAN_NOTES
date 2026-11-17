@@ -6,6 +6,7 @@ export type Shortcut =
   | "toggle-outline"
   | "toggle-full-screen"
   | "leave-full-screen"
+  | "toggle-side-panels"
   | "open-settings"
   | "quick-open"
   | "command-palette"
@@ -21,6 +22,7 @@ const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+o": "toggle-outline",
   "cmd+ctrl+f": "toggle-full-screen",
   escape: "leave-full-screen",
+  "cmd+ctrl+s": "toggle-side-panels",
   "cmd+,": "open-settings",
   "cmd+o": "quick-open",
   "cmd+shift+p": "command-palette",

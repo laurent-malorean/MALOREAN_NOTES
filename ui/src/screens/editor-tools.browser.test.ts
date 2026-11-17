@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { showFocusUnit, showFullScreen, showOutline, showTypewriter } from "./editor-tools";
+import {
+  showFocusUnit,
+  showFullScreen,
+  showOutline,
+  showSidePanels,
+  showTypewriter,
+} from "./editor-tools";
 
 describe("bouton du mode focus", () => {
   it("dit le mode en cours et s'il est actif", () => {
@@ -17,21 +23,31 @@ describe("bouton du mode focus", () => {
 });
 
 describe("plein écran", () => {
-  it("ne laisse que le texte, et le bouton propose d'en sortir", () => {
-    const workspace = document.createElement("section");
+  it("le bouton propose d'en sortir, sans rien cacher de la fenêtre", () => {
     const button = document.createElement("button");
-    showFullScreen(workspace, button, true);
-    expect(workspace.classList.contains("full-screen")).toBe(true);
+    showFullScreen(button, true);
     expect([button.textContent, button.getAttribute("aria-pressed")]).toEqual([
       "Quitter le plein écran",
       "true",
     ]);
-    showFullScreen(workspace, button, false);
-    expect(workspace.classList.contains("full-screen")).toBe(false);
+    showFullScreen(button, false);
     expect([button.textContent, button.getAttribute("aria-pressed")]).toEqual([
       "Plein écran",
       "false",
     ]);
+  });
+});
+
+describe("panneaux latéraux", () => {
+  it("se cachent ensemble, et le bouton dit s'ils sont montrés", () => {
+    const workspace = document.createElement("section");
+    const button = document.createElement("button");
+    showSidePanels(workspace, button, "hidden");
+    expect(workspace.classList.contains("panels-hidden")).toBe(true);
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+    showSidePanels(workspace, button, "shown");
+    expect(workspace.classList.contains("panels-hidden")).toBe(false);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
   });
 });
 

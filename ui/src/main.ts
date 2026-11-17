@@ -31,10 +31,10 @@ import { initialSelection, nextSelection } from "./state/selection";
 import {
   type OutlineDisplay,
   showFocusUnit,
-  showFullScreen,
   showOutline,
   showTypewriter,
 } from "./screens/editor-tools";
+import { connectWindowDisplay } from "./screens/window-display";
 import { type Shortcut, shortcutFor } from "./screens/shortcuts";
 import { loadFocusUnit, nextFocusUnit, saveFocusUnit } from "./state/focus-preference";
 import { loadTypewriter, nextTypewriter, saveTypewriter } from "./state/typewriter-preference";
@@ -485,23 +485,11 @@ function toggleOutline() {
 }
 layout.outlineButton.addEventListener("click", toggleOutline);
 
-let fullScreen = false;
-function showWindowState(on: boolean) {
-  fullScreen = on;
-  showFullScreen(layout.workspace, layout.fullScreenButton, on);
-}
-async function setFullScreen(on: boolean) {
-  await bridge.setFullScreen(on);
-  showWindowState(on);
-}
-layout.fullScreenButton.addEventListener(
-  "click",
-  () => void setFullScreen(!fullScreen).catch(showError),
-);
-// Le plein écran peut aussi venir du bouton vert ou du menu du Mac : la fenêtre fait foi.
-void bridge
-  .onWindowResized(() => void bridge.isFullScreen().then(showWindowState).catch(showError))
-  .catch(showError);
+const windowDisplay = connectWindowDisplay(layout, {
+  window: bridge,
+  storage: localStorage,
+  error: showError,
+});
 
 /** Ce que fait chaque commande de la palette. */
 const COMMAND_ACTIONS: Readonly<Record<CommandId, () => void>> = {
@@ -514,7 +502,8 @@ const COMMAND_ACTIONS: Readonly<Record<CommandId, () => void>> = {
   "toggle-focus": toggleFocus,
   "toggle-typewriter": toggleTypewriter,
   "toggle-outline": toggleOutline,
-  "toggle-full-screen": () => run(setFullScreen(!fullScreen)),
+  "toggle-full-screen": () => run(windowDisplay.toggleFullScreen()),
+  "toggle-side-panels": windowDisplay.toggleSidePanels,
   "new-tab": () =>
     run(quickOpen("Nouvel onglet", (path) => changeColumns(notePlaced(columns, path, "newTab")))),
   "close-tab": () => run(changeColumns(activeTabClosed(columns))),
@@ -543,8 +532,9 @@ const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "toggle-focus": () => (toggleFocus(), true),
   "toggle-typewriter": () => (toggleTypewriter(), true),
   "toggle-outline": () => (toggleOutline(), true),
-  "toggle-full-screen": () => (void setFullScreen(!fullScreen).catch(showError), true),
-  "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
+  "toggle-full-screen": () => (COMMAND_ACTIONS["toggle-full-screen"](), true),
+  "leave-full-screen": windowDisplay.leaveFullScreen,
+  "toggle-side-panels": () => (windowDisplay.toggleSidePanels(), true),
   "open-settings": () => (showSettings(), true),
   "quick-open": () => (run(quickOpen()), true),
   "command-palette": () => (openPalette(), true),

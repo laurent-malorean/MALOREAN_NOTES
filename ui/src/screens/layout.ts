@@ -16,6 +16,7 @@ export interface Layout {
   /** La zone des colonnes d'édition, à gauche du plan. */
   readonly columns: HTMLElement;
   readonly fullScreenButton: HTMLButtonElement;
+  readonly sidePanelsButton: HTMLButtonElement;
   readonly status: HTMLElement;
   readonly chooseButtons: readonly HTMLButtonElement[];
   readonly newNoteButton: HTMLButtonElement;
@@ -59,6 +60,7 @@ const TEMPLATE = `
           <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
           <button class="tool" data-outline title="Plan de la note (Cmd+Maj+O)" aria-pressed="false">Plan</button>
           <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
+          <button class="tool" data-side-panels title="Panneaux latéraux : dossiers et notes (Ctrl+Cmd+S)" aria-pressed="true">Panneaux</button>
           <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
         </div>
         <div class="columns"></div>
@@ -89,6 +91,7 @@ export function createLayout(root: HTMLElement): Layout {
     outline: find(".outline"),
     columns: find(".columns"),
     fullScreenButton: find("[data-full-screen]"),
+    sidePanelsButton: find("[data-side-panels]"),
     status: find(".status"),
     chooseButtons: [...root.querySelectorAll<HTMLButtonElement>("[data-choose]")],
     newNoteButton: find("[data-new]"),

@@ -23,6 +23,7 @@ describe("mise en page", () => {
       layout.editor,
       layout.focusButton,
       layout.fullScreenButton,
+      layout.sidePanelsButton,
       layout.status,
       layout.newNoteButton,
       layout.settingsButton,

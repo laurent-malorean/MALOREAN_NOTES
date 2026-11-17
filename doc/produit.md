@@ -26,7 +26,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
 - Recherche plein texte instantanée.
 - Notes épinglées en tête de liste ; tri par date de modification.
-- Mode focus (phrase ou paragraphe courant mis en avant) et mode plein écran.
+- Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
 - Coller une image : elle devient une pièce jointe liée.
 
 ## Hors première version

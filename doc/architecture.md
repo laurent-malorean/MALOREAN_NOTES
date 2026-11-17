@@ -88,6 +88,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0015-ci-avant-chaque-commit.md` | La mini CI avant chaque commit, plus rien à l'envoi |
 | `0016-liens-entre-notes.md` | Liens entre notes : `[[titre]]`, résolus par le titre à la demande |
 | `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
+| `0018-plein-ecran-et-panneaux-lateraux.md` | Plein écran et panneaux latéraux : deux réglages indépendants |
 
 ## Décisions ouvertes
 

@@ -1,6 +1,8 @@
-// Outils posés sur l'éditeur : boutons du mode focus, du mode machine à écrire et du plein écran.
+// Outils posés sur l'éditeur : boutons du mode focus, du mode machine à écrire, du plein écran
+// et des panneaux latéraux.
 import type { FocusUnit } from "../editor/focus/focus-range";
 import type { Typewriter } from "../editor/writing/typewriter";
+import type { SidePanels } from "../state/side-panels-preference";
 
 const FOCUS_LABELS: Readonly<Record<FocusUnit, string>> = {
   sentence: "Focus : phrase",
@@ -13,11 +15,20 @@ export function showFocusUnit(button: HTMLElement, unit: FocusUnit | null): void
   button.setAttribute("aria-pressed", String(unit !== null));
 }
 
-/** En plein écran, seules les colonnes restent : listes des dossiers et des notes cachées. */
-export function showFullScreen(workspace: HTMLElement, button: HTMLElement, on: boolean): void {
-  workspace.classList.toggle("full-screen", on);
+/** Le bouton dit si la fenêtre est en plein écran ; la disposition, elle, ne change pas. */
+export function showFullScreen(button: HTMLElement, on: boolean): void {
   button.textContent = on ? "Quitter le plein écran" : "Plein écran";
   button.setAttribute("aria-pressed", String(on));
+}
+
+/** Cache ou montre ensemble les listes des dossiers et des notes ; les colonnes prennent la place. */
+export function showSidePanels(
+  workspace: HTMLElement,
+  button: HTMLElement,
+  panels: SidePanels,
+): void {
+  workspace.classList.toggle("panels-hidden", panels === "hidden");
+  button.setAttribute("aria-pressed", String(panels === "shown"));
 }
 
 /** Le plan est-il affiché à droite du texte ? */
@@ -25,7 +36,7 @@ export type OutlineDisplay = "shown" | "hidden";
 
 /**
  * Montre ou cache le plan ; le texte lui laisse la place. Le plan reste affiché en plein écran
- * s'il l'était : il sert à se déplacer dans le texte, seul à rester à l'écran.
+ * s'il l'était : il sert à se déplacer dans le texte.
  */
 export function showOutline(
   area: HTMLElement,
