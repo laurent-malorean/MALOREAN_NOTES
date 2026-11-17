@@ -13,6 +13,7 @@ import { liveTables } from "./live-preview/tables";
 import { findReplace } from "./writing/find-replace";
 import { formattingShortcuts } from "./writing/formatting";
 import { type Today, todayShortcut } from "./writing/today";
+import { type Typewriter, typewriterMode } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
 import { keptPosition } from "../state/external-change";
 
@@ -27,6 +28,8 @@ export interface Editor {
   focus(): void;
   /** Met en avant la phrase ou le paragraphe en cours ; `null` arrête le mode focus. */
   setFocusMode(unit: FocusUnit | null): void;
+  /** Garde, ou non, la ligne en cours au milieu de l'écran. */
+  setTypewriter(mode: Typewriter): void;
 }
 
 export function createEditor(
@@ -38,8 +41,11 @@ export function createEditor(
 ): Editor {
   const focus = new Compartment();
   let focusUnit: FocusUnit | null = null;
+  const typewriter = new Compartment();
+  let typewriterState: Typewriter = "off";
   const extensions = () => [
     focus.of(focusMode(focusUnit)),
+    typewriter.of(typewriterMode(typewriterState)),
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
     history(),
@@ -82,6 +88,10 @@ export function createEditor(
     setFocusMode(unit) {
       focusUnit = unit;
       view.dispatch({ effects: focus.reconfigure(focusMode(unit)) });
+    },
+    setTypewriter(mode) {
+      typewriterState = mode;
+      view.dispatch({ effects: typewriter.reconfigure(typewriterMode(mode)) });
     },
   };
 }

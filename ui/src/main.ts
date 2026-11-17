@@ -29,9 +29,11 @@ import {
   welcome,
 } from "./state/screen";
 import { initialSelection, nextSelection } from "./state/selection";
-import { showFocusUnit, showFullScreen } from "./screens/editor-tools";
+import { showFocusUnit, showFullScreen, showTypewriter } from "./screens/editor-tools";
 import { type Shortcut, shortcutFor } from "./screens/shortcuts";
 import { loadFocusUnit, nextFocusUnit, saveFocusUnit } from "./state/focus-preference";
+import { loadTypewriter, nextTypewriter, saveTypewriter } from "./state/typewriter-preference";
+import type { Typewriter } from "./editor/writing/typewriter";
 import "./theme.css";
 import "./style.css";
 
@@ -325,6 +327,17 @@ const toggleFocus = () => applyFocusUnit(nextFocusUnit(focusUnit));
 layout.focusButton.addEventListener("click", toggleFocus);
 applyFocusUnit(focusUnit);
 
+let typewriter = loadTypewriter(localStorage);
+function applyTypewriter(mode: Typewriter) {
+  typewriter = mode;
+  editor.setTypewriter(mode);
+  showTypewriter(layout.typewriterButton, mode);
+  saveTypewriter(localStorage, mode);
+}
+const toggleTypewriter = () => applyTypewriter(nextTypewriter(typewriter));
+layout.typewriterButton.addEventListener("click", toggleTypewriter);
+applyTypewriter(typewriter);
+
 let fullScreen = false;
 function showWindowState(on: boolean) {
   fullScreen = on;
@@ -345,6 +358,7 @@ void bridge
 
 const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "toggle-focus": () => (toggleFocus(), true),
+  "toggle-typewriter": () => (toggleTypewriter(), true),
   "toggle-full-screen": () => (void setFullScreen(!fullScreen).catch(showError), true),
   "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
 };

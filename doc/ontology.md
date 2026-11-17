@@ -37,3 +37,4 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Thème | `theme` | Couleurs, polices et tailles de lecture de l'interface, réunies dans un seul fichier. |
 | Plein écran | `fullScreen` | La fenêtre occupe tout l'écran et ne montre que le texte de la note : colonnes des dossiers et des notes cachées. |
 | Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. |
+| Mode machine à écrire | `Typewriter` | Affichage où la ligne en cours d'écriture reste au milieu de l'écran. |

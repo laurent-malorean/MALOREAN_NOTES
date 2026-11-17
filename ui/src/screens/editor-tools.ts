@@ -1,5 +1,6 @@
-// Outils posés sur l'éditeur : boutons du mode focus et du plein écran.
+// Outils posés sur l'éditeur : boutons du mode focus, du mode machine à écrire et du plein écran.
 import type { FocusUnit } from "../editor/focus/focus-range";
+import type { Typewriter } from "../editor/writing/typewriter";
 
 const FOCUS_LABELS: Readonly<Record<FocusUnit, string>> = {
   sentence: "Focus : phrase",
@@ -17,4 +18,9 @@ export function showFullScreen(workspace: HTMLElement, button: HTMLElement, on: 
   workspace.classList.toggle("full-screen", on);
   button.textContent = on ? "Quitter le plein écran" : "Plein écran";
   button.setAttribute("aria-pressed", String(on));
+}
+
+/** Le bouton dit si le mode machine à écrire est en marche. */
+export function showTypewriter(button: HTMLElement, mode: Typewriter): void {
+  button.setAttribute("aria-pressed", String(mode === "on"));
 }

@@ -10,6 +10,7 @@ export interface Layout {
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
   readonly focusButton: HTMLButtonElement;
+  readonly typewriterButton: HTMLButtonElement;
   readonly fullScreenButton: HTMLButtonElement;
   readonly status: HTMLElement;
   readonly chooseButtons: readonly HTMLButtonElement[];
@@ -44,6 +45,7 @@ export function createLayout(root: HTMLElement): Layout {
       <main class="editor">
         <div class="editor-tools">
           <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
+          <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
           <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
         </div>
       </main>
@@ -61,6 +63,7 @@ export function createLayout(root: HTMLElement): Layout {
     notesList: find(".notes-list"),
     editor: find(".editor"),
     focusButton: find("[data-focus]"),
+    typewriterButton: find("[data-typewriter]"),
     fullScreenButton: find("[data-full-screen]"),
     status: find(".status"),
     chooseButtons: [...root.querySelectorAll<HTMLButtonElement>("[data-choose]")],

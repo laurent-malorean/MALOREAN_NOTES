@@ -12,6 +12,11 @@ describe("raccourcis clavier", () => {
     expect(key("F", { metaKey: true, shiftKey: true })).toBe("toggle-focus");
   });
 
+  it("Cmd+Maj+T met en marche ou arrête le mode machine à écrire", () => {
+    expect(key("t", { metaKey: true, shiftKey: true })).toBe("toggle-typewriter");
+    expect(key("t", { metaKey: true })).toBeNull();
+  });
+
   it("ne réagit pas aux autres touches", () => {
     expect(key("f", { metaKey: true })).toBeNull();
     expect(key("f", { shiftKey: true })).toBeNull();

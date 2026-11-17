@@ -1,9 +1,11 @@
 // Raccourcis clavier de la fenêtre, valables où que soit le curseur.
 
-export type Shortcut = "toggle-focus" | "toggle-full-screen" | "leave-full-screen";
+export type Shortcut =
+  "toggle-focus" | "toggle-typewriter" | "toggle-full-screen" | "leave-full-screen";
 
 const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+f": "toggle-focus",
+  "cmd+shift+t": "toggle-typewriter",
   "cmd+ctrl+f": "toggle-full-screen",
   escape: "leave-full-screen",
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { showFocusUnit, showFullScreen } from "./editor-tools";
+import { showFocusUnit, showFullScreen, showTypewriter } from "./editor-tools";
 
 describe("bouton du mode focus", () => {
   it("dit le mode en cours et s'il est actif", () => {
@@ -32,5 +32,15 @@ describe("plein écran", () => {
       "Plein écran",
       "false",
     ]);
+  });
+});
+
+describe("bouton du mode machine à écrire", () => {
+  it("dit si le mode est en marche", () => {
+    const button = document.createElement("button");
+    showTypewriter(button, "on");
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    showTypewriter(button, "off");
+    expect(button.getAttribute("aria-pressed")).toBe("false");
   });
 });

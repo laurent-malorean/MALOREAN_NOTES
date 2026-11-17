@@ -47,3 +47,15 @@ test("remplacer partout dans la note enregistre le résultat", async ({ page }) 
   await page.getByRole("button", { name: "tout remplacer" }).click();
   await expect.poll(() => savedContent(page, "courses.md")).toBe("# Courses\nbrioche\nbrioche");
 });
+
+test("le mode machine à écrire se met en marche, est gardé, puis s'arrête", async ({ page }) => {
+  await launch(page, { "courses.md": { content: "# Courses\npain", modified: 1 } });
+  const button = page.getByRole("button", { name: "Machine à écrire" });
+  await expect(button).toHaveAttribute("aria-pressed", "false");
+  await button.click();
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  await page.reload();
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Meta+Shift+T");
+  await expect(button).toHaveAttribute("aria-pressed", "false");
+});
