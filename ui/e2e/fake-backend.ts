@@ -27,6 +27,8 @@ export interface FakeBackend {
   enterFullScreenFromTheSystem: () => Promise<void>;
   /** Une note modifiée (ou supprimée, avec `null`) hors de l'application, puis annoncée. */
   changeOutside: (path: string, content: string | null) => Promise<void>;
+  /** Une note renommée (et peut-être réécrite) hors de l'application, puis annoncée. */
+  renameOutside: (from: string, to: string, content: string) => Promise<void>;
 }
 
 declare global {
@@ -55,6 +57,11 @@ const backend: FakeBackend = {
     if (content === null) Reflect.deleteProperty(backend.notes, path);
     else backend.notes[path] = { content, modified: (clock += 1) };
     await emit("library-changed", { notes: [path] });
+  },
+  renameOutside: async (from, to, content) => {
+    Reflect.deleteProperty(backend.notes, from);
+    backend.notes[to] = { content, modified: (clock += 1) };
+    await emit("library-changed", { notes: [from, to] });
   },
 };
 window.backend = backend;

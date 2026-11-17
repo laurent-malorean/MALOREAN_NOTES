@@ -59,8 +59,17 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
   return element;
 }
 
-/** Dessine les onglets de la colonne dans `list`. */
+/** Ce que montre chaque barre d'onglets, pour ne la redessiner que si cela change. */
+const drawn = new WeakMap<HTMLElement, string>();
+
+/**
+ * Dessine les onglets de la colonne dans `list`. Les mêmes onglets gardent leurs éléments : un clic
+ * qui rend la colonne active (et la redessine) aboutit encore sur l'onglet visé.
+ */
 export function renderTabs(list: HTMLElement, column: Column, actions: TabActions): void {
+  const shown = JSON.stringify([column.tabs, column.activeTab]);
+  if (drawn.get(list) === shown) return;
+  drawn.set(list, shown);
   list.replaceChildren(
     ...column.tabs.map((tab) => tabElement(tab, tab.id === column.activeTab, actions)),
   );

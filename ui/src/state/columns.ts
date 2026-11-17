@@ -1,6 +1,8 @@
 // Colonnes d'édition et leurs onglets : un état pur, que l'écran ne fait que montrer
 // (voir la fiche de décision 0017).
 
+import type { LibraryNoteItem } from "../bridge/generated/LibraryNoteItem";
+
 /** Nombre de colonnes au plus, côte à côte. */
 export const MAX_COLUMNS = 3;
 
@@ -331,6 +333,31 @@ export function notesMoved(columns: Columns, moved: (path: string) => string): C
 /** Les onglets de cette note prennent son titre, tel que Rust l'a lu ou enregistré. */
 export function noteTitled(columns: Columns, note: string, title: string): Columns {
   return tabsChanged(columns, (tab) => (tab.note === note ? { ...tab, title } : tab));
+}
+
+/**
+ * Des notes ont changé hors de l'application ; `library` est la bibliothèque après coup. Une seule
+ * note ouverte partie et une seule note apparue (pas encore ouverte) : c'est un renommage, ses
+ * onglets la suivent. Puis chaque note ouverte annoncée prend son titre dans tous ses onglets.
+ */
+export function notesChangedOutside(
+  columns: Columns,
+  changed: readonly string[],
+  library: readonly Pick<LibraryNoteItem, "path" | "title">[],
+): Columns {
+  const open = new Set(columns.list.flatMap((column) => column.tabs.map((tab) => tab.note)));
+  const titles = new Map(library.map((note) => [note.path, note.title]));
+  const gone = changed.filter((path) => open.has(path) && !titles.has(path));
+  const appeared = changed.filter((path) => !open.has(path) && titles.has(path));
+  const [from, to] = [gone[0], appeared[0]];
+  const renamed =
+    gone.length === 1 && appeared.length === 1
+      ? notesMoved(columns, (path) => (path === from ? (to as string) : path))
+      : columns;
+  return changed.reduce((next, path) => {
+    const title = titles.get(path);
+    return title === undefined ? next : noteTitled(next, path, title);
+  }, renamed);
 }
 
 /** Des notes ont quitté la bibliothèque (corbeille) : leurs onglets se ferment. */

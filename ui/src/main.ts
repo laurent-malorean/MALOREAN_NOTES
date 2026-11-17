@@ -58,6 +58,7 @@ import {
   noteOpened,
   notePlaced,
   noteShown,
+  notesChangedOutside,
   notesMoved,
   notesRemoved,
   noteTitled,
@@ -382,11 +383,13 @@ async function refreshFolders() {
   await showAnswer(bridge.listFolders(), foldersRefreshed);
 }
 
-/** La bibliothèque a changé hors de l'application : dossiers, liste et notes des colonnes suivent. */
+/** La bibliothèque a changé hors de l'application : dossiers, liste, onglets et notes des colonnes suivent. */
 async function followLibraryChange(change: bridge.LibraryChanged) {
   if (screen.kind !== "library") return;
   await refreshFolders();
   await refreshList();
+  // Avant de relire les notes des colonnes : une note renommée ailleurs n'y passe pas pour supprimée.
+  await changeColumns(notesChangedOutside(columns, change.notes, await bridge.listAllNotes()));
   for (const pane of panes.values()) {
     await pane.showBacklinks();
     if (touchesNote(change.notes, pane.note())) await pane.followDisk();

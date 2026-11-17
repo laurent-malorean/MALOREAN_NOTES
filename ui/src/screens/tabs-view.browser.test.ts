@@ -69,6 +69,17 @@ describe("onglets d'une colonne", () => {
     expect(list.children).toHaveLength(0);
   });
 
+  it("redessiner les mêmes onglets garde leurs éléments : un clic commencé avant y aboutit", () => {
+    const { list, tabs } = mount();
+    const actions = { activate: () => {}, close: () => {}, place: () => {}, drag: () => {} };
+    renderTabs(list, { ...column, tabs: [...column.tabs] }, actions);
+    expect(list.children[0]).toBe(tabs[0]);
+    expect(list.children[1]).toBe(tabs[1]);
+    renderTabs(list, { ...column, activeTab: 1 }, actions);
+    expect(list.children[0]).not.toBe(tabs[0]);
+    expect(list.children[0]?.getAttribute("aria-selected")).toBe("true");
+  });
+
   it("un clic droit sur l'onglet ouvre le menu de sa note, à l'endroit du clic", () => {
     const { tabs, asked } = mount();
     const event = new MouseEvent("contextmenu", {
