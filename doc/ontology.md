@@ -24,6 +24,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Étiquette | `Tag` | Mot-clé libre attaché à une note. |
 | Corbeille | `Trash` | Dossier caché `.trash/` à la racine de la bibliothèque, où va une note ou un dossier supprimé, rangé à son chemin d'origine. Elle ne se vide qu'à la main. |
 | Restaurer | `restore` | Remettre un élément de la corbeille à son chemin d'origine ; un nom pris reçoit un suffixe libre. |
+| Confirmation | `confirmation` | Petite fenêtre qui pose une question avant une action : « Placer « Titre » dans la corbeille ? ». Échap ou « Annuler » ne fait rien ; Entrée ou le bouton de l'action la lance. Placer une note ou un dossier dans la corbeille la demande toujours, quel que soit le chemin (menu, touche). |
 | Recherche | `SearchQuery` | Les mots tapés pour retrouver des notes ; une note est trouvée si elle contient tous les mots, sans tenir compte des majuscules ni des accents. |
 | Résultat de recherche | `SearchResult` | Une note trouvée : son titre, son dossier et un extrait. |
 | Seuil de recherche | `SEARCH_MIN_LENGTH` | Nombre minimal de caractères tapés (3) pour lancer une recherche, sauf si le texte est un nombre ; en dessous, la liste montre les notes du dossier. Une recherche part après une courte pause dans la frappe, jamais à chaque lettre. |

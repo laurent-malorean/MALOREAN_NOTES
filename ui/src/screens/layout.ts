@@ -23,6 +23,7 @@ export interface Layout {
   readonly settings: HTMLDialogElement;
   /** La fenêtre de choix au clavier : ouverture rapide, palette de commandes. */
   readonly picker: HTMLDialogElement;
+  readonly confirmation: HTMLDialogElement;
 }
 
 /** La fenêtre : accueil, dossiers, liste des notes, outils et colonnes d'édition, message, réglages. */
@@ -66,7 +67,8 @@ const TEMPLATE = `
     </section>
     <div class="status" role="status"></div>
     <dialog class="settings" aria-label="Réglages"></dialog>
-    <dialog class="picker"></dialog>`;
+    <dialog class="picker"></dialog>
+    <dialog class="confirmation"></dialog>`;
 
 export function createLayout(root: HTMLElement): Layout {
   root.innerHTML = TEMPLATE;
@@ -93,5 +95,6 @@ export function createLayout(root: HTMLElement): Layout {
     settingsButton: find("[data-settings]"),
     settings: find(".settings"),
     picker: find(".picker"),
+    confirmation: find(".confirmation"),
   };
 }

@@ -3,7 +3,7 @@ import * as bridge from "./bridge";
 import type { Editor } from "./editor/editor";
 import type { FocusUnit } from "./editor/focus/focus-range";
 import { imageAddress } from "./editor/image-address";
-import { folderOf, movedPath } from "./state/folders";
+import { folderOf, movedPath, nameOf } from "./state/folders";
 import { createLayout } from "./screens/layout";
 import { startFolderCreation } from "./screens/folders-list";
 import { connectSearchField } from "./screens/search-field";
@@ -43,6 +43,7 @@ import { loadSettings, saveSettings, type Settings } from "./state/settings";
 import { openSettings } from "./screens/settings-view";
 import { showDisplay } from "./screens/display";
 import { openPicker } from "./screens/picker";
+import { askTrash } from "./screens/confirmation";
 import { matchingNotes } from "./state/quick-open";
 import { type CommandId, matchingCommands } from "./state/commands";
 import {
@@ -157,10 +158,10 @@ const actions: ScreenActions = {
   moveNote: (path, into) => run(moveNote(path, into)),
   pin: (path) => run(changePin(path, bridge.pinNote)),
   unpin: (path) => run(changePin(path, bridge.unpinNote)),
-  trash: (path) => run(trashNote(path)),
+  trash: (path) => run(confirmTrash(noteTitle(path), () => trashNote(path))),
   place: (path, placement) => run(changeColumns(notePlaced(columns, path, placement))),
   closeNote: (path) => run(changeColumns(noteClosed(columns, path))),
-  trashFolder: (path) => run(trashFolder(path)),
+  trashFolder: (path) => run(confirmTrash(nameOf(path), () => trashFolder(path))),
   restoreNote: (path) => run(changeTrash(bridge.restoreNote(path))),
   restoreFolder: (path) => run(changeTrash(bridge.restoreFolder(path))),
   empty: () => run(changeTrash(bridge.emptyTrash())),
@@ -248,6 +249,14 @@ function forgetNotes(gone: (path: string) => boolean) {
     const note = pane.note();
     if (note !== null && gone(note)) pane.forget();
   });
+}
+
+const noteTitle = (path: string) =>
+  (screen.kind === "library" && screen.notes.find((note) => note.path === path)?.title) || path;
+
+/** Placer une note ou un dossier dans la corbeille attend d'abord sa confirmation. */
+async function confirmTrash(name: string, trash: () => Promise<void>) {
+  if (await askTrash(layout.confirmation, name)) await trash();
 }
 
 /**

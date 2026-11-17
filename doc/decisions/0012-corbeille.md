@@ -13,6 +13,7 @@ Supprimer une note ou un dossier ne doit rien perdre tout de suite : on veut pou
 - Un élément supprimé y garde **son chemin d'origine** : `Travail/lundi.md` va dans `.trash/Travail/lundi.md`. Une note part avec son dossier de pièces jointes, un dossier part entier. Restaurer, c'est remettre l'élément à ce chemin : aucune autre information n'est nécessaire.
 - Deux éléments supprimés au même chemin ne s'écrasent pas : la note reçoit le premier suffixe libre (`lundi-2.md`, liens vers ses pièces jointes mis à jour), le dossier devient `Travail 2`, comme dans le Finder.
 - Restaurer recrée les dossiers manquants. Un nom pris reçoit un suffixe libre. Un dossier restauré là où un dossier du même nom existe déjà y est fusionné, élément par élément. Les dossiers de la corbeille laissés vides en disparaissent (les fichiers cachés du Finder, comme `.DS_Store`, ne comptent pas).
+- Placer une note ou un dossier dans la corbeille demande d'abord une **confirmation** (« Placer « Titre » dans la corbeille ? »), par le menu comme par les touches Effacer et Suppr.
 - La corbeille se vide **seulement à la main**, après une confirmation : c'est la seule action définitive de l'application.
 - La corbeille montre les notes de la racine, puis chaque dossier suivi de ses notes, avec leur emplacement d'origine. Un dossier y apparaît aussi quand il ne fait que contenir une note supprimée ; le restaurer remet tout ce qu'il contient.
 

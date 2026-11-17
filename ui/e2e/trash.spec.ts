@@ -22,6 +22,14 @@ const editorLines = (page: Page) => page.locator(".cm-line");
 const folders = (page: Page) => page.locator(".folders-list .folder-name");
 const trashLabels = (page: Page) => page.locator(".trash-label");
 const savedPaths = (page: Page) => page.evaluate(() => Object.keys(window.backend.notes).sort());
+const confirmation = (page: Page) => page.getByRole("dialog", { name: "Confirmation" });
+
+/** Choisit « Placer dans la corbeille » dans le menu, puis l'accepte dans la confirmation. */
+async function trashFromMenu(page: Page, item: string) {
+  await page.locator(item).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "Placer dans la corbeille" }).click();
+  await confirmation(page).getByRole("button", { name: "Placer dans la corbeille" }).click();
+}
 
 test("la note ouverte placée dans la corbeille laisse la place à la suivante, puis revient", async ({
   page,
@@ -31,8 +39,7 @@ test("la note ouverte placée dans la corbeille laisse la place à la suivante, 
   await editorLines(page).last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" et beurre");
-  await page.locator(".note-item", { hasText: "Courses" }).click({ button: "right" });
-  await page.getByRole("menuitem", { name: "Placer dans la corbeille" }).click();
+  await trashFromMenu(page, '.note-item:has-text("Courses")');
   await expect(titles(page)).toHaveText(["Idée"]);
   await expect(editorLines(page).first()).toHaveText("Idée");
 
@@ -55,6 +62,9 @@ test("la touche Effacer place la note choisie dans la corbeille", async ({ page 
   await launch(page);
   await page.locator(".note-item", { hasText: "Idée" }).focus();
   await page.keyboard.press("Backspace");
+  await expect(confirmation(page)).toContainText("Placer « Idée » dans la corbeille ?");
+  await page.keyboard.press("Enter");
+  await expect(confirmation(page)).toBeHidden();
   await expect(titles(page)).toHaveText(["Courses"]);
   expect(await savedPaths(page)).toEqual(["Travail/lundi.md", "courses.md"]);
 });
@@ -65,8 +75,7 @@ test("un dossier placé dans la corbeille part avec ses notes et revient entier"
   await launch(page);
   await page.locator(".folder-item", { hasText: "Travail" }).click();
   await expect(titles(page)).toHaveText(["Lundi"]);
-  await page.locator(".folder-item", { hasText: "Travail" }).click({ button: "right" });
-  await page.getByRole("menuitem", { name: "Placer dans la corbeille" }).click();
+  await trashFromMenu(page, '.folder-item:has-text("Travail")');
   await expect(folders(page)).toHaveText(["Notes"]);
   await expect(page.locator(".library-name")).toHaveText("Notes");
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
@@ -82,8 +91,7 @@ test("vider la corbeille demande une confirmation, puis supprime définitivement
   page,
 }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Idée" }).click({ button: "right" });
-  await page.getByRole("menuitem", { name: "Placer dans la corbeille" }).click();
+  await trashFromMenu(page, '.note-item:has-text("Idée")');
   await page.getByRole("button", { name: "Corbeille" }).click();
   await page.getByRole("button", { name: "Vider la corbeille" }).click();
   await page.getByRole("button", { name: "Annuler" }).click();
@@ -92,4 +100,36 @@ test("vider la corbeille demande une confirmation, puis supprime définitivement
   await page.getByRole("button", { name: "Vider définitivement" }).click();
   await expect(page.getByText("La corbeille est vide")).toBeVisible();
   expect(await savedPaths(page)).toEqual(["Travail/lundi.md", "courses.md"]);
+});
+
+test("placer dans la corbeille demande une confirmation ; Échap et Annuler ne font rien", async ({
+  page,
+}) => {
+  await launch(page);
+  const ask = async (item: string) => {
+    await page.locator(item).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Placer dans la corbeille" }).click();
+  };
+  await ask('.note-item:has-text("Courses")');
+  await expect(confirmation(page)).toContainText("Placer « Courses » dans la corbeille ?");
+  await page.keyboard.press("Escape");
+  await expect(confirmation(page)).toBeHidden();
+  await ask('.note-item:has-text("Courses")');
+  await confirmation(page).getByRole("button", { name: "Annuler" }).click();
+  await expect(confirmation(page)).toBeHidden();
+  await expect(titles(page)).toHaveText(["Courses", "Idée"]);
+
+  await ask('.folder-item:has-text("Travail")');
+  await expect(confirmation(page)).toContainText("Placer « Travail » dans la corbeille ?");
+  await page.keyboard.press("Escape");
+  await page.locator(".note-item", { hasText: "Idée" }).focus();
+  await page.keyboard.press("Delete");
+  await confirmation(page).getByRole("button", { name: "Annuler" }).click();
+  await expect(folders(page)).toHaveText(["Notes", "Travail"]);
+  await expect(titles(page)).toHaveText(["Courses", "Idée"]);
+  expect(await savedPaths(page)).toEqual(["Travail/lundi.md", "courses.md", "idee.md"]);
+
+  await ask('.note-item:has-text("Courses")');
+  await page.keyboard.press("Enter");
+  await expect(titles(page)).toHaveText(["Idée"]);
 });

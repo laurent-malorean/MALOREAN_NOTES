@@ -65,6 +65,8 @@
   --backlinks-text-size: 13px;
   --backlinks-max-height: 30%;
   --picker-max-height: 50vh;
+  --confirmation-width: 26rem;
+  --confirmation-text-size: 14px;
 
   /* Fenêtre */
   --folders-width: 200px;

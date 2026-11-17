@@ -762,6 +762,31 @@ button {
   margin-left: 0.3rem;
 }
 
+/* Confirmation : une question avant une action, Annuler puis le bouton de l'action */
+.confirmation {
+  width: min(var(--confirmation-width), 90vw);
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 10px 30px var(--shadow);
+  font-family: var(--sans);
+  font-size: var(--confirmation-text-size);
+}
+.confirmation::backdrop {
+  background: var(--shadow);
+}
+.confirmation-question {
+  margin: 0 0 1rem;
+}
+.confirmation-buttons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.8rem;
+}
+
 /* Fenêtre de choix au clavier : ouverture rapide, palette de commandes */
 .picker {
   width: min(36rem, 90vw);
