@@ -61,6 +61,7 @@ import {
   shownNote,
   tabActivated,
   tabClosed,
+  tabDropped,
   tabPlaced,
 } from "./state/columns";
 import { type ColumnParts, createColumnsView } from "./screens/columns-view";
@@ -324,14 +325,15 @@ const columnsView = createColumnsView(layout.columns, {
   activateTab: (tabId) => run(changeColumns(tabActivated(columns, tabId))),
   closeTab: (tabId) => run(changeColumns(tabClosed(columns, tabId))),
   placeTab: (tabId, placement) => run(changeColumns(tabPlaced(columns, tabId, placement))),
-  split: () => run(splitColumn()),
+  dropTab: (tabId, drop) => run(changeColumnsFlushed(() => tabDropped(columns, tabId, drop))),
+  split: () => run(changeColumnsFlushed(() => columnSplit(columns))),
   resize: (divider, delta) => run(changeColumns(columnsResized(columns, divider, delta))),
 });
 
-/** Une colonne de plus, sur la note de la colonne active telle qu'on vient de la taper. */
-async function splitColumn() {
-  await activePane().flush();
-  await changeColumns(columnSplit(columns));
+/** Les colonnes changent une fois ce qui est tapé enregistré : une note qui change de colonne s'y lit à jour. */
+async function changeColumnsFlushed(next: () => Columns) {
+  await flushAll();
+  await changeColumns(next());
 }
 
 /** L'onglet actif de la colonne active montre cette note à la place de la sienne. */

@@ -562,6 +562,19 @@ button {
 .tab-close:hover {
   color: var(--text);
 }
+/* Où tomberait l'onglet qu'on glisse : la colonne, son bord gauche ou droit, la place avant un onglet. */
+.column[data-drop="inside"] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.column[data-drop="left"] {
+  box-shadow: inset 6px 0 0 var(--accent);
+}
+.column[data-drop="right"] {
+  box-shadow: inset -6px 0 0 var(--accent);
+}
+.tab.drop-before {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
 .column-split[hidden] {
   display: none;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Columns } from "../state/columns";
+import type { Column, Columns, TabDrop } from "../state/columns";
 import { type ColumnParts, createColumnsView } from "./columns-view";
 import "../theme.css";
 import "../style.css";
@@ -17,6 +17,7 @@ function mount() {
   const activated: number[] = [];
   const resized: { divider: number; delta: number }[] = [];
   const tabs: string[] = [];
+  const drops: { tab: number; drop: TabDrop }[] = [];
   let splits = 0;
   const view = createColumnsView(container, {
     created: (id, parts) => created.push({ id, parts, connected: parts.element.isConnected }),
@@ -27,8 +28,19 @@ function mount() {
     activateTab: (tab) => tabs.push(`activer ${tab}`),
     closeTab: (tab) => tabs.push(`fermer ${tab}`),
     placeTab: (tab, placement) => tabs.push(`placer ${tab} ${placement}`),
+    dropTab: (tab, drop) => drops.push({ tab, drop }),
   });
-  return { container, view, created, removed, activated, resized, tabs, splits: () => splits };
+  return {
+    container,
+    view,
+    created,
+    removed,
+    activated,
+    resized,
+    tabs,
+    drops,
+    splits: () => splits,
+  };
 }
 
 const state = (widths: readonly number[], active = 0, ids = widths.map((_, i) => i)): Columns => ({
@@ -216,5 +228,142 @@ describe("colonnes à l'écran", () => {
     document.dispatchEvent(new PointerEvent("pointerup"));
     document.dispatchEvent(new PointerEvent("pointermove", { clientX: centre + 50 }));
     expect(resized).toHaveLength(1);
+  });
+
+  describe("glisser un onglet", () => {
+    /** Deux ou trois colonnes : la première a les onglets 1 et 2, les autres aucun. */
+    const withTabs = (widths: readonly number[]): Columns => {
+      const columns = state(widths);
+      const [first, ...others] = columns.list;
+      const tabs = [
+        { id: 1, note: "a.md", title: "A" },
+        { id: 2, note: "b.md", title: "B" },
+      ];
+      return { ...columns, list: [{ ...(first as Column), tabs, activeTab: 1 }, ...others] };
+    };
+    const tabElements = (column: HTMLElement) => [
+      ...column.querySelectorAll<HTMLElement>('[role="tab"]'),
+    ];
+    const drag = (target: Element, type: string, at = 0) => {
+      const event = new DragEvent(type, { bubbles: true, cancelable: true, clientX: at });
+      target.dispatchEvent(event);
+      return event;
+    };
+    /** Un point de la colonne, à cette part de sa largeur depuis la gauche. */
+    const point = (column: HTMLElement, part: number) => {
+      const box = column.getBoundingClientRect();
+      return box.left + part * box.width;
+    };
+
+    it("au milieu d'une colonne, l'onglet y va ; au bord, une colonne s'ouvre de ce côté", () => {
+      const { container, view, drops } = mount();
+      // Deux colonnes de 500 pixels, à des abscisses entières : la limite d'un bord tombe sur un pixel.
+      container.style.width = "1005px";
+      view.render(withTabs([0.5, 0.5]));
+      const [first, second] = sections(container) as [HTMLElement, HTMLElement];
+      expect(second.getBoundingClientRect().width).toBe(500);
+      expect(Number.isInteger(second.getBoundingClientRect().left)).toBe(true);
+      const body = second.querySelector(".backlinks") as HTMLElement;
+      const tab = tabElements(first)[1] as HTMLElement;
+      drag(tab, "dragstart");
+      const over = drag(body, "dragover", point(second, 0.5));
+      expect(over.defaultPrevented).toBe(true);
+      expect(second.dataset.drop).toBe("inside");
+      drag(body, "dragover", point(second, 0.2));
+      expect(second.dataset.drop).toBe("left");
+      drag(body, "dragover", point(second, 0.8));
+      expect(second.dataset.drop).toBe("right");
+      drag(body, "dragover", point(second, 0.25));
+      expect(second.dataset.drop).toBe("inside");
+      drag(body, "dragover", point(second, 0.75));
+      expect(second.dataset.drop).toBe("inside");
+      drag(body, "dragleave");
+      expect(second.dataset.drop).toBeUndefined();
+      const dropped = drag(body, "drop", point(second, 0.5));
+      expect(dropped.defaultPrevented).toBe(true);
+      expect(drag(body, "dragover", point(second, 0.5)).defaultPrevented).toBe(false);
+      drag(tab, "dragstart");
+      drag(body, "drop", point(second, 0.2));
+      drag(tab, "dragstart");
+      drag(first, "drop", point(first, 0.8));
+      expect(second.dataset.drop).toBeUndefined();
+      expect(drops).toEqual([
+        { tab: 2, drop: { column: 1, before: null } },
+        { tab: 2, drop: { column: 1, side: "left" } },
+        { tab: 2, drop: { column: 0, side: "right" } },
+      ]);
+    });
+
+    it("sur la barre d'onglets, l'onglet se place avant celui qu'on survole, sinon à la fin", () => {
+      const { container, view, drops } = mount();
+      view.render(withTabs([0.5, 0.5]));
+      const [first, second] = sections(container) as [HTMLElement, HTMLElement];
+      const [one, two] = tabElements(first) as [HTMLElement, HTMLElement];
+      drag(two, "dragstart");
+      drag(one.querySelector(".tab-title") as HTMLElement, "dragover", point(first, 0.1));
+      expect(one.classList.contains("drop-before")).toBe(true);
+      expect(first.dataset.drop).toBe("inside");
+      drag(one, "dragleave");
+      expect(one.classList.contains("drop-before")).toBe(false);
+      drag(one, "drop", point(first, 0.1));
+      drag(two, "dragstart");
+      drag(second.querySelector(".tabs") as HTMLElement, "drop", point(second, 0.9));
+      expect(drops).toEqual([
+        { tab: 2, drop: { column: 0, before: 1 } },
+        { tab: 2, drop: { column: 1, before: null } },
+      ]);
+    });
+
+    it("à trois colonnes, le bord d'une colonne la reçoit comme son milieu", () => {
+      const { container, view, drops } = mount();
+      view.render(withTabs([0.4, 0.3, 0.3]));
+      const [first, , third] = sections(container) as [HTMLElement, HTMLElement, HTMLElement];
+      drag(tabElements(first)[0] as HTMLElement, "dragstart");
+      drag(third, "dragover", point(third, 0.95));
+      expect(third.dataset.drop).toBe("inside");
+      drag(third, "drop", point(third, 0.95));
+      expect(drops).toEqual([{ tab: 1, drop: { column: 2, before: null } }]);
+    });
+
+    it("l'éditeur ne cache pas le survol ; la fin du glissement efface ce qu'il montrait", () => {
+      const { container, view } = mount();
+      view.render(withTabs([0.5, 0.5]));
+      const [first, second] = sections(container) as [HTMLElement, HTMLElement];
+      const editor = document.createElement("div");
+      editor.addEventListener("dragover", (event) => event.stopPropagation());
+      second.append(editor);
+      const tab = tabElements(first)[0] as HTMLElement;
+      drag(tab, "dragstart");
+      drag(editor, "dragover", point(second, 0.5));
+      drag(tab.querySelector(".tab-title") as HTMLElement, "dragover", point(first, 0.1));
+      expect(second.dataset.drop).toBe("inside");
+      expect(tab.classList.contains("drop-before")).toBe(true);
+      drag(tab, "dragend");
+      expect(second.dataset.drop).toBeUndefined();
+      expect(first.dataset.drop).toBeUndefined();
+      expect(tab.classList.contains("drop-before")).toBe(false);
+    });
+
+    it("ce qui n'est pas un onglet glissé n'est ni accepté ni pris à l'éditeur", () => {
+      const { container, view, drops } = mount();
+      view.render(withTabs([0.5, 0.5]));
+      const [first, second] = sections(container) as [HTMLElement, HTMLElement];
+      const editor = document.createElement("div");
+      const reached: string[] = [];
+      editor.addEventListener("drop", () => reached.push("drop"));
+      second.append(editor);
+      expect(drag(editor, "dragover", point(second, 0.5)).defaultPrevented).toBe(false);
+      drag(editor, "drop", point(second, 0.5));
+      const tab = tabElements(first)[0] as HTMLElement;
+      drag(tab, "dragstart");
+      drag(editor, "drop", point(second, 0.5));
+      drag(editor, "dragover", point(second, 0.5));
+      drag(tab, "dragend");
+      expect(second.dataset.drop).toBeUndefined();
+      expect(drag(editor, "dragover", point(second, 0.5)).defaultPrevented).toBe(false);
+      drag(editor, "drop", point(second, 0.5));
+      expect(reached).toEqual(["drop", "drop"]);
+      expect(drops).toEqual([{ tab: 1, drop: { column: 1, before: null } }]);
+    });
   });
 });

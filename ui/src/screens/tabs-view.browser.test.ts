@@ -23,6 +23,7 @@ function mount() {
     activate: (tab) => asked.push(`activer ${tab}`),
     close: (tab) => asked.push(`fermer ${tab}`),
     place: (tab, placement) => asked.push(`placer ${tab} ${placement}`),
+    drag: (tab) => asked.push(`glisser ${tab}`),
   });
   const tabs = [...list.querySelectorAll<HTMLElement>('[role="tab"]')];
   return { list, asked, tabs };
@@ -63,7 +64,7 @@ describe("onglets d'une colonne", () => {
     renderTabs(
       list,
       { ...column, tabs: [], activeTab: null },
-      { activate: () => {}, close: () => {}, place: () => {} },
+      { activate: () => {}, close: () => {}, place: () => {}, drag: () => {} },
     );
     expect(list.children).toHaveLength(0);
   });
@@ -92,5 +93,14 @@ describe("onglets d'une colonne", () => {
     tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     entries()[3]?.click();
     expect(asked).toEqual(["placer 1 right", "fermer 2"]);
+  });
+
+  it("un onglet se glisse : son début et sa fin sont annoncés, il porte son identifiant", () => {
+    const { tabs, asked } = mount();
+    expect(tabs.map((tab) => tab.draggable)).toEqual([true, true]);
+    expect(tabs.map((tab) => tab.dataset.tab)).toEqual(["1", "2"]);
+    tabs[1]?.dispatchEvent(new DragEvent("dragstart", { bubbles: true }));
+    tabs[1]?.dispatchEvent(new DragEvent("dragend", { bubbles: true }));
+    expect(asked).toEqual(["glisser 2", "glisser null"]);
   });
 });

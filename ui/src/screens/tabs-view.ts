@@ -12,6 +12,8 @@ export interface TabActions {
   close(tabId: number): void;
   /** Ouvrir la note de cet onglet à cet emplacement. */
   place(tabId: number, placement: Placement): void;
+  /** On commence à glisser cet onglet, ou on a fini (`null`). */
+  drag(tabId: number | null): void;
 }
 
 const NOTE_EXTENSION = ".md";
@@ -27,6 +29,10 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
   element.setAttribute("role", "tab");
   element.setAttribute("aria-selected", String(active));
   element.title = tab.note;
+  element.dataset.tab = String(tab.id);
+  element.draggable = true;
+  element.addEventListener("dragstart", () => actions.drag(tab.id));
+  element.addEventListener("dragend", () => actions.drag(null));
   const label = document.createElement("span");
   label.className = "tab-title";
   label.textContent = tabLabel(tab);

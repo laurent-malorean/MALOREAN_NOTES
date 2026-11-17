@@ -131,8 +131,8 @@ function tabAdded(columns: Columns, note: string): Columns {
 /** Où le menu d'une note l'ouvre : un nouvel onglet de la colonne active, ou la colonne voisine. */
 export type Placement = "newTab" | Side;
 
-/** Un côté de la colonne active. */
-type Side = "left" | "right";
+/** Un côté d'une colonne. */
+export type Side = "left" | "right";
 
 /**
  * Ouvre la note à l'emplacement choisi. Dans un nouvel onglet : un onglet de plus dans la colonne
@@ -210,6 +210,41 @@ function columnClosed(columns: Columns, id: number): Columns {
     );
   const active = columns.active === id ? (neighbours.at(-1) as Column).id : columns.active;
   return { ...columns, list, active };
+}
+
+/**
+ * Où l'on lâche un onglet qu'on glisse : dans une colonne, avant l'un de ses onglets (à la fin
+ * sans onglet désigné), ou au bord d'une colonne, d'un côté.
+ */
+export type TabDrop =
+  | { readonly column: number; readonly before: number | null }
+  | { readonly column: number; readonly side: Side };
+
+/**
+ * L'onglet glissé quitte sa colonne, qui se ferme s'il était son dernier. Dans une colonne, il se
+ * place avant l'onglet désigné (sinon à la fin) et y devient actif. Au bord d'une colonne, une
+ * colonne s'ouvre de ce côté pour lui, s'il reste de la place. La colonne qui le reçoit devient
+ * active. Un onglet ou une colonne inconnus, ou un onglet seul lâché dans sa colonne, ne changent rien.
+ */
+export function tabDropped(columns: Columns, tabId: number, drop: TabDrop): Columns {
+  const source = columns.list.find((c) => c.tabs.some((t) => t.id === tabId));
+  const target = columns.list.find((c) => c.id === drop.column);
+  if (source === undefined || target === undefined) return columns;
+  if (source.id === target.id && source.tabs.length === 1) return columns;
+  if ("before" in drop && drop.before === tabId) return columns;
+  const tab = source.tabs.find((t) => t.id === tabId) as Tab;
+  const left = tabClosed(columns, tabId);
+  if ("side" in drop) {
+    if (left.list.length >= MAX_COLUMNS) return columns;
+    return columnAdded(columnActivated(left, target.id), drop.side, tab);
+  }
+  const next = changed(left, (c) => {
+    if (c.id !== target.id) return c;
+    const at = c.tabs.findIndex((t) => t.id === drop.before);
+    const tabs = at < 0 ? [...c.tabs, tab] : [...c.tabs.slice(0, at), tab, ...c.tabs.slice(at)];
+    return { ...c, tabs, activeTab: tabId };
+  });
+  return { ...next, active: target.id };
 }
 
 /**

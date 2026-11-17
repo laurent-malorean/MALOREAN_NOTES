@@ -255,3 +255,34 @@ test("Cmd+clic sur une note, dans la liste ou la recherche, l'ouvre dans un nouv
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×", "Idée×"]);
   await expect(firstLine(page, 0)).toHaveText("Idée");
 });
+
+/** Lâche l'onglet sur la colonne, à cette part de sa largeur depuis la gauche. */
+async function dropTab(page: Page, tab: number, column: number, part: number) {
+  const target = columns(page).nth(column);
+  const box = (await target.boundingBox()) ?? { width: 0, height: 0 };
+  await tabs(page, 0)
+    .nth(tab)
+    .dragTo(target, { targetPosition: { x: box.width * part, y: box.height / 2 } });
+}
+
+test("glisser un onglet vers une autre colonne l'y emmène ; vers le bord, une colonne s'ouvre", async ({
+  page,
+}) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×", "Vieille note×"]);
+  await dropTab(page, 1, 0, 0.95);
+  await expect(columns(page)).toHaveCount(2);
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Vieille note×"]);
+  await expect(tabs(page, 1)).toHaveText(["Idée×"]);
+  await expect(firstLine(page, 1)).toHaveText("Idée");
+  await dropTab(page, 0, 1, 0.5);
+  await expect(tabs(page, 0)).toHaveText(["Vieille note×"]);
+  await expect(tabs(page, 1)).toHaveText(["Idée×", "Courses×"]);
+  await expect(firstLine(page, 1)).toHaveText("Courses");
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Courses");
+  await dropTab(page, 0, 1, 0.5);
+  await expect(columns(page)).toHaveCount(1);
+  await expect(tabs(page, 0)).toHaveText(["Idée×", "Courses×", "Vieille note×"]);
+});

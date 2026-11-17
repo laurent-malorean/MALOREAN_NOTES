@@ -1,5 +1,5 @@
 // Les colonnes d'édition à l'écran : une section par colonne, un séparateur entre deux voisines.
-import { type Columns, MAX_COLUMNS, type Placement } from "../state/columns";
+import { type Columns, MAX_COLUMNS, type Placement, type TabDrop } from "../state/columns";
 import { renderTabs } from "./tabs-view";
 
 /** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément et la place des liens entrants. */
@@ -22,6 +22,8 @@ export interface ColumnsHandlers {
   closeTab(tabId: number): void;
   /** Ouvrir la note d'un onglet à cet emplacement (menu de l'onglet). */
   placeTab(tabId: number, placement: Placement): void;
+  /** Un onglet glissé est lâché là. */
+  dropTab(tabId: number, drop: TabDrop): void;
   /** Diviser la colonne active. */
   split(): void;
   /** Le séparateur `divider` glisse de `delta`, en part de la zone d'édition. */
@@ -41,10 +43,85 @@ interface ShownColumn {
   readonly divider: HTMLElement;
 }
 
-function columnElement(id: number, container: HTMLElement, handlers: ColumnsHandlers): ShownColumn {
+/** Ce qu'une colonne sait de l'onglet qu'on glisse. */
+interface TabDragging {
+  /** L'onglet en cours de glissement, s'il y en a un. */
+  moving(): number | null;
+  /** Le glissement est fini : lâché, ou abandonné. */
+  stop(): void;
+  /** Lâcher au bord d'une colonne en ouvre une : faux à trois colonnes. */
+  edges(): boolean;
+}
+
+/** Part de la largeur d'une colonne, de chaque côté, où lâcher un onglet ouvre une colonne. */
+const EDGE_ZONE = 0.25;
+
+/** Où tomberait l'onglet lâché sous le pointeur, dans la colonne `id`. */
+function dropAt(event: DragEvent, column: HTMLElement, id: number, edges: boolean): TabDrop {
+  const target = event.target as Element;
+  if (target.closest(".column-header")) {
+    const before = target.closest<HTMLElement>(".tab")?.dataset.tab;
+    return { column: id, before: before === undefined ? null : Number(before) };
+  }
+  const box = column.getBoundingClientRect();
+  const at = (event.clientX - box.left) / box.width;
+  if (edges && at < EDGE_ZONE) return { column: id, side: "left" };
+  if (edges && at > 1 - EDGE_ZONE) return { column: id, side: "right" };
+  return { column: id, before: null };
+}
+
+/** Montre où l'onglet tomberait : la colonne, son bord, ou la place avant un onglet ; rien sans dépôt. */
+function showDrop(column: HTMLElement, drop: TabDrop | null): void {
+  if (drop === null) delete column.dataset.drop;
+  else column.dataset.drop = "side" in drop ? drop.side : "inside";
+  const before = drop !== null && "before" in drop ? String(drop.before) : null;
+  for (const tab of column.querySelectorAll<HTMLElement>(".tab")) {
+    tab.classList.toggle("drop-before", tab.dataset.tab === before);
+  }
+}
+
+/**
+ * La colonne reçoit l'onglet qu'on glisse ; elle le prend avant l'éditeur, qui y verrait du texte
+ * à insérer. Le reste (une note de la liste, un fichier) passe sans être accepté.
+ */
+function acceptTabs(
+  column: HTMLElement,
+  id: number,
+  dragging: TabDragging,
+  handlers: ColumnsHandlers,
+) {
+  const over = (event: DragEvent): TabDrop | null => {
+    const tabId = dragging.moving();
+    if (tabId === null) return null;
+    event.preventDefault();
+    event.stopPropagation();
+    return dropAt(event, column, id, dragging.edges());
+  };
+  column.addEventListener("dragover", (event) => showDrop(column, over(event)), { capture: true });
+  column.addEventListener("dragleave", () => showDrop(column, null));
+  column.addEventListener(
+    "drop",
+    (event) => {
+      const drop = over(event);
+      if (drop === null) return;
+      // Un dépôt n'existe que pendant le glissement d'un onglet.
+      handlers.dropTab(dragging.moving() as number, drop);
+      dragging.stop();
+    },
+    { capture: true },
+  );
+}
+
+function columnElement(
+  id: number,
+  container: HTMLElement,
+  handlers: ColumnsHandlers,
+  dragging: TabDragging,
+): ShownColumn {
   const element = document.createElement("section");
   element.className = "column";
   element.setAttribute("aria-label", "Colonne");
+  acceptTabs(element, id, dragging, handlers);
   // Avant tout autre effet du clic (Cmd+clic sur un lien, case à cocher) : la colonne est déjà active.
   element.addEventListener("mousedown", () => handlers.activate(id), { capture: true });
   element.addEventListener("focusin", () => handlers.activate(id));
@@ -99,8 +176,19 @@ function dividerElement(container: HTMLElement, handlers: ColumnsHandlers): HTML
 /** Les colonnes, dessinées dans `container` ; chaque colonne garde son élément tant qu'elle existe. */
 export function createColumnsView(container: HTMLElement, handlers: ColumnsHandlers): ColumnsView {
   const shown = new Map<number, ShownColumn>();
+  let moving: number | null = null;
+  let count = 0;
+  const dragging: TabDragging = {
+    moving: () => moving,
+    stop: () => {
+      moving = null;
+      for (const entry of shown.values()) showDrop(entry.parts.element, null);
+    },
+    edges: () => count < MAX_COLUMNS,
+  };
   return {
     render(columns) {
+      count = columns.list.length;
       for (const id of shown.keys()) {
         if (columns.list.some((column) => column.id === id)) continue;
         shown.delete(id);
@@ -110,7 +198,7 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
       const wanted = columns.list.flatMap((column, index) => {
         let entry = shown.get(column.id);
         if (entry === undefined) {
-          entry = columnElement(column.id, container, handlers);
+          entry = columnElement(column.id, container, handlers, dragging);
           shown.set(column.id, entry);
           added.push({ id: column.id, parts: entry.parts });
         }
@@ -121,6 +209,7 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
           activate: handlers.activateTab,
           close: handlers.closeTab,
           place: handlers.placeTab,
+          drag: (tabId) => (tabId === null ? dragging.stop() : (moving = tabId)),
         });
         if (index === 0) return [entry.parts.element];
         entry.divider.dataset.index = String(index - 1);
