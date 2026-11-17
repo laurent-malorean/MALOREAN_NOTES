@@ -173,3 +173,24 @@ test("Cmd+O ouvre une note de n'importe quel dossier par quelques lettres de son
   await expect(picker).toBeHidden();
   await expect(page.locator(".cm-line").first()).toHaveText("Recette de crêpes");
 });
+
+test("la palette de commandes lance une action par son nom, raccourci affiché", async ({
+  page,
+}) => {
+  await launch(page, { "courses.md": { content: "# Courses\npain", modified: 1 } });
+  await expect(page.locator(".cm-line").first()).toHaveText("Courses");
+  await page.keyboard.press("Meta+Shift+P");
+  const palette = page.getByRole("dialog", { name: "Palette de commandes" });
+  await page.keyboard.type("machine");
+  await expect(palette.getByRole("option")).toHaveText(["Mode machine à écrireCmd+Maj+T"]);
+  await page.keyboard.press("Enter");
+  await expect(palette).toBeHidden();
+  await expect(page.getByRole("button", { name: "Machine à écrire" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.keyboard.press("Meta+Shift+P");
+  await page.keyboard.type("dans la note");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".cm-search")).toBeVisible();
+});

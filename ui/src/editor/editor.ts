@@ -16,6 +16,7 @@ import type { FocusUnit } from "./focus/focus-range";
 import { liveFormatting } from "./live-formatting";
 import { type ImageResolver, imageResolver, livePreview } from "./live-preview/plugin";
 import { liveTables } from "./live-preview/tables";
+import { openSearchPanel } from "@codemirror/search";
 import { findReplace } from "./writing/find-replace";
 import { formattingShortcuts } from "./writing/formatting";
 import { charactersPerPage, statusBar } from "./writing/status-bar";
@@ -42,6 +43,8 @@ export interface Editor {
   setTypewriter(mode: Typewriter): void;
   /** Le nombre de caractères d'une page, pour le bandeau. */
   setCharactersPerPage(characters: number): void;
+  /** Ouvre la recherche dans la note, comme Cmd+F. */
+  openFind(): void;
 }
 
 /** Ce que l'éditeur peut recevoir de l'application ; chaque élément est facultatif. */
@@ -135,5 +138,6 @@ export function createEditor(
     setFocusMode: (unit) => view.dispatch({ effects: focus.change(unit) }),
     setTypewriter: (mode) => view.dispatch({ effects: typewriter.change(mode) }),
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
+    openFind: () => void openSearchPanel(view),
   };
 }

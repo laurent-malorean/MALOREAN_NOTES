@@ -8,11 +8,12 @@ function mount(content: string) {
   const parent = document.createElement("div");
   parent.className = "editor";
   document.body.replaceChildren(parent);
-  createEditor(parent, () => {}).show(content);
+  const editor = createEditor(parent, () => {});
+  editor.show(content);
   const view = EditorView.findFromDOM(parent.querySelector(".cm-editor") as HTMLElement);
   if (!view) throw new Error("éditeur introuvable");
   view.focus();
-  return { parent, view };
+  return { parent, view, editor };
 }
 
 const panel = (parent: HTMLElement) => parent.querySelector<HTMLElement>(".cm-search");
@@ -34,6 +35,13 @@ describe("rechercher et remplacer dans la note ouverte", () => {
     );
     const options = [...parent.querySelectorAll(".cm-search label")].map((l) => l.textContent);
     expect(options).toEqual(["respecter la casse", "expression régulière", "mot entier"]);
+  });
+
+  it("s'ouvre aussi sur demande de l'application, le curseur dans le champ", () => {
+    const { parent, editor } = mount("pain");
+    editor.openFind();
+    expect(panel(parent)).not.toBeNull();
+    expect(document.activeElement).toBe(field(parent, "search"));
   });
 
   it("surligne chaque occurrence et va de l'une à l'autre", async () => {

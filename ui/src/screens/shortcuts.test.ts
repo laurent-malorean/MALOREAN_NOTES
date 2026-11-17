@@ -45,6 +45,11 @@ describe("raccourcis clavier", () => {
     expect(key("O", { metaKey: true })).toBe("quick-open");
   });
 
+  it("Cmd+Maj+P ouvre la palette de commandes", () => {
+    expect(key("p", { metaKey: true, shiftKey: true })).toBe("command-palette");
+    expect(key("p", { metaKey: true })).toBeNull();
+  });
+
   it("Échap quitte le plein écran", () => {
     expect(key("Escape")).toBe("leave-full-screen");
     expect(key("Escape", { metaKey: true })).toBeNull();

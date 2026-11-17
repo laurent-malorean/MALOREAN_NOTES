@@ -46,6 +46,7 @@ import { showDisplay } from "./screens/display";
 import { renderBacklinks } from "./screens/backlinks-view";
 import { openPicker } from "./screens/picker";
 import { matchingNotes } from "./state/quick-open";
+import { type CommandId, matchingCommands } from "./state/commands";
 import "./theme.css";
 import "./style.css";
 
@@ -424,6 +425,36 @@ void bridge
   .onWindowResized(() => void bridge.isFullScreen().then(showWindowState).catch(showError))
   .catch(showError);
 
+/** Ce que fait chaque commande de la palette. */
+const COMMAND_ACTIONS: Readonly<Record<CommandId, () => void>> = {
+  "quick-open": () => run(quickOpen()),
+  "new-note": () => run(createNote()),
+  "new-folder": () =>
+    startFolderCreation(layout.foldersList, currentFolder(screen), actions.create),
+  "search-library": () => layout.searchField.focus(),
+  "find-in-note": () => editor.openFind(),
+  "toggle-focus": toggleFocus,
+  "toggle-typewriter": toggleTypewriter,
+  "toggle-outline": toggleOutline,
+  "toggle-full-screen": () => run(setFullScreen(!fullScreen)),
+  "show-trash": () => run(showTrash()),
+  "open-settings": () => showSettings(),
+  "choose-library": () => run(chooseLibrary()),
+};
+
+/** La palette de commandes : une action de l'application, par quelques lettres de son nom. */
+function openPalette() {
+  if (screen.kind !== "library") return;
+  openPicker(layout.picker, {
+    label: "Palette de commandes",
+    placeholder: "Nom de la commande",
+    empty: "Aucune commande ne correspond",
+    entries: matchingCommands,
+    describe: (command) => ({ label: command.label, detail: command.shortcut }),
+    choose: (command) => COMMAND_ACTIONS[command.id](),
+  });
+}
+
 const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "toggle-focus": () => (toggleFocus(), true),
   "toggle-typewriter": () => (toggleTypewriter(), true),
@@ -432,6 +463,7 @@ const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
   "open-settings": () => (showSettings(), true),
   "quick-open": () => (run(quickOpen()), true),
+  "command-palette": () => (openPalette(), true),
 };
 document.addEventListener("keydown", (event) => {
   // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
