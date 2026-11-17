@@ -7,6 +7,6 @@ allow-panic-in-tests = true
 disallowed-methods = [
   { path = "std::time::SystemTime::now", reason = "utiliser le port Clock" },
   { path = "std::time::Instant::now", reason = "utiliser le port Clock" },
-  { path = "chrono::Local::now", reason = "utiliser le port Clock" },
-  { path = "chrono::Utc::now", reason = "utiliser le port Clock" },
+  { path = "jiff::ZonedDateTime::now", reason = "utiliser le port Clock" },
+  { path = "jiff::Timestamp::now", reason = "utiliser le port Clock" },
 ]

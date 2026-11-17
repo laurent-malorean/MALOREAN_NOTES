@@ -70,7 +70,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 
 ## 6. Temps, aléa, environnement
 
-- **L'horloge est injectée** : un cas d'usage la reçoit via le port `Clock` et ne lit jamais l'heure ailleurs. La seule horloge réelle vit dans `infrastructure`. Un test passe une horloge arrêtée (`FixedClock`). Même règle pour l'aléa et les identifiants. *Vérifié par : Clippy `disallowed_methods` (`SystemTime::now`, `Instant::now`, `chrono::Local::now`, `rand::thread_rng`…), levé une seule fois dans l'horloge réelle avec `#[expect(…, reason = …)]`.*
+- **L'horloge est injectée** : un cas d'usage la reçoit via le port `Clock` et ne lit jamais l'heure ailleurs. La seule horloge réelle vit dans `infrastructure`. Un test passe une horloge arrêtée (`FixedClock`). Même règle pour l'aléa et les identifiants. *Vérifié par : Clippy `disallowed_methods` (`SystemTime::now`, `Instant::now`, `jiff::ZonedDateTime::now`, `rand::thread_rng`…), levé une seule fois dans l'horloge réelle avec `#[expect(…, reason = …)]`.*
 - **Configuration** : lue une fois, dans `app`, puis passée aux objets.
 - **Journal** : `tracing`, jamais `println!` ni `dbg!`. *Vérifié par : Clippy (`print_stdout`, `print_stderr`, `dbg_macro`).*
 
@@ -212,8 +212,8 @@ allow-expect-in-tests = true
 disallowed-methods = [
   { path = "std::time::SystemTime::now", reason = "utiliser le port Clock" },
   { path = "std::time::Instant::now", reason = "utiliser le port Clock" },
-  { path = "chrono::Local::now", reason = "utiliser le port Clock" },
-  { path = "chrono::Utc::now", reason = "utiliser le port Clock" },
+  { path = "jiff::ZonedDateTime::now", reason = "utiliser le port Clock" },
+  { path = "jiff::Timestamp::now", reason = "utiliser le port Clock" },
   { path = "rand::thread_rng", reason = "utiliser le port d'aléa" },
 ]
 ```
