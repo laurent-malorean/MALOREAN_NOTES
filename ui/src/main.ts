@@ -20,6 +20,7 @@ import {
   noteSelected,
   notesRefreshed,
   type Screen,
+  searchable,
   searchAnswered,
   searchTyped,
   selectedNote,
@@ -171,21 +172,27 @@ function show(next: Screen) {
   renderScreen(layout, screen, actions);
 }
 
+/** Applique une réponse de Rust à l'écran tel qu'il est à son arrivée, pas tel qu'il était à la demande. */
+async function showAnswer<T>(answer: Promise<T>, next: (now: Screen, answer: T) => Screen) {
+  const value = await answer;
+  show(next(screen, value));
+}
+
 async function refreshList() {
-  show(notesRefreshed(screen, await bridge.listNotes(currentFolder(screen))));
+  await showAnswer(bridge.listNotes(currentFolder(screen)), notesRefreshed);
   if (screen.kind === "library" && screen.search) await search(screen.search.query);
 }
 
 const searchLater = createDebouncer(timerScheduler(SEARCH_DELAY_MS));
 
 async function search(query: string) {
-  show(searchAnswered(screen, query, await bridge.searchNotes(query)));
+  await showAnswer(bridge.searchNotes(query), (now, answer) => searchAnswered(now, query, answer));
 }
 
-/** Chaque frappe montre la recherche ; elle part vers Rust après une courte pause. */
+/** Chaque frappe montre la recherche ; elle part vers Rust après une courte pause, dès le seuil atteint. */
 function typeSearch(query: string) {
   show(searchTyped(screen, query));
-  if (query.trim() === "") return searchLater.cancel();
+  if (!searchable(query)) return searchLater.cancel();
   searchLater(() => run(search(query)));
 }
 
@@ -194,13 +201,13 @@ async function selectFolder(folder: string) {
   const trashOpen = screen.kind === "library" && screen.trash !== null;
   if (folder === currentFolder(screen) && !trashOpen) return;
   await activePane().flush();
-  show(folderSelected(screen, folder, await bridge.listNotes(folder)));
+  await showAnswer(bridge.listNotes(folder), (now, answer) => folderSelected(now, folder, answer));
   await showNote(selectedNote(screen));
 }
 
 async function createFolder(parent: string, name: string) {
   const created = await bridge.createFolder(parent, name);
-  show(foldersRefreshed(screen, await bridge.listFolders()));
+  await showAnswer(bridge.listFolders(), foldersRefreshed);
   await selectFolder(created);
 }
 
@@ -209,7 +216,7 @@ async function changeFolder(path: string, change: Promise<string>) {
   await flushAll();
   const to = await change;
   show(folderMoved(screen, path, to));
-  show(foldersRefreshed(screen, await bridge.listFolders()));
+  await showAnswer(bridge.listFolders(), foldersRefreshed);
   await refreshList();
   await changeColumns(notesMoved(columns, (note) => movedPath(note, path, to)));
 }
@@ -271,10 +278,10 @@ async function trashFolder(path: string) {
   const activeGone = gone(activeNote(columns) ?? "");
   await bridge.trashFolder(path);
   forgetNotes(gone);
-  show(foldersRefreshed(screen, await bridge.listFolders()));
+  await showAnswer(bridge.listFolders(), foldersRefreshed);
   let next = columns;
   if (listInside) {
-    show(folderSelected(screen, "", await bridge.listNotes("")));
+    await showAnswer(bridge.listNotes(""), (now, answer) => folderSelected(now, "", answer));
     next = noteShown(next, selectedNote(screen));
   } else {
     await refreshList();
@@ -285,14 +292,14 @@ async function trashFolder(path: string) {
 }
 
 async function showTrash() {
-  show(trashShown(screen, await bridge.listTrash()));
+  await showAnswer(bridge.listTrash(), trashShown);
 }
 
 /** Restaure ou vide : la corbeille, les dossiers et les notes affichées sont relus. */
 async function changeTrash(change: Promise<unknown>) {
   await change;
-  show(foldersRefreshed(screen, await bridge.listFolders()));
-  show(notesRefreshed(screen, await bridge.listNotes(currentFolder(screen))));
+  await showAnswer(bridge.listFolders(), foldersRefreshed);
+  await showAnswer(bridge.listNotes(currentFolder(screen)), notesRefreshed);
   await showTrash();
 }
 
@@ -353,7 +360,7 @@ async function followLink(title: string) {
 }
 
 async function refreshFolders() {
-  show(foldersRefreshed(screen, await bridge.listFolders()));
+  await showAnswer(bridge.listFolders(), foldersRefreshed);
 }
 
 /** La bibliothèque a changé hors de l'application : dossiers, liste et notes des colonnes suivent. */

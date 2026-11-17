@@ -9,7 +9,7 @@ On veut retrouver une note de n'importe quel dossier en tapant quelques mots, av
 
 ## Décision
 
-- **Relire toutes les notes à chaque recherche**, dans un fil d'arrière-plan côté Rust : la page n'est jamais bloquée. La recherche part 200 ms après la dernière frappe ; une réponse arrivée pour une recherche déjà dépassée est ignorée.
+- **Relire toutes les notes à chaque recherche**, dans un fil d'arrière-plan côté Rust : la page n'est jamais bloquée. La recherche part 200 ms après la dernière frappe, jamais à chaque lettre, et seulement à partir de 3 caractères (seuil de recherche), sauf pour un nombre : en dessous, la liste montre les notes du dossier. Une réponse arrivée pour une recherche déjà dépassée est ignorée : elle est comparée à l'écran tel qu'il est à son arrivée, et le champ garde toujours ce qui a été tapé.
 - La règle de correspondance est une fonction pure du domaine : une note est trouvée si elle contient **tous les mots**, sans tenir compte des **majuscules ni des accents** (« ete » trouve « été »), même au milieu d'un mot. Le titre faisant partie du contenu, il est cherché avec lui ; l'en-tête YAML aussi (étiquettes).
 - Chaque note trouvée vient avec un **extrait** d'une ligne autour du premier mot trouvé, mots cherchés mis en évidence. Au plus 100 notes, la plus récente en premier.
 - Le cas d'usage `SearchNotes` est le seul à savoir comment on cherche : un index pourra le remplacer sans changer la commande ni l'interface.

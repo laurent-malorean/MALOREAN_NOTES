@@ -84,13 +84,26 @@ export function noteSelected(screen: Screen, path: string | null): Screen {
   return screen.kind === "library" ? { ...screen, selected: path } : screen;
 }
 
-/** La recherche tapée : elle commence, continue avec les résultats précédents, ou s'arrête si vide. */
+/** Seuil de recherche : nombre minimal de caractères pour chercher, sauf pour un nombre. */
+export const SEARCH_MIN_LENGTH = 3;
+
+/** Vrai si le texte tapé est assez long pour lancer une recherche, ou si c'est un nombre. */
+export function searchable(query: string): boolean {
+  const text = query.trim();
+  return text.length >= SEARCH_MIN_LENGTH || /^\d+$/.test(text);
+}
+
+/**
+ * La recherche tapée : elle commence, continue avec les résultats précédents, ou s'arrête si vide.
+ * Sous le seuil de recherche, le texte est gardé sans résultat : la liste montre le dossier.
+ */
 export function searchTyped(screen: Screen, query: string): Screen {
   if (screen.kind !== "library") return screen;
   if (query.trim() === "") return { ...screen, search: null };
+  const previous = searchable(query) ? screen.search?.results : null;
   return {
     ...screen,
-    search: { query, results: screen.search?.results ?? null },
+    search: { query, results: previous ?? null },
     trash: null,
   };
 }

@@ -111,6 +111,19 @@ describe("affichage de l'écran", () => {
     expect(view.searchField.value).toBe("pain");
   });
 
+  it("sous le seuil de recherche, garde le texte et montre les notes du dossier", () => {
+    const view = layout();
+    const opened = libraryOpened(
+      library,
+      [],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
+    );
+    renderScreen(view, searchTyped(opened, "pa"), ignore);
+    expect(view.searchField.value).toBe("pa");
+    expect(view.notesList.querySelector(".search-message")).toBeNull();
+    expect(view.notesList.querySelector(".note-item")?.textContent).toContain("Alpha");
+  });
+
   it("vide le champ de recherche quand la recherche s'arrête", () => {
     const view = layout();
     const opened = libraryOpened(library, ["Travail"], []);

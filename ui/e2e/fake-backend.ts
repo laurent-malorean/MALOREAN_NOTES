@@ -21,6 +21,8 @@ export interface FakeBackend {
   attachments: Record<string, number>;
   /** Les cibles de liens dont l'ouverture a été demandée. */
   opened: string[];
+  /** Durée d'une recherche en millisecondes, pour simuler une grosse bibliothèque. */
+  searchDuration: number;
   /** Le plein écran demandé par le Mac lui-même (bouton vert, menu). */
   enterFullScreenFromTheSystem: () => Promise<void>;
   /** Une note modifiée (ou supprimée, avec `null`) hors de l'application, puis annoncée. */
@@ -44,6 +46,7 @@ const backend: FakeBackend = {
   fullScreen: false,
   attachments: {},
   opened: [],
+  searchDuration: 0,
   enterFullScreenFromTheSystem: async () => {
     backend.fullScreen = true;
     await emit("tauri://resize", { width: 1440, height: 900 });
@@ -275,7 +278,8 @@ const trashCommands: Record<string, (args: Record<string, string>) => unknown> =
 
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
-  search_notes: ({ query = "" }) => searchNotes(query),
+  search_notes: ({ query = "" }) =>
+    new Promise((resolve) => setTimeout(() => resolve(searchNotes(query)), backend.searchDuration)),
   resolve_link: ({ title = "" }) => resolveLink(title),
   list_all_notes: () =>
     Object.entries(backend.notes)

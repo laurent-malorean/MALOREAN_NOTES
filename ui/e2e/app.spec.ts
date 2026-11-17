@@ -255,6 +255,43 @@ test("la recherche trouve les notes de tous les dossiers et ouvre celle qu'on cl
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
 });
 
+test("taper vite dans la recherche ne perd aucune lettre, même si une réponse arrive en route", async ({
+  page,
+}) => {
+  await launch(page, { notes: { "lisbonne.md": { content: "# Lisbonne\nTram 28", modified: 1 } } });
+  await page.evaluate(() => (window.backend.searchDuration = 300));
+  const field = page.getByRole("searchbox", { name: "Rechercher" });
+  await field.focus();
+  await page.keyboard.type("lis");
+  await page.waitForTimeout(250);
+  await page.keyboard.type("bonne", { delay: 60 });
+  await expect(field).toHaveValue("lisbonne");
+  await expect(page.locator(".search-result .note-title")).toHaveText(["Lisbonne"]);
+  await expect(field).toHaveValue("lisbonne");
+  const searches = await page.evaluate(() =>
+    window.backend.calls.filter((c) => c === "search_notes"),
+  );
+  expect(searches).toHaveLength(2);
+});
+
+test("en dessous de trois caractères, la liste reste celle du dossier, sauf pour un nombre", async ({
+  page,
+}) => {
+  await launch(page, {
+    notes: {
+      "courses.md": { content: "# Courses\n- pain", modified: 2 },
+      "budget.md": { content: "# Budget\n42 euros", modified: 1 },
+    },
+  });
+  const field = page.getByRole("searchbox", { name: "Rechercher" });
+  await field.pressSequentially("pa");
+  await page.waitForTimeout(400);
+  await expect(titles(page)).toHaveText(["Courses", "Budget"]);
+  expect(await page.evaluate(() => window.backend.calls)).not.toContain("search_notes");
+  await field.fill("42");
+  await expect(page.locator(".search-result .note-title")).toHaveText(["Budget"]);
+});
+
 test("une recherche sans résultat le dit", async ({ page }) => {
   await launch(page);
   await page.getByRole("searchbox", { name: "Rechercher" }).fill("introuvable");

@@ -26,6 +26,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Restaurer | `restore` | Remettre un élément de la corbeille à son chemin d'origine ; un nom pris reçoit un suffixe libre. |
 | Recherche | `SearchQuery` | Les mots tapés pour retrouver des notes ; une note est trouvée si elle contient tous les mots, sans tenir compte des majuscules ni des accents. |
 | Résultat de recherche | `SearchResult` | Une note trouvée : son titre, son dossier et un extrait. |
+| Seuil de recherche | `SEARCH_MIN_LENGTH` | Nombre minimal de caractères tapés (3) pour lancer une recherche, sauf si le texte est un nombre ; en dessous, la liste montre les notes du dossier. Une recherche part après une courte pause dans la frappe, jamais à chaque lettre. |
 | Extrait | `Excerpt` | Court passage d'une note trouvée, autour du premier mot cherché, mots trouvés mis en évidence. |
 | Index | `SearchIndex` | Cache de recherche, reconstructible à partir des fichiers. |
 | Conflit | `Conflict` | Une note modifiée à la fois dans l'application et hors de l'application. |

@@ -8,6 +8,8 @@ import {
   libraryOpened,
   noteSelected,
   notesRefreshed,
+  SEARCH_MIN_LENGTH,
+  searchable,
   searchAnswered,
   searchTyped,
   selectedNote,
@@ -174,7 +176,7 @@ describe("recherche", () => {
   });
 
   it("garde les résultats précédents pendant qu'on continue de taper", () => {
-    const answered = searchAnswered(searchTyped(opened(), "pa"), "pa", [result("a.md")]);
+    const answered = searchAnswered(searchTyped(opened(), "pai"), "pai", [result("a.md")]);
     expect(searchOf(searchTyped(answered, "pain"))).toEqual({
       query: "pain",
       results: [result("a.md")],
@@ -182,12 +184,29 @@ describe("recherche", () => {
   });
 
   it("ignore la réponse d'une recherche déjà dépassée", () => {
-    const typed = searchTyped(searchTyped(opened(), "pa"), "pain");
-    expect(searchAnswered(typed, "pa", [result("a.md")])).toBe(typed);
+    const typed = searchTyped(searchTyped(opened(), "pai"), "pain");
+    expect(searchAnswered(typed, "pai", [result("a.md")])).toBe(typed);
   });
 
   it("ignore une réponse arrivée après la fin de la recherche", () => {
     expect(searchAnswered(opened(), "pain", [result("a.md")])).toEqual(opened());
+  });
+
+  it("garde un texte trop court sans résultat, et oublie ceux d'avant", () => {
+    const answered = searchAnswered(searchTyped(opened(), "pain"), "pain", [result("a.md")]);
+    expect(searchOf(searchTyped(answered, "pa"))).toEqual({ query: "pa", results: null });
+  });
+
+  it("ne cherche qu'à partir de trois caractères, sauf pour un nombre", () => {
+    expect(SEARCH_MIN_LENGTH).toBe(3);
+    expect(searchable("pai")).toBe(true);
+    expect(searchable(" pa ")).toBe(false);
+    expect(searchable("a b")).toBe(true);
+    expect(searchable("4")).toBe(true);
+    expect(searchable("42")).toBe(true);
+    expect(searchable("4a")).toBe(false);
+    expect(searchable("a4")).toBe(false);
+    expect(searchable("")).toBe(false);
   });
 
   it("revient à la liste du dossier quand le champ est vidé", () => {

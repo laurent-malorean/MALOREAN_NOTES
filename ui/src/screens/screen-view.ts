@@ -1,5 +1,5 @@
 import { nameOf } from "../state/folders";
-import type { Screen } from "../state/screen";
+import { type Screen, searchable } from "../state/screen";
 import { type FolderActions, renderFoldersList } from "./folders-list";
 import type { Layout } from "./layout";
 import { type NoteActions, renderNotesList } from "./notes-list";
@@ -41,7 +41,7 @@ export function renderScreen(layout: Layout, screen: Screen, actions: ScreenActi
       layout.searchField.value = screen.search?.query ?? "";
       if (screen.trash) {
         renderTrash(layout.notesList, screen.library.name, screen.trash, actions);
-      } else if (screen.search) {
+      } else if (screen.search && searchable(screen.search.query)) {
         renderSearchResults(
           layout.notesList,
           screen.library.name,
