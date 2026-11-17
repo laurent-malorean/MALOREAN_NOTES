@@ -1,5 +1,6 @@
 // Les colonnes d'édition à l'écran : une section par colonne, un séparateur entre deux voisines.
 import { type Columns, MAX_COLUMNS } from "../state/columns";
+import { renderTabs } from "./tabs-view";
 
 /** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément et la place des liens entrants. */
 export interface ColumnParts {
@@ -15,6 +16,10 @@ export interface ColumnsHandlers {
   removed(id: number): void;
   /** On a cliqué, ou tapé, dans cette colonne. */
   activate(id: number): void;
+  /** Montrer la note d'un onglet. */
+  activateTab(tabId: number): void;
+  /** Fermer un onglet. */
+  closeTab(tabId: number): void;
   /** Diviser la colonne active. */
   split(): void;
   /** Le séparateur `divider` glisse de `delta`, en part de la zone d'édition. */
@@ -26,9 +31,10 @@ export interface ColumnsView {
   render(columns: Columns): void;
 }
 
-/** Une colonne à l'écran : ses parties, son bouton « Diviser », et le séparateur à sa gauche. */
+/** Une colonne à l'écran : ses parties, ses onglets, son bouton « Diviser », le séparateur à sa gauche. */
 interface ShownColumn {
   readonly parts: ColumnParts;
+  readonly tabs: HTMLElement;
   readonly split: HTMLButtonElement;
   readonly divider: HTMLElement;
 }
@@ -42,18 +48,27 @@ function columnElement(id: number, container: HTMLElement, handlers: ColumnsHand
   element.addEventListener("focusin", () => handlers.activate(id));
   const header = document.createElement("header");
   header.className = "column-header";
+  const tabs = document.createElement("div");
+  tabs.className = "tabs";
+  tabs.setAttribute("role", "tablist");
+  tabs.setAttribute("aria-label", "Onglets");
   const split = document.createElement("button");
   split.className = "icon column-split";
   split.title = "Diviser la colonne";
   split.textContent = "◫";
   split.addEventListener("click", () => handlers.split());
-  header.append(split);
+  header.append(tabs, split);
   const backlinks = document.createElement("nav");
   backlinks.className = "backlinks";
   backlinks.setAttribute("aria-label", "Liens entrants");
   backlinks.hidden = true;
   element.append(header, backlinks);
-  return { parts: { element, backlinks }, split, divider: dividerElement(container, handlers) };
+  return {
+    parts: { element, backlinks },
+    tabs,
+    split,
+    divider: dividerElement(container, handlers),
+  };
 }
 
 /** Le séparateur suit le pointeur, aussi loin que les largeurs minimales le permettent. */
@@ -100,6 +115,10 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
         entry.parts.element.style.flexGrow = String(column.width);
         entry.parts.element.classList.toggle("active", column.id === columns.active);
         entry.split.hidden = columns.list.length >= MAX_COLUMNS;
+        renderTabs(entry.tabs, column, {
+          activate: handlers.activateTab,
+          close: handlers.closeTab,
+        });
         if (index === 0) return [entry.parts.element];
         entry.divider.dataset.index = String(index - 1);
         return [entry.divider, entry.parts.element];

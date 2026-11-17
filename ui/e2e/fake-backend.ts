@@ -83,9 +83,12 @@ function freeName(folder: string, wanted: string, current?: string): string {
 const fingerprintOf = (content: string) =>
   [...content].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 7).toString(16);
 
+const displayedTitle = (content: string) => titleOf(content) ?? "Sans titre";
+
 const noteContent = (path: string, content: string) => ({
   path,
   content,
+  title: displayedTitle(content),
   fingerprint: fingerprintOf(content),
 });
 
@@ -108,7 +111,12 @@ function save(path: string, content: string, fingerprint: string) {
   const target = freeName(folderOf(path), slug(titleOf(content)), path);
   Reflect.deleteProperty(backend.notes, path);
   backend.notes[target] = { content, modified: (clock += 1) };
-  return { path: target, fingerprint: fingerprintOf(content), conflictCopy };
+  return {
+    path: target,
+    title: displayedTitle(content),
+    fingerprint: fingerprintOf(content),
+    conflictCopy,
+  };
 }
 
 const moved = (path: string, from: string, to: string) =>

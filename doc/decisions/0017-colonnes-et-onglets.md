@@ -23,4 +23,5 @@ On veut voir une note pendant qu'on en écrit une autre, comme dans Obsidian : j
 - L'état se teste sans navigateur, cas par cas ; les fonctions à venir (fermer une colonne, glisser un onglet, raccourcis, relancement) n'ont qu'à ajouter une transition et son test.
 - Un onglet qui n'est pas affiché ne garde ni la position du curseur ni l'historique d'annulation : ils sont perdus au changement d'onglet. Garder un état d'éditeur par onglet pourra venir ensuite.
 - La même note ouverte dans deux colonnes a deux enregistrements automatiques ; les garder identiques pendant la frappe est une étape suivante.
+- Fermer le dernier onglet d'une colonne la laisse vide, pour l'instant ; elle ne se ferme pas d'elle-même.
 - Les colonnes ne sont pas encore gardées d'un lancement à l'autre.

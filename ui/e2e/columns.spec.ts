@@ -100,3 +100,35 @@ test("glisser le séparateur règle la largeur des deux colonnes voisines", asyn
   await expect.poll(() => widthOf(0)).toBeGreaterThan(before + 100);
   expect(await widthOf(1)).toBeLessThan(before - 100);
 });
+
+const tabs = (page: Page, index: number) => columns(page).nth(index).getByRole("tab");
+
+test("chaque colonne montre l'onglet de sa note, à son titre, qui suit le titre tapé", async ({
+  page,
+}) => {
+  await launch(page);
+  await expect(tabs(page, 0)).toHaveText(["Courses×"]);
+  await expect(tabs(page, 0).first()).toHaveAttribute("aria-selected", "true");
+  await split(page).click();
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await expect(tabs(page, 1)).toHaveText(["Idée×"]);
+  await expect(tabs(page, 0)).toHaveText(["Courses×"]);
+  await firstLine(page, 1).click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" neuve");
+  await expect(tabs(page, 1)).toHaveText(["Idée neuve×"]);
+});
+
+test("fermer l'onglet enregistre ce qui est tapé et laisse la colonne vide", async ({ page }) => {
+  await launch(page);
+  await columns(page).nth(0).locator(".cm-line").last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(" bio");
+  await tabs(page, 0).first().getByRole("button", { name: "Fermer l'onglet" }).click();
+  await expect(tabs(page, 0)).toHaveCount(0);
+  await expect(columns(page).nth(0).locator(".cm-line")).toHaveCount(1);
+  await expect(columns(page).nth(0).locator(".cm-placeholder")).toBeVisible();
+  expect(await savedContent(page, "courses.md")).toBe("# Courses\n- pain bio");
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await expect(tabs(page, 0)).toHaveText(["Idée×"]);
+});

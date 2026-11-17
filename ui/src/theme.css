@@ -71,6 +71,8 @@
   --folder-indent: 0.9rem;
   --sidebar-width: 280px;
   --divider-width: 5px;
+  --tab-max-width: 14rem;
+  --tab-text-size: 12px;
 }
 
 /* Réglages d'affichage */

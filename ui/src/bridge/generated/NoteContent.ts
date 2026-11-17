@@ -13,6 +13,10 @@ path: string,
  */
 content: string, 
 /**
+ * Le titre affiché : le titre `#`, ou « Sans titre ».
+ */
+title: string, 
+/**
  * L'empreinte de ce contenu, à renvoyer à l'enregistrement : si le fichier a changé
  * ailleurs entre-temps, sa version est gardée dans une copie de conflit.
  */

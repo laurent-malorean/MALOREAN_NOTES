@@ -21,6 +21,7 @@ const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0));
 /** La réponse de Rust à un enregistrement, sans conflit. */
 const result = (path: string, fingerprint = "f-enregistree"): SaveResult => ({
   path,
+  title: "Titre",
   fingerprint,
   conflictCopy: null,
 });
@@ -280,7 +281,12 @@ describe("enregistrement automatique : empreinte de la note", () => {
       path: "a.md",
       fingerprint: "f-lue",
       scheduler: manualScheduler().scheduler,
-      save: async () => ({ path: "a.md", fingerprint: "f", conflictCopy: "a (conflit).md" }),
+      save: async () => ({
+        path: "a.md",
+        title: "A",
+        fingerprint: "f",
+        conflictCopy: "a (conflit).md",
+      }),
       onSaved: (done) => copies.push(done.conflictCopy),
     });
     autosave.edit("v1");

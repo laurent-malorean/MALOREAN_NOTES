@@ -20,7 +20,7 @@ function fakeBackend(notes: Record<string, string>) {
       await gates[`lire ${path}`];
       const content = notes[path];
       if (content === undefined) throw new Error(`${path} absente`);
-      return { path, content, fingerprint: content };
+      return { path, content, title: `titre de ${content}`, fingerprint: content };
     },
     saveNote: (path, content, fingerprint) => {
       calls.push(`enregistrer ${path} ${fingerprint}`);
@@ -28,7 +28,12 @@ function fakeBackend(notes: Record<string, string>) {
       const renamed = content.startsWith("# Nouveau") ? "nouveau.md" : path;
       Reflect.deleteProperty(notes, path);
       notes[renamed] = content;
-      const result: SaveResult = { path: renamed, fingerprint: content, conflictCopy: null };
+      const result: SaveResult = {
+        path: renamed,
+        title: content,
+        fingerprint: content,
+        conflictCopy: null,
+      };
       return Promise.resolve(result);
     },
     listBacklinks: async (path) => {
@@ -76,6 +81,7 @@ function mount(notes: Record<string, string> = { "a.md": "# A", "b.md": "# B" })
   const fake = fakeBackend(notes);
   const timer = manualScheduler();
   const events: string[] = [];
+  const titles: string[] = [];
   const errors: string[] = [];
   const images: string[] = [];
   const pane = createPane(parts, {
@@ -83,6 +89,7 @@ function mount(notes: Record<string, string> = { "a.md": "# A", "b.md": "# B" })
     scheduler: timer.scheduler,
     events: {
       saved: (from, result) => events.push(`enregistrée ${from} → ${result.path}`),
+      titled: (path, title) => titles.push(`${path} : ${title}`),
       openNote: (path) => events.push(`ouvrir ${path}`),
       openLink: (title) => events.push(`lien ${title}`),
       deleted: () => events.push("supprimée"),
@@ -98,7 +105,7 @@ function mount(notes: Record<string, string> = { "a.md": "# A", "b.md": "# B" })
     const editor = view() as EditorView;
     editor.dispatch({ changes: { from: editor.state.doc.length, insert: text } });
   };
-  return { pane, parts, ...fake, ...timer, events, errors, images, view, type };
+  return { pane, parts, ...fake, ...timer, events, titles, errors, images, view, type };
 }
 
 const text = (m: ReturnType<typeof mount>) => m.view()?.state.doc.toString();
@@ -111,6 +118,7 @@ describe("colonne : la note qu'elle montre", () => {
     await m.pane.load("a.md");
     expect(m.pane.note()).toBe("a.md");
     expect(text(m)).toBe("# A");
+    expect(m.titles).toEqual(["a.md : titre de # A"]);
     await expect.poll(() => m.parts.backlinks.textContent).toContain("B");
     m.parts.backlinks.querySelector("button")?.click();
     expect(m.events).toEqual(["ouvrir b.md"]);
@@ -153,6 +161,7 @@ describe("colonne : la note qu'elle montre", () => {
     await first;
     expect(m.pane.note()).toBe("b.md");
     expect(text(m)).toBe("# B");
+    expect(m.titles).toEqual(["b.md : titre de # B"]);
     m.type("?");
     await m.pane.flush();
     expect(m.notes["b.md"]).toBe("# B?");
@@ -199,6 +208,7 @@ describe("colonne : enregistrement de ce qu'on tape", () => {
         backend: fake.backend,
         events: {
           saved: () => {},
+          titled: () => {},
           openNote: () => {},
           openLink: () => {},
           deleted: () => {},
@@ -270,6 +280,7 @@ describe("colonne : la note a changé sur le disque", () => {
     m.notes["a.md"] = "# A changée";
     await m.pane.followDisk();
     expect(text(m)).toBe("# A changée");
+    expect(m.titles).toEqual(["a.md : titre de # A", "a.md : titre de # A changée"]);
     m.type("!");
     await m.pane.flush();
     expect(m.calls).toContain("enregistrer a.md # A changée");

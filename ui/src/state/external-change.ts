@@ -5,7 +5,12 @@ export type Reaction =
   /** Le disque a la version que l'on connaît : c'est notre propre enregistrement. */
   | { readonly kind: "ignore" }
   /** Rien n'attend d'être enregistré : on montre la nouvelle version. */
-  | { readonly kind: "reload"; readonly content: string; readonly fingerprint: string }
+  | {
+      readonly kind: "reload";
+      readonly content: string;
+      readonly title: string;
+      readonly fingerprint: string;
+    }
   /** Changée des deux côtés : on enregistre ce qui est tapé, Rust garde l'autre version à côté. */
   | { readonly kind: "conflict" }
   /** Supprimée : le texte reste à l'écran, la note est recréée à la prochaine modification. */
@@ -19,7 +24,12 @@ export function reactionToChange(disk: NoteContent | null, known: string, idle: 
   if (disk === null) return { kind: "deleted" };
   if (disk.fingerprint === known) return { kind: "ignore" };
   if (!idle) return { kind: "conflict" };
-  return { kind: "reload", content: disk.content, fingerprint: disk.fingerprint };
+  return {
+    kind: "reload",
+    content: disk.content,
+    title: disk.title,
+    fingerprint: disk.fingerprint,
+  };
 }
 
 /** Le changement annoncé concerne-t-il la note ouverte ? */

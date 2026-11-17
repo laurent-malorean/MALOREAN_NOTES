@@ -67,7 +67,7 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
   });
 
   it("enregistre une note avec son nom, son contenu et l'empreinte connue", async () => {
-    const answer = { path: "b.md", fingerprint: "f2", conflictCopy: null };
+    const answer = { path: "b.md", title: "B", fingerprint: "f2", conflictCopy: null };
     const calls = recordCalls(answer);
     expect(await bridge.saveNote("a.md", "# B", "f1")).toEqual(answer);
     expect(calls).toEqual([

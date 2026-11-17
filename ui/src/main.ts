@@ -54,6 +54,10 @@ import {
   noteShown,
   notesMoved,
   notesRemoved,
+  noteTitled,
+  shownNote,
+  tabActivated,
+  tabClosed,
 } from "./state/columns";
 import { type ColumnParts, createColumnsView } from "./screens/columns-view";
 import { createPane, type Pane } from "./screens/note-pane";
@@ -85,7 +89,8 @@ async function flushedPath(path: string): Promise<string> {
 
 /** Ce qui est tapé dans une colonne est enregistré : la note a peut-être changé de nom. */
 function noteSaved(from: string, saved: bridge.SaveResult) {
-  run(changeColumns(notesMoved(columns, (path) => (path === from ? saved.path : path))));
+  const moved = notesMoved(columns, (path) => (path === from ? saved.path : path));
+  run(changeColumns(noteTitled(moved, saved.path, saved.title)));
   if (saved.conflictCopy !== null) {
     showMessage(
       `Cette note a aussi changé hors de l'application : l'autre version est gardée dans « ${saved.conflictCopy} ».`,
@@ -101,6 +106,7 @@ function paneIn(parts: ColumnParts): Pane {
     backend: bridge,
     events: {
       saved: noteSaved,
+      titled: (path, title) => run(changeColumns(noteTitled(columns, path, title))),
       openNote: (path) => actions.open(path),
       openLink: (title) => run(followLink(title)),
       deleted: () =>
@@ -295,7 +301,7 @@ async function changeColumns(next: Columns) {
     outlineOwner = active;
   }
   if (selectedNote(screen) !== activeNote(columns)) show(noteSelected(screen, activeNote(columns)));
-  await Promise.all(columns.list.map((column) => panes.get(column.id)?.load(column.note)));
+  await Promise.all(columns.list.map((column) => panes.get(column.id)?.load(shownNote(column))));
 }
 
 const columnsView = createColumnsView(layout.columns, {
@@ -309,6 +315,8 @@ const columnsView = createColumnsView(layout.columns, {
   activate: (id) => {
     if (id !== columns.active) run(changeColumns(columnActivated(columns, id)));
   },
+  activateTab: (tabId) => run(changeColumns(tabActivated(columns, tabId))),
+  closeTab: (tabId) => run(changeColumns(tabClosed(columns, tabId))),
   split: () => run(splitColumn()),
   resize: (divider, delta) => run(changeColumns(columnsResized(columns, divider, delta))),
 });
@@ -319,7 +327,7 @@ async function splitColumn() {
   await changeColumns(columnSplit(columns));
 }
 
-/** La colonne active montre cette note (ou aucune) à la place de la sienne. */
+/** L'onglet actif de la colonne active montre cette note à la place de la sienne. */
 const showNote = (path: string | null) => changeColumns(noteShown(columns, path));
 
 /** Ouvre une note dans la colonne active. */

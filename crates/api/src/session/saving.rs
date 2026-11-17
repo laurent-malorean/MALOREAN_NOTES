@@ -1,6 +1,7 @@
 //! Enregistrer une note de la bibliothèque ouverte, sans jamais écraser une version écrite ailleurs.
 
 use application::use_cases::SaveNote;
+use domain::title::displayed_title;
 use domain::{Fingerprint, NotePath};
 
 use super::Session;
@@ -29,6 +30,7 @@ impl Session {
         )?;
         Ok(SaveResult {
             path: saved.path.to_path(),
+            title: displayed_title(content),
             fingerprint: saved.fingerprint.as_str().to_owned(),
             conflict_copy: saved.conflict_copy.as_ref().map(NotePath::to_path),
         })
@@ -62,15 +64,28 @@ mod tests {
         let session = opened(&[("a.md", "# Alpha")]);
         let read = session.read_note("a.md").unwrap();
         assert_eq!(read.content, "# Alpha");
+        assert_eq!(read.title, "Alpha");
         let saved = session
             .save_note("a.md", "# Bêta", &read.fingerprint)
             .unwrap();
         assert_eq!(saved.path, "beta.md");
+        assert_eq!(saved.title, "Bêta");
         assert_eq!(saved.conflict_copy, None);
         assert_eq!(
             saved.fingerprint,
             session.read_note("beta.md").unwrap().fingerprint
         );
+    }
+
+    #[test]
+    fn a_note_without_heading_is_untitled() {
+        let session = opened(&[("a.md", "texte")]);
+        assert_eq!(session.read_note("a.md").unwrap().title, "Sans titre");
+        let read = session.read_note("a.md").unwrap();
+        let saved = session
+            .save_note("a.md", "encore", &read.fingerprint)
+            .unwrap();
+        assert_eq!(saved.title, "Sans titre");
     }
 
     #[test]

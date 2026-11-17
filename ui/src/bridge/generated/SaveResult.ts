@@ -9,6 +9,10 @@ export type SaveResult = {
  */
 path: string, 
 /**
+ * Le titre affiché de ce qui vient d'être écrit : le titre `#`, ou « Sans titre ».
+ */
+title: string, 
+/**
  * L'empreinte de ce qui vient d'être écrit, à renvoyer au prochain enregistrement.
  */
 fingerprint: string, 

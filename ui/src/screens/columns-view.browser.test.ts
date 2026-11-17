@@ -16,6 +16,7 @@ function mount() {
   const removed: number[] = [];
   const activated: number[] = [];
   const resized: { divider: number; delta: number }[] = [];
+  const tabs: string[] = [];
   let splits = 0;
   const view = createColumnsView(container, {
     created: (id, parts) => created.push({ id, parts, connected: parts.element.isConnected }),
@@ -23,12 +24,19 @@ function mount() {
     activate: (id) => activated.push(id),
     split: () => (splits += 1),
     resize: (divider, delta) => resized.push({ divider, delta }),
+    activateTab: (tab) => tabs.push(`activer ${tab}`),
+    closeTab: (tab) => tabs.push(`fermer ${tab}`),
   });
-  return { container, view, created, removed, activated, resized, splits: () => splits };
+  return { container, view, created, removed, activated, resized, tabs, splits: () => splits };
 }
 
 const state = (widths: readonly number[], active = 0, ids = widths.map((_, i) => i)): Columns => ({
-  list: widths.map((width, index) => ({ id: ids[index] as number, note: null, width })),
+  list: widths.map((width, index) => ({
+    id: ids[index] as number,
+    tabs: [],
+    activeTab: null,
+    width,
+  })),
   active,
   nextId: widths.length,
 });
@@ -112,9 +120,48 @@ describe("colonnes à l'écran", () => {
     const column = sections(container)[0] as HTMLElement;
     expect(column.getAttribute("aria-label")).toBe("Colonne");
     const header = column.querySelector(".column-header") as HTMLElement;
-    expect(header.firstElementChild).toBe(splitButton(column));
+    expect(header.lastElementChild).toBe(splitButton(column));
+    const tablist = header.firstElementChild as HTMLElement;
+    expect(tablist.getAttribute("role")).toBe("tablist");
+    expect(tablist.getAttribute("aria-label")).toBe("Onglets");
+    expect(tablist.className).toBe("tabs");
     expect(splitButton(column).textContent).toBe("◫");
     expect(column.querySelector(".backlinks")?.getAttribute("aria-label")).toBe("Liens entrants");
+  });
+
+  it("montre les onglets de chaque colonne, et transmet leurs clics", () => {
+    const { container, view, tabs } = mount();
+    const columns: Columns = {
+      list: [
+        { id: 0, tabs: [{ id: 1, note: "a.md", title: "A" }], activeTab: 1, width: 0.5 },
+        {
+          id: 2,
+          tabs: [
+            { id: 3, note: "b.md", title: "B" },
+            { id: 4, note: "c.md", title: null },
+          ],
+          activeTab: 4,
+          width: 0.5,
+        },
+      ],
+      active: 2,
+      nextId: 5,
+    };
+    view.render(columns);
+    const second = sections(container)[1] as HTMLElement;
+    const labels = [...second.querySelectorAll('[role="tab"]')].map((t) => t.textContent);
+    expect(labels).toEqual(["B×", "c×"]);
+    second.querySelector<HTMLElement>('[role="tab"]')?.click();
+    second.querySelector<HTMLElement>(".tab-close")?.click();
+    expect(tabs).toEqual(["activer 3", "fermer 3"]);
+    view.render({
+      ...columns,
+      list: [
+        columns.list[0] as (typeof columns.list)[0],
+        { ...(columns.list[1] as (typeof columns.list)[0]), tabs: [], activeTab: null },
+      ],
+    });
+    expect(second.querySelectorAll('[role="tab"]')).toHaveLength(0);
   });
 
   it("un clic ou le focus dans une colonne la rend active, avant tout autre effet du clic", () => {

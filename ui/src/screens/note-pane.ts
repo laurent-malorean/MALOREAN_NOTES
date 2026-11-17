@@ -27,6 +27,8 @@ export interface PaneBackend {
 export interface PaneEvents {
   /** Ce qui était tapé est enregistré : la note `from` porte désormais le chemin `result.path`. */
   readonly saved: (from: string, result: SaveResult) => void;
+  /** La note `path` a été lue : voici son titre affiché. */
+  readonly titled: (path: string, title: string) => void;
   /** Ouvrir une note des liens entrants. */
   readonly openNote: (path: string) => void;
   /** Ouvrir la note visée par un lien `[[titre]]`. */
@@ -106,6 +108,7 @@ class NotePane implements Pane {
     if (this.shown !== path) return;
     this.autosave = this.edit(read);
     this.editor.show(read.content);
+    this.options.events.titled(read.path, read.title);
   }
 
   async flush(): Promise<void> {
@@ -132,6 +135,7 @@ class NotePane implements Pane {
     if (reaction.kind === "reload") {
       editing.adopt(reaction.fingerprint);
       this.editor.reload(reaction.content);
+      this.options.events.titled(this.shown, reaction.title);
     } else if (reaction.kind === "conflict") await editing.flush();
     else if (reaction.kind === "deleted") this.options.events.deleted();
   }

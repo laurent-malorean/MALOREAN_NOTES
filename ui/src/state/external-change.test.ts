@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { keptPosition, reactionToChange, touchesNote } from "./external-change";
 
-const disk = (content: string, fingerprint: string) => ({ path: "a.md", content, fingerprint });
+const disk = (content: string, fingerprint: string) => ({
+  path: "a.md",
+  content,
+  title: "A",
+  fingerprint,
+});
 
 describe("note ouverte changée hors de l'application", () => {
   it("ne fait rien quand le disque a la version que l'on connaît", () => {
@@ -12,6 +17,7 @@ describe("note ouverte changée hors de l'application", () => {
     expect(reactionToChange(disk("nouveau", "f2"), "f1", true)).toEqual({
       kind: "reload",
       content: "nouveau",
+      title: "A",
       fingerprint: "f2",
     });
   });

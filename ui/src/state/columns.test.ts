@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   activeColumn,
   activeNote,
+  type Column,
   type Columns,
   columnActivated,
   columnSplit,
@@ -12,14 +13,23 @@ import {
   noteShown,
   notesMoved,
   notesRemoved,
+  noteTitled,
+  shownNote,
+  tabActivated,
+  tabClosed,
 } from "./columns";
 
-/** Trois colonnes : `a.md` à gauche, `b.md` au milieu (active), rien à droite. */
+const tab = (id: number, note: string, title: string | null = null) => ({ id, note, title });
+
+/**
+ * Trois colonnes : à gauche `a.md` et `c.md` (actif : `a.md`), au milieu `b.md` (colonne active),
+ * à droite aucun onglet.
+ */
 const three: Columns = {
   list: [
-    { id: 0, note: "a.md", width: 0.5 },
-    { id: 3, note: "b.md", width: 0.3 },
-    { id: 5, note: null, width: 0.2 },
+    { id: 0, tabs: [tab(1, "a.md", "A"), tab(2, "c.md")], activeTab: 1, width: 0.5 },
+    { id: 3, tabs: [tab(4, "b.md")], activeTab: 4, width: 0.3 },
+    { id: 5, tabs: [], activeTab: null, width: 0.2 },
   ],
   active: 3,
   nextId: 6,
@@ -31,20 +41,20 @@ function expectWidths(columns: Columns, expected: readonly number[]) {
   expect(widths(columns)).toHaveLength(expected.length);
   expected.forEach((width, index) => expect(widths(columns)[index]).toBeCloseTo(width, 9));
 }
-const notes = (columns: Columns) => columns.list.map((column) => column.note);
+const shown = (columns: Columns) => columns.list.map(shownNote);
+const notesOf = (column: Column | undefined) => column?.tabs.map((t) => t.note);
+const column = (columns: Columns, index: number) => columns.list[index] as Column;
 
 describe("colonnes", () => {
-  it("au lancement, une seule colonne, active, toute la largeur et sans note", () => {
-    expect(columnsStarted.list).toEqual([{ id: 0, note: null, width: 1 }]);
+  it("au lancement, une seule colonne, active, toute la largeur et sans onglet", () => {
+    expect(columnsStarted.list).toEqual([{ id: 0, tabs: [], activeTab: null, width: 1 }]);
     expect(activeColumn(columnsStarted).id).toBe(0);
     expect(activeNote(columnsStarted)).toBeNull();
   });
 
-  it("la colonne active montre la note ouverte, les autres gardent la leur", () => {
-    const next = noteShown(three, "c.md");
-    expect(notes(next)).toEqual(["a.md", "c.md", null]);
-    expect(activeNote(next)).toBe("c.md");
-    expect(notes(noteShown(three, null))).toEqual(["a.md", null, null]);
+  it("une colonne montre la note de son onglet actif", () => {
+    expect(shown(three)).toEqual(["a.md", "b.md", null]);
+    expect(activeNote(three)).toBe("b.md");
   });
 
   it("la colonne où l'on clique devient active ; un identifiant inconnu ne change rien", () => {
@@ -52,29 +62,34 @@ describe("colonnes", () => {
     expect(columnActivated(three, 4)).toBe(three);
   });
 
-  it("diviser ouvre à droite de la colonne active une colonne sur la même note, qui devient active", () => {
-    const next = columnSplit(noteShown(columnsStarted, "a.md"));
-    expect(next.list).toEqual([
-      { id: 0, note: "a.md", width: 0.5 },
-      { id: 1, note: "a.md", width: 0.5 },
-    ]);
-    expect(next.active).toBe(1);
-    expect(next.nextId).toBe(2);
+  it(`diviser ouvre à droite une colonne sur la note active, dans un onglet à elle, qui devient active`, () => {
+    const two: Columns = { ...three, list: three.list.slice(0, 2) };
+    const next = columnSplit(columnActivated(two, 0));
+    expect(next.list.map((c) => c.id)).toEqual([0, 6, 3]);
+    expect(column(next, 1)).toEqual({
+      id: 6,
+      tabs: [tab(7, "a.md", "A")],
+      activeTab: 7,
+      width: 0.25,
+    });
+    expect(column(next, 0).width).toBe(0.25);
+    expect(next.active).toBe(6);
+    expect(next.nextId).toBe(8);
   });
 
-  it("diviser une colonne du milieu insère la nouvelle juste après elle", () => {
-    const two: Columns = {
-      list: [
-        { id: 0, note: "a.md", width: 0.6 },
-        { id: 1, note: "b.md", width: 0.4 },
-      ],
-      active: 0,
-      nextId: 2,
-    };
-    const next = columnSplit(two);
-    expect(next.list.map((column) => column.id)).toEqual([0, 2, 1]);
-    expect(widths(next)).toEqual([0.3, 0.3, 0.4]);
-    expect(notes(next)).toEqual(["a.md", "a.md", "b.md"]);
+  it("diviser copie l'onglet actif de la colonne, pas un autre", () => {
+    const two: Columns = { ...three, list: three.list.slice(0, 2) };
+    const next = columnSplit(tabActivated(two, 2));
+    expect(column(next, 1).tabs).toEqual([tab(7, "c.md")]);
+  });
+
+  it("diviser une colonne sans onglet ouvre une colonne sans onglet", () => {
+    const next = columnSplit(columnsStarted);
+    expect(next.list).toEqual([
+      { id: 0, tabs: [], activeTab: null, width: 0.5 },
+      { id: 1, tabs: [], activeTab: null, width: 0.5 },
+    ]);
+    expect(next.active).toBe(1);
   });
 
   it(`pas plus de ${MAX_COLUMNS} colonnes`, () => {
@@ -96,20 +111,100 @@ describe("colonnes", () => {
     expect(columnsResized(three, 2, 0.1)).toBe(three);
     expect(columnsResized(three, -1, 0.1)).toBe(three);
   });
+});
 
-  it("les notes renommées ou déplacées sont suivies dans toutes les colonnes", () => {
+describe("onglets", () => {
+  it("seul l'onglet actif change de note", () => {
+    const next = noteShown(columnActivated(three, 0), "d.md");
+    expect(column(next, 0).tabs).toEqual([tab(1, "d.md"), tab(2, "c.md")]);
+  });
+
+  it("l'onglet actif de la colonne active montre la note choisie à la place de la sienne, sans titre encore", () => {
+    const next = noteShown(three, "d.md");
+    expect(column(next, 1).tabs).toEqual([tab(4, "d.md")]);
+    expect(column(next, 0)).toBe(column(three, 0));
+    expect(next.nextId).toBe(6);
+  });
+
+  it("sans note à montrer, rien ne change", () => {
+    expect(noteShown(three, null)).toBe(three);
+  });
+
+  it("une note déjà ouverte dans la colonne active y retrouve son onglet", () => {
+    const next = noteShown(columnActivated(three, 0), "c.md");
+    expect(column(next, 0).tabs).toEqual(column(three, 0).tabs);
+    expect(activeNote(next)).toBe("c.md");
+  });
+
+  it("une colonne sans onglet en ouvre un pour montrer la note", () => {
+    const next = noteShown(columnActivated(three, 5), "d.md");
+    expect(column(next, 2)).toEqual({ id: 5, tabs: [tab(6, "d.md")], activeTab: 6, width: 0.2 });
+    expect(next.nextId).toBe(7);
+  });
+
+  it("cliquer un onglet le rend actif, et sa colonne aussi ; un onglet inconnu ne change rien", () => {
+    const next = tabActivated(three, 2);
+    expect(next.active).toBe(0);
+    expect(activeNote(next)).toBe("c.md");
+    expect(column(next, 1)).toBe(column(three, 1));
+    expect(column(next, 2)).toBe(column(three, 2));
+    expect(tabActivated(three, 9)).toBe(three);
+  });
+
+  it("fermer l'onglet actif rend actif son voisin de droite, sinon de gauche", () => {
+    const row: Columns = {
+      list: [
+        { id: 0, tabs: [tab(1, "x.md"), tab(2, "y.md"), tab(3, "z.md")], activeTab: 2, width: 1 },
+      ],
+      active: 0,
+      nextId: 4,
+    };
+    expect(column(tabClosed(row, 2), 0).activeTab).toBe(3);
+    expect(column(tabClosed(row, 1), 0).activeTab).toBe(2);
+    const wide: Columns = {
+      ...row,
+      list: [{ ...column(row, 0), tabs: [tab(0, "w.md"), ...column(row, 0).tabs] }],
+    };
+    expect(column(tabClosed(wide, 2), 0).activeTab).toBe(3);
+    expect(column(tabClosed(tabActivated(row, 3), 3), 0).activeTab).toBe(2);
+    expect(column(tabClosed(three, 1), 0).activeTab).toBe(2);
+    const right = tabClosed(tabActivated(three, 2), 2);
+    expect(column(right, 0)).toEqual({ ...column(three, 0), tabs: [tab(1, "a.md", "A")] });
+  });
+
+  it("fermer un autre onglet garde l'onglet actif ; le dernier onglet fermé laisse la colonne vide", () => {
+    const next = tabClosed(three, 2);
+    expect(column(next, 0).activeTab).toBe(1);
+    expect(notesOf(column(next, 0))).toEqual(["a.md"]);
+    const empty = tabClosed(three, 4);
+    expect(column(empty, 1)).toEqual({ id: 3, tabs: [], activeTab: null, width: 0.3 });
+  });
+
+  it("fermer un onglet qui n'existe pas ne change rien", () => {
+    expect(column(tabClosed(three, 9), 0)).toBe(column(three, 0));
+  });
+
+  it("les notes renommées ou déplacées sont suivies dans tous leurs onglets", () => {
     const next = notesMoved(three, (path) => `Travail/${path}`);
-    expect(notes(next)).toEqual(["Travail/a.md", "Travail/b.md", null]);
+    expect(next.list.map(notesOf)).toEqual([
+      ["Travail/a.md", "Travail/c.md"],
+      ["Travail/b.md"],
+      [],
+    ]);
+    expect(column(next, 0).tabs[0]?.title).toBe("A");
   });
 
-  it("seules les colonnes qui montrent une note sont concernées par la corbeille", () => {
-    const asked: string[] = [];
-    notesRemoved(three, (path) => (asked.push(path), false));
-    expect(asked).toEqual(["a.md", "b.md"]);
-  });
-
-  it("une note mise à la corbeille quitte les colonnes qui la montraient", () => {
+  it("le titre lu ou enregistré d'une note va à tous ses onglets", () => {
     const both = noteShown(columnActivated(three, 5), "a.md");
-    expect(notes(notesRemoved(both, (path) => path === "a.md"))).toEqual([null, "b.md", null]);
+    const next = noteTitled(both, "a.md", "Alpha");
+    expect(column(next, 0).tabs).toEqual([tab(1, "a.md", "Alpha"), tab(2, "c.md")]);
+    expect(column(next, 2).tabs).toEqual([tab(6, "a.md", "Alpha")]);
+  });
+
+  it("une note mise à la corbeille ferme tous ses onglets", () => {
+    const both = noteShown(columnActivated(three, 5), "a.md");
+    const next = notesRemoved(both, (path) => path === "a.md");
+    expect(next.list.map(notesOf)).toEqual([["c.md"], ["b.md"], []]);
+    expect(shown(next)).toEqual(["c.md", "b.md", null]);
   });
 });
