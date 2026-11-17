@@ -20,6 +20,23 @@ const panel = (parent: HTMLElement) => parent.querySelector<HTMLElement>(".cm-se
 const field = (parent: HTMLElement, name: string) =>
   parent.querySelector<HTMLInputElement>(`.cm-search input[name=${name}]`) as HTMLInputElement;
 
+// CodeMirror vide sa zone d'annonce 200 ms après l'avoir remplie : la lire après une frappe
+// dépend de la vitesse de la machine. On note chaque annonce au moment où elle s'affiche ;
+// chaque lecture rend les annonces parues depuis la précédente.
+function listenToAnnouncements(parent: HTMLElement) {
+  const heard: string[] = [];
+  const note = (records: MutationRecord[]) =>
+    records.forEach((record) =>
+      record.addedNodes.forEach((node) => heard.push(node.textContent ?? "")),
+    );
+  const observer = new MutationObserver(note);
+  observer.observe(parent.querySelector(".cm-announced") as HTMLElement, { childList: true });
+  return () => {
+    note(observer.takeRecords());
+    return heard.splice(0).join(" ");
+  };
+}
+
 describe("rechercher et remplacer dans la note ouverte", () => {
   it("Cmd+F ouvre la recherche, en français, le curseur dans le champ", async () => {
     const { parent } = mount("pain\nlait");
@@ -105,11 +122,12 @@ describe("rechercher et remplacer dans la note ouverte", () => {
 
   it("annonce en français l'occurrence trouvée et les remplacements", async () => {
     const { parent, view } = mount("pain\nlait\npain");
-    const announced = () => parent.querySelector(".cm-announced")?.textContent ?? "";
+    const announced = listenToAnnouncements(parent);
     await userEvent.keyboard("{Meta>}f{/Meta}");
     await userEvent.keyboard("pain{Enter}");
-    expect(announced()).toContain("occurrence en cours");
-    expect(announced()).toContain("à la ligne 1");
+    const found = announced();
+    expect(found).toContain("occurrence en cours");
+    expect(found).toContain("à la ligne 1");
     field(parent, "replace").focus();
     await userEvent.keyboard("brioche");
     parent.querySelector<HTMLButtonElement>(".cm-search button[name=replace]")?.click();

@@ -1,5 +1,5 @@
 import { EditorView, runScopeHandlers } from "@codemirror/view";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 import { createEditor } from "../editor";
 
@@ -196,10 +196,17 @@ describe("écriture : titre d'une note vide", () => {
   });
 
   it("annuler retire d'un coup le titre tapé, marque comprise", async () => {
-    const view = typing("");
-    await userEvent.keyboard("Liste");
-    await userEvent.keyboard("{Meta>}z{/Meta}");
-    expect(view.state.doc.toString()).toBe("");
+    // L'historique sépare deux frappes espacées de plus d'une demi-seconde, et la machine de
+    // test envoie les lettres une à une, parfois lentement : l'horloge arrêtée tape d'un trait.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const view = typing("");
+      await userEvent.keyboard("Liste");
+      await userEvent.keyboard("{Meta>}z{/Meta}");
+      expect(view.state.doc.toString()).toBe("");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("taper la marque soi-même ne la double pas", async () => {

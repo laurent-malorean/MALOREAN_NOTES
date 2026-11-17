@@ -1,5 +1,6 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { waitForTestFrame } from "./test-support/test-frame";
 
 // Port fixe : Tauri charge la page depuis cette adresse en développement.
 export default defineConfig({
@@ -22,8 +23,10 @@ export default defineConfig({
         test: {
           name: "écran",
           include: ["src/**/*.browser.test.ts"],
+          setupFiles: ["test-support/test-frame-setup.ts"],
           // WebKit : le même moteur que la fenêtre de l'application sur Mac.
           browser: {
+            commands: { waitForTestFrame },
             enabled: true,
             headless: true,
             provider: playwright(),
