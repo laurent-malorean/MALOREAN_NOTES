@@ -71,6 +71,12 @@ describe("éditeur : aperçu en direct dans la fenêtre", () => {
     expect(view.state.doc.toString()).toBe("seconde");
   });
 
+  it("se retire de l'écran quand sa colonne disparaît", () => {
+    const { parent, editor } = mount();
+    editor.destroy();
+    expect(parent.querySelector(".cm-editor")).toBeNull();
+  });
+
   it("donne le focus à l'éditeur", () => {
     const { editor, view } = mount();
     editor.focus();

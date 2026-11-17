@@ -5,11 +5,6 @@ export function initialSelection(notes: readonly NoteListItem[]): string | null 
   return notes[0]?.path ?? null;
 }
 
-/** La note sélectionnée après le renommage d'un fichier. */
-export function followRename(selected: string | null, from: string, to: string): string | null {
-  return selected === from ? to : selected;
-}
-
 /**
  * La note à ouvrir quand `removed` quitte la liste : la suivante, sinon la précédente ;
  * la première si `removed` n'y était pas.

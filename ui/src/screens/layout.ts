@@ -13,7 +13,8 @@ export interface Layout {
   readonly typewriterButton: HTMLButtonElement;
   readonly outlineButton: HTMLButtonElement;
   readonly outline: HTMLElement;
-  readonly backlinks: HTMLElement;
+  /** La zone des colonnes d'édition, à gauche du plan. */
+  readonly columns: HTMLElement;
   readonly fullScreenButton: HTMLButtonElement;
   readonly status: HTMLElement;
   readonly chooseButtons: readonly HTMLButtonElement[];
@@ -24,7 +25,7 @@ export interface Layout {
   readonly picker: HTMLDialogElement;
 }
 
-/** La fenêtre : accueil, colonnes, éditeur et ses outils, message, réglages. */
+/** La fenêtre : accueil, dossiers, liste des notes, outils et colonnes d'édition, message, réglages. */
 const TEMPLATE = `
     <section class="welcome">
       <h1>MALOREAN Notes</h1>
@@ -59,8 +60,8 @@ const TEMPLATE = `
           <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
           <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
         </div>
+        <div class="columns"></div>
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
-        <nav class="backlinks" aria-label="Liens entrants" hidden></nav>
       </main>
     </section>
     <div class="status" role="status"></div>
@@ -84,7 +85,7 @@ export function createLayout(root: HTMLElement): Layout {
     typewriterButton: find("[data-typewriter]"),
     outlineButton: find("[data-outline]"),
     outline: find(".outline"),
-    backlinks: find(".backlinks"),
+    columns: find(".columns"),
     fullScreenButton: find("[data-full-screen]"),
     status: find(".status"),
     chooseButtons: [...root.querySelectorAll<HTMLButtonElement>("[data-choose]")],

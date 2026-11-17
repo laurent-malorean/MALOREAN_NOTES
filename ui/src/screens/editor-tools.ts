@@ -13,7 +13,7 @@ export function showFocusUnit(button: HTMLElement, unit: FocusUnit | null): void
   button.setAttribute("aria-pressed", String(unit !== null));
 }
 
-/** En plein écran, seul le texte reste : colonnes des dossiers et des notes cachées. */
+/** En plein écran, seules les colonnes restent : listes des dossiers et des notes cachées. */
 export function showFullScreen(workspace: HTMLElement, button: HTMLElement, on: boolean): void {
   workspace.classList.toggle("full-screen", on);
   button.textContent = on ? "Quitter le plein écran" : "Plein écran";

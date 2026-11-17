@@ -1,6 +1,6 @@
 import type { LibraryInfo, NoteListItem, SearchResultItem, TrashInfo } from "../bridge";
 import { movedPath } from "./folders";
-import { followRename, initialSelection } from "./selection";
+import { initialSelection } from "./selection";
 
 /**
  * Une recherche en cours : les mots tapés et les notes trouvées à la dernière réponse
@@ -82,13 +82,6 @@ export function notesRefreshed(screen: Screen, notes: readonly NoteListItem[]): 
 /** La même bibliothèque, avec une autre note sélectionnée (ou aucune). */
 export function noteSelected(screen: Screen, path: string | null): Screen {
   return screen.kind === "library" ? { ...screen, selected: path } : screen;
-}
-
-/** La même bibliothèque, après le renommage d'un fichier de note. */
-export function noteRenamed(screen: Screen, from: string, to: string): Screen {
-  return screen.kind === "library"
-    ? { ...screen, selected: followRename(screen.selected, from, to) }
-    : screen;
 }
 
 /** La recherche tapée : elle commence, continue avec les résultats précédents, ou s'arrête si vide. */

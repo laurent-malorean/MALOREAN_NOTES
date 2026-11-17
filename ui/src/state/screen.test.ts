@@ -6,7 +6,6 @@ import {
   folderSelected,
   foldersRefreshed,
   libraryOpened,
-  noteRenamed,
   noteSelected,
   notesRefreshed,
   searchAnswered,
@@ -73,20 +72,6 @@ describe("état de l'écran", () => {
     });
   });
 
-  it("suit la note sélectionnée quand son fichier est renommé", () => {
-    const screen = noteRenamed(libraryOpened(library, [], [note("a.md", 1)]), "a.md", "b.md");
-    expect(screen).toEqual({
-      kind: "library",
-      library,
-      folders: [],
-      folder: "",
-      notes: [note("a.md", 1)],
-      selected: "b.md",
-      search: null,
-      trash: null,
-    });
-  });
-
   it("remplace la liste sans toucher à la sélection", () => {
     const screen = notesRefreshed(libraryOpened(library, [], [note("a.md", 1)]), [
       note("b.md", 2),
@@ -109,7 +94,6 @@ describe("état de l'écran", () => {
     expect(foldersRefreshed(welcome, ["a"])).toBe(welcome);
     expect(folderMoved(welcome, "a", "b")).toBe(welcome);
     expect(noteSelected(welcome, "a.md")).toBe(welcome);
-    expect(noteRenamed(welcome, "a.md", "b.md")).toBe(welcome);
     expect(notesRefreshed(welcome, [note("a.md", 1)])).toBe(welcome);
     expect(searchTyped(welcome, "pain")).toBe(welcome);
     expect(searchAnswered(welcome, "pain", [])).toBe(welcome);

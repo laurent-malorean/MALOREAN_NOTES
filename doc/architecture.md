@@ -62,6 +62,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 - Toute écriture dans la bibliothèque est atomique (fichier temporaire puis renommage) : un fichier n'est jamais à moitié écrit.
 - La surveillance des fichiers (port `LibraryWatcher`, adaptateur FSEvents dans `infrastructure`) détecte les modifications extérieures ; `api` les relaie à la page par l'événement `library-changed`. L'application recharge la note, ou garde l'autre version dans une copie de conflit : rien n'est perdu (fiche 0014).
 - Les liens entre notes (`[[titre]]`) et les liens entrants sont calculés à la demande en relisant les notes, comme la recherche (fiche 0016).
+- Les colonnes et leurs onglets sont un état de l'interface seule ; chaque colonne a son éditeur et charge la note de son onglet actif (fiche 0017).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
 ## Décisions d'architecture
@@ -86,6 +87,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0014-modifications-externes.md` | Modifications faites hors de l'application : recharger, ou garder les deux versions |
 | `0015-ci-avant-chaque-commit.md` | La mini CI avant chaque commit, plus rien à l'envoi |
 | `0016-liens-entre-notes.md` | Liens entre notes : `[[titre]]`, résolus par le titre à la demande |
+| `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
 
 ## Décisions ouvertes
 

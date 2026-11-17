@@ -258,12 +258,10 @@ button {
   flex-direction: column;
 }
 .editor-tools {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.8rem;
-  z-index: 1;
   display: flex;
+  justify-content: flex-end;
   gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
 }
 .tool {
   font: inherit;
@@ -498,8 +496,43 @@ button {
   text-align: center;
 }
 
+/* Colonnes d'édition, côte à côte ; chacune : en-tête, texte, liens entrants */
+.columns {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.column {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.column-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--border);
+}
+/* La colonne active ne se distingue que s'il y en a plusieurs. */
+.columns:has(> .column-divider) .column.active .column-header {
+  border-bottom-color: var(--accent);
+}
+.column-split[hidden] {
+  display: none;
+}
+.column-divider {
+  flex: 0 0 var(--divider-width);
+  background: var(--border);
+  cursor: col-resize;
+}
+.column-divider:hover {
+  background: var(--accent);
+}
+
 /* Plan de la note, à droite du texte */
-.editor.outline-open .cm-editor {
+.editor.outline-open .columns {
   margin-right: var(--outline-width);
 }
 .outline {
@@ -654,9 +687,6 @@ button {
 }
 .backlinks[hidden] {
   display: none;
-}
-.editor.outline-open .backlinks {
-  margin-right: var(--outline-width);
 }
 .backlinks-title {
   font-size: inherit;

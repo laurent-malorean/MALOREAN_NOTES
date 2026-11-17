@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { NoteListItem } from "../bridge/generated/NoteListItem";
-import { followRename, initialSelection, nextSelection } from "./selection";
+import { initialSelection, nextSelection } from "./selection";
 
 const note = (path: string, modified: number): NoteListItem => ({
   path,
@@ -16,14 +16,6 @@ describe("sélection de la note", () => {
 
   it("n'ouvre rien dans une bibliothèque vide", () => {
     expect(initialSelection([])).toBeNull();
-  });
-
-  it("suit la note quand son fichier est renommé", () => {
-    expect(followRename("ancien.md", "ancien.md", "nouveau.md")).toBe("nouveau.md");
-  });
-
-  it("garde la sélection quand une autre note est renommée", () => {
-    expect(followRename("a.md", "b.md", "c.md")).toBe("a.md");
   });
 });
 

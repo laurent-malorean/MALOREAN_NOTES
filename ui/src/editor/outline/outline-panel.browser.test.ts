@@ -46,6 +46,27 @@ describe("plan de la note dans la fenêtre", () => {
     expect(entries(outline)).toEqual(["1:Autre"]);
   });
 
+  it("se dessine ailleurs, ou plus du tout, à la demande de l'application", () => {
+    const { editor, view, outline } = mount("# Un");
+    const other = document.createElement("nav");
+    editor.setOutline(other);
+    expect(entries(other)).toEqual(["1:Un"]);
+    editor.setOutline(null);
+    view.dispatch({ changes: { from: view.state.doc.length, insert: "\n## Deux" } });
+    expect(entries(other)).toEqual(["1:Un"]);
+    expect(entries(outline)).toEqual(["1:Un"]);
+  });
+
+  it("sans plan au départ, il se dessine quand l'application le demande", () => {
+    const parent = document.createElement("div");
+    document.body.replaceChildren(parent);
+    const editor = createEditor(parent, () => {});
+    editor.show("# Seul");
+    const outline = document.createElement("nav");
+    editor.setOutline(outline);
+    expect(entries(outline)).toEqual(["1:Seul"]);
+  });
+
   it("un clic emmène au titre, à l'écran, le curseur dessus", async () => {
     const lines = Array.from({ length: 200 }, (_, i) => `ligne ${i}`).join("\n");
     const { view, outline } = mount(`# Début\n${lines}\n## Fin\n${lines}`);

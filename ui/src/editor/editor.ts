@@ -45,6 +45,10 @@ export interface Editor {
   setCharactersPerPage(characters: number): void;
   /** Ouvre la recherche dans la note, comme Cmd+F. */
   openFind(): void;
+  /** Dessine le plan de la note dans `container` ; `null` arrête de le dessiner. */
+  setOutline(container: HTMLElement | null): void;
+  /** Retire l'éditeur de l'écran, quand sa colonne disparaît. */
+  destroy(): void;
 }
 
 /** Ce que l'éditeur peut recevoir de l'application ; chaque élément est facultatif. */
@@ -55,7 +59,7 @@ export interface EditorOptions {
   readonly attachmentActions?: AttachmentActions;
   /** Donne la date du jour ; la vraie date par défaut. */
   readonly today?: Today;
-  /** Où dessiner le plan de la note. */
+  /** Où dessiner le plan de la note, dès le départ. */
   readonly outline?: HTMLElement;
   /** Ouvre la note désignée par un lien `[[titre]]`. */
   readonly openLink?: (title: string) => void;
@@ -77,18 +81,29 @@ function adjustable<T>(make: (value: T) => Extension, initial: T) {
   };
 }
 
+/** Les parties de l'éditeur qui suivent un réglage, ou une demande de l'application. */
+function adjustableParts(outline: HTMLElement | null) {
+  return {
+    focus: adjustable<FocusUnit | null>(focusMode, null),
+    typewriter: adjustable<Typewriter>(typewriterMode, "off"),
+    outlineArea: adjustable<HTMLElement | null>(
+      (container) => (container ? outlinePanel(container) : []),
+      outline,
+    ),
+    page: adjustable(
+      (characters: number) => charactersPerPage.of(characters),
+      DEFAULT_SETTINGS.charactersPerPage,
+    ),
+  };
+}
+
 export function createEditor(
   parent: HTMLElement,
   onChange: (content: string) => void,
   options: EditorOptions = {},
 ): Editor {
   const { resolveImage, attachmentActions, today = () => new Date(), outline, openLink } = options;
-  const focus = adjustable<FocusUnit | null>(focusMode, null);
-  const typewriter = adjustable<Typewriter>(typewriterMode, "off");
-  const page = adjustable(
-    (characters: number) => charactersPerPage.of(characters),
-    DEFAULT_SETTINGS.charactersPerPage,
-  );
+  const { focus, typewriter, outlineArea, page } = adjustableParts(outline ?? null);
   const extensions = () => [
     focus.extension(),
     typewriter.extension(),
@@ -103,7 +118,7 @@ export function createEditor(
     todayShortcut(today),
     page.extension(),
     statusBar,
-    outline ? outlinePanel(outline) : [],
+    outlineArea.extension(),
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.
     markdown({ base: markdownLanguage, codeLanguages: languages }),
@@ -139,5 +154,7 @@ export function createEditor(
     setTypewriter: (mode) => view.dispatch({ effects: typewriter.change(mode) }),
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
     openFind: () => void openSearchPanel(view),
+    setOutline: (container) => view.dispatch({ effects: outlineArea.change(container) }),
+    destroy: () => view.destroy(),
   };
 }

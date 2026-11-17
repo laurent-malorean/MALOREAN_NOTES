@@ -35,7 +35,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Aperçu en direct | `livePreview` | Affichage de la note mise en forme dans l'éditeur : la syntaxe Markdown est masquée, sauf là où se trouve le curseur ; le fichier n'est jamais modifié. |
 | Tableau | `Table` | Tableau Markdown : ligne d'en-tête, ligne d'alignement, puis les lignes ; dessiné par l'aperçu en direct. |
 | Thème | `theme` | Couleurs, polices et tailles de lecture de l'interface, réunies dans un seul fichier. |
-| Plein écran | `fullScreen` | La fenêtre occupe tout l'écran et ne montre que le texte de la note : colonnes des dossiers et des notes cachées. |
+| Plein écran | `fullScreen` | La fenêtre occupe tout l'écran et ne montre que les colonnes : listes des dossiers et des notes cachées. |
 | Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. |
 | Lien entre notes | `NoteLink` | `[[titre]]` écrit dans une note : désigne la note qui porte ce titre, sans tenir compte des majuscules ni des accents ; `[[titre|texte]]` montre `texte`. Cmd+clic l'ouvre. |
 | Liens entrants | `Backlinks` | Les notes dont un lien entre notes désigne la note ouverte, montrées sous son texte. |
@@ -52,3 +52,11 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Largeur du texte | `textWidth` | Réglage d'affichage : largeur de la colonne de texte — étroite, moyenne (par défaut) ou large. |
 | Apparence | `appearance` | Réglage d'affichage : claire, sombre, ou automatique (comme le Mac, par défaut). |
 | Mode machine à écrire | `Typewriter` | Affichage où la ligne en cours d'écriture reste au milieu de l'écran. |
+| Colonne | `Column` | Zone d'édition de la fenêtre, à droite de la liste des notes ; jusqu'à trois côte à côte. Elle a ses onglets et montre la note de son onglet actif. Les listes des dossiers et des notes ne sont pas des colonnes. |
+| Colonnes | `Columns` | Les colonnes ouvertes, de gauche à droite, avec leurs onglets, leurs largeurs et la colonne active ; tenues par l'interface seule. |
+| Largeur de colonne | `width` | Part de la zone d'édition qu'occupe une colonne ; réglée en glissant le séparateur, jamais sous un minimum. |
+| Séparateur | `divider` | Barre entre deux colonnes voisines, qu'on glisse pour partager autrement leur largeur. |
+| Diviser | `split` | Ouvrir une nouvelle colonne à droite de la colonne active, sur la même note ; elle prend la moitié de la largeur de sa voisine. Impossible au-delà de trois colonnes. |
+| Onglet | `Tab` | Une note ouverte dans une colonne, montrée par son titre dans la barre d'onglets en haut de la colonne. |
+| Onglet actif | `activeTab` | L'onglet dont la colonne montre la note ; un clic sur un onglet le rend actif. |
+| Colonne active | `activeColumn` | La colonne où l'on a cliqué en dernier. Une note ouverte depuis la liste, la recherche, l'ouverture rapide ou un lien, ou une note créée, s'y ouvre dans un onglet ; le plan, la recherche dans la note et la note sélectionnée de la liste suivent son onglet actif. |

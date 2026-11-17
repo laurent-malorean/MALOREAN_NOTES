@@ -7,7 +7,8 @@ import { outlineOf } from "./outline";
 function outline(doc: string) {
   const state = EditorState.create({ doc, extensions: markdown({ base: markdownLanguage }) });
   ensureSyntaxTree(state, state.doc.length, 5000);
-  return outlineOf(state).map((h) => `${h.level}:${h.text}@${h.from}`);
+  // L'état suivant reçoit l'arbre terminé : sous charge, l'analyse du départ a pu s'arrêter avant la fin.
+  return outlineOf(state.update({}).state).map((h) => `${h.level}:${h.text}@${h.from}`);
 }
 
 describe("plan de la note", () => {

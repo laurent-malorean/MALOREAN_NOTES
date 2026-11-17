@@ -26,7 +26,8 @@ describe("mise en page", () => {
       layout.status,
       layout.newNoteButton,
       layout.settingsButton,
-      layout.backlinks,
+      layout.columns,
+      layout.outline,
     ]) {
       expect(element).toBeInstanceOf(HTMLElement);
     }
@@ -35,7 +36,6 @@ describe("mise en page", () => {
     expect(layout.picker).toBeInstanceOf(HTMLDialogElement);
     expect(layout.settings.getAttribute("aria-label")).toBe("Réglages");
     expect(layout.settingsButton.textContent).toBe("Réglages");
-    expect(layout.backlinks.hidden).toBe(true);
-    expect(layout.backlinks.getAttribute("aria-label")).toBe("Liens entrants");
+    expect(layout.columns.children).toHaveLength(0);
   });
 });

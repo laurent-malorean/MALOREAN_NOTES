@@ -21,7 +21,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 
 ## Périmètre de la première version
 
-- Fenêtre en trois colonnes : dossiers, liste des notes, éditeur.
+- Fenêtre en trois parties : dossiers, liste des notes, et jusqu'à trois colonnes d'édition à onglets, côte à côte.
 - Créer, renommer, déplacer, supprimer (corbeille) une note ou un dossier.
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
 - Recherche plein texte instantanée.

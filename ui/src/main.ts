@@ -1,24 +1,22 @@
 // Assemblage de l'interface : relie l'état de l'écran, l'éditeur et le pont vers Rust.
 import * as bridge from "./bridge";
-import type { AttachmentActions } from "./editor/attachments";
-import { createEditor } from "./editor/editor";
+import type { Editor } from "./editor/editor";
 import type { FocusUnit } from "./editor/focus/focus-range";
 import { imageAddress } from "./editor/image-address";
-import { folderOf } from "./state/folders";
+import { folderOf, movedPath } from "./state/folders";
 import { createLayout } from "./screens/layout";
 import { startFolderCreation } from "./screens/folders-list";
 import { connectSearchField } from "./screens/search-field";
 import { renderScreen, type ScreenActions } from "./screens/screen-view";
-import { type Autosave, createAutosave, timerScheduler } from "./state/autosave";
+import { timerScheduler } from "./state/autosave";
 import { createDebouncer, SEARCH_DELAY_MS } from "./state/debounce";
-import { reactionToChange, touchesNote } from "./state/external-change";
+import { touchesNote } from "./state/external-change";
 import {
   currentFolder,
   folderMoved,
   folderSelected,
   foldersRefreshed,
   libraryOpened,
-  noteRenamed,
   noteSelected,
   notesRefreshed,
   type Screen,
@@ -43,10 +41,22 @@ import type { Typewriter } from "./editor/writing/typewriter";
 import { loadSettings, saveSettings, type Settings } from "./state/settings";
 import { openSettings } from "./screens/settings-view";
 import { showDisplay } from "./screens/display";
-import { renderBacklinks } from "./screens/backlinks-view";
 import { openPicker } from "./screens/picker";
 import { matchingNotes } from "./state/quick-open";
 import { type CommandId, matchingCommands } from "./state/commands";
+import {
+  activeNote,
+  columnActivated,
+  type Columns,
+  columnSplit,
+  columnsResized,
+  columnsStarted,
+  noteShown,
+  notesMoved,
+  notesRemoved,
+} from "./state/columns";
+import { type ColumnParts, createColumnsView } from "./screens/columns-view";
+import { createPane, type Pane } from "./screens/note-pane";
 import "./theme.css";
 import "./style.css";
 
@@ -54,37 +64,66 @@ const STATUS_DURATION_MS = 4000;
 
 const layout = createLayout(document.querySelector<HTMLElement>("#app") as HTMLElement);
 let screen: Screen = welcome;
-let autosave: Autosave | null = null;
 let libraryPath = "";
 
-/** Joindre à la note ouverte : ce qui est tapé est enregistré d'abord, pour viser son vrai nom. */
-const attachmentActions: AttachmentActions = {
-  attach: async (file, origin) => {
-    try {
-      await autosave?.flush();
-      const path = selectedNote(screen);
-      return path === null ? null : (await bridge.attachFile(path, file, origin)).markdown;
-    } catch (error) {
-      showError(error);
-      return null;
-    }
-  },
-  open: (target) => {
-    const path = selectedNote(screen);
-    if (path !== null) run(bridge.openAttachment(path, target));
-  },
-};
+const panes = new Map<number, Pane>();
+let columns: Columns = columnsStarted;
+const activePane = () => panes.get(columns.active) as Pane;
+const eachEditor = (act: (editor: Editor) => void) => panes.forEach((pane) => act(pane.editor));
 
-const editor = createEditor(layout.editor, (content) => autosave?.edit(content), {
-  // Une image relative est cherchée à côté de la note, dans son dossier.
-  resolveImage: (src) => {
-    const folder = folderOf(selectedNote(screen) ?? "");
-    return imageAddress(src, folder ? `${libraryPath}/${folder}` : libraryPath, bridge.fileAddress);
-  },
-  attachmentActions,
-  outline: layout.outline,
-  openLink: (title) => run(followLink(title)),
-});
+/** Enregistre tout de suite ce qui est tapé, dans toutes les colonnes. */
+async function flushAll() {
+  await Promise.all([...panes.values()].map((pane) => pane.flush()));
+}
+
+/** Enregistre ce qui est tapé ; rend le chemin de la note, que l'enregistrement a pu renommer. */
+async function flushedPath(path: string): Promise<string> {
+  const showing = [...panes.values()].find((pane) => pane.note() === path);
+  await flushAll();
+  return showing?.note() ?? path;
+}
+
+/** Ce qui est tapé dans une colonne est enregistré : la note a peut-être changé de nom. */
+function noteSaved(from: string, saved: bridge.SaveResult) {
+  run(changeColumns(notesMoved(columns, (path) => (path === from ? saved.path : path))));
+  if (saved.conflictCopy !== null) {
+    showMessage(
+      `Cette note a aussi changé hors de l'application : l'autre version est gardée dans « ${saved.conflictCopy} ».`,
+    );
+    run(refreshFolders());
+  }
+  run(refreshList());
+}
+
+/** L'éditeur d'une colonne qui vient d'apparaître, aux réglages en cours. */
+function paneIn(parts: ColumnParts): Pane {
+  const pane = createPane(parts, {
+    backend: bridge,
+    events: {
+      saved: noteSaved,
+      openNote: (path) => actions.open(path),
+      openLink: (title) => run(followLink(title)),
+      deleted: () =>
+        showMessage(
+          "Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
+        ),
+      error: showError,
+    },
+    // Une image relative est cherchée à côté de la note, dans son dossier.
+    resolveImage: (src, note) => {
+      const folder = folderOf(note ?? "");
+      return imageAddress(
+        src,
+        folder ? `${libraryPath}/${folder}` : libraryPath,
+        bridge.fileAddress,
+      );
+    },
+  });
+  pane.editor.setFocusMode(focusUnit);
+  pane.editor.setTypewriter(typewriter);
+  pane.editor.setCharactersPerPage(settings.charactersPerPage);
+  return pane;
+}
 
 function showMessage(message: string) {
   layout.status.textContent = message;
@@ -139,9 +178,9 @@ async function selectFolder(folder: string) {
   // Rechoisir le dossier affiché ne le recharge pas, sauf pour quitter la corbeille.
   const trashOpen = screen.kind === "library" && screen.trash !== null;
   if (folder === currentFolder(screen) && !trashOpen) return;
-  await autosave?.flush();
+  await activePane().flush();
   show(folderSelected(screen, folder, await bridge.listNotes(folder)));
-  await openNote(selectedNote(screen));
+  await showNote(selectedNote(screen));
 }
 
 async function createFolder(parent: string, name: string) {
@@ -152,75 +191,82 @@ async function createFolder(parent: string, name: string) {
 
 /** Renomme ou déplace un dossier : ce qui est enregistré d'abord, puis tout suit le nouveau chemin. */
 async function changeFolder(path: string, change: Promise<string>) {
-  await autosave?.flush();
+  await flushAll();
   const to = await change;
   show(folderMoved(screen, path, to));
   show(foldersRefreshed(screen, await bridge.listFolders()));
-  const selected = selectedNote(screen);
   await refreshList();
-  await openNote(selected);
+  await changeColumns(notesMoved(columns, (note) => movedPath(note, path, to)));
 }
 
 /**
  * Déplace une note dans un autre dossier ; la liste reste sur le dossier affiché.
- * La note ouverte le reste, sous son nouveau chemin, une fois ce qui est tapé enregistré.
+ * Les colonnes qui la montrent la gardent, sous son nouveau chemin, une fois ce qui est tapé enregistré.
  */
 async function moveNote(path: string, into: string) {
-  const wasOpen = selectedNote(screen) === path;
-  await autosave?.flush();
-  // L'enregistrement a pu renommer la note ouverte (titre changé).
-  const source = wasOpen ? (selectedNote(screen) ?? path) : path;
+  const source = await flushedPath(path);
   const moved = await bridge.moveNote(source, into);
   await refreshList();
-  if (wasOpen) await openNote(moved.path);
+  await changeColumns(notesMoved(columns, (note) => (note === source ? moved.path : note)));
 }
 
 /**
- * Épingle ou désépingle une note. Ce qui est tapé est enregistré d'abord ; si c'est la note
- * ouverte, l'éditeur montre son nouvel en-tête.
+ * Épingle ou désépingle une note. Ce qui est tapé est enregistré d'abord ; les colonnes qui la
+ * montrent affichent son nouvel en-tête.
  */
 async function changePin(path: string, change: (path: string) => Promise<bridge.NoteContent>) {
-  const wasOpen = selectedNote(screen) === path;
-  await autosave?.flush();
-  // L'enregistrement a pu renommer la note ouverte (titre changé).
-  const note = await change(wasOpen ? (selectedNote(screen) ?? path) : path);
-  if (wasOpen) editor.show(note.content);
+  const source = await flushedPath(path);
+  const note = await change(source);
+  panes.forEach((pane) => pane.note() === source && pane.editor.show(note.content));
   await refreshList();
 }
 
+/** Les colonnes qui montraient des notes parties à la corbeille n'enregistrent plus rien. */
+function forgetNotes(gone: (path: string) => boolean) {
+  panes.forEach((pane) => {
+    const note = pane.note();
+    if (note !== null && gone(note)) pane.forget();
+  });
+}
+
 /**
- * Place une note dans la corbeille, une fois ce qui est tapé enregistré ; si c'était la note
- * ouverte, la suivante de la liste s'ouvre (ou aucune).
+ * Place une note dans la corbeille, une fois ce qui est tapé enregistré ; si la colonne active la
+ * montrait, la suivante de la liste s'y ouvre (ou aucune).
  */
 async function trashNote(path: string) {
-  const wasOpen = selectedNote(screen) === path;
-  await autosave?.flush();
-  // L'enregistrement a pu renommer la note ouverte (titre changé).
-  const source = wasOpen ? (selectedNote(screen) ?? path) : path;
+  const source = await flushedPath(path);
+  const gone = (note: string) => note === source;
   const next = screen.kind === "library" ? nextSelection(screen.notes, source) : null;
   await bridge.trashNote(source);
-  if (wasOpen) autosave = null;
+  forgetNotes(gone);
   await refreshList();
-  if (wasOpen) await openNote(next);
+  const replaced = activeNote(columns) === source ? noteShown(columns, next) : columns;
+  await changeColumns(notesRemoved(replaced, gone));
 }
 
 /**
  * Place un dossier dans la corbeille, avec tout ce qu'il contient. Si l'on y était, la liste
- * revient à la bibliothèque ; si la note ouverte y était, une autre s'ouvre.
+ * revient à la bibliothèque ; si la note de la colonne active y était, une autre s'y ouvre.
  */
 async function trashFolder(path: string) {
-  await autosave?.flush();
+  await flushAll();
   const inside = (p: string) => p === path || p.startsWith(`${path}/`);
-  const noteGone = inside(folderOf(selectedNote(screen) ?? ""));
+  const gone = (note: string) => inside(folderOf(note));
+  const listInside = inside(currentFolder(screen));
+  const activeGone = gone(activeNote(columns) ?? "");
   await bridge.trashFolder(path);
-  if (noteGone) autosave = null;
+  forgetNotes(gone);
   show(foldersRefreshed(screen, await bridge.listFolders()));
-  if (inside(currentFolder(screen))) {
+  let next = columns;
+  if (listInside) {
     show(folderSelected(screen, "", await bridge.listNotes("")));
-    return openNote(selectedNote(screen));
+    next = noteShown(next, selectedNote(screen));
+  } else {
+    await refreshList();
+    if (activeGone)
+      next = noteShown(next, screen.kind === "library" ? initialSelection(screen.notes) : null);
   }
-  await refreshList();
-  if (noteGone) await openNote(screen.kind === "library" ? initialSelection(screen.notes) : null);
+  await changeColumns(notesRemoved(next, gone));
 }
 
 async function showTrash() {
@@ -235,51 +281,53 @@ async function changeTrash(change: Promise<unknown>) {
   await showTrash();
 }
 
-function editNote(note: bridge.NoteContent): Autosave {
-  let current = note.path;
-  return createAutosave({
-    path: current,
-    fingerprint: note.fingerprint,
-    scheduler: timerScheduler(),
-    save: bridge.saveNote,
-    onSaved: (saved) => {
-      show(noteRenamed(screen, current, saved.path));
-      current = saved.path;
-      if (saved.conflictCopy !== null) {
-        showMessage(
-          `Cette note a aussi changé hors de l'application : l'autre version est gardée dans « ${saved.conflictCopy} ».`,
-        );
-        void refreshFolders().catch(showError);
-      }
-      void refreshList().catch(showError);
-      // Le titre a pu changer : les liens entrants aussi.
-      void showBacklinks().catch(showError);
-    },
-    onError: showError,
-  });
+/** Seul l'éditeur de la colonne active dessine le plan. */
+let outlineOwner: Pane | null = null;
+
+/** Les colonnes passent à leur état suivant : l'écran suit, et chaque colonne montre sa note. */
+async function changeColumns(next: Columns) {
+  columns = next;
+  columnsView.render(columns);
+  const active = activePane();
+  if (outlineOwner !== active) {
+    outlineOwner?.editor.setOutline(null);
+    active.editor.setOutline(layout.outline);
+    outlineOwner = active;
+  }
+  if (selectedNote(screen) !== activeNote(columns)) show(noteSelected(screen, activeNote(columns)));
+  await Promise.all(columns.list.map((column) => panes.get(column.id)?.load(column.note)));
 }
 
-async function openNote(path: string | null) {
-  await autosave?.flush();
-  autosave = null;
-  show(noteSelected(screen, path));
-  void showBacklinks().catch(showError);
-  if (path === null) return editor.show("");
-  const note = await bridge.readNote(path);
-  autosave = editNote(note);
-  editor.show(note.content);
+const columnsView = createColumnsView(layout.columns, {
+  created: (id, parts) => panes.set(id, paneIn(parts)),
+  removed: (id) => {
+    const pane = panes.get(id);
+    if (outlineOwner === pane) outlineOwner = null;
+    pane?.destroy();
+    panes.delete(id);
+  },
+  activate: (id) => {
+    if (id !== columns.active) run(changeColumns(columnActivated(columns, id)));
+  },
+  split: () => run(splitColumn()),
+  resize: (divider, delta) => run(changeColumns(columnsResized(columns, divider, delta))),
+});
+
+/** Une colonne de plus, sur la note de la colonne active telle qu'on vient de la taper. */
+async function splitColumn() {
+  await activePane().flush();
+  await changeColumns(columnSplit(columns));
 }
 
-/** Les liens entrants de la note ouverte ; une réponse arrivée pour une autre note est ignorée. */
-async function showBacklinks() {
-  const path = selectedNote(screen);
-  const notes = path === null ? [] : await bridge.listBacklinks(path);
-  if (selectedNote(screen) === path) renderBacklinks(layout.backlinks, notes, actions.open);
-}
+/** La colonne active montre cette note (ou aucune) à la place de la sienne. */
+const showNote = (path: string | null) => changeColumns(noteShown(columns, path));
+
+/** Ouvre une note dans la colonne active. */
+const openNote = (path: string | null) => showNote(path);
 
 /** Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord. */
 async function followLink(title: string) {
-  await autosave?.flush();
+  await activePane().flush();
   const path = await bridge.resolveLink(title);
   if (path === null) return showMessage(`Aucune note ne porte le titre « ${title} ».`);
   await openNote(path);
@@ -289,44 +337,32 @@ async function refreshFolders() {
   show(foldersRefreshed(screen, await bridge.listFolders()));
 }
 
-/** La bibliothèque a changé hors de l'application : dossiers, liste et note ouverte suivent. */
+/** La bibliothèque a changé hors de l'application : dossiers, liste et notes des colonnes suivent. */
 async function followLibraryChange(change: bridge.LibraryChanged) {
   if (screen.kind !== "library") return;
   await refreshFolders();
   await refreshList();
-  await showBacklinks();
-  const open = selectedNote(screen);
-  if (touchesNote(change.notes, open) && open !== null) await followOpenNote(open);
-}
-
-/** La note ouverte a changé sur le disque : voir la fiche de décision 0014. */
-async function followOpenNote(path: string) {
-  const editing = autosave;
-  if (editing === null) return;
-  const disk = await bridge.readNote(path).catch(() => null);
-  const reaction = reactionToChange(disk, editing.fingerprint(), editing.isIdle());
-  switch (reaction.kind) {
-    case "ignore":
-      return;
-    case "reload":
-      editing.adopt(reaction.fingerprint);
-      return editor.reload(reaction.content);
-    case "conflict":
-      return editing.flush();
-    case "deleted":
-      return showMessage(
-        "Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
-      );
+  for (const pane of panes.values()) {
+    await pane.showBacklinks();
+    if (touchesNote(change.notes, pane.note())) await pane.followDisk();
   }
 }
 
 async function showLibrary(library: bridge.LibraryInfo) {
   libraryPath = library.path;
   show(libraryOpened(library, await bridge.listFolders(), await bridge.listNotes("")));
-  await openNote(selectedNote(screen));
+  // Les colonnes montraient peut-être des notes d'une autre bibliothèque.
+  await changeColumns(
+    noteShown(
+      notesRemoved(columns, () => true),
+      selectedNote(screen),
+    ),
+  );
 }
 
 async function chooseLibrary() {
+  // Ce qui est tapé va dans la bibliothèque d'où on vient.
+  await flushAll();
   const library = await bridge.chooseLibrary();
   if (library) await showLibrary(library);
 }
@@ -335,7 +371,7 @@ async function createNote() {
   const created = await bridge.createNote(currentFolder(screen));
   await refreshList();
   await openNote(created.path);
-  editor.focus();
+  activePane().editor.focus();
 }
 
 for (const button of layout.chooseButtons) {
@@ -351,7 +387,7 @@ layout.newFolderButton.addEventListener("click", () =>
 let focusUnit = loadFocusUnit(localStorage);
 function applyFocusUnit(unit: FocusUnit | null) {
   focusUnit = unit;
-  editor.setFocusMode(unit);
+  eachEditor((editor) => editor.setFocusMode(unit));
   showFocusUnit(layout.focusButton, unit);
   saveFocusUnit(localStorage, unit);
 }
@@ -362,7 +398,7 @@ applyFocusUnit(focusUnit);
 let typewriter = loadTypewriter(localStorage);
 function applyTypewriter(mode: Typewriter) {
   typewriter = mode;
-  editor.setTypewriter(mode);
+  eachEditor((editor) => editor.setTypewriter(mode));
   showTypewriter(layout.typewriterButton, mode);
   saveTypewriter(localStorage, mode);
 }
@@ -376,7 +412,7 @@ const showSettingsDisplay = () =>
   showDisplay(document.documentElement, settings, systemDark.matches);
 function applySettings(next: Settings) {
   settings = next;
-  editor.setCharactersPerPage(next.charactersPerPage);
+  eachEditor((editor) => editor.setCharactersPerPage(next.charactersPerPage));
   showSettingsDisplay();
   saveSettings(localStorage, next);
 }
@@ -432,7 +468,7 @@ const COMMAND_ACTIONS: Readonly<Record<CommandId, () => void>> = {
   "new-folder": () =>
     startFolderCreation(layout.foldersList, currentFolder(screen), actions.create),
   "search-library": () => layout.searchField.focus(),
-  "find-in-note": () => editor.openFind(),
+  "find-in-note": () => activePane().editor.openFind(),
   "toggle-focus": toggleFocus,
   "toggle-typewriter": toggleTypewriter,
   "toggle-outline": toggleOutline,
@@ -476,6 +512,7 @@ document.addEventListener("keydown", (event) => {
 void bridge.onLibraryChanged((change) => run(followLibraryChange(change))).catch(showError);
 
 show(welcome);
+void changeColumns(columns);
 bridge
   .reopenLastLibrary()
   .then((library) => (library ? showLibrary(library) : undefined))
