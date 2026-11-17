@@ -264,3 +264,20 @@ describe("éditeur : version relue sur le disque", () => {
     expect(changes).toEqual(["!nouveau"]);
   });
 });
+
+describe("éditeur : position du texte à l'ouverture d'une note", () => {
+  const long = (word: string) => Array.from({ length: 200 }, (_, i) => `${word} ${i}`).join("\n");
+
+  it("montre une autre note depuis son début, même après avoir défilé dans la précédente", async () => {
+    const { editor, view } = mount();
+    view.dom.style.height = "300px";
+    editor.show(long("avant"));
+    view.focus();
+    view.dispatch({ selection: { anchor: view.state.doc.line(150).from }, scrollIntoView: true });
+    await expect.poll(() => view.scrollDOM.scrollTop).toBeGreaterThan(1000);
+    editor.show(long("après"));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    expect(view.scrollDOM.scrollTop).toBe(0);
+    expect(view.scrollDOM.querySelector(".cm-line")?.textContent).toBe("après 0");
+  });
+});

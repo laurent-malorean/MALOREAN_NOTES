@@ -134,7 +134,6 @@ function paneIn(parts: ColumnParts): Pane {
     },
   });
   pane.editor.setFocusMode(focusUnit);
-  pane.editor.setTypewriter(typewriter);
   pane.editor.setCharactersPerPage(settings.charactersPerPage);
   return pane;
 }
@@ -310,6 +309,7 @@ let outlineOwner: Pane | null = null;
 async function changeColumns(next: Columns) {
   columns = next;
   columnsView.render(columns);
+  showTypewriterIn(columns.active);
   const active = activePane();
   if (outlineOwner !== active) {
     outlineOwner?.editor.setOutline(null);
@@ -422,9 +422,13 @@ layout.focusButton.addEventListener("click", toggleFocus);
 applyFocusUnit(focusUnit);
 
 let typewriter = loadTypewriter(localStorage);
+/** Le mode machine à écrire ne vaut que pour la colonne active : les autres gardent leur texte en place. */
+function showTypewriterIn(active: number) {
+  panes.forEach((pane, id) => pane.editor.setTypewriter(id === active ? typewriter : "off"));
+}
 function applyTypewriter(mode: Typewriter) {
   typewriter = mode;
-  eachEditor((editor) => editor.setTypewriter(mode));
+  showTypewriterIn(columns.active);
   showTypewriter(layout.typewriterButton, mode);
   saveTypewriter(localStorage, mode);
 }

@@ -24,7 +24,7 @@ import { DEFAULT_SETTINGS } from "../state/settings";
 import { outlinePanel } from "./outline/outline-panel";
 import { noteLinks } from "./links/note-links";
 import { type Today, todayShortcut } from "./writing/today";
-import { type Typewriter, typewriterMode } from "./writing/typewriter";
+import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
 import { keptPosition } from "../state/external-change";
@@ -75,6 +75,7 @@ function adjustable<T>(make: (value: T) => Extension, initial: T) {
   let value = initial;
   return {
     extension: () => compartment.of(make(value)),
+    value: () => value,
     change(next: T) {
       value = next;
       return compartment.reconfigure(make(next));
@@ -95,6 +96,15 @@ function adjustableParts(outline: HTMLElement | null) {
       (characters: number) => charactersPerPage.of(characters),
       DEFAULT_SETTINGS.charactersPerPage,
     ),
+  };
+}
+
+/** Redemander le même mode ne déplace rien ; le mettre en marche centre la ligne du curseur. */
+function typewriterSwitch(view: EditorView, typewriter: ReturnType<typeof adjustable<Typewriter>>) {
+  return (mode: Typewriter) => {
+    if (mode === typewriter.value()) return;
+    view.dispatch({ effects: typewriter.change(mode) });
+    if (mode === "on") view.dispatch(typewriterStarted(view.state));
   };
 }
 
@@ -141,6 +151,8 @@ export function createEditor(
     // Remplacer tout l'état ne passe par aucune transaction : rien n'est signalé comme modifié.
     show(content) {
       view.setState(EditorState.create({ doc: content, extensions: extensions() }));
+      // Une note qu'on ouvre se montre depuis son début, pas là où l'on était dans la précédente.
+      view.scrollDOM.scrollTop = 0;
     },
     reload(content) {
       const { doc, selection } = view.state;
@@ -153,7 +165,7 @@ export function createEditor(
     },
     focus: () => view.focus(),
     setFocusMode: (unit) => view.dispatch({ effects: focus.change(unit) }),
-    setTypewriter: (mode) => view.dispatch({ effects: typewriter.change(mode) }),
+    setTypewriter: typewriterSwitch(view, typewriter),
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
     openFind: () => void openSearchPanel(view),
     setOutline: (container) => view.dispatch({ effects: outlineArea.change(container) }),
