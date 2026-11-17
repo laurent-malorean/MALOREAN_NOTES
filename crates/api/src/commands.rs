@@ -10,8 +10,8 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
-    ApiError, AttachedFile, LibraryInfo, NoteContent, NoteListItem, SaveResult, SavedNote,
-    SearchResultItem, Session, TrashInfo,
+    ApiError, AttachedFile, LibraryInfo, LinkingNoteItem, NoteContent, NoteListItem, SaveResult,
+    SavedNote, SearchResultItem, Session, TrashInfo,
 };
 
 /// Événement envoyé à la page quand la bibliothèque change hors de l'application ;
@@ -121,6 +121,34 @@ pub async fn search_notes(
 ) -> Result<Vec<SearchResultItem>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.search_notes(&query)).await
+}
+
+/// Le chemin de la note qu'un lien `[[titre]]` désigne, ou rien.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn resolve_link(
+    session: SharedSession<'_>,
+    title: String,
+) -> Result<Option<String>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.resolve_link(&title)).await
+}
+
+/// Les liens entrants d'une note.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn list_backlinks(
+    session: SharedSession<'_>,
+    path: String,
+) -> Result<Vec<LinkingNoteItem>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.list_backlinks(&path)).await
 }
 
 /// Le contenu d'une note.
@@ -398,6 +426,8 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         choose_library,
         list_notes,
         search_notes,
+        resolve_link,
+        list_backlinks,
         read_note,
         save_note,
         create_note,

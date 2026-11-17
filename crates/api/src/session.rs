@@ -1,6 +1,7 @@
 //! La bibliothèque ouverte et les cas d'usage qu'on lui applique.
 
 mod attachments;
+mod links;
 mod saving;
 mod trash;
 mod watching;

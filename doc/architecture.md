@@ -61,6 +61,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 
 - Toute écriture dans la bibliothèque est atomique (fichier temporaire puis renommage) : un fichier n'est jamais à moitié écrit.
 - La surveillance des fichiers (port `LibraryWatcher`, adaptateur FSEvents dans `infrastructure`) détecte les modifications extérieures ; `api` les relaie à la page par l'événement `library-changed`. L'application recharge la note, ou garde l'autre version dans une copie de conflit : rien n'est perdu (fiche 0014).
+- Les liens entre notes (`[[titre]]`) et les liens entrants sont calculés à la demande en relisant les notes, comme la recherche (fiche 0016).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
 ## Décisions d'architecture
@@ -75,6 +76,16 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0004-strategie-de-tests.md` | Niveaux de tests, seuils, mutation, garde-fou avant envoi |
 | `0005-aide-ecriture-modele-apple.md` | Aide à l'écriture par le modèle d'IA du Mac (proposée) |
 | `0006-seuils-et-mutation-a-chaque-envoi.md` | Seuils qui ne baissent jamais, test de mutation à chaque envoi |
+| `0007-images-par-le-protocole-asset.md` | Images des notes : chargées par le protocole `asset` de Tauri |
+| `0008-sous-dossiers.md` | Sous-dossiers : une note est désignée par son chemin depuis la bibliothèque |
+| `0009-recherche-plein-texte.md` | Recherche plein texte : relire les notes à chaque recherche, en Rust |
+| `0010-notes-epinglees.md` | Notes épinglées : `pinned: true` dans l'en-tête de la note |
+| `0011-mode-focus.md` | Mode focus : calculé dans l'éditeur, réglage gardé par la page |
+| `0012-corbeille.md` | Corbeille : un dossier caché `.trash/` qui garde le chemin d'origine |
+| `0013-pieces-jointes-collees.md` | Pièces jointes collées ou glissées : octets envoyés à Rust, nom décidé par le domaine |
+| `0014-modifications-externes.md` | Modifications faites hors de l'application : recharger, ou garder les deux versions |
+| `0015-ci-avant-chaque-commit.md` | La mini CI avant chaque commit, plus rien à l'envoi |
+| `0016-liens-entre-notes.md` | Liens entre notes : `[[titre]]`, résolus par le titre à la demande |
 
 ## Décisions ouvertes
 

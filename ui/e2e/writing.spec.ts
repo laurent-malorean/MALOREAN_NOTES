@@ -131,3 +131,27 @@ test("l'affichage se règle : police, taille, largeur et apparence, gardés au r
   await page.reload();
   await expect.poll(shown).toEqual([true, "24px", "dark"]);
 });
+
+test("Cmd+clic sur un lien ouvre la note visée, qui liste ses liens entrants", async ({ page }) => {
+  await launch(page, {
+    "courses.md": { content: "# Courses\npain", modified: 1 },
+    "Travail/lundi.md": { content: "# Lundi\nPenser aux [[courses]]", modified: 2 },
+  });
+  await page.getByRole("button", { name: "Travail" }).click();
+  const link = page.locator(".cm-note-link", { hasText: "courses" });
+  await link.click({ modifiers: ["Meta"] });
+  await expect(page.locator(".cm-line").first()).toHaveText("Courses");
+  const backlinks = page.getByRole("navigation", { name: "Liens entrants" });
+  await expect(backlinks).toContainText("Lundi");
+  await backlinks.getByRole("button", { name: /Lundi/ }).click();
+  await expect(page.locator(".cm-line").first()).toContainText("Lundi");
+  await expect(backlinks).toBeHidden();
+});
+
+test("un lien vers un titre absent le signale", async ({ page }) => {
+  await launch(page, { "a.md": { content: "# A\nvoir [[Nulle part]]", modified: 1 } });
+  await page.locator(".cm-note-link").click({ modifiers: ["Meta"] });
+  await expect(page.getByRole("status")).toContainText(
+    "Aucune note ne porte le titre « Nulle part ».",
+  );
+});

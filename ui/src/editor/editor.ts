@@ -21,6 +21,7 @@ import { formattingShortcuts } from "./writing/formatting";
 import { charactersPerPage, statusBar } from "./writing/status-bar";
 import { DEFAULT_SETTINGS } from "../state/settings";
 import { outlinePanel } from "./outline/outline-panel";
+import { noteLinks } from "./links/note-links";
 import { type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
@@ -53,6 +54,8 @@ export interface EditorOptions {
   readonly today?: Today;
   /** Où dessiner le plan de la note. */
   readonly outline?: HTMLElement;
+  /** Ouvre la note désignée par un lien `[[titre]]`. */
+  readonly openLink?: (title: string) => void;
 }
 
 /**
@@ -76,7 +79,7 @@ export function createEditor(
   onChange: (content: string) => void,
   options: EditorOptions = {},
 ): Editor {
-  const { resolveImage, attachmentActions, today = () => new Date(), outline } = options;
+  const { resolveImage, attachmentActions, today = () => new Date(), outline, openLink } = options;
   const focus = adjustable<FocusUnit | null>(focusMode, null);
   const typewriter = adjustable<Typewriter>(typewriterMode, "off");
   const page = adjustable(
@@ -88,6 +91,7 @@ export function createEditor(
     typewriter.extension(),
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
+    openLink ? noteLinks(openLink) : [],
     history(),
     listContinuation,
     findReplace,

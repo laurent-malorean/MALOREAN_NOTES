@@ -7,6 +7,7 @@ pub mod conflict;
 pub mod file_name;
 pub mod folder;
 pub mod front_matter;
+pub mod links;
 pub mod note;
 pub mod saving;
 pub mod search;

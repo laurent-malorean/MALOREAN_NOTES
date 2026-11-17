@@ -6,6 +6,7 @@ import type { ApiError } from "./generated/ApiError";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { LibraryChanged } from "./generated/LibraryChanged";
 import type { LibraryInfo } from "./generated/LibraryInfo";
+import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
 import type { SaveResult } from "./generated/SaveResult";
@@ -18,6 +19,7 @@ export type {
   AttachedFile,
   LibraryChanged,
   LibraryInfo,
+  LinkingNoteItem,
   NoteContent,
   NoteListItem,
   SaveResult,
@@ -41,6 +43,11 @@ export const chooseLibrary = () => invoke<LibraryInfo | null>("choose_library");
 export const listNotes = (folder: string) => invoke<NoteListItem[]>("list_notes", { folder });
 /** Les notes de toute la bibliothèque qui contiennent tous les mots de `query`. */
 export const searchNotes = (query: string) => invoke<SearchResultItem[]>("search_notes", { query });
+/** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */
+export const resolveLink = (title: string) => invoke<string | null>("resolve_link", { title });
+/** Les liens entrants de la note `path` : les notes qui pointent vers elle. */
+export const listBacklinks = (path: string) =>
+  invoke<LinkingNoteItem[]>("list_backlinks", { path });
 export const readNote = (path: string) => invoke<NoteContent>("read_note", { path });
 /** Enregistre une note lue ou enregistrée avec l'empreinte `fingerprint` (voir la fiche 0014). */
 export const saveNote = (path: string, content: string, fingerprint: string) =>

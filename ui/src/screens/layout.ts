@@ -13,6 +13,7 @@ export interface Layout {
   readonly typewriterButton: HTMLButtonElement;
   readonly outlineButton: HTMLButtonElement;
   readonly outline: HTMLElement;
+  readonly backlinks: HTMLElement;
   readonly fullScreenButton: HTMLButtonElement;
   readonly status: HTMLElement;
   readonly chooseButtons: readonly HTMLButtonElement[];
@@ -57,6 +58,7 @@ const TEMPLATE = `
           <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
         </div>
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
+        <nav class="backlinks" aria-label="Liens entrants" hidden></nav>
       </main>
     </section>
     <div class="status" role="status"></div>
@@ -79,6 +81,7 @@ export function createLayout(root: HTMLElement): Layout {
     typewriterButton: find("[data-typewriter]"),
     outlineButton: find("[data-outline]"),
     outline: find(".outline"),
+    backlinks: find(".backlinks"),
     fullScreenButton: find("[data-full-screen]"),
     status: find(".status"),
     chooseButtons: [...root.querySelectorAll<HTMLButtonElement>("[data-choose]")],

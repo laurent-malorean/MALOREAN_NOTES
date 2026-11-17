@@ -10,8 +10,8 @@ use std::sync::Arc;
 use api::commands::{FILE_NAME_HEADER, MEDIA_TYPE_HEADER, NOTE_HEADER};
 use api::commands::{LIBRARY_CHANGED_EVENT, invoke_handler};
 use api::{
-    AttachedFile, LibraryChanged, LibraryInfo, NoteContent, NoteListItem, SaveResult, SavedNote,
-    SearchResultItem, Session, TrashInfo,
+    AttachedFile, LibraryChanged, LibraryInfo, LinkingNoteItem, NoteContent, NoteListItem,
+    SaveResult, SavedNote, SearchResultItem, Session, TrashInfo,
 };
 use application::testing::{
     FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore,
@@ -313,6 +313,31 @@ fn the_page_searches_the_whole_library_by_its_query_argument() {
     assert_eq!(
         results.iter().map(|r| r.path.as_str()).collect::<Vec<_>>(),
         ["a.md"]
+    );
+}
+
+#[test]
+fn the_page_follows_links_between_notes_by_title_and_path() {
+    let window = window(&[
+        ("courses.md", "# Courses"),
+        ("b.md", "# Lundi\n[[courses]]"),
+    ]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let target: Option<String> = ok(call(&window, "resolve_link", json!({ "title": "Courses" })));
+    assert_eq!(target.as_deref(), Some("courses.md"));
+    let missing: Option<String> = ok(call(&window, "resolve_link", json!({ "title": "Mardi" })));
+    assert_eq!(missing, None);
+    let backlinks: Vec<LinkingNoteItem> = ok(call(
+        &window,
+        "list_backlinks",
+        json!({ "path": "courses.md" }),
+    ));
+    assert_eq!(
+        backlinks
+            .iter()
+            .map(|n| n.title.as_str())
+            .collect::<Vec<_>>(),
+        ["Lundi"]
     );
 }
 

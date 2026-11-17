@@ -153,6 +153,31 @@ function searchNotes(query: string) {
     });
 }
 
+/** Liens entre notes simplifiés : `[[titre]]`, majuscules et accents ignorés. */
+const linkedTitles = (content: string) =>
+  [...content.matchAll(/\[\[([^\]|\n]+)(?:\|[^\]\n]*)?\]\]/g)].map((m) =>
+    folded(m[1]?.trim() ?? ""),
+  );
+
+function resolveLink(title: string) {
+  const found = Object.entries(backend.notes)
+    .sort(([, a], [, b]) => b.modified - a.modified)
+    .find(([, note]) => folded(titleOf(note.content) ?? "") === folded(title.trim()));
+  return found?.[0] ?? null;
+}
+
+function listBacklinks(path: string) {
+  const title = folded(titleOf(backend.notes[path]?.content ?? "") ?? "");
+  return Object.entries(backend.notes)
+    .filter(([other, note]) => other !== path && linkedTitles(note.content).includes(title))
+    .sort(([, a], [, b]) => b.modified - a.modified)
+    .map(([other, note]) => ({
+      path: other,
+      title: titleOf(note.content) ?? "Sans titre",
+      folder: folderOf(other),
+    }));
+}
+
 /** Doublure de l'en-tête d'une note épinglée : les vraies règles sont testées côté Rust. */
 const PIN_HEADER = "---\npinned: true\n---\n";
 
@@ -243,6 +268,8 @@ const trashCommands: Record<string, (args: Record<string, string>) => unknown> =
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
   search_notes: ({ query = "" }) => searchNotes(query),
+  resolve_link: ({ title = "" }) => resolveLink(title),
+  list_backlinks: ({ path = "" }) => listBacklinks(path),
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
   choose_library: () => library,
   list_notes: ({ folder = "" }) =>

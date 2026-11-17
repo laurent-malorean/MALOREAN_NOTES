@@ -253,6 +253,9 @@ button {
   position: relative;
   min-height: 0;
   overflow: hidden;
+  /* Le texte prend la place ; les liens entrants, s'il y en a, se rangent dessous. */
+  display: flex;
+  flex-direction: column;
 }
 .editor-tools {
   position: absolute;
@@ -283,6 +286,8 @@ button {
 }
 .editor .cm-editor {
   height: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
   background: var(--bg);
   color: var(--text);
 }
@@ -622,4 +627,51 @@ button {
   border-radius: 6px;
   padding: 0.3rem 0.5rem;
   width: 14rem;
+}
+
+/* Liens entre notes */
+.editor .cm-note-link {
+  color: var(--accent);
+  cursor: pointer;
+}
+.editor .cm-note-link-mark {
+  color: var(--marker);
+}
+
+/* Liens entrants, sous le texte */
+.backlinks {
+  order: 1;
+  max-height: var(--backlinks-max-height);
+  overflow-y: auto;
+  padding: 0.5rem 1rem 0.7rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: var(--backlinks-text-size);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.8rem;
+}
+.backlinks[hidden] {
+  display: none;
+}
+.editor.outline-open .backlinks {
+  margin-right: var(--outline-width);
+}
+.backlinks-title {
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0;
+}
+.backlink {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+}
+.backlink-folder {
+  color: var(--muted);
+  margin-left: 0.3rem;
 }

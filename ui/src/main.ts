@@ -43,6 +43,7 @@ import type { Typewriter } from "./editor/writing/typewriter";
 import { loadSettings, saveSettings, type Settings } from "./state/settings";
 import { openSettings } from "./screens/settings-view";
 import { showDisplay } from "./screens/display";
+import { renderBacklinks } from "./screens/backlinks-view";
 import "./theme.css";
 import "./style.css";
 
@@ -79,6 +80,7 @@ const editor = createEditor(layout.editor, (content) => autosave?.edit(content),
   },
   attachmentActions,
   outline: layout.outline,
+  openLink: (title) => run(followLink(title)),
 });
 
 function showMessage(message: string) {
@@ -247,6 +249,8 @@ function editNote(note: bridge.NoteContent): Autosave {
         void refreshFolders().catch(showError);
       }
       void refreshList().catch(showError);
+      // Le titre a pu changer : les liens entrants aussi.
+      void showBacklinks().catch(showError);
     },
     onError: showError,
   });
@@ -256,10 +260,26 @@ async function openNote(path: string | null) {
   await autosave?.flush();
   autosave = null;
   show(noteSelected(screen, path));
+  void showBacklinks().catch(showError);
   if (path === null) return editor.show("");
   const note = await bridge.readNote(path);
   autosave = editNote(note);
   editor.show(note.content);
+}
+
+/** Les liens entrants de la note ouverte ; une réponse arrivée pour une autre note est ignorée. */
+async function showBacklinks() {
+  const path = selectedNote(screen);
+  const notes = path === null ? [] : await bridge.listBacklinks(path);
+  if (selectedNote(screen) === path) renderBacklinks(layout.backlinks, notes, actions.open);
+}
+
+/** Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord. */
+async function followLink(title: string) {
+  await autosave?.flush();
+  const path = await bridge.resolveLink(title);
+  if (path === null) return showMessage(`Aucune note ne porte le titre « ${title} ».`);
+  await openNote(path);
 }
 
 async function refreshFolders() {
@@ -271,6 +291,7 @@ async function followLibraryChange(change: bridge.LibraryChanged) {
   if (screen.kind !== "library") return;
   await refreshFolders();
   await refreshList();
+  await showBacklinks();
   const open = selectedNote(screen);
   if (touchesNote(change.notes, open) && open !== null) await followOpenNote(open);
 }

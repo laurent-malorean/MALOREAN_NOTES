@@ -62,6 +62,8 @@
   --status-bar-text-size: 12px;
   --outline-width: 220px;
   --outline-text-size: 13px;
+  --backlinks-text-size: 13px;
+  --backlinks-max-height: 30%;
 
   /* Fenêtre */
   --folders-width: 200px;
