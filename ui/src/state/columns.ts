@@ -98,6 +98,23 @@ export function noteShown(columns: Columns, note: string | null): Columns {
   );
 }
 
+/**
+ * Ouvre une note dans la colonne active : un nouvel onglet juste après l'onglet actif, qui devient
+ * actif. Si la note est déjà dans un onglet de la colonne, cet onglet devient actif.
+ */
+export function noteOpened(columns: Columns, note: string): Columns {
+  const column = activeColumn(columns);
+  const open = column.tabs.find((tab) => tab.note === note);
+  if (open) return tabActivated(columns, open.id);
+  const tab: Tab = { id: columns.nextId, note, title: null };
+  const at = column.tabs.findIndex((t) => t.id === column.activeTab) + 1;
+  const tabs = [...column.tabs.slice(0, at), tab, ...column.tabs.slice(at)];
+  const next = changed(columns, (c) =>
+    c.id === column.id ? { ...c, tabs, activeTab: tab.id } : c,
+  );
+  return { ...next, nextId: columns.nextId + 1 };
+}
+
 /** La colonne où l'on vient de cliquer devient la colonne active ; un identifiant inconnu ne change rien. */
 export function columnActivated(columns: Columns, id: number): Columns {
   return columns.list.some((column) => column.id === id) ? { ...columns, active: id } : columns;

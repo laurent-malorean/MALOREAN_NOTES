@@ -51,6 +51,7 @@ import {
   columnSplit,
   columnsResized,
   columnsStarted,
+  noteOpened,
   noteShown,
   notesMoved,
   notesRemoved,
@@ -330,8 +331,8 @@ async function splitColumn() {
 /** L'onglet actif de la colonne active montre cette note à la place de la sienne. */
 const showNote = (path: string | null) => changeColumns(noteShown(columns, path));
 
-/** Ouvre une note dans la colonne active. */
-const openNote = (path: string | null) => showNote(path);
+/** Ouvre une note dans un nouvel onglet de la colonne active, ou retrouve le sien. */
+const openNote = (path: string) => changeColumns(noteOpened(columns, path));
 
 /** Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord. */
 async function followLink(title: string) {

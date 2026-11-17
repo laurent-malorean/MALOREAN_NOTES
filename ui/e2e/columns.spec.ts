@@ -111,12 +111,12 @@ test("chaque colonne montre l'onglet de sa note, à son titre, qui suit le titre
   await expect(tabs(page, 0).first()).toHaveAttribute("aria-selected", "true");
   await split(page).click();
   await page.locator(".note-item", { hasText: "Idée" }).click();
-  await expect(tabs(page, 1)).toHaveText(["Idée×"]);
+  await expect(tabs(page, 1)).toHaveText(["Courses×", "Idée×"]);
   await expect(tabs(page, 0)).toHaveText(["Courses×"]);
   await firstLine(page, 1).click();
   await page.keyboard.press("End");
   await page.keyboard.type(" neuve");
-  await expect(tabs(page, 1)).toHaveText(["Idée neuve×"]);
+  await expect(tabs(page, 1)).toHaveText(["Courses×", "Idée neuve×"]);
 });
 
 test("fermer l'onglet enregistre ce qui est tapé et laisse la colonne vide", async ({ page }) => {
@@ -131,4 +131,39 @@ test("fermer l'onglet enregistre ce qui est tapé et laisse la colonne vide", as
   expect(await savedContent(page, "courses.md")).toBe("# Courses\n- pain bio");
   await page.locator(".note-item", { hasText: "Idée" }).click();
   await expect(tabs(page, 0)).toHaveText(["Idée×"]);
+});
+
+test("ouvrir ou créer une note ajoute un onglet dans la colonne où l'on a cliqué en dernier", async ({
+  page,
+}) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×"]);
+  await expect(tabs(page, 0).nth(1)).toHaveAttribute("aria-selected", "true");
+  await page.locator(".note-item", { hasText: "Courses" }).click();
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×"]);
+  await expect(tabs(page, 0).first()).toHaveAttribute("aria-selected", "true");
+  await split(page).click();
+  await firstLine(page, 0).click();
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Vieille note×", "Idée×"]);
+  await expect(tabs(page, 1)).toHaveText(["Courses×"]);
+  await firstLine(page, 1).click();
+  await page.getByTitle("Nouvelle note").click();
+  await expect(tabs(page, 1)).toHaveText(["Courses×", "Sans titre×"]);
+  await page.keyboard.type("# Liste");
+  await expect(tabs(page, 1)).toHaveText(["Courses×", "Liste×"]);
+  await expect(tabs(page, 0)).toHaveCount(3);
+});
+
+test("cliquer un onglet montre sa note, ce qui était tapé étant enregistré", async ({ page }) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await columns(page).nth(0).locator(".cm-line").last().click();
+  await page.keyboard.press("End");
+  await page.keyboard.type("!");
+  await tabs(page, 0).first().click();
+  await expect(firstLine(page, 0)).toHaveText("Courses");
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Courses");
+  expect(await savedContent(page, "idee.md")).toBe("# Idée\n## Détail\ntexte!");
 });

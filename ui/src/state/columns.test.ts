@@ -10,6 +10,7 @@ import {
   columnsStarted,
   MAX_COLUMNS,
   MIN_COLUMN_WIDTH,
+  noteOpened,
   noteShown,
   notesMoved,
   notesRemoved,
@@ -206,5 +207,29 @@ describe("onglets", () => {
     const next = notesRemoved(both, (path) => path === "a.md");
     expect(next.list.map(notesOf)).toEqual([["c.md"], ["b.md"], []]);
     expect(shown(next)).toEqual(["c.md", "b.md", null]);
+  });
+
+  it("ouvrir une note ajoute un onglet dans la colonne active, juste après l'onglet actif, et l'active", () => {
+    const next = noteOpened(tabActivated(three, 1), "d.md");
+    expect(column(next, 0).tabs).toEqual([tab(1, "a.md", "A"), tab(6, "d.md"), tab(2, "c.md")]);
+    expect(column(next, 0).activeTab).toBe(6);
+    expect(next.active).toBe(0);
+    expect(next.nextId).toBe(7);
+    expect(column(next, 1)).toBe(column(three, 1));
+    const last = noteOpened(tabActivated(three, 2), "d.md");
+    expect(notesOf(column(last, 0))).toEqual(["a.md", "c.md", "d.md"]);
+  });
+
+  it("ouvrir une note dans une colonne sans onglet lui en donne un", () => {
+    const next = noteOpened(columnActivated(three, 5), "d.md");
+    expect(column(next, 2)).toEqual({ id: 5, tabs: [tab(6, "d.md")], activeTab: 6, width: 0.2 });
+  });
+
+  it("ouvrir une note déjà ouverte dans la colonne active retrouve son onglet ; ailleurs, elle en a un de plus", () => {
+    const again = noteOpened(columnActivated(three, 0), "c.md");
+    expect(column(again, 0).tabs).toEqual(column(three, 0).tabs);
+    expect(activeNote(again)).toBe("c.md");
+    const elsewhere = noteOpened(three, "a.md");
+    expect(notesOf(column(elsewhere, 1))).toEqual(["b.md", "a.md"]);
   });
 });
