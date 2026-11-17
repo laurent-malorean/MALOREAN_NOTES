@@ -12,6 +12,7 @@ import { type ImageResolver, imageResolver, livePreview } from "./live-preview/p
 import { liveTables } from "./live-preview/tables";
 import { findReplace } from "./writing/find-replace";
 import { formattingShortcuts } from "./writing/formatting";
+import { statusBar } from "./writing/status-bar";
 import { type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
@@ -54,6 +55,7 @@ export function createEditor(
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.
     formattingShortcuts,
     todayShortcut(today),
+    statusBar,
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.
     markdown({ base: markdownLanguage, codeLanguages: languages }),

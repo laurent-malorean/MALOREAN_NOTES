@@ -479,3 +479,16 @@ button {
 .editor .cm-searchMatch-selected {
   background: var(--highlight-current);
 }
+
+/* Bandeau en bas de la note : mots, caractères, pages */
+.editor .cm-panels-bottom {
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+.editor .cm-status-bar {
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: var(--status-bar-text-size);
+  padding: 0.3rem 1rem;
+  text-align: center;
+}

@@ -59,3 +59,12 @@ test("le mode machine à écrire se met en marche, est gardé, puis s'arrête", 
   await page.keyboard.press("Meta+Shift+T");
   await expect(button).toHaveAttribute("aria-pressed", "false");
 });
+
+test("le bandeau compte les mots, les caractères et les pages de la note", async ({ page }) => {
+  await launch(page, { "courses.md": { content: "# Courses\npain lait", modified: 1 } });
+  const bar = page.locator(".cm-status-bar");
+  await expect(bar).toHaveText("3 mots · 16 caractères · 0 page");
+  await typeAtEnd(page);
+  await page.keyboard.type(" œufs");
+  await expect(bar).toHaveText("4 mots · 21 caractères · 0 page");
+});

@@ -10,3 +10,8 @@ export function frontMatterEnd(doc: Text): number {
   const header = FRONT_MATTER.exec(doc.sliceString(0, Math.min(doc.length, SCAN_LIMIT)));
   return header ? header[0].trimEnd().length : 0;
 }
+
+/** Le texte sans son en-tête YAML. */
+export function withoutFrontMatter(markdown: string): string {
+  return markdown.slice(FRONT_MATTER.exec(markdown.slice(0, SCAN_LIMIT))?.[0].length ?? 0);
+}
