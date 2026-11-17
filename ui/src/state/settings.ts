@@ -1,55 +1,148 @@
 // Réglages de l'application : leurs valeurs par défaut, leurs bornes, et leur garde d'un lancement à l'autre.
 import type { PreferenceStorage } from "./focus-preference";
 
+export type Font = "serif" | "sans" | "mono";
+export type TextSize = "small" | "medium" | "large" | "larger";
+export type TextWidth = "narrow" | "medium" | "wide";
+export type Appearance = "auto" | "light" | "dark";
+
 export interface Settings {
   /** Nombre de caractères d'une page, pour le bandeau. */
   readonly charactersPerPage: number;
+  readonly font: Font;
+  readonly textSize: TextSize;
+  readonly textWidth: TextWidth;
+  readonly appearance: Appearance;
 }
 
-export const DEFAULT_SETTINGS: Settings = { charactersPerPage: 1500 };
+export const DEFAULT_SETTINGS: Settings = {
+  charactersPerPage: 1500,
+  font: "serif",
+  textSize: "medium",
+  textWidth: "medium",
+  appearance: "auto",
+};
 
-/** Un réglage tel que l'écran de réglages le présente : un nombre entier entre deux bornes. */
-export interface NumberField {
-  readonly key: keyof Settings;
+/** Ce que tout réglage montre sur l'écran de réglages. */
+interface FieldText {
   readonly label: string;
   readonly help: string;
+  /** La partie de l'écran où il se trouve. */
+  readonly group: "Écriture" | "Affichage";
+}
+
+/** Un réglage nombre : un entier entre deux bornes. */
+export interface NumberField extends FieldText {
+  readonly kind: "number";
+  readonly key: "charactersPerPage";
   readonly min: number;
   readonly max: number;
 }
 
+export interface Choice {
+  readonly value: string;
+  readonly label: string;
+}
+
+/** Un réglage à choix : une valeur parmi une liste. */
+export interface ChoiceField extends FieldText {
+  readonly kind: "choice";
+  readonly key: "font" | "textSize" | "textWidth" | "appearance";
+  readonly choices: readonly Choice[];
+}
+
+export type SettingField = NumberField | ChoiceField;
+
 /** Les réglages, dans l'ordre de l'écran. Un nouveau réglage s'ajoute ici. */
-export const SETTING_FIELDS: readonly NumberField[] = [
+export const SETTING_FIELDS: readonly SettingField[] = [
   {
+    kind: "number",
     key: "charactersPerPage",
+    group: "Écriture",
     label: "Caractères par page",
     help: "Pour le nombre de pages du bandeau, espaces comprises. Un feuillet : 1 500.",
     min: 100,
     max: 100_000,
+  },
+  {
+    kind: "choice",
+    key: "font",
+    group: "Affichage",
+    label: "Police",
+    help: "Pour le texte des notes.",
+    choices: [
+      { value: "serif", label: "Avec empattements" },
+      { value: "sans", label: "Sans empattements" },
+      { value: "mono", label: "Chasse fixe" },
+    ],
+  },
+  {
+    kind: "choice",
+    key: "textSize",
+    group: "Affichage",
+    label: "Taille du texte",
+    help: "Pour le texte des notes.",
+    choices: [
+      { value: "small", label: "Petite" },
+      { value: "medium", label: "Moyenne" },
+      { value: "large", label: "Grande" },
+      { value: "larger", label: "Très grande" },
+    ],
+  },
+  {
+    kind: "choice",
+    key: "textWidth",
+    group: "Affichage",
+    label: "Largeur du texte",
+    help: "Largeur de la colonne de texte dans la fenêtre.",
+    choices: [
+      { value: "narrow", label: "Étroite" },
+      { value: "medium", label: "Moyenne" },
+      { value: "wide", label: "Large" },
+    ],
+  },
+  {
+    kind: "choice",
+    key: "appearance",
+    group: "Affichage",
+    label: "Apparence",
+    help: "Automatique : claire ou sombre, comme le Mac.",
+    choices: [
+      { value: "auto", label: "Automatique" },
+      { value: "light", label: "Claire" },
+      { value: "dark", label: "Sombre" },
+    ],
   },
 ];
 
 const KEY = "malorean.settings";
 const INTEGER = /^\d+$/;
 
-/** Le nombre écrit, ou rien s'il n'est pas un entier entre les bornes du réglage. */
-function parsed(field: NumberField, value: unknown): number | null {
+/** La valeur si elle est permise pour ce réglage, sinon rien. */
+function allowed(field: SettingField, value: unknown): string | number | null {
+  if (field.kind === "choice")
+    return field.choices.some((c) => c.value === value) ? (value as string) : null;
   if (!Number.isInteger(value)) return null;
   const number = value as number;
   return number >= field.min && number <= field.max ? number : null;
 }
 
 /**
- * Les réglages avec `field` changé d'après le texte tapé, ou rien si le texte n'est pas valable.
- * Les espaces qui séparent les milliers (« 2 500 ») sont permises.
+ * Les réglages avec `field` changé d'après ce qui est tapé ou choisi, ou rien si ce n'est pas
+ * valable. Dans un nombre, les espaces qui séparent les milliers (« 2 500 ») sont permises.
  */
 export function settingChanged(
   settings: Settings,
-  field: NumberField,
+  field: SettingField,
   text: string,
 ): Settings | null {
-  const digits = text.replace(/\s/g, "");
-  const value = INTEGER.test(digits) ? parsed(field, Number(digits)) : null;
-  return value === null ? null : { ...settings, [field.key]: value };
+  let value: unknown = text;
+  if (field.kind === "number") {
+    const digits = text.replace(/\s/g, "");
+    value = INTEGER.test(digits) ? Number(digits) : null;
+  }
+  const kept = allowed(field, value);
+  return kept === null ? null : { ...settings, [field.key]: kept };
 }
 
 /** Ce qui est gardé, tel quel : n'importe quelle valeur JSON, ou rien. */
@@ -69,7 +162,7 @@ export function loadSettings(storage: PreferenceStorage): Settings {
   const stored = storedValues(storage);
   let settings = DEFAULT_SETTINGS;
   for (const field of SETTING_FIELDS) {
-    const value = parsed(field, stored?.[field.key]);
+    const value = allowed(field, stored?.[field.key]);
     if (value !== null) settings = { ...settings, [field.key]: value };
   }
   return settings;

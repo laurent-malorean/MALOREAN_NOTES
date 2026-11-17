@@ -41,7 +41,56 @@ describe("écran de réglages", () => {
       .split(" ")
       .map((id) => document.getElementById(id)?.className);
     expect(described).toEqual(["setting-help", "setting-error"]);
-    expect(dialog.querySelectorAll(".setting")).toHaveLength(1);
+    expect(dialog.querySelectorAll(".setting")).toHaveLength(5);
+  });
+
+  it("range les réglages par partie : écriture, puis affichage", () => {
+    const { dialog } = open();
+    const parts = [...dialog.querySelectorAll("fieldset")].map((f) => [
+      f.querySelector("legend")?.textContent,
+      [...f.querySelectorAll("label")].map((l) => l.textContent),
+    ]);
+    expect(parts).toEqual([
+      ["Écriture", ["Caractères par page"]],
+      ["Affichage", ["Police", "Taille du texte", "Largeur du texte", "Apparence"]],
+    ]);
+  });
+
+  it("propose les choix d'un réglage d'affichage, et applique celui qu'on prend", () => {
+    const { dialog, changes } = open({ ...DEFAULT_SETTINGS, textSize: "large" });
+    const select = dialog.querySelector<HTMLSelectElement>("select[name=textSize]");
+    if (!select) throw new Error("liste introuvable");
+    expect(select.labels?.[0]?.textContent).toBe("Taille du texte");
+    expect([...select.options].map((o) => o.text)).toEqual([
+      "Petite",
+      "Moyenne",
+      "Grande",
+      "Très grande",
+    ]);
+    expect(select.value).toBe("large");
+    expect(document.getElementById(select.getAttribute("aria-describedby") ?? "")?.className).toBe(
+      "setting-help",
+    );
+    select.value = "small";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    const appearance = dialog.querySelector<HTMLSelectElement>("select[name=appearance]");
+    if (!appearance) throw new Error("liste introuvable");
+    appearance.value = "dark";
+    appearance.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(changes).toEqual([
+      { ...DEFAULT_SETTINGS, textSize: "small" },
+      { ...DEFAULT_SETTINGS, textSize: "small", appearance: "dark" },
+    ]);
+  });
+
+  it("n'applique rien pour un choix hors de la liste", () => {
+    const { dialog, changes } = open();
+    const select = dialog.querySelector<HTMLSelectElement>("select[name=font]");
+    if (!select) throw new Error("liste introuvable");
+    select.add(new Option("Inconnue", "comic"));
+    select.value = "comic";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(changes).toEqual([]);
   });
 
   it("montre chaque réglage avec son nom, sa valeur et son aide", () => {

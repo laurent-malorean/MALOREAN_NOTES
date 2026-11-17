@@ -42,4 +42,8 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Page | `page` | Feuillet de texte tel qu'on le lit (sans la syntaxe Markdown) : autant de caractères, espaces comprises, que le réglage « caractères par page ». |
 | Réglages | `Settings` | Choix de l'utilisateur qui valent pour toute l'application, gardés d'un lancement à l'autre ; modifiés dans l'écran de réglages. |
 | Caractères par page | `charactersPerPage` | Réglage : nombre de caractères d'une page, 1 500 par défaut (un feuillet). |
+| Police | `font` | Réglage d'affichage : la famille de caractères du texte des notes — avec empattements (par défaut), sans empattements, ou à chasse fixe. |
+| Taille du texte | `textSize` | Réglage d'affichage : petite, moyenne (par défaut), grande ou très grande. |
+| Largeur du texte | `textWidth` | Réglage d'affichage : largeur de la colonne de texte — étroite, moyenne (par défaut) ou large. |
+| Apparence | `appearance` | Réglage d'affichage : claire, sombre, ou automatique (comme le Mac, par défaut). |
 | Mode machine à écrire | `Typewriter` | Affichage où la ligne en cours d'écriture reste au milieu de l'écran. |

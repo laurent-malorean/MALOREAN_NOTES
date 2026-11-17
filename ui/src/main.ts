@@ -42,6 +42,7 @@ import { loadTypewriter, nextTypewriter, saveTypewriter } from "./state/typewrit
 import type { Typewriter } from "./editor/writing/typewriter";
 import { loadSettings, saveSettings, type Settings } from "./state/settings";
 import { openSettings } from "./screens/settings-view";
+import { showDisplay } from "./screens/display";
 import "./theme.css";
 import "./style.css";
 
@@ -346,11 +347,17 @@ layout.typewriterButton.addEventListener("click", toggleTypewriter);
 applyTypewriter(typewriter);
 
 let settings = loadSettings(localStorage);
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+const showSettingsDisplay = () =>
+  showDisplay(document.documentElement, settings, systemDark.matches);
 function applySettings(next: Settings) {
   settings = next;
   editor.setCharactersPerPage(next.charactersPerPage);
+  showSettingsDisplay();
   saveSettings(localStorage, next);
 }
+// En apparence automatique, l'application suit le Mac quand il passe de clair à sombre.
+systemDark.addEventListener("change", showSettingsDisplay);
 const showSettings = () => openSettings(layout.settings, settings, applySettings);
 layout.settingsButton.addEventListener("click", showSettings);
 applySettings(settings);

@@ -120,7 +120,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Un module = un écran ou un sujet.** Éditeur : une extension CodeMirror par fonctionnalité (mise en forme en direct, mode focus, collage d'images) dans `ui/src/editor/`.
 - **Logique hors du navigateur** : état d'écran, transitions et calculs dans des modules sans DOM, testés avec Vitest.
 - **Aucune règle métier** dans l'interface : elle appelle les commandes.
-- **Apparence dans le thème** : couleurs (thème clair et sombre), polices et tailles de lecture ne s'écrivent que dans `ui/src/theme.css`, sous forme de variables CSS. Feuilles de style et extensions CodeMirror n'emploient que ces variables (`var(--accent)`), y compris les couleurs de la coloration du code par langage. *Vérifié par : `scripts/ci.sh` (aucune couleur ni police écrite ailleurs).*
+- **Apparence dans le thème** : couleurs (thème clair et sombre), polices et tailles de lecture ne s'écrivent que dans `ui/src/theme.css`, sous forme de variables CSS. Feuilles de style et extensions CodeMirror n'emploient que ces variables (`var(--accent)`), y compris les couleurs de la coloration du code par langage. Les réglages d'affichage ne posent que des attributs sur la page (`data-font`, `data-text-size`, `data-text-width`, `data-appearance`) ; le thème les traduit en valeurs. *Vérifié par : `scripts/ci.sh` (aucune couleur ni police écrite ailleurs).*
 - **Mise en forme** : Prettier. *Vérifié par : `prettier --check`.*
 
 ## 9. Changer le code

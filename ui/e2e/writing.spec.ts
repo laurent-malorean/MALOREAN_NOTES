@@ -106,3 +106,28 @@ test("le nombre de caractères par page se règle, est gardé, et Échap ferme l
   await page.getByRole("button", { name: "Réglages" }).click();
   await expect(page.getByLabel("Caractères par page")).toHaveValue("1000");
 });
+
+test("l'affichage se règle : police, taille, largeur et apparence, gardés au relancement", async ({
+  page,
+}) => {
+  await launch(page, { "courses.md": { content: "# Courses\npain", modified: 1 } });
+  await page.getByRole("button", { name: "Réglages" }).click();
+  const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByLabel("Police").selectOption({ label: "Chasse fixe" });
+  await dialog.getByLabel("Taille du texte").selectOption({ label: "Très grande" });
+  await dialog.getByLabel("Largeur du texte").selectOption({ label: "Étroite" });
+  await dialog.getByLabel("Apparence").selectOption({ label: "Sombre" });
+  const scroller = page.locator(".cm-scroller");
+  const shown = () =>
+    scroller.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return [
+        style.fontFamily.includes("Menlo"),
+        style.fontSize,
+        document.documentElement.dataset.appearance,
+      ];
+    });
+  await expect.poll(shown).toEqual([true, "24px", "dark"]);
+  await page.reload();
+  await expect.poll(shown).toEqual([true, "24px", "dark"]);
+});

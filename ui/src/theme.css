@@ -1,9 +1,10 @@
 /*
  * Thème : seul endroit où s'écrivent les couleurs, les polices et les tailles de lecture.
- * Le reste de l'interface n'emploie que ces variables.
+ * Le reste de l'interface n'emploie que ces variables. Les réglages d'affichage sont posés
+ * sur la page (data-font, data-text-size, data-text-width, data-appearance) et traduits ici.
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   /* Couleurs */
   --bg: #fbfaf7;
@@ -39,10 +40,18 @@
   --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --mono: "SF Mono", ui-monospace, Menlo, monospace;
 
-  /* Lecture */
-  --text-size: 18px;
+  /* Lecture : la police, la taille et la largeur du texte suivent les réglages d'affichage */
+  --text-font: var(--serif);
+  --text-size-small: 16px;
+  --text-size-medium: 18px;
+  --text-size-large: 21px;
+  --text-size-larger: 24px;
+  --text-size: var(--text-size-medium);
   --line-height: 1.65;
-  --text-width: 42rem;
+  --text-width-narrow: 34rem;
+  --text-width-medium: 42rem;
+  --text-width-wide: 54rem;
+  --text-width: var(--text-width-medium);
   --heading1-size: 1.8em;
   --heading2-size: 1.45em;
   --heading3-size: 1.2em;
@@ -60,32 +69,55 @@
   --sidebar-width: 280px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1c1c1e;
-    --sidebar: #242426;
-    --text: #e8e6e1;
-    --muted: #9a9890;
-    --marker: #5f5d58;
-    --accent: #6fa0ff;
-    --on-accent: #ffffff;
-    --code: #e39a7f;
-    --selected: #34343a;
-    --border: #333336;
-    --danger: #c0392b;
-    --highlight: #6b5a1e;
-    --highlight-current: #a6781c;
-    --on-danger: #ffffff;
-    --shadow: #00000080;
-    --syntax-plain: #e8e6e1;
-    --syntax-keyword: #c792ea;
-    --syntax-string: #a5d6a7;
-    --syntax-comment: #7d7b75;
-    --syntax-number: #f6b26b;
-    --syntax-function: #82aaff;
-    --syntax-type: #80cbc4;
-    --syntax-property: #b4a7f0;
-    --syntax-tag: #f48fb1;
-    --code-block-background: #242426;
-  }
+/* Réglages d'affichage */
+:root[data-font="sans"] {
+  --text-font: var(--sans);
+}
+:root[data-font="mono"] {
+  --text-font: var(--mono);
+}
+:root[data-text-size="small"] {
+  --text-size: var(--text-size-small);
+}
+:root[data-text-size="large"] {
+  --text-size: var(--text-size-large);
+}
+:root[data-text-size="larger"] {
+  --text-size: var(--text-size-larger);
+}
+:root[data-text-width="narrow"] {
+  --text-width: var(--text-width-narrow);
+}
+:root[data-text-width="wide"] {
+  --text-width: var(--text-width-wide);
+}
+
+/* Apparence sombre : choisie, ou automatique quand le Mac est en sombre */
+:root[data-appearance="dark"] {
+  color-scheme: dark;
+  --bg: #1c1c1e;
+  --sidebar: #242426;
+  --text: #e8e6e1;
+  --muted: #9a9890;
+  --marker: #5f5d58;
+  --accent: #6fa0ff;
+  --on-accent: #ffffff;
+  --code: #e39a7f;
+  --selected: #34343a;
+  --border: #333336;
+  --danger: #c0392b;
+  --highlight: #6b5a1e;
+  --highlight-current: #a6781c;
+  --on-danger: #ffffff;
+  --shadow: #00000080;
+  --syntax-plain: #e8e6e1;
+  --syntax-keyword: #c792ea;
+  --syntax-string: #a5d6a7;
+  --syntax-comment: #7d7b75;
+  --syntax-number: #f6b26b;
+  --syntax-function: #82aaff;
+  --syntax-type: #80cbc4;
+  --syntax-property: #b4a7f0;
+  --syntax-tag: #f48fb1;
+  --code-block-background: #242426;
 }

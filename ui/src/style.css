@@ -290,7 +290,7 @@ button {
   outline: none;
 }
 .editor .cm-scroller {
-  font-family: var(--serif);
+  font-family: var(--text-font);
   font-size: var(--text-size);
   line-height: var(--line-height);
   padding: 3rem 0;
@@ -601,4 +601,25 @@ button {
 .settings footer {
   display: flex;
   justify-content: flex-end;
+}
+.settings fieldset {
+  border: 0;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+.settings legend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.setting select {
+  font: inherit;
+  color: var(--text);
+  background: var(--sidebar);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  width: 14rem;
 }

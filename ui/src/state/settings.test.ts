@@ -32,16 +32,29 @@ const broken = {
 const stored = (value: unknown) => memoryStorage({ "malorean.settings": JSON.stringify(value) });
 
 describe("réglages", () => {
-  it("comptent 1 500 caractères par page au premier lancement", () => {
-    expect(DEFAULT_SETTINGS.charactersPerPage).toBe(1500);
+  it("comptent 1 500 caractères par page au premier lancement, avec l'affichage d'origine", () => {
+    expect(DEFAULT_SETTINGS).toEqual({
+      charactersPerPage: 1500,
+      font: "serif",
+      textSize: "medium",
+      textWidth: "medium",
+      appearance: "auto",
+    });
     expect(loadSettings(memoryStorage())).toEqual(DEFAULT_SETTINGS);
   });
 
   it("sont retrouvés d'un lancement à l'autre, sous leur propre clé", () => {
     const storage = memoryStorage();
-    saveSettings(storage, { ...DEFAULT_SETTINGS, charactersPerPage: 2000 });
+    const chosen = {
+      charactersPerPage: 2000,
+      font: "mono",
+      textSize: "larger",
+      textWidth: "wide",
+      appearance: "dark",
+    } as const;
+    saveSettings(storage, chosen);
     expect([...storage.items.keys()]).toEqual(["malorean.settings"]);
-    expect(loadSettings(storage).charactersPerPage).toBe(2000);
+    expect(loadSettings(storage)).toEqual(chosen);
   });
 
   it("reprennent la valeur par défaut d'un réglage gardé illisible, sans perdre les autres", () => {
@@ -50,6 +63,10 @@ describe("réglages", () => {
     expect(loadSettings(stored({ charactersPerPage: "2000" }))).toEqual(DEFAULT_SETTINGS);
     expect(loadSettings(stored({ charactersPerPage: 1500.5 }))).toEqual(DEFAULT_SETTINGS);
     expect(loadSettings(stored(null))).toEqual(DEFAULT_SETTINGS);
+    expect(loadSettings(stored({ font: "comic", appearance: "dark" }))).toEqual({
+      ...DEFAULT_SETTINGS,
+      appearance: "dark",
+    });
     expect(loadSettings(stored([1]))).toEqual(DEFAULT_SETTINGS);
     expect(loadSettings(memoryStorage({ "malorean.settings": "{abîmé" }))).toEqual(
       DEFAULT_SETTINGS,
@@ -62,9 +79,62 @@ describe("réglages", () => {
   });
 });
 
-describe("modifier un réglage", () => {
-  const field = SETTING_FIELDS.find((f) => f.key === "charactersPerPage");
-  if (!field) throw new Error("réglage introuvable");
+function fieldOf(key: string) {
+  const field = SETTING_FIELDS.find((f) => f.key === key);
+  if (!field) throw new Error(`réglage introuvable : ${key}`);
+  return field;
+}
+
+describe("écran de réglages, tel que décrit", () => {
+  it("range l'écriture puis l'affichage, avec les choix de chaque réglage", () => {
+    expect(SETTING_FIELDS.map((f) => [f.group, f.label])).toEqual([
+      ["Écriture", "Caractères par page"],
+      ["Affichage", "Police"],
+      ["Affichage", "Taille du texte"],
+      ["Affichage", "Largeur du texte"],
+      ["Affichage", "Apparence"],
+    ]);
+    const choices = (key: string) => {
+      const field = fieldOf(key);
+      return field.kind === "choice" ? field.choices.map((c) => `${c.value} ${c.label}`) : [];
+    };
+    expect(choices("font")).toEqual([
+      "serif Avec empattements",
+      "sans Sans empattements",
+      "mono Chasse fixe",
+    ]);
+    expect(choices("textSize")).toEqual([
+      "small Petite",
+      "medium Moyenne",
+      "large Grande",
+      "larger Très grande",
+    ]);
+    expect(choices("textWidth")).toEqual(["narrow Étroite", "medium Moyenne", "wide Large"]);
+    expect(choices("appearance")).toEqual(["auto Automatique", "light Claire", "dark Sombre"]);
+  });
+
+  it("explique chaque réglage", () => {
+    expect(SETTING_FIELDS.map((f) => f.help)).toEqual([
+      "Pour le nombre de pages du bandeau, espaces comprises. Un feuillet : 1 500.",
+      "Pour le texte des notes.",
+      "Pour le texte des notes.",
+      "Largeur de la colonne de texte dans la fenêtre.",
+      "Automatique : claire ou sombre, comme le Mac.",
+    ]);
+  });
+
+  it("accepte un choix de la liste, et rien d'autre", () => {
+    const font = fieldOf("font");
+    expect(settingChanged(DEFAULT_SETTINGS, font, "sans")).toEqual({
+      ...DEFAULT_SETTINGS,
+      font: "sans",
+    });
+    expect(settingChanged(DEFAULT_SETTINGS, font, "comic")).toBeNull();
+  });
+});
+
+describe("modifier un réglage nombre", () => {
+  const field = fieldOf("charactersPerPage");
 
   it("est décrit pour l'écran de réglages, avec ses bornes", () => {
     expect(field).toMatchObject({ label: "Caractères par page", min: 100, max: 100_000 });
