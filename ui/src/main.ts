@@ -62,16 +62,14 @@ const attachmentActions: AttachmentActions = {
   },
 };
 
-const editor = createEditor(
-  layout.editor,
-  (content) => autosave?.edit(content),
+const editor = createEditor(layout.editor, (content) => autosave?.edit(content), {
   // Une image relative est cherchée à côté de la note, dans son dossier.
-  (src) => {
+  resolveImage: (src) => {
     const folder = folderOf(selectedNote(screen) ?? "");
     return imageAddress(src, folder ? `${libraryPath}/${folder}` : libraryPath, bridge.fileAddress);
   },
   attachmentActions,
-);
+});
 
 function showMessage(message: string) {
   layout.status.textContent = message;

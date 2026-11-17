@@ -6,7 +6,7 @@ import type { ImageResolver } from "./plugin";
 function mount(content: string, resolveImage?: ImageResolver) {
   const parent = document.createElement("div");
   document.body.replaceChildren(parent);
-  const editor = createEditor(parent, () => {}, resolveImage);
+  const editor = createEditor(parent, () => {}, { resolveImage });
   editor.show(content);
   const frame = parent.querySelector(".cm-editor") as HTMLElement;
   frame.style.height = "300px";

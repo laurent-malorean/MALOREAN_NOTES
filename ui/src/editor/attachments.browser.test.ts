@@ -16,12 +16,14 @@ function mount(content: string, answer: (file: File) => string | null = linkFor)
   document.body.replaceChildren(parent);
   const attached: Attached[] = [];
   const opened: string[] = [];
-  const editor = createEditor(parent, () => {}, undefined, {
-    attach: (file, origin) => {
-      attached.push({ name: file.name, origin });
-      return Promise.resolve(answer(file));
+  const editor = createEditor(parent, () => {}, {
+    attachmentActions: {
+      attach: (file, origin) => {
+        attached.push({ name: file.name, origin });
+        return Promise.resolve(answer(file));
+      },
+      open: (target) => opened.push(target),
     },
-    open: (target) => opened.push(target),
   });
   editor.show(content);
   const view = EditorView.findFromDOM(parent.querySelector(".cm-editor") as HTMLElement);

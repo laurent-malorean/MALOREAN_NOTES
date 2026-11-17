@@ -138,13 +138,7 @@ describe("écriture : date du jour", () => {
   function withDate(content: string) {
     const parent = document.createElement("div");
     document.body.replaceChildren(parent);
-    createEditor(
-      parent,
-      () => {},
-      undefined,
-      undefined,
-      () => new Date(2026, 10, 16),
-    ).show(content);
+    createEditor(parent, () => {}, { today: () => new Date(2026, 10, 16) }).show(content);
     const view = EditorView.findFromDOM(parent.querySelector(".cm-editor") as HTMLElement);
     if (!view) throw new Error("éditeur introuvable");
     view.focus();

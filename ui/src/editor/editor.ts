@@ -33,13 +33,22 @@ export interface Editor {
   setTypewriter(mode: Typewriter): void;
 }
 
+/** Ce que l'éditeur peut recevoir de l'application ; chaque élément est facultatif. */
+export interface EditorOptions {
+  /** Traduit l'adresse d'une image écrite dans la note en adresse chargeable. */
+  readonly resolveImage?: ImageResolver;
+  /** Joint un fichier collé ou glissé, ouvre une pièce jointe. */
+  readonly attachmentActions?: AttachmentActions;
+  /** Donne la date du jour ; la vraie date par défaut. */
+  readonly today?: Today;
+}
+
 export function createEditor(
   parent: HTMLElement,
   onChange: (content: string) => void,
-  resolveImage?: ImageResolver,
-  attachmentActions?: AttachmentActions,
-  today: Today = () => new Date(),
+  options: EditorOptions = {},
 ): Editor {
+  const { resolveImage, attachmentActions, today = () => new Date() } = options;
   const focus = new Compartment();
   let focusUnit: FocusUnit | null = null;
   const typewriter = new Compartment();
