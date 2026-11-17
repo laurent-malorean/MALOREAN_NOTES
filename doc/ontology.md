@@ -12,7 +12,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Note | `Note` | Un fichier `.md` de la bibliothèque. |
 | Contenu | `Body` | Le texte Markdown de la note, sans l'en-tête. |
 | En-tête | `FrontMatter` | Bloc YAML optionnel en tête de fichier, qui porte les métadonnées. |
-| Titre | `Title` | Premier titre `#` de la note ; nom affiché. |
+| Titre | `Title` | Premier titre `#` de la note ; nom affiché. Ce qu'on tape dans une note vide devient son titre : la marque `# ` se met devant. |
 | Nom de fichier | `FileName` | Titre en kebab-case suivi de `.md` ; suit le titre. |
 | Pièce jointe | `Attachment` | Fichier non Markdown (image, document) lié depuis une note par un lien relatif. |
 | Nom de pièce jointe | `AttachmentName` | Nom du fichier d'une pièce jointe dans le dossier de pièces jointes : une image (PNG, JPEG, GIF, WebP, HEIC, TIFF, SVG) ou un PDF. Celui d'un fichier glissé garde son nom, rendu sûr ; celui d'une image collée est tiré du moment (`image-2026-11-16-1830.png`). |

@@ -26,6 +26,7 @@ import { noteLinks } from "./links/note-links";
 import { type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
+import { firstTitle } from "./writing/first-title";
 import { keptPosition } from "../state/external-change";
 
 /** Marque une transaction qui montre la version du disque : ce n'est pas une modification. */
@@ -112,6 +113,7 @@ export function createEditor(
     openLink ? noteLinks(openLink) : [],
     history(),
     listContinuation,
+    firstTitle,
     findReplace,
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.
     formattingShortcuts,

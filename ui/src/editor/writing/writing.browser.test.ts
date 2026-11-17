@@ -186,3 +186,25 @@ describe("écriture : date du jour", () => {
     await expect.poll(() => view.scrollDOM.scrollTop).toBeGreaterThan(0);
   });
 });
+
+describe("écriture : titre d'une note vide", () => {
+  it("ce qu'on tape dans une note vide devient son titre, curseur à la fin", async () => {
+    const view = typing("");
+    await userEvent.keyboard("Liste");
+    expect(view.state.doc.toString()).toBe("# Liste");
+    expect(view.state.selection.main.head).toBe("# Liste".length);
+  });
+
+  it("annuler retire d'un coup le titre tapé, marque comprise", async () => {
+    const view = typing("");
+    await userEvent.keyboard("Liste");
+    await userEvent.keyboard("{Meta>}z{/Meta}");
+    expect(view.state.doc.toString()).toBe("");
+  });
+
+  it("taper la marque soi-même ne la double pas", async () => {
+    const view = typing("");
+    await userEvent.keyboard("# Liste");
+    expect(view.state.doc.toString()).toBe("# Liste");
+  });
+});

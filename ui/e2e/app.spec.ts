@@ -84,6 +84,16 @@ test("une nouvelle note s'ouvre vide et prend le nom de son titre", async ({ pag
   await expect(page.locator(".note-item.selected .note-title")).toHaveText("Liste de Noël");
 });
 
+test("taper dans une nouvelle note écrit son titre : la première ligne reste un titre `#`", async ({
+  page,
+}) => {
+  await launch(page);
+  await page.getByTitle("Nouvelle note").click();
+  await page.keyboard.type("Liste de Noël");
+  await expect.poll(() => savedContent(page, "liste-de-noel.md")).toBe("# Liste de Noël");
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Liste de Noël");
+});
+
 test("changer de note enregistre tout de suite ce qui ne l'était pas", async ({ page }) => {
   await launch(page);
   await page.locator(".note-item", { hasText: "Vieille note" }).click();
