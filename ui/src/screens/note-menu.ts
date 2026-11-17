@@ -1,4 +1,5 @@
-// Menu d'une note, au clic droit dans la liste ou sur un onglet : où l'ouvrir, ou la fermer.
+// Ouvrir une note depuis une liste : le clic, le Cmd+clic, et le menu du clic droit (où l'ouvrir,
+// ou la fermer), dans la liste ou sur un onglet.
 import type { Placement } from "../state/columns";
 import type { MenuEntry } from "./context-menu";
 
@@ -18,4 +19,18 @@ export function noteMenu(actions: NoteMenuActions): MenuEntry[] {
     { label: "Ouvrir à droite", run: () => actions.place("right") },
     { label: "Fermer", run: () => actions.close() },
   ];
+}
+
+/** Ce qu'un clic sur une note peut demander. */
+export interface NoteOpening {
+  readonly open: (path: string) => void;
+  readonly place: (path: string, placement: Placement) => void;
+}
+
+/** Un clic sur l'élément ouvre la note ; un Cmd+clic l'ouvre dans un nouvel onglet. */
+export function openOnClick(element: HTMLElement, path: string, actions: NoteOpening): void {
+  element.addEventListener("click", (event) => {
+    if (event.metaKey) actions.place(path, "newTab");
+    else actions.open(path);
+  });
 }

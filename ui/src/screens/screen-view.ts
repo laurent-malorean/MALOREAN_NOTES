@@ -47,7 +47,7 @@ export function renderScreen(layout: Layout, screen: Screen, actions: ScreenActi
           screen.library.name,
           screen.search.results,
           screen.selected,
-          actions.open,
+          actions,
         );
       } else {
         renderNotesList(layout.notesList, screen.notes, screen.selected, actions);

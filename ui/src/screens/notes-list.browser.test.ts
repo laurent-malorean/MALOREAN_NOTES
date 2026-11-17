@@ -72,6 +72,15 @@ describe("liste des notes", () => {
     expect(asked).toEqual(["ouvrir a.md"]);
   });
 
+  it("ouvre dans un nouvel onglet la note Cmd+cliquée", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    renderNotesList(container, notes, null, actions);
+    const item = container.querySelectorAll<HTMLButtonElement>(".note-item")[1] as HTMLElement;
+    item.dispatchEvent(new MouseEvent("click", { bubbles: true, metaKey: true }));
+    expect(asked).toEqual(["placer a.md newTab"]);
+  });
+
   it("n'interprète pas un titre comme du HTML", () => {
     const container = list();
     renderNotesList(

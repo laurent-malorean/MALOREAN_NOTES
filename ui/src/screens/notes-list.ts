@@ -1,7 +1,7 @@
 import type { NoteListItem } from "../bridge";
 import type { Placement } from "../state/columns";
 import { showContextMenu } from "./context-menu";
-import { noteMenu } from "./note-menu";
+import { noteMenu, openOnClick } from "./note-menu";
 import { startDragging, stopDragging } from "./dragging";
 
 /** Ce que l'utilisateur peut demander depuis la liste des notes. */
@@ -57,7 +57,7 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 /**
- * Affiche la liste des notes ; un clic ouvre la note, un clic droit l'épingle, la désépingle ou
+ * Affiche la liste des notes ; un clic ouvre la note (Cmd+clic : dans un nouvel onglet), un clic droit l'épingle, la désépingle ou
  * la place dans la corbeille, et on peut la glisser vers un dossier.
  */
 export function renderNotesList(
@@ -81,7 +81,7 @@ export function renderNotesList(
       date.className = "note-date";
       date.textContent = dateFormat.format(new Date(note.modified));
       item.append(heading, date);
-      item.addEventListener("click", () => actions.open(note.path));
+      openOnClick(item, note.path, actions);
       offerActions(item, note, actions);
       item.draggable = true;
       item.addEventListener("dragstart", () => startDragging({ kind: "note", path: note.path }));

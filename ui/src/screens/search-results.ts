@@ -1,4 +1,5 @@
 import type { SearchResultItem } from "../bridge";
+import { type NoteOpening, openOnClick } from "./note-menu";
 
 const NOTHING_FOUND = "Aucune note trouvée";
 const SEARCHING = "Recherche…";
@@ -33,7 +34,8 @@ function line(className: string, text: string): HTMLElement {
 }
 
 /**
- * Affiche les notes trouvées (titre, dossier, extrait aux mots surlignés) ; un clic ouvre la note.
+ * Affiche les notes trouvées (titre, dossier, extrait aux mots surlignés) ; un clic ouvre la note,
+ * un Cmd+clic l'ouvre dans un nouvel onglet.
  * `null` : aucune réponse encore.
  */
 export function renderSearchResults(
@@ -41,7 +43,7 @@ export function renderSearchResults(
   libraryName: string,
   results: readonly SearchResultItem[] | null,
   selected: string | null,
-  onOpen: (path: string) => void,
+  actions: NoteOpening,
 ): void {
   if (results === null) return container.replaceChildren(message(SEARCHING));
   if (results.length === 0) return container.replaceChildren(message(NOTHING_FOUND));
@@ -53,7 +55,7 @@ export function renderSearchResults(
       const folder =
         result.folder === "" ? libraryName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
       item.append(line("note-title", result.title), line("search-folder", folder), excerpt(result));
-      item.addEventListener("click", () => onOpen(result.path));
+      openOnClick(item, result.path, actions);
       return item;
     }),
   );

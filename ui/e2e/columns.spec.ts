@@ -242,3 +242,16 @@ test("« Fermer » dans le menu d'une note de la liste ferme son onglet dans la 
   await expect(columns(page)).toHaveCount(1);
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×"]);
 });
+
+test("Cmd+clic sur une note, dans la liste ou la recherche, l'ouvre dans un nouvel onglet", async ({
+  page,
+}) => {
+  await launch(page);
+  await page.locator(".note-item", { hasText: "Courses" }).click({ modifiers: ["Meta"] });
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×"]);
+  await expect(tabs(page, 0).nth(1)).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("searchbox", { name: "Rechercher" }).fill("texte");
+  await page.locator(".search-result", { hasText: "Idée" }).click({ modifiers: ["Meta"] });
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×", "Idée×"]);
+  await expect(firstLine(page, 0)).toHaveText("Idée");
+});
