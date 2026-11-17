@@ -19,18 +19,22 @@
   <rect x="30" y="60" width="1040" height="120" rx="10" fill="#eff6ff" stroke="#3b82f6"/>
   <text x="46" y="82" class="h">Interface — ui/ (TypeScript, Vite)</text>
   <text x="1054" y="82" class="s" text-anchor="end">aucune règle métier · aucun accès disque</text>
-  <rect x="50" y="95" width="340" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
+  <rect x="50" y="95" width="235" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
   <text x="62" y="116" class="h">Écrans et éditeur</text>
-  <text x="62" y="134" class="s">dossiers, liste des notes ; CodeMirror 6 :</text>
-  <text x="62" y="150" class="s">mise en forme en direct, mode focus</text>
-  <rect x="410" y="95" width="320" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
-  <text x="422" y="116" class="h">État d'écran</text>
-  <text x="422" y="134" class="s">état + transitions, sans DOM,</text>
-  <text x="422" y="150" class="s">testés avec Vitest</text>
-  <rect x="750" y="95" width="300" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
-  <text x="762" y="116" class="h">bridge/</text>
-  <text x="762" y="134" class="s">seul module qui appelle Rust ;</text>
-  <text x="762" y="150" class="s">types générés depuis Rust (ts-rs)</text>
+  <text x="62" y="134" class="s">dossiers, notes ; CodeMirror 6 :</text>
+  <text x="62" y="150" class="s">mise en forme en direct, focus</text>
+  <rect x="300" y="95" width="255" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
+  <text x="312" y="116" class="h">Domaines — app/</text>
+  <text x="312" y="134" class="s">un module par domaine, reliés</text>
+  <text x="312" y="150" class="s">par main.ts, sans logique</text>
+  <rect x="570" y="95" width="225" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
+  <text x="582" y="116" class="h">État d'écran</text>
+  <text x="582" y="134" class="s">état + transitions, sans DOM,</text>
+  <text x="582" y="150" class="s">testés avec Vitest</text>
+  <rect x="810" y="95" width="240" height="70" rx="8" fill="#fff" stroke="#3b82f6"/>
+  <text x="822" y="116" class="h">bridge/</text>
+  <text x="822" y="134" class="s">seul module qui appelle Rust ;</text>
+  <text x="822" y="150" class="s">types générés depuis Rust (ts-rs)</text>
 
   <!-- WebView ↔ Rust -->
   <rect x="30" y="187" width="1040" height="22" rx="6" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="6 4"/>
@@ -136,8 +140,8 @@
   <!-- Flèches -->
   <path class="ar" d="M220 165V230"/>
   <text x="228" y="224" class="lbl">appelle</text>
-  <path class="ar" d="M555 230V165"/>
-  <text x="563" y="224" class="lbl">événements</text>
+  <path class="ar" d="M500 230V165"/>
+  <text x="508" y="224" class="lbl">événements</text>
   <path class="ar" d="M145 340V375"/>
   <text x="153" y="367" class="lbl">appelle</text>
   <path class="ar" d="M555 375V340"/>

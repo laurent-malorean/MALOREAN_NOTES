@@ -16,6 +16,10 @@ crates/
   api/                pont Tauri : commandes et événements, types exportés en TypeScript
   app/                binaire Tauri : assemblage, configuration, permissions
 ui/                   interface TypeScript (Vite)
+  src/main.ts         assemblage : crée chaque partie et les relie, sans logique
+  src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
+                      bibliothèque, dossiers, recherche, corbeille, enregistrement,
+                      modifications extérieures, outils d'écriture, réglages, commandes
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
   src/screens/        écrans : dossiers, liste des notes, éditeur
@@ -35,7 +39,7 @@ Sens des dépendances : `api` → `application` → `domain` ; `infrastructure` 
 
 ## Parcours d'une action
 
-1. L'utilisateur agit (frappe, clic, raccourci, menu). L'écran appelle une fonction de `ui/src/bridge/`.
+1. L'utilisateur agit (frappe, clic, raccourci, menu). L'écran prévient le module de son domaine (`ui/src/app/`), qui appelle une fonction de `ui/src/bridge/`.
 2. Le pont envoie une commande Tauri ; la page reste libre pendant ce temps.
 3. La commande valide la requête et appelle un cas d'usage, qui lit via les ports, applique les règles du domaine, écrit via les ports.
 4. Le cas d'usage publie un événement « ce qui a changé » ; `api` le relaie à la page.

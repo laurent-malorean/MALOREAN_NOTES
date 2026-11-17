@@ -9,6 +9,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 readonly MAX_FILE_LINES=600
+# Assemblage de l'interface : il relie les modules sans logique, il reste court (doc/code.md).
+readonly UI_ASSEMBLY=ui/src/main.ts
+readonly MAX_UI_ASSEMBLY_LINES=150
 readonly RUST_MIN_LINE_COVERAGE=95
 readonly PRIVATE_PATHS=(_SECRET CLAUDE.local.md)
 readonly GENERATED_TYPES=ui/src/bridge/generated
@@ -54,6 +57,16 @@ check_file_length() {
     | awk -v max="$MAX_FILE_LINES" '$2 != "total" && $1 > max')
   [ -z "$too_long" ] || fail "fichiers trop longs :
 $too_long"
+  check_assembly_length
+}
+
+check_assembly_length() {
+  [ -f "$UI_ASSEMBLY" ] || return 0
+  step "Assemblage de l'interface sans logique (${UI_ASSEMBLY} : ${MAX_UI_ASSEMBLY_LINES} lignes au plus)"
+  local lines
+  lines=$(wc -l < "$UI_ASSEMBLY" | tr -d ' ')
+  [ "$lines" -le "$MAX_UI_ASSEMBLY_LINES" ] \
+    || fail "${UI_ASSEMBLY} fait ${lines} lignes : son fonctionnement va dans un module de ui/src/app/"
 }
 
 check_theme() {
