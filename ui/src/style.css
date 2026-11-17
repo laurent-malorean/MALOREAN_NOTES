@@ -455,3 +455,27 @@ button {
   font-size: 0.8rem;
   color: var(--muted);
 }
+
+/* Rechercher et remplacer dans la note */
+.editor .cm-panels {
+  background: var(--sidebar);
+  color: var(--text);
+  font-family: var(--sans);
+}
+.editor .cm-panels-top {
+  border-bottom: 1px solid var(--border);
+}
+.editor .cm-search input,
+.editor .cm-search button {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.editor .cm-searchMatch {
+  background: var(--highlight);
+}
+.editor .cm-searchMatch-selected {
+  background: var(--highlight-current);
+}

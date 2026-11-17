@@ -349,6 +349,8 @@ const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
 };
 document.addEventListener("keydown", (event) => {
+  // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
+  if (event.defaultPrevented) return;
   const shortcut = shortcutFor(event);
   if (shortcut && SHORTCUT_ACTIONS[shortcut]()) event.preventDefault();
 });
