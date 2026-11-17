@@ -17,10 +17,12 @@ export interface Layout {
   readonly status: HTMLElement;
   readonly chooseButtons: readonly HTMLButtonElement[];
   readonly newNoteButton: HTMLButtonElement;
+  readonly settingsButton: HTMLButtonElement;
+  readonly settings: HTMLDialogElement;
 }
 
-export function createLayout(root: HTMLElement): Layout {
-  root.innerHTML = `
+/** La fenêtre : accueil, colonnes, éditeur et ses outils, message, réglages. */
+const TEMPLATE = `
     <section class="welcome">
       <h1>MALOREAN Notes</h1>
       <p>Vos notes sont de simples fichiers Markdown, dans le dossier de votre choix.</p>
@@ -33,7 +35,10 @@ export function createLayout(root: HTMLElement): Layout {
           <button class="icon" data-new-folder title="Nouveau dossier">＋</button>
         </header>
         <nav class="folders-list"></nav>
-        <footer class="sidebar-footer"><button class="trash-item" data-trash>Corbeille</button></footer>
+        <footer class="sidebar-footer">
+          <button class="trash-item" data-trash>Corbeille</button>
+          <button class="trash-item" data-settings title="Réglages (Cmd+,)">Réglages</button>
+        </footer>
       </aside>
       <aside class="sidebar">
         <header class="sidebar-header">
@@ -54,7 +59,11 @@ export function createLayout(root: HTMLElement): Layout {
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
       </main>
     </section>
-    <div class="status" role="status"></div>`;
+    <div class="status" role="status"></div>
+    <dialog class="settings" aria-label="Réglages"></dialog>`;
+
+export function createLayout(root: HTMLElement): Layout {
+  root.innerHTML = TEMPLATE;
   const find = <T extends HTMLElement>(selector: string) => root.querySelector(selector) as T;
   return {
     welcome: find(".welcome"),
@@ -74,5 +83,7 @@ export function createLayout(root: HTMLElement): Layout {
     status: find(".status"),
     chooseButtons: [...root.querySelectorAll<HTMLButtonElement>("[data-choose]")],
     newNoteButton: find("[data-new]"),
+    settingsButton: find("[data-settings]"),
+    settings: find(".settings"),
   };
 }

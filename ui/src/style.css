@@ -545,3 +545,60 @@ button {
 .outline-empty {
   color: var(--muted);
 }
+
+/* Écran de réglages */
+.sidebar-footer .trash-item + .trash-item {
+  margin-top: 0.2rem;
+}
+.settings {
+  width: min(32rem, 90vw);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.2rem 1.4rem;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 10px 30px var(--shadow);
+}
+.settings::backdrop {
+  background: var(--shadow);
+}
+.settings h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+}
+.setting {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+.setting label {
+  font-weight: 600;
+}
+.setting input {
+  font: inherit;
+  color: var(--text);
+  background: var(--sidebar);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  width: 10rem;
+}
+.setting input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.setting-help,
+.setting-error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.setting-error {
+  color: var(--danger);
+}
+.setting-error[hidden] {
+  display: none;
+}
+.settings footer {
+  display: flex;
+  justify-content: flex-end;
+}

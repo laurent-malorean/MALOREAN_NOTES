@@ -25,9 +25,13 @@ describe("mise en page", () => {
       layout.fullScreenButton,
       layout.status,
       layout.newNoteButton,
+      layout.settingsButton,
     ]) {
       expect(element).toBeInstanceOf(HTMLElement);
     }
     expect(layout.chooseButtons).toHaveLength(2);
+    expect(layout.settings).toBeInstanceOf(HTMLDialogElement);
+    expect(layout.settings.getAttribute("aria-label")).toBe("Réglages");
+    expect(layout.settingsButton.textContent).toBe("Réglages");
   });
 });

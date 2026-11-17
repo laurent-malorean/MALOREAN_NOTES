@@ -5,7 +5,8 @@ export type Shortcut =
   | "toggle-typewriter"
   | "toggle-outline"
   | "toggle-full-screen"
-  | "leave-full-screen";
+  | "leave-full-screen"
+  | "open-settings";
 
 const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+f": "toggle-focus",
@@ -13,6 +14,7 @@ const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+o": "toggle-outline",
   "cmd+ctrl+f": "toggle-full-screen",
   escape: "leave-full-screen",
+  "cmd+,": "open-settings",
 };
 
 /** Ce qu'il faut savoir d'une touche pressée. */

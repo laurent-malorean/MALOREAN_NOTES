@@ -2,7 +2,13 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { Annotation, Compartment, EditorState, Transaction } from "@codemirror/state";
+import {
+  Annotation,
+  Compartment,
+  EditorState,
+  type Extension,
+  Transaction,
+} from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { type AttachmentActions, attachments } from "./attachments";
 import { focusMode } from "./focus/focus-mode";
@@ -12,7 +18,8 @@ import { type ImageResolver, imageResolver, livePreview } from "./live-preview/p
 import { liveTables } from "./live-preview/tables";
 import { findReplace } from "./writing/find-replace";
 import { formattingShortcuts } from "./writing/formatting";
-import { statusBar } from "./writing/status-bar";
+import { charactersPerPage, statusBar } from "./writing/status-bar";
+import { DEFAULT_SETTINGS } from "../state/settings";
 import { outlinePanel } from "./outline/outline-panel";
 import { type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode } from "./writing/typewriter";
@@ -32,6 +39,8 @@ export interface Editor {
   setFocusMode(unit: FocusUnit | null): void;
   /** Garde, ou non, la ligne en cours au milieu de l'écran. */
   setTypewriter(mode: Typewriter): void;
+  /** Le nombre de caractères d'une page, pour le bandeau. */
+  setCharactersPerPage(characters: number): void;
 }
 
 /** Ce que l'éditeur peut recevoir de l'application ; chaque élément est facultatif. */
@@ -46,19 +55,37 @@ export interface EditorOptions {
   readonly outline?: HTMLElement;
 }
 
+/**
+ * Une partie de l'éditeur qui dépend d'un réglage : elle suit chaque changement, et une autre
+ * note ouverte la reçoit avec le réglage en cours.
+ */
+function adjustable<T>(make: (value: T) => Extension, initial: T) {
+  const compartment = new Compartment();
+  let value = initial;
+  return {
+    extension: () => compartment.of(make(value)),
+    change(next: T) {
+      value = next;
+      return compartment.reconfigure(make(next));
+    },
+  };
+}
+
 export function createEditor(
   parent: HTMLElement,
   onChange: (content: string) => void,
   options: EditorOptions = {},
 ): Editor {
   const { resolveImage, attachmentActions, today = () => new Date(), outline } = options;
-  const focus = new Compartment();
-  let focusUnit: FocusUnit | null = null;
-  const typewriter = new Compartment();
-  let typewriterState: Typewriter = "off";
+  const focus = adjustable<FocusUnit | null>(focusMode, null);
+  const typewriter = adjustable<Typewriter>(typewriterMode, "off");
+  const page = adjustable(
+    (characters: number) => charactersPerPage.of(characters),
+    DEFAULT_SETTINGS.charactersPerPage,
+  );
   const extensions = () => [
-    focus.of(focusMode(focusUnit)),
-    typewriter.of(typewriterMode(typewriterState)),
+    focus.extension(),
+    typewriter.extension(),
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
     history(),
@@ -67,6 +94,7 @@ export function createEditor(
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.
     formattingShortcuts,
     todayShortcut(today),
+    page.extension(),
     statusBar,
     outline ? outlinePanel(outline) : [],
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
@@ -100,13 +128,8 @@ export function createEditor(
       });
     },
     focus: () => view.focus(),
-    setFocusMode(unit) {
-      focusUnit = unit;
-      view.dispatch({ effects: focus.reconfigure(focusMode(unit)) });
-    },
-    setTypewriter(mode) {
-      typewriterState = mode;
-      view.dispatch({ effects: typewriter.reconfigure(typewriterMode(mode)) });
-    },
+    setFocusMode: (unit) => view.dispatch({ effects: focus.change(unit) }),
+    setTypewriter: (mode) => view.dispatch({ effects: typewriter.change(mode) }),
+    setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
   };
 }

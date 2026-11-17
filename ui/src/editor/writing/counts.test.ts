@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { CHARACTERS_PER_PAGE, countText, describeCounts, readableText } from "./counts";
+import { countText, describeCounts, readableText } from "./counts";
 
 const count = (markdown: string) => countText(readableText(markdown));
 
@@ -111,25 +111,35 @@ describe("mots et caractères", () => {
 
 describe("description des comptes", () => {
   it("donne les mots, les caractères et les pages, en français", () => {
-    expect(describeCounts({ words: 1234, characters: 5678 })).toBe(
+    expect(describeCounts({ words: 1234, characters: 5678 }, 1500)).toBe(
       "1 234 mots · 5 678 caractères · 3,8 pages",
     );
   });
 
   it("met « page », « mot » et « caractère » au singulier en dessous de 2", () => {
-    expect(describeCounts({ words: 1, characters: 1 })).toBe("1 mot · 1 caractère · 0 page");
-    expect(describeCounts({ words: 0, characters: 600 })).toBe("0 mot · 600 caractères · 0,4 page");
-    expect(describeCounts({ words: 2, characters: 2250 })).toBe(
+    expect(describeCounts({ words: 1, characters: 1 }, 1500)).toBe("1 mot · 1 caractère · 0 page");
+    expect(describeCounts({ words: 0, characters: 600 }, 1500)).toBe(
+      "0 mot · 600 caractères · 0,4 page",
+    );
+    expect(describeCounts({ words: 2, characters: 2250 }, 1500)).toBe(
       "2 mots · 2 250 caractères · 1,5 page",
     );
   });
 
-  it("compte une page par feuillet de 1 500 caractères, arrondi au dixième", () => {
-    expect(CHARACTERS_PER_PAGE).toBe(1500);
-    expect(describeCounts({ words: 0, characters: 3000 })).toBe(
+  it("compte une page par tranche du nombre de caractères réglé, arrondi au dixième", () => {
+    expect(describeCounts({ words: 0, characters: 3000 }, 1000)).toBe(
+      "0 mot · 3\u202f000 caractères · 3 pages",
+    );
+    expect(describeCounts({ words: 0, characters: 3000 }, 1500)).toBe(
       "0 mot · 3 000 caractères · 2 pages",
     );
-    expect(describeCounts({ words: 0, characters: 3074 })).toBe(
+    expect(describeCounts({ words: 0, characters: 2997 }, 1500)).toBe(
+      "0 mot · 2\u202f997 caractères · 2 pages",
+    );
+    expect(describeCounts({ words: 0, characters: 2924 }, 1500)).toBe(
+      "0 mot · 2\u202f924 caractères · 1,9 page",
+    );
+    expect(describeCounts({ words: 0, characters: 3074 }, 1500)).toBe(
       "0 mot · 3 074 caractères · 2 pages",
     );
   });

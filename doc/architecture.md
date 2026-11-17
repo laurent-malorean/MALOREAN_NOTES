@@ -54,6 +54,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 |---|---|---|
 | Bibliothèque (dossier choisi par l'utilisateur, iCloud Drive possible) | notes `.md`, dossiers, pièces jointes — **seule source de vérité** | non |
 | `~/Library/Application Support/<app>/` | préférences, liste des bibliothèques ouvertes | non |
+| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire ; un réglage illisible reprend sa valeur par défaut | oui |
 | `~/Library/Caches/<app>/` | index de recherche, aperçus — reconstructibles | oui |
 | `~/Library/Logs/<app>/` | journaux | oui |
 | Trousseau macOS | secrets éventuels | non |

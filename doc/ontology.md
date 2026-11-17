@@ -39,5 +39,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. |
 | Plan | `outline` | Liste des titres de la note, dans l'ordre et selon leur niveau, affichée à droite du texte ; un clic emmène au titre. |
 | Bandeau | `statusBar` | Ligne en bas de la note qui donne ses nombres de mots, de caractères et de pages, ou ceux de la sélection. |
-| Page | `page` | Feuillet de 1 500 caractères, espaces comprises, du texte tel qu'on le lit (sans la syntaxe Markdown). |
+| Page | `page` | Feuillet de texte tel qu'on le lit (sans la syntaxe Markdown) : autant de caractères, espaces comprises, que le réglage « caractères par page ». |
+| Réglages | `Settings` | Choix de l'utilisateur qui valent pour toute l'application, gardés d'un lancement à l'autre ; modifiés dans l'écran de réglages. |
+| Caractères par page | `charactersPerPage` | Réglage : nombre de caractères d'une page, 1 500 par défaut (un feuillet). |
 | Mode machine à écrire | `Typewriter` | Affichage où la ligne en cours d'écriture reste au milieu de l'écran. |

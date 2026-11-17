@@ -1,9 +1,6 @@
 // Comptes d'une note : mots, caractères et pages, sur le texte tel qu'on le lit.
 import { withoutFrontMatter } from "../front-matter";
 
-/** Un feuillet : 1 500 caractères, espaces comprises. L'écran de réglages le rendra modifiable. */
-export const CHARACTERS_PER_PAGE = 1500;
-
 export interface Counts {
   readonly words: number;
   readonly characters: number;
@@ -45,15 +42,18 @@ export function countText(text: string): Counts {
 }
 
 const number = new Intl.NumberFormat("fr-FR");
-const pages = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 
-/** « 1 234 mots · 5 678 caractères · 3,8 pages » ; « page » au singulier en dessous de 2. */
-export function describeCounts({ words, characters }: Counts): string {
-  const pageCount = characters / CHARACTERS_PER_PAGE;
+/**
+ * « 1 234 mots · 5 678 caractères · 3,8 pages », une page comptant `charactersPerPage`
+ * caractères ; « page » au singulier en dessous de 2.
+ */
+export function describeCounts({ words, characters }: Counts, charactersPerPage: number): string {
+  // Arrondi au dixième avant d'accorder : 1,98 page s'affiche « 2 pages ».
+  const pageCount = Math.round((characters / charactersPerPage) * 10) / 10;
   const plural = (n: number, word: string) => `${word}${n >= 2 ? "s" : ""}`;
   return [
     `${number.format(words)} ${plural(words, "mot")}`,
     `${number.format(characters)} ${plural(characters, "caractère")}`,
-    `${pages.format(pageCount)} ${plural(pageCount, "page")}`,
+    `${number.format(pageCount)} ${plural(pageCount, "page")}`,
   ].join(" · ");
 }

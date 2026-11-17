@@ -1,6 +1,8 @@
+import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { createEditor } from "../editor";
+import { statusText } from "./status-bar";
 import "../../style.css";
 
 function mount(content: string) {
@@ -41,6 +43,21 @@ describe("bandeau en bas de la note", () => {
     const { parent, editor } = mount("un");
     editor.show("un deux trois quatre");
     expect(bar(parent)?.textContent).toBe("4 mots · 20 caractères · 0 page");
+  });
+
+  it("compte les pages selon le nombre de caractères réglé, même après avoir changé de note", () => {
+    const { parent, editor } = mount("a".repeat(3000));
+    expect(bar(parent)?.textContent).toBe("1 mot · 3\u202f000 caractères · 2 pages");
+    editor.setCharactersPerPage(1000);
+    expect(bar(parent)?.textContent).toBe("1 mot · 3\u202f000 caractères · 3 pages");
+    editor.show("a".repeat(500));
+    expect(bar(parent)?.textContent).toBe("1 mot · 500 caractères · 0,5 page");
+  });
+
+  it("compte 1 500 caractères par page quand rien n'est réglé", () => {
+    expect(statusText(EditorState.create({ doc: "a".repeat(3000) }))).toBe(
+      "1 mot · 3\u202f000 caractères · 2 pages",
+    );
   });
 
   it("est annoncé poliment aux lecteurs d'écran", () => {

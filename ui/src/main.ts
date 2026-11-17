@@ -40,6 +40,8 @@ import { type Shortcut, shortcutFor } from "./screens/shortcuts";
 import { loadFocusUnit, nextFocusUnit, saveFocusUnit } from "./state/focus-preference";
 import { loadTypewriter, nextTypewriter, saveTypewriter } from "./state/typewriter-preference";
 import type { Typewriter } from "./editor/writing/typewriter";
+import { loadSettings, saveSettings, type Settings } from "./state/settings";
+import { openSettings } from "./screens/settings-view";
 import "./theme.css";
 import "./style.css";
 
@@ -343,6 +345,16 @@ const toggleTypewriter = () => applyTypewriter(nextTypewriter(typewriter));
 layout.typewriterButton.addEventListener("click", toggleTypewriter);
 applyTypewriter(typewriter);
 
+let settings = loadSettings(localStorage);
+function applySettings(next: Settings) {
+  settings = next;
+  editor.setCharactersPerPage(next.charactersPerPage);
+  saveSettings(localStorage, next);
+}
+const showSettings = () => openSettings(layout.settings, settings, applySettings);
+layout.settingsButton.addEventListener("click", showSettings);
+applySettings(settings);
+
 let outlineDisplay: OutlineDisplay = "hidden";
 function toggleOutline() {
   outlineDisplay = outlineDisplay === "shown" ? "hidden" : "shown";
@@ -374,10 +386,12 @@ const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "toggle-outline": () => (toggleOutline(), true),
   "toggle-full-screen": () => (void setFullScreen(!fullScreen).catch(showError), true),
   "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
+  "open-settings": () => (showSettings(), true),
 };
 document.addEventListener("keydown", (event) => {
   // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
-  if (event.defaultPrevented) return;
+  // Les réglages ouverts gardent le clavier : Échap les ferme, sans quitter le plein écran.
+  if (event.defaultPrevented || layout.settings.open) return;
   const shortcut = shortcutFor(event);
   if (shortcut && SHORTCUT_ACTIONS[shortcut]()) event.preventDefault();
 });

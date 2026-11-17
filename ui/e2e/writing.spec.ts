@@ -86,3 +86,23 @@ test("le plan liste les titres, emmène au titre cliqué, et reste en plein écr
   await page.keyboard.press("Meta+Shift+O");
   await expect(outline).toBeHidden();
 });
+
+test("le nombre de caractères par page se règle, est gardé, et Échap ferme les réglages", async ({
+  page,
+}) => {
+  await launch(page, { "courses.md": { content: `# Courses\n${"a".repeat(2990)}`, modified: 1 } });
+  const bar = page.locator(".cm-status-bar");
+  await expect(bar).toContainText("2 pages");
+  await page.getByRole("button", { name: "Plein écran" }).click();
+  await page.keyboard.press("Meta+,");
+  const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByLabel("Caractères par page").fill("1000");
+  await expect(bar).toContainText("3 pages");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  expect(await page.evaluate(() => window.backend.fullScreen)).toBe(true);
+  await page.reload();
+  await expect(bar).toContainText("3 pages");
+  await page.getByRole("button", { name: "Réglages" }).click();
+  await expect(page.getByLabel("Caractères par page")).toHaveValue("1000");
+});

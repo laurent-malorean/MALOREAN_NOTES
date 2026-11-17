@@ -35,6 +35,11 @@ describe("raccourcis clavier", () => {
     expect(key("f", { ctrlKey: true })).toBeNull();
   });
 
+  it("Cmd+virgule ouvre les réglages", () => {
+    expect(key(",", { metaKey: true })).toBe("open-settings");
+    expect(key(",")).toBeNull();
+  });
+
   it("Échap quitte le plein écran", () => {
     expect(key("Escape")).toBe("leave-full-screen");
     expect(key("Escape", { metaKey: true })).toBeNull();
