@@ -46,6 +46,7 @@ import { matchingNotes } from "./state/quick-open";
 import { type CommandId, matchingCommands } from "./state/commands";
 import {
   activeNote,
+  activeTabClosed,
   columnActivated,
   type Columns,
   columnSplit,
@@ -63,6 +64,7 @@ import {
   tabClosed,
   tabDropped,
   tabPlaced,
+  tabStepped,
 } from "./state/columns";
 import { type ColumnParts, createColumnsView } from "./screens/columns-view";
 import { createPane, type Pane } from "./screens/note-pane";
@@ -326,7 +328,7 @@ const columnsView = createColumnsView(layout.columns, {
   closeTab: (tabId) => run(changeColumns(tabClosed(columns, tabId))),
   placeTab: (tabId, placement) => run(changeColumns(tabPlaced(columns, tabId, placement))),
   dropTab: (tabId, drop) => run(changeColumnsFlushed(() => tabDropped(columns, tabId, drop))),
-  split: () => run(changeColumnsFlushed(() => columnSplit(columns))),
+  split: () => COMMAND_ACTIONS["split-column"](),
   resize: (divider, delta) => run(changeColumns(columnsResized(columns, divider, delta))),
 });
 
@@ -439,17 +441,20 @@ const showSettings = () => openSettings(layout.settings, settings, applySettings
 layout.settingsButton.addEventListener("click", showSettings);
 applySettings(settings);
 
-/** Ouverture rapide : une note de n'importe quel dossier, par quelques lettres de son titre. */
-async function quickOpen() {
+/**
+ * Ouverture rapide : une note de n'importe quel dossier, par quelques lettres de son titre ; dans
+ * un nouvel onglet pour Cmd+T.
+ */
+async function quickOpen(label = "Ouvrir une note", open = openNote) {
   if (screen.kind !== "library") return;
   const notes = await bridge.listAllNotes();
   openPicker(layout.picker, {
-    label: "Ouvrir une note",
+    label,
     placeholder: "Titre de la note",
     empty: "Aucune note ne correspond",
     entries: (query) => matchingNotes(notes, query),
     describe: (note) => ({ label: note.title, detail: note.folder }),
-    choose: (note) => run(openNote(note.path)),
+    choose: (note) => run(open(note.path)),
   });
 }
 
@@ -490,6 +495,12 @@ const COMMAND_ACTIONS: Readonly<Record<CommandId, () => void>> = {
   "toggle-typewriter": toggleTypewriter,
   "toggle-outline": toggleOutline,
   "toggle-full-screen": () => run(setFullScreen(!fullScreen)),
+  "new-tab": () =>
+    run(quickOpen("Nouvel onglet", (path) => changeColumns(notePlaced(columns, path, "newTab")))),
+  "close-tab": () => run(changeColumns(activeTabClosed(columns))),
+  "next-tab": () => run(changeColumns(tabStepped(columns, 1))),
+  "previous-tab": () => run(changeColumns(tabStepped(columns, -1))),
+  "split-column": () => run(changeColumnsFlushed(() => columnSplit(columns))),
   "show-trash": () => run(showTrash()),
   "open-settings": () => showSettings(),
   "choose-library": () => run(chooseLibrary()),
@@ -517,6 +528,11 @@ const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "open-settings": () => (showSettings(), true),
   "quick-open": () => (run(quickOpen()), true),
   "command-palette": () => (openPalette(), true),
+  "new-tab": () => (COMMAND_ACTIONS["new-tab"](), true),
+  "close-tab": () => (COMMAND_ACTIONS["close-tab"](), true),
+  "next-tab": () => (COMMAND_ACTIONS["next-tab"](), true),
+  "previous-tab": () => (COMMAND_ACTIONS["previous-tab"](), true),
+  "split-column": () => (COMMAND_ACTIONS["split-column"](), true),
 };
 document.addEventListener("keydown", (event) => {
   // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.

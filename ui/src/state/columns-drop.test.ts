@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { type Column, type Columns, MAX_COLUMNS, tabDropped } from "./columns";
+import {
+  activeTabClosed,
+  type Column,
+  type Columns,
+  columnActivated,
+  MAX_COLUMNS,
+  tabDropped,
+  tabStepped,
+} from "./columns";
 
 const tab = (id: number, note: string, title: string | null = null) => ({ id, note, title });
 
@@ -137,3 +145,32 @@ describe("glisser un onglet au bord d'une colonne", () => {
 function columnsWithActive(columns: Columns, active: number): Columns {
   return { ...columns, active };
 }
+
+describe("raccourcis des onglets", () => {
+  const actives = (columns: Columns) => columns.list.map((c) => c.activeTab);
+
+  it("onglet suivant ou précédent, dans la colonne active, en revenant au début ou à la fin", () => {
+    const left = columnActivated(three, 0);
+    expect(actives(tabStepped(left, 1))).toEqual([2, 4, null]);
+    expect(actives(tabStepped(tabStepped(left, 1), 1))).toEqual([1, 4, null]);
+    expect(actives(tabStepped(left, -1))).toEqual([2, 4, null]);
+    expect(actives(tabStepped(tabStepped(left, -1), -1))).toEqual([1, 4, null]);
+    expect(tabStepped(left, 1).active).toBe(0);
+    const tabs = [tab(1, "a.md"), tab(2, "b.md"), tab(3, "c.md")];
+    const one: Columns = { list: [{ id: 0, tabs, activeTab: 2, width: 1 }], active: 0, nextId: 4 };
+    expect(actives(tabStepped(one, 1))).toEqual([3]);
+    expect(actives(tabStepped(one, -1))).toEqual([1]);
+  });
+
+  it("une colonne active sans onglet, ou d'un seul onglet, ne change pas d'onglet", () => {
+    expect(tabStepped(columnActivated(three, 5), 1)).toEqual(columnActivated(three, 5));
+    expect(tabStepped(three, -1)).toEqual(three);
+  });
+
+  it("fermer l'onglet actif de la colonne active ; sans onglet, rien ne change", () => {
+    expect(tabIds(activeTabClosed(columnActivated(three, 0)))).toEqual([[2], [4], []]);
+    expect(ids(activeTabClosed(three))).toEqual([0, 5]);
+    const empty = columnActivated(three, 5);
+    expect(activeTabClosed(empty)).toBe(empty);
+  });
+});

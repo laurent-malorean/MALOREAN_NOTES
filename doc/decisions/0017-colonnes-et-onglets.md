@@ -20,11 +20,12 @@ On veut voir une note pendant qu'on en écrit une autre, comme dans Obsidian : j
 - **Cmd+clic sur une note**, dans la liste ou dans les résultats de recherche, fait comme « Ouvrir dans un nouvel onglet » ; un simple clic retrouve l'onglet de la note s'il existe.
 - **Fermer le dernier onglet d'une colonne ferme la colonne** : ses voisines se partagent sa largeur (une seule voisine la prend toute) ; si elle était active, sa voisine de droite, sinon de gauche, le devient. La dernière colonne reste, vide. Une note mise à la corbeille ferme ses onglets sans fermer leur colonne.
 - **Glisser un onglet** le déplace : lâché dans une colonne, il s'y place avant l'onglet survolé de la barre (sinon à la fin), y devient actif, et la colonne devient active ; lâché dans le quart gauche ou droit d'une colonne, une colonne s'ouvre de ce côté pour lui, avec la moitié de sa largeur — à trois colonnes, ce bord reçoit l'onglet comme le milieu. La colonne qu'il quitte se ferme si elle n'a plus d'onglet. Ce qui est tapé est enregistré avant, pour que la colonne qui reçoit la note la lise à jour. La colonne prend le glissement avant son éditeur, qui y verrait du texte à insérer.
+- **Raccourcis des onglets**, choisis parmi ceux du Mac et libres dans l'application : Cmd+T « Nouvel onglet » (comme dans Safari, une fenêtre demande la note par son titre, puis l'ouvre dans un nouvel onglet de la colonne active — un onglet est toujours sur une note), Cmd+W ferme l'onglet actif de la colonne active (la colonne se ferme avec son dernier onglet), Ctrl+Tab et Ctrl+Maj+Tab passent à l'onglet suivant ou précédent de la colonne active, en bouclant, et Ctrl+Cmd+T divise la colonne (comme « Ajouter un éditeur à droite » dans Xcode ; Cmd+\\ demanderait trois touches sur un clavier français, et Cmd+D sélectionne déjà l'occurrence suivante dans l'éditeur). Tous sont aussi dans la palette de commandes.
 - **Le titre d'un onglet** vient de Rust : la lecture et l'enregistrement d'une note rendent aussi son titre affiché, que l'interface ne recalcule pas.
 
 ## Conséquences
 
-- L'état se teste sans navigateur, cas par cas ; les fonctions à venir (raccourcis, relancement) n'ont qu'à ajouter une transition et son test.
+- L'état se teste sans navigateur, cas par cas ; les fonctions à venir (relancement) n'ont qu'à ajouter une transition et son test.
 - Un onglet qui n'est pas affiché ne garde ni la position du curseur ni l'historique d'annulation : ils sont perdus au changement d'onglet. Garder un état d'éditeur par onglet pourra venir ensuite.
 - La même note ouverte dans deux colonnes a deux enregistrements automatiques ; les garder identiques pendant la frappe est une étape suivante.
 - Les colonnes ne sont pas encore gardées d'un lancement à l'autre.

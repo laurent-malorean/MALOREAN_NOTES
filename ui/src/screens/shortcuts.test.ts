@@ -14,7 +14,6 @@ describe("raccourcis clavier", () => {
 
   it("Cmd+Maj+T met en marche ou arrête le mode machine à écrire", () => {
     expect(key("t", { metaKey: true, shiftKey: true })).toBe("toggle-typewriter");
-    expect(key("t", { metaKey: true })).toBeNull();
   });
 
   it("Cmd+Maj+O montre ou cache le plan", () => {
@@ -55,5 +54,21 @@ describe("raccourcis clavier", () => {
     expect(key("Escape", { metaKey: true })).toBeNull();
     expect(key("Escape", { ctrlKey: true })).toBeNull();
     expect(key("Escape", { shiftKey: true })).toBeNull();
+  });
+
+  it("les onglets : Cmd+T nouvel onglet, Cmd+W fermer, Ctrl+Tab suivant, Ctrl+Maj+Tab précédent", () => {
+    expect(key("t", { metaKey: true })).toBe("new-tab");
+    expect(key("w", { metaKey: true })).toBe("close-tab");
+    expect(key("W", { metaKey: true })).toBe("close-tab");
+    expect(key("Tab", { ctrlKey: true })).toBe("next-tab");
+    expect(key("Tab", { ctrlKey: true, shiftKey: true })).toBe("previous-tab");
+    expect(key("Tab")).toBeNull();
+    expect(key("Tab", { shiftKey: true })).toBeNull();
+    expect(key("w")).toBeNull();
+  });
+
+  it("Ctrl+Cmd+T divise la colonne", () => {
+    expect(key("t", { metaKey: true, ctrlKey: true })).toBe("split-column");
+    expect(key("t", { ctrlKey: true })).toBeNull();
   });
 });

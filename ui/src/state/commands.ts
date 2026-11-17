@@ -11,6 +11,11 @@ export type CommandId =
   | "toggle-typewriter"
   | "toggle-outline"
   | "toggle-full-screen"
+  | "new-tab"
+  | "close-tab"
+  | "next-tab"
+  | "previous-tab"
+  | "split-column"
   | "show-trash"
   | "open-settings"
   | "choose-library";
@@ -33,6 +38,11 @@ export const COMMANDS: readonly Command[] = [
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },
   { id: "toggle-full-screen", label: "Plein écran", shortcut: "Ctrl+Cmd+F" },
+  { id: "new-tab", label: "Nouvel onglet", shortcut: "Cmd+T" },
+  { id: "close-tab", label: "Fermer l'onglet", shortcut: "Cmd+W" },
+  { id: "next-tab", label: "Onglet suivant", shortcut: "Ctrl+Tab" },
+  { id: "previous-tab", label: "Onglet précédent", shortcut: "Ctrl+Maj+Tab" },
+  { id: "split-column", label: "Diviser la colonne", shortcut: "Ctrl+Cmd+T" },
   { id: "show-trash", label: "Corbeille" },
   { id: "open-settings", label: "Réglages", shortcut: "Cmd+," },
   { id: "choose-library", label: "Changer de dossier de notes" },

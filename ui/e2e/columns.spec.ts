@@ -286,3 +286,37 @@ test("glisser un onglet vers une autre colonne l'y emmène ; vers le bord, une c
   await expect(columns(page)).toHaveCount(1);
   await expect(tabs(page, 0)).toHaveText(["Idée×", "Courses×", "Vieille note×"]);
 });
+
+test("raccourcis : nouvel onglet, onglet suivant ou précédent, fermer l'onglet, diviser", async ({
+  page,
+}) => {
+  await launch(page);
+  await firstLine(page, 0).click();
+  await page.keyboard.press("Meta+T");
+  const picker = page.getByRole("dialog", { name: "Nouvel onglet" });
+  await page.keyboard.type("courses");
+  await page.keyboard.press("Enter");
+  await expect(picker).toBeHidden();
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×"]);
+  await page.keyboard.press("Meta+T");
+  await page.keyboard.type("idee");
+  await page.keyboard.press("Enter");
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×", "Idée×"]);
+  await page.keyboard.press("Control+Tab");
+  await expect(tabs(page, 0).first()).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Control+Shift+Tab");
+  await expect(tabs(page, 0).nth(2)).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".note-item.selected .note-title")).toHaveText("Idée");
+  await page.keyboard.press("Meta+W");
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×"]);
+  await page.keyboard.press("Control+Meta+T");
+  await expect(columns(page)).toHaveCount(2);
+  await expect(tabs(page, 1)).toHaveText(["Courses×"]);
+  await page.keyboard.press("Meta+Shift+P");
+  await page.keyboard.type("fermer l'onglet");
+  await expect(
+    page.getByRole("dialog", { name: "Palette de commandes" }).getByRole("option"),
+  ).toHaveText(["Fermer l'ongletCmd+W"]);
+  await page.keyboard.press("Enter");
+  await expect(columns(page)).toHaveCount(1);
+});

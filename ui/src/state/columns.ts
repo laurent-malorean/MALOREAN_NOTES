@@ -180,6 +180,23 @@ export function tabActivated(columns: Columns, tabId: number): Columns {
 }
 
 /**
+ * L'onglet voisin de l'onglet actif, à droite (`1`) ou à gauche (`-1`), dans la colonne active,
+ * devient actif ; après le dernier revient le premier, et inversement. Sans onglet, rien ne change.
+ */
+export function tabStepped(columns: Columns, step: 1 | -1): Columns {
+  const { tabs, activeTab } = activeColumn(columns);
+  const index = tabs.findIndex((tab) => tab.id === activeTab);
+  const next = tabs[(index + step + tabs.length) % tabs.length];
+  return next ? tabActivated(columns, next.id) : columns;
+}
+
+/** L'onglet actif de la colonne active se ferme ; sans onglet, rien ne change. */
+export function activeTabClosed(columns: Columns): Columns {
+  const { activeTab } = activeColumn(columns);
+  return activeTab === null ? columns : tabClosed(columns, activeTab);
+}
+
+/**
  * L'onglet se ferme ; s'il était actif, son voisin de droite (sinon de gauche) le devient. Fermer
  * le dernier onglet d'une colonne ferme la colonne, sauf s'il ne reste qu'elle.
  */

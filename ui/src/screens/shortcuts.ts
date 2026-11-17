@@ -8,7 +8,12 @@ export type Shortcut =
   | "leave-full-screen"
   | "open-settings"
   | "quick-open"
-  | "command-palette";
+  | "command-palette"
+  | "new-tab"
+  | "close-tab"
+  | "next-tab"
+  | "previous-tab"
+  | "split-column";
 
 const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+f": "toggle-focus",
@@ -19,6 +24,11 @@ const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+,": "open-settings",
   "cmd+o": "quick-open",
   "cmd+shift+p": "command-palette",
+  "cmd+t": "new-tab",
+  "cmd+w": "close-tab",
+  "ctrl+tab": "next-tab",
+  "ctrl+shift+tab": "previous-tab",
+  "cmd+ctrl+t": "split-column",
 };
 
 /** Ce qu'il faut savoir d'une touche pressée. */
