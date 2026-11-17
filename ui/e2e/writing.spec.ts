@@ -68,3 +68,21 @@ test("le bandeau compte les mots, les caractères et les pages de la note", asyn
   await page.keyboard.type(" œufs");
   await expect(bar).toHaveText("4 mots · 21 caractères · 0 page");
 });
+
+test("le plan liste les titres, emmène au titre cliqué, et reste en plein écran", async ({
+  page,
+}) => {
+  const body = Array.from({ length: 80 }, (_, i) => `ligne ${i}`).join("\n");
+  await launch(page, { "guide.md": { content: `# Guide\n${body}\n## Annexe`, modified: 1 } });
+  const outline = page.getByRole("navigation", { name: "Plan de la note" });
+  await expect(outline).toBeHidden();
+  await page.getByRole("button", { name: "Plan" }).click();
+  await expect(outline.locator(".outline-item")).toHaveText(["Guide", "Annexe"]);
+  await outline.getByRole("button", { name: "Annexe" }).click();
+  // Le curseur est sur le titre, à l'écran : sa syntaxe se montre.
+  await expect(page.locator(".cm-line", { hasText: "## Annexe" })).toBeInViewport();
+  await page.getByRole("button", { name: "Plein écran" }).click();
+  await expect(outline).toBeVisible();
+  await page.keyboard.press("Meta+Shift+O");
+  await expect(outline).toBeHidden();
+});

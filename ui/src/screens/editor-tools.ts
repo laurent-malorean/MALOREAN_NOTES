@@ -20,6 +20,24 @@ export function showFullScreen(workspace: HTMLElement, button: HTMLElement, on: 
   button.setAttribute("aria-pressed", String(on));
 }
 
+/** Le plan est-il affiché à droite du texte ? */
+export type OutlineDisplay = "shown" | "hidden";
+
+/**
+ * Montre ou cache le plan ; le texte lui laisse la place. Le plan reste affiché en plein écran
+ * s'il l'était : il sert à se déplacer dans le texte, seul à rester à l'écran.
+ */
+export function showOutline(
+  area: HTMLElement,
+  outline: HTMLElement,
+  button: HTMLElement,
+  display: OutlineDisplay,
+): void {
+  outline.hidden = display === "hidden";
+  area.classList.toggle("outline-open", display === "shown");
+  button.setAttribute("aria-pressed", String(display === "shown"));
+}
+
 /** Le bouton dit si le mode machine à écrire est en marche. */
 export function showTypewriter(button: HTMLElement, mode: Typewriter): void {
   button.setAttribute("aria-pressed", String(mode === "on"));

@@ -37,6 +37,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Thème | `theme` | Couleurs, polices et tailles de lecture de l'interface, réunies dans un seul fichier. |
 | Plein écran | `fullScreen` | La fenêtre occupe tout l'écran et ne montre que le texte de la note : colonnes des dossiers et des notes cachées. |
 | Mode focus | `FocusMode` | Affichage qui met en avant la phrase ou le paragraphe en cours d'écriture. |
+| Plan | `outline` | Liste des titres de la note, dans l'ordre et selon leur niveau, affichée à droite du texte ; un clic emmène au titre. |
 | Bandeau | `statusBar` | Ligne en bas de la note qui donne ses nombres de mots, de caractères et de pages, ou ceux de la sélection. |
 | Page | `page` | Feuillet de 1 500 caractères, espaces comprises, du texte tel qu'on le lit (sans la syntaxe Markdown). |
 | Mode machine à écrire | `Typewriter` | Affichage où la ligne en cours d'écriture reste au milieu de l'écran. |

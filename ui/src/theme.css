@@ -51,6 +51,8 @@
   --table-text-size: 0.9em;
   --code-block-text-size: 0.85em;
   --status-bar-text-size: 12px;
+  --outline-width: 220px;
+  --outline-text-size: 13px;
 
   /* Fenêtre */
   --folders-width: 200px;

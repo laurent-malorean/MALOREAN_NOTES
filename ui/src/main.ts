@@ -29,7 +29,13 @@ import {
   welcome,
 } from "./state/screen";
 import { initialSelection, nextSelection } from "./state/selection";
-import { showFocusUnit, showFullScreen, showTypewriter } from "./screens/editor-tools";
+import {
+  type OutlineDisplay,
+  showFocusUnit,
+  showFullScreen,
+  showOutline,
+  showTypewriter,
+} from "./screens/editor-tools";
 import { type Shortcut, shortcutFor } from "./screens/shortcuts";
 import { loadFocusUnit, nextFocusUnit, saveFocusUnit } from "./state/focus-preference";
 import { loadTypewriter, nextTypewriter, saveTypewriter } from "./state/typewriter-preference";
@@ -69,6 +75,7 @@ const editor = createEditor(layout.editor, (content) => autosave?.edit(content),
     return imageAddress(src, folder ? `${libraryPath}/${folder}` : libraryPath, bridge.fileAddress);
   },
   attachmentActions,
+  outline: layout.outline,
 });
 
 function showMessage(message: string) {
@@ -336,6 +343,13 @@ const toggleTypewriter = () => applyTypewriter(nextTypewriter(typewriter));
 layout.typewriterButton.addEventListener("click", toggleTypewriter);
 applyTypewriter(typewriter);
 
+let outlineDisplay: OutlineDisplay = "hidden";
+function toggleOutline() {
+  outlineDisplay = outlineDisplay === "shown" ? "hidden" : "shown";
+  showOutline(layout.editor, layout.outline, layout.outlineButton, outlineDisplay);
+}
+layout.outlineButton.addEventListener("click", toggleOutline);
+
 let fullScreen = false;
 function showWindowState(on: boolean) {
   fullScreen = on;
@@ -357,6 +371,7 @@ void bridge
 const SHORTCUT_ACTIONS: Readonly<Record<Shortcut, () => boolean>> = {
   "toggle-focus": () => (toggleFocus(), true),
   "toggle-typewriter": () => (toggleTypewriter(), true),
+  "toggle-outline": () => (toggleOutline(), true),
   "toggle-full-screen": () => (void setFullScreen(!fullScreen).catch(showError), true),
   "leave-full-screen": () => fullScreen && (void setFullScreen(false).catch(showError), true),
 };

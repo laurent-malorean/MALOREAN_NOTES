@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { showFocusUnit, showFullScreen, showTypewriter } from "./editor-tools";
+import { showFocusUnit, showFullScreen, showOutline, showTypewriter } from "./editor-tools";
 
 describe("bouton du mode focus", () => {
   it("dit le mode en cours et s'il est actif", () => {
@@ -41,6 +41,20 @@ describe("bouton du mode machine à écrire", () => {
     showTypewriter(button, "on");
     expect(button.getAttribute("aria-pressed")).toBe("true");
     showTypewriter(button, "off");
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+  });
+});
+
+describe("plan de la note", () => {
+  it("se montre à droite du texte, qui lui laisse la place, puis se cache", () => {
+    const area = document.createElement("main");
+    const outline = document.createElement("nav");
+    const button = document.createElement("button");
+    showOutline(area, outline, button, "shown");
+    expect([outline.hidden, area.classList.contains("outline-open")]).toEqual([false, true]);
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+    showOutline(area, outline, button, "hidden");
+    expect([outline.hidden, area.classList.contains("outline-open")]).toEqual([true, false]);
     expect(button.getAttribute("aria-pressed")).toBe("false");
   });
 });

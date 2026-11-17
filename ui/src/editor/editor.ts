@@ -13,6 +13,7 @@ import { liveTables } from "./live-preview/tables";
 import { findReplace } from "./writing/find-replace";
 import { formattingShortcuts } from "./writing/formatting";
 import { statusBar } from "./writing/status-bar";
+import { outlinePanel } from "./outline/outline-panel";
 import { type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
@@ -41,6 +42,8 @@ export interface EditorOptions {
   readonly attachmentActions?: AttachmentActions;
   /** Donne la date du jour ; la vraie date par défaut. */
   readonly today?: Today;
+  /** Où dessiner le plan de la note. */
+  readonly outline?: HTMLElement;
 }
 
 export function createEditor(
@@ -48,7 +51,7 @@ export function createEditor(
   onChange: (content: string) => void,
   options: EditorOptions = {},
 ): Editor {
-  const { resolveImage, attachmentActions, today = () => new Date() } = options;
+  const { resolveImage, attachmentActions, today = () => new Date(), outline } = options;
   const focus = new Compartment();
   let focusUnit: FocusUnit | null = null;
   const typewriter = new Compartment();
@@ -65,6 +68,7 @@ export function createEditor(
     formattingShortcuts,
     todayShortcut(today),
     statusBar,
+    outline ? outlinePanel(outline) : [],
     keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
     // Chaque langue des blocs de code n'est chargée qu'à sa première apparition.
     markdown({ base: markdownLanguage, codeLanguages: languages }),

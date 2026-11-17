@@ -17,6 +17,11 @@ describe("raccourcis clavier", () => {
     expect(key("t", { metaKey: true })).toBeNull();
   });
 
+  it("Cmd+Maj+O montre ou cache le plan", () => {
+    expect(key("o", { metaKey: true, shiftKey: true })).toBe("toggle-outline");
+    expect(key("o", { metaKey: true })).toBeNull();
+  });
+
   it("ne réagit pas aux autres touches", () => {
     expect(key("f", { metaKey: true })).toBeNull();
     expect(key("f", { shiftKey: true })).toBeNull();
