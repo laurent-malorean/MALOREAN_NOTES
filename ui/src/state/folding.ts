@@ -6,8 +6,12 @@ import type { PreferenceStorage } from "./focus-preference";
 const KEY = "malorean.folded:";
 const SEPARATOR = "/";
 
-/** Vrai si `folder` contient `path`, à n'importe quelle profondeur (pas lui-même). */
-const contains = (folder: string, path: string) => path.startsWith(folder + SEPARATOR);
+const ROOT = "";
+
+/** Vrai si `folder` contient `path`, à n'importe quelle profondeur (pas lui-même) ; la racine
+ * (chemin vide) contient tous les dossiers. */
+const contains = (folder: string, path: string) =>
+  folder === ROOT ? path !== ROOT : path.startsWith(folder + SEPARATOR);
 
 /** Vrai si ce dossier contient au moins un sous-dossier. */
 export function hasSubfolders(folders: readonly string[], path: string): boolean {

@@ -300,7 +300,7 @@ describe("icônes et dossiers pliés", () => {
     const { container } = column(FOLDERS);
     expect(arrow(container, "Travail")).not.toBeNull();
     expect(arrow(container, "Travail/Réunions")).not.toBeNull();
-    for (const path of ["", "Perso", "Travail/Réunions/2026"]) {
+    for (const path of ["Perso", "Travail/Réunions/2026"]) {
       expect(toggle(container, path)).not.toBeNull();
       expect(arrow(container, path)).toBeNull();
       expect(item(container, path).hasAttribute("aria-expanded")).toBe(false);
@@ -309,6 +309,20 @@ describe("icônes et dossiers pliés", () => {
     const otherName = item(container, "Travail").querySelector(".folder-name") as HTMLElement;
     expect(name.getBoundingClientRect().left).toBe(otherName.getBoundingClientRect().left);
     expect(item(container, "Travail").textContent).toBe("Travail");
+  });
+
+  it("la racine a sa flèche dès que la bibliothèque a un dossier ; pliée, elle les cache tous", () => {
+    const { container, calls } = column(["archives"]);
+    expect(arrow(container, "")).not.toBeNull();
+    expect(item(container, "").getAttribute("aria-expanded")).toBe("true");
+    toggle(container, "").click();
+    expect(calls).toEqual([["fold", ""]]);
+    const folded = column(["archives"], "", [""]).container;
+    expect(names(folded)).toEqual(["Notes"]);
+    expect(item(folded, "").getAttribute("aria-expanded")).toBe("false");
+    const empty = column([]).container;
+    expect(arrow(empty, "")).toBeNull();
+    expect(item(empty, "").hasAttribute("aria-expanded")).toBe(false);
   });
 
   it("un dossier plié cache ses sous-dossiers ; sa flèche dit s'il est déplié", () => {

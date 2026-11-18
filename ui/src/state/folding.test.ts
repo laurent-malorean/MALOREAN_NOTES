@@ -76,6 +76,50 @@ describe("dossiers pliés", () => {
   });
 });
 
+describe("la racine de la bibliothèque se plie comme un dossier", () => {
+  const ONE_LEVEL = ["archives"];
+
+  it("elle a des sous-dossiers dès que la bibliothèque en a un, pas sinon", () => {
+    expect(hasSubfolders(ONE_LEVEL, "")).toBe(true);
+    expect(hasSubfolders(FOLDERS, "")).toBe(true);
+    expect(hasSubfolders([], "")).toBe(false);
+  });
+
+  it("pliée, elle cache tous les dossiers, à toute profondeur", () => {
+    expect(visibleFolders(ONE_LEVEL, [""])).toEqual([]);
+    expect(visibleFolders(FOLDERS, [""])).toEqual([]);
+    expect(visibleFolders(FOLDERS, ["", "Travail"])).toEqual([]);
+  });
+
+  it("montrer un dossier la déplie ; la montrer elle-même la laisse comme elle est", () => {
+    expect(parentsUnfolded(["", "Perso"], "archives")).toEqual(["Perso"]);
+    expect(parentsUnfolded(["", "Travail"], "Travail/Réunions")).toEqual([]);
+    expect(parentsUnfolded(["", "Travail"], "")).toEqual(["", "Travail"]);
+  });
+
+  it("un dossier montré est toujours visible, la racine pliée ou non", () => {
+    fc.assert(
+      fc.property(fc.subarray(["", ...FOLDERS]), fc.constantFrom(...FOLDERS), (folded, shown) =>
+        visibleFolders(FOLDERS, parentsUnfolded(folded, shown)).includes(shown),
+      ),
+    );
+  });
+
+  it("elle reste pliée quand un dossier est renommé ou déplacé", () => {
+    expect(foldedMoved(["", "Travail"], "Travail", "Archives/Travail")).toEqual([
+      "",
+      "Archives/Travail",
+    ]);
+  });
+
+  it("pliée, elle est gardée d'un lancement à l'autre, sous le chemin vide", () => {
+    const { storage, items } = memoryStorage();
+    saveFolded(storage, "/notes", [""]);
+    expect(items.get("malorean.folded:/notes")).toBe('[""]');
+    expect(loadFolded(storage, "/notes")).toEqual([""]);
+  });
+});
+
 describe("dossiers pliés gardés", () => {
   it("chaque bibliothèque garde les siens", () => {
     const { storage, items } = memoryStorage();

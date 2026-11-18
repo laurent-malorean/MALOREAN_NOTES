@@ -1,5 +1,6 @@
 // Colonne des dossiers : la racine (nom de la bibliothèque) puis l'arbre des dossiers, chacun
-// avec son icône, et une flèche de dépliage devant ceux qui ont des sous-dossiers.
+// avec son icône, et une flèche de dépliage devant ceux qui ont des sous-dossiers (la racine
+// comprise, dès que la bibliothèque a un dossier).
 // Créer, renommer (double-clic) et déplacer (glisser-déposer) passent par un champ ou un geste ;
 // une note glissée depuis la liste se dépose aussi sur un dossier.
 import { canMoveInto, folderTree } from "../state/folders";
@@ -192,7 +193,7 @@ export function renderFoldersList(
     return folded.includes(path) ? "folded" : "unfolded";
   };
   container.replaceChildren(
-    item(ROOT, libraryName, 0, selected, "none", actions),
+    item(ROOT, libraryName, 0, selected, folding(ROOT), actions),
     ...folderTree(visibleFolders(folders, folded)).map((f) =>
       item(f.path, f.name, f.depth, selected, folding(f.path), actions),
     ),

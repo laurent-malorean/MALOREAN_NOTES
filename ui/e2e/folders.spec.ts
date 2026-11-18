@@ -7,10 +7,10 @@ const NOTES = {
 };
 const FOLDERS = ["Perso", "Travail", "Travail/Réunions"];
 
-async function launch(page: Page) {
+async function launch(page: Page, notes: object = NOTES, folders: string[] = FOLDERS) {
   const params = new URLSearchParams({
-    notes: JSON.stringify(NOTES),
-    folders: JSON.stringify(FOLDERS),
+    notes: JSON.stringify(notes),
+    folders: JSON.stringify(folders),
     remembered: "1",
   });
   await page.goto(`/e2e/app.html?${params.toString()}`);
@@ -62,4 +62,30 @@ test("une note glissée sur un dossier plié y va toujours", async ({ page }) =>
     .poll(() => page.evaluate(() => Object.keys(window.backend.notes).sort()))
     .toContain("Travail/idee.md");
   await expect(folderNames(page)).toHaveText(["Notes", "Perso", "Travail"]);
+});
+
+test("une bibliothèque à un seul niveau de dossiers se plie par sa racine, et le reste au relancement", async ({
+  page,
+}) => {
+  const notes = {
+    "idee.md": { content: "# Idée", modified: 2 },
+    "archives/vieux.md": { content: "# Vieux", modified: 1 },
+  };
+  await launch(page, notes, ["archives"]);
+  await expect(folderNames(page)).toHaveText(["Notes", "archives"]);
+  await expect(folderItem(page, "")).toHaveAttribute("aria-expanded", "true");
+
+  await toggle(page, "").click();
+  await expect(folderNames(page)).toHaveText(["Notes"]);
+  await expect(folderItem(page, "")).toHaveAttribute("aria-expanded", "false");
+  await expect(titles(page)).toHaveText(["Idée"]);
+
+  await page.reload();
+
+  await expect(folderNames(page)).toHaveText(["Notes"]);
+  await expect(folderItem(page, "")).toHaveAttribute("aria-expanded", "false");
+
+  await toggle(page, "").click();
+  await expect(folderNames(page)).toHaveText(["Notes", "archives"]);
+  await expect(folderItem(page, "")).toHaveAttribute("aria-expanded", "true");
 });
