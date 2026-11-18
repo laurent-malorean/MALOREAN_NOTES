@@ -7,7 +7,7 @@ import {
   recordedScreen,
 } from "../../test-support/app-fixture";
 import type { NoteContent } from "../bridge";
-import { activeNote, columnsStarted, noteOpened } from "../state/columns";
+import { activeNote, type Columns, columnsStarted, noteOpened } from "../state/columns";
 import { type Screen, searchTyped, welcome } from "../state/screen";
 import { createLibrary } from "./library";
 
@@ -25,6 +25,7 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
   const messages: string[] = [];
   const state = {
     chosen: { name: "Autres", path: "/autres" } as { name: string; path: string } | null,
+    restored: null as Columns | null,
   };
   const library = createLibrary({
     backend: {
@@ -40,6 +41,7 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
     },
     screen,
     columns: columns.open,
+    layout: { restore: async (path) => (calls.push(`disposition de ${path}`), state.restored) },
     show: (message) => messages.push(message),
     search: async (query) => void calls.push(`chercher ${query}`),
   });
@@ -52,12 +54,19 @@ describe("bibliothèque ouverte", () => {
     expect(t.library.path()).toBe("");
     await t.library.open({ name: "Notes", path: "/notes" });
     expect(t.library.path()).toBe("/notes");
-    expect(t.calls).toEqual(["dossiers", "notes de «»"]);
+    expect(t.calls).toEqual(["dossiers", "notes de «»", "disposition de /notes"]);
     const now = t.screen.get();
     expect(now.kind === "library" && now.folders).toEqual(["projets"]);
     expect(now.kind === "library" && now.library.path).toBe("/notes");
     expect(activeNote(t.columns.columns())).toBe("n.md");
     expect(t.columns.columns().list[0]?.tabs.map((tab) => tab.note)).toEqual(["n.md"]);
+  });
+
+  it("retrouve les colonnes gardées pour elle, s'il y en a", async () => {
+    const t = setup(welcome, noteOpened(columnsStarted, "un.md"));
+    t.state.restored = noteOpened(noteOpened(columnsStarted, "a.md"), "b.md");
+    await t.library.open({ name: "Notes", path: "/notes" });
+    expect(t.columns.columns()).toBe(t.state.restored);
   });
 
   it("en choisir une autre enregistre d'abord ce qui est tapé ; renoncer ne change rien", async () => {

@@ -215,7 +215,7 @@ export function tabClosed(columns: Columns, tabId: number): Columns {
  * La colonne se ferme : ses voisines se partagent sa largeur. Si elle était active, sa voisine de
  * droite (sinon de gauche) le devient.
  */
-function columnClosed(columns: Columns, id: number): Columns {
+export function columnClosed(columns: Columns, id: number): Columns {
   const index = columns.list.findIndex((column) => column.id === id);
   const closed = columns.list[index] as Column;
   const neighbours = [columns.list[index - 1], columns.list[index + 1]].filter(

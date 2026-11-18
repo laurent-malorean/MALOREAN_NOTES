@@ -27,8 +27,8 @@ export interface ColumnsDeps {
   readonly screen: CurrentScreen;
   /** L'éditeur d'une colonne qui vient d'apparaître. */
   newPane(parts: ColumnParts): Pane;
-  /** Les colonnes ont changé : la colonne active est peut-être une autre. */
-  changed(): void;
+  /** Les colonnes ont changé : la colonne active est peut-être une autre ; voici leur état. */
+  changed(columns: Columns): void;
   run(action: Promise<unknown>): void;
 }
 
@@ -106,7 +106,7 @@ export function createOpenColumns(deps: ColumnsDeps): OpenColumns {
   const change = async (next: Columns) => {
     state.columns = next;
     view.render(state.columns);
-    deps.changed();
+    deps.changed(state.columns);
     moveOutline(state, deps.outline);
     const screen = deps.screen.get();
     const active = activeNote(state.columns);

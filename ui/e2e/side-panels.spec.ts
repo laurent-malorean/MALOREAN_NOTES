@@ -121,14 +121,15 @@ test("les panneaux latéraux se cachent et se montrent, en plein écran comme en
   await page.reload();
   await expect(page.locator(".cm-line").first()).toContainText("Alpha");
   await expect(folders(page)).toBeHidden();
-  await expectColumnsFill(page, [1]);
+  // Les deux colonnes reviennent aussi au relancement (disposition gardée).
+  await expectColumnsFill(page, [0.5, 0.5]);
   await expect.poll(() => firstLineFromTop(page, 0)).toBeLessThan(3);
   // Palette de commandes.
   await page.keyboard.press("Meta+Shift+P");
   await page.keyboard.type("panneaux");
   await page.keyboard.press("Enter");
   await expect(folders(page)).toBeVisible();
-  await expectColumnsFill(page, [1]);
+  await expectColumnsFill(page, [0.5, 0.5]);
 });
 
 test("la ligne en cours reste au milieu quand les panneaux se cachent", async ({ page }) => {

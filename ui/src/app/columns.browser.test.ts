@@ -68,6 +68,7 @@ describe("colonnes et onglets de l'application", () => {
     expect(first.editor.setOutline).toHaveBeenCalledTimes(1);
     expect(selectedNote(m.screen.get())).toBe("a.md");
     expect(first.load).toHaveBeenLastCalledWith("a.md");
+    expect(m.changed).toHaveBeenLastCalledWith(m.columns.current());
     expect(m.columns.activePane()).toBe(first);
     expect([...m.columns.panes().values()]).toEqual([first]);
   });

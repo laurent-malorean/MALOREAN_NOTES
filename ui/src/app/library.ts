@@ -12,6 +12,7 @@ import {
 } from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
+import type { LayoutMemory } from "./layout-memory";
 
 export interface LibraryDeps {
   readonly backend: Pick<
@@ -20,6 +21,8 @@ export interface LibraryDeps {
   >;
   readonly screen: CurrentScreen;
   readonly columns: OpenColumns;
+  /** Les colonnes gardées pour chaque bibliothèque. */
+  readonly layout: Pick<LayoutMemory, "restore">;
   /** Montre un message quelques secondes. */
   show(message: string): void;
   /** Relance la recherche en cours sur les notes telles qu'elles sont maintenant. */
@@ -66,12 +69,14 @@ async function openLibrary(deps: LibraryDeps, library: LibraryInfo) {
   deps.screen.show(
     libraryOpened(library, await deps.backend.listFolders(), await deps.backend.listNotes("")),
   );
-  // Les colonnes montraient peut-être des notes d'une autre bibliothèque.
+  const restored = await deps.layout.restore(library.path);
+  // Sans colonnes gardées : celles d'avant montraient peut-être des notes d'une autre bibliothèque.
   await deps.columns.change(
-    noteShown(
-      notesRemoved(deps.columns.current(), () => true),
-      selectedNote(deps.screen.get()),
-    ),
+    restored ??
+      noteShown(
+        notesRemoved(deps.columns.current(), () => true),
+        selectedNote(deps.screen.get()),
+      ),
   );
 }
 

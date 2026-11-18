@@ -6,6 +6,7 @@ import { connectCommands } from "./app/commands";
 import { createCurrentScreen } from "./app/current-screen";
 import { connectExternalChanges } from "./app/external-changes";
 import { createFolders } from "./app/folders";
+import { createLayoutMemory } from "./app/layout-memory";
 import { createLibrary } from "./app/library";
 import { createMessages } from "./app/messages";
 import { paneMaker } from "./app/panes";
@@ -34,14 +35,16 @@ const columns = createOpenColumns({
   outline: layout.outline,
   screen,
   newPane: (parts) => newPane(parts),
-  changed: () => writing.showTypewriter(),
+  changed: (now) => (writing.showTypewriter(), layoutMemory.save(now)),
   run,
 });
+const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage });
 const search = createSearch({ backend: bridge, screen, run });
 const library = createLibrary({
   backend: bridge,
   screen,
   columns,
+  layout: layoutMemory,
   show: messages.show,
   search: search.search,
 });
