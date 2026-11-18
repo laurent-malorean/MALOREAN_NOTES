@@ -1,51 +1,29 @@
-// Raccourcis clavier de la fenêtre, valables où que soit le curseur.
+// Raccourcis clavier de la fenêtre, valables où que soit le curseur. Ceux des commandes viennent
+// de la liste des commandes (state/commands.ts), où chacun n'est écrit qu'une fois.
+import { MENU_COMMANDS, type MenuCommandId } from "../state/commands";
 
-export type Shortcut =
-  | "toggle-focus"
-  | "toggle-typewriter"
-  | "toggle-outline"
-  | "toggle-full-screen"
-  | "leave-full-screen"
-  | "toggle-side-panels"
-  | "open-settings"
-  | "quick-open"
-  | "command-palette"
-  | "new-tab"
-  | "close-tab"
-  | "next-tab"
-  | "previous-tab"
-  | "split-column"
-  | "new-note-from-template"
-  | "daily-note"
-  | "switch-workspace"
-  | "export-note"
-  | "print-note"
-  | "copy-note"
-  | "copy-markdown";
+/** Ce que demande une touche : une commande, la palette, ou Échap. */
+export type Shortcut = MenuCommandId | "leave-full-screen";
 
-const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
-  "cmd+shift+f": "toggle-focus",
-  "cmd+shift+t": "toggle-typewriter",
-  "cmd+shift+o": "toggle-outline",
-  "cmd+ctrl+f": "toggle-full-screen",
-  escape: "leave-full-screen",
-  "cmd+ctrl+s": "toggle-side-panels",
-  "cmd+,": "open-settings",
-  "cmd+o": "quick-open",
-  "cmd+shift+p": "command-palette",
-  "cmd+t": "new-tab",
-  "cmd+w": "close-tab",
-  "ctrl+tab": "next-tab",
-  "ctrl+shift+tab": "previous-tab",
-  "cmd+ctrl+t": "split-column",
-  "cmd+shift+n": "new-note-from-template",
-  "cmd+shift+j": "daily-note",
-  "cmd+shift+e": "switch-workspace",
-  "cmd+e": "export-note",
-  "cmd+p": "print-note",
-  "cmd+shift+c": "copy-note",
-  "cmd+ctrl+c": "copy-markdown",
-};
+/**
+ * Le nom d'une touche écrit comme dans les menus du Mac (`Cmd+Maj+N`), tel que `shortcutFor` le lit.
+ * Une touche avec Alt n'est jamais lue ici (Alt change la lettre tapée) : l'éditeur ou la barre
+ * des menus la prennent.
+ */
+export function keyOf(shortcut: string): string {
+  const written = shortcut.toLowerCase();
+  const parts = written.split("+");
+  const key = written.slice(written.lastIndexOf("+") + 1);
+  const has = (modifier: string) => (parts.includes(modifier) ? `${modifier}+` : "");
+  return `${has("cmd")}${has("ctrl")}${has("alt")}${parts.includes("maj") ? "shift+" : ""}${key}`;
+}
+
+const SHORTCUTS: ReadonlyMap<string, Shortcut> = new Map<string, Shortcut>([
+  ...MENU_COMMANDS.flatMap((command) =>
+    command.shortcut === undefined ? [] : [[keyOf(command.shortcut), command.id] as const],
+  ),
+  ["escape", "leave-full-screen"],
+]);
 
 /** Ce qu'il faut savoir d'une touche pressée. */
 export interface KeyPress {
@@ -58,5 +36,5 @@ export interface KeyPress {
 /** L'action demandée par la touche, ou rien. */
 export function shortcutFor(press: KeyPress): Shortcut | null {
   const modifiers = `${press.metaKey ? "cmd+" : ""}${press.ctrlKey ? "ctrl+" : ""}${press.shiftKey ? "shift+" : ""}`;
-  return SHORTCUTS[`${modifiers}${press.key.toLowerCase()}`] ?? null;
+  return SHORTCUTS.get(`${modifiers}${press.key.toLowerCase()}`) ?? null;
 }

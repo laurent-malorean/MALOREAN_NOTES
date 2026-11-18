@@ -57,6 +57,13 @@ impl ApiError {
         }
     }
 
+    /// Le Mac n'a pas pu construire ou modifier la barre des menus.
+    pub(crate) fn menu_failed(reason: &impl std::fmt::Display) -> Self {
+        Self {
+            message: format!("la barre des menus n'a pas pu être construite : {reason}"),
+        }
+    }
+
     pub(crate) fn internal(reason: &impl std::fmt::Display) -> Self {
         tracing::error!(%reason, "erreur interne");
         Self {

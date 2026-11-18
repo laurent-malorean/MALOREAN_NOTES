@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMMANDS, matchingCommands } from "./commands";
+import { COMMANDS, MENU_COMMANDS, matchingCommands, PALETTE } from "./commands";
 
 const labels = (query: string) => matchingCommands(query).map((c) => c.label);
 
@@ -7,12 +7,13 @@ describe("palette de commandes", () => {
   it("propose chaque action de l'application, avec son raccourci", () => {
     expect(COMMANDS.map((c) => [c.id, c.label, c.shortcut ?? null])).toEqual([
       ["quick-open", "Ouvrir une note", "Cmd+O"],
-      ["new-note", "Nouvelle note", null],
+      ["new-note", "Nouvelle note", "Cmd+N"],
       ["new-note-from-template", "Nouvelle note depuis un modèle", "Cmd+Maj+N"],
       ["daily-note", "Note du jour", "Cmd+Maj+J"],
       ["new-folder", "Nouveau dossier", null],
       ["search-workspace", "Rechercher dans toutes les notes", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],
+      ["find-and-replace", "Rechercher et remplacer", "Alt+Cmd+F"],
       ["toggle-focus", "Mode focus", "Cmd+Maj+F"],
       ["toggle-typewriter", "Mode machine à écrire", "Cmd+Maj+T"],
       ["toggle-outline", "Plan de la note", "Cmd+Maj+O"],
@@ -36,6 +37,16 @@ describe("palette de commandes", () => {
       ["remove-workspace", "Retirer un espace de travail", null],
       ["rebuild-index", "Reconstruire l'index", null],
     ]);
+  });
+
+  it("la palette elle-même a un nom et un raccourci, hors de sa propre liste", () => {
+    expect(PALETTE).toEqual({
+      id: "command-palette",
+      label: "Palette de commandes",
+      shortcut: "Cmd+Maj+P",
+    });
+    expect(MENU_COMMANDS).toEqual([...COMMANDS, PALETTE]);
+    expect(COMMANDS).not.toContainEqual(PALETTE);
   });
 
   it("garde les commandes dont le nom contient chaque mot tapé, sans tenir compte des accents", () => {

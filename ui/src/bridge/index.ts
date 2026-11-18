@@ -3,10 +3,13 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
+import type { AppMenu } from "./generated/AppMenu";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { ChosenFolder } from "./generated/ChosenFolder";
 import type { ExportFile } from "./generated/ExportFile";
 import type { ExportFormatItem } from "./generated/ExportFormatItem";
+import type { MenuEntryItem } from "./generated/MenuEntryItem";
+import type { StandardItem } from "./generated/StandardItem";
 import type { WorkspaceChanged } from "./generated/WorkspaceChanged";
 import type { WorkspaceInfo } from "./generated/WorkspaceInfo";
 import type { WorkspaceItem } from "./generated/WorkspaceItem";
@@ -23,10 +26,13 @@ import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
 import type { TrashInfo } from "./generated/TrashInfo";
 
 export type {
+  AppMenu,
   AttachedFile,
   ChosenFolder,
   ExportFile,
   ExportFormatItem,
+  MenuEntryItem,
+  StandardItem,
   WorkspaceChanged,
   WorkspaceInfo,
   WorkspaceItem,
@@ -143,6 +149,17 @@ const WORKSPACE_CHANGED_EVENT = "workspace-changed";
 /** Prévient de chaque changement fait dans l'espace de travail hors de l'application. */
 export const onWorkspaceChanged = (handler: (change: WorkspaceChanged) => void) =>
   listen<WorkspaceChanged>(WORKSPACE_CHANGED_EVENT, (event) => handler(event.payload));
+
+/** Remplace la barre des menus du Mac par `menus`, de gauche à droite. */
+export const installMenu = (menus: AppMenu[]) => invoke<null>("install_menu", { menus });
+/** Grise (`enabled` faux) ou rend actifs les éléments de menu des commandes `ids`. */
+export const enableMenuItems = (ids: string[], enabled: boolean) =>
+  invoke<null>("enable_menu_items", { ids, enabled });
+/** Même nom côté Rust (`MENU_COMMAND_EVENT`). */
+const MENU_COMMAND_EVENT = "menu-command";
+/** Prévient à chaque élément de la barre des menus choisi, avec l'identifiant de sa commande. */
+export const onMenuCommand = (handler: (id: string) => void) =>
+  listen<string>(MENU_COMMAND_EVENT, (event) => handler(event.payload));
 
 /** Prévient à chaque changement de taille de la fenêtre, entrée et sortie du plein écran comprises. */
 export const onWindowResized = (handler: () => void) => getCurrentWindow().onResized(handler);

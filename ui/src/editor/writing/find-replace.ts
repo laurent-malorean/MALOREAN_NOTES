@@ -25,7 +25,7 @@ const FRENCH: Readonly<Record<string, string>> = {
 };
 
 /** Ouvre le panneau, le curseur dans le champ de remplacement. */
-const openReplacePanel: Command = (view) => {
+export const openReplacePanel: Command = (view) => {
   openSearchPanel(view);
   // Stryker disable next-line OptionalChaining: le panneau vient d'être ouvert ; TypeScript exige le cas contraire.
   view.dom.querySelector<HTMLInputElement>(".cm-search input[name=replace]")?.focus();

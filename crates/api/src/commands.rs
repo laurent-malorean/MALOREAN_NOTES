@@ -18,6 +18,7 @@ use crate::{
 pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
 pub mod export;
+pub mod menu;
 pub mod workspaces;
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
@@ -495,5 +496,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         export::print_page,
         export::copy_rich_text,
         export::copy_plain_text,
+        menu::install_menu,
+        menu::enable_menu_items,
     ]
 }

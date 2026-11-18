@@ -255,3 +255,91 @@ pub struct AttachedFile {
     /// Le lien Markdown à insérer dans la note, là où le fichier a été collé ou glissé.
     pub markdown: String,
 }
+
+/// Un menu de la barre des menus du Mac : son titre et ses éléments, dans l'ordre.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AppMenu {
+    /// Le titre montré dans la barre ; celui du premier menu est remplacé par le nom de l'application.
+    pub title: String,
+    /// Le rôle que le Mac donne au menu, s'il en a un.
+    pub role: Option<MenuRoleItem>,
+    /// Les éléments du menu, de haut en bas.
+    pub entries: Vec<MenuEntryItem>,
+}
+
+/// Le rôle d'un menu pour le Mac : il y ajoute la liste des fenêtres, ou le champ d'aide.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum MenuRoleItem {
+    /// Le menu Fenêtre.
+    Window,
+    /// Le menu Aide.
+    Help,
+}
+
+/// Un élément de menu : une commande de la page, un élément standard du Mac, ou un séparateur.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+#[ts(export)]
+pub enum MenuEntryItem {
+    /// Une commande de la page, renvoyée à la page quand on la choisit.
+    Command {
+        /// L'identifiant de la commande, le même que dans la palette.
+        id: String,
+        /// Le nom montré.
+        label: String,
+        /// Le raccourci, écrit pour le Mac (`Cmd+Shift+N`), ou rien.
+        accelerator: Option<String>,
+        /// Faux pour un élément grisé.
+        enabled: bool,
+    },
+    /// Un élément que le Mac fait lui-même.
+    Standard {
+        /// Lequel.
+        item: StandardItem,
+        /// Le nom montré.
+        label: String,
+    },
+    /// Un trait entre deux groupes d'éléments.
+    Separator,
+}
+
+/// Les éléments standard du Mac, chacun avec son raccourci habituel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum StandardItem {
+    /// À propos de l'application.
+    About,
+    /// Services.
+    Services,
+    /// Masquer l'application (Cmd+H).
+    Hide,
+    /// Masquer les autres (Alt+Cmd+H).
+    HideOthers,
+    /// Tout afficher.
+    ShowAll,
+    /// Quitter (Cmd+Q).
+    Quit,
+    /// Annuler (Cmd+Z).
+    Undo,
+    /// Rétablir (Cmd+Maj+Z).
+    Redo,
+    /// Couper (Cmd+X).
+    Cut,
+    /// Copier (Cmd+C).
+    Copy,
+    /// Coller (Cmd+V).
+    Paste,
+    /// Tout sélectionner (Cmd+A).
+    SelectAll,
+    /// Placer dans le Dock (Cmd+M).
+    Minimize,
+    /// Réduire/agrandir.
+    Zoom,
+    /// Tout ramener au premier plan.
+    BringAllToFront,
+}

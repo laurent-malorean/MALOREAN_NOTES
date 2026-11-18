@@ -19,7 +19,7 @@ import { liveFormatting } from "./live-formatting";
 import { type ImageResolver, imageResolver, livePreview } from "./live-preview/plugin";
 import { liveTables } from "./live-preview/tables";
 import { openSearchPanel } from "@codemirror/search";
-import { findReplace } from "./writing/find-replace";
+import { findReplace, openReplacePanel } from "./writing/find-replace";
 import { formattingShortcuts } from "./writing/formatting";
 import { charactersPerPage, statusBar } from "./writing/status-bar";
 import { DEFAULT_SETTINGS } from "../state/settings";
@@ -63,6 +63,8 @@ export interface Editor {
   setCharactersPerPage(characters: number): void;
   /** Ouvre la recherche dans la note, comme Cmd+F. */
   openFind(): void;
+  /** Ouvre la recherche, le curseur dans le champ de remplacement, comme Alt+Cmd+F. */
+  openReplace(): void;
   /** Dessine le plan de la note dans `container` ; `null` arrête de le dessiner. */
   setOutline(container: HTMLElement | null): void;
   /** Retire l'éditeur de l'écran, quand sa colonne disparaît. */
@@ -219,6 +221,7 @@ export function createEditor(
     setTypewriter: typewriterSwitch(view, typewriter),
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
     openFind: () => void openSearchPanel(view),
+    openReplace: () => void openReplacePanel(view),
     setOutline: (container) => view.dispatch({ effects: outlineArea.change(container) }),
     destroy: () => view.destroy(),
   };

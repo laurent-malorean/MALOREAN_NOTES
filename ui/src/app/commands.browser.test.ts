@@ -74,7 +74,7 @@ const deps: CommandsDeps = {
   },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
-connectCommands(deps);
+const connected = connectCommands(deps);
 
 const picker = () => layout.picker;
 const options = () => [...picker().querySelectorAll(".picker-option")].map((o) => o.textContent);
@@ -160,6 +160,17 @@ describe("commandes de la palette", () => {
     expect(focus).toHaveBeenCalled();
     actions["find-in-note"]();
     expect(columns.open.activePane().editor.openFind).toHaveBeenCalled();
+    const openReplace = vi.fn();
+    Object.assign(columns.open.activePane().editor, { openReplace });
+    actions["find-and-replace"]();
+    expect(openReplace).toHaveBeenCalled();
+  });
+
+  it("rend aussi la palette, pour la barre des menus", () => {
+    connected["command-palette"]();
+    expect(picker().getAttribute("aria-label")).toBe("Palette de commandes");
+    connected["show-trash"]();
+    expect(log).toEqual(["corbeille"]);
   });
 
   it("les onglets se ferment et se parcourent dans la colonne active", async () => {
@@ -257,6 +268,7 @@ describe("raccourcis clavier", () => {
       ["N", { metaKey: true, shiftKey: true }],
       ["J", { metaKey: true, shiftKey: true }],
       ["E", { metaKey: true, shiftKey: true }],
+      ["n", { metaKey: true }],
     ];
     for (const [key, modifiers] of keys) expect(press(key, modifiers).defaultPrevented).toBe(true);
     await settle();
@@ -271,7 +283,13 @@ describe("raccourcis clavier", () => {
       "depuis un modèle",
       "note du jour",
       "changer d'espace de travail",
+      "nouvelle note",
     ]);
+  });
+
+  it("Cmd+F ouvre la recherche de la note quand l'éditeur ne l'a pas prise", () => {
+    expect(press("f", { metaKey: true }).defaultPrevented).toBe(true);
+    expect(columns.open.activePane().editor.openFind).toHaveBeenCalled();
   });
 
   it("les raccourcis des onglets", async () => {

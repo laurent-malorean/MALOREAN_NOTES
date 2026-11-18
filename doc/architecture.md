@@ -19,7 +19,7 @@ ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
                       disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, recherche, corbeille, enregistrement,
-                      modifications extérieures, outils d'écriture, réglages, export, commandes
+                      modifications extérieures, outils d'écriture, réglages, export, commandes, barre des menus
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
   src/rendering/      rendu HTML d'une note (export PDF, impression, copie mise en forme), styles en ligne, texte brut
@@ -72,6 +72,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 - Les liens entre notes (`[[titre]]`) et les liens entrants sont calculés à la demande en relisant les notes (fiche 0016).
 - Les colonnes et leurs onglets sont un état de l'interface seule ; chaque colonne a son éditeur et charge la note de son onglet actif ; une note montrée dans plusieurs colonnes n'a qu'un texte et qu'un enregistrement automatique, partagés entre leurs éditeurs (fiche 0017).
 - Un export écrit hors de l'espace de travail, là où l'utilisateur l'a choisi : le Markdown et ses pièces jointes par le port `ExportStore`, le PDF par l'impression de la page par WebKit (fiche 0025). Imprimer ouvre la fenêtre d'impression du Mac sur la même page (fiche 0026). Copier en texte mis en forme pose le même rendu, aux styles en ligne, et le texte brut dans le presse-papiers du Mac par le port `Clipboard` ; copier en Markdown y pose le texte de la note seul, tel quel (fiche 0027).
+- La barre des menus du Mac est décrite par la page (`ui/src/state/app-menu.ts`, tirée de la liste des commandes) et construite par Rust (`install_menu`) ; un élément choisi revient à la page par l'événement `menu-command` et lance la même commande que la palette. Les touches passent d'abord par la page, qui empêche WebKit de les donner au menu quand elle les prend (fiche 0029).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
 ## Décisions d'architecture

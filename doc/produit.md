@@ -38,6 +38,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Copier une note en texte mis en forme, pour la coller dans un mail ou un document : la mise en forme de l'export PDF et, pour les applications qui n'en veulent pas, le texte sans marques Markdown ; images incluses tant qu'elles restent légères. Palette ou Cmd+Maj+C (la sélection seule si du texte est sélectionné), menu de la note ou de son onglet.
 - Copier une note en Markdown, telle qu'elle est écrite (en-tête compris), pour la coller dans un autre outil qui lit le Markdown. Palette ou Ctrl+Cmd+C (la sélection seule si du texte est sélectionné), menu de la note ou de son onglet.
 - Note du jour : la note de la date du jour, rangée dans le journal sous sa date et titrée en toutes lettres, créée au besoin depuis le modèle « Journal » ; ouverte par Cmd+Maj+J, la palette, et au lancement si les réglages le demandent.
+- Barre des menus du Mac en français, rangée comme le veut Apple (MALOREAN Notes, Fichier, Édition, Présentation, Fenêtre, Aide) : chaque action de la palette avec le même raccourci ; Cmd+W ferme l'onglet, jamais la fenêtre ; les actions sur une note sont grisées quand aucune note n'est montrée.
 
 ## Hors première version
 

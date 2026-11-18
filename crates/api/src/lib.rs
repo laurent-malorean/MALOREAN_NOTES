@@ -9,9 +9,10 @@ mod pdf;
 mod session;
 
 pub use dto::{
-    AttachedFile, ChosenFolder, ExcerptPartItem, ExportFile, ExportFormatItem, LinkingNoteItem,
-    NoteContent, NoteListItem, NoteOrderItem, SaveResult, SavedNote, SearchResultItem, TagItem,
-    TrashInfo, TrashedNoteItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem,
+    AppMenu, AttachedFile, ChosenFolder, ExcerptPartItem, ExportFile, ExportFormatItem,
+    LinkingNoteItem, MenuEntryItem, MenuRoleItem, NoteContent, NoteListItem, NoteOrderItem,
+    SaveResult, SavedNote, SearchResultItem, StandardItem, TagItem, TrashInfo, TrashedNoteItem,
+    WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem,
 };
 pub use error::ApiError;
 pub use session::Session;

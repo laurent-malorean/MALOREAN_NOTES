@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shortcutFor } from "./shortcuts";
+import { keyOf, shortcutFor } from "./shortcuts";
 
 const key = (
   key: string,
@@ -22,7 +22,7 @@ describe("raccourcis clavier", () => {
   });
 
   it("ne réagit pas aux autres touches", () => {
-    expect(key("f", { metaKey: true })).toBeNull();
+    expect(key("g", { metaKey: true })).toBeNull();
     expect(key("f", { shiftKey: true })).toBeNull();
     expect(key("g", { metaKey: true, shiftKey: true })).toBeNull();
     expect(key("f", { metaKey: true, shiftKey: true, ctrlKey: true })).toBeNull();
@@ -71,9 +71,22 @@ describe("raccourcis clavier", () => {
     expect(key("w")).toBeNull();
   });
 
-  it("Cmd+Maj+N crée une note depuis un modèle", () => {
+  it("Cmd+N crée une note, Cmd+Maj+N une note depuis un modèle", () => {
     expect(key("N", { metaKey: true, shiftKey: true })).toBe("new-note-from-template");
-    expect(key("n", { metaKey: true })).toBeNull();
+    expect(key("n", { metaKey: true })).toBe("new-note");
+    expect(key("n")).toBeNull();
+  });
+
+  it("Cmd+F recherche dans la note (quand l'éditeur ne l'a pas déjà pris)", () => {
+    expect(key("f", { metaKey: true })).toBe("find-in-note");
+  });
+
+  it("lit un raccourci écrit comme dans les menus du Mac", () => {
+    expect(keyOf("Ctrl+Cmd+Maj+T")).toBe("cmd+ctrl+shift+t");
+    expect(keyOf("Cmd+,")).toBe("cmd+,");
+    expect(keyOf("Ctrl+Maj+Tab")).toBe("ctrl+shift+tab");
+    expect(keyOf("Escape")).toBe("escape");
+    expect(keyOf("Alt+Cmd+F")).toBe("cmd+alt+f");
   });
 
   it("Cmd+Maj+J ouvre la note du jour", () => {

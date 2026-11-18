@@ -5,7 +5,7 @@ import { openPicker } from "../screens/picker";
 import { type Shortcut, shortcutFor } from "../screens/shortcuts";
 import type { WindowDisplay } from "../screens/window-display";
 import { activeTabClosed, notePlaced, tabStepped } from "../state/columns";
-import { type CommandId, matchingCommands } from "../state/commands";
+import { type CommandId, matchingCommands, type MenuCommandId } from "../state/commands";
 import { NOTE_ORDERS, type NoteOrder } from "../state/note-order";
 import { matching, matchingNotes } from "../state/quick-open";
 import { noteOrder } from "../state/screen";
@@ -91,6 +91,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "new-folder": () => deps.folders.startCreation(),
     "search-workspace": () => deps.searchField.focus(),
     "find-in-note": () => columns.activePane().editor.openFind(),
+    "find-and-replace": () => columns.activePane().editor.openReplace(),
     "toggle-focus": () => writing.toggleFocus(),
     "toggle-typewriter": () => writing.toggleTypewriter(),
     "toggle-outline": () => writing.toggleOutline(),
@@ -134,48 +135,39 @@ function openPalette(deps: CommandsDeps, actions: Readonly<Record<CommandId, () 
   });
 }
 
-/** Ce que fait chaque raccourci ; faux si la touche n'a servi à rien et reste à la fenêtre. */
-function shortcutActions(
-  deps: CommandsDeps,
-  actions: Readonly<Record<CommandId, () => void>>,
-): Readonly<Record<Shortcut, () => boolean>> {
-  const done = (action: () => void) => () => (action(), true);
-  return {
-    "toggle-focus": done(actions["toggle-focus"]),
-    "toggle-typewriter": done(actions["toggle-typewriter"]),
-    "toggle-outline": done(actions["toggle-outline"]),
-    "toggle-full-screen": done(actions["toggle-full-screen"]),
-    // Échap fait une chose à la fois : quitter le plein écran, sinon retirer le filtre par étiquette.
-    "leave-full-screen": () => deps.window.leaveFullScreen() || deps.tags.clear(),
-    "toggle-side-panels": done(actions["toggle-side-panels"]),
-    "open-settings": done(actions["open-settings"]),
-    "quick-open": done(actions["quick-open"]),
-    "command-palette": done(() => openPalette(deps, actions)),
-    "new-tab": done(actions["new-tab"]),
-    "close-tab": done(actions["close-tab"]),
-    "next-tab": done(actions["next-tab"]),
-    "previous-tab": done(actions["previous-tab"]),
-    "split-column": done(actions["split-column"]),
-    "new-note-from-template": done(actions["new-note-from-template"]),
-    "daily-note": done(actions["daily-note"]),
-    "switch-workspace": done(actions["switch-workspace"]),
-    "export-note": done(actions["export-note"]),
-    "print-note": done(actions["print-note"]),
-    "copy-note": done(actions["copy-note"]),
-    "copy-markdown": done(actions["copy-markdown"]),
-  };
+/** Une fenêtre de la page (réglages, choix, question) est ouverte : elle garde le clavier et les menus. */
+export function dialogOpen(): boolean {
+  return document.querySelector("dialog[open]") !== null;
 }
 
-/** Branche les raccourcis clavier ; rend ce que fait chaque commande. */
-export function connectCommands(deps: CommandsDeps): Readonly<Record<CommandId, () => void>> {
-  const actions = commandActions(deps);
-  const shortcuts = shortcutActions(deps, actions);
+/** Lance ce que demande la touche ; faux si elle n'a servi à rien et reste à la fenêtre. */
+function runShortcut(
+  deps: CommandsDeps,
+  actions: Readonly<Record<MenuCommandId, () => void>>,
+  shortcut: Shortcut,
+): boolean {
+  // Échap fait une chose à la fois : quitter le plein écran, sinon retirer le filtre par étiquette.
+  if (shortcut === "leave-full-screen") return deps.window.leaveFullScreen() || deps.tags.clear();
+  actions[shortcut]();
+  return true;
+}
+
+/**
+ * Branche les raccourcis clavier ; rend ce que fait chaque commande, et la palette.
+ * La touche est prise ici, avant la barre des menus : `preventDefault` empêche WebKit de la
+ * passer au menu, qui ne la reçoit que si ni l'éditeur ni la page ne l'ont prise.
+ */
+export function connectCommands(deps: CommandsDeps): Readonly<Record<MenuCommandId, () => void>> {
+  const actions: Readonly<Record<MenuCommandId, () => void>> = {
+    ...commandActions(deps),
+    "command-palette": () => openPalette(deps, actions),
+  };
   document.addEventListener("keydown", (event) => {
     // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
     // Une fenêtre ouverte (réglages, choix) garde le clavier : Échap la ferme, sans quitter le plein écran.
-    if (event.defaultPrevented || document.querySelector("dialog[open]")) return;
+    if (event.defaultPrevented || dialogOpen()) return;
     const shortcut = shortcutFor(event);
-    if (shortcut && shortcuts[shortcut]()) event.preventDefault();
+    if (shortcut && runShortcut(deps, actions, shortcut)) event.preventDefault();
   });
   return actions;
 }

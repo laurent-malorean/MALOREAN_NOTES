@@ -29,3 +29,9 @@ tauri = { workspace = true, features = ["test"] }
 
 [lints]
 workspace = true
+
+# Les menus du Mac ne se construisent que sur le fil principal du programme : ces tests tournent
+# sans le lanceur de tests habituel, qui les mettrait chacun sur un autre fil.
+[[test]]
+name = "ipc_menu"
+harness = false

@@ -3,6 +3,7 @@
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { type FakeExports, fakeExport } from "./fake-export";
+import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 
 interface FakeNote {
@@ -10,7 +11,7 @@ interface FakeNote {
   modified: number;
 }
 
-export interface FakeBackend extends FakeExports {
+export interface FakeBackend extends FakeExports, FakeMenu {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -60,6 +61,7 @@ const backend: FakeBackend = {
   printed: [],
   copied: [],
   copiedMarkdown: [],
+  ...fakeMenuState(),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
   readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
@@ -461,6 +463,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
 const windowCommands: Record<string, (args: Record<string, unknown>) => unknown> = {
   "plugin:window|set_fullscreen": ({ value }) => void (backend.fullScreen = value === true),
   "plugin:window|is_fullscreen": () => backend.fullScreen,
+  ...fakeMenu(backend),
 };
 
 /** Pièces jointes : même nommage que Rust, en plus simple (moment figé). */

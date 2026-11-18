@@ -2,6 +2,7 @@
 // Le fonctionnement vit dans les modules de chaque domaine, sous `app/` (doc/code.md).
 import * as bridge from "./bridge";
 import { createOpenColumns } from "./app/columns";
+import { connectAppMenu } from "./app/app-menu";
 import { connectCommands } from "./app/commands";
 import { createCurrentScreen } from "./app/current-screen";
 import { createExport } from "./app/export";
@@ -47,7 +48,12 @@ const columns = createOpenColumns({
   outline: layout.outline,
   screen,
   newPane: (parts) => newPane(parts),
-  changed: (now) => (writing.showTypewriter(), layoutMemory.save(now), recent.visited(now)),
+  changed: (now) => (
+    writing.showTypewriter(),
+    layoutMemory.save(now),
+    recent.visited(now),
+    menu.follow(now)
+  ),
   ...{ printNote: (path) => exporting.printNote(path), copyNote: (p) => exporting.copyNote(p) },
   copyMarkdown: (path) => exporting.copyMarkdown(path),
   run,
@@ -60,16 +66,11 @@ const workspace = createWorkspace({
   ...{ storage: localStorage, show: messages.show, search: search.search },
 });
 const folders = createFolders({
-  backend: bridge,
-  screen,
-  columns,
+  ...{ backend: bridge, screen, columns },
   ...{ refreshList: workspace.refreshList, recent, list: layout.foldersList, run },
 });
 const trash = createTrash({
-  backend: bridge,
-  screen,
-  columns,
-  ask: (name) => askTrash(layout.confirmation, name),
+  ...{ backend: bridge, screen, columns, ask: (name) => askTrash(layout.confirmation, name) },
   ...{ refreshList: workspace.refreshList, refreshTags: workspace.refreshTags },
 });
 const tags = createTags({ backend: bridge, screen, columns, run });
@@ -128,15 +129,14 @@ layout.trashButton.addEventListener("click", () => run(trash.show()));
 layout.newFolderButton.addEventListener("click", folders.startCreation);
 
 const windowDisplay = connectWindowDisplay(layout, {
-  window: bridge,
-  storage: localStorage,
-  error: messages.error,
+  ...{ window: bridge, storage: localStorage, error: messages.error },
 });
-connectCommands({
+const commands = connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField, exporting },
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent },
 });
+const menu = connectAppMenu({ backend: bridge, actions: commands, error: messages.error });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
 
 screen.show(welcome);

@@ -9,6 +9,7 @@ export type CommandId =
   | "new-folder"
   | "search-workspace"
   | "find-in-note"
+  | "find-and-replace"
   | "toggle-focus"
   | "toggle-typewriter"
   | "toggle-outline"
@@ -42,12 +43,13 @@ export interface Command {
 /** Les commandes, dans l'ordre de la palette. Une nouvelle action s'ajoute ici. */
 export const COMMANDS: readonly Command[] = [
   { id: "quick-open", label: "Ouvrir une note", shortcut: "Cmd+O" },
-  { id: "new-note", label: "Nouvelle note" },
+  { id: "new-note", label: "Nouvelle note", shortcut: "Cmd+N" },
   { id: "new-note-from-template", label: "Nouvelle note depuis un modèle", shortcut: "Cmd+Maj+N" },
   { id: "daily-note", label: "Note du jour", shortcut: "Cmd+Maj+J" },
   { id: "new-folder", label: "Nouveau dossier" },
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },
+  { id: "find-and-replace", label: "Rechercher et remplacer", shortcut: "Alt+Cmd+F" },
   { id: "toggle-focus", label: "Mode focus", shortcut: "Cmd+Maj+F" },
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },
@@ -71,6 +73,19 @@ export const COMMANDS: readonly Command[] = [
   { id: "remove-workspace", label: "Retirer un espace de travail" },
   { id: "rebuild-index", label: "Reconstruire l'index" },
 ];
+
+/** La palette elle-même : lancée par son raccourci ou par la barre des menus, absente de sa liste. */
+export const PALETTE = {
+  id: "command-palette",
+  label: "Palette de commandes",
+  shortcut: "Cmd+Maj+P",
+} as const;
+
+/** Ce que lancent un raccourci et un élément de la barre des menus : une commande, ou la palette. */
+export type MenuCommandId = CommandId | typeof PALETTE.id;
+
+/** Les commandes et la palette : la seule liste des noms et des raccourcis de l'application. */
+export const MENU_COMMANDS: readonly (Command | typeof PALETTE)[] = [...COMMANDS, PALETTE];
 
 /** Les commandes dont le nom correspond à ce qui est tapé ; celles qui commencent par lui d'abord. */
 export function matchingCommands(query: string): Command[] {

@@ -61,6 +61,13 @@ describe("rechercher et remplacer dans la note ouverte", () => {
     expect(document.activeElement).toBe(field(parent, "search"));
   });
 
+  it("s'ouvre sur demande de l'application pour remplacer, le curseur dans le remplacement", () => {
+    const { parent, editor } = mount("pain");
+    editor.openReplace();
+    expect(panel(parent)).not.toBeNull();
+    expect(document.activeElement).toBe(field(parent, "replace"));
+  });
+
   it("surligne chaque occurrence et va de l'une à l'autre", async () => {
     const { parent, view } = mount("pain\nlait\npain");
     await userEvent.keyboard("{Meta>}f{/Meta}");

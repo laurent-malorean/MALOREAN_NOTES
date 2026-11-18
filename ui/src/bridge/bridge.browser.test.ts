@@ -385,3 +385,24 @@ describe("pont vers Rust : pièces jointes", () => {
     expect(calls).toEqual([{ command: "copy_plain_text", args: { text: "# a\n" } }]);
   });
 });
+
+describe("pont vers Rust : barre des menus", () => {
+  it("fait construire la barre des menus, puis griser ou activer ses éléments", async () => {
+    const calls = recordCalls(null);
+    const menus = [{ title: "Fichier", role: null, entries: [{ kind: "separator" as const }] }];
+    await bridge.installMenu(menus);
+    await bridge.enableMenuItems(["close-tab"], false);
+    expect(calls).toEqual([
+      { command: "install_menu", args: { menus } },
+      { command: "enable_menu_items", args: { ids: ["close-tab"], enabled: false } },
+    ]);
+  });
+
+  it("transmet chaque élément de menu choisi, par l'identifiant de sa commande", async () => {
+    mockIPC(() => null, { shouldMockEvents: true });
+    const received: string[] = [];
+    await bridge.onMenuCommand((id) => received.push(id));
+    await emit("menu-command", "close-tab");
+    expect(received).toEqual(["close-tab"]);
+  });
+});
