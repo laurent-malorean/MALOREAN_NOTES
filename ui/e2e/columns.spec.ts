@@ -122,6 +122,21 @@ test("chaque colonne montre l'onglet de sa note, à son titre, qui suit le titre
   await expect(tabs(page, 1)).toHaveText(["Courses×", "Idée neuve×"]);
 });
 
+test("deux notes cliquées vite, lecture lente : chaque onglet montre le titre de sa note dès qu'il s'ouvre", async ({
+  page,
+}) => {
+  await launch(page);
+  await page.evaluate(() => (window.backend.readDelay = 3000));
+  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  // Bien avant la fin de la lecture : les titres viennent de la liste des notes.
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×", "Vieille note×"], {
+    timeout: 1500,
+  });
+  await waitForNote(page, "Vieille note");
+  await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×", "Vieille note×"]);
+});
+
 test("fermer l'onglet de la seule colonne enregistre ce qui est tapé et la laisse vide", async ({
   page,
 }) => {

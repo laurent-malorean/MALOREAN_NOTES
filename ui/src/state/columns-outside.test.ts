@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Columns, notesChangedOutside } from "./columns";
+import { type Columns, notesChangedOutside, titlesKnown } from "./columns";
 
 const tab = (id: number, note: string, title: string | null = null) => ({ id, note, title });
 
@@ -56,5 +56,24 @@ describe("notes changées hors de l'application", () => {
 
   it("une note partie sans remplaçante garde ses onglets", () => {
     expect(notesChangedOutside(columns, ["b.md"], [note("a.md", "A")])).toEqual(columns);
+  });
+});
+
+describe("titres déjà connus de l'écran", () => {
+  it("un onglet sans titre prend celui de sa note dans la liste ; un onglet titré garde le sien", () => {
+    const opened: Columns = {
+      ...columns,
+      list: [{ id: 0, tabs: [tab(1, "a.md", "A"), tab(2, "c.md")], activeTab: 2, width: 1 }],
+    };
+    const next = titlesKnown(opened, (path) => ({ "a.md": "Autre", "c.md": "C" })[path]);
+    expect(tabs(next)).toEqual([["a.md A", "c.md C"]]);
+  });
+
+  it("un onglet dont le titre n'est connu nulle part reste sans titre", () => {
+    const opened: Columns = {
+      ...columns,
+      list: [{ id: 0, tabs: [tab(1, "c.md")], activeTab: 1, width: 1 }],
+    };
+    expect(tabs(titlesKnown(opened, () => undefined))).toEqual([["c.md null"]]);
   });
 });

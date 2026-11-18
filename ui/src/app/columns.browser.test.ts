@@ -1,20 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
-import { fakePane, workspaceScreen, recordedScreen, settle } from "../../test-support/app-fixture";
+import {
+  fakePane,
+  listed,
+  workspaceScreen,
+  recordedScreen,
+  settle,
+} from "../../test-support/app-fixture";
 import type { Pane } from "../screens/note-pane";
 import { activeNote, columnSplit, type Columns, noteOpened } from "../state/columns";
-import { selectedNote } from "../state/screen";
+import { selectedNote, welcome } from "../state/screen";
 import { createOpenColumns } from "./columns";
 import "../theme.css";
 import "../style.css";
 
-function mount() {
+function mount(start = workspaceScreen()) {
   const container = document.createElement("div");
   container.className = "columns";
   container.style.width = "1000px";
   container.style.height = "300px";
   const outline = document.createElement("nav");
   document.body.replaceChildren(container, outline);
-  const { screen, shown } = recordedScreen(workspaceScreen());
+  const { screen, shown } = recordedScreen(start);
   const log: string[] = [];
   const panes: ReturnType<typeof fakePane>[] = [];
   const changed = vi.fn();
@@ -67,6 +73,39 @@ async function twoColumns() {
 }
 
 describe("colonnes et onglets de l'application", () => {
+  it("un onglet qui s'ouvre prend le titre de sa note dans la liste ou dans les résultats de la recherche", async () => {
+    const found = { ...listed("b.md", "Note B"), folder: "", excerpt: [] };
+    const start = workspaceScreen([listed("a.md", "Note A")], (screen) => ({
+      ...screen,
+      search: { query: "note", results: [found] },
+    }));
+    const m = mount(start);
+    await m.columns.openNote("a.md");
+    await m.columns.openNote("b.md");
+    await m.columns.openNote("c.md");
+    const titles = m.columns.current().list[0]?.tabs.map((tab) => tab.title);
+    expect(titles).toEqual(["Note A", "Note B", null]);
+    expect(m.tabs().map((tab) => tab.textContent)).toEqual(["Note A×", "Note B×", "c×"]);
+  });
+
+  it("une recherche encore sans réponse : le titre vient de la liste", async () => {
+    const start = workspaceScreen([listed("a.md", "Note A")], (screen) => ({
+      ...screen,
+      search: { query: "note", results: null },
+    }));
+    const m = mount(start);
+    await m.columns.openNote("a.md");
+    await m.columns.openNote("c.md");
+    const titles = m.columns.current().list[0]?.tabs.map((tab) => tab.title);
+    expect(titles).toEqual(["Note A", null]);
+  });
+
+  it("sur l'accueil, sans liste, un onglet qui s'ouvre reste sans titre", async () => {
+    const m = mount(welcome);
+    await m.columns.openNote("a.md");
+    expect(m.columns.current().list[0]?.tabs.map((tab) => tab.title)).toEqual([null]);
+  });
+
   it("une colonne apparue reçoit son éditeur ; la colonne active dessine le plan et choisit la note de la liste", async () => {
     const m = mount();
     await m.columns.change(m.columns.current());

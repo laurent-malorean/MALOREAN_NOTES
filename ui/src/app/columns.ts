@@ -15,8 +15,9 @@ import {
   tabClosed,
   tabDropped,
   tabPlaced,
+  titlesKnown,
 } from "../state/columns";
-import { noteSelected, selectedNote } from "../state/screen";
+import { noteSelected, type Screen, selectedNote } from "../state/screen";
 import type { CurrentScreen } from "./current-screen";
 
 export interface ColumnsDeps {
@@ -71,6 +72,13 @@ interface ColumnsState {
   readonly panes: Map<number, Pane>;
 }
 
+/** Le titre d'une note tel que l'écran le connaît déjà : dans la liste ou dans les résultats de la recherche. */
+function listedTitle(screen: Screen, path: string): string | undefined {
+  if (screen.kind !== "workspace") return undefined;
+  const listed = screen.notes.find((note) => note.path === path);
+  return (listed ?? screen.search?.results?.find((note) => note.path === path))?.title;
+}
+
 /** Le plan passe à l'éditeur de la colonne active. */
 function moveOutline(state: ColumnsState, outline: HTMLElement) {
   const active = state.panes.get(state.columns.active) as Pane;
@@ -113,7 +121,8 @@ export function createOpenColumns(deps: ColumnsDeps): OpenColumns {
     await Promise.all([...state.panes.values()].map((pane) => pane.flush()));
   };
   const change = async (next: Columns) => {
-    state.columns = next;
+    const known = deps.screen.get();
+    state.columns = titlesKnown(next, (path) => listedTitle(known, path));
     view.render(state.columns);
     deps.changed(state.columns);
     moveOutline(state, deps.outline);

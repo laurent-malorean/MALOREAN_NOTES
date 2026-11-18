@@ -336,6 +336,21 @@ export function noteTitled(columns: Columns, note: string, title: string): Colum
 }
 
 /**
+ * Les onglets encore sans titre prennent celui que l'écran connaît déjà (`titleOf`, par exemple la
+ * liste des notes) : un onglet a son titre dès qu'il s'ouvre, même si sa note n'est jamais montrée
+ * (une autre a été cliquée avant la fin de sa lecture). Un titre déjà connu de l'onglet reste : il
+ * vient de la note lue.
+ */
+export function titlesKnown(
+  columns: Columns,
+  titleOf: (note: string) => string | undefined,
+): Columns {
+  return tabsChanged(columns, (tab) =>
+    tab.title === null ? { ...tab, title: titleOf(tab.note) ?? null } : tab,
+  );
+}
+
+/**
  * Des notes ont changé hors de l'application ; `workspace` est l'espace de travail après coup. Une seule
  * note ouverte partie et une seule note apparue (pas encore ouverte) : c'est un renommage, ses
  * onglets la suivent. Puis chaque note ouverte annoncée prend son titre dans tous ses onglets.
