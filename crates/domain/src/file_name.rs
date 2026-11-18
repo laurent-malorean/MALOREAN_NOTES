@@ -120,6 +120,14 @@ mod tests {
     }
 
     #[test]
+    fn a_refused_name_is_quoted_in_the_message() {
+        assert_eq!(
+            InvalidFileName("a/b.md".to_owned()).to_string(),
+            "nom de note invalide : « a/b.md »"
+        );
+    }
+
+    #[test]
     fn title_becomes_kebab_case_without_accents() {
         assert_eq!(from_title("# Mon idée du jour"), "mon-idee-du-jour.md");
     }

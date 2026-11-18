@@ -88,3 +88,16 @@ fn run(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn printing_is_refused_while_the_window_is_not_ready() {
+        let none = std::ptr::null_mut();
+        let not_ready = Err("la fenêtre n'est pas prête".to_owned());
+        assert_eq!(print_with_panel(none, none), not_ready);
+        assert_eq!(print_to_pdf(none, none, "/Users/moi/Alpha.pdf"), not_ready);
+    }
+}

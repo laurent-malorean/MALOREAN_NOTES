@@ -32,6 +32,7 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     rename_refuses_a_taken_name(&empty_store());
     created_folders_are_listed_at_any_depth(&empty_store());
     a_folder_lists_its_own_notes_only(&empty_store());
+    the_names_of_a_missing_folder_are_not_found(&empty_store());
     a_note_is_renamed_inside_its_folder(&empty_store());
     creating_an_existing_folder_is_refused(&empty_store());
     creating_a_folder_in_a_missing_parent_is_refused(&empty_store());
@@ -45,6 +46,13 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     rewriting_while_keeping_the_date_changes_only_the_content(&empty_store());
     rewriting_a_missing_note_while_keeping_the_date_is_refused(&empty_store());
     super::trash_contract::trash_contract(&empty_store);
+}
+
+fn the_names_of_a_missing_folder_are_not_found(store: &impl NoteStore) {
+    assert_eq!(
+        store.names(&folder("absent")),
+        Err(StoreError::FolderNotFound(folder("absent")))
+    );
 }
 
 fn rewriting_while_keeping_the_date_changes_only_the_content(store: &impl NoteStore) {

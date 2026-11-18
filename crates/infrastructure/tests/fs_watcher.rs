@@ -87,7 +87,11 @@ fn changes_in_a_dependency_folder_are_not_announced() {
         "x",
     )
     .unwrap();
-    assert!(received.recv_timeout(SILENCE).is_err());
+    // La création des dossiers, juste avant le départ, peut encore arriver (sans note) quand
+    // la machine est chargée : seule compte l'annonce d'une note.
+    while let Ok(change) = received.recv_timeout(SILENCE) {
+        assert_eq!(change.notes, []);
+    }
 }
 
 #[test]
@@ -106,4 +110,11 @@ fn a_missing_folder_cannot_be_watched() {
     assert!(
         matches!(result, Err(StoreError::Unavailable(message)) if message.starts_with("surveillance impossible"))
     );
+}
+
+#[test]
+fn a_watching_shows_its_kind_in_the_logs() {
+    let folder = tempfile::tempdir().unwrap();
+    let (watching, _received) = watch(&folder);
+    assert_eq!(format!("{watching:?}"), "FsWatching");
 }

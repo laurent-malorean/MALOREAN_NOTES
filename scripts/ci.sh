@@ -6,6 +6,9 @@
 #                            Rust pas encore commité, interface changée depuis le dernier passage de Stryker
 #   scripts/ci.sh --complet  tous les contrôles, test de mutation de tout le code, Rust et interface (avant de livrer)
 # Seuil du test de mutation : 100 %, des deux côtés.
+# Rust : les copies mutées se construisent lints coupés (.cargo/mutants.toml), sinon une erreur
+# introduite qui laisse du code inutilisé ne compile pas et n'est jamais testée. Un passage où
+# des erreurs ont été introduites mais aucune testée (toutes non compilables) est refusé.
 # Les seuils ne baissent jamais : on les relève quand la couverture monte.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -23,18 +26,44 @@ readonly COVERAGE_IGNORED='crates/app/src/main\.rs'
 
 step() { printf '\n▶ %s\n' "$1"; }
 
-# Codes de sortie de cargo-mutants : 2 = erreur introduite passée inaperçue (refus) ;
-# 3 = un test a tourné jusqu'au délai maximal : l'erreur a bien été remarquée (accepté).
+# Codes de sortie de cargo-mutants : 0 = tout attrapé ; 2 = erreur passée inaperçue ;
+# 3 = un test a tourné jusqu'au délai maximal (l'erreur a bien été remarquée). Quand il y a à la
+# fois des inaperçues et des délais, cargo-mutants rend 3 : le verdict se lit donc dans le bilan.
 readonly MUTANTS_MISSED=2
 readonly MUTANTS_TIMEOUT=3
+readonly MUTANTS_OUTCOMES=mutants.out/outcomes.json
 run_mutants() {
-  local status=0
+  local status=0 started
+  # Sans erreur à introduire (changement de tests seulement), cargo-mutants n'écrit aucun bilan :
+  # celui qui reste est celui d'un passage précédent, à ne pas relire.
+  started=$(mktemp)
+  # Les copies mutées se construisent lints coupés (.cargo/mutants.toml, `cap_lints`).
   cargo mutants --workspace --all-features --exclude "$COVERAGE_IGNORED" --jobs 4 "$@" || status=$?
   case "$status" in
-    0 | "$MUTANTS_TIMEOUT") ;;
-    "$MUTANTS_MISSED") fail "une erreur introduite dans le code n'est attrapée par aucun test (voir mutants.out/missed.txt)" ;;
+    0 | "$MUTANTS_MISSED" | "$MUTANTS_TIMEOUT") ;;
     *) fail "le test de mutation n'a pas pu tourner (code $status)" ;;
   esac
+  if [ "$MUTANTS_OUTCOMES" -nt "$started" ]; then
+    check_mutants_outcomes
+  else
+    printf '(aucune erreur à introduire dans le code modifié)\n'
+  fi
+  rm -f "$started"
+}
+
+# Refuse une erreur introduite passée inaperçue, et un passage qui n'a rien vérifié : des
+# erreurs ont été introduites mais aucune n'a été testée (toutes « non compilables »).
+check_mutants_outcomes() {
+  local total tested missed
+  total=$(jq '.total_mutants' "$MUTANTS_OUTCOMES")
+  tested=$(jq '.caught + .missed + .timeout' "$MUTANTS_OUTCOMES")
+  missed=$(jq '.missed' "$MUTANTS_OUTCOMES")
+  printf '(%s erreurs introduites, %s testées, %s non compilables)\n' \
+    "$total" "$tested" "$(jq '.unviable' "$MUTANTS_OUTCOMES")"
+  [ "$missed" -eq 0 ] \
+    || fail "${missed} erreurs introduites dans le code ne sont attrapées par aucun test (voir mutants.out/missed.txt)"
+  [ "$total" -eq 0 ] || [ "$tested" -gt 0 ] \
+    || fail "aucune des ${total} erreurs introduites n'a pu être testée : toutes sont non compilables (voir mutants.out/unviable.txt)"
 }
 fail() { printf '✗ %s\n' "$1" >&2; exit 1; }
 require() { "$@" >/dev/null 2>&1 || fail "outil manquant : $* (voir doc/code.md, « Contrôles automatiques »)"; }
@@ -144,12 +173,14 @@ check_ui_mutations() {
 
 check_mutations() {
   require cargo mutants --version
+  require jq --version
   step "Rust : test de mutation de tout le code (chaque erreur introduite doit être attrapée)"
   run_mutants --no-shuffle
 }
 
 check_uncommitted_mutations() {
   require cargo mutants --version
+  require jq --version
   local diff
   diff=$(mktemp)
   # Le code Rust qui sera commité : les changements suivis, plus les nouveaux fichiers.

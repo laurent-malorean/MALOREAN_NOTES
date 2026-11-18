@@ -83,6 +83,15 @@ mod tests {
     }
 
     #[test]
+    fn a_named_clipboard_is_apart_from_the_general_one() {
+        let name = "org.malorean.notes.tests.apart";
+        assert_eq!(
+            MacClipboard::named(name).pasteboard().name().to_string(),
+            name
+        );
+    }
+
+    #[test]
     fn the_default_clipboard_is_the_general_one() {
         assert_eq!(
             MacClipboard::default().pasteboard().name().to_string(),

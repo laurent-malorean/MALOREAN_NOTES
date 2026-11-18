@@ -189,8 +189,11 @@ impl NoteStore for InMemoryNoteStore {
     }
 
     fn names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError> {
-        Ok(self
-            .state()
+        let state = self.state();
+        if !state.has_folder(folder) {
+            return Err(StoreError::FolderNotFound(folder.clone()));
+        }
+        Ok(state
             .notes
             .keys()
             .filter(|name| name.folder() == folder)

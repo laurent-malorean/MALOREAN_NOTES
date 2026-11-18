@@ -80,7 +80,9 @@ impl FsNoteStore {
     /// Les noms exacts des notes : la casse compte, même sur un disque qui l'ignore.
     fn note_names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError> {
         let mut names = Vec::new();
-        for entry in fs::read_dir(self.folder_path(folder)).map_err(unavailable)? {
+        let entries =
+            fs::read_dir(self.folder_path(folder)).map_err(|e| folder_not_found_or(folder, e))?;
+        for entry in entries {
             let entry = entry.map_err(unavailable)?;
             let is_file = entry.file_type().map_err(unavailable)?.is_file();
             let parsed = entry.file_name().to_str().map(FileName::parse);
@@ -497,6 +499,15 @@ fn modified(path: &Path) -> io::Result<Modified> {
 fn not_found_or(name: &NotePath, error: io::Error) -> StoreError {
     if error.kind() == io::ErrorKind::NotFound {
         StoreError::NotFound(name.clone())
+    } else {
+        unavailable(error)
+    }
+}
+
+/// Un sous-dossier absent est introuvable ; l'espace de travail absent, lui, est indisponible.
+fn folder_not_found_or(folder: &Folder, error: io::Error) -> StoreError {
+    if error.kind() == io::ErrorKind::NotFound && folder.parent().is_some() {
+        StoreError::FolderNotFound(folder.clone())
     } else {
         unavailable(error)
     }

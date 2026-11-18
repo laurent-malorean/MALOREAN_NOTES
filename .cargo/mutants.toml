@@ -1,0 +1,17 @@
+# Réglages de cargo-mutants (test de mutation Rust, doc/code.md). S'ajoutent aux options
+# passées par scripts/ci.sh.
+
+# Les lints du projet refusent le code inutilisé (`unused = "deny"`) : une erreur introduite qui
+# laisse un paramètre ou une fonction inutilisée ne compilait plus et n'était donc jamais testée
+# (« non compilable »). Les copies mutées se construisent avec les lints coupés (`--cap-lints`) ;
+# la construction normale et Clippy restent stricts.
+cap_lints = true
+
+# Les tests de contrat sont des tests (joués sur le faux et sur le vrai stockage) : les muter
+# reviendrait à tester les tests.
+exclude_globs = ["crates/application/src/testing/*contract.rs"]
+
+# Commandes qui ouvrent une fenêtre de choix du Mac (enregistrement, dossier) : le simulateur de
+# Tauri n'a pas ces fenêtres, aucun test automatique ne peut les ouvrir. Ce qu'elles font du
+# choix est testé à part (`Session::chosen_export`, `Session::chosen_folder`).
+exclude_re = ["choose_export_file", "choose_workspace_folder"]

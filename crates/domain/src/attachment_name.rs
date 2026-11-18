@@ -368,6 +368,11 @@ mod tests {
     }
 
     #[test]
+    fn a_refused_moment_says_why() {
+        assert_eq!(InvalidMoment.to_string(), "moment invalide");
+    }
+
+    #[test]
     fn a_pasted_screenshot_is_named_after_the_moment() {
         let name = AttachmentName::pasted("image/png", &moment()).unwrap();
         assert_eq!(name.to_name(), "image-2026-11-16-1805.png");
