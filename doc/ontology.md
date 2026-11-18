@@ -51,6 +51,7 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 | Surveillance | `WorkspaceWatcher` | Écoute des changements faits dans le dossier de l'espace de travail hors de l'application. |
 | Aperçu en direct | `livePreview` | Affichage de la note mise en forme dans l'éditeur : la syntaxe Markdown est masquée, sauf là où se trouve le curseur ; le fichier n'est jamais modifié. |
 | Tableau | `Table` | Tableau Markdown : ligne d'en-tête, ligne d'alignement, puis les lignes ; dessiné par l'aperçu en direct. |
+| Image introuvable | `cm-lp-image-missing` | Image de la note que l'aperçu en direct ne peut pas charger (fichier absent, adresse fausse) : son texte de remplacement s'affiche à sa place, ou l'adresse écrite quand ce texte est vide. |
 | Thème | `theme` | Couleurs, polices et tailles de lecture de l'interface, réunies dans un seul fichier. |
 | Plein écran | `fullScreen` | La fenêtre occupe tout l'écran, en gardant sa disposition : les panneaux latéraux restent montrés ou cachés comme avant. Bouton, Ctrl+Cmd+F ou la palette ; Échap en sort. |
 | Panneaux latéraux | `sidePanels` | Les listes des dossiers et des notes, à gauche des colonnes. Un bouton, Ctrl+Cmd+S ou la palette les cachent ou les montrent ensemble, en plein écran comme en dehors ; les colonnes prennent alors toute la largeur. Le choix est gardé d'un lancement à l'autre. |

@@ -38,7 +38,9 @@ function decorationFor(conceal: Conceal, resolve: ImageResolver): Decoration {
     case "checkbox":
       return conceal.checked ? checkboxes.checked : checkboxes.unchecked;
     case "image":
-      return Decoration.replace({ widget: new ImageWidget(resolve(conceal.src), conceal.alt) });
+      return Decoration.replace({
+        widget: new ImageWidget(resolve(conceal.src), conceal.alt, conceal.src),
+      });
   }
 }
 

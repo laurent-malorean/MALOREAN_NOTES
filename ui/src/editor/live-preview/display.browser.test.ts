@@ -176,6 +176,18 @@ describe("aperçu à l'écran : images", () => {
     expect(shown(parent)[2]).not.toContain("![");
   });
 
+  it("affiche le texte de remplacement d'une image introuvable", async () => {
+    const { parent } = mount("texte\n\n![un chat absent](introuvable.png)");
+    await expect.poll(() => shown(parent)[2]).toBe("un chat absent");
+    expect(isSeen(parent.querySelector(".cm-lp-image-missing"))).toBe(true);
+    expect(isSeen(parent.querySelector("img.cm-lp-image"))).toBe(false);
+  });
+
+  it("affiche l'adresse d'une image introuvable sans texte de remplacement", async () => {
+    const { parent } = mount("texte\n\n![](introuvable.png)");
+    await expect.poll(() => shown(parent)[2]).toBe("introuvable.png");
+  });
+
   it("montre la syntaxe de l'image quand le curseur est sur sa ligne", () => {
     const { parent, view } = mount(`texte\n\n![un point](${PIXEL})`);
     cursorOnLine(view, 3);

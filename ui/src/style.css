@@ -535,6 +535,10 @@ button {
   margin: 0.5em 0;
   border-radius: 4px;
 }
+.editor .cm-lp-image-missing {
+  color: var(--muted);
+  font-style: italic;
+}
 .editor .cm-lp-table {
   border-collapse: collapse;
   margin: 0.5em 0;
