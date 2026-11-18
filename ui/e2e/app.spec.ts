@@ -175,6 +175,8 @@ test("on range ses notes dans des dossiers : créer, renommer, déplacer", async
 
   await page.getByTitle("Nouvelle note").click();
   await expect.poll(() => paths(page)).toContain("Travail/Projets/sans-titre.md");
+  // La note créée prend le curseur en s'affichant : on attend qu'elle soit là pour renommer.
+  await waitForEmptyNote(page);
 
   await folderItem(page, "Projets").dblclick();
   await page.keyboard.press("Meta+A");
