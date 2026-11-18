@@ -2,12 +2,15 @@ import { afterEach, describe, expect, it } from "vitest";
 import { closeContextMenu } from "./context-menu";
 import { startDragging, stopDragging } from "./dragging";
 import { type FolderActions, renderFoldersList, startFolderCreation } from "./folders-list";
+import "../theme.css";
+import "../style.css";
 
 type Call = readonly [string, ...string[]];
 
 function column(
   folders: readonly string[] = ["Perso", "Travail", "Travail/Réunions"],
   selected: string | null = "",
+  folded: readonly string[] = [],
 ) {
   const container = document.createElement("nav");
   document.body.replaceChildren(container);
@@ -19,8 +22,9 @@ function column(
     move: (path, into) => calls.push(["move", path, into]),
     moveNote: (path, into) => calls.push(["moveNote", path, into]),
     trashFolder: (path) => calls.push(["trashFolder", path]),
+    fold: (path) => calls.push(["fold", path]),
   };
-  renderFoldersList(container, "Notes", folders, selected, actions);
+  renderFoldersList(container, "Notes", folders, selected, actions, folded);
   return { container, calls, actions };
 }
 
@@ -103,7 +107,7 @@ describe("créer un dossier", () => {
     const { container, actions } = column();
     startFolderCreation(container, "", actions.create);
     input(container).value = "Pro";
-    renderFoldersList(container, "Notes", ["Autre"], "", actions);
+    renderFoldersList(container, "Notes", ["Autre"], "", actions, []);
     expect(input(container).value).toBe("Pro");
   });
 });
@@ -262,5 +266,117 @@ describe("jeter un dossier", () => {
   it("aucun dossier n'est choisi quand la corbeille est affichée", () => {
     const { container } = column(["Travail"], null);
     expect(container.querySelector(".folder-item.selected")).toBeNull();
+  });
+});
+
+describe("icônes et dossiers pliés", () => {
+  const FOLDERS = ["Perso", "Travail", "Travail/Réunions", "Travail/Réunions/2026"];
+  const toggle = (container: HTMLElement, path: string) =>
+    item(container, path).querySelector<HTMLElement>(".folder-toggle") as HTMLElement;
+  const arrow = (container: HTMLElement, path: string) =>
+    toggle(container, path).querySelector<SVGSVGElement>("svg.folder-chevron");
+
+  it("chaque dossier a son icône de dossier, dessinée de la couleur du texte", () => {
+    const { container } = column(FOLDERS);
+    for (const path of ["", ...FOLDERS]) {
+      const icon = item(container, path).querySelector("svg.folder-icon");
+      expect(icon?.getAttribute("stroke")).toBe("currentColor");
+      expect(icon?.getAttribute("aria-hidden")).toBe("true");
+    }
+  });
+
+  it("l'icône et la flèche sont des dessins au trait, à l'échelle de leur place", () => {
+    const { container } = column(FOLDERS);
+    const icon = item(container, "Travail").querySelector("svg.folder-icon") as SVGSVGElement;
+    for (const drawing of [icon, arrow(container, "Travail") as SVGSVGElement]) {
+      expect(drawing.viewBox.baseVal.width).toBe(24);
+      const line = drawing.querySelector("path") as SVGPathElement;
+      expect(line.getBBox().width).toBeGreaterThan(0);
+      expect(getComputedStyle(line).fill).toBe("none");
+    }
+  });
+
+  it("une flèche devant les seuls dossiers qui ont des sous-dossiers ; les autres gardent sa place", () => {
+    const { container } = column(FOLDERS);
+    expect(arrow(container, "Travail")).not.toBeNull();
+    expect(arrow(container, "Travail/Réunions")).not.toBeNull();
+    for (const path of ["", "Perso", "Travail/Réunions/2026"]) {
+      expect(toggle(container, path)).not.toBeNull();
+      expect(arrow(container, path)).toBeNull();
+      expect(item(container, path).hasAttribute("aria-expanded")).toBe(false);
+    }
+    const name = item(container, "Perso").querySelector(".folder-name") as HTMLElement;
+    const otherName = item(container, "Travail").querySelector(".folder-name") as HTMLElement;
+    expect(name.getBoundingClientRect().left).toBe(otherName.getBoundingClientRect().left);
+    expect(item(container, "Travail").textContent).toBe("Travail");
+  });
+
+  it("un dossier plié cache ses sous-dossiers ; sa flèche dit s'il est déplié", () => {
+    const { container } = column(FOLDERS, "", ["Travail/Réunions"]);
+    expect(names(container)).toEqual(["Notes", "Perso", "Travail", "Réunions"]);
+    expect(item(container, "Travail").getAttribute("aria-expanded")).toBe("true");
+    expect(item(container, "Travail/Réunions").getAttribute("aria-expanded")).toBe("false");
+    column(FOLDERS, "", ["Travail"]);
+    expect(names(document.querySelector("nav") as HTMLElement)).toEqual([
+      "Notes",
+      "Perso",
+      "Travail",
+    ]);
+  });
+
+  it("la flèche tourne vers le bas quand le dossier est déplié", () => {
+    const { container } = column(FOLDERS, "", ["Travail/Réunions"]);
+    const turn = (path: string) => getComputedStyle(toggle(container, path)).transform;
+    expect(turn("Travail/Réunions")).toBe("none");
+    expect(turn("Travail")).not.toBe("none");
+  });
+
+  it("un clic sur la flèche plie ou déplie le dossier, sans le choisir ni le renommer", () => {
+    const { container, calls } = column(FOLDERS);
+    toggle(container, "Travail").click();
+    toggle(container, "Travail").dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    expect(calls).toEqual([["fold", "Travail"]]);
+    expect(input(container)).toBeNull();
+  });
+
+  it("au clavier, → déplie et ← plie le dossier qui a le focus", () => {
+    const { container, calls } = column(FOLDERS, "", ["Travail/Réunions"]);
+    press(item(container, "Travail/Réunions"), "ArrowRight");
+    press(item(container, "Travail/Réunions"), "ArrowLeft");
+    press(item(container, "Travail"), "ArrowLeft");
+    press(item(container, "Travail"), "ArrowRight");
+    press(item(container, "Perso"), "ArrowLeft");
+    press(item(container, "Perso"), "ArrowRight");
+    press(item(container, "Travail"), "Enter");
+    press(item(container, "Travail/Réunions"), "Enter");
+    expect(calls).toEqual([
+      ["fold", "Travail/Réunions"],
+      ["fold", "Travail"],
+    ]);
+  });
+
+  it("le dossier qui avait le focus le garde quand la colonne est redessinée", () => {
+    const { container, actions } = column(FOLDERS);
+    item(container, "Travail").focus();
+    renderFoldersList(container, "Notes", FOLDERS, "", actions, ["Travail"]);
+    expect(document.activeElement).toBe(item(container, "Travail"));
+    (document.activeElement as HTMLElement).blur();
+    renderFoldersList(container, "Notes", FOLDERS, "", actions, []);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("un dossier qui avait le focus et qu'un pli cache le perd, sans erreur", () => {
+    const { container, actions } = column(FOLDERS);
+    item(container, "Travail/Réunions").focus();
+    renderFoldersList(container, "Notes", FOLDERS, "", actions, ["Travail"]);
+    expect(names(container)).toEqual(["Notes", "Perso", "Travail"]);
+  });
+
+  it("glisser une note sur un dossier qui a des sous-dossiers l'y dépose toujours", () => {
+    const { container, calls } = column(FOLDERS, "", ["Travail"]);
+    startDragging({ kind: "note", path: "courses.md" });
+    expect(drag(toggle(container, "Travail"), "dragover").defaultPrevented).toBe(true);
+    drag(toggle(container, "Travail"), "drop");
+    expect(calls).toEqual([["moveNote", "courses.md", "Travail"]]);
   });
 });

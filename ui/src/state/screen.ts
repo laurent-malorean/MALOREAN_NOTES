@@ -1,5 +1,6 @@
 import type { LibraryInfo, NoteListItem, SearchResultItem, TrashInfo } from "../bridge";
 import { movedPath } from "./folders";
+import { foldedMoved, foldToggled, parentsUnfolded } from "./folding";
 import { initialSelection } from "./selection";
 
 /**
@@ -15,7 +16,7 @@ export interface Search {
  * Ce que montre la fenêtre : l'accueil, ou une bibliothèque ouverte avec ses dossiers,
  * le dossier choisi (`""` pour la racine), ses notes, la note sélectionnée, la recherche
  * en cours et la corbeille affichée (`null` pour l'une et l'autre : la liste montre les notes
- * du dossier).
+ * du dossier), et les dossiers pliés de la colonne des dossiers.
  */
 export type Screen =
   | { readonly kind: "welcome" }
@@ -28,16 +29,21 @@ export type Screen =
       readonly selected: string | null;
       readonly search: Search | null;
       readonly trash: TrashInfo | null;
+      readonly folded: readonly string[];
     };
 
 /** L'écran du lancement, avant toute bibliothèque. */
 export const welcome: Screen = { kind: "welcome" };
 
-/** Une bibliothèque qu'on vient d'ouvrir, sur sa racine et sa note la plus récente. */
+/**
+ * Une bibliothèque qu'on vient d'ouvrir, sur sa racine et sa note la plus récente, avec ses
+ * dossiers pliés gardés (aucun : tous dépliés).
+ */
 export function libraryOpened(
   library: LibraryInfo,
   folders: readonly string[],
   notes: readonly NoteListItem[],
+  folded: readonly string[] = [],
 ): Screen {
   return {
     kind: "library",
@@ -48,17 +54,33 @@ export function libraryOpened(
     selected: initialSelection(notes),
     search: null,
     trash: null,
+    folded,
   };
 }
 
-/** La même bibliothèque, sur un autre dossier et sa note la plus récente. */
+/** La même bibliothèque, sur un autre dossier, rendu visible, et sa note la plus récente. */
 export function folderSelected(
   screen: Screen,
   folder: string,
   notes: readonly NoteListItem[],
 ): Screen {
+  if (screen.kind !== "library") return screen;
+  const selected = initialSelection(notes);
+  const folded = parentsUnfolded(screen.folded, folder);
+  return { ...screen, folder, notes, selected, search: null, trash: null, folded };
+}
+
+/** La même bibliothèque, avec ce dossier plié, ou déplié s'il était plié. */
+export function folderFolded(screen: Screen, path: string): Screen {
   return screen.kind === "library"
-    ? { ...screen, folder, notes, selected: initialSelection(notes), search: null, trash: null }
+    ? { ...screen, folded: foldToggled(screen.folded, path) }
+    : screen;
+}
+
+/** La même bibliothèque, avec les dossiers qui contiennent celui-ci dépliés. */
+export function folderRevealed(screen: Screen, path: string): Screen {
+  return screen.kind === "library"
+    ? { ...screen, folded: parentsUnfolded(screen.folded, path) }
     : screen;
 }
 
@@ -67,11 +89,16 @@ export function foldersRefreshed(screen: Screen, folders: readonly string[]): Sc
   return screen.kind === "library" ? { ...screen, folders } : screen;
 }
 
-/** La même bibliothèque, après le déplacement (ou renommage) du dossier `from` en `to`. */
+/**
+ * La même bibliothèque, après le déplacement (ou renommage) du dossier `from` en `to` ; les
+ * dossiers pliés le suivent et le dossier affiché reste visible.
+ */
 export function folderMoved(screen: Screen, from: string, to: string): Screen {
   if (screen.kind !== "library") return screen;
   const selected = screen.selected === null ? null : movedPath(screen.selected, from, to);
-  return { ...screen, folder: movedPath(screen.folder, from, to), selected };
+  const folder = movedPath(screen.folder, from, to);
+  const folded = parentsUnfolded(foldedMoved(screen.folded, from, to), folder);
+  return { ...screen, folder, selected, folded };
 }
 
 /** La même bibliothèque, avec la liste des notes relue. */

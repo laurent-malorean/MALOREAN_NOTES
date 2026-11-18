@@ -5,6 +5,7 @@ import type { LibraryInfo, NoteContent } from "../bridge";
 import { notesMoved, noteShown, notesRemoved } from "../state/columns";
 import {
   currentFolder,
+  folderRevealed,
   foldersRefreshed,
   libraryOpened,
   notesRefreshed,
@@ -12,6 +13,7 @@ import {
 } from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
+import type { FoldMemory } from "./fold-memory";
 import type { LayoutMemory } from "./layout-memory";
 
 export interface LibraryDeps {
@@ -23,6 +25,8 @@ export interface LibraryDeps {
   readonly columns: OpenColumns;
   /** Les colonnes gardées pour chaque bibliothèque. */
   readonly layout: Pick<LayoutMemory, "restore">;
+  /** Les dossiers pliés gardés pour chaque bibliothèque. */
+  readonly folds: Pick<FoldMemory, "load">;
   /** Montre un message quelques secondes. */
   show(message: string): void;
   /** Relance la recherche en cours sur les notes telles qu'elles sont maintenant. */
@@ -44,7 +48,8 @@ export interface Library {
   /** Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord. */
   followLink(title: string): Promise<void>;
   /**
-   * Déplace une note dans un autre dossier ; la liste reste sur le dossier affiché.
+   * Déplace une note dans un autre dossier, dont ceux qui le contiennent se déplient ; la liste
+   * reste sur le dossier affiché.
    * Les colonnes qui la montrent la gardent, sous son nouveau chemin, une fois ce qui est tapé enregistré.
    */
   moveNote(path: string, into: string): Promise<void>;
@@ -66,9 +71,9 @@ async function refreshList(deps: LibraryDeps) {
 }
 
 async function openLibrary(deps: LibraryDeps, library: LibraryInfo) {
-  deps.screen.show(
-    libraryOpened(library, await deps.backend.listFolders(), await deps.backend.listNotes("")),
-  );
+  const folders = await deps.backend.listFolders();
+  const notes = await deps.backend.listNotes("");
+  deps.screen.show(libraryOpened(library, folders, notes, deps.folds.load(library.path)));
   const restored = await deps.layout.restore(library.path);
   // Sans colonnes gardées : celles d'avant montraient peut-être des notes d'une autre bibliothèque.
   await deps.columns.change(
@@ -97,6 +102,7 @@ async function followLink(deps: LibraryDeps, title: string) {
 async function moveNote(deps: LibraryDeps, path: string, into: string) {
   const source = await deps.columns.flushedPath(path);
   const moved = await deps.backend.moveNote(source, into);
+  deps.screen.show(folderRevealed(deps.screen.get(), into));
   await refreshList(deps);
   await deps.columns.update((now) =>
     notesMoved(now, (note) => (note === source ? moved.path : note)),

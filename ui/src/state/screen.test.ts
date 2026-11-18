@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { NoteListItem, SearchResultItem } from "../bridge";
 import {
   currentFolder,
+  folderFolded,
   folderMoved,
+  folderRevealed,
   folderSelected,
   foldersRefreshed,
   libraryOpened,
@@ -41,6 +43,7 @@ describe("état de l'écran", () => {
       selected: "recente.md",
       search: null,
       trash: null,
+      folded: [],
     });
   });
 
@@ -54,6 +57,7 @@ describe("état de l'écran", () => {
       selected: null,
       search: null,
       trash: null,
+      folded: [],
     });
   });
 
@@ -71,6 +75,7 @@ describe("état de l'écran", () => {
       selected: "b.md",
       search: null,
       trash: null,
+      folded: [],
     });
   });
 
@@ -88,6 +93,7 @@ describe("état de l'écran", () => {
       selected: "a.md",
       search: null,
       trash: null,
+      folded: [],
     });
   });
 
@@ -95,6 +101,8 @@ describe("état de l'écran", () => {
     expect(folderSelected(welcome, "a", [])).toBe(welcome);
     expect(foldersRefreshed(welcome, ["a"])).toBe(welcome);
     expect(folderMoved(welcome, "a", "b")).toBe(welcome);
+    expect(folderFolded(welcome, "a")).toBe(welcome);
+    expect(folderRevealed(welcome, "a")).toBe(welcome);
     expect(noteSelected(welcome, "a.md")).toBe(welcome);
     expect(notesRefreshed(welcome, [note("a.md", 1)])).toBe(welcome);
     expect(searchTyped(welcome, "pain")).toBe(welcome);
@@ -240,5 +248,51 @@ describe("corbeille", () => {
   it("quitte la corbeille quand on cherche", () => {
     const screen = searchTyped(trashShown(opened(), trash), "lundi");
     expect(screen.kind === "library" && screen.trash).toBeNull();
+  });
+});
+
+describe("dossiers pliés", () => {
+  const folders = ["Perso", "Travail", "Travail/Réunions", "Travail/Réunions/2026"];
+  const opened = libraryOpened(library, folders, [], ["Travail", "Travail/Réunions"]);
+
+  it("une bibliothèque s'ouvre avec ses dossiers pliés gardés, ou tous dépliés", () => {
+    expect(opened).toMatchObject({ folded: ["Travail", "Travail/Réunions"] });
+    expect(libraryOpened(library, folders, [])).toMatchObject({ folded: [] });
+  });
+
+  it("plie ou déplie un dossier sans le choisir", () => {
+    expect(folderFolded(opened, "Travail")).toMatchObject({
+      folder: "",
+      folded: ["Travail/Réunions"],
+    });
+    expect(folderFolded(opened, "Perso")).toMatchObject({
+      folded: ["Travail", "Travail/Réunions", "Perso"],
+    });
+  });
+
+  it("choisir un dossier déplie ceux qui le contiennent", () => {
+    const screen = folderSelected(opened, "Travail/Réunions/2026", []);
+    expect(screen).toMatchObject({ folder: "Travail/Réunions/2026", folded: [] });
+    expect(folderSelected(opened, "Travail/Réunions", [])).toMatchObject({
+      folded: ["Travail/Réunions"],
+    });
+  });
+
+  it("un dossier qui reçoit une note déplie ceux qui le contiennent, sans être choisi", () => {
+    expect(folderRevealed(opened, "Travail/Réunions/2026")).toMatchObject({
+      folder: "",
+      folded: [],
+    });
+  });
+
+  it("les dossiers pliés suivent un dossier déplacé ; le dossier affiché reste visible", () => {
+    const inside = { ...folderSelected(opened, "Travail", []), folded: ["Perso", "Travail"] };
+    expect(folderMoved(inside, "Travail", "Perso/Travail")).toMatchObject({
+      folder: "Perso/Travail",
+      folded: ["Perso/Travail"],
+    });
+    expect(folderMoved(opened, "Travail/Réunions", "Perso/Réunions")).toMatchObject({
+      folded: ["Travail", "Perso/Réunions"],
+    });
   });
 });

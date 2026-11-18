@@ -35,6 +35,7 @@ export function renderScreen(layout: Layout, screen: Screen, actions: ScreenActi
         screen.folders,
         screen.trash ? null : screen.folder,
         actions,
+        screen.folded,
       );
       layout.trashButton.classList.toggle("selected", screen.trash !== null);
       // Remettre la même valeur ne déplace pas le curseur du champ.

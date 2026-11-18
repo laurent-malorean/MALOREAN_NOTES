@@ -5,12 +5,14 @@ import { createOpenColumns } from "./app/columns";
 import { connectCommands } from "./app/commands";
 import { createCurrentScreen } from "./app/current-screen";
 import { connectExternalChanges } from "./app/external-changes";
+import { createFoldMemory } from "./app/fold-memory";
 import { createFolders } from "./app/folders";
 import { createLayoutMemory } from "./app/layout-memory";
 import { createLibrary } from "./app/library";
 import { createMessages } from "./app/messages";
 import { paneMaker } from "./app/panes";
 import { savingEvents } from "./app/saving";
+import { screenActions } from "./app/screen-actions";
 import { createSearch } from "./app/search";
 import { connectSettings } from "./app/settings";
 import { createTemplates } from "./app/templates";
@@ -22,7 +24,6 @@ import { renderScreen, type ScreenActions } from "./screens/screen-view";
 import { connectSearchField } from "./screens/search-field";
 import { createSharedNotes } from "./screens/shared-notes";
 import { connectWindowDisplay } from "./screens/window-display";
-import { noteClosed, notePlaced } from "./state/columns";
 import { welcome } from "./state/screen";
 import "./theme.css";
 import "./style.css";
@@ -30,7 +31,10 @@ import "./style.css";
 const layout = createLayout(document.querySelector<HTMLElement>("#app") as HTMLElement);
 const messages = createMessages(layout.status, bridge.errorMessage);
 const { run } = messages;
-const screen = createCurrentScreen((next) => renderScreen(layout, next, actions));
+const foldMemory = createFoldMemory(localStorage);
+const screen = createCurrentScreen(
+  (next) => (renderScreen(layout, next, actions), foldMemory.save(next)),
+);
 const columns = createOpenColumns({
   container: layout.columns,
   outline: layout.outline,
@@ -46,6 +50,7 @@ const library = createLibrary({
   screen,
   columns,
   layout: layoutMemory,
+  folds: foldMemory,
   show: messages.show,
   search: search.search,
 });
@@ -94,23 +99,9 @@ const newPane = paneMaker({
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),
 });
 
-const actions: ScreenActions = {
-  open: (path) => run(columns.openNote(path)),
-  select: (folder) => run(folders.select(folder)),
-  create: (parent, name) => run(folders.create(parent, name)),
-  rename: (path, name) => run(folders.rename(path, name)),
-  move: (path, into) => run(folders.move(path, into)),
-  moveNote: (path, into) => run(library.moveNote(path, into)),
-  pin: (path) => run(library.changePin(path, bridge.pinNote)),
-  unpin: (path) => run(library.changePin(path, bridge.unpinNote)),
-  trash: (path) => run(trash.trashNote(path)),
-  place: (path, placement) => run(columns.update((now) => notePlaced(now, path, placement))),
-  closeNote: (path) => run(columns.update((now) => noteClosed(now, path))),
-  trashFolder: (path) => run(trash.trashFolder(path)),
-  restoreNote: (path) => run(trash.restoreNote(path)),
-  restoreFolder: (path) => run(trash.restoreFolder(path)),
-  empty: () => run(trash.empty()),
-};
+const actions: ScreenActions = screenActions({
+  ...{ backend: bridge, columns, folders, library, trash, run },
+});
 
 layout.chooseButtons.forEach((button) =>
   button.addEventListener("click", () => run(library.choose())),

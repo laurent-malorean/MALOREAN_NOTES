@@ -42,6 +42,7 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
     screen,
     columns: columns.open,
     layout: { restore: async (path) => (calls.push(`disposition de ${path}`), state.restored) },
+    folds: { load: (path) => (path === "/notes" ? ["projets"] : []) },
     show: (message) => messages.push(message),
     search: async (query) => void calls.push(`chercher ${query}`),
   });
@@ -60,6 +61,16 @@ describe("bibliothèque ouverte", () => {
     expect(now.kind === "library" && now.library.path).toBe("/notes");
     expect(activeNote(t.columns.columns())).toBe("n.md");
     expect(t.columns.columns().list[0]?.tabs.map((tab) => tab.note)).toEqual(["n.md"]);
+  });
+
+  it("s'ouvre avec ses dossiers pliés gardés", async () => {
+    const t = setup(welcome);
+    await t.library.open({ name: "Notes", path: "/notes" });
+    const now = t.screen.get();
+    expect(now.kind === "library" && now.folded).toEqual(["projets"]);
+    await t.library.open({ name: "Autres", path: "/autres" });
+    const other = t.screen.get();
+    expect(other.kind === "library" && other.folded).toEqual([]);
   });
 
   it("retrouve les colonnes gardées pour elle, s'il y en a", async () => {
@@ -128,6 +139,14 @@ describe("bibliothèque ouverte", () => {
     expect(t.columns.log).toEqual(["enregistrer a.md", "colonnes"]);
     const tabs = t.columns.columns().list[0]?.tabs.map((tab) => tab.note);
     expect(tabs).toEqual(["projets/a.md", "b.md"]);
+  });
+
+  it("une note déposée dans un dossier déplie ceux qui le contiennent", async () => {
+    const folded = ["a", "a/b", "a/b/c", "x"];
+    const t = setup(libraryScreen([], (screen) => ({ ...screen, folded })));
+    await t.library.moveNote("n.md", "a/b/c");
+    const now = t.screen.get();
+    expect(now.kind === "library" && now.folded).toEqual(["a/b/c", "x"]);
   });
 
   it("épingle une note : les colonnes qui la montrent affichent son nouvel en-tête", async () => {

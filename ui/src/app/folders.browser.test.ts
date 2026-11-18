@@ -38,6 +38,18 @@ function setup(start: Screen = libraryScreen()) {
 }
 
 describe("dossiers", () => {
+  it("en plier un le plie sans le choisir ; le replier le déplie", () => {
+    const t = setup();
+    t.folders.fold("projets");
+    const folded = t.screen.get();
+    expect(folded.kind === "library" && folded.folded).toEqual(["projets"]);
+    expect(currentFolder(folded)).toBe("");
+    t.folders.fold("projets");
+    const unfolded = t.screen.get();
+    expect(unfolded.kind === "library" && unfolded.folded).toEqual([]);
+    expect(t.log).toEqual([]);
+  });
+
   it("en choisir un enregistre ce qui est tapé, montre ses notes et ouvre la plus récente", async () => {
     const t = setup();
     await t.folders.select("projets");

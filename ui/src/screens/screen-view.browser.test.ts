@@ -23,6 +23,7 @@ const ignore: ScreenActions = {
   place: () => {},
   closeNote: () => {},
   trashFolder: () => {},
+  fold: () => {},
   restoreNote: () => {},
   restoreFolder: () => {},
   empty: () => {},
@@ -70,6 +71,16 @@ describe("affichage de l'écran", () => {
     renderScreen(view, folderSelected(opened, "Travail/Réunions/2026", []), ignore);
     expect(view.libraryName.textContent).toBe("2026");
     expect(view.foldersList.querySelector(".folder-item.selected")?.textContent).toBe("2026");
+  });
+
+  it("cache les sous-dossiers des dossiers pliés", () => {
+    const view = layout();
+    renderScreen(
+      view,
+      libraryOpened(library, ["Travail", "Travail/Réunions"], [], ["Travail"]),
+      ignore,
+    );
+    expect(view.foldersList.querySelectorAll(".folder-item")).toHaveLength(2);
   });
 
   it("ouvre la note cliquée et choisit le dossier cliqué", () => {

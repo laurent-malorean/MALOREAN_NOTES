@@ -5,6 +5,7 @@ import { notesMoved } from "../state/columns";
 import { movedPath } from "../state/folders";
 import {
   currentFolder,
+  folderFolded,
   folderMoved,
   folderSelected,
   foldersRefreshed,
@@ -36,6 +37,8 @@ export interface Folders {
   move(path: string, into: string): Promise<void>;
   /** Fait écrire le nom d'un nouveau dossier, dans le dossier affiché. */
   startCreation(): void;
+  /** Plie le dossier, ou le déplie s'il est plié, sans le choisir. */
+  fold(path: string): void;
 }
 
 async function selectFolder(deps: FoldersDeps, folder: string) {
@@ -74,5 +77,6 @@ export function createFolders(deps: FoldersDeps): Folders {
       startFolderCreation(deps.list, currentFolder(deps.screen.get()), (parent, name) =>
         deps.run(create(parent, name)),
       ),
+    fold: (path) => deps.screen.show(folderFolded(deps.screen.get(), path)),
   };
 }

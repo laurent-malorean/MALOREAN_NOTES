@@ -1,0 +1,44 @@
+// Demandes de l'écran : ce que la colonne des dossiers, la liste des notes et la corbeille
+// demandent, confié au module de chaque domaine.
+import type * as Bridge from "../bridge";
+import type { ScreenActions } from "../screens/screen-view";
+import { noteClosed, notePlaced } from "../state/columns";
+import type { OpenColumns } from "./columns";
+import type { Folders } from "./folders";
+import type { Library } from "./library";
+import type { Trash } from "./trash";
+
+export interface ScreenActionsDeps {
+  readonly backend: Pick<typeof Bridge, "pinNote" | "unpinNote">;
+  readonly columns: Pick<OpenColumns, "openNote" | "update">;
+  readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
+  readonly library: Pick<Library, "moveNote" | "changePin">;
+  readonly trash: Pick<
+    Trash,
+    "trashNote" | "trashFolder" | "restoreNote" | "restoreFolder" | "empty"
+  >;
+  /** Lance l'action ; son échec est montré. */
+  run(action: Promise<unknown>): void;
+}
+
+export function screenActions(deps: ScreenActionsDeps): ScreenActions {
+  const { backend, columns, folders, library, trash, run } = deps;
+  return {
+    open: (path) => run(columns.openNote(path)),
+    select: (folder) => run(folders.select(folder)),
+    create: (parent, name) => run(folders.create(parent, name)),
+    rename: (path, name) => run(folders.rename(path, name)),
+    move: (path, into) => run(folders.move(path, into)),
+    fold: (path) => folders.fold(path),
+    moveNote: (path, into) => run(library.moveNote(path, into)),
+    pin: (path) => run(library.changePin(path, backend.pinNote)),
+    unpin: (path) => run(library.changePin(path, backend.unpinNote)),
+    trash: (path) => run(trash.trashNote(path)),
+    place: (path, placement) => run(columns.update((now) => notePlaced(now, path, placement))),
+    closeNote: (path) => run(columns.update((now) => noteClosed(now, path))),
+    trashFolder: (path) => run(trash.trashFolder(path)),
+    restoreNote: (path) => run(trash.restoreNote(path)),
+    restoreFolder: (path) => run(trash.restoreFolder(path)),
+    empty: () => run(trash.empty()),
+  };
+}
