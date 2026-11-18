@@ -11,6 +11,7 @@ const noActions: NoteActions = {
   place: () => {},
   closeNote: () => {},
   selectTag: () => {},
+  exportNote: () => {},
 };
 
 /** Les actions demandées, notées dans l'ordre : `ouvrir a.md`, `épingler a.md`… */
@@ -26,6 +27,7 @@ function recorded(): { readonly asked: string[]; readonly actions: NoteActions }
       place: (path, placement) => asked.push(`placer ${path} ${placement}`),
       closeNote: (path) => asked.push(`fermer ${path}`),
       selectTag: (tag) => asked.push(`filtrer #${tag}`),
+      exportNote: (path) => asked.push(`exporter ${path}`),
     },
   };
 }
@@ -186,7 +188,7 @@ describe("notes épinglées", () => {
     renderNotesList(container, withPinned, null, actions);
     const event = rightClick(container.querySelectorAll(".note-item")[1] as Element);
     expect(event.defaultPrevented).toBe(true);
-    expect(menuEntries().slice(4)).toEqual(["Épingler", "Placer dans la corbeille"]);
+    expect(menuEntries().slice(4)).toEqual(["Épingler", "Exporter…", "Placer dans la corbeille"]);
     expect(document.querySelector<HTMLElement>(".context-menu")?.style.left).toBe("12px");
     menuButtons()[4]?.click();
     expect(asked).toEqual(["épingler a.md"]);
@@ -197,9 +199,22 @@ describe("notes épinglées", () => {
     const { asked, actions } = recorded();
     renderNotesList(container, withPinned, null, actions);
     rightClick(container.querySelector(".note-item") as Element);
-    expect(menuEntries().slice(4)).toEqual(["Désépingler", "Placer dans la corbeille"]);
+    expect(menuEntries().slice(4)).toEqual([
+      "Désépingler",
+      "Exporter…",
+      "Placer dans la corbeille",
+    ]);
     menuButtons()[4]?.click();
     expect(asked).toEqual(["désépingler p.md"]);
+  });
+
+  it("un clic droit sur une note propose de l'exporter", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    renderNotesList(container, withPinned, null, actions);
+    rightClick(container.querySelector(".note-item") as Element);
+    menuButtons()[5]?.click();
+    expect(asked).toEqual(["exporter p.md"]);
   });
 });
 

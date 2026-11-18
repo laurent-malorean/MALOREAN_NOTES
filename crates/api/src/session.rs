@@ -1,6 +1,7 @@
 //! L'espace de travail ouvert et les cas d'usage qu'on lui applique.
 
 mod attachments;
+mod export;
 mod journal;
 mod links;
 mod quick_open;
@@ -19,7 +20,7 @@ use application::use_cases::{
     PinNote, ReadNote, RenameFolder, SearchNotes, SearchResult,
 };
 use application::{
-    AppError, Clock, NoteStore, Preferences, StoredNote, Watching, WorkspaceLocation,
+    AppError, Clock, ExportStore, NoteStore, Preferences, StoredNote, Watching, WorkspaceLocation,
     WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
 };
 
@@ -52,6 +53,7 @@ pub struct Session {
     workspace: RwLock<Option<OpenWorkspaceState>>,
     watcher: Option<Arc<dyn WorkspaceWatcher>>,
     watching: Mutex<Option<Box<dyn Watching>>>,
+    exports: Option<Arc<dyn ExportStore>>,
 }
 
 /// L'espace de travail ouvert : où il est, et ses notes.
@@ -77,6 +79,7 @@ impl Session {
             workspace: RwLock::new(None),
             watcher: None,
             watching: Mutex::new(None),
+            exports: None,
         }
     }
 

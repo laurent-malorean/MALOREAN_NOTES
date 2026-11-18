@@ -2,6 +2,7 @@
 // Doublure volontairement simple ; les vraies règles sont testées côté Rust.
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
+import { type FakeExports, fakeExport } from "./fake-export";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 
 interface FakeNote {
@@ -9,7 +10,7 @@ interface FakeNote {
   modified: number;
 }
 
-export interface FakeBackend {
+export interface FakeBackend extends FakeExports {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -52,6 +53,8 @@ const backend: FakeBackend = {
   fullScreen: false,
   attachments: {},
   opened: [],
+  saveDialogs: [],
+  exported: {},
   searchDuration: 0,
   enterFullScreenFromTheSystem: async () => {
     backend.fullScreen = true;
@@ -376,6 +379,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
       })),
   list_backlinks: ({ path = "" }) => listBacklinks(path),
   ...fakeWorkspaces(params, backend, backend.rememberedWorkspace),
+  ...fakeExport(backend),
   list_notes: ({ folder = "", order }) =>
     Object.entries(backend.notes)
       .filter(([path]) => folderOf(path) === folder)

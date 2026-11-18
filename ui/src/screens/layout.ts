@@ -39,6 +39,8 @@ export interface Layout {
   /** La fenêtre de choix au clavier : ouverture rapide, palette de commandes. */
   readonly picker: HTMLDialogElement;
   readonly confirmation: HTMLDialogElement;
+  /** La feuille d'impression : cachée à l'écran, seule visible à l'impression. */
+  readonly printSheet: HTMLElement;
 }
 
 /** La fenêtre : accueil, dossiers, liste des notes, outils et colonnes d'édition, message, réglages. */
@@ -88,7 +90,8 @@ const TEMPLATE = `
     <div class="status" role="status"></div>
     <dialog class="settings" aria-label="Réglages"></dialog>
     <dialog class="picker"></dialog>
-    <dialog class="confirmation"></dialog>`;
+    <dialog class="confirmation"></dialog>
+    <article class="print-sheet" aria-hidden="true"></article>`;
 
 export function createLayout(root: HTMLElement): Layout {
   root.innerHTML = TEMPLATE;
@@ -123,5 +126,6 @@ export function createLayout(root: HTMLElement): Layout {
     settings: find(".settings"),
     picker: find(".picker"),
     confirmation: find(".confirmation"),
+    printSheet: find(".print-sheet"),
   };
 }

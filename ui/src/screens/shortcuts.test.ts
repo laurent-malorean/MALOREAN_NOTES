@@ -83,7 +83,11 @@ describe("raccourcis clavier", () => {
 
   it("Cmd+Maj+E change d'espace de travail", () => {
     expect(key("E", { metaKey: true, shiftKey: true })).toBe("switch-workspace");
-    expect(key("e", { metaKey: true })).toBeNull();
+  });
+
+  it("Cmd+E exporte la note", () => {
+    expect(key("e", { metaKey: true })).toBe("export-note");
+    expect(key("e", { ctrlKey: true })).toBeNull();
   });
 
   it("Ctrl+Cmd+T divise la colonne", () => {

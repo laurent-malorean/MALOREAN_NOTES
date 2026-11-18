@@ -17,6 +17,8 @@ export interface NoteActions {
   readonly closeNote: (path: string) => void;
   /** Filtrer la liste par une étiquette de la note. */
   readonly selectTag: (tag: string) => void;
+  /** Exporter la note en PDF ou en Markdown. */
+  readonly exportNote: (path: string) => void;
 }
 
 /** Les touches qui placent la note choisie dans la corbeille. */
@@ -44,11 +46,12 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
       ? { label: "Désépingler", run: () => actions.unpin(note.path) }
       : { label: "Épingler", run: () => actions.pin(note.path) };
     const trashing = { label: "Placer dans la corbeille", run: () => actions.trash(note.path) };
+    const exporting = { label: "Exporter…", run: () => actions.exportNote(note.path) };
     const placing = noteMenu({
       place: (placement) => actions.place(note.path, placement),
       close: () => actions.closeNote(note.path),
     });
-    showContextMenu(event.clientX, event.clientY, [...placing, pinning, trashing]);
+    showContextMenu(event.clientX, event.clientY, [...placing, pinning, exporting, trashing]);
   });
   item.addEventListener("keydown", (event) => {
     if (!TRASH_KEYS.has(event.key)) return;

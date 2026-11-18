@@ -4,6 +4,7 @@ import * as bridge from "./bridge";
 import { createOpenColumns } from "./app/columns";
 import { connectCommands } from "./app/commands";
 import { createCurrentScreen } from "./app/current-screen";
+import { createExport } from "./app/export";
 import { connectExternalChanges } from "./app/external-changes";
 import { createFoldMemory } from "./app/fold-memory";
 import { createFolders } from "./app/folders";
@@ -89,11 +90,11 @@ const templates = createTemplates({
   ...{ picker: layout.picker, show: messages.show, run },
 });
 const journal = createJournal({
-  backend: bridge,
-  storage: localStorage,
-  screen,
-  columns,
-  workspace,
+  ...{ backend: bridge, storage: localStorage, screen, columns, workspace },
+});
+const exporting = createExport({
+  ...{ backend: bridge, columns, workspacePath: workspace.path, picker: layout.picker },
+  ...{ sheet: layout.printSheet, storage: localStorage, show: messages.show, run },
 });
 const workspaces = createWorkspaces({
   ...{ backend: bridge, screen, columns, workspace, picker: layout.picker, run },
@@ -113,7 +114,7 @@ const newPane = paneMaker({
 });
 
 const actions: ScreenActions = screenActions({
-  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, run },
+  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, exporting, run },
 });
 
 layout.addButton.addEventListener("click", () => run(workspaces.add()));
@@ -131,7 +132,7 @@ const windowDisplay = connectWindowDisplay(layout, {
 });
 connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
-  ...{ picker: layout.picker, searchField: layout.searchField },
+  ...{ picker: layout.picker, searchField: layout.searchField, exporting },
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent },
 });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });

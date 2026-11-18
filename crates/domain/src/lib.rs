@@ -4,6 +4,7 @@
 pub mod attachment_name;
 pub mod attachments;
 pub mod conflict;
+pub mod export;
 pub mod file_name;
 pub mod folder;
 pub mod front_matter;

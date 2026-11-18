@@ -23,6 +23,7 @@ describe("palette de commandes", () => {
       ["next-tab", "Onglet suivant", "Ctrl+Tab"],
       ["previous-tab", "Onglet précédent", "Ctrl+Maj+Tab"],
       ["split-column", "Diviser la colonne", "Ctrl+Cmd+T"],
+      ["export-note", "Exporter…", "Cmd+E"],
       ["sort-notes", "Trier la liste", null],
       ["show-trash", "Corbeille", null],
       ["open-settings", "Réglages", "Cmd+,"],

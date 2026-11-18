@@ -5,6 +5,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { ChosenFolder } from "./generated/ChosenFolder";
+import type { ExportFile } from "./generated/ExportFile";
+import type { ExportFormatItem } from "./generated/ExportFormatItem";
 import type { WorkspaceChanged } from "./generated/WorkspaceChanged";
 import type { WorkspaceInfo } from "./generated/WorkspaceInfo";
 import type { WorkspaceItem } from "./generated/WorkspaceItem";
@@ -23,6 +25,8 @@ import type { TrashInfo } from "./generated/TrashInfo";
 export type {
   AttachedFile,
   ChosenFolder,
+  ExportFile,
+  ExportFormatItem,
   WorkspaceChanged,
   WorkspaceInfo,
   WorkspaceItem,
@@ -164,6 +168,17 @@ export async function attachFile(
   return invoke<AttachedFile>("attach_file", bytes, { headers });
 }
 
+/**
+ * Fait choisir le fichier d'un export dans la fenêtre d'enregistrement du Mac, le nom tiré du
+ * titre, dans `folder` (dossier du dernier export) ou à défaut dans Documents ; rien si annulé.
+ */
+export const chooseExportFile = (title: string, format: ExportFormatItem, folder: string | null) =>
+  invoke<ExportFile | null>("choose_export_file", { title, format, folder });
+/** Écrit la note en Markdown au fichier `destination`, ses pièces jointes copiées à côté. */
+export const exportMarkdown = (path: string, destination: string) =>
+  invoke<null>("export_markdown", { path, destination });
+/** Imprime la feuille d'impression de la page dans le fichier PDF `destination`. */
+export const exportPdf = (destination: string) => invoke<null>("export_pdf", { destination });
 /** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
 export const openAttachment = (path: string, target: string) =>
   invoke<null>("open_attachment", { path, target });

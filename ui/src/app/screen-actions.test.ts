@@ -43,6 +43,7 @@ function setup() {
       clear: () => (calls.push("retirer le filtre"), true),
     },
     recent: { show: done("récentes") },
+    exporting: { exportNote: (path) => void calls.push(`exporter ${path}`) },
     run: (action) => void ran.push(action),
   });
   return { actions, calls, ran, columns };
@@ -58,6 +59,7 @@ describe("demandes de l'écran", () => {
     t.actions.moveNote("a.md", "projets");
     t.actions.pin("a.md");
     t.actions.unpin("b.md");
+    t.actions.exportNote("c.md");
     t.actions.trash("a.md");
     t.actions.trashFolder("projets");
     t.actions.restoreNote("a.md");
@@ -77,6 +79,7 @@ describe("demandes de l'écran", () => {
       "déplacer la note a.md projets",
       "épingler a.md",
       "désépingler b.md",
+      "exporter c.md",
       "jeter a.md",
       "jeter le dossier projets",
       "rendre a.md",

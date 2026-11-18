@@ -9,8 +9,8 @@ pub mod workspaces;
 
 pub use error::AppError;
 pub use ports::{
-    AttachmentLocation, ChangeListener, Clock, EmptyLocation, NoteStore, Preferences, StoreError,
-    StoredNote, TrashContents, Watching, WorkspaceChange, WorkspaceLocation, WorkspaceOpener,
-    WorkspaceWatcher,
+    AttachmentLocation, ChangeListener, Clock, EmptyLocation, ExportStore, ExportedAttachment,
+    NoteStore, Preferences, StoreError, StoredNote, TrashContents, Watching, WorkspaceChange,
+    WorkspaceLocation, WorkspaceOpener, WorkspaceWatcher,
 };
 pub use workspaces::{Workspace, WorkspaceName, Workspaces};

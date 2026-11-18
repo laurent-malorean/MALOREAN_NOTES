@@ -2,6 +2,7 @@
 
 mod attachments;
 mod create_note;
+mod export;
 mod folders;
 mod list_notes;
 mod move_note;
@@ -17,6 +18,7 @@ mod workspace;
 
 pub use attachments::{AttachFile, AttachmentSource, MAX_ATTACHMENT_MEGABYTES, OpenAttachment};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
+pub use export::ExportMarkdown;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use list_notes::{ListAllNotes, ListNotes};
 pub use move_note::MoveNote;

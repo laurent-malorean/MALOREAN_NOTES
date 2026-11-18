@@ -65,6 +65,7 @@ const deps: CommandsDeps = {
   settings: { open: () => log.push("réglages") },
   tags: { clear: () => (log.push("retirer le filtre"), tagFilter) },
   recent: { paths: () => recentPaths },
+  exporting: { exportNote: (path) => void log.push(`exporter ${path}`) },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
 connectCommands(deps);
@@ -107,6 +108,7 @@ describe("commandes de la palette", () => {
       "toggle-full-screen",
       "toggle-side-panels",
       "split-column",
+      "export-note",
       "show-trash",
       "open-settings",
       "switch-workspace",
@@ -127,6 +129,7 @@ describe("commandes de la palette", () => {
       "plein écran",
       "panneaux",
       "diviser",
+      "exporter undefined",
       "corbeille",
       "réglages",
       "changer d'espace de travail",
@@ -270,6 +273,11 @@ describe("raccourcis clavier", () => {
     press("t", { metaKey: true });
     await settle();
     expect(picker().getAttribute("aria-label")).toBe("Nouvel onglet");
+  });
+
+  it("Cmd+E exporte la note de la colonne active", () => {
+    expect(press("e", { metaKey: true }).defaultPrevented).toBe(true);
+    expect(log).toEqual(["exporter undefined"]);
   });
 
   it("Cmd+O ouvre l'ouverture rapide", async () => {

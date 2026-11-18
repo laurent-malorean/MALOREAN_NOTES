@@ -1,6 +1,7 @@
 //! Traduction des erreurs en message pour l'interface : le seul endroit où cela se fait.
 
 use application::{AppError, EmptyLocation};
+use domain::export::InvalidExportDestination;
 use domain::{InvalidFileName, InvalidFingerprint, InvalidFolderName};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -25,6 +26,20 @@ impl ApiError {
     pub(crate) fn incomplete_attachment() -> Self {
         Self {
             message: "le fichier à joindre n'a pas été reçu en entier".to_owned(),
+        }
+    }
+
+    /// La session n'a pas de quoi écrire les exports.
+    pub(crate) fn exports_unavailable() -> Self {
+        Self {
+            message: "l'export n'est pas disponible".to_owned(),
+        }
+    }
+
+    /// WebKit n'a pas pu imprimer la page en PDF.
+    pub(crate) fn pdf_failed(reason: &str) -> Self {
+        Self {
+            message: format!("le PDF n'a pas pu être écrit : {reason}"),
         }
     }
 
@@ -76,6 +91,14 @@ impl From<InvalidFolderName> for ApiError {
     }
 }
 
+impl From<InvalidExportDestination> for ApiError {
+    fn from(error: InvalidExportDestination) -> Self {
+        Self {
+            message: error.to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -85,6 +108,18 @@ mod tests {
         assert_eq!(
             ApiError::from(AppError::NoWorkspaceOpen).message,
             "aucun espace de travail n'est ouvert"
+        );
+    }
+
+    #[test]
+    fn export_errors_say_what_happened() {
+        assert_eq!(
+            ApiError::exports_unavailable().message,
+            "l'export n'est pas disponible"
+        );
+        assert_eq!(
+            ApiError::pdf_failed("la fenêtre n'est pas prête").message,
+            "le PDF n'a pas pu être écrit : la fenêtre n'est pas prête"
         );
     }
 

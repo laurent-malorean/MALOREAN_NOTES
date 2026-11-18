@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crate::Workspaces;
+use domain::export::ExportDestination;
 use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 
 /// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
@@ -196,6 +197,18 @@ pub trait NoteStore: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si le dossier de pièces jointes ne peut pas être lu.
     fn attachment_names(&self, note: &NotePath) -> Result<Vec<AttachmentName>, StoreError>;
 
+    /// Le contenu d'une pièce jointe de la note.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::AttachmentNotFound`] si la note n'a pas cette pièce jointe,
+    /// [`StoreError::Unavailable`] si elle ne peut pas être lue.
+    fn read_attachment(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+    ) -> Result<Vec<u8>, StoreError>;
+
     /// Écrit une nouvelle pièce jointe dans le dossier de pièces jointes de la note, créé si
     /// besoin ; n'écrase jamais un fichier existant.
     ///
@@ -271,6 +284,32 @@ pub trait WorkspaceWatcher: Send + Sync + Debug {
         location: &WorkspaceLocation,
         listener: ChangeListener,
     ) -> Result<Box<dyn Watching>, StoreError>;
+}
+
+/// Une pièce jointe copiée avec un export Markdown.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExportedAttachment {
+    /// Son nom, gardé dans le dossier de pièces jointes de l'export.
+    pub name: AttachmentName,
+    /// Son contenu.
+    pub bytes: Vec<u8>,
+}
+
+/// Écrit les fichiers exportés, hors de l'espace de travail, là où l'utilisateur l'a choisi.
+pub trait ExportStore: Send + Sync + Debug {
+    /// Écrit le texte d'un export Markdown au fichier exporté, à la place d'un fichier existant
+    /// (la fenêtre d'enregistrement l'a fait confirmer), et chaque pièce jointe dans le dossier
+    /// de pièces jointes de l'export, créé si besoin.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si un fichier ne peut pas être écrit.
+    fn write_markdown(
+        &self,
+        destination: &ExportDestination,
+        text: &str,
+        attachments: &[ExportedAttachment],
+    ) -> Result<(), StoreError>;
 }
 
 /// Donne le moment présent.

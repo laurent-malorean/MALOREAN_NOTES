@@ -29,8 +29,8 @@ struct State {
     trashed_notes: BTreeMap<NotePath, (String, Modified)>,
     /// Les dossiers de la corbeille, racine exclue.
     trashed_folders: BTreeSet<Folder>,
-    /// Les pièces jointes de chaque note (leur contenu ne sert à aucun test).
-    attachments: BTreeMap<NotePath, Vec<AttachmentName>>,
+    /// Les pièces jointes de chaque note, avec leur contenu.
+    attachments: BTreeMap<NotePath, Vec<(AttachmentName, Vec<u8>)>>,
     tick: u64,
 }
 
@@ -335,25 +335,38 @@ impl NoteStore for InMemoryNoteStore {
             .state()
             .attachments
             .get(note)
-            .cloned()
+            .map(|attachments| attachments.iter().map(|(name, _)| name.clone()).collect())
             .unwrap_or_default())
+    }
+
+    fn read_attachment(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+    ) -> Result<Vec<u8>, StoreError> {
+        self.state()
+            .attachments
+            .get(note)
+            .and_then(|attachments| attachments.iter().find(|(known, _)| known == name))
+            .map(|(_, bytes)| bytes.clone())
+            .ok_or_else(|| StoreError::AttachmentNotFound(name.to_name()))
     }
 
     fn write_attachment(
         &self,
         note: &NotePath,
         name: &AttachmentName,
-        _bytes: &[u8],
+        bytes: &[u8],
     ) -> Result<(), StoreError> {
         let mut state = self.state();
         if !state.notes.contains_key(note) {
             return Err(StoreError::NotFound(note.clone()));
         }
         let attachments = state.attachments.entry(note.clone()).or_default();
-        if attachments.iter().any(|a| a.same_file_as(name)) {
+        if attachments.iter().any(|(a, _)| a.same_file_as(name)) {
             return Err(StoreError::AttachmentAlreadyExists(name.to_name()));
         }
-        attachments.push(name.clone());
+        attachments.push((name.clone(), bytes.to_vec()));
         Ok(())
     }
 
@@ -366,7 +379,7 @@ impl NoteStore for InMemoryNoteStore {
         let known = state
             .attachments
             .get(note)
-            .is_some_and(|attachments| attachments.contains(name));
+            .is_some_and(|attachments| attachments.iter().any(|(known, _)| known == name));
         if !known {
             return Err(StoreError::AttachmentNotFound(name.to_name()));
         }

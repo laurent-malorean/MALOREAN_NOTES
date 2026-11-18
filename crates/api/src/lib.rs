@@ -4,12 +4,14 @@
 pub mod commands;
 mod dto;
 mod error;
+#[cfg(target_os = "macos")]
+mod pdf;
 mod session;
 
 pub use dto::{
-    AttachedFile, ChosenFolder, ExcerptPartItem, LinkingNoteItem, NoteContent, NoteListItem,
-    NoteOrderItem, SaveResult, SavedNote, SearchResultItem, TagItem, TrashInfo, TrashedNoteItem,
-    WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem,
+    AttachedFile, ChosenFolder, ExcerptPartItem, ExportFile, ExportFormatItem, LinkingNoteItem,
+    NoteContent, NoteListItem, NoteOrderItem, SaveResult, SavedNote, SearchResultItem, TagItem,
+    TrashInfo, TrashedNoteItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem,
 };
 pub use error::ApiError;
 pub use session::Session;

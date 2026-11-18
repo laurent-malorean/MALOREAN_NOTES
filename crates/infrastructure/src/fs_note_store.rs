@@ -388,6 +388,19 @@ impl NoteStore for FsNoteStore {
         Ok(names)
     }
 
+    fn read_attachment(
+        &self,
+        note: &NotePath,
+        name: &AttachmentName,
+    ) -> Result<Vec<u8>, StoreError> {
+        fs::read(self.attachment_path(note).join(name.to_name())).map_err(|error| {
+            match error.kind() {
+                io::ErrorKind::NotFound => StoreError::AttachmentNotFound(name.to_name()),
+                _ => unavailable(error),
+            }
+        })
+    }
+
     /// Écrit un fichier temporaire, puis le lie sous son nom : le lien échoue si le nom est
     /// pris (casse comprise sur un disque qui l'ignore), donc rien n'est jamais écrasé.
     fn write_attachment(

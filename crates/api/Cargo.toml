@@ -16,6 +16,12 @@ percent-encoding.workspace = true
 tracing.workspace = true
 ts-rs.workspace = true
 
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2.workspace = true
+objc2-foundation.workspace = true
+objc2-app-kit.workspace = true
+objc2-web-kit.workspace = true
+
 [dev-dependencies]
 application = { workspace = true, features = ["testing"] }
 serde_json.workspace = true

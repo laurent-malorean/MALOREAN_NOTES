@@ -3,7 +3,9 @@
  * Le reste de l'interface n'emploie que ces variables. Les réglages d'affichage sont posés
  * sur la page (data-font, data-text-size, data-text-width, data-appearance) et traduits ici.
  */
-:root {
+/* Couleurs claires : celles de la page, et toujours celles de la feuille d'impression. */
+:root,
+.print-sheet {
   color-scheme: light;
 
   /* Couleurs */
@@ -37,7 +39,9 @@
   --syntax-property: #5c4d9a;
   --syntax-tag: #b0306a;
   --code-block-background: #f2f0eb;
+}
 
+:root {
   /* Polices */
   --serif: "Iowan Old Style", "Charter", Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;

@@ -74,6 +74,37 @@ impl From<NoteOrderItem> for domain::NoteOrder {
     }
 }
 
+/// Le format d'export choisi dans l'interface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum ExportFormatItem {
+    /// La note mise en forme, en pages.
+    Pdf,
+    /// Le fichier de la note tel quel.
+    Markdown,
+}
+
+impl From<ExportFormatItem> for domain::export::ExportFormat {
+    fn from(format: ExportFormatItem) -> Self {
+        match format {
+            ExportFormatItem::Pdf => Self::Pdf,
+            ExportFormatItem::Markdown => Self::Markdown,
+        }
+    }
+}
+
+/// Le fichier exporté choisi dans la fenêtre d'enregistrement.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ExportFile {
+    /// L'emplacement complet du fichier à écrire.
+    pub path: String,
+    /// Le dossier qui le contient, où s'ouvrira la fenêtre d'enregistrement suivante.
+    pub folder: String,
+}
+
 /// Une étiquette de la liste des étiquettes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]

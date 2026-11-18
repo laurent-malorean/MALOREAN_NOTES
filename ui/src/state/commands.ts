@@ -19,6 +19,7 @@ export type CommandId =
   | "next-tab"
   | "previous-tab"
   | "split-column"
+  | "export-note"
   | "sort-notes"
   | "show-trash"
   | "open-settings"
@@ -53,6 +54,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "next-tab", label: "Onglet suivant", shortcut: "Ctrl+Tab" },
   { id: "previous-tab", label: "Onglet précédent", shortcut: "Ctrl+Maj+Tab" },
   { id: "split-column", label: "Diviser la colonne", shortcut: "Ctrl+Cmd+T" },
+  { id: "export-note", label: "Exporter…", shortcut: "Cmd+E" },
   { id: "sort-notes", label: "Trier la liste" },
   { id: "show-trash", label: "Corbeille" },
   { id: "open-settings", label: "Réglages", shortcut: "Cmd+," },

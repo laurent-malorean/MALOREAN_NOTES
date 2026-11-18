@@ -32,6 +32,7 @@ fn names(store: &impl NoteStore, of: &str) -> Vec<String> {
 pub fn attachment_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     a_note_without_attachment_folder_has_no_attachment(&empty_store());
     a_written_attachment_is_listed_and_can_be_located(&empty_store());
+    a_written_attachment_is_read_back(&empty_store());
     an_attachment_needs_an_existing_note(&empty_store());
     an_attachment_never_overwrites_another(&empty_store());
     a_missing_attachment_cannot_be_located(&empty_store());
@@ -57,6 +58,21 @@ fn a_written_attachment_is_listed_and_can_be_located(store: &impl NoteStore) {
         .attachment_location(&note("a.md"), &attachment("doc.pdf"))
         .unwrap();
     assert!(location.as_str().ends_with("doc.pdf"), "{location:?}");
+}
+
+fn a_written_attachment_is_read_back(store: &impl NoteStore) {
+    store.write(&note("a.md"), "# A").unwrap();
+    store
+        .write_attachment(&note("a.md"), &attachment("vue.png"), b"PNG")
+        .unwrap();
+    assert_eq!(
+        store.read_attachment(&note("a.md"), &attachment("vue.png")),
+        Ok(b"PNG".to_vec())
+    );
+    assert_eq!(
+        store.read_attachment(&note("a.md"), &attachment("x.png")),
+        Err(StoreError::AttachmentNotFound("x.png".into()))
+    );
 }
 
 fn an_attachment_needs_an_existing_note(store: &impl NoteStore) {

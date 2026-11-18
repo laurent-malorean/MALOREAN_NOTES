@@ -1039,3 +1039,122 @@ button {
 .setting-check input {
   margin: 0;
 }
+
+/* Feuille d'impression : le rendu HTML d'une note, caché à l'écran. À l'impression (export PDF),
+   elle est seule visible, dans le thème clair (theme.css) et la police de lecture. */
+.print-sheet {
+  display: none;
+}
+@media print {
+  html,
+  body,
+  #app {
+    height: auto;
+    background: none;
+  }
+  body > :not(#app),
+  #app > :not(.print-sheet) {
+    display: none !important;
+  }
+  .print-sheet {
+    display: block;
+    color: var(--text);
+    font-family: var(--text-font);
+    font-size: var(--text-size);
+    line-height: var(--line-height);
+  }
+  .print-sheet h1 {
+    font-size: var(--heading1-size);
+  }
+  .print-sheet h2 {
+    font-size: var(--heading2-size);
+  }
+  .print-sheet h3 {
+    font-size: var(--heading3-size);
+  }
+  .print-sheet :is(h1, h2, h3, h4, h5, h6) {
+    break-after: avoid;
+  }
+  .print-sheet a {
+    color: var(--accent);
+  }
+  .print-sheet blockquote {
+    margin: 1em 0;
+    padding-left: 1em;
+    border-left: 3px solid var(--border);
+    color: var(--muted);
+    font-style: italic;
+  }
+  .print-sheet li > p {
+    margin: 0;
+  }
+  .print-sheet li:has(> input) {
+    list-style: none;
+  }
+  .print-sheet li > input {
+    margin: 0 0.45em 0 -1.2em;
+    accent-color: var(--accent);
+  }
+  .print-sheet img {
+    max-width: 100%;
+    break-inside: avoid;
+  }
+  .print-sheet code {
+    font-family: var(--mono);
+    color: var(--code);
+  }
+  .print-sheet pre {
+    padding: 0.8em 1em;
+    border-radius: 4px;
+    background: var(--code-block-background);
+    font-size: var(--code-block-text-size);
+    white-space: pre-wrap;
+    break-inside: avoid;
+    print-color-adjust: exact;
+  }
+  .print-sheet pre code {
+    color: var(--syntax-plain);
+  }
+  .print-sheet table {
+    border-collapse: collapse;
+    font-size: var(--table-text-size);
+  }
+  .print-sheet :is(th, td) {
+    border: 1px solid var(--border);
+    padding: 0.3em 0.7em;
+    text-align: left;
+  }
+  .print-sheet th {
+    background: var(--sidebar);
+    print-color-adjust: exact;
+  }
+  .print-sheet hr {
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+  .print-sheet .syntax-keyword {
+    color: var(--syntax-keyword);
+  }
+  .print-sheet .syntax-string {
+    color: var(--syntax-string);
+  }
+  .print-sheet .syntax-comment {
+    color: var(--syntax-comment);
+    font-style: italic;
+  }
+  .print-sheet .syntax-number {
+    color: var(--syntax-number);
+  }
+  .print-sheet .syntax-function {
+    color: var(--syntax-function);
+  }
+  .print-sheet .syntax-type {
+    color: var(--syntax-type);
+  }
+  .print-sheet .syntax-property {
+    color: var(--syntax-property);
+  }
+  .print-sheet .syntax-tag {
+    color: var(--syntax-tag);
+  }
+}

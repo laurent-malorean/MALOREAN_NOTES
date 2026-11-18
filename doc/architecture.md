@@ -12,16 +12,17 @@ clippy.toml           seuils et méthodes interdites
 crates/
   domain/             règles pures, types, erreurs métier
   application/        cas d'usage, lectures, événements, ports (traits)
-  infrastructure/     stockage Markdown, système macOS, horloge réelle, journal
+  infrastructure/     stockage Markdown, fichiers exportés, système macOS, horloge réelle, journal
   api/                pont Tauri : commandes et événements, types exportés en TypeScript
   app/                binaire Tauri : assemblage, configuration, permissions
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
                       disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, recherche, corbeille, enregistrement,
-                      modifications extérieures, outils d'écriture, réglages, commandes
+                      modifications extérieures, outils d'écriture, réglages, export, commandes
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
+  src/rendering/      rendu HTML d'une note (export PDF, puis impression et copie mise en forme)
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
 scripts/ci.sh         mini CI locale, avant chaque push
@@ -58,7 +59,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 |---|---|---|
 | Espace de travail (dossier choisi par l'utilisateur, iCloud Drive possible) | notes `.md`, dossiers, pièces jointes — **seule source de vérité** | non |
 | `~/Library/Application Support/<app>/` | préférences (`preferences.json`) : liste des espaces de travail (nom, dossier) et celui ouvert en dernier, port `Preferences` | non |
-| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes, dossier des modèles, réglages du journal, dossiers pliés, tri de la liste et notes récentes de chaque espace de travail, rangés sous son dossier (renommer l'espace ne les perd pas) ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
+| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux, dossier du dernier export ; disposition des colonnes, dossier des modèles, réglages du journal, dossiers pliés, tri de la liste et notes récentes de chaque espace de travail, rangés sous son dossier (renommer l'espace ne les perd pas) ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
 | `~/Library/Caches/<app>/` | index de recherche, aperçus — reconstructibles | oui |
 | `~/Library/Logs/<app>/` | journaux | oui |
 | Trousseau macOS | secrets éventuels | non |
@@ -67,6 +68,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 - La surveillance des fichiers (port `WorkspaceWatcher`, adaptateur FSEvents dans `infrastructure`) détecte les modifications extérieures ; `api` les relaie à la page par l'événement `workspace-changed`. L'application recharge la note, ou garde l'autre version dans une copie de conflit : rien n'est perdu (fiche 0014).
 - Les liens entre notes (`[[titre]]`) et les liens entrants sont calculés à la demande en relisant les notes, comme la recherche (fiche 0016).
 - Les colonnes et leurs onglets sont un état de l'interface seule ; chaque colonne a son éditeur et charge la note de son onglet actif ; une note montrée dans plusieurs colonnes n'a qu'un texte et qu'un enregistrement automatique, partagés entre leurs éditeurs (fiche 0017).
+- Un export écrit hors de l'espace de travail, là où l'utilisateur l'a choisi : le Markdown et ses pièces jointes par le port `ExportStore`, le PDF par l'impression de la page par WebKit (fiche 0025).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
 ## Décisions d'architecture
@@ -99,6 +101,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0022-notes-recentes.md` | Notes récentes : tenues par l'interface, relues par Rust |
 | `0023-note-du-jour.md` | Note du jour : un fichier daté dans le journal, créé par Rust, ouvert au lancement |
 | `0024-espaces-de-travail.md` | Espaces de travail : une liste gardée par Rust, chaque espace désigné par son nom |
+| `0025-export-pdf-et-markdown.md` | Export : le Markdown écrit par Rust, le PDF imprimé par WebKit depuis le rendu HTML de la note |
 
 ## Décisions ouvertes
 

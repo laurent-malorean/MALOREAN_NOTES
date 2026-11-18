@@ -325,7 +325,7 @@ fn safe_stem(stem: &str) -> String {
     }
 }
 
-fn encoded(text: &str) -> String {
+pub(crate) fn encoded(text: &str) -> String {
     text.chars()
         .map(|c| {
             if ENCODED_IN_LINK.contains(&c) {

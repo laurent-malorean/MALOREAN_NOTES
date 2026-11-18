@@ -348,4 +348,16 @@ describe("pont vers Rust : pièces jointes", () => {
       { command: "open_attachment", args: { path: "a.md", target: "a.assets/b.pdf" } },
     ]);
   });
+
+  it("exporte une note : fichier choisi, puis Markdown ou PDF", async () => {
+    const calls = recordCalls(null);
+    await bridge.chooseExportFile("Lundi", "pdf", null);
+    await bridge.exportMarkdown("a.md", "/Docs/Lundi.md");
+    await bridge.exportPdf("/Docs/Lundi.pdf");
+    expect(calls).toEqual([
+      { command: "choose_export_file", args: { title: "Lundi", format: "pdf", folder: null } },
+      { command: "export_markdown", args: { path: "a.md", destination: "/Docs/Lundi.md" } },
+      { command: "export_pdf", args: { destination: "/Docs/Lundi.pdf" } },
+    ]);
+  });
 });
