@@ -52,6 +52,7 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
         calls.push(`déplacer ${path} ${into}`),
         { path: `${into}/${path}` }
       ),
+      rebuildIndex: async () => (calls.push("reconstruire l'index"), null),
     },
     screen,
     columns: columns.open,
@@ -188,6 +189,20 @@ describe("espace de travail ouvert", () => {
     expect(t.calls).toEqual(["étiquettes"]);
     const now = t.screen.get();
     expect(now.kind === "workspace" && now.tags).toEqual([{ name: "perso", count: 2 }]);
+  });
+
+  it("reconstruit l'index, puis relit dossiers, étiquettes et liste, et le dit", async () => {
+    const t = setup(workspaceScreen([], (screen) => ({ ...screen, folder: "projets" })));
+    await t.workspace.rebuildIndex();
+    expect(t.calls).toEqual([
+      "reconstruire l'index",
+      "dossiers",
+      "étiquettes",
+      "notes de «projets»",
+    ]);
+    const now = t.screen.get();
+    expect(now.kind === "workspace" && now.notes).toEqual([listed("projetsn.md")]);
+    expect(t.messages).toEqual(["Index reconstruit"]);
   });
 
   it("sur l'accueil, la liste relue ne cherche rien", async () => {

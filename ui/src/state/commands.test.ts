@@ -34,6 +34,7 @@ describe("palette de commandes", () => {
       ["add-workspace", "Ajouter un espace de travail", null],
       ["rename-workspace", "Renommer l'espace de travail", null],
       ["remove-workspace", "Retirer un espace de travail", null],
+      ["rebuild-index", "Reconstruire l'index", null],
     ]);
   });
 

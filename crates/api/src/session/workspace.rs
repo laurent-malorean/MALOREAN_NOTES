@@ -22,7 +22,7 @@ impl Session {
     /// dossier introuvable.
     pub fn reopen_last_workspace(&self) -> Result<Option<WorkspaceInfo>, ApiError> {
         let reopened = self.manage().reopen_last()?;
-        Ok(reopened.map(|opened| self.keep(opened)))
+        reopened.map(|opened| self.keep(opened)).transpose()
     }
 
     /// Les espaces de travail, dans l'ordre où on les a ajoutés ; l'ouvert est marqué.
@@ -72,7 +72,7 @@ impl Session {
         let opened = self
             .manage()
             .add(WorkspaceName::new(name)?, WorkspaceLocation::new(folder)?)?;
-        Ok(self.keep(opened))
+        self.keep(opened)
     }
 
     /// Ouvre l'espace de travail `name` à la place de celui qui l'était.
@@ -83,7 +83,7 @@ impl Session {
     /// préférences impossibles à écrire.
     pub fn open_workspace(&self, name: &str) -> Result<WorkspaceInfo, ApiError> {
         let opened = self.manage().open(&WorkspaceName::new(name)?)?;
-        Ok(self.keep(opened))
+        self.keep(opened)
     }
 
     /// Renomme l'espace de travail `name` ; son dossier ne change pas. Rend le nom gardé.

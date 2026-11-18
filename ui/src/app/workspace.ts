@@ -1,5 +1,5 @@
 // L'espace de travail ouvert : ses dossiers et la liste de ses notes (et son tri), les notes
-// qu'on y crée, déplace ou épingle, et les liens qui mènent d'une note à l'autre.
+// qu'on y crée, déplace ou épingle, les liens qui mènent d'une note à l'autre, et son index.
 import type * as Bridge from "../bridge";
 import type { WorkspaceInfo, NoteContent } from "../bridge";
 import { notesMoved, noteShown, notesRemoved } from "../state/columns";
@@ -34,6 +34,7 @@ export interface WorkspaceDeps {
     | "createNote"
     | "resolveLink"
     | "moveNote"
+    | "rebuildIndex"
   >;
   readonly screen: CurrentScreen;
   readonly columns: OpenColumns;
@@ -82,6 +83,8 @@ export interface Workspace {
    * montrent affichent son nouvel en-tête.
    */
   changePin(path: string, change: (path: string) => Promise<NoteContent>): Promise<void>;
+  /** Reconstruit l'index à partir des fichiers, puis relit les dossiers, les étiquettes et la liste. */
+  rebuildIndex(): Promise<void>;
 }
 
 /** Les notes que la liste montre : celles du dossier, du filtre par étiquette, ou les récentes. */
@@ -170,13 +173,14 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
     workspacePath = workspace.path;
     return openWorkspace(deps, workspace);
   };
+  const refreshFolders = async () => {
+    await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
+    await refreshTags();
+  };
   return {
     path: () => workspacePath,
     open,
-    refreshFolders: async () => {
-      await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
-      await refreshTags();
-    },
+    refreshFolders,
     refreshTags,
     refreshList: () => refreshList(deps),
     sortBy: (order) => sortBy(deps, workspacePath, order),
@@ -184,5 +188,11 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
     followLink: (title) => followLink(deps, title),
     moveNote: (path, into) => moveNote(deps, path, into),
     changePin: (path, change) => changePin(deps, path, change),
+    rebuildIndex: async () => {
+      await deps.backend.rebuildIndex();
+      await refreshFolders();
+      await refreshList(deps);
+      deps.show("Index reconstruit");
+    },
   };
 }

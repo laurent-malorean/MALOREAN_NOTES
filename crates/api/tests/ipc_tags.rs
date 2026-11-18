@@ -1,5 +1,5 @@
-//! Les commandes des étiquettes et des notes récentes, appelées comme le fait l'interface :
-//! nom, arguments JSON.
+//! Les commandes des étiquettes, des notes récentes et de l'index, appelées comme le fait
+//! l'interface : nom, arguments JSON.
 
 #![expect(
     clippy::unwrap_used,
@@ -24,6 +24,13 @@ const BRIDGE_SOURCE: &str = include_str!("../../../ui/src/bridge/index.ts");
 
 /// Une fenêtre simulée sur un espace de travail en mémoire, déjà rouvert.
 fn window(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
+    let window = unopened(notes);
+    call(&window, "reopen_last_workspace", json!({}));
+    window
+}
+
+/// La même fenêtre, avant que l'espace de travail ne soit rouvert.
+fn unopened(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
     let preferences = FakePreferences::default();
     let first = Workspace {
         name: WorkspaceName::new("Notes").unwrap(),
@@ -43,14 +50,20 @@ fn window(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
         .invoke_handler(invoke_handler())
         .build(mock_context(noop_assets()))
         .unwrap();
-    let window = WebviewWindowBuilder::new(&app, "main", Default::default())
+    WebviewWindowBuilder::new(&app, "main", Default::default())
         .build()
-        .unwrap();
-    call(&window, "reopen_last_workspace", json!({}));
-    window
+        .unwrap()
 }
 
 fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Value {
+    try_call(window, command, args).unwrap()
+}
+
+fn try_call(
+    window: &WebviewWindow<MockRuntime>,
+    command: &str,
+    args: Value,
+) -> Result<Value, Value> {
     let request = InvokeRequest {
         cmd: command.into(),
         callback: CallbackFn(0),
@@ -60,10 +73,7 @@ fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Valu
         headers: Default::default(),
         invoke_key: INVOKE_KEY.to_string(),
     };
-    get_ipc_response(window, request)
-        .unwrap()
-        .deserialize::<Value>()
-        .unwrap()
+    get_ipc_response(window, request).map(|body| body.deserialize::<Value>().unwrap())
 }
 
 fn paths(notes: &Value) -> Vec<&str> {
@@ -99,4 +109,23 @@ fn recent_notes_are_listed_with_the_argument_names_used_by_the_page() {
         ["b.md", "a.md"]
     );
     assert!(BRIDGE_SOURCE.contains("\"list_recent_notes\", { paths }"));
+}
+
+#[test]
+fn the_index_is_rebuilt_on_request_of_the_page() {
+    let closed = unopened(NOTES);
+    let refused = try_call(&closed, "rebuild_index", json!({})).unwrap_err();
+    assert!(
+        refused.to_string().contains("aucun espace de travail"),
+        "{refused}"
+    );
+    let window = window(NOTES);
+    assert_eq!(call(&window, "rebuild_index", json!({})), Value::Null);
+    let notes = call(
+        &window,
+        "list_notes",
+        json!({"folder": "", "order": "title"}),
+    );
+    assert_eq!(paths(&notes), ["a.md", "b.md"]);
+    assert!(BRIDGE_SOURCE.contains("\"rebuild_index\""));
 }

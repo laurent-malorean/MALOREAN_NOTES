@@ -2,10 +2,9 @@
 
 use domain::note::compare;
 use domain::search::{Excerpt, SearchQuery, search};
-use domain::{Folder, Modified, NoteOrder, NotePath};
+use domain::{Modified, NoteOrder, NotePath};
 
-use super::list_notes::summary;
-use crate::{AppError, NoteStore};
+use crate::{AppError, NoteIndex};
 
 /// Au-delà, les notes trouvées ne sont pas montrées : la recherche doit être précisée.
 pub const MAX_RESULTS: usize = 100;
@@ -23,20 +22,18 @@ pub struct SearchResult {
     pub excerpt: Excerpt,
 }
 
-/// Les notes de tout l'espace de travail qui contiennent tous les mots cherchés.
-///
-/// Aujourd'hui, chaque recherche relit toutes les notes ; un index pourra prendre
-/// le relais sans que l'appelant change.
+/// Les notes de tout l'espace de travail qui contiennent tous les mots cherchés, trouvées par
+/// l'index sans relire les fichiers.
 #[derive(Debug)]
 pub struct SearchNotes<'a> {
-    store: &'a dyn NoteStore,
+    index: &'a dyn NoteIndex,
 }
 
 impl<'a> SearchNotes<'a> {
-    /// Le cas d'usage, branché sur l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
     #[must_use]
-    pub fn new(store: &'a dyn NoteStore) -> Self {
-        Self { store }
+    pub fn new(index: &'a dyn NoteIndex) -> Self {
+        Self { index }
     }
 
     /// Les notes trouvées dans l'ordre du tri de la liste, les épinglées d'abord ;
@@ -44,30 +41,25 @@ impl<'a> SearchNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
     pub fn execute(
         &self,
         query: &SearchQuery,
         order: NoteOrder,
     ) -> Result<Vec<SearchResult>, AppError> {
-        let mut found = Vec::new();
-        let folders = std::iter::once(Folder::root()).chain(self.store.folders()?);
-        for folder in folders {
-            for note in self.store.list(&folder)? {
-                if let Some(excerpt) = search(query, &note.content) {
-                    found.push((summary(note), excerpt));
-                }
-            }
-        }
+        let mut found = self.index.search(query)?;
         found.sort_by(|(a, _), (b, _)| compare(a, b, order));
         found.truncate(MAX_RESULTS);
+        // L'extrait n'est tiré que des notes montrées : l'index a déjà vérifié chaque mot.
         Ok(found
             .into_iter()
-            .map(|(note, excerpt)| SearchResult {
-                path: note.path().clone(),
-                title: note.title().to_owned(),
-                modified: note.modified(),
-                excerpt,
+            .filter_map(|(note, content)| {
+                Some(SearchResult {
+                    excerpt: search(query, &content)?,
+                    path: note.path().clone(),
+                    title: note.title().to_owned(),
+                    modified: note.modified(),
+                })
             })
             .collect())
     }
@@ -76,14 +68,14 @@ impl<'a> SearchNotes<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::InMemoryNoteStore;
+    use crate::testing::{InMemoryNoteStore, indexed};
 
     fn found(store: &InMemoryNoteStore, query: &str) -> Vec<String> {
         found_in_order(store, query, NoteOrder::Modified)
     }
 
     fn found_in_order(store: &InMemoryNoteStore, query: &str, order: NoteOrder) -> Vec<String> {
-        SearchNotes::new(store)
+        SearchNotes::new(&indexed(store))
             .execute(&SearchQuery::parse(query).unwrap(), order)
             .unwrap()
             .into_iter()

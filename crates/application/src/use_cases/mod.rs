@@ -4,6 +4,7 @@ mod attachments;
 mod create_note;
 mod export;
 mod folders;
+mod index;
 mod list_notes;
 mod move_note;
 mod note_links;
@@ -20,6 +21,7 @@ pub use attachments::{AttachFile, AttachmentSource, MAX_ATTACHMENT_MEGABYTES, Op
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
 pub use export::ExportMarkdown;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
+pub use index::{RebuildIndex, RefreshIndex};
 pub use list_notes::{ListAllNotes, ListNotes};
 pub use move_note::MoveNote;
 pub use note_links::{LinkingNote, NoteLinks};

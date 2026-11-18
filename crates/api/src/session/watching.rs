@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, PoisonError};
 
+use application::use_cases::RefreshIndex;
 use application::{AppError, WorkspaceWatcher};
 use domain::NotePath;
 
@@ -16,8 +17,9 @@ impl Session {
         self
     }
 
-    /// Surveille l'espace de travail ouvert, à la place du précédent : `announce` reçoit
-    /// chaque changement fait hors de l'application, prêt à envoyer à la page.
+    /// Surveille l'espace de travail ouvert, à la place du précédent : à chaque changement fait
+    /// hors de l'application, l'index relit les notes changées, puis `announce` reçoit le
+    /// changement, prêt à envoyer à la page.
     /// Rien n'est surveillé si la session n'a pas de surveillance.
     ///
     /// # Errors
@@ -31,11 +33,16 @@ impl Session {
         let Some(watcher) = &self.watcher else {
             return Ok(());
         };
-        let location = self.opened()?.location;
+        let opened = self.opened()?;
+        let (store, index) = (opened.store, opened.index);
         let watching = watcher
             .watch(
-                &location,
+                &opened.location,
                 Arc::new(move |change| {
+                    // L'index suit les fichiers avant que la page ne relise la liste.
+                    if let Err(error) = RefreshIndex::new(&*store, &*index).execute() {
+                        tracing::warn!(?error, "l'index n'a pas pu suivre le changement");
+                    }
                     announce(WorkspaceChanged {
                         notes: change.notes.iter().map(NotePath::to_path).collect(),
                     });
@@ -54,8 +61,10 @@ mod tests {
     use application::testing::{
         FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore,
     };
-    use application::{WorkspaceChange, WorkspaceLocation};
+    use application::{NoteStore, WorkspaceChange, WorkspaceLocation};
     use domain::NotePath;
+
+    use crate::NoteOrderItem;
 
     use super::*;
 
@@ -92,6 +101,36 @@ mod tests {
                 notes: vec!["Travail/lundi.md".into()]
             }]
         );
+    }
+
+    #[test]
+    fn the_index_follows_changes_made_outside_the_app_before_they_are_announced() {
+        let watcher = Arc::new(FakeWatcher::default());
+        let store = Arc::new(InMemoryNoteStore::with_notes(&[("a.md", "# A")]));
+        let session = Session::new(
+            Arc::new(FakeOpener::new(Arc::clone(&store))),
+            Arc::new(FakePreferences::default()),
+            Arc::new(FixedClock::default()),
+        )
+        .with_watcher(Arc::clone(&watcher) as Arc<dyn WorkspaceWatcher>);
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        let session = Arc::new(session);
+        let listed = Arc::new(Mutex::new(Vec::new()));
+        let (kept, reader) = (Arc::clone(&listed), Arc::clone(&session));
+        session
+            .watch_workspace(move |_| {
+                let notes = reader.list_notes("", NoteOrderItem::Title).unwrap();
+                *kept.lock().unwrap() = notes.into_iter().map(|n| n.title).collect();
+            })
+            .unwrap();
+        store
+            .write(&NotePath::parse("b.md").unwrap(), "# B")
+            .unwrap();
+        store
+            .write(&NotePath::parse("a.md").unwrap(), "# Alpha")
+            .unwrap();
+        watcher.announce(WorkspaceChange::default());
+        assert_eq!(*listed.lock().unwrap(), ["Alpha", "B"]);
     }
 
     #[test]

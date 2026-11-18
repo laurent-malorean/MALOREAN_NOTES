@@ -18,8 +18,8 @@ impl Session {
         tag: &str,
         order: NoteOrderItem,
     ) -> Result<Vec<NoteListItem>, ApiError> {
-        let store = self.store()?;
-        let notes = ListTaggedNotes::new(&*store).execute(tag, order.into())?;
+        let index = self.index()?;
+        let notes = ListTaggedNotes::new(&*index).execute(tag, order.into())?;
         Ok(notes.iter().map(list_item).collect())
     }
 
@@ -30,8 +30,8 @@ impl Session {
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
     /// espace de travail ouvert.
     pub fn list_tags(&self) -> Result<Vec<TagItem>, ApiError> {
-        let store = self.store()?;
-        Ok(ListTags::new(&*store)
+        let index = self.index()?;
+        Ok(ListTags::new(&*index)
             .execute()?
             .into_iter()
             .map(|(name, count)| TagItem { name, count })

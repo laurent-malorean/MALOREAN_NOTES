@@ -3,19 +3,19 @@
 use domain::NoteSummary;
 
 use super::ListAllNotes;
-use crate::{AppError, NoteStore};
+use crate::{AppError, NoteIndex};
 
 /// Le résumé des notes récentes, telles qu'elles sont maintenant dans l'espace de travail.
 #[derive(Debug)]
 pub struct ListRecentNotes<'a> {
-    store: &'a dyn NoteStore,
+    index: &'a dyn NoteIndex,
 }
 
 impl<'a> ListRecentNotes<'a> {
-    /// Le cas d'usage, branché sur l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
     #[must_use]
-    pub fn new(store: &'a dyn NoteStore) -> Self {
-        Self { store }
+    pub fn new(index: &'a dyn NoteIndex) -> Self {
+        Self { index }
     }
 
     /// Le résumé de chaque note de `paths`, dans cet ordre ; celles qui n'existent plus
@@ -23,9 +23,9 @@ impl<'a> ListRecentNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
     pub fn execute(&self, paths: &[String]) -> Result<Vec<NoteSummary>, AppError> {
-        let mut notes = ListAllNotes::new(self.store).execute()?;
+        let mut notes = ListAllNotes::new(self.index).execute()?;
         Ok(paths
             .iter()
             .filter_map(|path| {
@@ -41,7 +41,7 @@ impl<'a> ListRecentNotes<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::InMemoryNoteStore;
+    use crate::testing::{InMemoryNoteStore, indexed};
 
     #[test]
     fn recent_notes_come_in_the_given_order_without_the_missing_ones() {
@@ -57,11 +57,13 @@ mod tests {
             "Travail/b.md",
         ]
         .map(String::from);
-        let notes = ListRecentNotes::new(&store).execute(&paths).unwrap();
+        let notes = ListRecentNotes::new(&indexed(&store))
+            .execute(&paths)
+            .unwrap();
         let titles: Vec<_> = notes.iter().map(NoteSummary::title).collect();
         assert_eq!(titles, ["Alpha", "Gamma", "Bêta"]);
         assert!(
-            ListRecentNotes::new(&store)
+            ListRecentNotes::new(&indexed(&store))
                 .execute(&[])
                 .unwrap()
                 .is_empty()

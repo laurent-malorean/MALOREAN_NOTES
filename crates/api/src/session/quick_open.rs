@@ -13,8 +13,8 @@ impl Session {
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
     /// espace de travail ouvert.
     pub fn list_all_notes(&self) -> Result<Vec<WorkspaceNoteItem>, ApiError> {
-        let store = self.store()?;
-        Ok(ListAllNotes::new(&*store)
+        let index = self.index()?;
+        Ok(ListAllNotes::new(&*index)
             .execute()?
             .into_iter()
             .map(|note| WorkspaceNoteItem {

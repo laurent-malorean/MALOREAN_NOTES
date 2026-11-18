@@ -69,6 +69,25 @@ impl NoteSummary {
         }
     }
 
+    /// Le résumé d'une note dont le titre affiché, l'épinglage et les étiquettes sont déjà
+    /// connus : tels que l'index les a gardés.
+    #[must_use]
+    pub fn indexed(
+        path: NotePath,
+        title: String,
+        modified: Modified,
+        pinned: bool,
+        tags: Vec<String>,
+    ) -> Self {
+        Self {
+            path,
+            title,
+            modified,
+            pinned,
+            tags,
+        }
+    }
+
     /// La note est épinglée en tête de liste.
     #[must_use]
     pub fn is_pinned(&self) -> bool {
@@ -131,6 +150,20 @@ mod tests {
     #[test]
     fn summary_shows_the_displayed_title() {
         assert_eq!(note("x.md", "sans titre ici", 0).title(), "Sans titre");
+    }
+
+    #[test]
+    fn an_indexed_summary_is_the_one_read_from_the_content() {
+        let content = "---\ntags: [a, b]\npinned: true\n---\n# Titre";
+        let read = note("x.md", content, 7);
+        let indexed = NoteSummary::indexed(
+            read.path().clone(),
+            read.title().to_owned(),
+            read.modified(),
+            read.is_pinned(),
+            read.tags().to_vec(),
+        );
+        assert_eq!(indexed, read);
     }
 
     #[test]

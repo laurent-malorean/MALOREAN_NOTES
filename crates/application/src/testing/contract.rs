@@ -7,7 +7,7 @@
 
 use domain::{FileName, Folder, NotePath};
 
-use crate::{NoteStore, StoreError};
+use crate::{IndexedNote, NoteStamp, NoteStore, StoreError};
 
 fn name(text: &str) -> NotePath {
     NotePath::parse(text).unwrap_or_else(|e| unreachable!("{e}"))
@@ -45,7 +45,53 @@ pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     moving_a_missing_note_or_into_a_missing_folder_is_refused(&empty_store());
     rewriting_while_keeping_the_date_changes_only_the_content(&empty_store());
     rewriting_a_missing_note_while_keeping_the_date_is_refused(&empty_store());
+    stamps_give_date_and_size_without_the_content(&empty_store());
+    a_note_read_for_the_index_comes_with_its_stamp(&empty_store());
     super::trash_contract::trash_contract(&empty_store);
+}
+
+fn stamps_give_date_and_size_without_the_content(store: &impl NoteStore) {
+    store.create_folder(&folder("a")).unwrap();
+    store.write(&name("x.md"), "abc").unwrap();
+    store.write(&name("y.md"), "été").unwrap();
+    store.write(&name("a/z.md"), "z").unwrap();
+    let mut stamps = store.stamps(&root()).unwrap();
+    stamps.sort_by(|a, b| a.path.cmp(&b.path));
+    let stamp = |n: &str, size| NoteStamp {
+        path: name(n),
+        modified: store.read(&name(n)).unwrap().modified,
+        size,
+    };
+    assert_eq!(stamps, [stamp("x.md", 3), stamp("y.md", 5)]);
+    assert_eq!(store.stamps(&folder("a")).unwrap(), [stamp("a/z.md", 1)]);
+    assert_eq!(
+        store.stamps(&folder("absent")),
+        Err(StoreError::FolderNotFound(folder("absent")))
+    );
+}
+
+fn a_note_read_for_the_index_comes_with_its_stamp(store: &impl NoteStore) {
+    store.write(&name("x.md"), "# Été").unwrap();
+    let modified = store.read(&name("x.md")).unwrap().modified;
+    assert_eq!(
+        store.read_indexed(&name("x.md")).unwrap(),
+        IndexedNote {
+            stamp: NoteStamp {
+                path: name("x.md"),
+                modified,
+                size: 7,
+            },
+            content: "# Été".to_owned(),
+        }
+    );
+    assert_eq!(
+        store.read_indexed(&name("absente.md")),
+        Err(StoreError::NotFound(name("absente.md")))
+    );
+    assert_eq!(
+        store.read_indexed(&name("absent/x.md")),
+        Err(StoreError::NotFound(name("absent/x.md")))
+    );
 }
 
 fn the_names_of_a_missing_folder_are_not_found(store: &impl NoteStore) {

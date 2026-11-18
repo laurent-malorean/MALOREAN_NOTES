@@ -5,7 +5,8 @@ use std::sync::Arc;
 
 use crate::Workspaces;
 use domain::export::ExportDestination;
-use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
+use domain::search::SearchQuery;
+use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath, NoteSummary};
 
 /// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +17,28 @@ pub struct StoredNote {
     pub content: String,
     /// La date de dernière modification.
     pub modified: Modified,
+}
+
+/// Le relevé du fichier d'une note : sa date de modification et sa taille, lues sans l'ouvrir.
+/// Si l'un des deux a changé depuis que l'index l'a lue, la note est à relire.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NoteStamp {
+    /// Le dossier et le nom de fichier de la note.
+    pub path: NotePath,
+    /// La date de dernière modification.
+    pub modified: Modified,
+    /// La taille du fichier, en octets.
+    pub size: u64,
+}
+
+/// Une note telle que l'index la garde : son relevé, et son contenu (avec ce qui en est lisible
+/// s'il n'est pas du texte UTF-8, comme dans la liste).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct IndexedNote {
+    /// Le relevé du fichier, pris avant de lire le contenu.
+    pub stamp: NoteStamp,
+    /// Le contenu Markdown complet, en-tête compris.
+    pub content: String,
 }
 
 /// Le contenu de la corbeille. Chaque élément y garde son chemin d'origine, avec un suffixe
@@ -59,6 +82,23 @@ pub trait NoteStore: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si le dossier ne peut pas être lu.
     fn list(&self, folder: &Folder) -> Result<Vec<StoredNote>, StoreError>;
+
+    /// Le relevé de chaque note du dossier, sans celles de ses sous-dossiers ni lire leur
+    /// contenu.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si le dossier ne peut pas être lu.
+    fn stamps(&self, folder: &Folder) -> Result<Vec<NoteStamp>, StoreError>;
+
+    /// La note à ce chemin, pour l'index : son relevé, pris avant de la lire, et son contenu, même
+    /// s'il n'est pas du texte UTF-8 (ce qui en est lisible, comme dans la liste).
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::NotFound`] si elle n'existe pas, [`StoreError::Unavailable`] si le stockage
+    /// ne répond pas.
+    fn read_indexed(&self, note: &NotePath) -> Result<IndexedNote, StoreError>;
 
     /// La note à ce chemin.
     ///
@@ -379,6 +419,80 @@ pub trait WorkspaceOpener: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si rien d'utilisable ne se trouve à cet emplacement.
     fn open(&self, location: &WorkspaceLocation) -> Result<Arc<dyn NoteStore>, StoreError>;
+}
+
+/// L'index d'un espace de travail : ce que la liste, le tri, les étiquettes et la recherche
+/// savent de chaque note sans relire les fichiers. Les fichiers Markdown restent la seule
+/// vérité : l'index se reconstruit à partir d'eux sans rien perdre.
+pub trait NoteIndex: Send + Sync + Debug {
+    /// Le relevé de chaque note connue de l'index, tel qu'il était quand il l'a lue.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne répond pas.
+    fn stamps(&self) -> Result<Vec<NoteStamp>, StoreError>;
+
+    /// Garde ces notes, à la place de ce qu'il savait d'elles.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne peut pas être écrit ; rien n'est alors gardé.
+    fn put(&self, notes: &[IndexedNote]) -> Result<(), StoreError>;
+
+    /// Oublie ces notes ; celles qu'il ne connaît pas sont ignorées.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne peut pas être écrit.
+    fn remove(&self, notes: &[NotePath]) -> Result<(), StoreError>;
+
+    /// Oublie toutes les notes.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne peut pas être écrit.
+    fn clear(&self) -> Result<(), StoreError>;
+
+    /// Le résumé de chaque note du dossier, sans celles de ses sous-dossiers, dans aucun ordre.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne répond pas.
+    fn notes_in(&self, folder: &Folder) -> Result<Vec<NoteSummary>, StoreError>;
+
+    /// Le résumé de chaque note de l'espace de travail, dans aucun ordre.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne répond pas.
+    fn all_notes(&self) -> Result<Vec<NoteSummary>, StoreError>;
+
+    /// Le résumé de chaque note qui porte l'étiquette `tag`, telle qu'écrite (les majuscules
+    /// comptent), dans aucun ordre.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne répond pas.
+    fn tagged(&self, tag: &str) -> Result<Vec<NoteSummary>, StoreError>;
+
+    /// Les notes qui contiennent tous les mots de `query` (voir [`domain::search`]), avec leur
+    /// contenu pour en tirer l'extrait, dans aucun ordre.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne répond pas.
+    fn search(&self, query: &SearchQuery) -> Result<Vec<(NoteSummary, String)>, StoreError>;
+}
+
+/// Ouvre l'index d'un espace de travail : un par espace, rangé hors de lui.
+pub trait IndexOpener: Send + Sync + Debug {
+    /// L'index de l'espace de travail situé à `location` ; vide s'il n'existait pas, s'il était
+    /// abîmé ou d'un ancien format.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si aucun index ne peut être ouvert ni créé.
+    fn open(&self, location: &WorkspaceLocation) -> Result<Arc<dyn NoteIndex>, StoreError>;
 }
 
 /// Préférences gardées d'un lancement à l'autre.

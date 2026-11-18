@@ -394,6 +394,8 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
       .filter((note) => note.tags.includes(tag))
       .sort(listOrder(order)),
   list_tags: () => listTags(),
+  // Le faux n'a pas d'index : la liste et la recherche relisent toujours les notes.
+  rebuild_index: () => null,
   list_recent_notes: (args) =>
     (args.paths as unknown as string[]).flatMap((path) => {
       const note = backend.notes[path];

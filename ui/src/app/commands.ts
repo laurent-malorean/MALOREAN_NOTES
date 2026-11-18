@@ -27,6 +27,7 @@ export interface CommandsDeps {
   readonly workspace: {
     createNote(): Promise<void>;
     sortBy(order: NoteOrder): Promise<void>;
+    rebuildIndex(): Promise<void>;
   };
   /** Les espaces de travail : passer de l'un à l'autre, en ajouter, renommer, retirer. */
   readonly workspaces: Pick<Workspaces, "choose" | "add" | "rename" | "chooseRemoval">;
@@ -116,6 +117,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "add-workspace": () => run(deps.workspaces.add()),
     "rename-workspace": () => run(deps.workspaces.rename()),
     "remove-workspace": () => run(deps.workspaces.chooseRemoval()),
+    "rebuild-index": () => run(deps.workspace.rebuildIndex()),
   };
 }
 

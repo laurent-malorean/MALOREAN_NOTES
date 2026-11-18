@@ -85,6 +85,8 @@ export const listRecentNotes = (paths: readonly string[]) =>
   invoke<NoteListItem[]>("list_recent_notes", { paths });
 /** Chaque étiquette de l'espace de travail et son nombre de notes, par ordre alphabétique. */
 export const listTags = () => invoke<TagItem[]>("list_tags");
+/** Reconstruit l'index de l'espace de travail ouvert à partir de ses fichiers. */
+export const rebuildIndex = () => invoke<null>("rebuild_index");
 /** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */
 export const resolveLink = (title: string) => invoke<string | null>("resolve_link", { title });
 /** Les liens entrants de la note `path` : les notes qui pointent vers elle. */

@@ -42,6 +42,22 @@ impl SearchQuery {
             .collect();
         (!words.is_empty()).then_some(Self { words })
     }
+
+    /// Les mots cherchés, sans majuscule ni accent, comme les donne [`folded`].
+    #[must_use]
+    pub fn words(&self) -> Vec<String> {
+        self.words
+            .iter()
+            .map(|word| word.iter().collect())
+            .collect()
+    }
+}
+
+/// Le texte sans majuscule ni accent, tel que la recherche le compare : une note contient un mot
+/// cherché si son texte ainsi ramené contient le mot (voir [`SearchQuery::words`]).
+#[must_use]
+pub fn folded(text: &str) -> String {
+    Folded::of(text).chars.into_iter().collect()
 }
 
 impl Excerpt {
@@ -172,6 +188,13 @@ mod tests {
 
     fn matched(s: &str) -> ExcerptPart {
         Match(s.to_owned())
+    }
+
+    #[test]
+    fn words_and_text_are_folded_alike() {
+        let query = SearchQuery::parse("  ÉTÉ  Œuvre ").unwrap();
+        assert_eq!(query.words(), ["ete", "œuvre"]);
+        assert_eq!(folded("Un bel Été, İ"), "un bel ete, i");
     }
 
     #[test]

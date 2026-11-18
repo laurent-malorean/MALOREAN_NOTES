@@ -153,6 +153,22 @@ fn a_note_that_is_not_utf8_text_does_not_break_the_list() {
 }
 
 #[test]
+fn a_note_that_is_not_utf8_text_is_indexed_with_what_can_be_read() {
+    let (dir, store) = workspace();
+    fs::write(
+        dir.path().join("binaire.md"),
+        [0x23, 0x20, 0xff, 0xfe, 0x41],
+    )
+    .unwrap();
+    fs::write(dir.path().join(".cachee.md"), "cachée").unwrap();
+    fs::write(dir.path().join("lisez-moi.txt"), "texte").unwrap();
+    let indexed = store.read_indexed(&name("binaire.md")).unwrap();
+    assert_eq!(indexed.content, "# \u{FFFD}\u{FFFD}A");
+    assert_eq!(indexed.stamp.size, 5);
+    assert_eq!(store.stamps(&root()).unwrap(), [indexed.stamp]);
+}
+
+#[test]
 fn a_note_that_is_not_utf8_text_cannot_be_opened() {
     let (dir, store) = workspace();
     fs::write(dir.path().join("binaire.md"), [0xff, 0xfe]).unwrap();

@@ -29,7 +29,8 @@ export type CommandId =
   | "switch-workspace"
   | "add-workspace"
   | "rename-workspace"
-  | "remove-workspace";
+  | "remove-workspace"
+  | "rebuild-index";
 
 export interface Command {
   readonly id: CommandId;
@@ -68,6 +69,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "add-workspace", label: "Ajouter un espace de travail" },
   { id: "rename-workspace", label: "Renommer l'espace de travail" },
   { id: "remove-workspace", label: "Retirer un espace de travail" },
+  { id: "rebuild-index", label: "Reconstruire l'index" },
 ];
 
 /** Les commandes dont le nom correspond à ce qui est tapé ; celles qui commencent par lui d'abord. */

@@ -58,6 +58,12 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     ]);
   });
 
+  it("reconstruit l'index de l'espace de travail ouvert", async () => {
+    const calls = recordCalls(null);
+    expect(await bridge.rebuildIndex()).toBeNull();
+    expect(calls).toEqual([{ command: "rebuild_index", args: {} }]);
+  });
+
   it("liste les notes récentes par leurs chemins", async () => {
     const calls = recordCalls([]);
     expect(await bridge.listRecentNotes(["b.md", "a.md"])).toEqual([]);

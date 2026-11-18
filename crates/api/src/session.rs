@@ -2,6 +2,7 @@
 
 mod attachments;
 mod export;
+mod index;
 mod journal;
 mod links;
 mod quick_open;
@@ -17,11 +18,12 @@ use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use application::use_cases::{
     CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenedWorkspace,
-    PinNote, ReadNote, RenameFolder, SearchNotes, SearchResult,
+    PinNote, ReadNote, RefreshIndex, RenameFolder, SearchNotes, SearchResult,
 };
 use application::{
-    AppError, Clipboard, Clock, ExportStore, NoteStore, Preferences, StoredNote, Watching,
-    WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
+    AppError, Clipboard, Clock, ExportStore, IndexOpener, IndexedStore, MemoryIndexes, NoteIndex,
+    NoteStore, Preferences, StoredNote, Watching, WorkspaceLocation, WorkspaceName,
+    WorkspaceOpener, WorkspaceWatcher,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
@@ -50,6 +52,7 @@ pub struct Session {
     opener: Arc<dyn WorkspaceOpener>,
     preferences: Arc<dyn Preferences>,
     clock: Arc<dyn Clock>,
+    indexes: Arc<dyn IndexOpener>,
     workspace: RwLock<Option<OpenWorkspaceState>>,
     watcher: Option<Arc<dyn WorkspaceWatcher>>,
     watching: Mutex<Option<Box<dyn Watching>>>,
@@ -57,16 +60,19 @@ pub struct Session {
     clipboard: Option<Arc<dyn Clipboard>>,
 }
 
-/// L'espace de travail ouvert : où il est, et ses notes.
+/// L'espace de travail ouvert : où il est, ses notes, et leur index, qui suit chaque changement
+/// fait par l'application.
 #[derive(Debug, Clone)]
 struct OpenWorkspaceState {
     name: WorkspaceName,
     location: WorkspaceLocation,
     store: Arc<dyn NoteStore>,
+    index: Arc<dyn NoteIndex>,
 }
 
 impl Session {
-    /// Une session sans espace de travail ouvert.
+    /// Une session sans espace de travail ouvert. Son index est gardé en mémoire, le temps de
+    /// la session, sauf si elle en reçoit un autre ([`Session::with_indexes`]).
     #[must_use]
     pub fn new(
         opener: Arc<dyn WorkspaceOpener>,
@@ -77,6 +83,7 @@ impl Session {
             opener,
             preferences,
             clock,
+            indexes: Arc::new(MemoryIndexes),
             workspace: RwLock::new(None),
             watcher: None,
             watching: Mutex::new(None),
@@ -96,8 +103,8 @@ impl Session {
         folder: &str,
         order: NoteOrderItem,
     ) -> Result<Vec<NoteListItem>, ApiError> {
-        let store = self.store()?;
-        let notes = ListNotes::new(&*store).execute(&Folder::parse(folder)?, order.into())?;
+        let index = self.index()?;
+        let notes = ListNotes::new(&*index).execute(&Folder::parse(folder)?, order.into())?;
         Ok(notes.iter().map(list_item).collect())
     }
 
@@ -113,11 +120,11 @@ impl Session {
         query: &str,
         order: NoteOrderItem,
     ) -> Result<Vec<SearchResultItem>, ApiError> {
-        let store = self.store()?;
+        let index = self.index()?;
         let Some(query) = SearchQuery::parse(query) else {
             return Ok(Vec::new());
         };
-        let found = SearchNotes::new(&*store).execute(&query, order.into())?;
+        let found = SearchNotes::new(&*index).execute(&query, order.into())?;
         Ok(found.into_iter().map(search_result_item).collect())
     }
 
@@ -239,18 +246,24 @@ impl Session {
         Ok(moved.to_path())
     }
 
-    fn keep(&self, opened: OpenedWorkspace) -> WorkspaceInfo {
+    /// L'espace de travail ouvert devient celui de la session ; son index est ouvert et mis à
+    /// jour sur ses fichiers (seules les notes changées depuis la dernière fois sont relues).
+    fn keep(&self, opened: OpenedWorkspace) -> Result<WorkspaceInfo, ApiError> {
         let info = workspace::workspace_info(&opened);
+        let location = opened.workspace.location;
+        let index = self.indexes.open(&location).map_err(AppError::from)?;
+        RefreshIndex::new(&*opened.store, &*index).execute()?;
         let state = OpenWorkspaceState {
             name: opened.workspace.name,
-            location: opened.workspace.location,
-            store: opened.store,
+            location,
+            store: Arc::new(IndexedStore::new(opened.store, Arc::clone(&index))),
+            index,
         };
         *self
             .workspace
             .write()
             .unwrap_or_else(PoisonError::into_inner) = Some(state);
-        info
+        Ok(info)
     }
 
     /// L'espace de travail `name` s'appelle maintenant `kept` : s'il est ouvert, il garde ce nom.
@@ -276,6 +289,10 @@ impl Session {
 
     fn store(&self) -> Result<Arc<dyn NoteStore>, ApiError> {
         Ok(self.opened()?.store)
+    }
+
+    fn index(&self) -> Result<Arc<dyn NoteIndex>, ApiError> {
+        Ok(self.opened()?.index)
     }
 }
 

@@ -3,19 +3,19 @@
 use domain::note::{sort_by_recent, sorted};
 use domain::{Folder, NoteOrder, NoteSummary};
 
-use crate::{AppError, NoteStore, StoredNote};
+use crate::{AppError, NoteIndex, StoredNote};
 
 /// Les notes d'un dossier, dans l'ordre du tri de la liste, les épinglées d'abord.
 #[derive(Debug)]
 pub struct ListNotes<'a> {
-    store: &'a dyn NoteStore,
+    index: &'a dyn NoteIndex,
 }
 
 impl<'a> ListNotes<'a> {
-    /// Le cas d'usage, branché sur l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
     #[must_use]
-    pub fn new(store: &'a dyn NoteStore) -> Self {
-        Self { store }
+    pub fn new(index: &'a dyn NoteIndex) -> Self {
+        Self { index }
     }
 
     /// Le résumé de chaque note du dossier : les épinglées d'abord, puis les autres ;
@@ -23,37 +23,32 @@ impl<'a> ListNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si le dossier ne peut pas être lu.
+    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
     pub fn execute(&self, folder: &Folder, order: NoteOrder) -> Result<Vec<NoteSummary>, AppError> {
-        let notes = self.store.list(folder)?;
-        Ok(sorted(notes.into_iter().map(summary).collect(), order))
+        Ok(sorted(self.index.notes_in(folder)?, order))
     }
 }
 
 /// Les notes de tout l'espace de travail, pour l'ouverture rapide.
 #[derive(Debug)]
 pub struct ListAllNotes<'a> {
-    store: &'a dyn NoteStore,
+    index: &'a dyn NoteIndex,
 }
 
 impl<'a> ListAllNotes<'a> {
-    /// Le cas d'usage, branché sur l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
     #[must_use]
-    pub fn new(store: &'a dyn NoteStore) -> Self {
-        Self { store }
+    pub fn new(index: &'a dyn NoteIndex) -> Self {
+        Self { index }
     }
 
     /// Le résumé de chaque note de chaque dossier, la plus récemment modifiée en premier.
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
     pub fn execute(&self) -> Result<Vec<NoteSummary>, AppError> {
-        let mut summaries = Vec::new();
-        for folder in std::iter::once(Folder::root()).chain(self.store.folders()?) {
-            summaries.extend(self.store.list(&folder)?.into_iter().map(summary));
-        }
-        Ok(sort_by_recent(summaries))
+        Ok(sort_by_recent(self.index.all_notes()?))
     }
 }
 
@@ -65,13 +60,14 @@ pub(crate) fn summary(note: StoredNote) -> NoteSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::InMemoryNoteStore;
+    use crate::NoteStore;
+    use crate::testing::{InMemoryNoteStore, indexed};
     use domain::NotePath;
 
     #[test]
     fn notes_are_listed_by_title_most_recent_first() {
         let store = InMemoryNoteStore::with_notes(&[("a.md", "# Alpha"), ("b.md", "texte")]);
-        let notes = ListNotes::new(&store)
+        let notes = ListNotes::new(&indexed(&store))
             .execute(&Folder::root(), NoteOrder::Modified)
             .unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
@@ -84,7 +80,7 @@ mod tests {
             ("a.md", "---\npinned: true\n---\n# Alpha"),
             ("b.md", "# Bêta"),
         ]);
-        let notes = ListNotes::new(&store)
+        let notes = ListNotes::new(&indexed(&store))
             .execute(&Folder::root(), NoteOrder::Modified)
             .unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
@@ -98,7 +94,7 @@ mod tests {
             .write(&NotePath::parse("b.md").unwrap(), "# Bêta !")
             .unwrap();
         let titles = |order| {
-            let notes = ListNotes::new(&store)
+            let notes = ListNotes::new(&indexed(&store))
                 .execute(&Folder::root(), order)
                 .unwrap();
             notes
@@ -117,7 +113,7 @@ mod tests {
             ("Travail/b.md", "# Bêta"),
             ("Travail/Archives/c.md", "# Gamma"),
         ]);
-        let notes = ListAllNotes::new(&store).execute().unwrap();
+        let notes = ListAllNotes::new(&indexed(&store)).execute().unwrap();
         let paths: Vec<_> = notes.iter().map(|n| n.path().to_path()).collect();
         assert_eq!(paths, ["Travail/Archives/c.md", "Travail/b.md", "a.md"]);
     }

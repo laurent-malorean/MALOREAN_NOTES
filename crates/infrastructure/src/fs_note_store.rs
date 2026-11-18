@@ -7,8 +7,8 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use application::{
-    AttachmentLocation, NoteStore, StoreError, StoredNote, TrashContents, WorkspaceLocation,
-    WorkspaceOpener,
+    AttachmentLocation, IndexedNote, NoteStamp, NoteStore, StoreError, StoredNote, TrashContents,
+    WorkspaceLocation, WorkspaceOpener,
 };
 use domain::{AttachmentName, FileName, Folder, FolderName, Modified, NotePath};
 
@@ -178,6 +178,16 @@ impl FsNoteStore {
             .map_err(|e| String::from_utf8_lossy(e.as_bytes()).into_owned());
         Ok((content, modified))
     }
+
+    /// La date et la taille du fichier de la note, sans l'ouvrir.
+    fn stamp(&self, note: &NotePath) -> Result<NoteStamp, StoreError> {
+        let metadata = fs::metadata(self.path(note)).map_err(|e| not_found_or(note, e))?;
+        Ok(NoteStamp {
+            path: note.clone(),
+            modified: date_of(&metadata).map_err(unavailable)?,
+            size: metadata.len(),
+        })
+    }
 }
 
 impl NoteStore for FsNoteStore {
@@ -195,6 +205,31 @@ impl NoteStore for FsNoteStore {
             });
         }
         Ok(notes)
+    }
+
+    fn stamps(&self, folder: &Folder) -> Result<Vec<NoteStamp>, StoreError> {
+        let mut stamps = Vec::new();
+        for name in self.note_names(folder)? {
+            stamps.push(self.stamp(&NotePath::new(folder.clone(), name))?);
+        }
+        Ok(stamps)
+    }
+
+    /// Le relevé est pris avant la lecture : un fichier changé entre les deux sera relu. Une
+    /// note d'un dossier disparu est introuvable, comme celle d'un dossier qui existe.
+    fn read_indexed(&self, note: &NotePath) -> Result<IndexedNote, StoreError> {
+        let names = match self.note_names(note.folder()) {
+            Err(StoreError::FolderNotFound(_)) => Vec::new(),
+            names => names?,
+        };
+        if !names.contains(note.name()) {
+            return Err(StoreError::NotFound(note.clone()));
+        }
+        let stamp = self.stamp(note)?;
+        let bytes = fs::read(self.path(note)).map_err(|e| not_found_or(note, e))?;
+        let content = String::from_utf8(bytes)
+            .unwrap_or_else(|e| String::from_utf8_lossy(e.as_bytes()).into_owned());
+        Ok(IndexedNote { stamp, content })
     }
 
     fn read(&self, name: &NotePath) -> Result<StoredNote, StoreError> {
@@ -487,7 +522,11 @@ impl WorkspaceOpener for FsWorkspaceOpener {
 }
 
 fn modified(path: &Path) -> io::Result<Modified> {
-    let since_epoch = fs::metadata(path)?
+    date_of(&fs::metadata(path)?)
+}
+
+fn date_of(metadata: &fs::Metadata) -> io::Result<Modified> {
+    let since_epoch = metadata
         .modified()?
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default();

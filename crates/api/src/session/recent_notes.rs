@@ -13,8 +13,8 @@ impl Session {
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
     /// espace de travail ouvert.
     pub fn list_recent_notes(&self, paths: &[String]) -> Result<Vec<NoteListItem>, ApiError> {
-        let store = self.store()?;
-        let notes = ListRecentNotes::new(&*store).execute(paths)?;
+        let index = self.index()?;
+        let notes = ListRecentNotes::new(&*index).execute(paths)?;
         Ok(notes.iter().map(list_item).collect())
     }
 }

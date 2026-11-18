@@ -51,6 +51,7 @@ const deps: CommandsDeps = {
   workspace: {
     createNote: async () => void log.push("nouvelle note"),
     sortBy: async (order) => void log.push(`trier par ${order}`),
+    rebuildIndex: async () => void log.push("reconstruire l'index"),
   },
   workspaces: {
     choose: async () => void log.push("changer d'espace de travail"),
@@ -123,6 +124,7 @@ describe("commandes de la palette", () => {
       "add-workspace",
       "rename-workspace",
       "remove-workspace",
+      "rebuild-index",
     ] as const)
       actions[id]();
     await settle();
@@ -147,6 +149,7 @@ describe("commandes de la palette", () => {
       "ajouter un espace de travail",
       "renommer l'espace de travail",
       "retirer un espace de travail",
+      "reconstruire l'index",
     ]);
   });
 

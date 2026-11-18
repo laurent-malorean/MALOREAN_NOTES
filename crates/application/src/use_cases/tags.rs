@@ -4,20 +4,19 @@ use domain::note::sorted;
 use domain::tag::tag_counts;
 use domain::{NoteOrder, NoteSummary};
 
-use super::ListAllNotes;
-use crate::{AppError, NoteStore};
+use crate::{AppError, NoteIndex};
 
 /// Les notes de tout l'espace de travail qui portent une étiquette : le filtre par étiquette.
 #[derive(Debug)]
 pub struct ListTaggedNotes<'a> {
-    store: &'a dyn NoteStore,
+    index: &'a dyn NoteIndex,
 }
 
 impl<'a> ListTaggedNotes<'a> {
-    /// Le cas d'usage, branché sur l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
     #[must_use]
-    pub fn new(store: &'a dyn NoteStore) -> Self {
-        Self { store }
+    pub fn new(index: &'a dyn NoteIndex) -> Self {
+        Self { index }
     }
 
     /// Le résumé de chaque note qui porte l'étiquette `tag`, telle qu'écrite : les épinglées
@@ -25,39 +24,32 @@ impl<'a> ListTaggedNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
     pub fn execute(&self, tag: &str, order: NoteOrder) -> Result<Vec<NoteSummary>, AppError> {
-        let notes = ListAllNotes::new(self.store).execute()?;
-        Ok(sorted(
-            notes
-                .into_iter()
-                .filter(|note| note.tags().iter().any(|t| t == tag))
-                .collect(),
-            order,
-        ))
+        Ok(sorted(self.index.tagged(tag)?, order))
     }
 }
 
 /// La liste des étiquettes : chaque étiquette de l'espace de travail et son nombre de notes.
 #[derive(Debug)]
 pub struct ListTags<'a> {
-    store: &'a dyn NoteStore,
+    index: &'a dyn NoteIndex,
 }
 
 impl<'a> ListTags<'a> {
-    /// Le cas d'usage, branché sur l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
     #[must_use]
-    pub fn new(store: &'a dyn NoteStore) -> Self {
-        Self { store }
+    pub fn new(index: &'a dyn NoteIndex) -> Self {
+        Self { index }
     }
 
     /// Chaque étiquette avec son nombre de notes, par ordre alphabétique.
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
     pub fn execute(&self) -> Result<Vec<(String, usize)>, AppError> {
-        let notes = ListAllNotes::new(self.store).execute()?;
+        let notes = self.index.all_notes()?;
         Ok(tag_counts(notes.iter().map(NoteSummary::tags)))
     }
 }
@@ -65,10 +57,11 @@ impl<'a> ListTags<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::InMemoryNoteStore;
+    use crate::MemoryIndex;
+    use crate::testing::{InMemoryNoteStore, indexed};
 
-    fn workspace() -> InMemoryNoteStore {
-        InMemoryNoteStore::with_notes(&[
+    fn workspace() -> MemoryIndex {
+        indexed(&InMemoryNoteStore::with_notes(&[
             ("a.md", "---\ntags: [perso]\n---\n# Alpha"),
             (
                 "Travail/b.md",
@@ -76,7 +69,7 @@ mod tests {
             ),
             ("Travail/Archives/c.md", "---\ntags: [perso]\n---\n# Gamma"),
             ("d.md", "# Delta"),
-        ])
+        ]))
     }
 
     #[test]

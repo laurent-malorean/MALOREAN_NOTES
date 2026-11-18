@@ -83,7 +83,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Vocabulaire des doublures** : un **faux** (*fake*) est une implémentation simple et réelle d'un port (stockage en mémoire) ; un **bouchon** (*stub*) rend une réponse fixée ; un **espion** (*spy*) enregistre les appels. On utilise des faux par défaut ; pas de bibliothèque de *mocks*.
 - **Forme d'un test** : trois blocs, préparer, agir, vérifier, une seule action. Aucune logique dans un test (`if`, boucle, calcul du résultat attendu) : le résultat attendu est écrit en clair.
 - **Répartition** : beaucoup de tests du domaine (rapides, sans doublure), des tests de cas d'usage sur les faux, des tests de contrat sur les vrais adaptateurs, très peu de tests de bout en bout.
-- **Couche par couche** : domaine sans rien ; application avec les faux en mémoire (`application/src/testing/` ou crate `test-support`) ; infrastructure avec de vrais fichiers dans un dossier temporaire ; interface sur sa logique hors écran.
+- **Couche par couche** : domaine sans rien ; application avec les faux en mémoire (`application/src/testing/` ou crate `test-support`, et l'index en mémoire `MemoryIndex`) ; infrastructure avec de vrais fichiers dans un dossier temporaire (base SQLite comprise) ; interface sur sa logique hors écran.
 - **Le faux et le vrai se ressemblent** : une même fonction de test de contrat, générique sur le port, est jouée sur le faux et sur l'implémentation réelle.
 - **Logique de l'interface hors de l'écran** : l'état d'un écran et ses transitions sont du code testable sans fenêtre.
 - **Pas de test qui dépend de l'heure, de l'ordre ou du réseau.**
@@ -147,7 +147,8 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 ## 11. Performance
 
 - Cibles : *à définir* (volume de données, temps d'ouverture, temps de réponse d'une action, mémoire).
-- Rien ne parcourt toutes les données à chaque action : un index, un cache, ou une lecture d'un niveau à la fois.
+- Rien ne parcourt toutes les données à chaque action : un index, un cache, ou une lecture d'un niveau à la fois. La liste, le tri, les étiquettes et la recherche lisent l'index de l'espace de travail (port `NoteIndex`, fiche 0028), jamais les fichiers ; une écriture de l'application passe par `IndexedStore`, qui le tient à jour.
+- L'index n'a pas de migration : changer son schéma, c'est augmenter `FORMAT_VERSION` (`infrastructure/src/sqlite_index.rs`) ; l'ancien index est alors remplacé et rempli à partir des fichiers.
 - Une évolution qui touche une lecture de masse passe par un benchmark (`criterion`). On mesure, on n'estime pas.
 - On mesure en profil `release`, jamais en `debug`.
 

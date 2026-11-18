@@ -57,7 +57,7 @@ mod tests {
     use domain::Folder;
 
     use super::*;
-    use crate::testing::InMemoryNoteStore;
+    use crate::testing::{InMemoryNoteStore, indexed};
     use crate::use_cases::ListNotes;
 
     fn path(text: &str) -> NotePath {
@@ -72,7 +72,7 @@ mod tests {
         assert_eq!(pinned.content, "---\npinned: true\n---\n# Alpha");
         assert_eq!(pinned.modified, before);
         assert_eq!(store.read(&path("a.md")).unwrap(), pinned);
-        let notes = ListNotes::new(&store)
+        let notes = ListNotes::new(&indexed(&store))
             .execute(&Folder::root(), domain::NoteOrder::Modified)
             .unwrap();
         assert_eq!(notes[0].title(), "Alpha");

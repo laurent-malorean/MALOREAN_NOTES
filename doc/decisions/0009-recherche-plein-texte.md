@@ -3,6 +3,7 @@
 - **Date** : 2026-11-16
 - **Statut** : acceptée
 - **Note (18/11/2026)** : « bibliothèque » (`Library`) s'appelle désormais « espace de travail » (`Workspace`), voir `doc/ontology.md` ; cette fiche garde l'ancien mot.
+- **Note (18/11/2026)** : la recherche ne relit plus les fichiers, elle passe par l'index (fiche 0028) ; la règle de correspondance et l'extrait ne changent pas.
 
 ## Contexte
 

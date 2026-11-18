@@ -127,6 +127,17 @@ pub async fn list_tags(session: SharedSession<'_>) -> Result<Vec<TagItem>, ApiEr
     in_background(move || session.list_tags()).await
 }
 
+/// Reconstruit l'index de l'espace de travail ouvert, à partir de ses fichiers.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn rebuild_index(session: SharedSession<'_>) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.rebuild_index()).await
+}
+
 /// Les liens entrants d'une note.
 ///
 /// # Errors
@@ -456,6 +467,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         list_all_notes,
         list_tagged_notes,
         list_tags,
+        rebuild_index,
         list_recent_notes,
         read_note,
         save_note,

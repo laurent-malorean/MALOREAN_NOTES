@@ -11,7 +11,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 ## Principe fondateur : tout est Markdown
 
 - **Une note = un fichier `.md`**, lisible et modifiable par n'importe quel autre outil.
-- **Les fichiers sont la seule source de vérité.** Pas de base de données propriétaire ; l'index de recherche est un cache que l'application peut reconstruire à tout moment.
+- **Les fichiers sont la seule source de vérité.** Pas de base de données propriétaire ; l'index (liste, étiquettes, recherche) est un cache rangé hors de l'espace de travail, que l'application peut reconstruire à tout moment à partir des fichiers.
 - **Un espace de travail = un nom + un dossier** choisi par l'utilisateur. Les dossiers de notes sont de vrais dossiers sur le disque. On en garde plusieurs et on passe de l'un à l'autre ; les renommer ou les retirer de la liste ne touche jamais aux fichiers.
 - **Titre et nom de fichier** : le titre d'une note est son premier titre `#`. Le nom du fichier est ce titre en kebab-case (`Mon idée du jour` → `mon-idee-du-jour.md`) : minuscules, accents retirés, espaces remplacés par `-`, autres signes supprimés. Changer le titre renomme le fichier. Note sans titre : `sans-titre.md`. Nom déjà pris dans le dossier : suffixe `-2`, `-3`…
 - **Pièces jointes** (images collées, fichiers) : un dossier par note, à côté d'elle, nommé comme la note avec `.assets` (`mon-idee-du-jour.assets/`), référencé par liens Markdown relatifs. Ce dossier n'apparaît pas comme un dossier de notes. Renommer la note renomme son dossier et met à jour ses liens ; supprimer la note envoie ses pièces jointes à la corbeille avec elle.
