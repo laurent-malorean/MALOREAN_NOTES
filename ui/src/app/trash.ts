@@ -6,6 +6,7 @@ import {
   currentFolder,
   folderSelected,
   foldersRefreshed,
+  noteOrder,
   type Screen,
   selectedNote,
   trashShown,
@@ -85,8 +86,9 @@ async function trashFolder(deps: TrashDeps, path: string) {
   await deps.refreshTags();
   let next = deps.columns.current();
   if (listInside) {
-    await deps.screen.answer(deps.backend.listNotes(""), (now, answer) =>
-      folderSelected(now, "", answer),
+    await deps.screen.answer(
+      deps.backend.listNotes("", noteOrder(deps.screen.get())),
+      (now, answer) => folderSelected(now, "", answer),
     );
     next = noteShown(next, selectedNote(deps.screen.get()));
   } else {

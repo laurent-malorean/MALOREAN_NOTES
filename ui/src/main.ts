@@ -52,6 +52,7 @@ const library = createLibrary({
   columns,
   layout: layoutMemory,
   folds: foldMemory,
+  storage: localStorage,
   show: messages.show,
   search: search.search,
 });

@@ -80,7 +80,7 @@ impl<'a> Trash<'a> {
         let mut notes: Vec<NoteSummary> = trashed
             .notes
             .into_iter()
-            .map(|n| NoteSummary::new(n.path, &n.content, n.modified))
+            .map(super::list_notes::summary)
             .collect();
         notes.sort_by(|a, b| a.path().cmp(b.path()));
         Ok(TrashView {

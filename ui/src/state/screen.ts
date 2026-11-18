@@ -1,6 +1,7 @@
 import type { LibraryInfo, NoteListItem, SearchResultItem, TagItem, TrashInfo } from "../bridge";
 import { movedPath } from "./folders";
 import { foldedMoved, foldToggled, parentsUnfolded } from "./folding";
+import { DEFAULT_ORDER, type NoteOrder } from "./note-order";
 import { initialSelection } from "./selection";
 
 /**
@@ -17,8 +18,8 @@ export interface Search {
  * le dossier choisi (`""` pour la racine), ses notes, la note sélectionnée, la recherche
  * en cours et la corbeille affichée (`null` pour l'une et l'autre : la liste montre les notes
  * du dossier), les dossiers pliés de la colonne des dossiers, le filtre par étiquette (`null` :
- * aucun ; sinon `notes` sont les notes de toute la bibliothèque qui portent cette étiquette) et la
- * liste des étiquettes.
+ * aucun ; sinon `notes` sont les notes de toute la bibliothèque qui portent cette étiquette), la
+ * liste des étiquettes et le tri de la liste.
  */
 export type Screen =
   | { readonly kind: "welcome" }
@@ -34,20 +35,22 @@ export type Screen =
       readonly folded: readonly string[];
       readonly tag: string | null;
       readonly tags: readonly TagItem[];
+      readonly order: NoteOrder;
     };
 
 /** L'écran du lancement, avant toute bibliothèque. */
 export const welcome: Screen = { kind: "welcome" };
 
 /**
- * Une bibliothèque qu'on vient d'ouvrir, sur sa racine et sa note la plus récente, avec ses
- * dossiers pliés gardés (aucun : tous dépliés).
+ * Une bibliothèque qu'on vient d'ouvrir, sur sa racine et la première note de sa liste, avec ses
+ * dossiers pliés (aucun : tous dépliés) et son tri gardés.
  */
 export function libraryOpened(
   library: LibraryInfo,
   folders: readonly string[],
   notes: readonly NoteListItem[],
   folded: readonly string[] = [],
+  order: NoteOrder = DEFAULT_ORDER,
 ): Screen {
   return {
     kind: "library",
@@ -61,6 +64,7 @@ export function libraryOpened(
     folded,
     tag: null,
     tags: [],
+    order,
   };
 }
 
@@ -190,4 +194,14 @@ export function tagsRefreshed(screen: Screen, tags: readonly TagItem[]): Screen 
 /** L'étiquette du filtre, s'il y en a un. */
 export function activeTag(screen: Screen): string | null {
   return screen.kind === "library" ? screen.tag : null;
+}
+
+/** La même bibliothèque, avec un autre tri de la liste ; les notes sont relues ensuite. */
+export function orderChosen(screen: Screen, order: NoteOrder): Screen {
+  return screen.kind === "library" ? { ...screen, order } : screen;
+}
+
+/** Le tri de la liste ; celui par défaut sur l'accueil. */
+export function noteOrder(screen: Screen): NoteOrder {
+  return screen.kind === "library" ? screen.order : DEFAULT_ORDER;
 }

@@ -110,8 +110,16 @@ const listItem = ([path, note]: [string, FakeNote]) => ({
   tags: tagsOf(note.content),
 });
 
-const listOrder = (a: ReturnType<typeof listItem>, b: ReturnType<typeof listItem>) =>
-  Number(b.pinned) - Number(a.pinned) || b.modified - a.modified;
+type Listed = ReturnType<typeof listItem>;
+
+/** Le tri de la liste, comme Rust : épinglées d'abord, puis par date de modification ou par titre. */
+const listOrder =
+  (order = "modified") =>
+  (a: Listed, b: Listed) =>
+    Number(b.pinned) - Number(a.pinned) ||
+    (order === "title"
+      ? a.title.localeCompare(b.title, "fr", { sensitivity: "base" })
+      : b.modified - a.modified);
 
 function listTags() {
   const counts = new Map<string, number>();
@@ -182,12 +190,13 @@ const treeOrder = (a: string, b: string) =>
 const folded = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /** Recherche simplifiée : toutes les notes qui contiennent tous les mots ; l'extrait est la note entière. */
-function searchNotes(query: string) {
+function searchNotes(query: string, order?: string) {
   const words = folded(query).split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
+  const sort = listOrder(order);
   return Object.entries(backend.notes)
     .filter(([, note]) => words.every((word) => folded(note.content).includes(word)))
-    .sort(([, a], [, b]) => b.modified - a.modified)
+    .sort((a, b) => sort(listItem(a), listItem(b)))
     .map(([path, note]) => {
       const line = note.content.replace(/\s+/g, " ");
       const parts = line.split(new RegExp(`(${words.join("|")})`, "i")).filter(Boolean);
@@ -315,8 +324,10 @@ const trashCommands: Record<string, (args: Record<string, string>) => unknown> =
 
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
-  search_notes: ({ query = "" }) =>
-    new Promise((resolve) => setTimeout(() => resolve(searchNotes(query)), backend.searchDuration)),
+  search_notes: ({ query = "", order }) =>
+    new Promise((resolve) =>
+      setTimeout(() => resolve(searchNotes(query, order)), backend.searchDuration),
+    ),
   resolve_link: ({ title = "" }) => resolveLink(title),
   list_all_notes: () =>
     Object.entries(backend.notes)
@@ -329,16 +340,16 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   list_backlinks: ({ path = "" }) => listBacklinks(path),
   reopen_last_library: () => (backend.rememberedLibrary ? library : null),
   choose_library: () => library,
-  list_notes: ({ folder = "" }) =>
+  list_notes: ({ folder = "", order }) =>
     Object.entries(backend.notes)
       .filter(([path]) => folderOf(path) === folder)
       .map(listItem)
-      .sort(listOrder),
-  list_tagged_notes: ({ tag = "" }) =>
+      .sort(listOrder(order)),
+  list_tagged_notes: ({ tag = "", order }) =>
     Object.entries(backend.notes)
       .map(listItem)
       .filter((note) => note.tags.includes(tag))
-      .sort(listOrder),
+      .sort(listOrder(order)),
   list_tags: () => listTags(),
   // Épingler ne change pas la date de la note.
   pin_note: ({ path = "" }) =>

@@ -1,11 +1,11 @@
 //! Lister les notes de la bibliothèque.
 
-use domain::note::{sort_by_recent, sort_pinned_first};
-use domain::{Folder, NoteSummary};
+use domain::note::{sort_by_recent, sorted};
+use domain::{Folder, NoteOrder, NoteSummary};
 
-use crate::{AppError, NoteStore};
+use crate::{AppError, NoteStore, StoredNote};
 
-/// Les notes d'un dossier : les épinglées d'abord, la plus récemment modifiée en premier.
+/// Les notes d'un dossier, dans l'ordre du tri de la liste, les épinglées d'abord.
 #[derive(Debug)]
 pub struct ListNotes<'a> {
     store: &'a dyn NoteStore,
@@ -19,18 +19,14 @@ impl<'a> ListNotes<'a> {
     }
 
     /// Le résumé de chaque note du dossier : les épinglées d'abord, puis les autres ;
-    /// dans chaque groupe, la plus récemment modifiée en premier.
+    /// dans chaque groupe, selon `order`.
     ///
     /// # Errors
     ///
     /// [`AppError::StorageUnavailable`] si le dossier ne peut pas être lu.
-    pub fn execute(&self, folder: &Folder) -> Result<Vec<NoteSummary>, AppError> {
+    pub fn execute(&self, folder: &Folder, order: NoteOrder) -> Result<Vec<NoteSummary>, AppError> {
         let notes = self.store.list(folder)?;
-        let summaries = notes
-            .into_iter()
-            .map(|n| NoteSummary::new(n.path, &n.content, n.modified))
-            .collect();
-        Ok(sort_pinned_first(summaries))
+        Ok(sorted(notes.into_iter().map(summary).collect(), order))
     }
 }
 
@@ -55,26 +51,29 @@ impl<'a> ListAllNotes<'a> {
     pub fn execute(&self) -> Result<Vec<NoteSummary>, AppError> {
         let mut summaries = Vec::new();
         for folder in std::iter::once(Folder::root()).chain(self.store.folders()?) {
-            summaries.extend(
-                self.store
-                    .list(&folder)?
-                    .into_iter()
-                    .map(|n| NoteSummary::new(n.path, &n.content, n.modified)),
-            );
+            summaries.extend(self.store.list(&folder)?.into_iter().map(summary));
         }
         Ok(sort_by_recent(summaries))
     }
+}
+
+/// Le résumé d'une note gardée, tel que l'affiche la liste.
+pub(crate) fn summary(note: StoredNote) -> NoteSummary {
+    NoteSummary::new(note.path, &note.content, note.modified)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::testing::InMemoryNoteStore;
+    use domain::NotePath;
 
     #[test]
     fn notes_are_listed_by_title_most_recent_first() {
         let store = InMemoryNoteStore::with_notes(&[("a.md", "# Alpha"), ("b.md", "texte")]);
-        let notes = ListNotes::new(&store).execute(&Folder::root()).unwrap();
+        let notes = ListNotes::new(&store)
+            .execute(&Folder::root(), NoteOrder::Modified)
+            .unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
         assert_eq!(titles, ["Sans titre", "Alpha"]);
     }
@@ -85,9 +84,30 @@ mod tests {
             ("a.md", "---\npinned: true\n---\n# Alpha"),
             ("b.md", "# Bêta"),
         ]);
-        let notes = ListNotes::new(&store).execute(&Folder::root()).unwrap();
+        let notes = ListNotes::new(&store)
+            .execute(&Folder::root(), NoteOrder::Modified)
+            .unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
         assert_eq!(titles, ["Alpha", "Bêta"]);
+    }
+
+    #[test]
+    fn notes_are_listed_in_the_chosen_order() {
+        let store = InMemoryNoteStore::with_notes(&[("b.md", "# Bêta"), ("a.md", "# alpha")]);
+        store
+            .write(&NotePath::parse("b.md").unwrap(), "# Bêta !")
+            .unwrap();
+        let titles = |order| {
+            let notes = ListNotes::new(&store)
+                .execute(&Folder::root(), order)
+                .unwrap();
+            notes
+                .iter()
+                .map(|n| n.title().to_owned())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(titles(NoteOrder::Modified), ["Bêta !", "alpha"]);
+        assert_eq!(titles(NoteOrder::Title), ["alpha", "Bêta !"]);
     }
 
     #[test]

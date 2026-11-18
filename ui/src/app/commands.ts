@@ -1,12 +1,14 @@
-// Commandes : ce que fait chaque commande de la palette et chaque raccourci clavier, et l'ouverture
-// rapide d'une note par son titre.
+// Commandes : ce que fait chaque commande de la palette et chaque raccourci clavier, l'ouverture
+// rapide d'une note par son titre et le choix du tri de la liste.
 import type * as Bridge from "../bridge";
 import { openPicker } from "../screens/picker";
 import { type Shortcut, shortcutFor } from "../screens/shortcuts";
 import type { WindowDisplay } from "../screens/window-display";
 import { activeTabClosed, notePlaced, tabStepped } from "../state/columns";
 import { type CommandId, matchingCommands } from "../state/commands";
-import { matchingNotes } from "../state/quick-open";
+import { NOTE_ORDERS, type NoteOrder } from "../state/note-order";
+import { matching, matchingNotes } from "../state/quick-open";
+import { noteOrder } from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { WritingModes } from "./writing-modes";
@@ -20,7 +22,11 @@ export interface CommandsDeps {
   /** La fenêtre de choix au clavier, et le champ de recherche dans toute la bibliothèque. */
   readonly picker: HTMLDialogElement;
   readonly searchField: HTMLElement;
-  readonly library: { createNote(): Promise<void>; choose(): Promise<void> };
+  readonly library: {
+    createNote(): Promise<void>;
+    choose(): Promise<void>;
+    sortBy(order: NoteOrder): Promise<void>;
+  };
   readonly templates: { newNote(): Promise<void> };
   readonly folders: { startCreation(): void };
   readonly trash: { show(): Promise<void> };
@@ -51,6 +57,19 @@ async function quickOpen(
   });
 }
 
+/** Le tri de la liste, choisi au clavier ; le tri en cours est marqué. */
+function chooseOrder(deps: CommandsDeps) {
+  const current = noteOrder(deps.screen.get());
+  openPicker(deps.picker, {
+    label: "Trier la liste",
+    placeholder: "Trier par",
+    empty: "Aucun tri ne correspond",
+    entries: (query) => matching(NOTE_ORDERS, query, (choice) => choice.label),
+    describe: ({ order, label }) => ({ label, detail: order === current ? "actuel" : undefined }),
+    choose: ({ order }) => deps.run(deps.library.sortBy(order)),
+  });
+}
+
 /** Ce que fait chaque commande de la palette. */
 export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, () => void>> {
   const { run, columns, writing } = deps;
@@ -76,6 +95,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "next-tab": () => run(columns.update((now) => tabStepped(now, 1))),
     "previous-tab": () => run(columns.update((now) => tabStepped(now, -1))),
     "split-column": () => run(columns.split()),
+    "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),
     "choose-library": () => run(deps.library.choose()),

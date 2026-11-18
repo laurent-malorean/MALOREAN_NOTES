@@ -3,7 +3,7 @@
 use application::use_cases::{ListTaggedNotes, ListTags};
 
 use super::{Session, list_item};
-use crate::{ApiError, NoteListItem, TagItem};
+use crate::{ApiError, NoteListItem, NoteOrderItem, TagItem};
 
 impl Session {
     /// Les notes de toute la bibliothèque qui portent l'étiquette `tag` : les épinglées
@@ -13,9 +13,13 @@ impl Session {
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; bibliothèque illisible, aucune
     /// bibliothèque ouverte.
-    pub fn list_tagged_notes(&self, tag: &str) -> Result<Vec<NoteListItem>, ApiError> {
+    pub fn list_tagged_notes(
+        &self,
+        tag: &str,
+        order: NoteOrderItem,
+    ) -> Result<Vec<NoteListItem>, ApiError> {
         let store = self.store()?;
-        let notes = ListTaggedNotes::new(&*store).execute(tag)?;
+        let notes = ListTaggedNotes::new(&*store).execute(tag, order.into())?;
         Ok(notes.iter().map(list_item).collect())
     }
 
@@ -60,16 +64,22 @@ mod tests {
             ("Travail/b.md", "---\ntags: [perso, travail]\n---\n# Bêta"),
             ("c.md", "# Gamma"),
         ]);
-        assert!(session.list_tagged_notes("perso").is_err());
+        assert!(
+            session
+                .list_tagged_notes("perso", NoteOrderItem::Modified)
+                .is_err()
+        );
         assert!(session.list_tags().is_err());
         session
             .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
-        let tagged = session.list_tagged_notes("perso").unwrap();
+        let tagged = session
+            .list_tagged_notes("perso", NoteOrderItem::Title)
+            .unwrap();
         let paths: Vec<_> = tagged.iter().map(|n| n.path.as_str()).collect();
-        assert_eq!(paths, ["Travail/b.md", "a.md"]);
-        assert_eq!(tagged[0].tags, ["perso", "travail"]);
-        assert_eq!(tagged[0].title, "Bêta");
+        assert_eq!(paths, ["a.md", "Travail/b.md"]);
+        assert_eq!(tagged[1].tags, ["perso", "travail"]);
+        assert_eq!(tagged[1].title, "Bêta");
         assert_eq!(
             session.list_tags().unwrap(),
             [

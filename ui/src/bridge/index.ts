@@ -10,6 +10,7 @@ import type { LibraryNoteItem } from "./generated/LibraryNoteItem";
 import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
+import type { NoteOrderItem } from "./generated/NoteOrderItem";
 import type { SaveResult } from "./generated/SaveResult";
 import type { SavedNote } from "./generated/SavedNote";
 import type { SearchResultItem } from "./generated/SearchResultItem";
@@ -25,6 +26,7 @@ export type {
   LinkingNoteItem,
   NoteContent,
   NoteListItem,
+  NoteOrderItem,
   SaveResult,
   SavedNote,
   SearchResultItem,
@@ -43,15 +45,20 @@ export function errorMessage(error: unknown): string {
 
 export const reopenLastLibrary = () => invoke<LibraryInfo | null>("reopen_last_library");
 export const chooseLibrary = () => invoke<LibraryInfo | null>("choose_library");
-/** Les notes d'un dossier, désigné par son chemin (`""` pour la racine de la bibliothèque). */
-export const listNotes = (folder: string) => invoke<NoteListItem[]>("list_notes", { folder });
-/** Les notes de toute la bibliothèque qui contiennent tous les mots de `query`. */
-export const searchNotes = (query: string) => invoke<SearchResultItem[]>("search_notes", { query });
+/**
+ * Les notes d'un dossier, désigné par son chemin (`""` pour la racine de la bibliothèque), dans
+ * l'ordre du tri de la liste.
+ */
+export const listNotes = (folder: string, order: NoteOrderItem) =>
+  invoke<NoteListItem[]>("list_notes", { folder, order });
+/** Les notes de toute la bibliothèque qui contiennent tous les mots de `query`, dans l'ordre du tri. */
+export const searchNotes = (query: string, order: NoteOrderItem) =>
+  invoke<SearchResultItem[]>("search_notes", { query, order });
 /** Toutes les notes de la bibliothèque, la plus récente en premier : pour l'ouverture rapide. */
 export const listAllNotes = () => invoke<LibraryNoteItem[]>("list_all_notes");
 /** Les notes de toute la bibliothèque qui portent l'étiquette `tag` : le filtre par étiquette. */
-export const listTaggedNotes = (tag: string) =>
-  invoke<NoteListItem[]>("list_tagged_notes", { tag });
+export const listTaggedNotes = (tag: string, order: NoteOrderItem) =>
+  invoke<NoteListItem[]>("list_tagged_notes", { tag, order });
 /** Chaque étiquette de la bibliothèque et son nombre de notes, par ordre alphabétique. */
 export const listTags = () => invoke<TagItem[]>("list_tags");
 /** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */

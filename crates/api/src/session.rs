@@ -26,7 +26,8 @@ use domain::title::displayed_title;
 use domain::{Fingerprint, Folder, FolderName, NotePath, NoteSummary};
 
 use crate::{
-    ApiError, ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
+    ApiError, ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, NoteOrderItem, SavedNote,
+    SearchResultItem,
 };
 
 /// Une ligne de la liste des notes.
@@ -123,9 +124,13 @@ impl Session {
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier invalide, aucune
     /// bibliothèque ouverte, dossier illisible.
-    pub fn list_notes(&self, folder: &str) -> Result<Vec<NoteListItem>, ApiError> {
+    pub fn list_notes(
+        &self,
+        folder: &str,
+        order: NoteOrderItem,
+    ) -> Result<Vec<NoteListItem>, ApiError> {
         let store = self.store()?;
-        let notes = ListNotes::new(&*store).execute(&Folder::parse(folder)?)?;
+        let notes = ListNotes::new(&*store).execute(&Folder::parse(folder)?, order.into())?;
         Ok(notes.iter().map(list_item).collect())
     }
 
@@ -136,12 +141,16 @@ impl Session {
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucune bibliothèque
     /// ouverte, bibliothèque illisible.
-    pub fn search_notes(&self, query: &str) -> Result<Vec<SearchResultItem>, ApiError> {
+    pub fn search_notes(
+        &self,
+        query: &str,
+        order: NoteOrderItem,
+    ) -> Result<Vec<SearchResultItem>, ApiError> {
         let store = self.store()?;
         let Some(query) = SearchQuery::parse(query) else {
             return Ok(Vec::new());
         };
-        let found = SearchNotes::new(&*store).execute(&query)?;
+        let found = SearchNotes::new(&*store).execute(&query, order.into())?;
         Ok(found.into_iter().map(search_result_item).collect())
     }
 
@@ -337,6 +346,8 @@ mod tests {
 
     use super::*;
 
+    const RECENT: NoteOrderItem = NoteOrderItem::Modified;
+
     fn session_with(notes: &[(&str, &str)]) -> Session {
         let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
         Session::new(
@@ -358,7 +369,7 @@ mod tests {
     fn nothing_works_before_a_library_is_open() {
         let session = session_with(&[]);
         assert_eq!(
-            session.list_notes("").unwrap_err().message,
+            session.list_notes("", RECENT).unwrap_err().message,
             "aucune bibliothèque n'est ouverte"
         );
     }
@@ -377,7 +388,7 @@ mod tests {
     fn cancelling_the_folder_picker_opens_nothing() {
         let session = session_with(&[]);
         assert_eq!(session.open_chosen_folder(None).unwrap(), None);
-        assert!(session.list_notes("").is_err());
+        assert!(session.list_notes("", RECENT).is_err());
     }
 
     #[test]
@@ -425,22 +436,32 @@ mod tests {
             session.reopen_last_library().unwrap().map(|i| i.name),
             Some("Notes".into())
         );
-        assert!(session.list_notes("").is_ok());
+        assert!(session.list_notes("", RECENT).is_ok());
     }
 
     #[test]
     fn notes_are_listed_with_their_title() {
         let session = opened(&[("a.md", "# Alpha")]);
-        let notes = session.list_notes("").unwrap();
+        let notes = session.list_notes("", RECENT).unwrap();
         assert_eq!(notes[0].path, "a.md");
         assert_eq!(notes[0].title, "Alpha");
         assert!(notes[0].tags.is_empty());
     }
 
     #[test]
+    fn notes_are_listed_in_the_chosen_order() {
+        let session = opened(&[("a.md", "# alpha\npain"), ("b.md", "# Bêta\npain")]);
+        let notes = session.list_notes("", NoteOrderItem::Title).unwrap();
+        let paths: Vec<_> = notes.iter().map(|n| n.path.as_str()).collect();
+        assert_eq!(paths, ["a.md", "b.md"]);
+        let found = session.search_notes("pain", NoteOrderItem::Title).unwrap();
+        assert_eq!(found[0].path, "a.md");
+    }
+
+    #[test]
     fn notes_are_listed_with_their_tags() {
         let session = opened(&[("a.md", "---\ntags: [perso]\n---\n# Alpha")]);
-        assert_eq!(session.list_notes("").unwrap()[0].tags, ["perso"]);
+        assert_eq!(session.list_notes("", RECENT).unwrap()[0].tags, ["perso"]);
     }
 
     #[test]
@@ -449,7 +470,7 @@ mod tests {
         let pinned = session.pin_note("a.md").unwrap();
         assert_eq!(pinned.path, "a.md");
         assert_eq!(pinned.content, "---\npinned: true\n---\n# Alpha");
-        let notes = session.list_notes("").unwrap();
+        let notes = session.list_notes("", RECENT).unwrap();
         assert_eq!(notes[0].path, "a.md");
         assert!(notes[0].pinned);
         assert!(!notes[1].pinned);
@@ -459,7 +480,7 @@ mod tests {
     fn an_unpinned_note_loses_its_mark() {
         let session = opened(&[("a.md", "---\npinned: true\n---\n# Alpha")]);
         assert_eq!(session.unpin_note("a.md").unwrap().content, "# Alpha");
-        assert!(!session.list_notes("").unwrap()[0].pinned);
+        assert!(!session.list_notes("", RECENT).unwrap()[0].pinned);
     }
 
     #[test]
@@ -497,7 +518,10 @@ mod tests {
             session.list_folders().unwrap(),
             ["Perso", "Perso/Travail", "Perso/Travail/Chantiers"]
         );
-        assert_eq!(session.list_notes("Perso/Travail").unwrap()[0].title, "A");
+        assert_eq!(
+            session.list_notes("Perso/Travail", RECENT).unwrap()[0].title,
+            "A"
+        );
     }
 
     #[test]
@@ -508,7 +532,7 @@ mod tests {
             "nom de dossier invalide : « .cache »"
         );
         assert_eq!(
-            session.list_notes("../x").unwrap_err().message,
+            session.list_notes("../x", RECENT).unwrap_err().message,
             "nom de dossier invalide : « ../x »"
         );
     }
@@ -519,7 +543,7 @@ mod tests {
             ("a.md", "# Alpha\ndu pain"),
             ("Travail/b.md", "# Bêta\nlait"),
         ]);
-        let results = session.search_notes("PAIN").unwrap();
+        let results = session.search_notes("PAIN", RECENT).unwrap();
         assert_eq!(
             results,
             [SearchResultItem {
@@ -539,19 +563,22 @@ mod tests {
                 ],
             }]
         );
-        assert_eq!(session.search_notes("lait").unwrap()[0].folder, "Travail");
+        assert_eq!(
+            session.search_notes("lait", RECENT).unwrap()[0].folder,
+            "Travail"
+        );
     }
 
     #[test]
     fn a_search_without_words_finds_nothing() {
         let session = opened(&[("a.md", "# Alpha")]);
-        assert!(session.search_notes("   ").unwrap().is_empty());
+        assert!(session.search_notes("   ", RECENT).unwrap().is_empty());
     }
 
     #[test]
     fn searching_needs_an_open_library() {
         let session = session_with(&[]);
-        assert!(session.search_notes("pain").is_err());
+        assert!(session.search_notes("pain", RECENT).is_err());
     }
 
     #[test]

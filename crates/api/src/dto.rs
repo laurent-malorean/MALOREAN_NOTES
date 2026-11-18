@@ -32,6 +32,26 @@ pub struct NoteListItem {
     pub tags: Vec<String>,
 }
 
+/// Le tri de la liste choisi dans l'interface.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum NoteOrderItem {
+    /// La plus récemment modifiée d'abord.
+    Modified,
+    /// Par titre, de A à Z.
+    Title,
+}
+
+impl From<NoteOrderItem> for domain::NoteOrder {
+    fn from(order: NoteOrderItem) -> Self {
+        match order {
+            NoteOrderItem::Modified => Self::Modified,
+            NoteOrderItem::Title => Self::Title,
+        }
+    }
+}
+
 /// Une étiquette de la liste des étiquettes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]

@@ -34,24 +34,26 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
 
   it("liste les notes d'une étiquette, et les étiquettes", async () => {
     const calls = recordCalls([]);
-    expect(await bridge.listTaggedNotes("perso")).toEqual([]);
+    expect(await bridge.listTaggedNotes("perso", "title")).toEqual([]);
     expect(await bridge.listTags()).toEqual([]);
     expect(calls).toEqual([
-      { command: "list_tagged_notes", args: { tag: "perso" } },
+      { command: "list_tagged_notes", args: { tag: "perso", order: "title" } },
       { command: "list_tags", args: {} },
     ]);
   });
 
-  it("liste les notes", async () => {
+  it("liste les notes dans l'ordre du tri", async () => {
     const calls = recordCalls([]);
-    expect(await bridge.listNotes("Travail")).toEqual([]);
-    expect(calls).toEqual([{ command: "list_notes", args: { folder: "Travail" } }]);
+    expect(await bridge.listNotes("Travail", "title")).toEqual([]);
+    expect(calls).toEqual([{ command: "list_notes", args: { folder: "Travail", order: "title" } }]);
   });
 
-  it("cherche dans toute la bibliothèque", async () => {
+  it("cherche dans toute la bibliothèque, dans l'ordre du tri", async () => {
     const calls = recordCalls([]);
-    expect(await bridge.searchNotes("pain")).toEqual([]);
-    expect(calls).toEqual([{ command: "search_notes", args: { query: "pain" } }]);
+    expect(await bridge.searchNotes("pain", "modified")).toEqual([]);
+    expect(calls).toEqual([
+      { command: "search_notes", args: { query: "pain", order: "modified" } },
+    ]);
   });
 
   it("suit un lien entre notes par son titre, et liste les liens entrants d'une note", async () => {

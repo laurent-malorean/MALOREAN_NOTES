@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { recordedScreen } from "../../test-support/app-fixture";
+import { libraryScreen, recordedScreen } from "../../test-support/app-fixture";
 import type { SearchResultItem } from "../bridge";
 import { SEARCH_DELAY_MS } from "../state/debounce";
+import type { NoteOrder } from "../state/note-order";
+import { searchTyped } from "../state/screen";
 import { createSearch } from "./search";
 
 const found = (path: string): SearchResultItem => ({
@@ -12,14 +14,16 @@ const found = (path: string): SearchResultItem => ({
   excerpt: [],
 });
 
-function setup() {
-  const { screen, shown } = recordedScreen();
+function setup(start = libraryScreen()) {
+  const { screen, shown } = recordedScreen(start);
   const queries: string[] = [];
+  const orders: NoteOrder[] = [];
   const errors: unknown[] = [];
   const search = createSearch({
     backend: {
-      searchNotes: async (query) => {
+      searchNotes: async (query, order) => {
         queries.push(query);
+        orders.push(order);
         return [found(`${query}.md`)];
       },
     },
@@ -30,7 +34,7 @@ function setup() {
     const now = screen.get();
     return now.kind === "library" ? now.search : undefined;
   };
-  return { search, screen, shown, queries, shownSearch };
+  return { search, screen, shown, queries, orders, shownSearch };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -49,6 +53,13 @@ describe("recherche dans la bibliothèque", () => {
     await vi.waitFor(() =>
       expect(shownSearch()).toEqual({ query: "cour", results: [found("cour.md")] }),
     );
+  });
+
+  it("range les notes trouvées selon le tri de la liste", async () => {
+    const t = setup(libraryScreen([], (screen) => ({ ...screen, order: "title" })));
+    t.screen.show(searchTyped(t.screen.get(), "pain"));
+    await t.search.search("pain");
+    expect(t.orders).toEqual(["title"]);
   });
 
   it("sous le seuil, la recherche prévue ne part pas", () => {

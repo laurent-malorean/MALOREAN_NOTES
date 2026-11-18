@@ -1,6 +1,13 @@
 // Étiquettes : filtrer la liste des notes par une étiquette, et retirer ce filtre.
 import type * as Bridge from "../bridge";
-import { activeTag, currentFolder, selectedNote, tagCleared, tagSelected } from "../state/screen";
+import {
+  activeTag,
+  currentFolder,
+  noteOrder,
+  selectedNote,
+  tagCleared,
+  tagSelected,
+} from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 
@@ -25,7 +32,8 @@ export interface Tags {
 async function selectTag(deps: TagsDeps, tag: string) {
   if (activeTag(deps.screen.get()) === tag) return;
   await deps.columns.activePane().flush();
-  await deps.screen.answer(deps.backend.listTaggedNotes(tag), (now, notes) =>
+  const order = noteOrder(deps.screen.get());
+  await deps.screen.answer(deps.backend.listTaggedNotes(tag, order), (now, notes) =>
     tagSelected(now, tag, notes),
   );
   await deps.columns.showNote(selectedNote(deps.screen.get()));
@@ -37,7 +45,8 @@ export function createTags(deps: TagsDeps): Tags {
     clear: () => {
       const screen = deps.screen.get();
       if (activeTag(screen) === null) return false;
-      deps.run(deps.screen.answer(deps.backend.listNotes(currentFolder(screen)), tagCleared));
+      const notes = deps.backend.listNotes(currentFolder(screen), noteOrder(screen));
+      deps.run(deps.screen.answer(notes, tagCleared));
       return true;
     },
   };

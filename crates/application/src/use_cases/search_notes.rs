@@ -1,9 +1,10 @@
 //! Retrouver des notes de toute la bibliothèque par les mots qu'elles contiennent.
 
+use domain::note::compare;
 use domain::search::{Excerpt, SearchQuery, search};
-use domain::title::displayed_title;
-use domain::{Folder, Modified, NotePath};
+use domain::{Folder, Modified, NoteOrder, NotePath};
 
+use super::list_notes::summary;
 use crate::{AppError, NoteStore};
 
 /// Au-delà, les notes trouvées ne sont pas montrées : la recherche doit être précisée.
@@ -38,30 +39,37 @@ impl<'a> SearchNotes<'a> {
         Self { store }
     }
 
-    /// Les notes trouvées, la plus récemment modifiée en premier, [`MAX_RESULTS`] au plus.
+    /// Les notes trouvées dans l'ordre du tri de la liste, les épinglées d'abord ;
+    /// [`MAX_RESULTS`] au plus.
     ///
     /// # Errors
     ///
     /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
-    pub fn execute(&self, query: &SearchQuery) -> Result<Vec<SearchResult>, AppError> {
+    pub fn execute(
+        &self,
+        query: &SearchQuery,
+        order: NoteOrder,
+    ) -> Result<Vec<SearchResult>, AppError> {
         let mut found = Vec::new();
         let folders = std::iter::once(Folder::root()).chain(self.store.folders()?);
         for folder in folders {
             for note in self.store.list(&folder)? {
                 if let Some(excerpt) = search(query, &note.content) {
-                    found.push(SearchResult {
-                        title: displayed_title(&note.content),
-                        path: note.path,
-                        modified: note.modified,
-                        excerpt,
-                    });
+                    found.push((summary(note), excerpt));
                 }
             }
         }
-        // Tri stable : à date égale, l'ordre des dossiers est gardé.
-        found.sort_by_key(|result| std::cmp::Reverse(result.modified));
+        found.sort_by(|(a, _), (b, _)| compare(a, b, order));
         found.truncate(MAX_RESULTS);
-        Ok(found)
+        Ok(found
+            .into_iter()
+            .map(|(note, excerpt)| SearchResult {
+                path: note.path().clone(),
+                title: note.title().to_owned(),
+                modified: note.modified(),
+                excerpt,
+            })
+            .collect())
     }
 }
 
@@ -71,8 +79,12 @@ mod tests {
     use crate::testing::InMemoryNoteStore;
 
     fn found(store: &InMemoryNoteStore, query: &str) -> Vec<String> {
+        found_in_order(store, query, NoteOrder::Modified)
+    }
+
+    fn found_in_order(store: &InMemoryNoteStore, query: &str, order: NoteOrder) -> Vec<String> {
         SearchNotes::new(store)
-            .execute(&SearchQuery::parse(query).unwrap())
+            .execute(&SearchQuery::parse(query).unwrap(), order)
             .unwrap()
             .into_iter()
             .map(|r| format!("{} | {}", r.path.to_path(), r.title))
@@ -95,6 +107,33 @@ mod tests {
                 "a.md | Courses"
             ]
         );
+    }
+
+    #[test]
+    fn found_notes_follow_the_chosen_order_pinned_first() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("b.md", "# Bêta\npain"),
+            ("a.md", "# alpha\npain"),
+            ("z.md", "---\npinned: true\n---\n# Zèbre\npain"),
+        ]);
+        assert_eq!(
+            found_in_order(&store, "pain", NoteOrder::Title),
+            ["z.md | Zèbre", "a.md | alpha", "b.md | Bêta"]
+        );
+    }
+
+    #[test]
+    fn the_hundred_notes_returned_are_the_first_in_order() {
+        let notes: Vec<(String, String)> = (0..=MAX_RESULTS)
+            .map(|i| (format!("n{i}.md"), format!("# {i:03}\npain")))
+            .collect();
+        let refs: Vec<(&str, &str)> = notes
+            .iter()
+            .map(|(n, c)| (n.as_str(), c.as_str()))
+            .collect();
+        let store = InMemoryNoteStore::with_notes(&refs);
+        let found = found_in_order(&store, "pain", NoteOrder::Title);
+        assert_eq!(found[0], "n0.md | 000");
     }
 
     #[test]

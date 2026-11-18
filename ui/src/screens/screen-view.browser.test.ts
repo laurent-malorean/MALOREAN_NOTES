@@ -31,6 +31,7 @@ const ignore: ScreenActions = {
   empty: () => {},
   selectTag: () => {},
   clearTag: () => {},
+  sortNotes: () => {},
 };
 
 function layout() {
@@ -61,6 +62,26 @@ describe("affichage de l'écran", () => {
     expect(view.notesList.querySelector(".note-item.selected .note-title")?.textContent).toBe(
       "Alpha",
     );
+  });
+
+  it("montre le tri de la liste et en demande un autre ; la corbeille n'en a pas", () => {
+    const view = layout();
+    const asked: string[] = [];
+    const note = {
+      path: "a.md",
+      title: "A",
+      modified: 0,
+      pinned: false,
+      tags: [],
+    };
+    const sorted = libraryOpened(library, [], [note], [], "title");
+    renderScreen(view, sorted, { ...ignore, sortNotes: (order) => asked.push(order) });
+    expect(view.noteOrder.value).toBe("title");
+    view.noteOrder.value = "modified";
+    view.noteOrder.dispatchEvent(new Event("change"));
+    expect(asked).toEqual(["modified"]);
+    renderScreen(view, trashShown(sorted, { folders: [], notes: [] }), ignore);
+    expect(view.noteOrder.parentElement?.hidden).toBe(true);
   });
 
   it("montre la colonne des dossiers et le nom du dossier affiché", () => {
@@ -187,7 +208,13 @@ describe("affichage de la corbeille", () => {
 });
 
 describe("affichage du filtre par étiquette", () => {
-  const tagged = { path: "b.md", title: "Bêta", modified: 0, pinned: false, tags: ["perso"] };
+  const tagged = {
+    path: "b.md",
+    title: "Bêta",
+    modified: 0,
+    pinned: false,
+    tags: ["perso"],
+  };
   const opened = tagsRefreshed(libraryOpened(library, ["Travail"], []), [
     { name: "perso", count: 1 },
   ]);

@@ -9,6 +9,7 @@ import {
   folderMoved,
   folderSelected,
   foldersRefreshed,
+  noteOrder,
   selectedNote,
 } from "../state/screen";
 import type { OpenColumns } from "./columns";
@@ -46,7 +47,7 @@ async function selectFolder(deps: FoldersDeps, folder: string) {
   const trashOpen = screen.kind === "library" && screen.trash !== null;
   if (folder === currentFolder(screen) && !trashOpen) return;
   await deps.columns.activePane().flush();
-  await deps.screen.answer(deps.backend.listNotes(folder), (now, answer) =>
+  await deps.screen.answer(deps.backend.listNotes(folder, noteOrder(screen)), (now, answer) =>
     folderSelected(now, folder, answer),
   );
   await deps.columns.showNote(selectedNote(deps.screen.get()));

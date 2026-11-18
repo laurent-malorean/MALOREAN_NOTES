@@ -1,13 +1,49 @@
-//! Résumé d'une note, tel que l'affiche la liste.
+//! Résumé d'une note, tel que l'affiche la liste, et le tri de la liste.
+
+use std::cmp::Ordering;
 
 use crate::NotePath;
 use crate::front_matter::is_pinned;
-use crate::tag::tags;
+use crate::tag::{sort_key, tags};
 use crate::title::displayed_title;
 
 /// Date de dernière modification, en millisecondes depuis le 1er janvier 1970.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Modified(pub u64);
+
+/// Le tri de la liste : par date de modification (la plus récente d'abord), ou par titre (de A
+/// à Z).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum NoteOrder {
+    /// La plus récemment modifiée d'abord : l'ordre par défaut.
+    #[default]
+    Modified,
+    /// Par titre, de A à Z, majuscules et accents ignorés.
+    Title,
+}
+
+/// L'ordre de deux notes dans la liste : les épinglées d'abord, puis selon `order` ; à égalité,
+/// par chemin.
+#[must_use]
+pub fn compare(a: &NoteSummary, b: &NoteSummary, order: NoteOrder) -> Ordering {
+    let by_order = match order {
+        NoteOrder::Modified => b.modified.cmp(&a.modified),
+        NoteOrder::Title => sort_key(&a.title)
+            .cmp(&sort_key(&b.title))
+            .then_with(|| a.title.cmp(&b.title)),
+    };
+    b.pinned
+        .cmp(&a.pinned)
+        .then(by_order)
+        .then_with(|| a.path.cmp(&b.path))
+}
+
+/// Les notes dans l'ordre de la liste : les épinglées d'abord, puis selon `order`.
+#[must_use]
+pub fn sorted(mut notes: Vec<NoteSummary>, order: NoteOrder) -> Vec<NoteSummary> {
+    notes.sort_by(|a, b| compare(a, b, order));
+    notes
+}
 
 /// Une note telle que l'affiche la liste.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -75,36 +111,31 @@ pub fn sort_by_recent(mut notes: Vec<NoteSummary>) -> Vec<NoteSummary> {
     notes
 }
 
-/// L'ordre de la liste : les notes épinglées d'abord, puis les autres ; dans chaque groupe,
-/// la plus récemment modifiée en premier.
-#[must_use]
-pub fn sort_pinned_first(notes: Vec<NoteSummary>) -> Vec<NoteSummary> {
-    let mut sorted = sort_by_recent(notes);
-    sorted.sort_by_key(|note| !note.pinned);
-    sorted
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::NotePath;
 
+    fn note(name: &str, content: &str, modified: u64) -> NoteSummary {
+        NoteSummary::new(NotePath::parse(name).unwrap(), content, Modified(modified))
+    }
+
     fn summary(name: &str, modified: u64) -> NoteSummary {
-        NoteSummary::new(
-            NotePath::parse(name).unwrap(),
-            "# Titre",
-            Modified(modified),
-        )
+        note(name, "# Titre", modified)
+    }
+
+    fn names(notes: &[NoteSummary]) -> Vec<String> {
+        notes.iter().map(|n| n.path().to_path()).collect()
     }
 
     #[test]
     fn summary_shows_the_displayed_title() {
-        let note = NoteSummary::new(
-            NotePath::parse("x.md").unwrap(),
-            "sans titre ici",
-            Modified(0),
-        );
-        assert_eq!(note.title(), "Sans titre");
+        assert_eq!(note("x.md", "sans titre ici", 0).title(), "Sans titre");
+    }
+
+    #[test]
+    fn a_summary_carries_its_modification_date() {
+        assert_eq!(note("x.md", "# T", 5).modified(), Modified(5));
     }
 
     #[test]
@@ -114,17 +145,12 @@ mod tests {
             summary("b.md", 3),
             summary("c.md", 2),
         ]);
-        let names: Vec<_> = sorted.iter().map(|n| n.path().to_path()).collect();
-        assert_eq!(names, ["b.md", "c.md", "a.md"]);
+        assert_eq!(names(&sorted), ["b.md", "c.md", "a.md"]);
     }
 
     #[test]
     fn a_note_is_pinned_by_its_header() {
-        let pinned = NoteSummary::new(
-            NotePath::parse("x.md").unwrap(),
-            "---\npinned: true\n---\n# Titre",
-            Modified(0),
-        );
+        let pinned = note("x.md", "---\npinned: true\n---\n# Titre", 0);
         assert!(pinned.is_pinned());
         assert_eq!(pinned.title(), "Titre");
         assert!(pinned.tags().is_empty());
@@ -133,37 +159,81 @@ mod tests {
 
     #[test]
     fn a_summary_carries_the_tags_of_its_header() {
-        let note = NoteSummary::new(
-            NotePath::parse("x.md").unwrap(),
-            "---\ntags: [perso, loisirs]\n---\n# Titre",
-            Modified(0),
-        );
-        assert_eq!(note.tags(), ["perso", "loisirs"]);
+        let tagged = note("x.md", "---\ntags: [perso, loisirs]\n---\n# Titre", 0);
+        assert_eq!(tagged.tags(), ["perso", "loisirs"]);
     }
 
     #[test]
     fn pinned_notes_come_first_then_the_others_most_recent_first() {
-        let pin = |name: &str, modified: u64| {
-            NoteSummary::new(
-                NotePath::parse(name).unwrap(),
-                "---\npinned: true\n---\n# T",
-                Modified(modified),
-            )
-        };
-        let sorted = sort_pinned_first(vec![
-            summary("a.md", 4),
-            pin("b.md", 1),
-            summary("c.md", 3),
-            pin("d.md", 2),
+        let pin = |name: &str, modified: u64| note(name, "---\npinned: true\n---\n# T", modified);
+        let sorted = sorted(
+            vec![
+                summary("a.md", 4),
+                pin("b.md", 1),
+                summary("c.md", 3),
+                pin("d.md", 2),
+            ],
+            NoteOrder::Modified,
+        );
+        assert_eq!(names(&sorted), ["d.md", "b.md", "a.md", "c.md"]);
+    }
+
+    #[test]
+    fn the_default_order_is_by_modification_date() {
+        assert_eq!(NoteOrder::default(), NoteOrder::Modified);
+    }
+
+    #[test]
+    fn by_title_notes_go_from_a_to_z_ignoring_case_and_accents() {
+        let sorted = sorted(
+            vec![
+                note("z.md", "# zèbre", 9),
+                note("e.md", "# Été", 8),
+                note("a.md", "# abricot", 1),
+                note("f.md", "# Fraise", 7),
+                note("p.md", "---\npinned: true\n---\n# Pomme", 0),
+            ],
+            NoteOrder::Title,
+        );
+        assert_eq!(names(&sorted), ["p.md", "a.md", "e.md", "f.md", "z.md"]);
+    }
+
+    #[test]
+    fn by_title_case_does_not_count() {
+        let sorted = sorted_by_title(&[
+            ("c.md", "# cerise"),
+            ("b.md", "# Banane"),
+            ("a.md", "# avion"),
+            ("e.md", "# ÉCLAIR"),
+            ("d.md", "# dé"),
         ]);
-        let names: Vec<_> = sorted.iter().map(|n| n.path().to_path()).collect();
-        assert_eq!(names, ["d.md", "b.md", "a.md", "c.md"]);
+        assert_eq!(sorted, ["a.md", "b.md", "c.md", "d.md", "e.md"]);
+    }
+
+    #[test]
+    fn titles_equal_but_for_case_keep_a_fixed_order() {
+        let sorted = sorted(
+            vec![note("b.md", "# ete", 0), note("a.md", "# Ete", 0)],
+            NoteOrder::Title,
+        );
+        assert_eq!(names(&sorted), ["a.md", "b.md"]);
+        let same = sorted_by_title(&[("a.md", "# b"), ("b.md", "# B")]);
+        assert_eq!(same, ["b.md", "a.md"]);
+    }
+
+    fn sorted_by_title(notes: &[(&str, &str)]) -> Vec<String> {
+        let notes = notes.iter().map(|(n, c)| note(n, c, 0)).collect();
+        names(&sorted(notes, NoteOrder::Title))
     }
 
     #[test]
     fn same_date_is_ordered_by_file_name() {
-        let sorted = sort_by_recent(vec![summary("b.md", 1), summary("a.md", 1)]);
-        let names: Vec<_> = sorted.iter().map(|n| n.path().to_path()).collect();
-        assert_eq!(names, ["a.md", "b.md"]);
+        let by_recent = sort_by_recent(vec![summary("b.md", 1), summary("a.md", 1)]);
+        assert_eq!(names(&by_recent), ["a.md", "b.md"]);
+        let in_order = sorted(
+            vec![summary("b.md", 1), summary("a.md", 1)],
+            NoteOrder::Modified,
+        );
+        assert_eq!(names(&in_order), ["a.md", "b.md"]);
     }
 }

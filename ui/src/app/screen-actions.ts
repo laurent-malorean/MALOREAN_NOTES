@@ -13,7 +13,7 @@ export interface ScreenActionsDeps {
   readonly backend: Pick<typeof Bridge, "pinNote" | "unpinNote">;
   readonly columns: Pick<OpenColumns, "openNote" | "update">;
   readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
-  readonly library: Pick<Library, "moveNote" | "changePin">;
+  readonly library: Pick<Library, "moveNote" | "changePin" | "sortBy">;
   readonly trash: Pick<
     Trash,
     "trashNote" | "trashFolder" | "restoreNote" | "restoreFolder" | "empty"
@@ -44,5 +44,6 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     empty: () => run(trash.empty()),
     selectTag: (tag) => run(tags.select(tag)),
     clearTag: () => void tags.clear(),
+    sortNotes: (order) => run(library.sortBy(order)),
   };
 }

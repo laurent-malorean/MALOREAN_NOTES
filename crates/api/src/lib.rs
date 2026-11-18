@@ -8,8 +8,8 @@ mod session;
 
 pub use dto::{
     AttachedFile, ExcerptPartItem, LibraryChanged, LibraryInfo, LibraryNoteItem, LinkingNoteItem,
-    NoteContent, NoteListItem, SaveResult, SavedNote, SearchResultItem, TagItem, TrashInfo,
-    TrashedNoteItem,
+    NoteContent, NoteListItem, NoteOrderItem, SaveResult, SavedNote, SearchResultItem, TagItem,
+    TrashInfo, TrashedNoteItem,
 };
 pub use error::ApiError;
 pub use session::Session;

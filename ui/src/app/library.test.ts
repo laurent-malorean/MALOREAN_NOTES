@@ -8,7 +8,8 @@ import {
 } from "../../test-support/app-fixture";
 import type { NoteContent } from "../bridge";
 import { activeNote, type Columns, columnsStarted, noteOpened } from "../state/columns";
-import { type Screen, searchTyped, tagSelected, welcome } from "../state/screen";
+import type { NoteOrder } from "../state/note-order";
+import { noteOrder, type Screen, searchTyped, tagSelected, welcome } from "../state/screen";
 import { createLibrary } from "./library";
 
 const content = (path: string, text: string): NoteContent => ({
@@ -23,6 +24,7 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
   const columns = fakeColumns(columnsStart);
   const calls: string[] = [];
   const messages: string[] = [];
+  const storage = memoryStorage();
   const state = {
     chosen: { name: "Autres", path: "/autres" } as { name: string; path: string } | null,
     restored: null as Columns | null,
@@ -31,8 +33,14 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
     backend: {
       chooseLibrary: async () => (calls.push("choisir"), state.chosen),
       listFolders: async () => (calls.push("dossiers"), ["projets"]),
-      listNotes: async (folder) => (calls.push(`notes de «${folder}»`), [listed(`${folder}n.md`)]),
-      listTaggedNotes: async (tag) => (calls.push(`notes #${tag}`), [listed(`${tag}.md`)]),
+      listNotes: async (folder, order) => (
+        calls.push(`notes de «${folder}»${sortedBy(order)}`),
+        [listed(`${folder}n.md`)]
+      ),
+      listTaggedNotes: async (tag, order) => (
+        calls.push(`notes #${tag}${sortedBy(order)}`),
+        [listed(`${tag}.md`)]
+      ),
       listTags: async () => (calls.push("étiquettes"), [{ name: "perso", count: 2 }]),
       createNote: async (folder) => (calls.push(`créer dans «${folder}»`), { path: "neuve.md" }),
       resolveLink: async (title) => (calls.push(`lien ${title}`), title === "A" ? "a.md" : null),
@@ -45,10 +53,24 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
     columns: columns.open,
     layout: { restore: async (path) => (calls.push(`disposition de ${path}`), state.restored) },
     folds: { load: (path) => (path === "/notes" ? ["projets"] : []) },
+    storage,
     show: (message) => messages.push(message),
     search: async (query) => void calls.push(`chercher ${query}`),
   });
-  return { library, screen, shown, columns, calls, messages, state };
+  return { library, screen, shown, columns, calls, messages, state, storage };
+}
+
+/** Le tri demandé, noté seulement s'il n'est pas celui par défaut. */
+const sortedBy = (order: NoteOrder) => (order === "modified" ? "" : ` par ${order}`);
+
+function memoryStorage() {
+  const values: Record<string, string> = {};
+  return {
+    values,
+    getItem: (key: string) => values[key] ?? null,
+    setItem: (key: string, value: string) => void (values[key] = value),
+    removeItem: (key: string) => void Reflect.deleteProperty(values, key),
+  };
 }
 
 describe("bibliothèque ouverte", () => {
@@ -74,6 +96,39 @@ describe("bibliothèque ouverte", () => {
     await t.library.open({ name: "Autres", path: "/autres" });
     const other = t.screen.get();
     expect(other.kind === "library" && other.folded).toEqual([]);
+  });
+
+  it("s'ouvre avec le tri gardé pour elle", async () => {
+    const t = setup(welcome);
+    t.storage.values["malorean.order:/notes"] = "title";
+    await t.library.open({ name: "Notes", path: "/notes" });
+    expect(t.calls[1]).toBe("notes de «» par title");
+    expect(noteOrder(t.screen.get())).toBe("title");
+    await t.library.open({ name: "Autres", path: "/autres" });
+    expect(noteOrder(t.screen.get())).toBe("modified");
+  });
+
+  it("trie la liste autrement, relit la liste et la recherche, et garde ce tri", async () => {
+    const t = setup(welcome);
+    await t.library.open({ name: "Notes", path: "/notes" });
+    t.screen.show(searchTyped(t.screen.get(), "courses"));
+    t.calls.length = 0;
+    await t.library.sortBy("title");
+    expect(noteOrder(t.screen.get())).toBe("title");
+    expect(t.calls).toEqual(["notes de «» par title", "chercher courses"]);
+    expect(t.storage.values).toEqual({ "malorean.order:/notes": "title" });
+  });
+
+  it("le filtre par étiquette suit le tri de la liste", async () => {
+    const t = setup(
+      tagSelected(
+        libraryScreen([], (s) => ({ ...s, order: "title" })),
+        "perso",
+        [],
+      ),
+    );
+    await t.library.refreshList();
+    expect(t.calls).toEqual(["notes #perso par title"]);
   });
 
   it("retrouve les colonnes gardées pour elle, s'il y en a", async () => {

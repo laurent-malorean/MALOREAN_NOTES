@@ -99,7 +99,11 @@ fn error_message(result: Result<Value, Value>) -> String {
 fn nothing_can_be_listed_before_a_library_is_open() {
     let window = window(&[]);
     assert_eq!(
-        error_message(call(&window, "list_notes", json!({ "folder": "" }))),
+        error_message(call(
+            &window,
+            "list_notes",
+            json!({ "folder": "", "order": "modified" })
+        )),
         "aucune bibliothèque n'est ouverte"
     );
 }
@@ -109,7 +113,11 @@ fn the_last_library_is_reopened_then_listed() {
     let window = window(&[("a.md", "# Alpha")]);
     let library: Option<LibraryInfo> = ok(call(&window, "reopen_last_library", json!({})));
     assert_eq!(library.map(|l| l.name), Some("Notes".into()));
-    let notes: Vec<NoteListItem> = ok(call(&window, "list_notes", json!({ "folder": "" })));
+    let notes: Vec<NoteListItem> = ok(call(
+        &window,
+        "list_notes",
+        json!({ "folder": "", "order": "modified" }),
+    ));
     assert_eq!(
         notes.iter().map(|n| n.title.as_str()).collect::<Vec<_>>(),
         ["Alpha"]
@@ -179,7 +187,11 @@ fn changes_made_outside_the_app_reach_the_page_as_an_event() {
 fn a_created_note_is_untitled() {
     let window = window(&[]);
     call(&window, "reopen_last_library", json!({})).unwrap();
-    let created: SavedNote = ok(call(&window, "create_note", json!({ "folder": "" })));
+    let created: SavedNote = ok(call(
+        &window,
+        "create_note",
+        json!({ "folder": "", "order": "modified" }),
+    ));
     assert_eq!(created.path, "sans-titre.md");
 }
 
@@ -268,7 +280,7 @@ fn folders_are_handled_with_the_argument_names_used_by_the_page() {
     let notes: Vec<NoteListItem> = ok(call(
         &window,
         "list_notes",
-        json!({ "folder": "Maison/Travail" }),
+        json!({ "folder": "Maison/Travail", "order": "modified" }),
     ));
     assert_eq!(notes[0].path, "Maison/Travail/a.md");
 }
@@ -283,7 +295,11 @@ fn a_note_is_moved_into_a_folder_by_the_names_used_by_the_page() {
         json!({ "path": "a.md", "into": "Perso" }),
     ));
     assert_eq!(moved.path, "Perso/a.md");
-    let notes: Vec<NoteListItem> = ok(call(&window, "list_notes", json!({ "folder": "Perso" })));
+    let notes: Vec<NoteListItem> = ok(call(
+        &window,
+        "list_notes",
+        json!({ "folder": "Perso", "order": "modified" }),
+    ));
     let mut paths: Vec<_> = notes.into_iter().map(|n| n.path).collect();
     paths.sort();
     assert_eq!(paths, ["Perso/a.md", "Perso/b.md"]);
@@ -308,12 +324,35 @@ fn moving_a_note_into_a_folder_with_a_bad_name_is_refused() {
 fn the_page_searches_the_whole_library_by_its_query_argument() {
     let window = window(&[("a.md", "# Alpha\nété"), ("Travail/b.md", "# Bêta\nhiver")]);
     call(&window, "reopen_last_library", json!({})).unwrap();
-    let results: Vec<SearchResultItem> =
-        ok(call(&window, "search_notes", json!({ "query": "ete" })));
+    let results: Vec<SearchResultItem> = ok(call(
+        &window,
+        "search_notes",
+        json!({ "query": "ete", "order": "modified" }),
+    ));
     assert_eq!(
         results.iter().map(|r| r.path.as_str()).collect::<Vec<_>>(),
         ["a.md"]
     );
+}
+
+#[test]
+fn the_page_chooses_the_order_of_the_list_by_its_order_argument() {
+    let window = window(&[("a.md", "# alpha\npain"), ("b.md", "# Bêta\npain")]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let paths = |command: &str, args: serde_json::Value| -> Vec<String> {
+        let notes: Vec<NoteListItem> = ok(call(&window, command, args));
+        notes.into_iter().map(|n| n.path).collect()
+    };
+    let by_title = json!({ "folder": "", "order": "title" });
+    assert_eq!(paths("list_notes", by_title), ["a.md", "b.md"]);
+    let by_date = json!({ "folder": "", "order": "modified" });
+    assert_eq!(paths("list_notes", by_date), ["b.md", "a.md"]);
+    let results: Vec<SearchResultItem> = ok(call(
+        &window,
+        "search_notes",
+        json!({ "query": "pain", "order": "title" }),
+    ));
+    assert_eq!(results[0].path, "a.md");
 }
 
 #[test]
@@ -358,7 +397,11 @@ fn the_page_pins_and_unpins_a_note_by_its_path() {
     call(&window, "reopen_last_library", json!({})).unwrap();
     let pinned: NoteContent = ok(call(&window, "pin_note", json!({ "path": "a.md" })));
     assert_eq!(pinned.content, "---\npinned: true\n---\n# Alpha");
-    let notes: Vec<NoteListItem> = ok(call(&window, "list_notes", json!({ "folder": "" })));
+    let notes: Vec<NoteListItem> = ok(call(
+        &window,
+        "list_notes",
+        json!({ "folder": "", "order": "modified" }),
+    ));
     assert_eq!(
         notes
             .iter()

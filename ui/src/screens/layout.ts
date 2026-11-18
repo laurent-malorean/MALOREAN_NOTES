@@ -8,6 +8,8 @@ export interface Layout {
   readonly tagsList: HTMLElement;
   /** La barre du filtre par étiquette, au-dessus de la liste des notes. */
   readonly tagFilter: HTMLElement;
+  /** Le choix du tri de la liste, au-dessus de la liste des notes. */
+  readonly noteOrder: HTMLSelectElement;
   readonly newFolderButton: HTMLButtonElement;
   readonly trashButton: HTMLButtonElement;
   readonly searchField: HTMLInputElement;
@@ -58,6 +60,7 @@ const TEMPLATE = `
         </header>
         <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
         <div class="tag-filter" hidden></div>
+        <label class="note-order">Trier par <select aria-label="Trier la liste"></select></label>
         <nav class="notes-list"></nav>
         <footer class="sidebar-footer"><button class="link" data-choose>Changer de dossier</button></footer>
       </aside>
@@ -88,6 +91,7 @@ export function createLayout(root: HTMLElement): Layout {
     foldersList: find(".folders-list"),
     tagsList: find(".tags-list"),
     tagFilter: find(".tag-filter"),
+    noteOrder: find(".note-order select"),
     newFolderButton: find("[data-new-folder]"),
     trashButton: find("[data-trash]"),
     searchField: find(".search-field"),

@@ -1,8 +1,8 @@
 //! Les étiquettes de la bibliothèque, et les notes qui portent l'une d'elles.
 
-use domain::NoteSummary;
-use domain::note::sort_pinned_first;
+use domain::note::sorted;
 use domain::tag::tag_counts;
+use domain::{NoteOrder, NoteSummary};
 
 use super::ListAllNotes;
 use crate::{AppError, NoteStore};
@@ -21,18 +21,19 @@ impl<'a> ListTaggedNotes<'a> {
     }
 
     /// Le résumé de chaque note qui porte l'étiquette `tag`, telle qu'écrite : les épinglées
-    /// d'abord, puis les autres ; dans chaque groupe, la plus récemment modifiée en premier.
+    /// d'abord, puis les autres ; dans chaque groupe, selon `order`.
     ///
     /// # Errors
     ///
     /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
-    pub fn execute(&self, tag: &str) -> Result<Vec<NoteSummary>, AppError> {
+    pub fn execute(&self, tag: &str, order: NoteOrder) -> Result<Vec<NoteSummary>, AppError> {
         let notes = ListAllNotes::new(self.store).execute()?;
-        Ok(sort_pinned_first(
+        Ok(sorted(
             notes
                 .into_iter()
                 .filter(|note| note.tags().iter().any(|t| t == tag))
                 .collect(),
+            order,
         ))
     }
 }
@@ -81,15 +82,27 @@ mod tests {
     #[test]
     fn notes_of_every_folder_carrying_the_tag_are_listed_pinned_first() {
         let store = library();
-        let notes = ListTaggedNotes::new(&store).execute("perso").unwrap();
+        let notes = ListTaggedNotes::new(&store)
+            .execute("perso", NoteOrder::Modified)
+            .unwrap();
         let paths: Vec<_> = notes.iter().map(|n| n.path().to_path()).collect();
         assert_eq!(paths, ["Travail/b.md", "Travail/Archives/c.md", "a.md"]);
         assert!(
             ListTaggedNotes::new(&store)
-                .execute("Perso")
+                .execute("Perso", NoteOrder::Modified)
                 .unwrap()
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn notes_carrying_the_tag_follow_the_chosen_order() {
+        let store = library();
+        let notes = ListTaggedNotes::new(&store)
+            .execute("perso", NoteOrder::Title)
+            .unwrap();
+        let titles: Vec<_> = notes.iter().map(NoteSummary::title).collect();
+        assert_eq!(titles, ["Bêta", "Alpha", "Gamma"]);
     }
 
     #[test]

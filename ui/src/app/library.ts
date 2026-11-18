@@ -1,15 +1,19 @@
-// La bibliothèque ouverte : son choix, ses dossiers et la liste de ses notes, les notes qu'on y crée,
-// déplace ou épingle, et les liens qui mènent d'une note à l'autre.
+// La bibliothèque ouverte : son choix, ses dossiers et la liste de ses notes (et son tri), les notes
+// qu'on y crée, déplace ou épingle, et les liens qui mènent d'une note à l'autre.
 import type * as Bridge from "../bridge";
 import type { LibraryInfo, NoteContent } from "../bridge";
 import { notesMoved, noteShown, notesRemoved } from "../state/columns";
+import type { PreferenceStorage } from "../state/focus-preference";
+import { loadNoteOrder, type NoteOrder, saveNoteOrder } from "../state/note-order";
 import {
   currentFolder,
   activeTag,
   folderRevealed,
   foldersRefreshed,
   libraryOpened,
+  noteOrder,
   notesRefreshed,
+  orderChosen,
   selectedNote,
   tagsRefreshed,
 } from "../state/screen";
@@ -36,6 +40,8 @@ export interface LibraryDeps {
   readonly layout: Pick<LayoutMemory, "restore">;
   /** Les dossiers pliés gardés pour chaque bibliothèque. */
   readonly folds: Pick<FoldMemory, "load">;
+  /** Là où le tri de la liste de chaque bibliothèque est gardé. */
+  readonly storage: PreferenceStorage;
   /** Montre un message quelques secondes. */
   show(message: string): void;
   /** Relance la recherche en cours sur les notes telles qu'elles sont maintenant. */
@@ -58,6 +64,8 @@ export interface Library {
    * cours.
    */
   refreshList(): Promise<void>;
+  /** Trie la liste (et la recherche en cours) autrement ; ce tri est gardé pour la bibliothèque. */
+  sortBy(order: NoteOrder): Promise<void>;
   /** Crée une note dans le dossier affiché et l'ouvre, prête à écrire. */
   createNote(): Promise<void>;
   /** Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord. */
@@ -76,11 +84,13 @@ export interface Library {
 }
 
 async function refreshList(deps: LibraryDeps) {
-  const tag = activeTag(deps.screen.get());
+  const shown = deps.screen.get();
+  const tag = activeTag(shown);
+  const order = noteOrder(shown);
   await deps.screen.answer(
     tag === null
-      ? deps.backend.listNotes(currentFolder(deps.screen.get()))
-      : deps.backend.listTaggedNotes(tag),
+      ? deps.backend.listNotes(currentFolder(shown), order)
+      : deps.backend.listTaggedNotes(tag, order),
     notesRefreshed,
   );
   const screen = deps.screen.get();
@@ -89,10 +99,12 @@ async function refreshList(deps: LibraryDeps) {
 }
 
 async function openLibrary(deps: LibraryDeps, library: LibraryInfo) {
+  const order = loadNoteOrder(deps.storage, library.path);
   const folders = await deps.backend.listFolders();
-  const notes = await deps.backend.listNotes("");
+  const notes = await deps.backend.listNotes("", order);
   const tags = await deps.backend.listTags();
-  const opened = libraryOpened(library, folders, notes, deps.folds.load(library.path));
+  const folded = deps.folds.load(library.path);
+  const opened = libraryOpened(library, folders, notes, folded, order);
   deps.screen.show(tagsRefreshed(opened, tags));
   const restored = await deps.layout.restore(library.path);
   // Sans colonnes gardées : celles d'avant montraient peut-être des notes d'une autre bibliothèque.
@@ -103,6 +115,12 @@ async function openLibrary(deps: LibraryDeps, library: LibraryInfo) {
         selectedNote(deps.screen.get()),
       ),
   );
+}
+
+async function sortBy(deps: LibraryDeps, library: string, order: NoteOrder) {
+  deps.screen.show(orderChosen(deps.screen.get(), order));
+  saveNoteOrder(deps.storage, library, order);
+  await refreshList(deps);
 }
 
 async function createNote(deps: LibraryDeps) {
@@ -161,6 +179,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     },
     refreshTags,
     refreshList: () => refreshList(deps),
+    sortBy: (order) => sortBy(deps, libraryPath, order),
     createNote: () => createNote(deps),
     followLink: (title) => followLink(deps, title),
     moveNote: (path, into) => moveNote(deps, path, into),

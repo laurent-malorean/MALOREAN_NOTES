@@ -11,7 +11,8 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::{
     ApiError, AttachedFile, LibraryInfo, LibraryNoteItem, LinkingNoteItem, NoteContent,
-    NoteListItem, SaveResult, SavedNote, SearchResultItem, Session, TagItem, TrashInfo,
+    NoteListItem, NoteOrderItem, SaveResult, SavedNote, SearchResultItem, Session, TagItem,
+    TrashInfo,
 };
 
 /// Événement envoyé à la page quand la bibliothèque change hors de l'application ;
@@ -104,9 +105,10 @@ pub async fn choose_library<R: Runtime>(
 pub async fn list_notes(
     session: SharedSession<'_>,
     folder: String,
+    order: NoteOrderItem,
 ) -> Result<Vec<NoteListItem>, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.list_notes(&folder)).await
+    in_background(move || session.list_notes(&folder, order)).await
 }
 
 /// Les notes de toute la bibliothèque qui contiennent tous les mots cherchés.
@@ -118,9 +120,10 @@ pub async fn list_notes(
 pub async fn search_notes(
     session: SharedSession<'_>,
     query: String,
+    order: NoteOrderItem,
 ) -> Result<Vec<SearchResultItem>, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.search_notes(&query)).await
+    in_background(move || session.search_notes(&query, order)).await
 }
 
 /// Le chemin de la note qu'un lien `[[titre]]` désigne, ou rien.
@@ -157,9 +160,10 @@ pub async fn list_all_notes(session: SharedSession<'_>) -> Result<Vec<LibraryNot
 pub async fn list_tagged_notes(
     session: SharedSession<'_>,
     tag: String,
+    order: NoteOrderItem,
 ) -> Result<Vec<NoteListItem>, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.list_tagged_notes(&tag)).await
+    in_background(move || session.list_tagged_notes(&tag, order)).await
 }
 
 /// Chaque étiquette de la bibliothèque et son nombre de notes.

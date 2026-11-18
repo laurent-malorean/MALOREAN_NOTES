@@ -89,8 +89,8 @@ pub fn tag_counts<'a>(notes: impl IntoIterator<Item = &'a [String]>) -> Vec<(Str
     sorted
 }
 
-/// L'étiquette en minuscules et sans accents, pour le classement alphabétique.
-fn sort_key(tag: &str) -> String {
+/// Le texte (étiquette, titre) en minuscules et sans accents, pour le classement alphabétique.
+pub(crate) fn sort_key(tag: &str) -> String {
     tag.chars()
         .flat_map(char::to_lowercase)
         .nfd()

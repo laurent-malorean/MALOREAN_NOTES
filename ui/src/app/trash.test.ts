@@ -28,7 +28,10 @@ function setup(
       trashFolder: async (path) => (log.push(`corbeille ${path}/`), path),
       listTrash: async () => (log.push("corbeille"), EMPTY_TRASH),
       listFolders: async () => (log.push("dossiers"), ["projets"]),
-      listNotes: async (folder) => (log.push(`notes de «${folder}»`), options.listed ?? []),
+      listNotes: async (folder, order) => (
+        log.push(`notes de «${folder}» par ${order}`),
+        options.listed ?? []
+      ),
       restoreNote: async (path) => (log.push(`restaurer ${path}`), { path }),
       restoreFolder: async (path) => (log.push(`restaurer ${path}/`), path),
       emptyTrash: async () => (log.push("vider"), null),
@@ -97,13 +100,18 @@ describe("corbeille : un dossier", () => {
     expect(t.log).toEqual([]);
   });
 
-  it("si on y était, la liste revient à la racine et sa note la plus récente s'ouvre", async () => {
-    const inside = libraryScreen([], (s) => ({ ...s, folder: "projets/plans" }));
+  it("si on y était, la liste revient à la racine, dans son tri, et sa première note s'ouvre", async () => {
+    const inside = libraryScreen([], (s) => ({ ...s, folder: "projets/plans", order: "title" }));
     const t = setup(inside, open("projets/plans/a.md", "b.md"), { listed: [listed("r.md")] });
     const pane = fakePane("projets/plans/a.md");
     t.columns.panes.set(2, pane);
     await t.trash.trashFolder("projets");
-    expect(t.log).toEqual(["corbeille projets/", "dossiers", "étiquettes", "notes de «»"]);
+    expect(t.log).toEqual([
+      "corbeille projets/",
+      "dossiers",
+      "étiquettes",
+      "notes de «» par title",
+    ]);
     expect(t.columns.log).toEqual(["tout enregistrer", "colonnes"]);
     expect(pane.forget).toHaveBeenCalled();
     expect(currentFolder(t.screen.get())).toBe("");

@@ -47,6 +47,7 @@ describe("état de l'écran", () => {
       folded: [],
       tag: null,
       tags: [],
+      order: "modified",
     });
   });
 
@@ -63,6 +64,7 @@ describe("état de l'écran", () => {
       folded: [],
       tag: null,
       tags: [],
+      order: "modified",
     });
   });
 
@@ -83,6 +85,7 @@ describe("état de l'écran", () => {
       folded: [],
       tag: null,
       tags: [],
+      order: "modified",
     });
   });
 
@@ -103,6 +106,7 @@ describe("état de l'écran", () => {
       folded: [],
       tag: null,
       tags: [],
+      order: "modified",
     });
   });
 

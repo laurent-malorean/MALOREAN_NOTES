@@ -325,6 +325,26 @@ button {
 .tag-count {
   color: var(--muted);
 }
+.note-order {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0.75rem 0.5rem;
+  color: var(--muted);
+  font-size: var(--note-order-text-size);
+}
+.note-order[hidden] {
+  display: none;
+}
+.note-order select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
 .tag-filter {
   display: flex;
   align-items: center;

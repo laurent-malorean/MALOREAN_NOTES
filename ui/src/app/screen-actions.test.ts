@@ -29,6 +29,7 @@ function setup() {
       moveNote: (path, into) => done(`déplacer la note ${path} ${into}`)(),
       changePin: (path, change) =>
         done(`${change === backend.pinNote ? "épingler" : "désépingler"} ${path}`)(),
+      sortBy: (order) => done(`trier par ${order}`)(),
     },
     trash: {
       trashNote: (path) => done(`jeter ${path}`)(),
@@ -64,6 +65,7 @@ describe("demandes de l'écran", () => {
     t.actions.fold("projets");
     t.actions.selectTag("perso");
     t.actions.clearTag();
+    t.actions.sortNotes("title");
     await Promise.all(t.ran);
     expect(t.calls).toEqual([
       "choisir projets",
@@ -81,8 +83,9 @@ describe("demandes de l'écran", () => {
       "plier projets",
       "filtrer #perso",
       "retirer le filtre",
+      "trier par title",
     ]);
-    expect(t.ran).toHaveLength(13);
+    expect(t.ran).toHaveLength(14);
   });
 
   it("ouvre une note, la place ou la ferme dans les colonnes", async () => {

@@ -2,13 +2,18 @@ import { nameOf } from "../state/folders";
 import { type Screen, type Search, searchable } from "../state/screen";
 import { type FolderActions, renderFoldersList } from "./folders-list";
 import type { Layout } from "./layout";
+import { type NoteOrderActions, renderNoteOrder } from "./note-order-view";
 import { type NoteActions, renderNotesList } from "./notes-list";
 import { renderSearchResults } from "./search-results";
 import { renderTagFilter, renderTagsList, type TagActions } from "./tags-view";
 import { renderTrash, type TrashActions } from "./trash-view";
 
 /** Ce que l'utilisateur peut demander depuis l'espace de travail. */
-export type ScreenActions = FolderActions & NoteActions & TrashActions & TagActions;
+export type ScreenActions = FolderActions &
+  NoteActions &
+  TrashActions &
+  TagActions &
+  NoteOrderActions;
 
 const TRASH_TITLE = "Corbeille";
 
@@ -64,6 +69,8 @@ function renderLibrary(layout: Layout, screen: LibraryScreen, actions: ScreenAct
   );
   renderTagsList(layout.tagsList, screen.tags, tag, actions.selectTag);
   renderTagFilter(layout.tagFilter, tag, actions.clearTag);
+  // La corbeille n'a pas de tri : ses notes sont rangées par chemin.
+  renderNoteOrder(layout.noteOrder, screen.trash ? null : screen.order, actions.sortNotes);
   layout.trashButton.classList.toggle("selected", screen.trash !== null);
   // Remettre la même valeur ne déplace pas le curseur du champ.
   layout.searchField.value = screen.search?.query ?? "";

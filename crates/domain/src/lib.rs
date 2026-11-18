@@ -21,5 +21,5 @@ pub use attachment_name::{
 pub use conflict::{Fingerprint, InvalidFingerprint};
 pub use file_name::{FileName, InvalidFileName};
 pub use folder::{Folder, FolderName, InvalidFolderName, NotePath};
-pub use note::{Modified, NoteSummary};
+pub use note::{Modified, NoteOrder, NoteSummary};
 pub use title::Title;

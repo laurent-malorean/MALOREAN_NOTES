@@ -72,7 +72,9 @@ mod tests {
         assert_eq!(pinned.content, "---\npinned: true\n---\n# Alpha");
         assert_eq!(pinned.modified, before);
         assert_eq!(store.read(&path("a.md")).unwrap(), pinned);
-        let notes = ListNotes::new(&store).execute(&Folder::root()).unwrap();
+        let notes = ListNotes::new(&store)
+            .execute(&Folder::root(), domain::NoteOrder::Modified)
+            .unwrap();
         assert_eq!(notes[0].title(), "Alpha");
     }
 

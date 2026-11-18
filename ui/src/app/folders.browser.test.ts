@@ -22,7 +22,10 @@ function setup(start: Screen = libraryScreen()) {
   const folders = createFolders({
     backend: {
       listFolders: async () => (log.push("dossiers"), ["projets", "neuf"]),
-      listNotes: async (folder) => (log.push(`notes de «${folder}»`), [listed(`${folder}/x.md`)]),
+      listNotes: async (folder, order) => (
+        log.push(`notes de «${folder}»${order === "modified" ? "" : ` par ${order}`}`),
+        [listed(`${folder}/x.md`)]
+      ),
       createFolder: async (parent, name) => (log.push(`créer ${parent} ${name}`), name),
       renameFolder: async (path, name) => (log.push(`renommer ${path} ${name}`), name),
       moveFolder: async (path, into) => (log.push(`déplacer ${path} ${into}`), `${into}/${path}`),
@@ -57,6 +60,12 @@ describe("dossiers", () => {
     expect(currentFolder(t.screen.get())).toBe("projets");
     expect(t.columns.log).toEqual(["montrer projets/x.md"]);
     expect(activeNote(t.columns.columns())).toBe("projets/x.md");
+  });
+
+  it("les notes du dossier choisi suivent le tri de la liste", async () => {
+    const t = setup(libraryScreen([], (screen) => ({ ...screen, order: "title" })));
+    await t.folders.select("projets");
+    expect(t.log).toEqual(["enregistrer b.md", "notes de «projets» par title"]);
   });
 
   it("rechoisir le dossier affiché ne le recharge pas, sauf pour quitter la corbeille", async () => {

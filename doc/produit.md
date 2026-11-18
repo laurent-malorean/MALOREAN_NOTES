@@ -27,6 +27,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Recherche plein texte instantanée.
 - Notes épinglées en tête de liste ; tri par date de modification.
 - Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur toute la bibliothèque ; liste des étiquettes avec leur nombre de notes.
+- Tri de la liste par date de modification ou par titre, épinglées toujours en tête ; il vaut aussi pour le filtre par étiquette et la recherche, et chaque bibliothèque garde le sien.
 - Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
 - Coller une image : elle devient une pièce jointe liée.
 - Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.

@@ -50,6 +50,7 @@ const deps: CommandsDeps = {
   library: {
     createNote: async () => void log.push("nouvelle note"),
     choose: async () => void log.push("changer de dossier"),
+    sortBy: async (order) => void log.push(`trier par ${order}`),
   },
   templates: { newNote: async () => void log.push("depuis un modèle") },
   folders: { startCreation: () => log.push("nouveau dossier") },
@@ -170,6 +171,23 @@ describe("commandes de la palette", () => {
       "c.md",
       "rome.md",
     ]);
+  });
+
+  it("trier la liste propose les deux tris, marque celui en cours et applique le choisi", async () => {
+    screen.show(libraryScreen([], (now) => ({ ...now, order: "title" })));
+    commandActions(deps)["sort-notes"]();
+    expect(picker().getAttribute("aria-label")).toBe("Trier la liste");
+    expect(options()).toEqual(["Date de modification", "Titreactuel"]);
+    const input = picker().querySelector("input") as HTMLInputElement;
+    expect(input.placeholder).toBe("Trier par");
+    input.value = "zzz";
+    input.dispatchEvent(new Event("input"));
+    expect(picker().textContent).toContain("Aucun tri ne correspond");
+    input.value = "modif";
+    input.dispatchEvent(new Event("input"));
+    picker().querySelector<HTMLElement>(".picker-option")?.click();
+    await settle();
+    expect(log).toEqual(["trier par modified"]);
   });
 
   it("sur l'accueil, ni ouverture rapide ni palette", async () => {
