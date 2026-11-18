@@ -18,13 +18,14 @@ function setup() {
       refreshList: async () => void log.push("liste"),
       refreshTags: async () => void log.push("étiquettes"),
     },
+    recent: { moved: (rename) => void log.push(`récentes ${rename("a.md")} ${rename("b.md")}`) },
   });
   const tabs = () => columns.columns().list[0]?.tabs.map((tab) => `${tab.note} ${tab.title}`);
   return { events, log, tabs };
 }
 
 describe("enregistrement : ce que les notes partagées annoncent", () => {
-  it("une note enregistrée sous un autre nom garde ses onglets, à son nouveau titre ; la liste est relue", () => {
+  it("une note enregistrée sous un autre nom garde ses onglets, à son nouveau titre, et sa place dans les notes récentes ; la liste est relue", () => {
     const { events, log, tabs } = setup();
     events.saved("a.md", {
       path: "neuf.md",
@@ -34,7 +35,7 @@ describe("enregistrement : ce que les notes partagées annoncent", () => {
       tagsChanged: false,
     });
     expect(tabs()).toEqual(["neuf.md Neuf", "b.md null"]);
-    expect(log).toEqual(["liste"]);
+    expect(log).toEqual(["récentes neuf.md b.md", "liste"]);
   });
 
   it("une copie de conflit est annoncée, avec les dossiers relus", () => {

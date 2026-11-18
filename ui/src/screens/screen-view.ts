@@ -4,6 +4,7 @@ import { type FolderActions, renderFoldersList } from "./folders-list";
 import type { Layout } from "./layout";
 import { type NoteOrderActions, renderNoteOrder } from "./note-order-view";
 import { type NoteActions, renderNotesList } from "./notes-list";
+import { type RecentActions, renderRecentEntry } from "./recent-view";
 import { renderSearchResults } from "./search-results";
 import { renderTagFilter, renderTagsList, type TagActions } from "./tags-view";
 import { renderTrash, type TrashActions } from "./trash-view";
@@ -13,9 +14,11 @@ export type ScreenActions = FolderActions &
   NoteActions &
   TrashActions &
   TagActions &
-  NoteOrderActions;
+  NoteOrderActions &
+  RecentActions;
 
 const TRASH_TITLE = "Corbeille";
+const RECENT_TITLE = "Récentes";
 
 /** Le nom du dossier affiché : celui de la bibliothèque pour la racine. */
 function folderName(libraryName: string, folder: string): string {
@@ -24,9 +27,10 @@ function folderName(libraryName: string, folder: string): string {
 
 type LibraryScreen = Extract<Screen, { kind: "library" }>;
 
-/** Le titre de la liste : la corbeille, l'étiquette du filtre ou le dossier affiché. */
-function listTitle(screen: LibraryScreen, tag: string | null): string {
+/** Le titre de la liste : la corbeille, Récentes, l'étiquette du filtre ou le dossier affiché. */
+function listTitle(screen: LibraryScreen, tag: string | null, recent: boolean): string {
   if (screen.trash) return TRASH_TITLE;
+  if (recent) return RECENT_TITLE;
   return tag === null ? folderName(screen.library.name, screen.folder) : `#${tag}`;
 }
 
@@ -52,25 +56,41 @@ function renderList(
   }
 }
 
-function renderLibrary(layout: Layout, screen: LibraryScreen, actions: ScreenActions) {
-  layout.welcome.hidden = true;
-  layout.workspace.hidden = false;
-  const search = screen.search && searchable(screen.search.query) ? screen.search : null;
-  // Le filtre se voit quand la liste montre ses notes : ni recherche, ni corbeille.
-  const tag = screen.trash || search ? null : screen.tag;
-  layout.libraryName.textContent = listTitle(screen, tag);
+/** La colonne des dossiers : le dossier en évidence (aucun hors de ses notes), Récentes, les étiquettes. */
+function renderNavigation(
+  layout: Layout,
+  screen: LibraryScreen,
+  shown: { readonly tag: string | null; readonly recent: boolean },
+  actions: ScreenActions,
+) {
   renderFoldersList(
     layout.foldersList,
     screen.library.name,
     screen.folders,
-    screen.trash || screen.tag !== null ? null : screen.folder,
+    screen.trash || screen.tag !== null || screen.recent ? null : screen.folder,
     actions,
     screen.folded,
   );
-  renderTagsList(layout.tagsList, screen.tags, tag, actions.selectTag);
-  renderTagFilter(layout.tagFilter, tag, actions.clearTag);
-  // La corbeille n'a pas de tri : ses notes sont rangées par chemin.
-  renderNoteOrder(layout.noteOrder, screen.trash ? null : screen.order, actions.sortNotes);
+  renderRecentEntry(layout.recentButton, shown.recent, actions.showRecent);
+  renderTagsList(layout.tagsList, screen.tags, shown.tag, actions.selectTag);
+  renderTagFilter(layout.tagFilter, shown.tag, actions.clearTag);
+}
+
+function renderLibrary(layout: Layout, screen: LibraryScreen, actions: ScreenActions) {
+  layout.welcome.hidden = true;
+  layout.workspace.hidden = false;
+  const search = screen.search && searchable(screen.search.query) ? screen.search : null;
+  // Le filtre et Récentes se voient quand la liste montre leurs notes : ni recherche, ni corbeille.
+  const aside = screen.trash !== null || search !== null;
+  const shown = { tag: aside ? null : screen.tag, recent: !aside && screen.recent };
+  layout.libraryName.textContent = listTitle(screen, shown.tag, shown.recent);
+  renderNavigation(layout, screen, shown, actions);
+  // La corbeille n'a pas de tri : ses notes sont rangées par chemin ; les récentes, par ouverture.
+  renderNoteOrder(
+    layout.noteOrder,
+    screen.trash || shown.recent ? null : screen.order,
+    actions.sortNotes,
+  );
   layout.trashButton.classList.toggle("selected", screen.trash !== null);
   // Remettre la même valeur ne déplace pas le curseur du champ.
   layout.searchField.value = screen.search?.query ?? "";

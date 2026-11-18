@@ -59,6 +59,9 @@ export const listAllNotes = () => invoke<LibraryNoteItem[]>("list_all_notes");
 /** Les notes de toute la bibliothèque qui portent l'étiquette `tag` : le filtre par étiquette. */
 export const listTaggedNotes = (tag: string, order: NoteOrderItem) =>
   invoke<NoteListItem[]>("list_tagged_notes", { tag, order });
+/** Les notes récentes `paths`, dans cet ordre, sans celles qui n'existent plus. */
+export const listRecentNotes = (paths: readonly string[]) =>
+  invoke<NoteListItem[]>("list_recent_notes", { paths });
 /** Chaque étiquette de la bibliothèque et son nombre de notes, par ordre alphabétique. */
 export const listTags = () => invoke<TagItem[]>("list_tags");
 /** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */

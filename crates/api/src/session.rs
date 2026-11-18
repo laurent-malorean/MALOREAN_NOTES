@@ -3,6 +3,7 @@
 mod attachments;
 mod links;
 mod quick_open;
+mod recent_notes;
 mod saving;
 mod tags;
 mod templates;

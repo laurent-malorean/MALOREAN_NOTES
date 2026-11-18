@@ -19,7 +19,8 @@ export interface Search {
  * en cours et la corbeille affichée (`null` pour l'une et l'autre : la liste montre les notes
  * du dossier), les dossiers pliés de la colonne des dossiers, le filtre par étiquette (`null` :
  * aucun ; sinon `notes` sont les notes de toute la bibliothèque qui portent cette étiquette), la
- * liste des étiquettes et le tri de la liste.
+ * liste des étiquettes, le tri de la liste et Récentes (`recent` : la liste montre les notes
+ * récentes à la place de celles du dossier).
  */
 export type Screen =
   | { readonly kind: "welcome" }
@@ -36,6 +37,7 @@ export type Screen =
       readonly tag: string | null;
       readonly tags: readonly TagItem[];
       readonly order: NoteOrder;
+      readonly recent: boolean;
     };
 
 /** L'écran du lancement, avant toute bibliothèque. */
@@ -65,6 +67,7 @@ export function libraryOpened(
     tag: null,
     tags: [],
     order,
+    recent: false,
   };
 }
 
@@ -77,7 +80,10 @@ export function folderSelected(
   if (screen.kind !== "library") return screen;
   const selected = initialSelection(notes);
   const folded = parentsUnfolded(screen.folded, folder);
-  return { ...screen, folder, notes, selected, search: null, trash: null, folded, tag: null };
+  return {
+    ...screen,
+    ...{ folder, notes, selected, search: null, trash: null, folded, tag: null, recent: false },
+  };
 }
 
 /** La même bibliothèque, avec ce dossier plié, ou déplié s'il était plié. */
@@ -178,7 +184,7 @@ export function currentFolder(screen: Screen): string {
 export function tagSelected(screen: Screen, tag: string, notes: readonly NoteListItem[]): Screen {
   if (screen.kind !== "library") return screen;
   const selected = initialSelection(notes);
-  return { ...screen, tag, notes, selected, search: null, trash: null };
+  return { ...screen, tag, notes, selected, search: null, trash: null, recent: false };
 }
 
 /** Le filtre retiré : les notes du dossier reviennent, la note sélectionnée reste la même. */
@@ -204,4 +210,19 @@ export function orderChosen(screen: Screen, order: NoteOrder): Screen {
 /** Le tri de la liste ; celui par défaut sur l'accueil. */
 export function noteOrder(screen: Screen): NoteOrder {
   return screen.kind === "library" ? screen.order : DEFAULT_ORDER;
+}
+
+/**
+ * Récentes : les notes récentes à la place de celles du dossier, la première sélectionnée ; la
+ * recherche est vidée, la corbeille et le filtre par étiquette quittés.
+ */
+export function recentShown(screen: Screen, notes: readonly NoteListItem[]): Screen {
+  if (screen.kind !== "library") return screen;
+  const selected = initialSelection(notes);
+  return { ...screen, recent: true, notes, selected, search: null, trash: null, tag: null };
+}
+
+/** Vrai si la liste montre les notes récentes (même mises de côté par une recherche ou la corbeille). */
+export function recentOn(screen: Screen): boolean {
+  return screen.kind === "library" && screen.recent;
 }

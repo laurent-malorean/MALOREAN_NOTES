@@ -14,6 +14,7 @@ import {
 } from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
+import type { RecentNotes } from "./recent-notes";
 
 export interface FoldersDeps {
   readonly backend: Pick<
@@ -24,6 +25,8 @@ export interface FoldersDeps {
   readonly columns: Pick<OpenColumns, "activePane" | "flushAll" | "showNote" | "update">;
   /** Relit la liste des notes du dossier affiché. */
   refreshList(): Promise<void>;
+  /** Les notes récentes, qui suivent les notes d'un dossier renommé ou déplacé. */
+  readonly recent: Pick<RecentNotes, "moved">;
   /** La liste des dossiers, où s'écrit le nom d'un nouveau dossier. */
   readonly list: HTMLElement;
   run(action: Promise<unknown>): void;
@@ -57,6 +60,7 @@ async function selectFolder(deps: FoldersDeps, folder: string) {
 async function changeFolder(deps: FoldersDeps, path: string, change: Promise<string>) {
   await deps.columns.flushAll();
   const to = await change;
+  deps.recent.moved((note) => movedPath(note, path, to));
   deps.screen.show(folderMoved(deps.screen.get(), path, to));
   await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
   await deps.refreshList();

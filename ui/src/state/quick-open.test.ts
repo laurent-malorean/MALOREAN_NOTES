@@ -19,6 +19,14 @@ describe("ouverture rapide : notes proposées", () => {
     expect(titles(notes, "   ")).toEqual(["Réunion lundi", "Courses", "Recette de crêpes"]);
   });
 
+  it("propose d'abord les notes récentes sans rien taper, et seulement alors", () => {
+    const recent = ["recette de crêpes.md", "courses.md"];
+    const ordered = (query: string) => matchingNotes(notes, query, recent).map((n) => n.title);
+    expect(ordered("")).toEqual(["Recette de crêpes", "Courses", "Réunion lundi"]);
+    expect(ordered(" ")).toEqual(["Recette de crêpes", "Courses", "Réunion lundi"]);
+    expect(ordered("r")).toEqual(["Réunion lundi", "Recette de crêpes", "Courses"]);
+  });
+
   it("garde les notes dont le titre contient chaque mot tapé, majuscules et accents ignorés", () => {
     expect(titles(notes, "CREPE")).toEqual(["Recette de crêpes"]);
     expect(titles(notes, "re de")).toEqual(["Recette de crêpes"]);

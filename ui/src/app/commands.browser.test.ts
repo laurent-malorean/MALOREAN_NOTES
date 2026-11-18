@@ -19,6 +19,7 @@ const { screen } = recordedScreen(libraryScreen());
 let columns = fakeColumns();
 let fullScreen = false;
 let tagFilter = false;
+let recentPaths: string[] = [];
 
 /** Ce que les commandes pilotent, chaque demande notée dans `log`. */
 const deps: CommandsDeps = {
@@ -57,6 +58,7 @@ const deps: CommandsDeps = {
   trash: { show: async () => void log.push("corbeille") },
   settings: { open: () => log.push("réglages") },
   tags: { clear: () => (log.push("retirer le filtre"), tagFilter) },
+  recent: { paths: () => recentPaths },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
 connectCommands(deps);
@@ -79,6 +81,7 @@ beforeEach(() => {
   if (picker().open) picker().close();
   log.length = 0;
   fullScreen = false;
+  recentPaths = [];
   screen.show(libraryScreen());
   columns = fakeColumns(["a.md", "b.md", "c.md"].reduce(noteOpened, columnsStarted));
   columns.panes.set(columns.columns().active, fakePane("c.md"));
@@ -188,6 +191,17 @@ describe("commandes de la palette", () => {
     picker().querySelector<HTMLElement>(".picker-option")?.click();
     await settle();
     expect(log).toEqual(["trier par modified"]);
+  });
+
+  it("l'ouverture rapide propose d'abord les notes récentes, tant que rien n'est tapé", async () => {
+    recentPaths = ["lyon.md"];
+    commandActions(deps)["quick-open"]();
+    await settle();
+    expect(options()).toEqual(["Lyon", "Romevoyages"]);
+    const input = picker().querySelector("input") as HTMLInputElement;
+    input.value = "o";
+    input.dispatchEvent(new Event("input"));
+    expect(options()).toEqual(["Romevoyages", "Lyon"]);
   });
 
   it("sur l'accueil, ni ouverture rapide ni palette", async () => {

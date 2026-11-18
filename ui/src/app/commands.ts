@@ -33,12 +33,14 @@ export interface CommandsDeps {
   readonly settings: { open(): void };
   /** Le filtre par étiquette, que retire Échap ; faux s'il n'y en avait pas. */
   readonly tags: { clear(): boolean };
+  /** Les notes récentes, que l'ouverture rapide propose d'abord. */
+  readonly recent: { paths(): readonly string[] };
   run(action: Promise<unknown>): void;
 }
 
 /**
- * Ouverture rapide : une note de n'importe quel dossier, par quelques lettres de son titre ; dans
- * un nouvel onglet pour Cmd+T.
+ * Ouverture rapide : une note de n'importe quel dossier, par quelques lettres de son titre (les
+ * notes récentes d'abord tant que rien n'est tapé) ; dans un nouvel onglet pour Cmd+T.
  */
 async function quickOpen(
   deps: CommandsDeps,
@@ -51,7 +53,7 @@ async function quickOpen(
     label,
     placeholder: "Titre de la note",
     empty: "Aucune note ne correspond",
-    entries: (query) => matchingNotes(notes, query),
+    entries: (query) => matchingNotes(notes, query, deps.recent.paths()),
     describe: (note) => ({ label: note.title, detail: note.folder }),
     choose: (note) => deps.run(open(note.path)),
   });

@@ -1,11 +1,12 @@
-// Demandes de l'écran : ce que la colonne des dossiers, la liste des notes, les étiquettes et la corbeille
-// demandent, confié au module de chaque domaine.
+// Demandes de l'écran : ce que la colonne des dossiers, la liste des notes, les étiquettes,
+// Récentes et la corbeille demandent, confié au module de chaque domaine.
 import type * as Bridge from "../bridge";
 import type { ScreenActions } from "../screens/screen-view";
 import { noteClosed, notePlaced } from "../state/columns";
 import type { OpenColumns } from "./columns";
 import type { Folders } from "./folders";
 import type { Library } from "./library";
+import type { RecentNotes } from "./recent-notes";
 import type { Tags } from "./tags";
 import type { Trash } from "./trash";
 
@@ -19,12 +20,13 @@ export interface ScreenActionsDeps {
     "trashNote" | "trashFolder" | "restoreNote" | "restoreFolder" | "empty"
   >;
   readonly tags: Tags;
+  readonly recent: Pick<RecentNotes, "show">;
   /** Lance l'action ; son échec est montré. */
   run(action: Promise<unknown>): void;
 }
 
 export function screenActions(deps: ScreenActionsDeps): ScreenActions {
-  const { backend, columns, folders, library, trash, tags, run } = deps;
+  const { backend, columns, folders, library, trash, tags, recent, run } = deps;
   return {
     open: (path) => run(columns.openNote(path)),
     select: (folder) => run(folders.select(folder)),
@@ -45,5 +47,6 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     selectTag: (tag) => run(tags.select(tag)),
     clearTag: () => void tags.clear(),
     sortNotes: (order) => run(library.sortBy(order)),
+    showRecent: () => run(recent.show()),
   };
 }

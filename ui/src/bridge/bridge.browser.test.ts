@@ -42,6 +42,12 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     ]);
   });
 
+  it("liste les notes récentes par leurs chemins", async () => {
+    const calls = recordCalls([]);
+    expect(await bridge.listRecentNotes(["b.md", "a.md"])).toEqual([]);
+    expect(calls).toEqual([{ command: "list_recent_notes", args: { paths: ["b.md", "a.md"] } }]);
+  });
+
   it("liste les notes dans l'ordre du tri", async () => {
     const calls = recordCalls([]);
     expect(await bridge.listNotes("Travail", "title")).toEqual([]);

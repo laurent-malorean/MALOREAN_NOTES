@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   folderSelected,
   libraryOpened,
+  recentShown,
   searchAnswered,
   searchTyped,
   tagSelected,
@@ -32,6 +33,7 @@ const ignore: ScreenActions = {
   selectTag: () => {},
   clearTag: () => {},
   sortNotes: () => {},
+  showRecent: () => {},
 };
 
 function layout() {
@@ -254,6 +256,52 @@ describe("affichage du filtre par étiquette", () => {
     expect(view.tagFilter.hidden).toBe(false);
     renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
     expect(view.tagFilter.hidden).toBe(true);
+    expect(view.libraryName.textContent).toBe("Corbeille");
+  });
+});
+
+describe("affichage de Récentes", () => {
+  const note = (path: string, title: string) => ({
+    path,
+    title,
+    modified: 0,
+    pinned: false,
+    tags: [],
+  });
+  const opened = libraryOpened(library, ["Travail"], [note("a.md", "Alpha")]);
+
+  it("l'entrée Récentes est juste au-dessus de la liste des étiquettes ; un clic la demande", () => {
+    const view = layout();
+    const calls: string[] = [];
+    renderScreen(view, opened, { ...ignore, showRecent: () => calls.push("récentes") });
+    expect(view.recentButton.textContent).toBe("Récentes");
+    expect(view.recentButton.nextElementSibling).toBe(view.tagsList);
+    expect(view.recentButton.classList.contains("selected")).toBe(false);
+    view.recentButton.click();
+    expect(calls).toEqual(["récentes"]);
+  });
+
+  it("montre les notes récentes, nommées en tête ; ni dossier en évidence, ni tri", () => {
+    const view = layout();
+    const screen = recentShown(opened, [note("Travail/b.md", "Bêta"), note("a.md", "Alpha")]);
+    renderScreen(view, screen, ignore);
+    expect(view.libraryName.textContent).toBe("Récentes");
+    expect(view.recentButton.classList.contains("selected")).toBe(true);
+    expect(view.foldersList.querySelector(".folder-item.selected")).toBeNull();
+    expect(view.noteOrder.parentElement?.hidden).toBe(true);
+    const titles = [...view.notesList.querySelectorAll(".note-title")].map((t) => t.textContent);
+    expect(titles).toEqual(["Bêta", "Alpha"]);
+  });
+
+  it("pendant une recherche ou dans la corbeille, Récentes n'est plus en évidence", () => {
+    const view = layout();
+    const screen = recentShown(opened, [note("a.md", "Alpha")]);
+    renderScreen(view, searchTyped(screen, "pain"), ignore);
+    expect(view.recentButton.classList.contains("selected")).toBe(false);
+    expect(view.libraryName.textContent).toBe("Notes");
+    expect(view.noteOrder.parentElement?.hidden).toBe(false);
+    renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
+    expect(view.recentButton.classList.contains("selected")).toBe(false);
     expect(view.libraryName.textContent).toBe("Corbeille");
   });
 });

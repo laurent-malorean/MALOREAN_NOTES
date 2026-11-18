@@ -14,6 +14,7 @@ import {
   noteOrder,
   notesRefreshed,
   orderChosen,
+  recentOn,
   selectedNote,
   tagsRefreshed,
 } from "../state/screen";
@@ -21,6 +22,7 @@ import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { FoldMemory } from "./fold-memory";
 import type { LayoutMemory } from "./layout-memory";
+import type { RecentNotes } from "./recent-notes";
 
 export interface LibraryDeps {
   readonly backend: Pick<
@@ -46,6 +48,8 @@ export interface LibraryDeps {
   show(message: string): void;
   /** Relance la recherche en cours sur les notes telles qu'elles sont maintenant. */
   search(query: string): Promise<void>;
+  /** Les notes récentes, que Récentes montre et qui suivent une note déplacée. */
+  readonly recent: Pick<RecentNotes, "list" | "moved">;
 }
 
 export interface Library {
@@ -60,8 +64,8 @@ export interface Library {
   /** Relit la liste des étiquettes : une note en a gagné, perdu, ou a disparu. */
   refreshTags(): Promise<void>;
   /**
-   * Relit la liste des notes du dossier affiché (ou du filtre par étiquette), et la recherche en
-   * cours.
+   * Relit la liste des notes du dossier affiché (ou du filtre par étiquette, ou des notes
+   * récentes), et la recherche en cours.
    */
   refreshList(): Promise<void>;
   /** Trie la liste (et la recherche en cours) autrement ; ce tri est gardé pour la bibliothèque. */
@@ -83,16 +87,19 @@ export interface Library {
   changePin(path: string, change: (path: string) => Promise<NoteContent>): Promise<void>;
 }
 
-async function refreshList(deps: LibraryDeps) {
+/** Les notes que la liste montre : celles du dossier, du filtre par étiquette, ou les récentes. */
+function listedNotes(deps: LibraryDeps) {
   const shown = deps.screen.get();
   const tag = activeTag(shown);
   const order = noteOrder(shown);
-  await deps.screen.answer(
-    tag === null
-      ? deps.backend.listNotes(currentFolder(shown), order)
-      : deps.backend.listTaggedNotes(tag, order),
-    notesRefreshed,
-  );
+  if (recentOn(shown)) return deps.recent.list();
+  return tag === null
+    ? deps.backend.listNotes(currentFolder(shown), order)
+    : deps.backend.listTaggedNotes(tag, order);
+}
+
+async function refreshList(deps: LibraryDeps) {
+  await deps.screen.answer(listedNotes(deps), notesRefreshed);
   const screen = deps.screen.get();
   // Stryker disable next-line ConditionalExpression: l'accueil n'a pas de recherche, la seconde condition l'écarte aussi ; TypeScript exige la première.
   if (screen.kind === "library" && screen.search) await deps.search(screen.search.query);
@@ -140,6 +147,7 @@ async function followLink(deps: LibraryDeps, title: string) {
 async function moveNote(deps: LibraryDeps, path: string, into: string) {
   const source = await deps.columns.flushedPath(path);
   const moved = await deps.backend.moveNote(source, into);
+  deps.recent.moved((note) => (note === source ? moved.path : note));
   deps.screen.show(folderRevealed(deps.screen.get(), into));
   await refreshList(deps);
   await deps.columns.update((now) =>

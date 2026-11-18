@@ -4,6 +4,8 @@ export interface Layout {
   readonly workspace: HTMLElement;
   readonly libraryName: HTMLElement;
   readonly foldersList: HTMLElement;
+  /** L'entrée Récentes, entre les dossiers et la liste des étiquettes. */
+  readonly recentButton: HTMLButtonElement;
   /** La liste des étiquettes, sous les dossiers. */
   readonly tagsList: HTMLElement;
   /** La barre du filtre par étiquette, au-dessus de la liste des notes. */
@@ -47,6 +49,7 @@ const TEMPLATE = `
           <button class="icon" data-new-folder title="Nouveau dossier">＋</button>
         </header>
         <nav class="folders-list"></nav>
+        <button class="recent-item" data-recent title="Les notes ouvertes le plus récemment">Récentes</button>
         <nav class="tags-list" aria-label="Étiquettes" hidden></nav>
         <footer class="sidebar-footer">
           <button class="trash-item" data-trash>Corbeille</button>
@@ -89,6 +92,7 @@ export function createLayout(root: HTMLElement): Layout {
     workspace: find(".workspace"),
     libraryName: find(".library-name"),
     foldersList: find(".folders-list"),
+    recentButton: find("[data-recent]"),
     tagsList: find(".tags-list"),
     tagFilter: find(".tag-filter"),
     noteOrder: find(".note-order select"),

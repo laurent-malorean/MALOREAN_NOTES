@@ -48,6 +48,7 @@ describe("état de l'écran", () => {
       tag: null,
       tags: [],
       order: "modified",
+      recent: false,
     });
   });
 
@@ -65,6 +66,7 @@ describe("état de l'écran", () => {
       tag: null,
       tags: [],
       order: "modified",
+      recent: false,
     });
   });
 
@@ -86,6 +88,7 @@ describe("état de l'écran", () => {
       tag: null,
       tags: [],
       order: "modified",
+      recent: false,
     });
   });
 
@@ -107,6 +110,7 @@ describe("état de l'écran", () => {
       tag: null,
       tags: [],
       order: "modified",
+      recent: false,
     });
   });
 

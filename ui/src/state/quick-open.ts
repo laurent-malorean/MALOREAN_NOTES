@@ -1,5 +1,6 @@
 // Ouverture rapide : les notes dont le titre correspond à ce qui est tapé.
 import type { LibraryNoteItem } from "../bridge";
+import { recentFirst } from "./recent-notes";
 
 /** Au-delà, les notes ne sont pas proposées : il faut taper davantage. */
 export const MAX_QUICK_OPEN_RESULTS = 50;
@@ -25,7 +26,12 @@ export function matching<T>(items: readonly T[], query: string, textOf: (item: T
   return [...first, ...found.filter((item) => !first.includes(item))];
 }
 
-/** Les notes proposées pour `query`, la limite au plus. */
-export function matchingNotes(notes: readonly LibraryNoteItem[], query: string): LibraryNoteItem[] {
-  return matching(notes, query, (note) => note.title).slice(0, MAX_QUICK_OPEN_RESULTS);
+/** Les notes proposées pour `query`, la limite au plus ; sans rien taper, les notes récentes d'abord. */
+export function matchingNotes(
+  notes: readonly LibraryNoteItem[],
+  query: string,
+  recent?: readonly string[],
+): LibraryNoteItem[] {
+  const offered = recent && query.trim() === "" ? recentFirst(notes, recent) : notes;
+  return matching(offered, query, (note) => note.title).slice(0, MAX_QUICK_OPEN_RESULTS);
 }

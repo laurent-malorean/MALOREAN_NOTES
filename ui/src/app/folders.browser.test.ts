@@ -33,6 +33,9 @@ function setup(start: Screen = libraryScreen()) {
     screen,
     columns: columns.open,
     refreshList: async () => void log.push("liste"),
+    recent: {
+      moved: (rename) => void log.push(`récentes ${rename("projets/a.md")} ${rename("b.md")}`),
+    },
     list,
     run: (action) => void action.catch((error: unknown) => errors.push(error)),
   });
@@ -96,10 +99,15 @@ describe("dossiers", () => {
     expect(currentFolder(now)).toBe("neuf");
   });
 
-  it("renommé, il reste affiché sous son nouveau nom, et les onglets suivent", async () => {
+  it("renommé, il reste affiché sous son nouveau nom ; les onglets et les notes récentes suivent", async () => {
     const t = setup(libraryScreen([listed("projets/a.md")], (s) => ({ ...s, folder: "projets" })));
     await t.folders.rename("projets", "travaux");
-    expect(t.log).toEqual(["renommer projets travaux", "dossiers", "liste"]);
+    expect(t.log).toEqual([
+      "renommer projets travaux",
+      "récentes travaux/a.md b.md",
+      "dossiers",
+      "liste",
+    ]);
     expect(t.columns.log).toEqual(["tout enregistrer", "colonnes"]);
     expect(currentFolder(t.screen.get())).toBe("travaux");
     expect(selectedNote(t.screen.get())).toBe("travaux/a.md");
@@ -109,7 +117,12 @@ describe("dossiers", () => {
   it("déplacé, il emmène ses notes et leurs onglets", async () => {
     const t = setup();
     await t.folders.move("projets", "archives");
-    expect(t.log).toEqual(["déplacer projets archives", "dossiers", "liste"]);
+    expect(t.log).toEqual([
+      "déplacer projets archives",
+      "récentes archives/projets/a.md b.md",
+      "dossiers",
+      "liste",
+    ]);
     expect(t.tabs()).toEqual(["archives/projets/a.md", "b.md"]);
   });
 

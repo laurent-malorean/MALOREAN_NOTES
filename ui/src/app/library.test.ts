@@ -9,7 +9,14 @@ import {
 import type { NoteContent } from "../bridge";
 import { activeNote, type Columns, columnsStarted, noteOpened } from "../state/columns";
 import type { NoteOrder } from "../state/note-order";
-import { noteOrder, type Screen, searchTyped, tagSelected, welcome } from "../state/screen";
+import {
+  noteOrder,
+  recentShown,
+  type Screen,
+  searchTyped,
+  tagSelected,
+  welcome,
+} from "../state/screen";
 import { createLibrary } from "./library";
 
 const content = (path: string, text: string): NoteContent => ({
@@ -29,6 +36,7 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
     chosen: { name: "Autres", path: "/autres" } as { name: string; path: string } | null,
     restored: null as Columns | null,
   };
+  const recentMoves: string[] = [];
   const library = createLibrary({
     backend: {
       chooseLibrary: async () => (calls.push("choisir"), state.chosen),
@@ -56,8 +64,12 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
     storage,
     show: (message) => messages.push(message),
     search: async (query) => void calls.push(`chercher ${query}`),
+    recent: {
+      list: async () => (calls.push("notes récentes"), [listed("r.md")]),
+      moved: (rename) => void recentMoves.push(`${rename("a.md")} ${rename("b.md")}`),
+    },
   });
-  return { library, screen, shown, columns, calls, messages, state, storage };
+  return { library, screen, shown, columns, calls, messages, state, storage, recentMoves };
 }
 
 /** Le tri demandé, noté seulement s'il n'est pas celui par défaut. */
@@ -172,6 +184,20 @@ describe("bibliothèque ouverte", () => {
     expect(now.kind === "library" && now.tag).toBe("perso");
   });
 
+  it("sur Récentes, la liste relue est celle des notes récentes, sans tri", async () => {
+    const t = setup(
+      recentShown(
+        libraryScreen([], (s) => ({ ...s, order: "title" })),
+        [],
+      ),
+    );
+    await t.library.refreshList();
+    expect(t.calls).toEqual(["notes récentes"]);
+    const now = t.screen.get();
+    expect(now.kind === "library" && now.notes).toEqual([listed("r.md")]);
+    expect(now.kind === "library" && now.recent).toBe(true);
+  });
+
   it("relit la liste des étiquettes seule", async () => {
     const t = setup();
     await t.library.refreshTags();
@@ -215,6 +241,12 @@ describe("bibliothèque ouverte", () => {
     expect(t.columns.log).toEqual(["enregistrer a.md", "colonnes"]);
     const tabs = t.columns.columns().list[0]?.tabs.map((tab) => tab.note);
     expect(tabs).toEqual(["projets/a.md", "b.md"]);
+  });
+
+  it("une note déplacée reste dans les notes récentes, sous son nouveau chemin", async () => {
+    const t = setup();
+    await t.library.moveNote("a.md", "projets");
+    expect(t.recentMoves).toEqual(["projets/a.md b.md"]);
   });
 
   it("une note déposée dans un dossier déplie ceux qui le contiennent", async () => {

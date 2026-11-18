@@ -42,13 +42,14 @@ function setup() {
       select: (tag) => done(`filtrer #${tag}`)(),
       clear: () => (calls.push("retirer le filtre"), true),
     },
+    recent: { show: done("récentes") },
     run: (action) => void ran.push(action),
   });
   return { actions, calls, ran, columns };
 }
 
 describe("demandes de l'écran", () => {
-  it("chaque demande des dossiers, des notes et de la corbeille va au module de son domaine", async () => {
+  it("chaque demande des dossiers, des notes, de Récentes et de la corbeille va au module de son domaine", async () => {
     const t = setup();
     t.actions.select("projets");
     t.actions.create("projets", "neuf");
@@ -66,6 +67,7 @@ describe("demandes de l'écran", () => {
     t.actions.selectTag("perso");
     t.actions.clearTag();
     t.actions.sortNotes("title");
+    t.actions.showRecent();
     await Promise.all(t.ran);
     expect(t.calls).toEqual([
       "choisir projets",
@@ -84,8 +86,9 @@ describe("demandes de l'écran", () => {
       "filtrer #perso",
       "retirer le filtre",
       "trier par title",
+      "récentes",
     ]);
-    expect(t.ran).toHaveLength(14);
+    expect(t.ran).toHaveLength(15);
   });
 
   it("ouvre une note, la place ou la ferme dans les colonnes", async () => {

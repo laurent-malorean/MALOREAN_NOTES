@@ -351,6 +351,11 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
       .filter((note) => note.tags.includes(tag))
       .sort(listOrder(order)),
   list_tags: () => listTags(),
+  list_recent_notes: (args) =>
+    (args.paths as unknown as string[]).flatMap((path) => {
+      const note = backend.notes[path];
+      return note ? [listItem([path, note])] : [];
+    }),
   // Épingler ne change pas la date de la note.
   pin_note: ({ path = "" }) =>
     rewritePin(path, (c) => (c.startsWith(PIN_HEADER) ? c : PIN_HEADER + c)),

@@ -11,6 +11,7 @@ import { createLayoutMemory } from "./app/layout-memory";
 import { createLibrary } from "./app/library";
 import { createMessages } from "./app/messages";
 import { paneMaker } from "./app/panes";
+import { createRecentNotes } from "./app/recent-notes";
 import { savingEvents } from "./app/saving";
 import { screenActions } from "./app/screen-actions";
 import { createSearch } from "./app/search";
@@ -41,10 +42,11 @@ const columns = createOpenColumns({
   outline: layout.outline,
   screen,
   newPane: (parts) => newPane(parts),
-  changed: (now) => (writing.showTypewriter(), layoutMemory.save(now)),
+  changed: (now) => (writing.showTypewriter(), layoutMemory.save(now), recent.visited(now)),
   run,
 });
 const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage });
+const recent = createRecentNotes({ backend: bridge, screen, columns, storage: localStorage });
 const search = createSearch({ backend: bridge, screen, run });
 const library = createLibrary({
   backend: bridge,
@@ -55,14 +57,13 @@ const library = createLibrary({
   storage: localStorage,
   show: messages.show,
   search: search.search,
+  recent,
 });
 const folders = createFolders({
   backend: bridge,
   screen,
   columns,
-  refreshList: library.refreshList,
-  list: layout.foldersList,
-  run,
+  ...{ refreshList: library.refreshList, recent, list: layout.foldersList, run },
 });
 const trash = createTrash({
   backend: bridge,
@@ -74,7 +75,7 @@ const trash = createTrash({
 const tags = createTags({ backend: bridge, screen, columns, run });
 const shared = createSharedNotes({
   backend: bridge,
-  events: savingEvents({ columns, messages, library }),
+  events: savingEvents({ columns, messages, library, recent }),
 });
 const writing = connectWritingModes(layout, { columns, storage: localStorage });
 const settings = connectSettings(
@@ -103,7 +104,7 @@ const newPane = paneMaker({
 });
 
 const actions: ScreenActions = screenActions({
-  ...{ backend: bridge, columns, folders, library, trash, tags, run },
+  ...{ backend: bridge, columns, folders, library, trash, tags, recent, run },
 });
 
 layout.chooseButtons.forEach((button) =>
@@ -120,20 +121,9 @@ const windowDisplay = connectWindowDisplay(layout, {
   error: messages.error,
 });
 connectCommands({
-  backend: bridge,
-  screen,
-  columns,
-  writing,
-  window: windowDisplay,
-  picker: layout.picker,
-  searchField: layout.searchField,
-  library,
-  templates,
-  folders,
-  trash,
-  settings,
-  tags,
-  run,
+  ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
+  ...{ picker: layout.picker, searchField: layout.searchField },
+  ...{ library, templates, folders, trash, settings, tags, recent },
 });
 connectExternalChanges({ backend: bridge, screen, columns, library, messages });
 

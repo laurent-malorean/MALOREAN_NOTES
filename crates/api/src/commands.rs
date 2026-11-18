@@ -166,6 +166,20 @@ pub async fn list_tagged_notes(
     in_background(move || session.list_tagged_notes(&tag, order)).await
 }
 
+/// Les notes récentes, dans l'ordre donné, sans celles qui n'existent plus.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn list_recent_notes(
+    session: SharedSession<'_>,
+    paths: Vec<String>,
+) -> Result<Vec<NoteListItem>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.list_recent_notes(&paths)).await
+}
+
 /// Chaque étiquette de la bibliothèque et son nombre de notes.
 ///
 /// # Errors
@@ -486,6 +500,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         list_all_notes,
         list_tagged_notes,
         list_tags,
+        list_recent_notes,
         read_note,
         save_note,
         create_note,

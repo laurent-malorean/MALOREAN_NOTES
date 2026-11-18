@@ -283,6 +283,23 @@ button {
 .note-tag:hover {
   color: var(--accent);
 }
+.recent-item {
+  flex: none;
+  margin: 0.3rem 0.5rem 0;
+  padding: 0.3rem 0.6rem;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  font-size: var(--recent-item-text-size);
+}
+.recent-item:hover {
+  background: color-mix(in srgb, var(--selected) 50%, transparent);
+}
+.recent-item.selected {
+  background: var(--selected);
+}
 .tags-list {
   flex: none;
   max-height: var(--tags-list-max-height);

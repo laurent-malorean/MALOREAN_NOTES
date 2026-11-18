@@ -4,6 +4,7 @@ import type { SharedNotesEvents } from "../screens/shared-notes";
 import { notesMoved, noteTitled } from "../state/columns";
 import type { OpenColumns } from "./columns";
 import type { Messages } from "./messages";
+import type { RecentNotes } from "./recent-notes";
 
 export interface SavingDeps {
   readonly columns: Pick<OpenColumns, "update">;
@@ -13,11 +14,14 @@ export interface SavingDeps {
     refreshList(): Promise<void>;
     refreshTags(): Promise<void>;
   };
+  /** Les notes récentes, qui suivent une note renommée par son titre. */
+  readonly recent: Pick<RecentNotes, "moved">;
 }
 
 /** Ce qui est tapé dans une colonne est enregistré : la note a peut-être changé de nom. */
 function noteSaved(deps: SavingDeps, from: string, saved: SaveResult) {
   const { run } = deps.messages;
+  if (saved.path !== from) deps.recent.moved((path) => (path === from ? saved.path : path));
   run(
     deps.columns.update((now) =>
       noteTitled(
