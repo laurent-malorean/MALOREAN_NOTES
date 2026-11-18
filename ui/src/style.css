@@ -981,6 +981,86 @@ button {
   gap: 0.8rem;
 }
 
+/* Historique d'une note : la liste datée à gauche, la version choisie et ses différences à droite */
+.history {
+  width: min(var(--history-width), 92vw);
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 10px 30px var(--shadow);
+  font-family: var(--sans);
+  font-size: var(--history-text-size);
+}
+.history::backdrop {
+  background: var(--shadow);
+}
+.history-title {
+  margin: 0 0 0.8rem;
+  font-size: 1.1em;
+}
+.history-body {
+  display: flex;
+  gap: 0.8rem;
+  height: var(--history-height);
+}
+.history-versions {
+  flex: 0 0 var(--history-versions-width);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.history-version {
+  display: block;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+.history-version[aria-selected="true"] {
+  background: var(--selected);
+}
+.history-preview {
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--mono);
+  white-space: pre-wrap;
+}
+.history-line {
+  display: block;
+  min-height: 1.2em;
+}
+.history-line.added {
+  background: var(--difference-added-background);
+}
+.history-line.removed {
+  background: var(--difference-removed-background);
+  text-decoration: line-through;
+}
+.history-legend,
+.history-empty {
+  color: var(--muted);
+}
+.history-legend {
+  margin: 0.6rem 0;
+}
+.history-legend .added {
+  background: var(--difference-added-background);
+}
+.history-legend .removed {
+  background: var(--difference-removed-background);
+}
+
 /* Fenêtre de choix au clavier : ouverture rapide, palette de commandes */
 .picker {
   width: min(36rem, 90vw);

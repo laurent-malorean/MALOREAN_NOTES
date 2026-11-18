@@ -36,6 +36,8 @@ export interface ColumnsDeps {
   copyNote(path: string): void;
   /** Copier le texte Markdown d'une note (menu d'un onglet). */
   copyMarkdown(path: string): void;
+  /** Ouvrir l'historique d'une note (menu d'un onglet). */
+  showHistory(path: string): void;
   run(action: Promise<unknown>): void;
 }
 
@@ -108,6 +110,7 @@ function viewHandlers(state: ColumnsState, deps: ColumnsDeps, open: OpenColumns)
     printNote: (path) => deps.printNote(path),
     copyNote: (path) => deps.copyNote(path),
     copyMarkdown: (path) => deps.copyMarkdown(path),
+    showHistory: (path) => deps.showHistory(path),
     dropTab: (tabId, drop) =>
       deps.run(open.changeFlushed(() => tabDropped(state.columns, tabId, drop))),
     split: () => deps.run(open.split()),

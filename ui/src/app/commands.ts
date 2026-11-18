@@ -12,6 +12,7 @@ import { noteOrder } from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
+import type { NoteHistory } from "./history";
 import type { WritingModes } from "./writing-modes";
 import type { Workspaces } from "./workspaces";
 
@@ -43,6 +44,8 @@ export interface CommandsDeps {
   readonly recent: { paths(): readonly string[] };
   /** L'export et l'impression de la note de la colonne active. */
   readonly exporting: Exporting;
+  /** L'historique de la note de la colonne active. */
+  readonly history: NoteHistory;
   run(action: Promise<unknown>): void;
 }
 
@@ -111,6 +114,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "print-note": () => deps.exporting.printNote(),
     "copy-note": () => deps.exporting.copyNote(),
     "copy-markdown": () => deps.exporting.copyMarkdown(),
+    "note-history": () => deps.history.show(),
     "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),

@@ -146,11 +146,13 @@ mod tests {
     }
 
     #[test]
-    fn hidden_files_trash_attachments_and_dependencies_are_ignored() {
+    fn hidden_files_trash_history_attachments_and_dependencies_are_ignored() {
         assert_eq!(
             change(&[
                 "/Users/moi/Notes/.a.md.enregistrement",
                 "/Users/moi/Notes/.trash/a.md",
+                "/Users/moi/Notes/.history/a.md/2026-11-18 14h30.md",
+                "/Users/moi/Notes/.trash/.history/b.md/2026-11-18 14h30.md",
                 "/Users/moi/Notes/voyage.assets/mer.png",
                 "/Users/moi/Notes/voyage.assets",
                 "/Users/moi/Notes/Projet/node_modules/paquet/README.md",

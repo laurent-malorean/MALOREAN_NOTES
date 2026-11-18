@@ -295,6 +295,21 @@ describe("pont vers Rust : corbeille", () => {
     expect(await bridge.emptyTrash()).toBeNull();
     expect(calls).toEqual([{ command: "empty_trash", args: {} }]);
   });
+
+  it("liste, compare, garde et restaure les versions d'une note", async () => {
+    const calls = recordCalls([]);
+    expect(await bridge.listVersions("a.md")).toEqual([]);
+    expect(await bridge.compareVersion("a.md", "2026-11-18 14h30")).toEqual([]);
+    expect(await bridge.keepVersion("a.md")).toEqual([]);
+    expect(await bridge.restoreVersion("a.md", "2026-11-18 14h30")).toEqual([]);
+    const version = { path: "a.md", version: "2026-11-18 14h30" };
+    expect(calls).toEqual([
+      { command: "list_versions", args: { path: "a.md" } },
+      { command: "compare_version", args: version },
+      { command: "keep_version", args: { path: "a.md" } },
+      { command: "restore_version", args: version },
+    ]);
+  });
 });
 
 interface SentFile {

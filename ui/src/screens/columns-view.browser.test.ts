@@ -31,6 +31,7 @@ function mount() {
     printNote: (path) => tabs.push(`imprimer ${path}`),
     copyNote: (path) => tabs.push(`copier ${path}`),
     copyMarkdown: (path) => tabs.push(`copier en Markdown ${path}`),
+    showHistory: (path) => tabs.push(`historique ${path}`),
     dropTab: (tab, drop) => drops.push({ tab, drop }),
   });
   return {
@@ -177,7 +178,7 @@ describe("colonnes à l'écran", () => {
     expect(labels).toEqual(["B×", "c×"]);
     second.querySelector<HTMLElement>('[role="tab"]')?.click();
     second.querySelector<HTMLElement>(".tab-close")?.click();
-    for (const entry of [0, -3, -2, -1]) menuChoice(second, entry);
+    for (const entry of [0, -4, -3, -2, -1]) menuChoice(second, entry);
     expect(tabs).toEqual([
       "activer 3",
       "fermer 3",
@@ -185,6 +186,7 @@ describe("colonnes à l'écran", () => {
       "imprimer b.md",
       "copier b.md",
       "copier en Markdown b.md",
+      "historique b.md",
     ]);
     view.render({
       ...columns,

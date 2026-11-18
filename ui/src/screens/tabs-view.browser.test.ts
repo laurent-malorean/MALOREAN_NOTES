@@ -27,6 +27,7 @@ function mount() {
     print: (note) => asked.push(`imprimer ${note}`),
     copy: (note) => asked.push(`copier ${note}`),
     copyMarkdown: (note) => asked.push(`copier en Markdown ${note}`),
+    history: (note) => asked.push(`historique ${note}`),
   });
   const tabs = [...list.querySelectorAll<HTMLElement>('[role="tab"]')];
   return { list, asked, tabs };
@@ -75,6 +76,7 @@ describe("onglets d'une colonne", () => {
         print: () => {},
         copy: () => {},
         copyMarkdown: () => {},
+        history: () => {},
       },
     );
     expect(list.children).toHaveLength(0);
@@ -90,6 +92,7 @@ describe("onglets d'une colonne", () => {
       print: () => {},
       copy: () => {},
       copyMarkdown: () => {},
+      history: () => {},
     };
     renderTabs(list, { ...column, tabs: [...column.tabs] }, actions);
     expect(list.children[0]).toBe(tabs[0]);
@@ -121,6 +124,7 @@ describe("onglets d'une colonne", () => {
       "Imprimer…",
       "Copier en texte mis en forme",
       "Copier en Markdown",
+      "Historique…",
     ]);
     entries()[2]?.click();
     for (const [tab, entry] of [
@@ -128,6 +132,7 @@ describe("onglets d'une colonne", () => {
       [1, 4],
       [0, 5],
       [1, 6],
+      [0, 7],
     ] as const) {
       tabs[tab]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
       entries()[entry]?.click();
@@ -138,6 +143,7 @@ describe("onglets d'une colonne", () => {
       "imprimer Travail/liste-de-noel.md",
       "copier Travail/reunion.md",
       "copier en Markdown Travail/liste-de-noel.md",
+      "historique Travail/reunion.md",
     ]);
   });
 

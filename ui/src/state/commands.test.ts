@@ -28,6 +28,7 @@ describe("palette de commandes", () => {
       ["print-note", "Imprimer…", "Cmd+P"],
       ["copy-note", "Copier en texte mis en forme", "Cmd+Maj+C"],
       ["copy-markdown", "Copier en Markdown", "Ctrl+Cmd+C"],
+      ["note-history", "Historique…", "Cmd+Y"],
       ["sort-notes", "Trier la liste", null],
       ["show-trash", "Corbeille", null],
       ["open-settings", "Réglages", "Cmd+,"],

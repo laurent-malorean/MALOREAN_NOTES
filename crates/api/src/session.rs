@@ -2,6 +2,7 @@
 
 mod attachments;
 mod export;
+mod history;
 mod index;
 mod journal;
 mod links;
@@ -14,6 +15,7 @@ mod trash;
 mod watching;
 mod workspace;
 
+use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use application::use_cases::{
@@ -21,9 +23,9 @@ use application::use_cases::{
     PinNote, ReadNote, RefreshIndex, RenameFolder, SearchNotes, SearchResult,
 };
 use application::{
-    AppError, Clipboard, Clock, ExportStore, IndexOpener, IndexedStore, MemoryIndexes, NoteIndex,
-    NoteStore, Preferences, StoredNote, Watching, WorkspaceLocation, WorkspaceName,
-    WorkspaceOpener, WorkspaceWatcher,
+    AppError, Clipboard, Clock, ExportStore, History, HistoryOpener, IndexOpener, IndexedStore,
+    MemoryHistories, MemoryIndexes, NoteIndex, NoteStore, Preferences, StoredNote, VersionedStore,
+    Watching, WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
@@ -53,6 +55,7 @@ pub struct Session {
     preferences: Arc<dyn Preferences>,
     clock: Arc<dyn Clock>,
     indexes: Arc<dyn IndexOpener>,
+    histories: Arc<dyn HistoryOpener>,
     workspace: RwLock<Option<OpenWorkspaceState>>,
     watcher: Option<Arc<dyn WorkspaceWatcher>>,
     watching: Mutex<Option<Box<dyn Watching>>>,
@@ -60,19 +63,24 @@ pub struct Session {
     clipboard: Option<Arc<dyn Clipboard>>,
 }
 
-/// L'espace de travail ouvert : où il est, ses notes, et leur index, qui suit chaque changement
-/// fait par l'application.
+/// L'espace de travail ouvert : où il est, ses notes, leur index et leur historique, qui suivent
+/// chaque changement fait par l'application, et ses versions en attente.
 #[derive(Debug, Clone)]
 struct OpenWorkspaceState {
     name: WorkspaceName,
     location: WorkspaceLocation,
     store: Arc<dyn NoteStore>,
     index: Arc<dyn NoteIndex>,
+    history: Arc<dyn History>,
+    /// Les notes enregistrées par l'application depuis leur dernière version : une version en
+    /// est gardée quand on quitte l'application.
+    pending: Arc<Mutex<BTreeSet<NotePath>>>,
 }
 
 impl Session {
-    /// Une session sans espace de travail ouvert. Son index est gardé en mémoire, le temps de
-    /// la session, sauf si elle en reçoit un autre ([`Session::with_indexes`]).
+    /// Une session sans espace de travail ouvert. Son index et son historique sont gardés en
+    /// mémoire, le temps de la session, sauf si elle en reçoit d'autres
+    /// ([`Session::with_indexes`], [`Session::with_histories`]).
     #[must_use]
     pub fn new(
         opener: Arc<dyn WorkspaceOpener>,
@@ -84,6 +92,7 @@ impl Session {
             preferences,
             clock,
             indexes: Arc::new(MemoryIndexes),
+            histories: Arc::new(MemoryHistories),
             workspace: RwLock::new(None),
             watcher: None,
             watching: Mutex::new(None),
@@ -246,18 +255,24 @@ impl Session {
         Ok(moved.to_path())
     }
 
-    /// L'espace de travail ouvert devient celui de la session ; son index est ouvert et mis à
-    /// jour sur ses fichiers (seules les notes changées depuis la dernière fois sont relues).
+    /// L'espace de travail ouvert devient celui de la session, après que les versions en attente
+    /// du précédent ont été gardées ; son index est ouvert et mis à jour sur ses fichiers (seules
+    /// les notes changées depuis la dernière fois sont relues), et son historique ouvert.
     fn keep(&self, opened: OpenedWorkspace) -> Result<WorkspaceInfo, ApiError> {
+        self.keep_pending_versions();
         let info = workspace::workspace_info(&opened);
         let location = opened.workspace.location;
         let index = self.indexes.open(&location).map_err(AppError::from)?;
+        let history = self.histories.open(&location).map_err(AppError::from)?;
         RefreshIndex::new(&*opened.store, &*index).execute()?;
+        let versioned = Arc::new(VersionedStore::new(opened.store, Arc::clone(&history)));
         let state = OpenWorkspaceState {
             name: opened.workspace.name,
             location,
-            store: Arc::new(IndexedStore::new(opened.store, Arc::clone(&index))),
+            store: Arc::new(IndexedStore::new(versioned, Arc::clone(&index))),
             index,
+            history,
+            pending: Arc::default(),
         };
         *self
             .workspace

@@ -49,6 +49,7 @@ function setup() {
       copyNote: (path) => void calls.push(`copier ${path}`),
       copyMarkdown: (path) => void calls.push(`copier en Markdown ${path}`),
     },
+    history: { show: (path) => void calls.push(`historique ${path}`) },
     run: (action) => void ran.push(action),
   });
   return { actions, calls, ran, columns };
@@ -68,6 +69,7 @@ describe("demandes de l'écran", () => {
     t.actions.printNote("b.md");
     t.actions.copyNote("c.md");
     t.actions.copyMarkdown("a.md");
+    t.actions.showHistory("b.md");
     t.actions.trash("a.md");
     t.actions.trashFolder("projets");
     t.actions.restoreNote("a.md");
@@ -91,6 +93,7 @@ describe("demandes de l'écran", () => {
       "imprimer b.md",
       "copier c.md",
       "copier en Markdown a.md",
+      "historique b.md",
       "jeter a.md",
       "jeter le dossier projets",
       "rendre a.md",

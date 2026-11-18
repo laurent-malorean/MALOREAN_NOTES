@@ -39,6 +39,10 @@
   --syntax-property: #5c4d9a;
   --syntax-tag: #b0306a;
   --code-block-background: #f2f0eb;
+
+  /* Historique : lignes seulement dans la version, seulement dans la note actuelle */
+  --difference-added-background: #dcf0d8;
+  --difference-removed-background: #f6dcd8;
 }
 
 :root {
@@ -74,6 +78,10 @@
   --picker-max-height: 50vh;
   --confirmation-width: 26rem;
   --confirmation-text-size: 14px;
+  --history-width: 56rem;
+  --history-height: 70vh;
+  --history-versions-width: 15rem;
+  --history-text-size: 13px;
 
   /* Fenêtre */
   --folders-width: 200px;
@@ -150,4 +158,6 @@
   --syntax-property: #b4a7f0;
   --syntax-tag: #f48fb1;
   --code-block-background: #242426;
+  --difference-added-background: #23402a;
+  --difference-removed-background: #4a2726;
 }

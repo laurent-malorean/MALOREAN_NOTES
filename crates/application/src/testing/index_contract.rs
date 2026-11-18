@@ -57,6 +57,7 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     search_finds_short_words(&empty_index());
     search_takes_symbols_as_written(&empty_index());
     search_gives_back_the_content(&empty_index());
+    a_kept_note_gives_back_its_last_text(&empty_index());
 }
 
 fn a_new_index_knows_no_note(index: &impl NoteIndex) {
@@ -252,4 +253,14 @@ fn search_gives_back_the_content(index: &impl NoteIndex) {
             content.to_owned()
         )]
     );
+}
+
+fn a_kept_note_gives_back_its_last_text(index: &impl NoteIndex) {
+    index.put(&[note("Travail/a.md", "# Avant", 1)]).unwrap();
+    index.put(&[note("Travail/a.md", "# Après", 2)]).unwrap();
+    assert_eq!(
+        index.content(&path("Travail/a.md")).unwrap(),
+        Some("# Après".to_owned())
+    );
+    assert_eq!(index.content(&path("a.md")).unwrap(), None);
 }

@@ -18,8 +18,9 @@ export function fakeBackend(notes: Record<string, string>) {
   const backlinks: Record<string, LinkingNoteItem[]> = {};
   /** Une réponse retenue jusqu'à ce que sa porte s'ouvre : « lire a.md », « liens a.md ». */
   const gates: Record<string, Promise<void>> = {};
-  const backend: PaneBackend & SharedBackend & { fail: boolean } = {
+  const backend: PaneBackend & SharedBackend & { fail: boolean; failVersion: boolean } = {
     fail: false,
+    failVersion: false,
     readNote: async (path) => {
       calls.push(`lire ${path}`);
       await gates[`lire ${path}`];
@@ -41,6 +42,12 @@ export function fakeBackend(notes: Record<string, string>) {
         tagsChanged: false,
       };
       return Promise.resolve(result);
+    },
+    keepVersion: (path) => {
+      calls.push(`version ${path}`);
+      return backend.failVersion
+        ? Promise.reject(new Error("historique plein"))
+        : Promise.resolve(null);
     },
     listBacklinks: async (path) => {
       calls.push(`liens ${path}`);
@@ -120,12 +127,14 @@ export function mountColumns(
   document.body.replaceChildren();
   const fake = fakeBackend(notes);
   const timer = manualScheduler();
+  const versionTimer = manualScheduler();
   const events: string[] = [];
   const titles: string[] = [];
   const errors: string[] = [];
   const shared = createSharedNotes({
     backend: fake.backend,
     scheduler: timer.scheduler,
+    versionScheduler: versionTimer.scheduler,
     events: {
       saved: (from, result) => events.push(`enregistrée ${from} → ${result.path}`),
       titled: (path, title) => titles.push(`${path} : ${title}`),
@@ -135,5 +144,6 @@ export function mountColumns(
   });
   const columns = Array.from({ length: count }, () => column(shared, fake.backend, events, errors));
   const first = columns[0] as ReturnType<typeof column>;
-  return { ...first, columns, shared, ...fake, ...timer, events, titles, errors };
+  const fireVersion = versionTimer.fire;
+  return { ...first, columns, shared, ...fake, ...timer, fireVersion, events, titles, errors };
 }

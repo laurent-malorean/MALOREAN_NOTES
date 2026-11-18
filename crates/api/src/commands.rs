@@ -18,6 +18,7 @@ use crate::{
 pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
 pub mod export;
+pub mod history;
 pub mod menu;
 pub mod workspaces;
 
@@ -490,6 +491,10 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         empty_trash,
         attach_file,
         open_attachment,
+        history::list_versions,
+        history::compare_version,
+        history::keep_version,
+        history::restore_version,
         export::choose_export_file,
         export::export_markdown,
         export::export_pdf,

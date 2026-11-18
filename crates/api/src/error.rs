@@ -2,6 +2,7 @@
 
 use application::{AppError, EmptyLocation};
 use domain::export::InvalidExportDestination;
+use domain::history::InvalidVersion;
 use domain::{InvalidFileName, InvalidFingerprint, InvalidFolderName};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -106,6 +107,14 @@ impl From<InvalidFileName> for ApiError {
 
 impl From<InvalidFolderName> for ApiError {
     fn from(error: InvalidFolderName) -> Self {
+        Self {
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<InvalidVersion> for ApiError {
+    fn from(error: InvalidVersion) -> Self {
         Self {
             message: error.to_string(),
         }

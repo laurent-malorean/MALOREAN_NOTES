@@ -3,6 +3,7 @@
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { type FakeExports, fakeExport } from "./fake-export";
+import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 
@@ -11,7 +12,7 @@ interface FakeNote {
   modified: number;
 }
 
-export interface FakeBackend extends FakeExports, FakeMenu {
+export interface FakeBackend extends FakeExports, FakeMenu, FakeHistory {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -61,6 +62,7 @@ const backend: FakeBackend = {
   printed: [],
   copied: [],
   copiedMarkdown: [],
+  versions: {},
   ...fakeMenuState(),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
@@ -70,11 +72,16 @@ const backend: FakeBackend = {
     await emit("tauri://resize", { width: 1440, height: 900 });
   },
   changeOutside: async (path, content) => {
+    // Comme Rust : le texte que l'application connaissait est gardé en version.
+    const known = backend.notes[path]?.content;
+    if (known !== undefined && known !== content) keepFakeVersion(backend, path, known);
     if (content === null) Reflect.deleteProperty(backend.notes, path);
     else backend.notes[path] = { content, modified: (clock += 1) };
     await emit("workspace-changed", { notes: [path] });
   },
   renameOutside: async (from, to, content) => {
+    const known = backend.notes[from]?.content;
+    if (known !== undefined) keepFakeVersion(backend, from, known);
     Reflect.deleteProperty(backend.notes, from);
     backend.notes[to] = { content, modified: (clock += 1) };
     await emit("workspace-changed", { notes: [from, to] });
@@ -207,6 +214,7 @@ function save(path: string, content: string, fingerprint: string) {
   const target = freeName(folderOf(path), wantedName(path, content), path);
   Reflect.deleteProperty(backend.notes, path);
   backend.notes[target] = { content, modified: (clock += 1) };
+  moveFakeVersions(backend, path, target);
   return {
     path: target,
     title: displayedTitle(content),
@@ -389,6 +397,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   list_backlinks: ({ path = "" }) => listBacklinks(path),
   ...fakeWorkspaces(params, backend, backend.rememberedWorkspace),
   ...fakeExport(backend),
+  ...fakeHistory(backend, noteContent),
   list_notes: ({ folder = "", order }) =>
     Object.entries(backend.notes)
       .filter(([path]) => folderOf(path) === folder)

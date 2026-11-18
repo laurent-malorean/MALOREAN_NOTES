@@ -9,6 +9,7 @@ import { createExport } from "./app/export";
 import { connectExternalChanges } from "./app/external-changes";
 import { createFoldMemory } from "./app/fold-memory";
 import { createFolders } from "./app/folders";
+import { createHistory } from "./app/history";
 import { createJournal } from "./app/journal";
 import { createLayoutMemory } from "./app/layout-memory";
 import { createWorkspace } from "./app/workspace";
@@ -55,7 +56,7 @@ const columns = createOpenColumns({
     menu.follow(now)
   ),
   ...{ printNote: (path) => exporting.printNote(path), copyNote: (p) => exporting.copyNote(p) },
-  copyMarkdown: (path) => exporting.copyMarkdown(path),
+  ...{ copyMarkdown: (p) => exporting.copyMarkdown(p), showHistory: (p) => history.show(p) },
   run,
 });
 const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage });
@@ -99,25 +100,25 @@ const exporting = createExport({
   ...{ backend: bridge, columns, workspacePath: workspace.path, picker: layout.picker },
   ...{ sheet: layout.printSheet, storage: localStorage, show: messages.show, run },
 });
+const history = createHistory({ ...messages, backend: bridge, columns, layout });
 const workspaces = createWorkspaces({
   ...{ backend: bridge, screen, columns, workspace, picker: layout.picker, run },
   askName: (options) => askName(layout.confirmation, options),
   askRemoval: (name) => askWorkspaceRemoval(layout.confirmation, name),
 });
 const newPane = paneMaker({
-  backend: bridge,
-  shared,
+  ...{ backend: bridge, shared, workspacePath: workspace.path },
   events: {
     openNote: (path) => actions.open(path),
     openLink: (title) => run(workspace.followLink(title)),
     error: messages.error,
   },
-  workspacePath: workspace.path,
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),
 });
 
 const actions: ScreenActions = screenActions({
-  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, exporting, run },
+  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, exporting },
+  ...{ history, run },
 });
 
 layout.addButton.addEventListener("click", () => run(workspaces.add()));
@@ -134,7 +135,7 @@ const windowDisplay = connectWindowDisplay(layout, {
 const commands = connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField, exporting },
-  ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent },
+  ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent, history },
 });
 const menu = connectAppMenu({ backend: bridge, actions: commands, error: messages.error });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });

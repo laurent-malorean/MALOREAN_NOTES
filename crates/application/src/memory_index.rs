@@ -70,6 +70,10 @@ impl NoteIndex for MemoryIndex {
         Ok(())
     }
 
+    fn content(&self, note: &NotePath) -> Result<Option<String>, StoreError> {
+        Ok(self.notes().get(note).map(|entry| entry.content.clone()))
+    }
+
     fn notes_in(&self, folder: &Folder) -> Result<Vec<NoteSummary>, StoreError> {
         Ok(self.summaries(|entry| entry.stamp.path.folder() == folder))
     }

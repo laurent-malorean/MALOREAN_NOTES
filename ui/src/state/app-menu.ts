@@ -51,6 +51,7 @@ export const APP_MENU: readonly MenuDef[] = [
       "separator",
       { command: "export-note" },
       { command: "print-note" },
+      { command: "note-history" },
       "separator",
       { command: "switch-workspace", label: "Changer d'espace de travail…" },
       { command: "add-workspace", label: "Ajouter un espace de travail…" },
@@ -124,6 +125,7 @@ export const NOTE_COMMANDS: ReadonlySet<MenuCommandId> = new Set<MenuCommandId>(
   "print-note",
   "copy-note",
   "copy-markdown",
+  "note-history",
 ]);
 
 /** Un raccourci écrit comme dans la palette (`Cmd+Maj+N`), écrit pour le Mac (`Cmd+Shift+N`). */

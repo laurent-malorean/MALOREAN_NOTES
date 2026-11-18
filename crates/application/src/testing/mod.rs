@@ -8,6 +8,7 @@ mod fake_clipboard;
 mod fake_exports;
 mod fake_watcher;
 mod fakes;
+pub mod history_contract;
 pub mod index_contract;
 pub mod preferences_contract;
 mod trash_contract;

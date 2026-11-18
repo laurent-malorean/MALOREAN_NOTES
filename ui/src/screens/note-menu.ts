@@ -15,6 +15,8 @@ export interface NoteMenuActions {
 export const COPY_LABEL = "Copier en texte mis en forme";
 /** Le choix « Copier en Markdown », juste après. */
 export const MARKDOWN_COPY_LABEL = "Copier en Markdown";
+/** Le choix « Historique… », qui ouvre l'historique des versions de la note. */
+export const HISTORY_LABEL = "Historique…";
 
 /** Les choix du menu d'une note, dans l'ordre. */
 export function noteMenu(actions: NoteMenuActions): MenuEntry[] {

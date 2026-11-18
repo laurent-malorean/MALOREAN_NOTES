@@ -23,11 +23,13 @@ impl Session {
         fingerprint: &str,
     ) -> Result<SaveResult, ApiError> {
         let store = self.store()?;
+        let note = NotePath::parse(path)?;
         let saved = SaveNote::new(&*store, &*self.clock).execute(
-            &NotePath::parse(path)?,
+            &note,
             content,
             &Fingerprint::parse(fingerprint)?,
         )?;
+        self.saved_since_version(&note, &saved.path)?;
         Ok(SaveResult {
             path: saved.path.to_path(),
             title: displayed_title(content),

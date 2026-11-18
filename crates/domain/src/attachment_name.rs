@@ -54,8 +54,9 @@ const MONTHS: [&str; 12] = [
     "décembre",
 ];
 
-/// Date et heure locales à la minute, telles que les donne l'horloge.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Date et heure locales à la minute, telles que les donne l'horloge ; les moments se rangent
+/// du plus ancien au plus récent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Moment {
     year: i32,
     month: u32,
@@ -150,6 +151,52 @@ impl Moment {
             "{:04}-{:02}-{:02} {:02}h{:02}",
             self.year, self.month, self.day, self.hour, self.minute
         )
+    }
+
+    /// Le moment lu dans `2026-11-16 18h30` ; rien si ce n'en est pas un.
+    pub(crate) fn of_label(text: &str) -> Option<Self> {
+        let (date, time) = text.split_once(' ')?;
+        let (hour, minute) = time.split_once('h')?;
+        let two_digits = |part: &str| {
+            (part.len() == 2 && part.bytes().all(|b| b.is_ascii_digit()))
+                .then(|| part.parse::<u32>().ok())
+                .flatten()
+        };
+        let day = Self::of_iso_date(date)?;
+        Self::new(
+            day.year,
+            day.month,
+            day.day,
+            two_digits(hour)?,
+            two_digits(minute)?,
+        )
+        .ok()
+    }
+
+    /// Le nombre de jours depuis le 1er janvier 1970 (négatif avant).
+    #[must_use]
+    pub fn days_since_epoch(&self) -> i64 {
+        // Calendrier grégorien, l'année commençant en mars (algorithme de H. Hinnant).
+        let year = i64::from(self.year) - i64::from(self.month <= 2);
+        let era = year.div_euclid(400);
+        let year_of_era = year - era * 400;
+        let day_of_year =
+            (153 * ((i64::from(self.month) + 9) % 12) + 2) / 5 + i64::from(self.day) - 1;
+        let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+        era * 146_097 + day_of_era - 719_468
+    }
+
+    /// Le numéro de la semaine (du lundi au dimanche) depuis celle du 1er janvier 1970.
+    #[must_use]
+    pub fn weeks_since_epoch(&self) -> i64 {
+        // Le 1er janvier 1970 était un jeudi : trois jours après le lundi de sa semaine.
+        (self.days_since_epoch() + 3).div_euclid(7)
+    }
+
+    /// Le nombre de minutes depuis le 1er janvier 1970 à minuit.
+    #[must_use]
+    pub fn minutes_since_epoch(&self) -> i64 {
+        self.days_since_epoch() * 1440 + i64::from(self.hour * 60 + self.minute)
     }
 }
 

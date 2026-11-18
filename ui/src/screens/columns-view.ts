@@ -28,6 +28,8 @@ export interface ColumnsHandlers {
   copyNote(path: string): void;
   /** Copier le texte Markdown de la note d'un onglet (menu de l'onglet). */
   copyMarkdown(path: string): void;
+  /** Ouvrir l'historique de la note d'un onglet (menu de l'onglet). */
+  showHistory(path: string): void;
   /** Un onglet glissé est lâché là. */
   dropTab(tabId: number, drop: TabDrop): void;
   /** Diviser la colonne active. */
@@ -218,6 +220,7 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
           print: handlers.printNote,
           copy: handlers.copyNote,
           copyMarkdown: handlers.copyMarkdown,
+          history: handlers.showHistory,
           drag: (tabId) => (tabId === null ? dragging.stop() : (moving = tabId)),
         });
         if (index === 0) return [entry.parts.element];

@@ -242,6 +242,18 @@ impl NoteIndex for SqliteIndex {
         })
     }
 
+    fn content(&self, note: &NotePath) -> Result<Option<String>, StoreError> {
+        self.run(|connection| {
+            connection
+                .query_row(
+                    "SELECT content FROM notes WHERE path = ?1",
+                    [note.to_path()],
+                    |row| row.get::<_, String>(0),
+                )
+                .optional()
+        })
+    }
+
     fn notes_in(&self, folder: &Folder) -> Result<Vec<NoteSummary>, StoreError> {
         self.summaries("WHERE folder = ?1", &[&folder.to_path()])
     }

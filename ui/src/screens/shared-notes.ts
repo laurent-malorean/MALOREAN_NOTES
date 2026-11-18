@@ -5,11 +5,14 @@ import type { SaveResult } from "../bridge/generated/SaveResult";
 import type { Editor } from "../editor/editor";
 import { type Autosave, createAutosave, type Scheduler, timerScheduler } from "../state/autosave";
 import { reactionToChange } from "../state/external-change";
+import { VERSION_DELAY_MS } from "../state/history";
 
 /** Ce que les notes partagées demandent à Rust, par le pont. */
 export interface SharedNotesBackend {
   readonly readNote: (path: string) => Promise<NoteContent>;
   readonly saveNote: (path: string, content: string, fingerprint: string) => Promise<SaveResult>;
+  /** Garde une version du texte enregistré de la note, s'il diffère de la plus récente. */
+  readonly keepVersion: (path: string) => Promise<unknown>;
 }
 
 /** Ce que les notes partagées annoncent à l'application. */
@@ -27,6 +30,8 @@ export interface SharedNotesOptions {
   readonly backend: SharedNotesBackend;
   readonly events: SharedNotesEvents;
   readonly scheduler?: Scheduler;
+  /** Programme la version gardée après quelques minutes de frappe. */
+  readonly versionScheduler?: Scheduler;
 }
 
 /** Une colonne qui montre une note partagée. */
@@ -42,9 +47,15 @@ export interface SharedNotes {
    * note lue sur le disque, une seule fois même si plusieurs colonnes la demandent ensemble.
    */
   join(path: string, viewer: Viewer): Promise<void>;
-  /** La colonne ne montre plus sa note ; la dernière à la quitter enregistre ce qui est tapé. */
+  /**
+   * La colonne ne montre plus sa note ; la dernière à la quitter enregistre ce qui est tapé, et
+   * en garde une version si on y a tapé depuis la dernière.
+   */
   leave(viewer: Viewer): Promise<void>;
-  /** On a tapé dans la colonne : les autres colonnes de la note le montrent, et il sera enregistré. */
+  /**
+   * On a tapé dans la colonne : les autres colonnes de la note le montrent, il sera enregistré, et
+   * une version en sera gardée après quelques minutes.
+   */
   typed(viewer: Viewer, changes: ChangeSet, content: string): void;
   /** Enregistre tout de suite ce qui est tapé dans la note de la colonne. */
   flush(viewer: Viewer): Promise<void>;
@@ -61,6 +72,8 @@ interface Shared {
   readonly viewers: Map<Viewer, boolean>;
   autosave: Autosave | null;
   read: Promise<NoteContent>;
+  /** Annule la version programmée depuis la première frappe ; `null` si rien n'a été tapé depuis la dernière. */
+  versionDue: (() => void) | null;
 }
 
 class SharedNoteList implements SharedNotes {
@@ -69,9 +82,11 @@ class SharedNoteList implements SharedNotes {
   /** La note de chaque colonne. */
   private readonly of = new Map<Viewer, Shared>();
   private readonly scheduler: Scheduler;
+  private readonly versionScheduler: Scheduler;
 
   constructor(private readonly options: SharedNotesOptions) {
     this.scheduler = options.scheduler ?? timerScheduler();
+    this.versionScheduler = options.versionScheduler ?? timerScheduler(VERSION_DELAY_MS);
   }
 
   async join(path: string, viewer: Viewer): Promise<void> {
@@ -94,7 +109,11 @@ class SharedNoteList implements SharedNotes {
     note.viewers.delete(viewer);
     if (note.viewers.size > 0) return;
     this.drop(note);
-    await note.autosave?.flush();
+    const typed = note.versionDue;
+    typed?.();
+    note.versionDue = null;
+    if (typed) await this.keepVersion(note);
+    else await note.autosave?.flush();
   }
 
   typed(viewer: Viewer, changes: ChangeSet, content: string): void {
@@ -103,7 +122,12 @@ class SharedNoteList implements SharedNotes {
     if (note?.viewers.get(viewer) !== true) return;
     for (const other of note.viewers.keys())
       if (other !== viewer) other.editor.follow(changes, content);
-    note.autosave?.edit(content);
+    if (!note.autosave) return;
+    note.autosave.edit(content);
+    note.versionDue ??= this.versionScheduler.schedule(() => {
+      note.versionDue = null;
+      void this.keepVersion(note);
+    });
   }
 
   async flush(viewer: Viewer): Promise<void> {
@@ -112,7 +136,10 @@ class SharedNoteList implements SharedNotes {
 
   forget(viewer: Viewer): void {
     const note = this.of.get(viewer);
-    if (note) note.autosave = null;
+    if (!note) return;
+    note.autosave = null;
+    note.versionDue?.();
+    note.versionDue = null;
   }
 
   async followDisk(viewer: Viewer): Promise<void> {
@@ -139,6 +166,7 @@ class SharedNoteList implements SharedNotes {
       viewers: new Map(),
       autosave: null,
       read: this.options.backend.readNote(path),
+      versionDue: null,
     };
     this.notes.set(path, note);
     note.read.then(
@@ -150,6 +178,13 @@ class SharedNoteList implements SharedNotes {
       () => this.drop(note),
     );
     return note;
+  }
+
+  /** Ce qui est tapé est enregistré, puis Rust en garde une version. */
+  private async keepVersion(note: Shared) {
+    // Stryker disable next-line OptionalChaining: une version n'est programmée que pour une note qui s'enregistre, et l'oubli l'annule ; TypeScript exige le cas contraire.
+    await note.autosave?.flush();
+    await this.options.backend.keepVersion(note.path).catch(this.options.events.error);
   }
 
   /** La note n'est plus montrée : une colonne qui la demande la relira. */

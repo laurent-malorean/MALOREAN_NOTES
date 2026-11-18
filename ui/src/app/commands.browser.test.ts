@@ -72,6 +72,7 @@ const deps: CommandsDeps = {
     copyNote: (path) => void log.push(`copier ${path}`),
     copyMarkdown: (path) => void log.push(`copier en Markdown ${path}`),
   },
+  history: { show: (path) => void log.push(`historique ${path}`) },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
 const connected = connectCommands(deps);
@@ -118,6 +119,7 @@ describe("commandes de la palette", () => {
       "print-note",
       "copy-note",
       "copy-markdown",
+      "note-history",
       "show-trash",
       "open-settings",
       "switch-workspace",
@@ -143,6 +145,7 @@ describe("commandes de la palette", () => {
       "imprimer undefined",
       "copier undefined",
       "copier en Markdown undefined",
+      "historique undefined",
       "corbeille",
       "réglages",
       "changer d'espace de travail",
@@ -325,6 +328,11 @@ describe("raccourcis clavier", () => {
   it("Ctrl+Cmd+C copie en Markdown la sélection ou la note de la colonne active", () => {
     expect(press("c", { metaKey: true, ctrlKey: true }).defaultPrevented).toBe(true);
     expect(log).toEqual(["copier en Markdown undefined"]);
+  });
+
+  it("Cmd+Y ouvre l'historique de la note de la colonne active", () => {
+    expect(press("y", { metaKey: true }).defaultPrevented).toBe(true);
+    expect(log).toEqual(["historique undefined"]);
   });
 
   it("Cmd+O ouvre l'ouverture rapide", async () => {

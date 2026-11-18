@@ -1,5 +1,6 @@
 //! Erreurs des cas d'usage.
 
+use domain::history::Version;
 use domain::{Folder, NotePath, RefusedAttachment};
 
 use crate::StoreError;
@@ -67,6 +68,9 @@ pub enum AppError {
     /// L'espace de travail ouvert ne se retire pas de la liste.
     #[error("l'espace de travail « {0} » est ouvert : passez à un autre avant de le retirer")]
     OpenWorkspaceKept(String),
+    /// La note n'a pas (ou plus) cette version : la conservation a pu la retirer.
+    #[error("la version du {} n'existe plus", .0.label())]
+    VersionNotFound(Version),
     /// Le stockage ne répond pas ; la cause est lisible.
     #[error("stockage indisponible : {0}")]
     StorageUnavailable(String),
@@ -82,6 +86,7 @@ impl From<StoreError> for AppError {
             StoreError::FolderAlreadyExists(folder) => Self::FolderNameTaken(folder),
             StoreError::AttachmentAlreadyExists(name) => Self::AttachmentNameTaken(name),
             StoreError::AttachmentNotFound(name) => Self::AttachmentNotFound(name),
+            StoreError::VersionNotFound(version) => Self::VersionNotFound(version),
             StoreError::Unavailable(reason) => Self::StorageUnavailable(reason),
         }
     }
@@ -93,6 +98,16 @@ mod tests {
 
     fn name() -> NotePath {
         NotePath::parse("note.md").unwrap()
+    }
+
+    #[test]
+    fn a_missing_version_is_reported_by_its_date() {
+        let version = Version::parse("2026-11-18 14h30").unwrap();
+        let message = AppError::from(StoreError::VersionNotFound(version)).to_string();
+        assert_eq!(
+            message,
+            "la version du 18 novembre 2026 à 14:30 n'existe plus"
+        );
     }
 
     #[test]

@@ -343,3 +343,38 @@ pub enum StandardItem {
     /// Tout ramener au premier plan.
     BringAllToFront,
 }
+
+/// Une version d'une note, dans l'historique.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct VersionItem {
+    /// Son identifiant, à renvoyer pour la comparer ou la restaurer : `2026-11-18 14h30`.
+    pub id: String,
+    /// Sa date, telle que l'historique la montre : `18 novembre 2026 à 14:30`.
+    pub label: String,
+}
+
+/// D'où vient une ligne de la comparaison entre la note actuelle et une version.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum DifferenceKind {
+    /// La ligne est dans la note et dans la version.
+    Same,
+    /// La ligne n'est que dans la note actuelle : restaurer la version la retire.
+    Removed,
+    /// La ligne n'est que dans la version : restaurer la version la remet.
+    Added,
+}
+
+/// Une ligne de la comparaison entre la note actuelle et une version.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct DifferenceItem {
+    /// D'où vient la ligne.
+    pub kind: DifferenceKind,
+    /// Le texte de la ligne.
+    pub text: String,
+}

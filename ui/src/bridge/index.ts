@@ -6,6 +6,7 @@ import type { ApiError } from "./generated/ApiError";
 import type { AppMenu } from "./generated/AppMenu";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { ChosenFolder } from "./generated/ChosenFolder";
+import type { DifferenceItem } from "./generated/DifferenceItem";
 import type { ExportFile } from "./generated/ExportFile";
 import type { ExportFormatItem } from "./generated/ExportFormatItem";
 import type { MenuEntryItem } from "./generated/MenuEntryItem";
@@ -24,11 +25,13 @@ import type { SearchResultItem } from "./generated/SearchResultItem";
 import type { TagItem } from "./generated/TagItem";
 import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
 import type { TrashInfo } from "./generated/TrashInfo";
+import type { VersionItem } from "./generated/VersionItem";
 
 export type {
   AppMenu,
   AttachedFile,
   ChosenFolder,
+  DifferenceItem,
   ExportFile,
   ExportFormatItem,
   MenuEntryItem,
@@ -47,6 +50,7 @@ export type {
   TagItem,
   TrashedNoteItem,
   TrashInfo,
+  VersionItem,
 };
 
 /** Le message lisible d'une erreur rendue par Rust, ou de toute autre erreur. */
@@ -139,6 +143,16 @@ export const restoreNote = (path: string) => invoke<SavedNote>("restore_note", {
 export const restoreFolder = (path: string) => invoke<string>("restore_folder", { path });
 /** Supprime définitivement tout ce que contient la corbeille. */
 export const emptyTrash = () => invoke<null>("empty_trash");
+/** Les versions de la note, la plus récente d'abord. */
+export const listVersions = (path: string) => invoke<VersionItem[]>("list_versions", { path });
+/** Les lignes de la note actuelle et de la version, marquées selon leur origine. */
+export const compareVersion = (path: string, version: string) =>
+  invoke<DifferenceItem[]>("compare_version", { path, version });
+/** Garde une version du texte actuel de la note, s'il diffère de la plus récente. */
+export const keepVersion = (path: string) => invoke<null>("keep_version", { path });
+/** Revient à une version de la note ; son texte actuel est d'abord gardé comme version. */
+export const restoreVersion = (path: string, version: string) =>
+  invoke<NoteContent>("restore_version", { path, version });
 
 /** Passe la fenêtre en plein écran, ou l'en fait sortir. */
 export const setFullScreen = (on: boolean) => getCurrentWindow().setFullscreen(on);

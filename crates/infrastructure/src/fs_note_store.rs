@@ -16,7 +16,7 @@ const TEMPORARY_PREFIX: &str = ".";
 const TEMPORARY_SUFFIX: &str = ".enregistrement";
 /// La corbeille : un dossier caché à la racine, comme dans Obsidian ; elle n'est donc jamais
 /// listée parmi les dossiers de l'espace de travail.
-const TRASH_FOLDER: &str = ".trash";
+pub(crate) const TRASH_FOLDER: &str = ".trash";
 const HIDDEN_PREFIX: char = '.';
 
 /// Les notes d'un dossier de l'espace de travail.

@@ -6,6 +6,7 @@ import { noteClosed, notePlaced } from "../state/columns";
 import type { OpenColumns } from "./columns";
 import type { Exporting } from "./export";
 import type { Folders } from "./folders";
+import type { NoteHistory } from "./history";
 import type { Workspace } from "./workspace";
 import type { RecentNotes } from "./recent-notes";
 import type { Tags } from "./tags";
@@ -24,12 +25,15 @@ export interface ScreenActionsDeps {
   readonly recent: Pick<RecentNotes, "show">;
   /** L'export et l'impression d'une note, demandés par son menu dans la liste. */
   readonly exporting: Exporting;
+  /** L'historique d'une note, demandé par son menu dans la liste. */
+  readonly history: NoteHistory;
   /** Lance l'action ; son échec est montré. */
   run(action: Promise<unknown>): void;
 }
 
 export function screenActions(deps: ScreenActionsDeps): ScreenActions {
-  const { backend, columns, folders, workspace, trash, tags, recent, exporting, run } = deps;
+  const { backend, columns, folders, workspace, trash, tags, recent, exporting, history, run } =
+    deps;
   return {
     open: (path) => run(columns.openNote(path)),
     select: (folder) => run(folders.select(folder)),
@@ -47,6 +51,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     printNote: (path) => exporting.printNote(path),
     copyNote: (path) => exporting.copyNote(path),
     copyMarkdown: (path) => exporting.copyMarkdown(path),
+    showHistory: (path) => history.show(path),
     trashFolder: (path) => run(trash.trashFolder(path)),
     restoreNote: (path) => run(trash.restoreNote(path)),
     restoreFolder: (path) => run(trash.restoreFolder(path)),

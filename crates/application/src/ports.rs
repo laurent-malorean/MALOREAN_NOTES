@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use crate::Workspaces;
 use domain::export::ExportDestination;
+use domain::history::Version;
 use domain::search::SearchQuery;
 use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath, NoteSummary};
 
@@ -69,6 +70,8 @@ pub enum StoreError {
     AttachmentNotFound(String),
     /// Un dossier existe déjà à ce chemin.
     FolderAlreadyExists(Folder),
+    /// La note n'a pas (ou plus) cette version dans son historique.
+    VersionNotFound(Version),
     /// Le stockage ne répond pas (dossier absent, droits, disque plein) ; la cause est lisible.
     Unavailable(String),
 }
@@ -452,6 +455,13 @@ pub trait NoteIndex: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si l'index ne peut pas être écrit.
     fn clear(&self) -> Result<(), StoreError>;
+
+    /// Le texte de la note tel que l'index l'a lu en dernier ; rien s'il ne la connaît pas.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si l'index ne répond pas.
+    fn content(&self, note: &NotePath) -> Result<Option<String>, StoreError>;
 
     /// Le résumé de chaque note du dossier, sans celles de ses sous-dossiers, dans aucun ordre.
     ///

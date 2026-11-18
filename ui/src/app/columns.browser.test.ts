@@ -28,6 +28,7 @@ function mount(start = workspaceScreen()) {
   const printed: string[] = [];
   const copied: string[] = [];
   const markdown: string[] = [];
+  const histories: string[] = [];
   const columns = createOpenColumns({
     container,
     outline,
@@ -42,6 +43,7 @@ function mount(start = workspaceScreen()) {
     printNote: (path) => printed.push(path),
     copyNote: (path) => copied.push(path),
     copyMarkdown: (path) => markdown.push(path),
+    showHistory: (path) => histories.push(path),
     run: (action) => void action.catch((error: unknown) => errors.push(error)),
   });
   const sections = () => [...container.querySelectorAll<HTMLElement>(".column")];
@@ -58,6 +60,7 @@ function mount(start = workspaceScreen()) {
     printed,
     copied,
     markdown,
+    histories,
   };
 }
 
@@ -164,7 +167,7 @@ describe("colonnes et onglets de l'application", () => {
     expect(m.notes()).toBe("b.md | c.md,c.md");
   });
 
-  it("le menu d'un onglet imprime sa note, ou la copie en texte mis en forme ou en Markdown", async () => {
+  it("le menu d'un onglet imprime sa note, la copie en texte mis en forme ou en Markdown, ou montre son historique", async () => {
     const m = await twoColumns();
     const menu = () => {
       m.tabs(0)[0]?.dispatchEvent(
@@ -172,12 +175,14 @@ describe("colonnes et onglets de l'application", () => {
       );
       return [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
     };
-    menu().at(-3)?.click();
+    menu().at(-4)?.click();
     expect(m.printed).toEqual(["a.md"]);
-    menu().at(-2)?.click();
+    menu().at(-3)?.click();
     expect(m.copied).toEqual(["a.md"]);
-    menu().at(-1)?.click();
+    menu().at(-2)?.click();
     expect(m.markdown).toEqual(["a.md"]);
+    menu().at(-1)?.click();
+    expect(m.histories).toEqual(["a.md"]);
   });
 
   it("une colonne fermée rend son éditeur, et le plan passe à la colonne restante", async () => {

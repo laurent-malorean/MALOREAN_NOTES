@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use api::{Session, commands};
 use infrastructure::{
-    FsExportStore, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, MacClipboard,
-    SqliteIndexes, SystemClock,
+    FsExportStore, FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences,
+    MacClipboard, SqliteIndexes, SystemClock,
 };
-use tauri::Manager;
+use tauri::{Manager, RunEvent};
 
 const PREFERENCES_FILE: &str = "preferences.json";
 
@@ -29,6 +29,7 @@ fn main() {
                 Arc::new(SystemClock),
             )
             .with_indexes(Arc::new(SqliteIndexes::new(app.path().app_data_dir()?)))
+            .with_histories(Arc::new(FsHistories))
             .with_watcher(Arc::new(FsWorkspaceWatcher))
             .with_exports(Arc::new(FsExportStore))
             .with_clipboard(Arc::new(MacClipboard::default()));
@@ -36,9 +37,18 @@ fn main() {
             Ok(())
         })
         .invoke_handler(commands::invoke_handler())
-        .run(tauri::generate_context!());
-    if let Err(error) = started {
-        tracing::error!(%error, "l'application n'a pas pu démarrer");
-        std::process::exit(1);
+        .build(tauri::generate_context!());
+    match started {
+        Ok(app) => app.run(|app, event| {
+            // Quitter l'application, c'est quitter ses notes : une version de chacune de celles
+            // enregistrées depuis leur dernière version.
+            if let RunEvent::Exit = event {
+                app.state::<Arc<Session>>().keep_pending_versions();
+            }
+        }),
+        Err(error) => {
+            tracing::error!(%error, "l'application n'a pas pu démarrer");
+            std::process::exit(1);
+        }
     }
 }

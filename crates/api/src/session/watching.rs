@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, PoisonError};
 
-use application::use_cases::RefreshIndex;
+use application::use_cases::{KeepVersionsBeforeChange, RefreshIndex};
 use application::{AppError, WorkspaceWatcher};
 use domain::NotePath;
 
@@ -18,8 +18,9 @@ impl Session {
     }
 
     /// Surveille l'espace de travail ouvert, à la place du précédent : à chaque changement fait
-    /// hors de l'application, l'index relit les notes changées, puis `announce` reçoit le
-    /// changement, prêt à envoyer à la page.
+    /// hors de l'application, le texte que l'application connaissait des notes changées est
+    /// gardé en version, l'index relit ces notes, puis `announce` reçoit le changement, prêt à
+    /// envoyer à la page.
     /// Rien n'est surveillé si la session n'a pas de surveillance.
     ///
     /// # Errors
@@ -34,11 +35,21 @@ impl Session {
             return Ok(());
         };
         let opened = self.opened()?;
-        let (store, index) = (opened.store, opened.index);
+        let (store, index, history) = (opened.store, opened.index, opened.history);
+        let clock = Arc::clone(&self.clock);
         let watching = watcher
             .watch(
                 &opened.location,
                 Arc::new(move |change| {
+                    // L'index sait encore ce que l'application connaissait : une version le garde.
+                    let keeping =
+                        KeepVersionsBeforeChange::new(&*store, &*index, &*history, &*clock);
+                    if let Err(error) = keeping.execute(&change.notes) {
+                        tracing::warn!(
+                            ?error,
+                            "le texte d'avant le changement n'a pas pu être gardé"
+                        );
+                    }
                     // L'index suit les fichiers avant que la page ne relise la liste.
                     if let Err(error) = RefreshIndex::new(&*store, &*index).execute() {
                         tracing::warn!(?error, "l'index n'a pas pu suivre le changement");

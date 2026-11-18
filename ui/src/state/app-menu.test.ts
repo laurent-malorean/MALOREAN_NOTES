@@ -61,6 +61,7 @@ describe("barre des menus", () => {
           "—",
           "Exporter… Cmd+E",
           "Imprimer… Cmd+P",
+          "Historique… Cmd+Y",
           "—",
           "Changer d'espace de travail… Cmd+Shift+E",
           "Ajouter un espace de travail…",
@@ -206,6 +207,7 @@ describe("barre des menus", () => {
       "print-note",
       "copy-note",
       "copy-markdown",
+      "note-history",
     ]);
   });
 
