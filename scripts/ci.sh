@@ -3,7 +3,9 @@
 # S'arrête au premier contrôle raté ; on ne commite que si tout réussit.
 # L'envoi (push) ne relance rien : le contenu envoyé est celui qui a passé la CI.
 #   scripts/ci.sh            tous les contrôles, test de mutation du code modifié seulement :
-#                            Rust pas encore commité, interface changée depuis le dernier passage de Stryker
+#                            Rust pas encore commité, interface changée depuis le dernier passage de Stryker ;
+#                            si l'interface a des survivantes, elles seules sont retestées une fois, pour
+#                            compter un test ajouté qui les tue (scripts/ui-mutations.sh)
 #   scripts/ci.sh --complet  tous les contrôles, test de mutation de tout le code, Rust et interface (avant de livrer)
 # Seuil du test de mutation : 100 %, des deux côtés.
 # Rust : les copies mutées se construisent lints coupés (.cargo/mutants.toml), sinon une erreur
@@ -147,27 +149,32 @@ check_ui() {
   (cd ui && npx --no-install playwright test)
 }
 
-# Test de mutation de l'interface, en mode incrémental : Stryker ne reteste que les mutations dont
-# le code, ou un test qui les couvre, a changé depuis son dernier passage ; les autres reprennent
-# leur résultat, gardé dans ui/reports/stryker-incremental.json (ignoré par git). Sans ce fichier, tout est testé.
-# Le score porte sur toutes les mutations, reprises comprises : seuil 100 %.
-readonly UI_MUTATION_FILE=reports/stryker-incremental.json
+# Test de mutation de l'interface (scripts/ui-mutations.sh), en mode incrémental : Stryker ne reteste
+# que les mutations dont le code, ou un test qui les couvre, a changé depuis son dernier passage ; les
+# autres reprennent leur résultat, gardé dans ui/reports/stryker-incremental.json (ignoré par git).
+# Sans ce fichier, tout est testé. Si le passage échoue, ses seules survivantes sont retestées : un
+# test ajouté qui tue une mutation « statique » (constante) est ainsi pris en compte. Seuil 100 %.
 # Fichiers que Stryker ne compare pas d'un passage à l'autre : s'ils changent, on reteste tout.
 readonly UI_MUTATION_CONTEXT=(ui/test-support ui/vitest.stryker.config.ts ui/stryker.config.json ui/package.json ui/package-lock.json)
+readonly UI_MUTATION_SCRIPTS=(scripts/ui-mutations.sh scripts/test-ui-mutations.sh)
 check_ui_mutations() {
   [ -f ui/package.json ] || return 0
   local scope=${1:-modifie}
-  git add --intent-to-add -- "${UI_MUTATION_CONTEXT[@]}" 2>/dev/null || true
+  git add --intent-to-add -- "${UI_MUTATION_CONTEXT[@]}" "${UI_MUTATION_SCRIPTS[@]}" 2>/dev/null || true
+  if [ -n "$(git diff HEAD --name-only -- "${UI_MUTATION_SCRIPTS[@]}")" ]; then
+    step "Interface : scénarios du test de mutation incrémental (script modifié)"
+    scripts/test-ui-mutations.sh
+  fi
   if [ "$scope" = modifie ] && [ -n "$(git diff HEAD --name-only -- "${UI_MUTATION_CONTEXT[@]}")" ]; then
     printf '\n(réglages ou outils de test de l interface modifiés : test de mutation complet)\n'
     scope=complet
   fi
   if [ "$scope" = complet ]; then
     step "Interface : test de mutation de tout le code (chaque erreur introduite doit être attrapée)"
-    (cd ui && npx --no-install stryker run --incremental --incrementalFile "$UI_MUTATION_FILE" --force)
+    (cd ui && ../scripts/ui-mutations.sh --complet)
   else
     step "Interface : test de mutation du code modifié depuis le dernier passage (seuil 100 %)"
-    (cd ui && npx --no-install stryker run --incremental --incrementalFile "$UI_MUTATION_FILE")
+    (cd ui && ../scripts/ui-mutations.sh)
   fi
 }
 

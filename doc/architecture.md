@@ -26,6 +26,7 @@ ui/                   interface TypeScript (Vite)
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
 scripts/ci.sh         mini CI locale, avant chaque push
+scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
 ```
 
 Sens des dépendances : `api` → `application` → `domain` ; `infrastructure` → `application` → `domain` ; `app` → tout ; `ui/` → commandes de `api` uniquement.
