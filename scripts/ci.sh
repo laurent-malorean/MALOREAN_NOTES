@@ -2,8 +2,10 @@
 # Mini CI locale : lancée avant chaque commit, sur le code tel qu'il sera commité.
 # S'arrête au premier contrôle raté ; on ne commite que si tout réussit.
 # L'envoi (push) ne relance rien : le contenu envoyé est celui qui a passé la CI.
-#   scripts/ci.sh            tous les contrôles, test de mutation du code Rust pas encore commité
-#   scripts/ci.sh --complet  tous les contrôles, test de mutation de tout le code Rust (avant de livrer)
+#   scripts/ci.sh            tous les contrôles, test de mutation du code modifié seulement :
+#                            Rust pas encore commité, interface changée depuis le dernier passage de Stryker
+#   scripts/ci.sh --complet  tous les contrôles, test de mutation de tout le code, Rust et interface (avant de livrer)
+# Seuil du test de mutation : 100 %, des deux côtés.
 # Les seuils ne baissent jamais : on les relève quand la couverture monte.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -114,9 +116,30 @@ check_ui() {
 
   step "Interface : parcours utilisateur complets (WebKit)"
   (cd ui && npx --no-install playwright test)
+}
 
-  step "Interface : test de mutation (chaque erreur introduite doit être attrapée)"
-  (cd ui && npx --no-install stryker run)
+# Test de mutation de l'interface, en mode incrémental : Stryker ne reteste que les mutations dont
+# le code, ou un test qui les couvre, a changé depuis son dernier passage ; les autres reprennent
+# leur résultat, gardé dans ui/reports/stryker-incremental.json (ignoré par git). Sans ce fichier, tout est testé.
+# Le score porte sur toutes les mutations, reprises comprises : seuil 100 %.
+readonly UI_MUTATION_FILE=reports/stryker-incremental.json
+# Fichiers que Stryker ne compare pas d'un passage à l'autre : s'ils changent, on reteste tout.
+readonly UI_MUTATION_CONTEXT=(ui/test-support ui/vitest.stryker.config.ts ui/stryker.config.json ui/package.json ui/package-lock.json)
+check_ui_mutations() {
+  [ -f ui/package.json ] || return 0
+  local scope=${1:-modifie}
+  git add --intent-to-add -- "${UI_MUTATION_CONTEXT[@]}" 2>/dev/null || true
+  if [ "$scope" = modifie ] && [ -n "$(git diff HEAD --name-only -- "${UI_MUTATION_CONTEXT[@]}")" ]; then
+    printf '\n(réglages ou outils de test de l interface modifiés : test de mutation complet)\n'
+    scope=complet
+  fi
+  if [ "$scope" = complet ]; then
+    step "Interface : test de mutation de tout le code (chaque erreur introduite doit être attrapée)"
+    (cd ui && npx --no-install stryker run --incremental --incrementalFile "$UI_MUTATION_FILE" --force)
+  else
+    step "Interface : test de mutation du code modifié depuis le dernier passage (seuil 100 %)"
+    (cd ui && npx --no-install stryker run --incremental --incrementalFile "$UI_MUTATION_FILE")
+  fi
 }
 
 check_mutations() {
@@ -146,8 +169,8 @@ check_file_length
 if [ -f Cargo.toml ]; then check_rust; else printf '\n(pas de projet Rust : contrôles Rust sautés)\n'; fi
 if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : contrôles interface sautés)\n'; fi
 case "${1:-}" in
-  --complet) check_mutations ;;
-  "") check_uncommitted_mutations ;;
+  --complet) check_mutations; check_ui_mutations complet ;;
+  "") check_uncommitted_mutations; check_ui_mutations ;;
   *) fail "option inconnue : $1" ;;
 esac
 
