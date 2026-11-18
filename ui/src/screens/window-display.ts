@@ -12,7 +12,7 @@ export interface WindowControl {
 }
 
 export interface WindowParts {
-  readonly workspace: HTMLElement;
+  readonly mainArea: HTMLElement;
   readonly fullScreenButton: HTMLElement;
   readonly sidePanelsButton: HTMLElement;
 }
@@ -53,7 +53,7 @@ export function connectWindowDisplay(
     .catch(deps.error);
 
   let panels = loadSidePanels(deps.storage);
-  const applySidePanels = () => showSidePanels(parts.workspace, parts.sidePanelsButton, panels);
+  const applySidePanels = () => showSidePanels(parts.mainArea, parts.sidePanelsButton, panels);
   const toggleSidePanels = () => {
     panels = nextSidePanels(panels);
     applySidePanels();

@@ -14,7 +14,7 @@ application = { path = "crates/application" }
 infrastructure = { path = "crates/infrastructure" }
 api = { path = "crates/api" }
 # Heure locale de l'horloge réelle (seule l'infrastructure la lit).
-# Surveillance du dossier de la bibliothèque (changements faits hors de l'application).
+# Surveillance du dossier de l'espace de travail (changements faits hors de l'application).
 notify-debouncer-mini = "0.6"
 jiff = "1"
 proptest = "1"

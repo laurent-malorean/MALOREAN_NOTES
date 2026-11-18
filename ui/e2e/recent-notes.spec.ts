@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const LIBRARY = {
+const WORKSPACE = {
   "courses.md": { content: "# Courses\n- pain", modified: 30 },
   "idee.md": { content: "# Idée\nUne idée.", modified: 20 },
   "Travail/lundi.md": { content: "# Lundi\nréunion", modified: 10 },
@@ -8,7 +8,7 @@ const LIBRARY = {
 
 async function launch(page: Page) {
   const params = new URLSearchParams({
-    notes: JSON.stringify(LIBRARY),
+    notes: JSON.stringify(WORKSPACE),
     folders: JSON.stringify(["Travail"]),
     remembered: "1",
   });
@@ -29,7 +29,7 @@ test("Récentes montre les notes ouvertes, la plus récente d'abord, même aprè
   await expect(page.locator(".cm-line").first()).toHaveText("Lundi");
 
   await recentEntry(page).click();
-  await expect(page.locator(".library-name")).toHaveText("Récentes");
+  await expect(page.locator(".workspace-name")).toHaveText("Récentes");
   await expect(titles(page)).toHaveText(["Lundi", "Idée", "Courses"]);
   await page.locator(".note-item", { hasText: "Courses" }).click();
   await expect(page.locator(".cm-line").first()).toHaveText("Courses");

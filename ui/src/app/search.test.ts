@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { libraryScreen, recordedScreen } from "../../test-support/app-fixture";
+import { workspaceScreen, recordedScreen } from "../../test-support/app-fixture";
 import type { SearchResultItem } from "../bridge";
 import { SEARCH_DELAY_MS } from "../state/debounce";
 import type { NoteOrder } from "../state/note-order";
@@ -14,7 +14,7 @@ const found = (path: string): SearchResultItem => ({
   excerpt: [],
 });
 
-function setup(start = libraryScreen()) {
+function setup(start = workspaceScreen()) {
   const { screen, shown } = recordedScreen(start);
   const queries: string[] = [];
   const orders: NoteOrder[] = [];
@@ -32,7 +32,7 @@ function setup(start = libraryScreen()) {
   });
   const shownSearch = () => {
     const now = screen.get();
-    return now.kind === "library" ? now.search : undefined;
+    return now.kind === "workspace" ? now.search : undefined;
   };
   return { search, screen, shown, queries, orders, shownSearch };
 }
@@ -40,7 +40,7 @@ function setup(start = libraryScreen()) {
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
-describe("recherche dans la bibliothèque", () => {
+describe("recherche dans l'espace de travail", () => {
   it("montre chaque frappe, et cherche après une courte pause", async () => {
     const { search, queries, shownSearch } = setup();
     search.type("cou");
@@ -56,7 +56,7 @@ describe("recherche dans la bibliothèque", () => {
   });
 
   it("range les notes trouvées selon le tri de la liste", async () => {
-    const t = setup(libraryScreen([], (screen) => ({ ...screen, order: "title" })));
+    const t = setup(workspaceScreen([], (screen) => ({ ...screen, order: "title" })));
     t.screen.show(searchTyped(t.screen.get(), "pain"));
     await t.search.search("pain");
     expect(t.orders).toEqual(["title"]);
@@ -77,6 +77,6 @@ describe("recherche dans la bibliothèque", () => {
     await search.search("cou");
     expect(queries).toEqual(["cou"]);
     expect(shownSearch()).toEqual({ query: "cou", results: [found("cou.md")] });
-    expect(screen.get().kind).toBe("library");
+    expect(screen.get().kind).toBe("workspace");
   });
 });

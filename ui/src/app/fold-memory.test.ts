@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { libraryScreen } from "../../test-support/app-fixture";
+import { workspaceScreen } from "../../test-support/app-fixture";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { welcome } from "../state/screen";
 import { createFoldMemory } from "./fold-memory";
@@ -15,10 +15,10 @@ function memoryStorage() {
 }
 
 describe("dossiers pliés gardés", () => {
-  it("garde les dossiers pliés de la bibliothèque affichée, et les rend pour elle", () => {
+  it("garde les dossiers pliés de l'espace de travail affiché, et les rend pour lui", () => {
     const { storage, items } = memoryStorage();
     const memory = createFoldMemory(storage);
-    memory.save(libraryScreen([], (screen) => ({ ...screen, folded: ["Travail"] })));
+    memory.save(workspaceScreen([], (screen) => ({ ...screen, folded: ["Travail"] })));
     expect(items.get("malorean.folded:/lib")).toBe('["Travail"]');
     expect(memory.load("/lib")).toEqual(["Travail"]);
     expect(memory.load("/autre")).toEqual([]);

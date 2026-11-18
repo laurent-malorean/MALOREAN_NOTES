@@ -5,7 +5,7 @@ import type { ScreenActions } from "../screens/screen-view";
 import { noteClosed, notePlaced } from "../state/columns";
 import type { OpenColumns } from "./columns";
 import type { Folders } from "./folders";
-import type { Library } from "./library";
+import type { Workspace } from "./workspace";
 import type { RecentNotes } from "./recent-notes";
 import type { Tags } from "./tags";
 import type { Trash } from "./trash";
@@ -14,7 +14,7 @@ export interface ScreenActionsDeps {
   readonly backend: Pick<typeof Bridge, "pinNote" | "unpinNote">;
   readonly columns: Pick<OpenColumns, "openNote" | "update">;
   readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
-  readonly library: Pick<Library, "moveNote" | "changePin" | "sortBy">;
+  readonly workspace: Pick<Workspace, "moveNote" | "changePin" | "sortBy">;
   readonly trash: Pick<
     Trash,
     "trashNote" | "trashFolder" | "restoreNote" | "restoreFolder" | "empty"
@@ -26,7 +26,7 @@ export interface ScreenActionsDeps {
 }
 
 export function screenActions(deps: ScreenActionsDeps): ScreenActions {
-  const { backend, columns, folders, library, trash, tags, recent, run } = deps;
+  const { backend, columns, folders, workspace, trash, tags, recent, run } = deps;
   return {
     open: (path) => run(columns.openNote(path)),
     select: (folder) => run(folders.select(folder)),
@@ -34,9 +34,9 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     rename: (path, name) => run(folders.rename(path, name)),
     move: (path, into) => run(folders.move(path, into)),
     fold: (path) => folders.fold(path),
-    moveNote: (path, into) => run(library.moveNote(path, into)),
-    pin: (path) => run(library.changePin(path, backend.pinNote)),
-    unpin: (path) => run(library.changePin(path, backend.unpinNote)),
+    moveNote: (path, into) => run(workspace.moveNote(path, into)),
+    pin: (path) => run(workspace.changePin(path, backend.pinNote)),
+    unpin: (path) => run(workspace.changePin(path, backend.unpinNote)),
     trash: (path) => run(trash.trashNote(path)),
     place: (path, placement) => run(columns.update((now) => notePlaced(now, path, placement))),
     closeNote: (path) => run(columns.update((now) => noteClosed(now, path))),
@@ -46,7 +46,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     empty: () => run(trash.empty()),
     selectTag: (tag) => run(tags.select(tag)),
     clearTag: () => void tags.clear(),
-    sortNotes: (order) => run(library.sortBy(order)),
+    sortNotes: (order) => run(workspace.sortBy(order)),
     showRecent: () => run(recent.show()),
   };
 }

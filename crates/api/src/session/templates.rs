@@ -1,4 +1,4 @@
-//! Les modèles de note de la bibliothèque ouverte, vus depuis la page.
+//! Les modèles de note de l'espace de travail ouvert, vus depuis la page.
 
 use application::use_cases::CreateNoteFromTemplate;
 use domain::{Folder, NotePath};
@@ -12,7 +12,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin ou dossier invalide,
-    /// modèle absent, stockage indisponible, aucune bibliothèque ouverte.
+    /// modèle absent, stockage indisponible, aucun espace de travail ouvert.
     pub fn create_note_from_template(
         &self,
         template: &str,
@@ -31,7 +31,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -54,7 +54,7 @@ mod tests {
                 .is_err()
         );
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         let created = session
             .create_note_from_template("Modèles/journal.md", "Modèles")

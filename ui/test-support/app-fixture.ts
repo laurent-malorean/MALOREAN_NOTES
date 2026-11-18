@@ -5,7 +5,7 @@ import type { OpenColumns } from "../src/app/columns";
 import { createCurrentScreen } from "../src/app/current-screen";
 import type { Pane } from "../src/screens/note-pane";
 import { type Columns, columnsStarted, noteOpened, noteShown } from "../src/state/columns";
-import { libraryOpened, type Screen } from "../src/state/screen";
+import { workspaceOpened, type Screen } from "../src/state/screen";
 
 /** Un éditeur de colonne simulé : chaque demande est notée dans `log`. */
 export function fakePane(note: string | null = null, log: string[] = []) {
@@ -81,17 +81,17 @@ export const listed = (path: string, title = path): NoteListItem => ({
   tags: [],
 });
 
-/** Une bibliothèque ouverte, puis changée par `change`. */
-export function libraryScreen(
+/** Un espace de travail ouvert, puis changée par `change`. */
+export function workspaceScreen(
   notes: readonly NoteListItem[] = [],
-  change: (screen: Extract<Screen, { kind: "library" }>) => Screen = (screen) => screen,
+  change: (screen: Extract<Screen, { kind: "workspace" }>) => Screen = (screen) => screen,
 ): Screen {
-  const opened = libraryOpened({ name: "Notes", path: "/lib" }, [], notes);
-  return change(opened as Extract<Screen, { kind: "library" }>);
+  const opened = workspaceOpened({ name: "Notes", path: "/lib" }, [], notes);
+  return change(opened as Extract<Screen, { kind: "workspace" }>);
 }
 
 /** L'écran affiché, qui note chaque état dessiné. */
-export function recordedScreen(start: Screen = libraryScreen()) {
+export function recordedScreen(start: Screen = workspaceScreen()) {
   const shown: Screen[] = [];
   const screen = createCurrentScreen((next) => shown.push(next));
   screen.show(start);

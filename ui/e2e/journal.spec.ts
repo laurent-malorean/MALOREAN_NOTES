@@ -2,13 +2,13 @@ import { expect, type Page, test } from "@playwright/test";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
-const LIBRARY: Notes = {
+const WORKSPACE: Notes = {
   "courses.md": { content: "# Courses\npain", modified: 30 },
   "Modèles/journal.md": { content: "# Journal\n## Humeur à {{time}}\n", modified: 10 },
 };
 const TODAY = "Journal/2026-11-16.md";
 
-async function launch(page: Page, notes: Notes = LIBRARY, folders = ["Modèles"]) {
+async function launch(page: Page, notes: Notes = WORKSPACE, folders = ["Modèles"]) {
   const params = new URLSearchParams({
     notes: JSON.stringify(notes),
     folders: JSON.stringify(folders),
@@ -37,7 +37,7 @@ test("au lancement, la note du jour est créée dans le journal et ouverte ; au 
   await page.keyboard.type("Il fait beau.");
   await expect.poll(() => savedContent(page, TODAY)).toBe("# 16 novembre 2026\nIl fait beau.");
 
-  // Relancement sur la bibliothèque telle qu'elle est maintenant sur le disque.
+  // Relancement sur l'espace de travail tel qu'il est maintenant sur le disque.
   const notes = await page.evaluate(() => window.backend.notes);
   const folders = await page.evaluate(() => window.backend.folders);
   await launch(page, notes, folders);

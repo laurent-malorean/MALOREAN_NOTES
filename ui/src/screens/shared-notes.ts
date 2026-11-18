@@ -48,7 +48,7 @@ export interface SharedNotes {
   typed(viewer: Viewer, changes: ChangeSet, content: string): void;
   /** Enregistre tout de suite ce qui est tapé dans la note de la colonne. */
   flush(viewer: Viewer): Promise<void>;
-  /** La note de la colonne a quitté la bibliothèque : ce qu'on y tape n'est plus enregistré. */
+  /** La note de la colonne a quitté l'espace de travail : ce qu'on y tape n'est plus enregistré. */
   forget(viewer: Viewer): void;
   /** La note de la colonne a changé sur le disque : voir la fiche de décision 0014. */
   followDisk(viewer: Viewer): Promise<void>;

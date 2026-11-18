@@ -40,13 +40,13 @@ describe("plein écran", () => {
 
 describe("panneaux latéraux", () => {
   it("se cachent ensemble, et le bouton dit s'ils sont montrés", () => {
-    const workspace = document.createElement("section");
+    const mainArea = document.createElement("section");
     const button = document.createElement("button");
-    showSidePanels(workspace, button, "hidden");
-    expect(workspace.classList.contains("panels-hidden")).toBe(true);
+    showSidePanels(mainArea, button, "hidden");
+    expect(mainArea.classList.contains("panels-hidden")).toBe(true);
     expect(button.getAttribute("aria-pressed")).toBe("false");
-    showSidePanels(workspace, button, "shown");
-    expect(workspace.classList.contains("panels-hidden")).toBe(false);
+    showSidePanels(mainArea, button, "shown");
+    expect(mainArea.classList.contains("panels-hidden")).toBe(false);
     expect(button.getAttribute("aria-pressed")).toBe("true");
   });
 });

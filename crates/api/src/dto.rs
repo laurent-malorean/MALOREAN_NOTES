@@ -3,11 +3,11 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-/// La bibliothèque ouverte.
+/// L'espace de travail ouvert.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
-pub struct LibraryInfo {
+pub struct WorkspaceInfo {
     /// Le nom du dossier, affiché en tête de la liste.
     pub name: String,
     /// L'emplacement complet du dossier.
@@ -19,7 +19,7 @@ pub struct LibraryInfo {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteListItem {
-    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    /// Le chemin de la note depuis l'espace de travail : `dossier/nom.md`.
     pub path: String,
     /// Le titre affiché.
     pub title: String,
@@ -69,7 +69,7 @@ pub struct TagItem {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct SearchResultItem {
-    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    /// Le chemin de la note depuis l'espace de travail : `dossier/nom.md`.
     pub path: String,
     /// Le titre affiché.
     pub title: String,
@@ -98,7 +98,7 @@ pub struct ExcerptPartItem {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NoteContent {
-    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    /// Le chemin de la note depuis l'espace de travail : `dossier/nom.md`.
     pub path: String,
     /// Le contenu Markdown complet.
     pub content: String,
@@ -127,11 +127,11 @@ pub struct SaveResult {
     pub tags_changed: bool,
 }
 
-/// Changement fait dans la bibliothèque hors de l'application, annoncé à la page.
+/// Changement fait dans l'espace de travail hors de l'application, annoncé à la page.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
-pub struct LibraryChanged {
+pub struct WorkspaceChanged {
     /// Les chemins des notes créées, modifiées, supprimées ou renommées ; vide si seuls
     /// des dossiers ont changé.
     pub notes: Vec<String>,
@@ -146,12 +146,12 @@ pub struct SavedNote {
     pub path: String,
 }
 
-/// Une note de la bibliothèque, proposée par l'ouverture rapide.
+/// Une note de l'espace de travail, proposée par l'ouverture rapide.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
-pub struct LibraryNoteItem {
-    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+pub struct WorkspaceNoteItem {
+    /// Le chemin de la note depuis l'espace de travail : `dossier/nom.md`.
     pub path: String,
     /// Le titre affiché.
     pub title: String,
@@ -164,7 +164,7 @@ pub struct LibraryNoteItem {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct LinkingNoteItem {
-    /// Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+    /// Le chemin de la note depuis l'espace de travail : `dossier/nom.md`.
     pub path: String,
     /// Le titre affiché.
     pub title: String,

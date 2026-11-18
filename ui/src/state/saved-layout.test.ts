@@ -14,8 +14,9 @@ import {
 import type { PreferenceStorage } from "./focus-preference";
 import { layoutRestored, loadLayout, savedLayout, saveLayout } from "./saved-layout";
 
-const library = (...paths: string[]) => paths.map((path) => ({ path, title: path.toUpperCase() }));
-const ALL = library("a.md", "b.md", "c.md", "d.md");
+const workspace = (...paths: string[]) =>
+  paths.map((path) => ({ path, title: path.toUpperCase() }));
+const ALL = workspace("a.md", "b.md", "c.md", "d.md");
 
 /** Ce que l'on voit des colonnes, sans les identifiants : notes, onglet actif, largeur, colonne active. */
 function shape(columns: Columns) {
@@ -58,7 +59,7 @@ describe("disposition gardée", () => {
     });
   });
 
-  it("donne à chaque colonne et onglet un identifiant à lui, et le titre de la note dans la bibliothèque", () => {
+  it("donne à chaque colonne et onglet un identifiant à lui, et le titre de la note dans l'espace de travail", () => {
     const restored = layoutRestored(stored([[1, ["a.md", "b.md"], 0]]), ALL) as Columns;
     expect(restored).toEqual({
       list: [
@@ -89,7 +90,7 @@ describe("disposition gardée", () => {
   });
 
   it("une note disparue est oubliée ; si elle était active, sa voisine de droite, sinon de gauche, le devient", () => {
-    const notes = library("a.md", "c.md");
+    const notes = workspace("a.md", "c.md");
     const right = layoutRestored(stored([[1, ["a.md", "b.md", "c.md"], 1]]), notes) as Columns;
     expect(shape(right).list).toEqual([{ notes: ["a.md", "c.md"], active: 1, width: 1 }]);
     const left = layoutRestored(stored([[1, ["a.md", "b.md"], 1]]), notes) as Columns;
@@ -211,7 +212,7 @@ function memoryStorage(refused = false) {
 }
 
 describe("disposition gardée dans le stockage de la page", () => {
-  it("chaque bibliothèque a la sienne", () => {
+  it("chaque espace de travail a la sienne", () => {
     const { storage } = memoryStorage();
     saveLayout(storage, "/notes", two);
     saveLayout(storage, "/autres", noteOpened(columnsStarted, "d.md"));
@@ -290,7 +291,7 @@ describe("disposition gardée, sur des colonnes quelconques", () => {
     );
     fc.assert(
       fc.property(value, (text) => {
-        const columns = layoutRestored(text, library("a.md"));
+        const columns = layoutRestored(text, workspace("a.md"));
         if (columns === null) return;
         expect(columns.list.length).toBeGreaterThan(0);
         expect(columns.list.reduce((sum, column) => sum + column.width, 0)).toBeCloseTo(1);

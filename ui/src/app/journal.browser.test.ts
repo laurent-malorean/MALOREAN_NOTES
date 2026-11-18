@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import {
   fakeColumns,
   fakePane,
-  libraryScreen,
+  workspaceScreen,
   recordedScreen,
 } from "../../test-support/app-fixture";
-import type { LibraryNoteItem } from "../bridge";
+import type { WorkspaceNoteItem } from "../bridge";
 import { columnsStarted, noteOpened } from "../state/columns";
 import { welcome } from "../state/screen";
 import { createJournal } from "./journal";
 
-const NOTES: LibraryNoteItem[] = [
+const NOTES: WorkspaceNoteItem[] = [
   { path: "Modèles/reunion.md", title: "Réunion", folder: "Modèles" },
   { path: "Modèles/jour.md", title: "Journal", folder: "Modèles" },
 ];
@@ -24,7 +24,7 @@ function setup(stored: Record<string, string> = {}, open = ["a.md"]) {
     removeItem: (key: string) => void items.delete(key),
   };
   const log: string[] = [];
-  const { screen } = recordedScreen(libraryScreen());
+  const { screen } = recordedScreen(workspaceScreen());
   const columns = fakeColumns(open.reduce(noteOpened, columnsStarted));
   const pane = fakePane("a.md");
   columns.panes.set(columns.columns().active, pane);
@@ -39,7 +39,7 @@ function setup(stored: Record<string, string> = {}, open = ["a.md"]) {
     storage,
     screen,
     columns: columns.open,
-    library: {
+    workspace: {
       path: () => "/lib",
       refreshFolders: async () => void log.push("dossiers"),
       refreshList: async () => void log.push("liste"),
@@ -107,7 +107,7 @@ describe("note du jour", () => {
     expect([off.log, off.tabs()]).toEqual([[], ["a.md"]]);
   });
 
-  it("le réglage montre et garde les choix de la bibliothèque ouverte", () => {
+  it("le réglage montre et garde les choix de l'espace de travail ouvert", () => {
     const j = setup();
     const [group] = j.journal.settingsGroups();
     const folder = group?.querySelector<HTMLInputElement>("input[name=journalFolder]");
@@ -121,7 +121,7 @@ describe("note du jour", () => {
     });
   });
 
-  it("sans bibliothèque ouverte, pas de réglage du journal", () => {
+  it("sans espace de travail ouvert, pas de réglage du journal", () => {
     const j = setup();
     j.screen.show(welcome);
     expect(j.journal.settingsGroups()).toEqual([]);

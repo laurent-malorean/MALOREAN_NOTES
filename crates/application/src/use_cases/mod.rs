@@ -3,7 +3,6 @@
 mod attachments;
 mod create_note;
 mod folders;
-mod library;
 mod list_notes;
 mod move_note;
 mod note_links;
@@ -14,11 +13,11 @@ mod save_note;
 mod search_notes;
 mod tags;
 mod trash;
+mod workspace;
 
 pub use attachments::{AttachFile, AttachmentSource, MAX_ATTACHMENT_MEGABYTES, OpenAttachment};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
-pub use library::{OpenLibrary, OpenedLibrary, ReopenLastLibrary};
 pub use list_notes::{ListAllNotes, ListNotes};
 pub use move_note::MoveNote;
 pub use note_links::{LinkingNote, NoteLinks};
@@ -29,3 +28,4 @@ pub use save_note::{SaveNote, SaveOutcome};
 pub use search_notes::{MAX_RESULTS, SearchNotes, SearchResult};
 pub use tags::{ListTaggedNotes, ListTags};
 pub use trash::{Trash, TrashView};
+pub use workspace::{OpenWorkspace, OpenedWorkspace, ReopenLastWorkspace};

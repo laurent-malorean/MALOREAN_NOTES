@@ -7,7 +7,7 @@ import {
   folderRevealed,
   folderSelected,
   foldersRefreshed,
-  libraryOpened,
+  workspaceOpened,
   noteSelected,
   notesRefreshed,
   SEARCH_MIN_LENGTH,
@@ -19,7 +19,7 @@ import {
   welcome,
 } from "./screen";
 
-const library = { name: "Notes", path: "/Users/moi/Notes" };
+const workspace = { name: "Notes", path: "/Users/moi/Notes" };
 const note = (path: string, modified: number): NoteListItem => ({
   path,
   title: path,
@@ -33,11 +33,11 @@ describe("état de l'écran", () => {
     expect(welcome).toEqual({ kind: "welcome" });
   });
 
-  it("ouvre une bibliothèque sur sa note la plus récente", () => {
-    const screen = libraryOpened(library, [], [note("recente.md", 2), note("vieille.md", 1)]);
+  it("ouvre un espace de travail sur sa note la plus récente", () => {
+    const screen = workspaceOpened(workspace, [], [note("recente.md", 2), note("vieille.md", 1)]);
     expect(screen).toEqual({
-      kind: "library",
-      library,
+      kind: "workspace",
+      workspace,
       folders: [],
       folder: "",
       notes: [note("recente.md", 2), note("vieille.md", 1)],
@@ -52,10 +52,10 @@ describe("état de l'écran", () => {
     });
   });
 
-  it("ouvre une bibliothèque vide sans note sélectionnée", () => {
-    expect(libraryOpened(library, [], [])).toEqual({
-      kind: "library",
-      library,
+  it("ouvre un espace de travail vide sans note sélectionnée", () => {
+    expect(workspaceOpened(workspace, [], [])).toEqual({
+      kind: "workspace",
+      workspace,
       folders: [],
       folder: "",
       notes: [],
@@ -72,12 +72,12 @@ describe("état de l'écran", () => {
 
   it("sélectionne la note choisie", () => {
     const screen = noteSelected(
-      libraryOpened(library, [], [note("a.md", 2), note("b.md", 1)]),
+      workspaceOpened(workspace, [], [note("a.md", 2), note("b.md", 1)]),
       "b.md",
     );
     expect(screen).toEqual({
-      kind: "library",
-      library,
+      kind: "workspace",
+      workspace,
       folders: [],
       folder: "",
       notes: [note("a.md", 2), note("b.md", 1)],
@@ -93,13 +93,13 @@ describe("état de l'écran", () => {
   });
 
   it("remplace la liste sans toucher à la sélection", () => {
-    const screen = notesRefreshed(libraryOpened(library, [], [note("a.md", 1)]), [
+    const screen = notesRefreshed(workspaceOpened(workspace, [], [note("a.md", 1)]), [
       note("b.md", 2),
       note("a.md", 1),
     ]);
     expect(screen).toEqual({
-      kind: "library",
-      library,
+      kind: "workspace",
+      workspace,
       folders: [],
       folder: "",
       notes: [note("b.md", 2), note("a.md", 1)],
@@ -128,8 +128,8 @@ describe("état de l'écran", () => {
 });
 
 describe("note sélectionnée", () => {
-  it("est celle de la bibliothèque ouverte", () => {
-    expect(selectedNote(libraryOpened(library, [], [note("a.md", 1)]))).toBe("a.md");
+  it("est celle de l'espace de travail ouvert", () => {
+    expect(selectedNote(workspaceOpened(workspace, [], [note("a.md", 1)]))).toBe("a.md");
   });
 
   it("n'existe pas sur l'accueil", () => {
@@ -138,9 +138,9 @@ describe("note sélectionnée", () => {
 });
 
 describe("dossiers", () => {
-  const opened = libraryOpened(library, ["Travail", "Travail/Réunions"], [note("a.md", 1)]);
+  const opened = workspaceOpened(workspace, ["Travail", "Travail/Réunions"], [note("a.md", 1)]);
 
-  it("ouvre une bibliothèque sur sa racine, avec ses dossiers", () => {
+  it("ouvre un espace de travail sur sa racine, avec ses dossiers", () => {
     expect(opened).toMatchObject({ folders: ["Travail", "Travail/Réunions"], folder: "" });
     expect(currentFolder(opened)).toBe("");
     expect(currentFolder(welcome)).toBe("");
@@ -187,9 +187,9 @@ describe("recherche", () => {
     modified: 1,
     excerpt: [{ text: "pain", matched: true }],
   });
-  const opened = () => libraryOpened(library, [], [note("a.md", 1)]);
+  const opened = () => workspaceOpened(workspace, [], [note("a.md", 1)]);
   const searchOf = (screen: ReturnType<typeof opened>) =>
-    screen.kind === "library" ? screen.search : undefined;
+    screen.kind === "workspace" ? screen.search : undefined;
 
   it("commence une recherche dès qu'on tape, sans résultat encore", () => {
     expect(searchOf(searchTyped(opened(), "pain"))).toEqual({ query: "pain", results: null });
@@ -246,11 +246,11 @@ describe("recherche", () => {
 
 describe("corbeille", () => {
   const trash = { folders: ["Travail"], notes: [{ path: "Travail/lundi.md", title: "Lundi" }] };
-  const opened = () => libraryOpened(library, ["Travail"], [note("a.md", 1)]);
+  const opened = () => workspaceOpened(workspace, ["Travail"], [note("a.md", 1)]);
 
   it("montre la corbeille à la place des notes du dossier", () => {
     const screen = trashShown(opened(), trash);
-    expect(screen.kind === "library" && screen.trash).toEqual(trash);
+    expect(screen.kind === "workspace" && screen.trash).toEqual(trash);
   });
 
   it("ne montre rien sur l'accueil", () => {
@@ -259,22 +259,22 @@ describe("corbeille", () => {
 
   it("quitte la corbeille quand on choisit un dossier", () => {
     const screen = folderSelected(trashShown(opened(), trash), "Travail", []);
-    expect(screen.kind === "library" && screen.trash).toBeNull();
+    expect(screen.kind === "workspace" && screen.trash).toBeNull();
   });
 
   it("quitte la corbeille quand on cherche", () => {
     const screen = searchTyped(trashShown(opened(), trash), "lundi");
-    expect(screen.kind === "library" && screen.trash).toBeNull();
+    expect(screen.kind === "workspace" && screen.trash).toBeNull();
   });
 });
 
 describe("dossiers pliés", () => {
   const folders = ["Perso", "Travail", "Travail/Réunions", "Travail/Réunions/2026"];
-  const opened = libraryOpened(library, folders, [], ["Travail", "Travail/Réunions"]);
+  const opened = workspaceOpened(workspace, folders, [], ["Travail", "Travail/Réunions"]);
 
-  it("une bibliothèque s'ouvre avec ses dossiers pliés gardés, ou tous dépliés", () => {
+  it("un espace de travail s'ouvre avec ses dossiers pliés gardés, ou tous dépliés", () => {
     expect(opened).toMatchObject({ folded: ["Travail", "Travail/Réunions"] });
-    expect(libraryOpened(library, folders, [])).toMatchObject({ folded: [] });
+    expect(workspaceOpened(workspace, folders, [])).toMatchObject({ folded: [] });
   });
 
   it("plie ou déplie un dossier sans le choisir", () => {

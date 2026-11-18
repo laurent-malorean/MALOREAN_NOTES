@@ -47,7 +47,7 @@ export interface Pane {
   load(path: string | null): Promise<void>;
   /** Enregistre tout de suite ce qui est tapé. */
   flush(): Promise<void>;
-  /** La note a quitté la bibliothèque : ce qu'on tape n'est plus enregistré. */
+  /** La note a quitté l'espace de travail : ce qu'on tape n'est plus enregistré. */
   forget(): void;
   /** Montre les liens entrants de la note ; une réponse arrivée pour une autre note est ignorée. */
   showBacklinks(): Promise<void>;

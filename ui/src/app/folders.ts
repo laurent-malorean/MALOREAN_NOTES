@@ -47,7 +47,7 @@ export interface Folders {
 
 async function selectFolder(deps: FoldersDeps, folder: string) {
   const screen = deps.screen.get();
-  const trashOpen = screen.kind === "library" && screen.trash !== null;
+  const trashOpen = screen.kind === "workspace" && screen.trash !== null;
   if (folder === currentFolder(screen) && !trashOpen) return;
   await deps.columns.activePane().flush();
   await deps.screen.answer(deps.backend.listNotes(folder, noteOrder(screen)), (now, answer) =>

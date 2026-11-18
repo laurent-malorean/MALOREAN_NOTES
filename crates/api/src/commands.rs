@@ -10,14 +10,13 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
-    ApiError, AttachedFile, LibraryInfo, LibraryNoteItem, LinkingNoteItem, NoteContent,
-    NoteListItem, NoteOrderItem, SaveResult, SavedNote, SearchResultItem, Session, TagItem,
-    TrashInfo,
+    ApiError, AttachedFile, LinkingNoteItem, NoteContent, NoteListItem, NoteOrderItem, SaveResult,
+    SavedNote, SearchResultItem, Session, TagItem, TrashInfo, WorkspaceInfo, WorkspaceNoteItem,
 };
 
-/// Événement envoyé à la page quand la bibliothèque change hors de l'application ;
-/// il porte un [`crate::LibraryChanged`].
-pub const LIBRARY_CHANGED_EVENT: &str = "library-changed";
+/// Événement envoyé à la page quand l'espace de travail change hors de l'application ;
+/// il porte un [`crate::WorkspaceChanged`].
+pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
 
@@ -29,45 +28,45 @@ async fn in_background<T: Send + 'static>(
         .map_err(|e| ApiError::internal(&e))?
 }
 
-/// Une bibliothèque vient d'être ouverte : la fenêtre peut charger ses fichiers (images des
+/// Un espace de travail vient d'être ouvert : la fenêtre peut charger ses fichiers (images des
 /// notes), rien d'autre, et la page apprend ce qui y change hors de l'application.
-/// Une bibliothèque ouverte auparavant reste lisible jusqu'à la fermeture de l'application.
-/// Une surveillance impossible n'empêche pas d'ouvrir la bibliothèque : elle est journalisée.
-fn follow_library<R: Runtime>(
+/// Un espace de travail ouvert auparavant reste lisible jusqu'à la fermeture de l'application.
+/// Une surveillance impossible n'empêche pas d'ouvrir l'espace de travail : elle est journalisée.
+fn follow_workspace<R: Runtime>(
     app: &AppHandle<R>,
     session: &Session,
-    library: Option<LibraryInfo>,
-) -> Result<Option<LibraryInfo>, ApiError> {
-    let Some(library) = library else {
+    workspace: Option<WorkspaceInfo>,
+) -> Result<Option<WorkspaceInfo>, ApiError> {
+    let Some(workspace) = workspace else {
         return Ok(None);
     };
     app.asset_protocol_scope()
-        .allow_directory(&library.path, true)
+        .allow_directory(&workspace.path, true)
         .map_err(|e| ApiError::internal(&e))?;
     let page = app.clone();
-    let watched = session.watch_library(move |change| {
-        if let Err(error) = page.emit(LIBRARY_CHANGED_EVENT, change) {
-            tracing::warn!(%error, "changement de la bibliothèque non transmis à la page");
+    let watched = session.watch_workspace(move |change| {
+        if let Err(error) = page.emit(WORKSPACE_CHANGED_EVENT, change) {
+            tracing::warn!(%error, "changement de l'espace de travail non transmis à la page");
         }
     });
     if let Err(error) = watched {
-        tracing::warn!(message = %error.message, "bibliothèque ouverte sans surveillance");
+        tracing::warn!(message = %error.message, "espace de travail ouvert sans surveillance");
     }
-    Ok(Some(library))
+    Ok(Some(workspace))
 }
 
-/// Rouvre la dernière bibliothèque au lancement ; rien au premier lancement.
+/// Rouvre le dernier espace de travail au lancement ; rien au premier lancement.
 ///
 /// # Errors
 ///
 /// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
-pub async fn reopen_last_library<R: Runtime>(
+pub async fn reopen_last_workspace<R: Runtime>(
     app: AppHandle<R>,
     session: SharedSession<'_>,
-) -> Result<Option<LibraryInfo>, ApiError> {
+) -> Result<Option<WorkspaceInfo>, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || follow_library(&app, &session, session.reopen_last_library()?)).await
+    in_background(move || follow_workspace(&app, &session, session.reopen_last_workspace()?)).await
 }
 
 /// Demande un dossier à l'utilisateur et l'ouvre ; rien s'il annule.
@@ -77,17 +76,17 @@ pub async fn reopen_last_library<R: Runtime>(
 /// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 /// S'y ajoute un nom de dossier illisible.
 #[tauri::command]
-pub async fn choose_library<R: Runtime>(
+pub async fn choose_workspace<R: Runtime>(
     app: AppHandle<R>,
     session: SharedSession<'_>,
-) -> Result<Option<LibraryInfo>, ApiError> {
+) -> Result<Option<WorkspaceInfo>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || {
         let chosen = app.dialog().file().blocking_pick_folder();
         let folder = chosen
             .map(|folder| folder.into_path().map_err(|e| ApiError::internal(&e)))
             .transpose()?;
-        follow_library(
+        follow_workspace(
             &app,
             &session,
             session.open_chosen_folder(folder.as_deref())?,
@@ -111,7 +110,7 @@ pub async fn list_notes(
     in_background(move || session.list_notes(&folder, order)).await
 }
 
-/// Les notes de toute la bibliothèque qui contiennent tous les mots cherchés.
+/// Les notes de tout l'espace de travail qui contiennent tous les mots cherchés.
 ///
 /// # Errors
 ///
@@ -140,18 +139,20 @@ pub async fn resolve_link(
     in_background(move || session.resolve_link(&title)).await
 }
 
-/// Toutes les notes de la bibliothèque, pour l'ouverture rapide.
+/// Toutes les notes de l'espace de travail, pour l'ouverture rapide.
 ///
 /// # Errors
 ///
 /// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
 #[tauri::command]
-pub async fn list_all_notes(session: SharedSession<'_>) -> Result<Vec<LibraryNoteItem>, ApiError> {
+pub async fn list_all_notes(
+    session: SharedSession<'_>,
+) -> Result<Vec<WorkspaceNoteItem>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.list_all_notes()).await
 }
 
-/// Les notes de toute la bibliothèque qui portent une étiquette.
+/// Les notes de tout l'espace de travail qui portent une étiquette.
 ///
 /// # Errors
 ///
@@ -180,7 +181,7 @@ pub async fn list_recent_notes(
     in_background(move || session.list_recent_notes(&paths)).await
 }
 
-/// Chaque étiquette de la bibliothèque et son nombre de notes.
+/// Chaque étiquette de l'espace de travail et son nombre de notes.
 ///
 /// # Errors
 ///
@@ -506,8 +507,8 @@ pub async fn open_attachment<R: Runtime>(
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
-        reopen_last_library,
-        choose_library,
+        reopen_last_workspace,
+        choose_workspace,
         list_notes,
         search_notes,
         resolve_link,

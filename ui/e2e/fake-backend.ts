@@ -1,4 +1,4 @@
-// Partie Rust simulée pour les parcours de test : une bibliothèque en mémoire.
+// Partie Rust simulée pour les parcours de test : un espace de travail en mémoire.
 // Doublure volontairement simple ; les vraies règles sont testées côté Rust.
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
@@ -13,7 +13,7 @@ export interface FakeBackend {
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
   trash: { notes: Record<string, FakeNote>; folders: string[] };
-  rememberedLibrary: boolean;
+  rememberedWorkspace: boolean;
   failNextSave: boolean;
   calls: string[];
   fullScreen: boolean;
@@ -21,7 +21,7 @@ export interface FakeBackend {
   attachments: Record<string, number>;
   /** Les cibles de liens dont l'ouverture a été demandée. */
   opened: string[];
-  /** Durée d'une recherche en millisecondes, pour simuler une grosse bibliothèque. */
+  /** Durée d'une recherche en millisecondes, pour simuler un gros espace de travail. */
   searchDuration: number;
   /** Le plein écran demandé par le Mac lui-même (bouton vert, menu). */
   enterFullScreenFromTheSystem: () => Promise<void>;
@@ -42,7 +42,7 @@ const backend: FakeBackend = {
   notes: JSON.parse(params.get("notes") ?? "{}") as Record<string, FakeNote>,
   folders: JSON.parse(params.get("folders") ?? "[]") as string[],
   trash: { notes: {}, folders: [] },
-  rememberedLibrary: params.get("remembered") === "1",
+  rememberedWorkspace: params.get("remembered") === "1",
   failNextSave: false,
   calls: [],
   fullScreen: false,
@@ -56,22 +56,22 @@ const backend: FakeBackend = {
   changeOutside: async (path, content) => {
     if (content === null) Reflect.deleteProperty(backend.notes, path);
     else backend.notes[path] = { content, modified: (clock += 1) };
-    await emit("library-changed", { notes: [path] });
+    await emit("workspace-changed", { notes: [path] });
   },
   renameOutside: async (from, to, content) => {
     Reflect.deleteProperty(backend.notes, from);
     backend.notes[to] = { content, modified: (clock += 1) };
-    await emit("library-changed", { notes: [from, to] });
+    await emit("workspace-changed", { notes: [from, to] });
   },
 };
 window.backend = backend;
 let clock = 1_000;
 
-const library = { name: "Notes", path: "/Users/moi/Notes" };
+const workspace = { name: "Notes", path: "/Users/moi/Notes" };
 
 // La note du jour au lancement n'est voulue que par les parcours du journal (`journal=1`) : les
 // autres commencent sur la note choisie, comme avant le journal. Un choix déjà gardé reste.
-const JOURNAL_KEY = `malorean.journal:${library.path}`;
+const JOURNAL_KEY = `malorean.journal:${workspace.path}`;
 if (params.get("journal") !== "1" && localStorage.getItem(JOURNAL_KEY) === null)
   localStorage.setItem(JOURNAL_KEY, JSON.stringify({ folder: "Journal", atLaunch: false }));
 
@@ -371,8 +371,8 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
         folder: folderOf(path),
       })),
   list_backlinks: ({ path = "" }) => listBacklinks(path),
-  reopen_last_library: () => (backend.rememberedLibrary ? library : null),
-  choose_library: () => library,
+  reopen_last_workspace: () => (backend.rememberedWorkspace ? workspace : null),
+  choose_workspace: () => workspace,
   list_notes: ({ folder = "", order }) =>
     Object.entries(backend.notes)
       .filter(([path]) => folderOf(path) === folder)

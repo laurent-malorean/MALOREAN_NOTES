@@ -95,7 +95,7 @@
   <!-- Domaine -->
   <rect x="30" y="545" width="500" height="130" rx="10" fill="#faf5ff" stroke="#a855f7"/>
   <text x="46" y="567" class="h">Domaine — crate domain (règles pures)</text>
-  <text x="46" y="589" class="s">Types : Library, Folder, Note, FrontMatter, Tag…</text>
+  <text x="46" y="589" class="s">Types : Workspace, Folder, Note, FrontMatter, Tag…</text>
   <text x="46" y="607" class="s">Règles : titre → nom de fichier kebab-case, pièces jointes</text>
   <text x="46" y="625" class="s">Erreurs métier : un enum, une variante par cas</text>
   <text x="46" y="655" class="s">Ne dépend de rien : ni fichiers, ni horloge, ni async, ni unsafe.</text>
@@ -124,7 +124,7 @@
   <!-- Disque -->
   <rect x="560" y="750" width="510" height="95" rx="10" fill="#f1f5f9" stroke="#64748b"/>
   <text x="576" y="772" class="h">Disque</text>
-  <text x="576" y="791" class="s">Bibliothèque (dossier choisi, iCloud possible) : .md + .assets/</text>
+  <text x="576" y="791" class="s">Espace de travail (dossier choisi, iCloud possible) : .md + .assets/</text>
   <text x="576" y="808" class="s">~/Library/Caches/&lt;app&gt;/ : index de recherche (reconstructible)</text>
   <text x="576" y="825" class="s">~/Library/Application Support/&lt;app&gt;/ : préférences · Logs : journaux</text>
 
@@ -135,7 +135,7 @@
   <text x="46" y="765" class="s">Lit la configuration, crée les adaptateurs, les injecte</text>
   <text x="46" y="783" class="s">dans les cas d'usage, enregistre les commandes de api,</text>
   <text x="46" y="801" class="s">déclare les permissions et ouvre la fenêtre.</text>
-  <text x="46" y="819" class="s">Au démarrage : dernière bibliothèque rouverte, index à jour.</text>
+  <text x="46" y="819" class="s">Au démarrage : dernier espace de travail rouvert, index à jour.</text>
 
   <!-- Flèches -->
   <path class="ar" d="M220 165V230"/>

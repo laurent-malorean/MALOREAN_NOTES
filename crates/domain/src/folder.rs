@@ -1,4 +1,4 @@
-//! Dossiers de la bibliothèque : un nom par niveau, choisi par l'utilisateur.
+//! Dossiers de l'espace de travail : un nom par niveau, choisi par l'utilisateur.
 
 use std::fmt;
 
@@ -12,7 +12,7 @@ const FIRST_DUPLICATE_NUMBER: u32 = 2;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FolderName(String);
 
-/// Nom ou chemin de dossier refusé : vide, caché, hors bibliothèque, ou dossier de pièces jointes.
+/// Nom ou chemin de dossier refusé : vide, caché, hors espace de travail, ou dossier de pièces jointes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InvalidFolderName(pub String);
 
@@ -51,12 +51,12 @@ impl FolderName {
     }
 }
 
-/// Un dossier de la bibliothèque, désigné par son chemin depuis la racine (la bibliothèque elle-même).
+/// Un dossier de l'espace de travail, désigné par son chemin depuis la racine (l'espace de travail lui-même).
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Folder(Vec<FolderName>);
 
 impl Folder {
-    /// La racine : la bibliothèque elle-même.
+    /// La racine : l'espace de travail lui-même.
     #[must_use]
     pub fn root() -> Self {
         Self(Vec::new())
@@ -210,7 +210,7 @@ impl NotePath {
         Self::new(self.folder.clone(), name)
     }
 
-    /// Le chemin `a/b/note.md` depuis la racine de la bibliothèque.
+    /// Le chemin `a/b/note.md` depuis la racine de l'espace de travail.
     #[must_use]
     pub fn to_path(&self) -> String {
         if self.folder == Folder::root() {

@@ -78,7 +78,7 @@ proptest! {
     }
 
     #[test]
-    fn a_file_name_never_leaves_the_library_folder(name in any::<String>()) {
+    fn a_file_name_never_leaves_the_workspace_folder(name in any::<String>()) {
         if let Ok(parsed) = FileName::parse(&name) {
             prop_assert!(!parsed.as_str().contains(['/', '\\', '\0']));
             prop_assert!(!parsed.as_str().starts_with('.'));
@@ -96,7 +96,7 @@ proptest! {
     }
 
     #[test]
-    fn a_folder_or_note_path_never_leaves_the_library(path in any::<String>()) {
+    fn a_folder_or_note_path_never_leaves_the_workspace(path in any::<String>()) {
         if let Ok(folder) = Folder::parse(&path) {
             prop_assert!(folder.names().iter().all(|n| !n.as_str().starts_with('.') && !n.as_str().contains(['/', '\\', '\0'])));
             prop_assert_eq!(folder.to_path(), path.clone());

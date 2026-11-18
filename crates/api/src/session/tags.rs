@@ -1,4 +1,4 @@
-//! Les étiquettes de la bibliothèque ouverte, vues depuis la page.
+//! Les étiquettes de l'espace de travail ouvert, vues depuis la page.
 
 use application::use_cases::{ListTaggedNotes, ListTags};
 
@@ -6,13 +6,13 @@ use super::{Session, list_item};
 use crate::{ApiError, NoteListItem, NoteOrderItem, TagItem};
 
 impl Session {
-    /// Les notes de toute la bibliothèque qui portent l'étiquette `tag` : les épinglées
+    /// Les notes de tout l'espace de travail qui portent l'étiquette `tag` : les épinglées
     /// d'abord, puis la plus récemment modifiée en premier.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; bibliothèque illisible, aucune
-    /// bibliothèque ouverte.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
+    /// espace de travail ouvert.
     pub fn list_tagged_notes(
         &self,
         tag: &str,
@@ -23,12 +23,12 @@ impl Session {
         Ok(notes.iter().map(list_item).collect())
     }
 
-    /// Chaque étiquette de la bibliothèque et son nombre de notes, par ordre alphabétique.
+    /// Chaque étiquette de l'espace de travail et son nombre de notes, par ordre alphabétique.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; bibliothèque illisible, aucune
-    /// bibliothèque ouverte.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
+    /// espace de travail ouvert.
     pub fn list_tags(&self) -> Result<Vec<TagItem>, ApiError> {
         let store = self.store()?;
         Ok(ListTags::new(&*store)
@@ -43,7 +43,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -58,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    fn tagged_notes_and_tags_come_from_the_whole_library() {
+    fn tagged_notes_and_tags_come_from_the_whole_workspace() {
         let session = session(&[
             ("a.md", "---\ntags: [perso]\n---\n# Alpha"),
             ("Travail/b.md", "---\ntags: [perso, travail]\n---\n# Bêta"),
@@ -71,7 +71,7 @@ mod tests {
         );
         assert!(session.list_tags().is_err());
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         let tagged = session
             .list_tagged_notes("perso", NoteOrderItem::Title)

@@ -8,15 +8,15 @@
 use std::sync::Arc;
 
 use api::commands::{FILE_NAME_HEADER, MEDIA_TYPE_HEADER, NOTE_HEADER};
-use api::commands::{LIBRARY_CHANGED_EVENT, invoke_handler};
+use api::commands::{WORKSPACE_CHANGED_EVENT, invoke_handler};
 use api::{
-    AttachedFile, LibraryChanged, LibraryInfo, LibraryNoteItem, LinkingNoteItem, NoteContent,
-    NoteListItem, SaveResult, SavedNote, SearchResultItem, Session, TrashInfo,
+    AttachedFile, LinkingNoteItem, NoteContent, NoteListItem, SaveResult, SavedNote,
+    SearchResultItem, Session, TrashInfo, WorkspaceChanged, WorkspaceInfo, WorkspaceNoteItem,
 };
 use application::testing::{
     FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore,
 };
-use application::{LibraryChange, LibraryLocation, LibraryWatcher, Preferences};
+use application::{Preferences, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher};
 use domain::NotePath;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
@@ -29,19 +29,19 @@ use tauri::{Listener, Manager, WebviewWindow, WebviewWindowBuilder};
 
 const BRIDGE_SOURCE: &str = include_str!("../../../ui/src/bridge/index.ts");
 
-/// Une fenêtre simulée, branchée sur une bibliothèque en mémoire déjà rouvrable.
+/// Une fenêtre simulée, branchée sur un espace de travail en mémoire déjà rouvrable.
 fn window(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
     window_watched_by(notes, Arc::new(FakeWatcher::default()))
 }
 
-/// La même fenêtre, dont la bibliothèque est surveillée par `watcher`.
+/// La même fenêtre, dont l'espace de travail est surveillée par `watcher`.
 fn window_watched_by(
     notes: &[(&str, &str)],
     watcher: Arc<FakeWatcher>,
 ) -> WebviewWindow<MockRuntime> {
     let preferences = FakePreferences::default();
     preferences
-        .remember_library(&LibraryLocation::new("/Users/moi/Notes").unwrap())
+        .remember_workspace(&WorkspaceLocation::new("/Users/moi/Notes").unwrap())
         .unwrap();
     let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
     let session = Session::new(
@@ -49,7 +49,7 @@ fn window_watched_by(
         Arc::new(preferences),
         Arc::new(FixedClock::default()),
     )
-    .with_watcher(watcher as Arc<dyn LibraryWatcher>);
+    .with_watcher(watcher as Arc<dyn WorkspaceWatcher>);
     let app = mock_builder()
         .manage(Arc::new(session))
         .invoke_handler(invoke_handler())
@@ -96,7 +96,7 @@ fn error_message(result: Result<Value, Value>) -> String {
 }
 
 #[test]
-fn nothing_can_be_listed_before_a_library_is_open() {
+fn nothing_can_be_listed_before_a_workspace_is_open() {
     let window = window(&[]);
     assert_eq!(
         error_message(call(
@@ -104,15 +104,15 @@ fn nothing_can_be_listed_before_a_library_is_open() {
             "list_notes",
             json!({ "folder": "", "order": "modified" })
         )),
-        "aucune bibliothèque n'est ouverte"
+        "aucun espace de travail n'est ouvert"
     );
 }
 
 #[test]
-fn the_last_library_is_reopened_then_listed() {
+fn the_last_workspace_is_reopened_then_listed() {
     let window = window(&[("a.md", "# Alpha")]);
-    let library: Option<LibraryInfo> = ok(call(&window, "reopen_last_library", json!({})));
-    assert_eq!(library.map(|l| l.name), Some("Notes".into()));
+    let workspace: Option<WorkspaceInfo> = ok(call(&window, "reopen_last_workspace", json!({})));
+    assert_eq!(workspace.map(|l| l.name), Some("Notes".into()));
     let notes: Vec<NoteListItem> = ok(call(
         &window,
         "list_notes",
@@ -127,7 +127,7 @@ fn the_last_library_is_reopened_then_listed() {
 #[test]
 fn a_note_is_read_with_the_argument_names_used_by_the_page() {
     let window = window(&[("a.md", "# Alpha\ntexte")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let note: NoteContent = ok(call(&window, "read_note", json!({ "path": "a.md" })));
     assert_eq!(note.content, "# Alpha\ntexte");
 }
@@ -135,7 +135,7 @@ fn a_note_is_read_with_the_argument_names_used_by_the_page() {
 #[test]
 fn saving_a_new_title_renames_the_file() {
     let window = window(&[("a.md", "# Alpha")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let read: NoteContent = ok(call(&window, "read_note", json!({ "path": "a.md" })));
     let saved: SaveResult = ok(call(
         &window,
@@ -149,7 +149,7 @@ fn saving_a_new_title_renames_the_file() {
 #[test]
 fn saving_over_a_version_changed_elsewhere_keeps_it_in_a_conflict_copy() {
     let window = window(&[("a.md", "# Alpha\nailleurs")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let saved: SaveResult = ok(call(
         &window,
         "save_note",
@@ -168,25 +168,25 @@ fn changes_made_outside_the_app_reach_the_page_as_an_event() {
     let (sender, received) = std::sync::mpsc::channel();
     window
         .app_handle()
-        .listen_any(LIBRARY_CHANGED_EVENT, move |event| {
+        .listen_any(WORKSPACE_CHANGED_EVENT, move |event| {
             let _sent = sender.send(event.payload().to_owned());
         });
-    call(&window, "reopen_last_library", json!({})).unwrap();
-    watcher.announce(LibraryChange {
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
+    watcher.announce(WorkspaceChange {
         notes: vec![NotePath::parse("Travail/lundi.md").unwrap()],
     });
     let payload = received
         .recv_timeout(std::time::Duration::from_secs(5))
         .unwrap();
-    let change: LibraryChanged = serde_json::from_str(&payload).unwrap();
+    let change: WorkspaceChanged = serde_json::from_str(&payload).unwrap();
     assert_eq!(change.notes, ["Travail/lundi.md"]);
-    assert!(BRIDGE_SOURCE.contains(&format!("\"{LIBRARY_CHANGED_EVENT}\"")));
+    assert!(BRIDGE_SOURCE.contains(&format!("\"{WORKSPACE_CHANGED_EVENT}\"")));
 }
 
 #[test]
 fn a_created_note_is_untitled() {
     let window = window(&[]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let created: SavedNote = ok(call(
         &window,
         "create_note",
@@ -198,7 +198,7 @@ fn a_created_note_is_untitled() {
 #[test]
 fn the_daily_note_is_asked_with_the_argument_names_used_by_the_page() {
     let window = window(&[]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let args = json!({ "journal": "Journal", "template": null });
     let created: SavedNote = ok(call(&window, "create_daily_note", args));
     assert_eq!(created.path, "Journal/2026-11-16.md");
@@ -207,7 +207,7 @@ fn the_daily_note_is_asked_with_the_argument_names_used_by_the_page() {
 #[test]
 fn a_dangerous_name_sent_by_the_page_is_refused() {
     let window = window(&[]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let error = error_message(call(
         &window,
         "read_note",
@@ -219,7 +219,7 @@ fn a_dangerous_name_sent_by_the_page_is_refused() {
 #[test]
 fn a_missing_argument_is_refused() {
     let window = window(&[]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     assert!(call(&window, "read_note", json!({})).is_err());
 }
 
@@ -232,7 +232,7 @@ fn every_command_called_by_the_page_exists() {
         .filter_map(|rest| rest.split('"').nth(1))
         .collect();
     assert!(called.len() >= 6, "commandes trouvées : {called:?}");
-    for command in called.into_iter().filter(|c| *c != "choose_library") {
+    for command in called.into_iter().filter(|c| *c != "choose_workspace") {
         let result = call(&window, command, json!({}));
         let message = result.err().map(|e| e.to_string()).unwrap_or_default();
         assert!(!message.contains("not found"), "{command} : {message}");
@@ -245,19 +245,19 @@ fn a_page_from_the_internet_cannot_call_any_command() {
     let result = call_from(
         &window,
         "https://site-malveillant.example",
-        "reopen_last_library",
+        "reopen_last_workspace",
         json!({}),
     );
     assert!(result.unwrap_err().to_string().contains("not allowed"));
 }
 
 #[test]
-fn the_window_can_load_the_files_of_the_open_library_only() {
+fn the_window_can_load_the_files_of_the_open_workspace_only() {
     let window = window(&[]);
     let scope = window.asset_protocol_scope();
     let image = "/Users/moi/Notes/voyage.assets/mer.png";
     assert!(!scope.is_allowed(image));
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     assert!(scope.is_allowed(image));
     assert!(!scope.is_allowed("/Users/moi/Documents/secret.png"));
 }
@@ -265,7 +265,7 @@ fn the_window_can_load_the_files_of_the_open_library_only() {
 #[test]
 fn folders_are_handled_with_the_argument_names_used_by_the_page() {
     let window = window(&[("Travail/a.md", "# A")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let created: String = ok(call(
         &window,
         "create_folder",
@@ -297,7 +297,7 @@ fn folders_are_handled_with_the_argument_names_used_by_the_page() {
 #[test]
 fn a_note_is_moved_into_a_folder_by_the_names_used_by_the_page() {
     let window = window(&[("a.md", "# Alpha"), ("Perso/b.md", "# Bêta")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let moved: SavedNote = ok(call(
         &window,
         "move_note",
@@ -317,7 +317,7 @@ fn a_note_is_moved_into_a_folder_by_the_names_used_by_the_page() {
 #[test]
 fn moving_a_note_into_a_folder_with_a_bad_name_is_refused() {
     let window = window(&[("a.md", "# Alpha")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let error = error_message(call(
         &window,
         "move_note",
@@ -330,9 +330,9 @@ fn moving_a_note_into_a_folder_with_a_bad_name_is_refused() {
 }
 
 #[test]
-fn the_page_searches_the_whole_library_by_its_query_argument() {
+fn the_page_searches_the_whole_workspace_by_its_query_argument() {
     let window = window(&[("a.md", "# Alpha\nété"), ("Travail/b.md", "# Bêta\nhiver")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let results: Vec<SearchResultItem> = ok(call(
         &window,
         "search_notes",
@@ -347,7 +347,7 @@ fn the_page_searches_the_whole_library_by_its_query_argument() {
 #[test]
 fn the_page_chooses_the_order_of_the_list_by_its_order_argument() {
     let window = window(&[("a.md", "# alpha\npain"), ("b.md", "# Bêta\npain")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let paths = |command: &str, args: serde_json::Value| -> Vec<String> {
         let notes: Vec<NoteListItem> = ok(call(&window, command, args));
         notes.into_iter().map(|n| n.path).collect()
@@ -370,7 +370,7 @@ fn the_page_follows_links_between_notes_by_title_and_path() {
         ("courses.md", "# Courses"),
         ("b.md", "# Lundi\n[[courses]]"),
     ]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let target: Option<String> = ok(call(&window, "resolve_link", json!({ "title": "Courses" })));
     assert_eq!(target.as_deref(), Some("courses.md"));
     let missing: Option<String> = ok(call(&window, "resolve_link", json!({ "title": "Mardi" })));
@@ -390,10 +390,10 @@ fn the_page_follows_links_between_notes_by_title_and_path() {
 }
 
 #[test]
-fn the_page_lists_every_note_of_the_library_for_quick_open() {
+fn the_page_lists_every_note_of_the_workspace_for_quick_open() {
     let window = window(&[("a.md", "# Alpha"), ("Travail/b.md", "# Bêta")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
-    let notes: Vec<LibraryNoteItem> = ok(call(&window, "list_all_notes", json!({})));
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
+    let notes: Vec<WorkspaceNoteItem> = ok(call(&window, "list_all_notes", json!({})));
     assert_eq!(
         notes.iter().map(|n| n.path.as_str()).collect::<Vec<_>>(),
         ["Travail/b.md", "a.md"]
@@ -403,7 +403,7 @@ fn the_page_lists_every_note_of_the_library_for_quick_open() {
 #[test]
 fn the_page_pins_and_unpins_a_note_by_its_path() {
     let window = window(&[("a.md", "# Alpha"), ("b.md", "# Bêta")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let pinned: NoteContent = ok(call(&window, "pin_note", json!({ "path": "a.md" })));
     assert_eq!(pinned.content, "---\npinned: true\n---\n# Alpha");
     let notes: Vec<NoteListItem> = ok(call(
@@ -425,7 +425,7 @@ fn the_page_pins_and_unpins_a_note_by_its_path() {
 #[test]
 fn a_note_goes_to_the_trash_and_comes_back_with_the_argument_names_used_by_the_page() {
     let window = window(&[("Travail/lundi.md", "# Lundi")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let at: String = ok(call(
         &window,
         "trash_note",
@@ -445,7 +445,7 @@ fn a_note_goes_to_the_trash_and_comes_back_with_the_argument_names_used_by_the_p
 #[test]
 fn a_folder_goes_to_the_trash_comes_back_and_the_trash_is_emptied() {
     let window = window(&[("Travail/lundi.md", "# Lundi")]);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     let at: String = ok(call(&window, "trash_folder", json!({ "path": "Travail" })));
     assert_eq!(at, "Travail");
     let back: String = ok(call(
@@ -487,7 +487,7 @@ fn attach(
 
 fn opened_with(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
     let window = window(notes);
-    call(&window, "reopen_last_library", json!({})).unwrap();
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
     window
 }
 

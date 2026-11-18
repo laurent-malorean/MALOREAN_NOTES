@@ -9,9 +9,9 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 
 use application::testing::contract::note_store_contract;
-use application::{LibraryLocation, LibraryOpener, NoteStore, StoreError};
+use application::{NoteStore, StoreError, WorkspaceLocation, WorkspaceOpener};
 use domain::{FileName, Folder, NotePath};
-use infrastructure::{FsLibraryOpener, FsNoteStore};
+use infrastructure::{FsNoteStore, FsWorkspaceOpener};
 use tempfile::TempDir;
 
 const READ_ONLY_FOLDER: u32 = 0o555;
@@ -31,11 +31,11 @@ fn root() -> Folder {
     Folder::root()
 }
 
-fn location(path: &std::path::Path) -> LibraryLocation {
-    LibraryLocation::new(path.to_str().unwrap()).unwrap()
+fn location(path: &std::path::Path) -> WorkspaceLocation {
+    WorkspaceLocation::new(path.to_str().unwrap()).unwrap()
 }
 
-fn library() -> (TempDir, FsNoteStore) {
+fn workspace() -> (TempDir, FsNoteStore) {
     let dir = TempDir::new().unwrap();
     let store = FsNoteStore::new(dir.path().to_path_buf());
     (dir, store)
@@ -45,15 +45,15 @@ fn library() -> (TempDir, FsNoteStore) {
 fn disk_store_honours_the_contract() {
     let dirs = std::cell::RefCell::new(Vec::new());
     note_store_contract(|| {
-        let (dir, store) = library();
+        let (dir, store) = workspace();
         dirs.borrow_mut().push(dir);
         store
     });
 }
 
 #[test]
-fn only_markdown_files_of_the_library_folder_are_listed() {
-    let (dir, store) = library();
+fn only_markdown_files_of_the_workspace_folder_are_listed() {
+    let (dir, store) = workspace();
     fs::write(dir.path().join("note.md"), "# Note").unwrap();
     fs::write(dir.path().join("lisez-moi.txt"), "texte").unwrap();
     fs::write(dir.path().join(".cachee.md"), "cachée").unwrap();
@@ -71,7 +71,7 @@ fn only_markdown_files_of_the_library_folder_are_listed() {
 
 #[test]
 fn writing_leaves_no_temporary_file() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     store.write(&name("a.md"), "contenu").unwrap();
     let entries: Vec<_> = fs::read_dir(dir.path())
         .unwrap()
@@ -82,7 +82,7 @@ fn writing_leaves_no_temporary_file() {
 
 #[test]
 fn renaming_moves_the_attachment_folder() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     store
         .write(&name("voyage.md"), "![vue](voyage.assets/vue.png)")
         .unwrap();
@@ -100,7 +100,7 @@ fn renaming_moves_the_attachment_folder() {
 
 #[test]
 fn renaming_only_the_letter_case_is_allowed() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     fs::write(dir.path().join("Courses.md"), "# Courses").unwrap();
     assert_eq!(store.names(&root()).unwrap(), [file("Courses.md")]);
     store
@@ -117,8 +117,8 @@ fn renaming_only_the_letter_case_is_allowed() {
 
 #[test]
 fn opening_a_missing_folder_fails() {
-    let opener = FsLibraryOpener;
-    let missing = LibraryLocation::new("/chemin/qui/n/existe/pas").unwrap();
+    let opener = FsWorkspaceOpener;
+    let missing = WorkspaceLocation::new("/chemin/qui/n/existe/pas").unwrap();
     assert!(matches!(
         opener.open(&missing),
         Err(StoreError::Unavailable(_))
@@ -129,13 +129,13 @@ fn opening_a_missing_folder_fails() {
 fn opening_an_existing_folder_gives_its_notes() {
     let dir = TempDir::new().unwrap();
     fs::write(dir.path().join("a.md"), "# A").unwrap();
-    let store = FsLibraryOpener.open(&location(dir.path())).unwrap();
+    let store = FsWorkspaceOpener.open(&location(dir.path())).unwrap();
     assert_eq!(store.list(&root()).unwrap().len(), 1);
 }
 
 #[test]
 fn a_note_that_is_not_utf8_text_does_not_break_the_list() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     fs::write(dir.path().join("ok.md"), "# Lisible").unwrap();
     fs::write(
         dir.path().join("binaire.md"),
@@ -154,7 +154,7 @@ fn a_note_that_is_not_utf8_text_does_not_break_the_list() {
 
 #[test]
 fn a_note_that_is_not_utf8_text_cannot_be_opened() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     fs::write(dir.path().join("binaire.md"), [0xff, 0xfe]).unwrap();
     assert_eq!(
         store.read(&name("binaire.md")),
@@ -163,8 +163,8 @@ fn a_note_that_is_not_utf8_text_cannot_be_opened() {
 }
 
 #[test]
-fn writing_into_a_read_only_library_fails_cleanly() {
-    let (dir, store) = library();
+fn writing_into_a_read_only_workspace_fails_cleanly() {
+    let (dir, store) = workspace();
     let set_mode =
         |mode| fs::set_permissions(dir.path(), fs::Permissions::from_mode(mode)).unwrap();
     set_mode(READ_ONLY_FOLDER);
@@ -175,8 +175,8 @@ fn writing_into_a_read_only_library_fails_cleanly() {
 }
 
 #[test]
-fn a_library_folder_deleted_while_open_is_reported() {
-    let (dir, store) = library();
+fn a_workspace_folder_deleted_while_open_is_reported() {
+    let (dir, store) = workspace();
     fs::remove_dir(dir.path()).unwrap();
     assert!(matches!(
         store.list(&root()),
@@ -190,7 +190,7 @@ fn a_library_folder_deleted_while_open_is_reported() {
 
 #[test]
 fn renaming_refuses_when_the_target_attachment_folder_exists() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     store.write(&name("voyage.md"), "texte").unwrap();
     fs::create_dir(dir.path().join("voyage.assets")).unwrap();
     fs::create_dir(dir.path().join("lisbonne.assets")).unwrap();
@@ -204,7 +204,7 @@ fn renaming_refuses_when_the_target_attachment_folder_exists() {
 
 #[test]
 fn renaming_a_missing_note_is_reported() {
-    let (_dir, store) = library();
+    let (_dir, store) = workspace();
     assert_eq!(
         store.rename(&name("absente.md"), &file("b.md")),
         Err(StoreError::NotFound(name("absente.md")))
@@ -217,14 +217,14 @@ fn opening_a_file_instead_of_a_folder_fails() {
     let file = dir.path().join("note.md");
     fs::write(&file, "x").unwrap();
     assert!(matches!(
-        FsLibraryOpener.open(&location(&file)),
+        FsWorkspaceOpener.open(&location(&file)),
         Err(StoreError::Unavailable(_))
     ));
 }
 
 #[test]
 fn a_note_without_read_permission_is_reported_as_unavailable() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     let file = dir.path().join("secret.md");
     fs::write(&file, "# Secret").unwrap();
     fs::set_permissions(&file, fs::Permissions::from_mode(NO_PERMISSION)).unwrap();
@@ -239,7 +239,7 @@ fn folder(path: &str) -> Folder {
 
 #[test]
 fn hidden_attachment_and_linked_folders_are_not_note_folders() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     for sub in [
         "Travail",
         "Travail/Réunions",
@@ -265,7 +265,7 @@ fn hidden_attachment_and_linked_folders_are_not_note_folders() {
 fn a_folder_whose_name_is_not_text_is_skipped() {
     use std::ffi::OsStr;
     use std::os::unix::ffi::OsStrExt;
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     let created = fs::create_dir(dir.path().join(OsStr::from_bytes(b"illisible-\xff")));
     if created.is_ok() {
         assert!(store.folders().unwrap().is_empty());
@@ -274,7 +274,7 @@ fn a_folder_whose_name_is_not_text_is_skipped() {
 
 #[test]
 fn a_folder_is_only_found_under_its_exact_name() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     fs::create_dir(dir.path().join("Travail")).unwrap();
     assert_eq!(
         store.create_folder(&folder("travail/Réunions")),
@@ -288,7 +288,7 @@ fn a_folder_is_only_found_under_its_exact_name() {
 
 #[test]
 fn a_folder_cannot_be_created_where_a_file_stands() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     fs::write(dir.path().join("Travail"), "fichier").unwrap();
     assert_eq!(
         store.create_folder(&folder("Travail")),
@@ -298,7 +298,7 @@ fn a_folder_cannot_be_created_where_a_file_stands() {
 
 #[test]
 fn a_folder_in_a_read_only_folder_cannot_be_created() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     fs::set_permissions(dir.path(), fs::Permissions::from_mode(READ_ONLY_FOLDER)).unwrap();
     let result = store.create_folder(&folder("Travail"));
     fs::set_permissions(dir.path(), fs::Permissions::from_mode(WRITABLE_FOLDER)).unwrap();
@@ -307,7 +307,7 @@ fn a_folder_in_a_read_only_folder_cannot_be_created() {
 
 #[test]
 fn a_folder_is_moved_on_disk_with_its_attachments() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     store.create_folder(&folder("a")).unwrap();
     store.create_folder(&folder("b")).unwrap();
     store
@@ -322,7 +322,7 @@ fn a_folder_is_moved_on_disk_with_its_attachments() {
 
 #[test]
 fn a_moved_note_takes_its_attachment_folder_along() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     store
         .write(&name("voyage.md"), "![vue](voyage.assets/vue.png)")
         .unwrap();
@@ -343,7 +343,7 @@ fn a_moved_note_takes_its_attachment_folder_along() {
 
 #[test]
 fn moving_refuses_when_the_attachment_folder_is_taken_in_the_target() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     store.write(&name("voyage.md"), "texte").unwrap();
     fs::create_dir_all(dir.path().join("Vacances/voyage.assets")).unwrap();
     assert_eq!(
@@ -355,7 +355,7 @@ fn moving_refuses_when_the_attachment_folder_is_taken_in_the_target() {
 
 #[test]
 fn rewriting_while_keeping_the_date_keeps_the_file_date() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     let path = dir.path().join("x.md");
     fs::write(&path, "avant").unwrap();
     let old = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000_000);
@@ -373,7 +373,7 @@ fn rewriting_while_keeping_the_date_keeps_the_file_date() {
 
 #[test]
 fn rewriting_while_keeping_the_date_fails_cleanly_in_a_read_only_folder() {
-    let (dir, store) = library();
+    let (dir, store) = workspace();
     fs::write(dir.path().join("x.md"), "avant").unwrap();
     fs::set_permissions(dir.path(), fs::Permissions::from_mode(READ_ONLY_FOLDER)).unwrap();
     let result = store.write_keeping_date(&name("x.md"), "après");

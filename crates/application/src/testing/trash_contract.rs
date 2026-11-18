@@ -43,7 +43,7 @@ fn trashed_folders(store: &impl NoteStore) -> Vec<String> {
     paths
 }
 
-/// Une bibliothèque avec `Travail/lundi.md` et `Travail/Réunions/mardi.md`.
+/// Un espace de travail avec `Travail/lundi.md` et `Travail/Réunions/mardi.md`.
 fn with_work_notes(store: &impl NoteStore) {
     store.create_folder(&folder("Travail")).unwrap();
     store.create_folder(&folder("Travail/Réunions")).unwrap();
@@ -53,9 +53,9 @@ fn with_work_notes(store: &impl NoteStore) {
         .unwrap();
 }
 
-/// Joue tout le contrat de la corbeille ; `empty_store` fabrique une bibliothèque vide à chaque appel.
+/// Joue tout le contrat de la corbeille ; `empty_store` fabrique un espace de travail vide à chaque appel.
 pub(super) fn trash_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
-    a_new_library_has_an_empty_trash(&empty_store());
+    a_new_workspace_has_an_empty_trash(&empty_store());
     a_trashed_note_goes_to_its_original_path_in_the_trash(&empty_store());
     trashing_a_missing_note_or_onto_a_taken_place_is_refused(&empty_store());
     a_trashed_folder_goes_whole(&empty_store());
@@ -68,7 +68,7 @@ pub(super) fn trash_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     emptying_the_trash_deletes_everything_in_it(&empty_store());
 }
 
-fn a_new_library_has_an_empty_trash(store: &impl NoteStore) {
+fn a_new_workspace_has_an_empty_trash(store: &impl NoteStore) {
     assert!(trashed_notes(store).is_empty());
     assert!(trashed_folders(store).is_empty());
     store.empty_trash().unwrap();

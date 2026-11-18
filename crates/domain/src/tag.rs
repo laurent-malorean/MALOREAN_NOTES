@@ -1,4 +1,4 @@
-//! Étiquettes d'une note, lues dans son en-tête, et leur décompte dans la bibliothèque.
+//! Étiquettes d'une note, lues dans son en-tête, et leur décompte dans l'espace de travail.
 
 use std::collections::BTreeMap;
 

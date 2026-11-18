@@ -1,18 +1,18 @@
-//! Les notes récentes : l'interface sait lesquelles ; la bibliothèque dit ce qu'elles sont devenues.
+//! Les notes récentes : l'interface sait lesquelles ; l'espace de travail dit ce qu'elles sont devenues.
 
 use domain::NoteSummary;
 
 use super::ListAllNotes;
 use crate::{AppError, NoteStore};
 
-/// Le résumé des notes récentes, telles qu'elles sont maintenant dans la bibliothèque.
+/// Le résumé des notes récentes, telles qu'elles sont maintenant dans l'espace de travail.
 #[derive(Debug)]
 pub struct ListRecentNotes<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> ListRecentNotes<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -23,7 +23,7 @@ impl<'a> ListRecentNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn execute(&self, paths: &[String]) -> Result<Vec<NoteSummary>, AppError> {
         let mut notes = ListAllNotes::new(self.store).execute()?;
         Ok(paths

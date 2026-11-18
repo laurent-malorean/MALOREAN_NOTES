@@ -4,12 +4,14 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use application::{LibraryLocation, Preferences, StoreError};
+use application::{Preferences, StoreError, WorkspaceLocation};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize)]
 struct Stored {
-    last_library: Option<String>,
+    // Nom d’avant le passage à « espace de travail » : un fichier déjà écrit reste lu.
+    #[serde(alias = "last_library")]
+    last_workspace: Option<String>,
 }
 
 /// Préférences gardées dans un fichier JSON.
@@ -50,17 +52,17 @@ impl JsonPreferences {
 }
 
 impl Preferences for JsonPreferences {
-    fn last_library(&self) -> Result<Option<LibraryLocation>, StoreError> {
-        // Un emplacement vide gardé par erreur vaut « aucune bibliothèque ».
+    fn last_workspace(&self) -> Result<Option<WorkspaceLocation>, StoreError> {
+        // Un emplacement vide gardé par erreur vaut « aucun espace de travail ».
         Ok(self
             .load()?
-            .last_library
-            .and_then(|l| LibraryLocation::new(l).ok()))
+            .last_workspace
+            .and_then(|l| WorkspaceLocation::new(l).ok()))
     }
 
-    fn remember_library(&self, location: &LibraryLocation) -> Result<(), StoreError> {
+    fn remember_workspace(&self, location: &WorkspaceLocation) -> Result<(), StoreError> {
         let mut stored = self.load()?;
-        stored.last_library = Some(location.as_str().to_owned());
+        stored.last_workspace = Some(location.as_str().to_owned());
         self.save(&stored)
     }
 }

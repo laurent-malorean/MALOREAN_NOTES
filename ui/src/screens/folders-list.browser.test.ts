@@ -43,7 +43,7 @@ const drag = (target: HTMLElement, type: string) => {
 };
 
 describe("colonne des dossiers", () => {
-  it("affiche la bibliothèque puis l'arbre des dossiers, indenté", () => {
+  it("affiche l'espace de travail puis l'arbre des dossiers, indenté", () => {
     const { container } = column();
     expect(names(container)).toEqual(["Notes", "Perso", "Travail", "Réunions"]);
     expect(item(container, "Travail/Réunions").style.getPropertyValue("--depth")).toBe("2");
@@ -137,7 +137,7 @@ describe("renommer un dossier", () => {
     expect(names(container)).toContain("Perso");
   });
 
-  it("la bibliothèque elle-même ne se renomme pas", () => {
+  it("l'espace de travail lui-même ne se renomme pas", () => {
     const { container } = column();
     item(container, "").dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
     expect(input(container)).toBeNull();
@@ -196,7 +196,7 @@ describe("déplacer un dossier", () => {
     expect(calls).toEqual([["move", "Perso", "Travail"]]);
   });
 
-  it("la bibliothèque elle-même ne se déplace pas", () => {
+  it("l'espace de travail lui-même ne se déplace pas", () => {
     const { container } = column();
     expect(item(container, "").draggable).toBe(false);
   });
@@ -257,7 +257,7 @@ describe("jeter un dossier", () => {
     expect(calls).toEqual([["trashFolder", "Travail"]]);
   });
 
-  it("la bibliothèque elle-même n'a pas ce menu", () => {
+  it("l'espace de travail lui-même n'a pas ce menu", () => {
     const { container } = column();
     expect(rightClick(item(container, "")).defaultPrevented).toBe(false);
     expect(document.querySelector(".context-menu")).toBeNull();
@@ -311,7 +311,7 @@ describe("icônes et dossiers pliés", () => {
     expect(item(container, "Travail").textContent).toBe("Travail");
   });
 
-  it("la racine a sa flèche dès que la bibliothèque a un dossier ; pliée, elle les cache tous", () => {
+  it("la racine a sa flèche dès que l'espace de travail a un dossier ; pliée, elle les cache tous", () => {
     const { container, calls } = column(["archives"]);
     expect(arrow(container, "")).not.toBeNull();
     expect(item(container, "").getAttribute("aria-expanded")).toBe("true");

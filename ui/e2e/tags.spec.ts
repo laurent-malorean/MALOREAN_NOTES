@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const LIBRARY = {
+const WORKSPACE = {
   "courses.md": { content: "---\ntags: [perso, maison]\n---\n# Courses\npain", modified: 30 },
   "Travail/budget.md": { content: "---\ntags: [travail]\n---\n# Budget", modified: 20 },
   "Loisirs/rando.md": { content: "---\ntags: [perso]\n---\n# Randonnée", modified: 10 },
@@ -9,7 +9,7 @@ const LIBRARY = {
 
 async function launch(page: Page) {
   const params = new URLSearchParams({
-    notes: JSON.stringify(LIBRARY),
+    notes: JSON.stringify(WORKSPACE),
     folders: JSON.stringify(["Loisirs", "Travail"]),
     remembered: "1",
   });
@@ -21,7 +21,7 @@ const titles = (page: Page) => page.locator(".notes-list .note-title");
 const filterBar = (page: Page) => page.locator(".tag-filter");
 const tagsList = (page: Page) => page.getByRole("navigation", { name: "Étiquettes" });
 
-test("les étiquettes se voient sous la date ; un clic filtre toute la bibliothèque ; la croix retire le filtre", async ({
+test("les étiquettes se voient sous la date ; un clic filtre tout l'espace de travail ; la croix retire le filtre", async ({
   page,
 }) => {
   await launch(page);
@@ -39,13 +39,13 @@ test("les étiquettes se voient sous la date ; un clic filtre toute la biblioth�
   await expect(titles(page)).toHaveText(["Courses", "Randonnée"]);
   await expect(filterBar(page)).toBeVisible();
   await expect(filterBar(page)).toContainText("#perso");
-  await expect(page.locator(".library-name")).toHaveText("#perso");
+  await expect(page.locator(".workspace-name")).toHaveText("#perso");
   await expect(tagsList(page).locator(".tag-item.selected")).toHaveText("#perso2");
 
   await filterBar(page).getByRole("button", { name: "Retirer le filtre" }).click();
   await expect(filterBar(page)).toBeHidden();
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
-  await expect(page.locator(".library-name")).toHaveText("Notes");
+  await expect(page.locator(".workspace-name")).toHaveText("Notes");
 });
 
 test("la liste des étiquettes filtre ; Échap retire le filtre ; choisir un dossier aussi", async ({
@@ -66,7 +66,7 @@ test("la liste des étiquettes filtre ; Échap retire le filtre ; choisir un dos
   await expect(titles(page)).toHaveText(["Budget"]);
 });
 
-test("la recherche porte sur toute la bibliothèque ; vidée, le filtre revient", async ({
+test("la recherche porte sur tout l'espace de travail ; vidée, le filtre revient", async ({
   page,
 }) => {
   await launch(page);

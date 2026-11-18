@@ -1,4 +1,4 @@
-//! Le journal de la bibliothèque ouverte, vu depuis la page : la note du jour.
+//! Le journal de l'espace de travail ouvert, vu depuis la page : la note du jour.
 
 use application::use_cases::CreateDailyNote;
 use domain::{Folder, NotePath};
@@ -13,7 +13,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier ou chemin invalide,
-    /// modèle absent, stockage indisponible, aucune bibliothèque ouverte.
+    /// modèle absent, stockage indisponible, aucun espace de travail ouvert.
     pub fn create_daily_note(
         &self,
         journal: &str,
@@ -33,7 +33,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -52,7 +52,7 @@ mod tests {
         let session = session(&[("Modèles/journal.md", "# Journal\n{{time}}")]);
         assert!(session.create_daily_note("Journal", None).is_err());
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         let created = session
             .create_daily_note("Journal", Some("Modèles/journal.md"))

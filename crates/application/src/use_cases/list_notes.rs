@@ -1,4 +1,4 @@
-//! Lister les notes de la bibliothèque.
+//! Lister les notes de l'espace de travail.
 
 use domain::note::{sort_by_recent, sorted};
 use domain::{Folder, NoteOrder, NoteSummary};
@@ -12,7 +12,7 @@ pub struct ListNotes<'a> {
 }
 
 impl<'a> ListNotes<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -30,14 +30,14 @@ impl<'a> ListNotes<'a> {
     }
 }
 
-/// Les notes de toute la bibliothèque, pour l'ouverture rapide.
+/// Les notes de tout l'espace de travail, pour l'ouverture rapide.
 #[derive(Debug)]
 pub struct ListAllNotes<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> ListAllNotes<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -47,7 +47,7 @@ impl<'a> ListAllNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn execute(&self) -> Result<Vec<NoteSummary>, AppError> {
         let mut summaries = Vec::new();
         for folder in std::iter::once(Folder::root()).chain(self.store.folders()?) {

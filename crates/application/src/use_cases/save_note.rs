@@ -35,7 +35,7 @@ pub struct SaveNote<'a> {
 }
 
 impl<'a> SaveNote<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte et l'horloge.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert et l'horloge.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore, clock: &'a dyn Clock) -> Self {
         Self { store, clock }

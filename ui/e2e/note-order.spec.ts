@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const LIBRARY = {
+const WORKSPACE = {
   "banane.md": { content: "# Banane\npain", modified: 40 },
   "cerise.md": { content: "# cerise\npain", modified: 30 },
   "avion.md": { content: "# avion\npain", modified: 20 },
@@ -8,7 +8,7 @@ const LIBRARY = {
 };
 
 async function launch(page: Page) {
-  const params = new URLSearchParams({ notes: JSON.stringify(LIBRARY), remembered: "1" });
+  const params = new URLSearchParams({ notes: JSON.stringify(WORKSPACE), remembered: "1" });
   await page.goto(`/e2e/app.html?${params.toString()}`);
   await expect(titles(page)).toHaveText(["Zut", "Banane", "cerise", "avion"]);
 }

@@ -5,7 +5,7 @@ const asset = (path: string) => `asset://${path}`;
 const resolve = (src: string) => imageAddress(src, "/Users/moi/Notes", asset);
 
 describe("adresse d'une image", () => {
-  it("cherche une image relative dans la bibliothèque", () => {
+  it("cherche une image relative dans l'espace de travail", () => {
     expect(resolve("voyage.assets/mer.png")).toBe("asset:///Users/moi/Notes/voyage.assets/mer.png");
   });
 

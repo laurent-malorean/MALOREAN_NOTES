@@ -5,14 +5,14 @@ use domain::{Folder, FolderName};
 
 use crate::{AppError, NoteStore};
 
-/// Les dossiers de la bibliothèque, dans l'ordre de l'arbre.
+/// Les dossiers de l'espace de travail, dans l'ordre de l'arbre.
 #[derive(Debug)]
 pub struct ListFolders<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> ListFolders<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -22,7 +22,7 @@ impl<'a> ListFolders<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn execute(&self) -> Result<Vec<Folder>, AppError> {
         Ok(sort_for_display(self.store.folders()?))
     }
@@ -35,7 +35,7 @@ pub struct CreateFolder<'a> {
 }
 
 impl<'a> CreateFolder<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -61,7 +61,7 @@ pub struct RenameFolder<'a> {
 }
 
 impl<'a> RenameFolder<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -91,7 +91,7 @@ pub struct MoveFolder<'a> {
 }
 
 impl<'a> MoveFolder<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }

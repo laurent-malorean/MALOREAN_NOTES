@@ -1,5 +1,5 @@
 // Journal : la note du jour, ouverte (et créée au besoin par Rust) sur demande ou au lancement,
-// et ses réglages, gardés pour chaque bibliothèque.
+// et ses réglages, gardés pour chaque espace de travail.
 import type * as Bridge from "../bridge";
 import { journalGroup } from "../screens/journal-setting";
 import { noteOpened } from "../state/columns";
@@ -8,15 +8,15 @@ import { journalTemplate, loadJournal, saveJournal } from "../state/journal";
 import { loadTemplatesFolder } from "../state/templates-folder";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
-import type { Library } from "./library";
+import type { Workspace } from "./workspace";
 
 export interface JournalDeps {
   readonly backend: Pick<typeof Bridge, "listAllNotes" | "createDailyNote">;
-  /** Où les réglages du journal et le dossier des modèles de chaque bibliothèque sont gardés. */
+  /** Où les réglages du journal et le dossier des modèles de chaque espace de travail sont gardés. */
   readonly storage: PreferenceStorage;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "flushedPath" | "update" | "activePane">;
-  readonly library: Pick<Library, "path" | "refreshFolders" | "refreshList">;
+  readonly workspace: Pick<Workspace, "path" | "refreshFolders" | "refreshList">;
 }
 
 export interface Journal {
@@ -24,25 +24,25 @@ export interface Journal {
   open(): Promise<void>;
   /** Fait de même au lancement, si les réglages le demandent. */
   atLaunch(): Promise<void>;
-  /** La partie des réglages du journal ; rien sans bibliothèque ouverte. */
+  /** La partie des réglages du journal ; rien sans espace de travail ouvert. */
   settingsGroups(): HTMLElement[];
 }
 
 /** Le modèle du journal, enregistré d'abord s'il est ouvert et modifié ; rien s'il n'y en a pas. */
-async function template(deps: JournalDeps, library: string): Promise<string | null> {
-  const folder = loadTemplatesFolder(deps.storage, library);
+async function template(deps: JournalDeps, workspace: string): Promise<string | null> {
+  const folder = loadTemplatesFolder(deps.storage, workspace);
   const found = folder && journalTemplate(await deps.backend.listAllNotes(), folder);
   return found ? deps.columns.flushedPath(found) : null;
 }
 
 async function open(deps: JournalDeps) {
-  if (deps.screen.get().kind !== "library") return;
-  const library = deps.library.path();
-  const { folder } = loadJournal(deps.storage, library);
-  const created = await deps.backend.createDailyNote(folder, await template(deps, library));
+  if (deps.screen.get().kind !== "workspace") return;
+  const workspace = deps.workspace.path();
+  const { folder } = loadJournal(deps.storage, workspace);
+  const created = await deps.backend.createDailyNote(folder, await template(deps, workspace));
   // Le journal vient peut-être d'être créé.
-  await deps.library.refreshFolders();
-  await deps.library.refreshList();
+  await deps.workspace.refreshFolders();
+  await deps.workspace.refreshList();
   await deps.columns.update((now) => noteOpened(now, created.path));
   deps.columns.activePane().editor.focus();
 }
@@ -51,14 +51,14 @@ export function createJournal(deps: JournalDeps): Journal {
   return {
     open: () => open(deps),
     atLaunch: async () => {
-      if (loadJournal(deps.storage, deps.library.path()).atLaunch) await open(deps);
+      if (loadJournal(deps.storage, deps.workspace.path()).atLaunch) await open(deps);
     },
     settingsGroups: () => {
-      if (deps.screen.get().kind !== "library") return [];
-      const library = deps.library.path();
+      if (deps.screen.get().kind !== "workspace") return [];
+      const workspace = deps.workspace.path();
       return [
-        journalGroup(loadJournal(deps.storage, library), (next) =>
-          saveJournal(deps.storage, library, next),
+        journalGroup(loadJournal(deps.storage, workspace), (next) =>
+          saveJournal(deps.storage, workspace, next),
         ),
       ];
     },

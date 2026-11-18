@@ -36,20 +36,20 @@ function fakeWindow(options: { failSet?: boolean; failAsk?: boolean; failListen?
 }
 
 function setup(window = fakeWindow(), storage = memoryStorage()) {
-  const workspace = document.createElement("section");
+  const mainArea = document.createElement("section");
   const fullScreenButton = document.createElement("button");
   const sidePanelsButton = document.createElement("button");
   const error = vi.fn();
   const display = connectWindowDisplay(
-    { workspace, fullScreenButton, sidePanelsButton },
+    { mainArea, fullScreenButton, sidePanelsButton },
     { window, storage, error },
   );
-  const panelsHidden = () => workspace.classList.contains("panels-hidden");
+  const panelsHidden = () => mainArea.classList.contains("panels-hidden");
   return {
     display,
     window,
     storage,
-    workspace,
+    mainArea,
     fullScreenButton,
     sidePanelsButton,
     error,

@@ -20,16 +20,16 @@ function recordCalls(answer: unknown = null): Call[] {
 afterEach(() => clearMocks());
 
 describe("pont vers Rust : chaque fonction appelle sa commande", () => {
-  it("rouvre la dernière bibliothèque", async () => {
+  it("rouvre le dernier espace de travail", async () => {
     const calls = recordCalls({ name: "Notes", path: "/n" });
-    expect(await bridge.reopenLastLibrary()).toEqual({ name: "Notes", path: "/n" });
-    expect(calls).toEqual([{ command: "reopen_last_library", args: {} }]);
+    expect(await bridge.reopenLastWorkspace()).toEqual({ name: "Notes", path: "/n" });
+    expect(calls).toEqual([{ command: "reopen_last_workspace", args: {} }]);
   });
 
-  it("fait choisir une bibliothèque", async () => {
+  it("fait choisir un espace de travail", async () => {
     const calls = recordCalls(null);
-    expect(await bridge.chooseLibrary()).toBeNull();
-    expect(calls).toEqual([{ command: "choose_library", args: {} }]);
+    expect(await bridge.chooseWorkspace()).toBeNull();
+    expect(calls).toEqual([{ command: "choose_workspace", args: {} }]);
   });
 
   it("liste les notes d'une étiquette, et les étiquettes", async () => {
@@ -54,7 +54,7 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     expect(calls).toEqual([{ command: "list_notes", args: { folder: "Travail", order: "title" } }]);
   });
 
-  it("cherche dans toute la bibliothèque, dans l'ordre du tri", async () => {
+  it("cherche dans tout l'espace de travail, dans l'ordre du tri", async () => {
     const calls = recordCalls([]);
     expect(await bridge.searchNotes("pain", "modified")).toEqual([]);
     expect(calls).toEqual([
@@ -72,7 +72,7 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     ]);
   });
 
-  it("liste toutes les notes de la bibliothèque", async () => {
+  it("liste toutes les notes de l'espace de travail", async () => {
     const calls = recordCalls([]);
     expect(await bridge.listAllNotes()).toEqual([]);
     expect(calls).toEqual([{ command: "list_all_notes", args: {} }]);
@@ -166,7 +166,7 @@ describe("pont vers Rust : dossiers", () => {
   });
 });
 
-describe("pont vers Rust : fichiers de la bibliothèque", () => {
+describe("pont vers Rust : fichiers de l'espace de travail", () => {
   it("donne l'adresse qui charge un fichier du disque dans la fenêtre", () => {
     mockConvertFileSrc("macos");
     expect(bridge.fileAddress("/Users/moi/Notes/a b.png")).toBe(
@@ -227,11 +227,11 @@ describe("pont vers Rust : fenêtre", () => {
 });
 
 describe("pont vers Rust : changements hors de l'application", () => {
-  it("transmet chaque changement de la bibliothèque annoncé par Rust", async () => {
+  it("transmet chaque changement de l'espace de travail annoncé par Rust", async () => {
     mockIPC(() => null, { shouldMockEvents: true });
     const received: string[][] = [];
-    await bridge.onLibraryChanged((change) => received.push(change.notes));
-    await emit("library-changed", { notes: ["Travail/lundi.md"] });
+    await bridge.onWorkspaceChanged((change) => received.push(change.notes));
+    await emit("workspace-changed", { notes: ["Travail/lundi.md"] });
     expect(received).toEqual([["Travail/lundi.md"]]);
   });
 });

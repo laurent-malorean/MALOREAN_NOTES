@@ -1,4 +1,4 @@
-// Réglages du journal : une partie de l'écran de réglages, propre à la bibliothèque ouverte.
+// Réglages du journal : une partie de l'écran de réglages, propre à l'espace de travail ouvert.
 import { journalFolder, type JournalSettings } from "../state/journal";
 
 /** Une ligne de réglage : son nom, son champ, et son aide s'il en a une. */

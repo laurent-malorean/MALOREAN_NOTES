@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fakePane, libraryScreen, recordedScreen, settle } from "../../test-support/app-fixture";
+import { fakePane, workspaceScreen, recordedScreen, settle } from "../../test-support/app-fixture";
 import type { Pane } from "../screens/note-pane";
 import { activeNote, columnSplit, type Columns, noteOpened } from "../state/columns";
 import { selectedNote } from "../state/screen";
@@ -14,7 +14,7 @@ function mount() {
   container.style.height = "300px";
   const outline = document.createElement("nav");
   document.body.replaceChildren(container, outline);
-  const { screen, shown } = recordedScreen(libraryScreen());
+  const { screen, shown } = recordedScreen(workspaceScreen());
   const log: string[] = [];
   const panes: ReturnType<typeof fakePane>[] = [];
   const changed = vi.fn();

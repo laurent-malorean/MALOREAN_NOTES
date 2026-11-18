@@ -49,7 +49,7 @@ export interface Trash {
 }
 
 const noteTitle = (screen: Screen, path: string) =>
-  (screen.kind === "library" && screen.notes.find((note) => note.path === path)?.title) || path;
+  (screen.kind === "workspace" && screen.notes.find((note) => note.path === path)?.title) || path;
 
 /**
  * Place une note dans la corbeille, une fois ce qui est tapé enregistré ; si la colonne active la
@@ -59,7 +59,7 @@ async function trashNote(deps: TrashDeps, path: string) {
   const source = await deps.columns.flushedPath(path);
   const gone = (note: string) => note === source;
   const screen = deps.screen.get();
-  const next = screen.kind === "library" ? nextSelection(screen.notes, source) : null;
+  const next = screen.kind === "workspace" ? nextSelection(screen.notes, source) : null;
   await deps.backend.trashNote(source);
   deps.columns.forget(gone);
   await deps.refreshList();
@@ -71,7 +71,7 @@ async function trashNote(deps: TrashDeps, path: string) {
 
 /**
  * Place un dossier dans la corbeille, avec tout ce qu'il contient. Si l'on y était, la liste
- * revient à la bibliothèque ; si la note de la colonne active y était, une autre s'y ouvre.
+ * revient à l'espace de travail ; si la note de la colonne active y était, une autre s'y ouvre.
  */
 async function trashFolder(deps: TrashDeps, path: string) {
   await deps.columns.flushAll();
@@ -95,7 +95,7 @@ async function trashFolder(deps: TrashDeps, path: string) {
     await deps.refreshList();
     const screen = deps.screen.get();
     if (activeGone)
-      next = noteShown(next, screen.kind === "library" ? initialSelection(screen.notes) : null);
+      next = noteShown(next, screen.kind === "workspace" ? initialSelection(screen.notes) : null);
   }
   await deps.columns.change(notesRemoved(next, gone));
 }

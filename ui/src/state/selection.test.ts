@@ -15,7 +15,7 @@ describe("sélection de la note", () => {
     expect(initialSelection([note("recente.md", 2), note("vieille.md", 1)])).toBe("recente.md");
   });
 
-  it("n'ouvre rien dans une bibliothèque vide", () => {
+  it("n'ouvre rien dans un espace de travail vide", () => {
     expect(initialSelection([])).toBeNull();
   });
 });

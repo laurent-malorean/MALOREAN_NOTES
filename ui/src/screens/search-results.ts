@@ -40,7 +40,7 @@ function line(className: string, text: string): HTMLElement {
  */
 export function renderSearchResults(
   container: HTMLElement,
-  libraryName: string,
+  workspaceName: string,
   results: readonly SearchResultItem[] | null,
   selected: string | null,
   actions: NoteOpening,
@@ -53,7 +53,7 @@ export function renderSearchResults(
       item.className = "search-result";
       item.classList.toggle("selected", result.path === selected);
       const folder =
-        result.folder === "" ? libraryName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
+        result.folder === "" ? workspaceName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
       item.append(line("note-title", result.title), line("search-folder", folder), excerpt(result));
       openOnClick(item, result.path, actions);
       return item;

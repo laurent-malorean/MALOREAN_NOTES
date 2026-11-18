@@ -2,13 +2,13 @@ import { expect, type Page, test } from "@playwright/test";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
-const LIBRARY: Notes = {
+const WORKSPACE: Notes = {
   "courses.md": { content: "# Courses\n- pain", modified: 30 },
   "idee.md": { content: "# Idée\ntexte", modified: 20 },
   "vieille-note.md": { content: "# Vieille note\ntexte", modified: 10 },
 };
 
-async function launch(page: Page, notes: Notes = LIBRARY) {
+async function launch(page: Page, notes: Notes = WORKSPACE) {
   const params = new URLSearchParams({ notes: JSON.stringify(notes), remembered: "1" });
   await page.goto(`/e2e/app.html?${params.toString()}`);
 }
@@ -72,7 +72,7 @@ test("au relancement, les notes disparues sont oubliées et une colonne sans ong
   await page.locator(".note-item", { hasText: "Vieille note" }).click();
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Vieille note×"]);
 
-  const { "vieille-note.md": kept } = LIBRARY;
+  const { "vieille-note.md": kept } = WORKSPACE;
   await launch(page, { "vieille-note.md": kept as Notes[string] });
 
   await expect(columns(page)).toHaveCount(1);
@@ -87,7 +87,7 @@ test("s'il ne reste rien des colonnes gardées, l'application démarre comme d'h
   await page.locator(".note-item", { hasText: "Idée" }).click();
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×"]);
 
-  const { "vieille-note.md": kept } = LIBRARY;
+  const { "vieille-note.md": kept } = WORKSPACE;
   await launch(page, { "vieille-note.md": kept as Notes[string] });
 
   await expect(columns(page)).toHaveCount(1);

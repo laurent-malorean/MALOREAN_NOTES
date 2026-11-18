@@ -1,4 +1,4 @@
-//! Retrouver des notes de toute la bibliothèque par les mots qu'elles contiennent.
+//! Retrouver des notes de tout l'espace de travail par les mots qu'elles contiennent.
 
 use domain::note::compare;
 use domain::search::{Excerpt, SearchQuery, search};
@@ -23,7 +23,7 @@ pub struct SearchResult {
     pub excerpt: Excerpt,
 }
 
-/// Les notes de toute la bibliothèque qui contiennent tous les mots cherchés.
+/// Les notes de tout l'espace de travail qui contiennent tous les mots cherchés.
 ///
 /// Aujourd'hui, chaque recherche relit toutes les notes ; un index pourra prendre
 /// le relais sans que l'appelant change.
@@ -33,7 +33,7 @@ pub struct SearchNotes<'a> {
 }
 
 impl<'a> SearchNotes<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -44,7 +44,7 @@ impl<'a> SearchNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn execute(
         &self,
         query: &SearchQuery,

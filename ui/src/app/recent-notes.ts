@@ -1,4 +1,4 @@
-// Notes récentes : celles que la colonne active a montrées, gardées pour chaque bibliothèque,
+// Notes récentes : celles que la colonne active a montrées, gardées pour chaque espace de travail,
 // qui suivent les renommages, et Récentes, qui les montre dans la liste comme un dossier.
 import type * as Bridge from "../bridge";
 import type { NoteListItem } from "../bridge";
@@ -19,12 +19,12 @@ export interface RecentNotesDeps {
   readonly backend: Pick<typeof Bridge, "listRecentNotes">;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "activePane" | "showNote">;
-  /** Là où les notes récentes de chaque bibliothèque sont gardées. */
+  /** Là où les notes récentes de chaque espace de travail sont gardées. */
   readonly storage: PreferenceStorage;
 }
 
 export interface RecentNotes {
-  /** Les chemins des notes récentes de la bibliothèque affichée, la plus récente d'abord. */
+  /** Les chemins des notes récentes de l'espace de travail affiché, la plus récente d'abord. */
   paths(): readonly string[];
   /** Les colonnes ont changé : la note que montre la colonne active passe en tête. */
   visited(columns: Columns): void;
@@ -36,26 +36,27 @@ export interface RecentNotes {
   show(): Promise<void>;
 }
 
-const libraryOf = (screen: Screen) => (screen.kind === "library" ? screen.library.path : null);
+const workspaceOf = (screen: Screen) =>
+  screen.kind === "workspace" ? screen.workspace.path : null;
 
 export function createRecentNotes(deps: RecentNotesDeps): RecentNotes {
-  const shown = () => libraryOf(deps.screen.get());
-  /** Celles de la bibliothèque affichée, telles que gardées ; aucune sur l'accueil. */
+  const shown = () => workspaceOf(deps.screen.get());
+  /** Celles de l'espace de travail affiché, telles que gardées ; aucune sur l'accueil. */
   const paths = (): readonly string[] => {
     const screen = deps.screen.get();
-    return screen.kind === "library" ? loadRecent(deps.storage, screen.library.path) : [];
+    return screen.kind === "workspace" ? loadRecent(deps.storage, screen.workspace.path) : [];
   };
   const change = (next: (now: readonly string[]) => readonly string[]) => {
-    const library = shown();
-    if (library !== null) saveRecent(deps.storage, library, next(paths()));
+    const workspace = shown();
+    if (workspace !== null) saveRecent(deps.storage, workspace, next(paths()));
   };
   const list = async () => {
-    const library = shown();
+    const workspace = shown();
     const asked = paths();
     const notes = await deps.backend.listRecentNotes(asked);
     const found = new Set(notes.map((note) => note.path));
-    // Une réponse arrivée après un changement de bibliothèque ne dit rien des notes de la nouvelle.
-    if (shown() === library) {
+    // Une réponse arrivée après un changement d'espace de travail ne dit rien des notes du nouveau.
+    if (shown() === workspace) {
       change((now) => recentKept(now, (path) => found.has(path) || !asked.includes(path)));
     }
     return notes;

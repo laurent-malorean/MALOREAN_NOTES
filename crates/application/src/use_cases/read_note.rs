@@ -11,7 +11,7 @@ pub struct ReadNote<'a> {
 }
 
 impl<'a> ReadNote<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }

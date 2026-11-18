@@ -1,4 +1,4 @@
-// Modèles de note : le dossier des modèles de la bibliothèque, et la note créée depuis un modèle.
+// Modèles de note : le dossier des modèles de l'espace de travail, et la note créée depuis un modèle.
 import type * as Bridge from "../bridge";
 import { openPicker } from "../screens/picker";
 import { templatesFolderGroup } from "../screens/templates-setting";
@@ -9,15 +9,15 @@ import { currentFolder } from "../state/screen";
 import { loadTemplatesFolder, saveTemplatesFolder, templatesIn } from "../state/templates-folder";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
-import type { Library } from "./library";
+import type { Workspace } from "./workspace";
 
 export interface TemplatesDeps {
   readonly backend: Pick<typeof Bridge, "listAllNotes" | "createNoteFromTemplate">;
-  /** Où le dossier des modèles de chaque bibliothèque est gardé. */
+  /** Où le dossier des modèles de chaque espace de travail est gardé. */
   readonly storage: PreferenceStorage;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "flushedPath" | "update" | "activePane">;
-  readonly library: Pick<Library, "path" | "refreshList" | "refreshTags">;
+  readonly workspace: Pick<Workspace, "path" | "refreshList" | "refreshTags">;
   /** La fenêtre de choix au clavier. */
   readonly picker: HTMLDialogElement;
   /** Montre un message quelques secondes. */
@@ -28,7 +28,7 @@ export interface TemplatesDeps {
 export interface Templates {
   /** Fait choisir un modèle, puis crée la note dans le dossier affiché et l'ouvre dans un nouvel onglet. */
   newNote(): Promise<void>;
-  /** La partie des réglages qui choisit le dossier des modèles ; rien sans bibliothèque ouverte. */
+  /** La partie des réglages qui choisit le dossier des modèles ; rien sans espace de travail ouvert. */
   settingsGroups(): HTMLElement[];
 }
 
@@ -39,16 +39,16 @@ async function createFrom(deps: TemplatesDeps, template: string) {
     source,
     currentFolder(deps.screen.get()),
   );
-  await deps.library.refreshList();
+  await deps.workspace.refreshList();
   // Un modèle peut porter des étiquettes.
-  await deps.library.refreshTags();
+  await deps.workspace.refreshTags();
   await deps.columns.update((now) => notePlaced(now, created.path, "newTab"));
   deps.columns.activePane().editor.focus();
 }
 
 async function newNote(deps: TemplatesDeps) {
-  if (deps.screen.get().kind !== "library") return;
-  const folder = loadTemplatesFolder(deps.storage, deps.library.path());
+  if (deps.screen.get().kind !== "workspace") return;
+  const folder = loadTemplatesFolder(deps.storage, deps.workspace.path());
   if (folder === null)
     return deps.show("Aucun dossier des modèles : choisissez-en un dans les réglages.");
   const templates = templatesIn(await deps.backend.listAllNotes(), folder);
@@ -69,11 +69,13 @@ export function createTemplates(deps: TemplatesDeps): Templates {
     newNote: () => newNote(deps),
     settingsGroups: () => {
       const screen = deps.screen.get();
-      if (screen.kind !== "library") return [];
-      const library = deps.library.path();
+      if (screen.kind !== "workspace") return [];
+      const workspace = deps.workspace.path();
       return [
-        templatesFolderGroup(screen.folders, loadTemplatesFolder(deps.storage, library), (folder) =>
-          saveTemplatesFolder(deps.storage, library, folder),
+        templatesFolderGroup(
+          screen.folders,
+          loadTemplatesFolder(deps.storage, workspace),
+          (folder) => saveTemplatesFolder(deps.storage, workspace, folder),
         ),
       ];
     },

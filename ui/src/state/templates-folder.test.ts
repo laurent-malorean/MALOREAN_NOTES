@@ -16,7 +16,7 @@ function memoryStorage(refused = false) {
 }
 
 describe("dossier des modèles", () => {
-  it("chaque bibliothèque garde le sien", () => {
+  it("chaque espace de travail garde le sien", () => {
     const { storage, items } = memoryStorage();
     expect(loadTemplatesFolder(storage, "/notes")).toBeNull();
     saveTemplatesFolder(storage, "/notes", "Modèles");

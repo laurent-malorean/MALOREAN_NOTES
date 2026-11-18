@@ -7,9 +7,9 @@ use crate::StoreError;
 /// Ce qui peut empêcher un cas d'usage d'aboutir.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum AppError {
-    /// Une action sur les notes a été demandée avant d'ouvrir une bibliothèque.
-    #[error("aucune bibliothèque n'est ouverte")]
-    NoLibraryOpen,
+    /// Une action sur les notes a été demandée avant d'ouvrir un espace de travail.
+    #[error("aucun espace de travail n'est ouvert")]
+    NoWorkspaceOpen,
     /// Aucune note ne porte ce nom.
     #[error("la note « {} » n'existe pas", .0.to_path())]
     NoteNotFound(NotePath),
@@ -28,11 +28,11 @@ pub enum AppError {
     /// Un dossier ne peut pas aller dans lui-même ni dans l'un de ses sous-dossiers.
     #[error("le dossier « {} » ne peut pas aller dans lui-même ni dans l'un de ses sous-dossiers", .0.to_path())]
     FolderInsideItself(Folder),
-    /// La racine (la bibliothèque elle-même) ne se renomme ni ne se déplace dans l'application.
-    #[error("la bibliothèque elle-même ne peut être ni renommée ni déplacée")]
+    /// La racine (l'espace de travail lui-même) ne se renomme ni ne se déplace dans l'application.
+    #[error("l'espace de travail lui-même ne peut être ni renommé ni déplacé")]
     RootIsFixed,
-    /// La racine (la bibliothèque elle-même) ne va pas dans la corbeille.
-    #[error("la bibliothèque elle-même ne peut pas aller dans la corbeille")]
+    /// La racine (l'espace de travail lui-même) ne va pas dans la corbeille.
+    #[error("l'espace de travail lui-même ne peut pas aller dans la corbeille")]
     RootCannotBeTrashed,
     /// Le fichier collé ou glissé n'est ni une image ni un PDF.
     #[error("{0}")]
@@ -117,7 +117,7 @@ mod tests {
         );
         assert_eq!(
             AppError::RootIsFixed.to_string(),
-            "la bibliothèque elle-même ne peut être ni renommée ni déplacée"
+            "l'espace de travail lui-même ne peut être ni renommé ni déplacé"
         );
     }
 

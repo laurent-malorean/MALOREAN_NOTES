@@ -19,7 +19,7 @@ describe("éditeur d'une colonne", () => {
       },
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
-      libraryPath: () => "/lib",
+      workspacePath: () => "/lib",
       configure,
     });
     const element = document.createElement("section");

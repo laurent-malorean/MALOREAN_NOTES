@@ -7,7 +7,7 @@ export type CommandId =
   | "new-note-from-template"
   | "daily-note"
   | "new-folder"
-  | "search-library"
+  | "search-workspace"
   | "find-in-note"
   | "toggle-focus"
   | "toggle-typewriter"
@@ -22,7 +22,7 @@ export type CommandId =
   | "sort-notes"
   | "show-trash"
   | "open-settings"
-  | "choose-library";
+  | "choose-workspace";
 
 export interface Command {
   readonly id: CommandId;
@@ -38,7 +38,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "new-note-from-template", label: "Nouvelle note depuis un modèle", shortcut: "Cmd+Maj+N" },
   { id: "daily-note", label: "Note du jour", shortcut: "Cmd+Maj+J" },
   { id: "new-folder", label: "Nouveau dossier" },
-  { id: "search-library", label: "Rechercher dans toutes les notes" },
+  { id: "search-workspace", label: "Rechercher dans toutes les notes" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },
   { id: "toggle-focus", label: "Mode focus", shortcut: "Cmd+Maj+F" },
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
@@ -53,7 +53,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "sort-notes", label: "Trier la liste" },
   { id: "show-trash", label: "Corbeille" },
   { id: "open-settings", label: "Réglages", shortcut: "Cmd+," },
-  { id: "choose-library", label: "Changer de dossier de notes" },
+  { id: "choose-workspace", label: "Changer de dossier de notes" },
 ];
 
 /** Les commandes dont le nom correspond à ce qui est tapé ; celles qui commencent par lui d'abord. */

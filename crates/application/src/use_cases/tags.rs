@@ -1,4 +1,4 @@
-//! Les étiquettes de la bibliothèque, et les notes qui portent l'une d'elles.
+//! Les étiquettes de l'espace de travail, et les notes qui portent l'une d'elles.
 
 use domain::note::sorted;
 use domain::tag::tag_counts;
@@ -7,14 +7,14 @@ use domain::{NoteOrder, NoteSummary};
 use super::ListAllNotes;
 use crate::{AppError, NoteStore};
 
-/// Les notes de toute la bibliothèque qui portent une étiquette : le filtre par étiquette.
+/// Les notes de tout l'espace de travail qui portent une étiquette : le filtre par étiquette.
 #[derive(Debug)]
 pub struct ListTaggedNotes<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> ListTaggedNotes<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -25,7 +25,7 @@ impl<'a> ListTaggedNotes<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn execute(&self, tag: &str, order: NoteOrder) -> Result<Vec<NoteSummary>, AppError> {
         let notes = ListAllNotes::new(self.store).execute()?;
         Ok(sorted(
@@ -38,14 +38,14 @@ impl<'a> ListTaggedNotes<'a> {
     }
 }
 
-/// La liste des étiquettes : chaque étiquette de la bibliothèque et son nombre de notes.
+/// La liste des étiquettes : chaque étiquette de l'espace de travail et son nombre de notes.
 #[derive(Debug)]
 pub struct ListTags<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> ListTags<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -55,7 +55,7 @@ impl<'a> ListTags<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn execute(&self) -> Result<Vec<(String, usize)>, AppError> {
         let notes = ListAllNotes::new(self.store).execute()?;
         Ok(tag_counts(notes.iter().map(NoteSummary::tags)))
@@ -67,7 +67,7 @@ mod tests {
     use super::*;
     use crate::testing::InMemoryNoteStore;
 
-    fn library() -> InMemoryNoteStore {
+    fn workspace() -> InMemoryNoteStore {
         InMemoryNoteStore::with_notes(&[
             ("a.md", "---\ntags: [perso]\n---\n# Alpha"),
             (
@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn notes_of_every_folder_carrying_the_tag_are_listed_pinned_first() {
-        let store = library();
+        let store = workspace();
         let notes = ListTaggedNotes::new(&store)
             .execute("perso", NoteOrder::Modified)
             .unwrap();
@@ -97,7 +97,7 @@ mod tests {
 
     #[test]
     fn notes_carrying_the_tag_follow_the_chosen_order() {
-        let store = library();
+        let store = workspace();
         let notes = ListTaggedNotes::new(&store)
             .execute("perso", NoteOrder::Title)
             .unwrap();
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn every_tag_comes_with_its_number_of_notes() {
-        let store = library();
+        let store = workspace();
         assert_eq!(
             ListTags::new(&store).execute().unwrap(),
             [("perso".to_owned(), 3), ("travail".to_owned(), 1)]

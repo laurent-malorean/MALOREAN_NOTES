@@ -7,7 +7,7 @@ describe("mise en page", () => {
     document.body.replaceChildren(root);
     const layout = createLayout(root);
     expect(layout.welcome.hidden).toBe(false);
-    expect(layout.workspace.hidden).toBe(true);
+    expect(layout.mainArea.hidden).toBe(true);
   });
 
   it("trouve tous les éléments utiles", () => {
@@ -15,7 +15,7 @@ describe("mise en page", () => {
     document.body.replaceChildren(root);
     const layout = createLayout(root);
     for (const element of [
-      layout.libraryName,
+      layout.workspaceName,
       layout.foldersList,
       layout.tagsList,
       layout.tagFilter,

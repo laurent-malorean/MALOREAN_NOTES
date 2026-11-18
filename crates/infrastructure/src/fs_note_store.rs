@@ -1,4 +1,4 @@
-//! Bibliothèque Markdown sur disque : un fichier `.md` par note, rangé dans des dossiers.
+//! Espace de travail Markdown sur disque : un fichier `.md` par note, rangé dans des dossiers.
 
 use std::fs;
 use std::io;
@@ -7,19 +7,19 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use application::{
-    AttachmentLocation, LibraryLocation, LibraryOpener, NoteStore, StoreError, StoredNote,
-    TrashContents,
+    AttachmentLocation, NoteStore, StoreError, StoredNote, TrashContents, WorkspaceLocation,
+    WorkspaceOpener,
 };
 use domain::{AttachmentName, FileName, Folder, FolderName, Modified, NotePath};
 
 const TEMPORARY_PREFIX: &str = ".";
 const TEMPORARY_SUFFIX: &str = ".enregistrement";
 /// La corbeille : un dossier caché à la racine, comme dans Obsidian ; elle n'est donc jamais
-/// listée parmi les dossiers de la bibliothèque.
+/// listée parmi les dossiers de l'espace de travail.
 const TRASH_FOLDER: &str = ".trash";
 const HIDDEN_PREFIX: char = '.';
 
-/// Les notes d'un dossier de la bibliothèque.
+/// Les notes d'un dossier de l'espace de travail.
 #[derive(Debug)]
 pub struct FsNoteStore {
     root: PathBuf,
@@ -118,7 +118,7 @@ impl FsNoteStore {
         }
     }
 
-    /// La corbeille, vue comme une petite bibliothèque rangée dans le dossier caché.
+    /// La corbeille, vue comme un petit espace de travail rangé dans le dossier caché.
     fn trash_store(&self) -> Self {
         Self::new(self.root.join(TRASH_FOLDER))
     }
@@ -454,12 +454,12 @@ fn move_into_place(folder: &Path, target: &Path) -> io::Result<()> {
     fs::rename(folder, target)
 }
 
-/// Ouvre une bibliothèque : un dossier existant sur le disque.
+/// Ouvre un espace de travail : un dossier existant sur le disque.
 #[derive(Debug)]
-pub struct FsLibraryOpener;
+pub struct FsWorkspaceOpener;
 
-impl LibraryOpener for FsLibraryOpener {
-    fn open(&self, location: &LibraryLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
+impl WorkspaceOpener for FsWorkspaceOpener {
+    fn open(&self, location: &WorkspaceLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
         let root = PathBuf::from(location.as_str());
         if !root.is_dir() {
             return Err(StoreError::Unavailable(format!(

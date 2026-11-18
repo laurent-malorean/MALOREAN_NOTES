@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-16
 - **Statut** : acceptée
+- **Note (18/11/2026)** : « bibliothèque » (`Library`) s'appelle désormais « espace de travail » (`Workspace`), voir `doc/ontology.md` ; cette fiche garde l'ancien mot.
 
 ## Contexte
 

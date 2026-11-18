@@ -28,7 +28,7 @@ fn names(store: &impl NoteStore, of: &str) -> Vec<String> {
     names
 }
 
-/// Joue tout le contrat ; `empty_store` fabrique une bibliothèque vide à chaque appel.
+/// Joue tout le contrat ; `empty_store` fabrique un espace de travail vide à chaque appel.
 pub fn attachment_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     a_note_without_attachment_folder_has_no_attachment(&empty_store());
     a_written_attachment_is_listed_and_can_be_located(&empty_store());

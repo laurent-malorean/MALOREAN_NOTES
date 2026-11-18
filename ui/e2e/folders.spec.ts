@@ -64,7 +64,7 @@ test("une note glissée sur un dossier plié y va toujours", async ({ page }) =>
   await expect(folderNames(page)).toHaveText(["Notes", "Perso", "Travail"]);
 });
 
-test("une bibliothèque à un seul niveau de dossiers se plie par sa racine, et le reste au relancement", async ({
+test("un espace de travail à un seul niveau de dossiers se plie par sa racine, et le reste au relancement", async ({
   page,
 }) => {
   const notes = {

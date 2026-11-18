@@ -18,7 +18,7 @@ crates/
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
-                      disposition gardée, dossiers pliés gardés, bibliothèque, dossiers, demandes de l'écran, modèles, journal, recherche, corbeille, enregistrement,
+                      disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, recherche, corbeille, enregistrement,
                       modifications extérieures, outils d'écriture, réglages, commandes
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
@@ -56,15 +56,15 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 
 | Emplacement | Contenu | Perte acceptable ? |
 |---|---|---|
-| Bibliothèque (dossier choisi par l'utilisateur, iCloud Drive possible) | notes `.md`, dossiers, pièces jointes — **seule source de vérité** | non |
-| `~/Library/Application Support/<app>/` | préférences, liste des bibliothèques ouvertes | non |
-| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes, dossier des modèles, réglages du journal, dossiers pliés, tri de la liste et notes récentes de chaque bibliothèque ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
+| Espace de travail (dossier choisi par l'utilisateur, iCloud Drive possible) | notes `.md`, dossiers, pièces jointes — **seule source de vérité** | non |
+| `~/Library/Application Support/<app>/` | préférences, liste des espaces de travail ouverts | non |
+| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes, dossier des modèles, réglages du journal, dossiers pliés, tri de la liste et notes récentes de chaque espace de travail ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
 | `~/Library/Caches/<app>/` | index de recherche, aperçus — reconstructibles | oui |
 | `~/Library/Logs/<app>/` | journaux | oui |
 | Trousseau macOS | secrets éventuels | non |
 
-- Toute écriture dans la bibliothèque est atomique (fichier temporaire puis renommage) : un fichier n'est jamais à moitié écrit.
-- La surveillance des fichiers (port `LibraryWatcher`, adaptateur FSEvents dans `infrastructure`) détecte les modifications extérieures ; `api` les relaie à la page par l'événement `library-changed`. L'application recharge la note, ou garde l'autre version dans une copie de conflit : rien n'est perdu (fiche 0014).
+- Toute écriture dans l'espace de travail est atomique (fichier temporaire puis renommage) : un fichier n'est jamais à moitié écrit.
+- La surveillance des fichiers (port `WorkspaceWatcher`, adaptateur FSEvents dans `infrastructure`) détecte les modifications extérieures ; `api` les relaie à la page par l'événement `workspace-changed`. L'application recharge la note, ou garde l'autre version dans une copie de conflit : rien n'est perdu (fiche 0014).
 - Les liens entre notes (`[[titre]]`) et les liens entrants sont calculés à la demande en relisant les notes, comme la recherche (fiche 0016).
 - Les colonnes et leurs onglets sont un état de l'interface seule ; chaque colonne a son éditeur et charge la note de son onglet actif ; une note montrée dans plusieurs colonnes n'a qu'un texte et qu'un enregistrement automatique, partagés entre leurs éditeurs (fiche 0017).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
@@ -82,7 +82,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0005-aide-ecriture-modele-apple.md` | Aide à l'écriture par le modèle d'IA du Mac (proposée) |
 | `0006-seuils-et-mutation-a-chaque-envoi.md` | Seuils qui ne baissent jamais, test de mutation à chaque envoi |
 | `0007-images-par-le-protocole-asset.md` | Images des notes : chargées par le protocole `asset` de Tauri |
-| `0008-sous-dossiers.md` | Sous-dossiers : une note est désignée par son chemin depuis la bibliothèque |
+| `0008-sous-dossiers.md` | Sous-dossiers : une note est désignée par son chemin depuis l'espace de travail |
 | `0009-recherche-plein-texte.md` | Recherche plein texte : relire les notes à chaque recherche, en Rust |
 | `0010-notes-epinglees.md` | Notes épinglées : `pinned: true` dans l'en-tête de la note |
 | `0011-mode-focus.md` | Mode focus : calculé dans l'éditeur, réglage gardé par la page |
@@ -94,11 +94,11 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
 | `0018-plein-ecran-et-panneaux-lateraux.md` | Plein écran et panneaux latéraux : deux réglages indépendants |
 | `0019-modeles-de-note.md` | Modèles de note : un dossier choisi dans les réglages, la note créée par Rust |
-| `0020-etiquettes.md` | Étiquettes : lues dans l'en-tête par Rust, un filtre sur toute la bibliothèque |
+| `0020-etiquettes.md` | Étiquettes : lues dans l'en-tête par Rust, un filtre sur tout l'espace de travail |
 | `0021-tri-de-la-liste.md` | Tri de la liste : choisi par l'interface, rangé par Rust |
 | `0022-notes-recentes.md` | Notes récentes : tenues par l'interface, relues par Rust |
 | `0023-note-du-jour.md` | Note du jour : un fichier daté dans le journal, créé par Rust, ouvert au lancement |
 
 ## Décisions ouvertes
 
-- Cibles de performance (taille de bibliothèque, temps d'ouverture, temps de recherche, mémoire).
+- Cibles de performance (taille d'espace de travail, temps d'ouverture, temps de recherche, mémoire).

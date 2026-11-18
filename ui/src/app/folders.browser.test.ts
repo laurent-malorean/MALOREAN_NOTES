@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   fakeColumns,
   fakePane,
-  libraryScreen,
+  workspaceScreen,
   listed,
   recordedScreen,
   settle,
@@ -11,7 +11,7 @@ import { activeNote, columnsStarted, noteOpened } from "../state/columns";
 import { currentFolder, type Screen, selectedNote, welcome } from "../state/screen";
 import { createFolders } from "./folders";
 
-function setup(start: Screen = libraryScreen()) {
+function setup(start: Screen = workspaceScreen()) {
   const { screen } = recordedScreen(start);
   const columns = fakeColumns(noteOpened(noteOpened(columnsStarted, "projets/a.md"), "b.md"));
   const log: string[] = [];
@@ -48,11 +48,11 @@ describe("dossiers", () => {
     const t = setup();
     t.folders.fold("projets");
     const folded = t.screen.get();
-    expect(folded.kind === "library" && folded.folded).toEqual(["projets"]);
+    expect(folded.kind === "workspace" && folded.folded).toEqual(["projets"]);
     expect(currentFolder(folded)).toBe("");
     t.folders.fold("projets");
     const unfolded = t.screen.get();
-    expect(unfolded.kind === "library" && unfolded.folded).toEqual([]);
+    expect(unfolded.kind === "workspace" && unfolded.folded).toEqual([]);
     expect(t.log).toEqual([]);
   });
 
@@ -66,7 +66,7 @@ describe("dossiers", () => {
   });
 
   it("les notes du dossier choisi suivent le tri de la liste", async () => {
-    const t = setup(libraryScreen([], (screen) => ({ ...screen, order: "title" })));
+    const t = setup(workspaceScreen([], (screen) => ({ ...screen, order: "title" })));
     await t.folders.select("projets");
     expect(t.log).toEqual(["enregistrer b.md", "notes de «projets» par title"]);
   });
@@ -76,12 +76,12 @@ describe("dossiers", () => {
     await t.folders.select("");
     expect(t.log).toEqual([]);
     const trash = setup(
-      libraryScreen([], (screen) => ({ ...screen, trash: { notes: [], folders: [] } })),
+      workspaceScreen([], (screen) => ({ ...screen, trash: { notes: [], folders: [] } })),
     );
     await trash.folders.select("");
     expect(trash.log).toEqual(["enregistrer b.md", "notes de «»"]);
     const now = trash.screen.get();
-    expect(now.kind === "library" && now.trash).toBe(null);
+    expect(now.kind === "workspace" && now.trash).toBe(null);
   });
 
   it("sur l'accueil, la racine n'est pas rechargée", async () => {
@@ -95,12 +95,14 @@ describe("dossiers", () => {
     await t.folders.create("", "neuf");
     expect(t.log).toEqual(["créer  neuf", "dossiers", "enregistrer b.md", "notes de «neuf»"]);
     const now = t.screen.get();
-    expect(now.kind === "library" && now.folders).toEqual(["projets", "neuf"]);
+    expect(now.kind === "workspace" && now.folders).toEqual(["projets", "neuf"]);
     expect(currentFolder(now)).toBe("neuf");
   });
 
   it("renommé, il reste affiché sous son nouveau nom ; les onglets et les notes récentes suivent", async () => {
-    const t = setup(libraryScreen([listed("projets/a.md")], (s) => ({ ...s, folder: "projets" })));
+    const t = setup(
+      workspaceScreen([listed("projets/a.md")], (s) => ({ ...s, folder: "projets" })),
+    );
     await t.folders.rename("projets", "travaux");
     expect(t.log).toEqual([
       "renommer projets travaux",
@@ -127,7 +129,7 @@ describe("dossiers", () => {
   });
 
   it("fait écrire le nom d'un nouveau dossier dans le dossier affiché", async () => {
-    const t = setup(libraryScreen([], (screen) => ({ ...screen, folder: "projets" })));
+    const t = setup(workspaceScreen([], (screen) => ({ ...screen, folder: "projets" })));
     t.folders.startCreation();
     const input = t.list.querySelector("input") as HTMLInputElement;
     expect(input.placeholder).toBe("Nom du dossier");

@@ -1,4 +1,4 @@
-// Réglage du dossier des modèles : une partie de l'écran de réglages, propre à la bibliothèque ouverte.
+// Réglage du dossier des modèles : une partie de l'écran de réglages, propre à l'espace de travail ouvert.
 
 /**
  * La partie « Modèles » de l'écran de réglages : le dossier des modèles parmi `folders`, ou aucun.

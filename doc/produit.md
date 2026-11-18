@@ -12,12 +12,12 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 
 - **Une note = un fichier `.md`**, lisible et modifiable par n'importe quel autre outil.
 - **Les fichiers sont la seule source de vérité.** Pas de base de données propriétaire ; l'index de recherche est un cache que l'application peut reconstruire à tout moment.
-- **Une bibliothèque = un dossier** choisi par l'utilisateur. Les dossiers de notes sont de vrais dossiers sur le disque.
+- **Un espace de travail = un dossier** choisi par l'utilisateur. Les dossiers de notes sont de vrais dossiers sur le disque.
 - **Titre et nom de fichier** : le titre d'une note est son premier titre `#`. Le nom du fichier est ce titre en kebab-case (`Mon idée du jour` → `mon-idee-du-jour.md`) : minuscules, accents retirés, espaces remplacés par `-`, autres signes supprimés. Changer le titre renomme le fichier. Note sans titre : `sans-titre.md`. Nom déjà pris dans le dossier : suffixe `-2`, `-3`…
 - **Pièces jointes** (images collées, fichiers) : un dossier par note, à côté d'elle, nommé comme la note avec `.assets` (`mon-idee-du-jour.assets/`), référencé par liens Markdown relatifs. Ce dossier n'apparaît pas comme un dossier de notes. Renommer la note renomme son dossier et met à jour ses liens ; supprimer la note envoie ses pièces jointes à la corbeille avec elle.
 - **Métadonnées minimales**, en en-tête YAML seulement quand elles sont nécessaires (épinglée, étiquettes). Une note sans en-tête est une note valide.
 - **Modifications extérieures** : si un fichier change hors de l'application (autre éditeur, synchronisation), l'application le recharge. Si la note était aussi modifiée dans l'application, elle ne perd rien et signale le conflit.
-- **Synchronisation** : la bibliothèque peut vivre dans iCloud Drive ou tout dossier synchronisé ; l'application n'a pas son propre service de synchronisation.
+- **Synchronisation** : l'espace de travail peut vivre dans iCloud Drive ou tout dossier synchronisé ; l'application n'a pas son propre service de synchronisation.
 
 ## Périmètre de la première version
 
@@ -26,9 +26,9 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
 - Recherche plein texte instantanée.
 - Notes épinglées en tête de liste ; tri par date de modification.
-- Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur toute la bibliothèque ; liste des étiquettes avec leur nombre de notes.
-- Tri de la liste par date de modification ou par titre, épinglées toujours en tête ; il vaut aussi pour le filtre par étiquette et la recherche, et chaque bibliothèque garde le sien.
-- Notes récentes : les 10 dernières notes ouvertes, de tout dossier, montrées par l'entrée « Récentes » comme un dossier et proposées d'abord par l'ouverture rapide ; elles suivent les renommages, perdent les notes jetées, et chaque bibliothèque garde les siennes.
+- Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur tout l'espace de travail ; liste des étiquettes avec leur nombre de notes.
+- Tri de la liste par date de modification ou par titre, épinglées toujours en tête ; il vaut aussi pour le filtre par étiquette et la recherche, et chaque espace de travail garde le sien.
+- Notes récentes : les 10 dernières notes ouvertes, de tout dossier, montrées par l'entrée « Récentes » comme un dossier et proposées d'abord par l'ouverture rapide ; elles suivent les renommages, perdent les notes jetées, et chaque espace de travail garde les siennes.
 - Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
 - Coller une image : elle devient une pièce jointe liée.
 - Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.

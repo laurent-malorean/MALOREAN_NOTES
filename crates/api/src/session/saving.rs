@@ -1,4 +1,4 @@
-//! Enregistrer une note de la bibliothèque ouverte, sans jamais écraser une version écrite ailleurs.
+//! Enregistrer une note de l'espace de travail ouvert, sans jamais écraser une version écrite ailleurs.
 
 use application::use_cases::SaveNote;
 use domain::title::displayed_title;
@@ -15,7 +15,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin ou empreinte invalide,
-    /// nom pris, stockage indisponible, aucune bibliothèque ouverte.
+    /// nom pris, stockage indisponible, aucun espace de travail ouvert.
     pub fn save_note(
         &self,
         path: &str,
@@ -42,7 +42,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -55,7 +55,7 @@ mod tests {
             Arc::new(FixedClock::default()),
         );
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         session
     }

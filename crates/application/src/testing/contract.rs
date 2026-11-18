@@ -21,7 +21,7 @@ fn root() -> Folder {
     Folder::root()
 }
 
-/// Joue tout le contrat ; `empty_store` fabrique une bibliothèque vide à chaque appel.
+/// Joue tout le contrat ; `empty_store` fabrique un espace de travail vide à chaque appel.
 pub fn note_store_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     written_note_can_be_read_back(&empty_store());
     rewriting_replaces_content_and_advances_modified(&empty_store());

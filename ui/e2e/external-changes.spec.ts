@@ -1,13 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 
-const LIBRARY = {
+const WORKSPACE = {
   "courses.md": { content: "# Courses\n- pain", modified: 20 },
   "idee.md": { content: "# Idée\ntexte", modified: 10 },
 };
 
 async function launch(page: Page) {
   const params = new URLSearchParams({
-    notes: JSON.stringify(LIBRARY),
+    notes: JSON.stringify(WORKSPACE),
     folders: "[]",
     remembered: "1",
   });

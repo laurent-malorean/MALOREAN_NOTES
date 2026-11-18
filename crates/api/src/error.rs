@@ -83,8 +83,8 @@ mod tests {
     #[test]
     fn use_case_errors_reach_the_page_as_their_message() {
         assert_eq!(
-            ApiError::from(AppError::NoLibraryOpen).message,
-            "aucune bibliothèque n'est ouverte"
+            ApiError::from(AppError::NoWorkspaceOpen).message,
+            "aucun espace de travail n'est ouvert"
         );
     }
 

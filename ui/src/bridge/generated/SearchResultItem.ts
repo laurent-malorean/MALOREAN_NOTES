@@ -6,7 +6,7 @@ import type { ExcerptPartItem } from "./ExcerptPartItem";
  */
 export type SearchResultItem = { 
 /**
- * Le chemin de la note depuis la bibliothèque : `dossier/nom.md`.
+ * Le chemin de la note depuis l'espace de travail : `dossier/nom.md`.
  */
 path: string, 
 /**

@@ -1,4 +1,4 @@
-// Recherche dans toute la bibliothèque : chaque frappe se voit ; la recherche part après une courte pause.
+// Recherche dans tout l'espace de travail : chaque frappe se voit ; la recherche part après une courte pause.
 import type * as Bridge from "../bridge";
 import { timerScheduler } from "../state/autosave";
 import { createDebouncer, SEARCH_DELAY_MS } from "../state/debounce";

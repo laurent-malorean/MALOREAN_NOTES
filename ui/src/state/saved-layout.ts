@@ -1,5 +1,5 @@
-// Disposition gardée : les colonnes d'une bibliothèque, retrouvées au relancement (fiche 0017).
-import type { LibraryNoteItem } from "../bridge/generated/LibraryNoteItem";
+// Disposition gardée : les colonnes d'un espace de travail, retrouvées au relancement (fiche 0017).
+import type { WorkspaceNoteItem } from "../bridge/generated/WorkspaceNoteItem";
 import {
   activeNote,
   type Column,
@@ -29,7 +29,7 @@ interface SavedLayout {
   readonly active: number;
 }
 
-type LibraryNote = Pick<LibraryNoteItem, "path" | "title">;
+type WorkspaceNote = Pick<WorkspaceNoteItem, "path" | "title">;
 
 /** Les colonnes, mises en texte pour être gardées ; les identifiants et les titres n'en font pas partie. */
 export function savedLayout(columns: Columns): string {
@@ -80,7 +80,7 @@ function readLayout(stored: string | null): SavedLayout | null {
     : null;
 }
 
-/** Les colonnes telles que gardées, chaque note gardée prenant son titre dans la bibliothèque. */
+/** Les colonnes telles que gardées, chaque note gardée prenant son titre dans l'espace de travail. */
 function rebuilt(layout: SavedLayout, titles: ReadonlyMap<string, string>): Columns {
   const total = layout.columns.reduce((sum, column) => sum + column.width, 0);
   let nextId = 0;
@@ -98,17 +98,17 @@ function rebuilt(layout: SavedLayout, titles: ReadonlyMap<string, string>): Colu
 }
 
 /**
- * Les colonnes gardées, retrouvées dans la bibliothèque telle qu'elle est : une note disparue
+ * Les colonnes gardées, retrouvées dans l'espace de travail tel qu'il est : une note disparue
  * est oubliée, une colonne restée sans onglet se ferme. Rien s'il ne reste aucune note, ou si la
  * disposition est absente, illisible ou d'une autre version.
  */
 export function layoutRestored(
   stored: string | null,
-  library: readonly LibraryNote[],
+  workspace: readonly WorkspaceNote[],
 ): Columns | null {
   const layout = readLayout(stored);
   if (layout === null) return null;
-  const titles = new Map(library.map((note) => [note.path, note.title]));
+  const titles = new Map(workspace.map((note) => [note.path, note.title]));
   const columns = rebuilt(layout, titles);
   const gone = columns.list.flatMap((column) => column.tabs).filter((tab) => !titles.has(tab.note));
   const kept = gone.reduce((next, tab) => tabClosed(next, tab.id), columns);
@@ -118,25 +118,25 @@ export function layoutRestored(
   return activeNote(closed) === null ? null : closed;
 }
 
-/** Les colonnes gardées pour cette bibliothèque ; rien si le stockage est refusé. */
+/** Les colonnes gardées pour cet espace de travail ; rien si le stockage est refusé. */
 export function loadLayout(
   storage: PreferenceStorage,
-  library: string,
-  notes: readonly LibraryNote[],
+  workspace: string,
+  notes: readonly WorkspaceNote[],
 ): Columns | null {
   let stored: string | null = null;
   try {
-    stored = storage.getItem(KEY + library);
+    stored = storage.getItem(KEY + workspace);
   } catch {
     // Stockage refusé : comme si rien n'était gardé.
   }
   return layoutRestored(stored, notes);
 }
 
-/** Garde les colonnes de cette bibliothèque ; sans effet si le stockage est refusé. */
-export function saveLayout(storage: PreferenceStorage, library: string, columns: Columns): void {
+/** Garde les colonnes de cet espace de travail ; sans effet si le stockage est refusé. */
+export function saveLayout(storage: PreferenceStorage, workspace: string, columns: Columns): void {
   try {
-    storage.setItem(KEY + library, savedLayout(columns));
+    storage.setItem(KEY + workspace, savedLayout(columns));
   } catch {
     // Confort : la perdre fait seulement repartir des colonnes du lancement.
   }

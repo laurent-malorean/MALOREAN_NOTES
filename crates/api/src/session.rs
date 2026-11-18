@@ -1,4 +1,4 @@
-//! La bibliothèque ouverte et les cas d'usage qu'on lui applique.
+//! L'espace de travail ouvert et les cas d'usage qu'on lui applique.
 
 mod attachments;
 mod journal;
@@ -10,17 +10,17 @@ mod tags;
 mod templates;
 mod trash;
 mod watching;
+mod workspace;
 
-use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use application::use_cases::{
-    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenLibrary, PinNote,
-    ReadNote, RenameFolder, ReopenLastLibrary, SearchNotes, SearchResult,
+    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, PinNote, ReadNote,
+    RenameFolder, SearchNotes, SearchResult,
 };
 use application::{
-    AppError, Clock, LibraryLocation, LibraryOpener, LibraryWatcher, NoteStore, Preferences,
-    StoredNote, Watching,
+    AppError, Clock, NoteStore, Preferences, StoredNote, Watching, WorkspaceLocation,
+    WorkspaceOpener, WorkspaceWatcher,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
@@ -28,8 +28,8 @@ use domain::title::displayed_title;
 use domain::{Fingerprint, Folder, FolderName, NotePath, NoteSummary};
 
 use crate::{
-    ApiError, ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, NoteOrderItem, SavedNote,
-    SearchResultItem,
+    ApiError, ExcerptPartItem, NoteContent, NoteListItem, NoteOrderItem, SavedNote,
+    SearchResultItem, WorkspaceInfo,
 };
 
 /// Une ligne de la liste des notes.
@@ -43,29 +43,29 @@ fn list_item(note: &NoteSummary) -> NoteListItem {
     }
 }
 
-/// État partagé par les commandes : les adaptateurs et la bibliothèque ouverte.
+/// État partagé par les commandes : les adaptateurs et l'espace de travail ouvert.
 #[derive(Debug)]
 pub struct Session {
-    opener: Arc<dyn LibraryOpener>,
+    opener: Arc<dyn WorkspaceOpener>,
     preferences: Arc<dyn Preferences>,
     clock: Arc<dyn Clock>,
-    library: RwLock<Option<OpenLibraryState>>,
-    watcher: Option<Arc<dyn LibraryWatcher>>,
+    workspace: RwLock<Option<OpenWorkspaceState>>,
+    watcher: Option<Arc<dyn WorkspaceWatcher>>,
     watching: Mutex<Option<Box<dyn Watching>>>,
 }
 
-/// La bibliothèque ouverte : où elle est, et ses notes.
+/// L'espace de travail ouvert : où il est, et ses notes.
 #[derive(Debug, Clone)]
-struct OpenLibraryState {
-    location: LibraryLocation,
+struct OpenWorkspaceState {
+    location: WorkspaceLocation,
     store: Arc<dyn NoteStore>,
 }
 
 impl Session {
-    /// Une session sans bibliothèque ouverte.
+    /// Une session sans espace de travail ouvert.
     #[must_use]
     pub fn new(
-        opener: Arc<dyn LibraryOpener>,
+        opener: Arc<dyn WorkspaceOpener>,
         preferences: Arc<dyn Preferences>,
         clock: Arc<dyn Clock>,
     ) -> Self {
@@ -73,59 +73,18 @@ impl Session {
             opener,
             preferences,
             clock,
-            library: RwLock::new(None),
+            workspace: RwLock::new(None),
             watcher: None,
             watching: Mutex::new(None),
         }
-    }
-
-    /// Rouvre la dernière bibliothèque ; rien au premier lancement.
-    ///
-    /// # Errors
-    ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; préférences illisibles,
-    /// bibliothèque introuvable.
-    pub fn reopen_last_library(&self) -> Result<Option<LibraryInfo>, ApiError> {
-        let reopened = ReopenLastLibrary::new(&*self.opener, &*self.preferences).execute()?;
-        Ok(reopened.map(|opened| self.keep(&opened.location, opened.store)))
-    }
-
-    /// Ouvre la bibliothèque choisie et s'en souvient.
-    ///
-    /// # Errors
-    ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier introuvable,
-    /// préférences impossibles à écrire.
-    pub fn open_library(&self, location: LibraryLocation) -> Result<LibraryInfo, ApiError> {
-        let store = OpenLibrary::new(&*self.opener, &*self.preferences).execute(&location)?;
-        Ok(self.keep(&location, store))
-    }
-
-    /// Ouvre le dossier choisi dans la fenêtre de choix ; rien si l'utilisateur a annulé.
-    ///
-    /// # Errors
-    ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom de dossier illisible,
-    /// emplacement vide, dossier introuvable, préférences impossibles à écrire.
-    pub fn open_chosen_folder(
-        &self,
-        folder: Option<&Path>,
-    ) -> Result<Option<LibraryInfo>, ApiError> {
-        let Some(folder) = folder else {
-            return Ok(None);
-        };
-        let location = folder
-            .to_str()
-            .ok_or_else(|| ApiError::unreadable_folder_name(folder))?;
-        self.open_library(LibraryLocation::new(location)?).map(Some)
     }
 
     /// Les notes du dossier reçu de la page (`""` pour la racine), la plus récente en premier.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier invalide, aucune
-    /// bibliothèque ouverte, dossier illisible.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier invalide, aucun
+    /// espace de travail ouvert, dossier illisible.
     pub fn list_notes(
         &self,
         folder: &str,
@@ -136,13 +95,13 @@ impl Session {
         Ok(notes.iter().map(list_item).collect())
     }
 
-    /// Les notes de toute la bibliothèque qui contiennent tous les mots de `query` ;
+    /// Les notes de tout l'espace de travail qui contiennent tous les mots de `query` ;
     /// aucune si `query` n'a pas de mot.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucune bibliothèque
-    /// ouverte, bibliothèque illisible.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucun espace de travail
+    /// ouvert, espace de travail illisible.
     pub fn search_notes(
         &self,
         query: &str,
@@ -161,7 +120,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note
-    /// absente ou illisible, aucune bibliothèque ouverte.
+    /// absente ou illisible, aucun espace de travail ouvert.
     pub fn read_note(&self, path: &str) -> Result<NoteContent, ApiError> {
         let store = self.store()?;
         Ok(note_content(
@@ -174,7 +133,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note ou
-    /// dossier absent, note illisible, nom pris, aucune bibliothèque ouverte.
+    /// dossier absent, note illisible, nom pris, aucun espace de travail ouvert.
     pub fn move_note(&self, path: &str, into: &str) -> Result<SavedNote, ApiError> {
         let store = self.store()?;
         let moved =
@@ -189,7 +148,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note absente
-    /// ou illisible, stockage indisponible, aucune bibliothèque ouverte.
+    /// ou illisible, stockage indisponible, aucun espace de travail ouvert.
     pub fn pin_note(&self, path: &str) -> Result<NoteContent, ApiError> {
         let store = self.store()?;
         Ok(note_content(
@@ -214,7 +173,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; dossier invalide, stockage
-    /// indisponible, aucune bibliothèque ouverte.
+    /// indisponible, aucun espace de travail ouvert.
     pub fn create_note(&self, folder: &str) -> Result<SavedNote, ApiError> {
         let store = self.store()?;
         let created = CreateNote::new(&*store).execute(&Folder::parse(folder)?)?;
@@ -223,12 +182,12 @@ impl Session {
         })
     }
 
-    /// Les chemins de tous les dossiers de la bibliothèque, dans l'ordre de l'arbre.
+    /// Les chemins de tous les dossiers de l'espace de travail, dans l'ordre de l'arbre.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucune bibliothèque
-    /// ouverte, bibliothèque illisible.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucun espace de travail
+    /// ouvert, espace de travail illisible.
     pub fn list_folders(&self) -> Result<Vec<String>, ApiError> {
         let store = self.store()?;
         let folders = ListFolders::new(&*store).execute()?;
@@ -240,7 +199,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom ou chemin invalide,
-    /// dossier déjà existant, parent absent, aucune bibliothèque ouverte.
+    /// dossier déjà existant, parent absent, aucun espace de travail ouvert.
     pub fn create_folder(&self, parent: &str, name: &str) -> Result<String, ApiError> {
         let store = self.store()?;
         let created = CreateFolder::new(&*store)
@@ -253,7 +212,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom ou chemin invalide,
-    /// racine, nom déjà pris, dossier absent, aucune bibliothèque ouverte.
+    /// racine, nom déjà pris, dossier absent, aucun espace de travail ouvert.
     pub fn rename_folder(&self, path: &str, name: &str) -> Result<String, ApiError> {
         let store = self.store()?;
         let renamed =
@@ -266,7 +225,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, racine,
-    /// déplacement dans lui-même, nom déjà pris, dossier absent, aucune bibliothèque ouverte.
+    /// déplacement dans lui-même, nom déjà pris, dossier absent, aucun espace de travail ouvert.
     pub fn move_folder(&self, path: &str, into: &str) -> Result<String, ApiError> {
         let store = self.store()?;
         let moved =
@@ -274,20 +233,26 @@ impl Session {
         Ok(moved.to_path())
     }
 
-    fn keep(&self, location: &LibraryLocation, store: Arc<dyn NoteStore>) -> LibraryInfo {
-        let opened = OpenLibraryState {
+    fn keep(&self, location: &WorkspaceLocation, store: Arc<dyn NoteStore>) -> WorkspaceInfo {
+        let opened = OpenWorkspaceState {
             location: location.clone(),
             store,
         };
-        *self.library.write().unwrap_or_else(PoisonError::into_inner) = Some(opened);
-        library_info(location)
+        *self
+            .workspace
+            .write()
+            .unwrap_or_else(PoisonError::into_inner) = Some(opened);
+        workspace::workspace_info(location)
     }
 
-    fn opened(&self) -> Result<OpenLibraryState, ApiError> {
-        let library = self.library.read().unwrap_or_else(PoisonError::into_inner);
-        library
+    fn opened(&self) -> Result<OpenWorkspaceState, ApiError> {
+        let workspace = self
+            .workspace
+            .read()
+            .unwrap_or_else(PoisonError::into_inner);
+        workspace
             .clone()
-            .ok_or_else(|| AppError::NoLibraryOpen.into())
+            .ok_or_else(|| AppError::NoWorkspaceOpen.into())
     }
 
     fn store(&self) -> Result<Arc<dyn NoteStore>, ApiError> {
@@ -329,22 +294,12 @@ fn note_content(note: StoredNote) -> NoteContent {
     }
 }
 
-fn library_info(location: &LibraryLocation) -> LibraryInfo {
-    let path = location.as_str().to_owned();
-    let name = Path::new(&path)
-        .file_name()
-        .map_or_else(|| path.clone(), |n| n.to_string_lossy().into_owned());
-    LibraryInfo { name, path }
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
 
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
-    use application::{LibraryLocation, Preferences};
-
-    use std::path::Path;
 
     use super::*;
 
@@ -362,83 +317,18 @@ mod tests {
     fn opened(notes: &[(&str, &str)]) -> Session {
         let session = session_with(notes);
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         session
     }
 
     #[test]
-    fn nothing_works_before_a_library_is_open() {
+    fn nothing_works_before_a_workspace_is_open() {
         let session = session_with(&[]);
         assert_eq!(
             session.list_notes("", RECENT).unwrap_err().message,
-            "aucune bibliothèque n'est ouverte"
+            "aucun espace de travail n'est ouvert"
         );
-    }
-
-    #[test]
-    fn opening_a_library_tells_its_name() {
-        let session = session_with(&[]);
-        let info = session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
-        assert_eq!(info.name, "Notes");
-        assert_eq!(info.path, "/Users/moi/Notes");
-    }
-
-    #[test]
-    fn cancelling_the_folder_picker_opens_nothing() {
-        let session = session_with(&[]);
-        assert_eq!(session.open_chosen_folder(None).unwrap(), None);
-        assert!(session.list_notes("", RECENT).is_err());
-    }
-
-    #[test]
-    fn the_chosen_folder_becomes_the_open_library() {
-        let session = session_with(&[]);
-        let info = session
-            .open_chosen_folder(Some(Path::new("/Users/moi/Notes")))
-            .unwrap();
-        assert_eq!(info.map(|i| i.name), Some("Notes".into()));
-    }
-
-    #[test]
-    fn a_folder_name_that_is_not_text_is_refused() {
-        use std::ffi::OsStr;
-        use std::os::unix::ffi::OsStrExt;
-        let session = session_with(&[]);
-        let folder = Path::new(OsStr::from_bytes(b"/Users/moi/\xff"));
-        let error = session.open_chosen_folder(Some(folder)).unwrap_err();
-        assert_eq!(
-            error.message,
-            "le nom du dossier « /Users/moi/\u{FFFD} » est illisible"
-        );
-    }
-
-    #[test]
-    fn an_empty_folder_path_is_refused() {
-        let session = session_with(&[]);
-        let error = session.open_chosen_folder(Some(Path::new(""))).unwrap_err();
-        assert_eq!(error.message, "l'emplacement de la bibliothèque est vide");
-    }
-
-    #[test]
-    fn last_library_is_reopened() {
-        let preferences = FakePreferences::default();
-        preferences
-            .remember_library(&LibraryLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
-        let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::default()));
-        let session = Session::new(
-            Arc::new(opener),
-            Arc::new(preferences),
-            Arc::new(FixedClock::default()),
-        );
-        assert_eq!(
-            session.reopen_last_library().unwrap().map(|i| i.name),
-            Some("Notes".into())
-        );
-        assert!(session.list_notes("", RECENT).is_ok());
     }
 
     #[test]
@@ -578,7 +468,7 @@ mod tests {
     }
 
     #[test]
-    fn searching_needs_an_open_library() {
+    fn searching_needs_an_open_workspace() {
         let session = session_with(&[]);
         assert!(session.search_notes("pain", RECENT).is_err());
     }

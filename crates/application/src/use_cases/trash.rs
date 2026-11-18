@@ -16,14 +16,14 @@ pub struct TrashView {
     pub notes: Vec<NoteSummary>,
 }
 
-/// La corbeille de la bibliothèque ouverte. Rien n'y est supprimé tant qu'on ne la vide pas.
+/// La corbeille de l'espace de travail ouvert. Rien n'y est supprimé tant qu'on ne la vide pas.
 #[derive(Debug)]
 pub struct Trash<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> Trash<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -55,7 +55,7 @@ impl<'a> Trash<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::RootCannotBeTrashed`] pour la bibliothèque elle-même,
+    /// [`AppError::RootCannotBeTrashed`] pour l'espace de travail lui-même,
     /// [`AppError::FolderNotFound`] si le dossier n'existe pas,
     /// [`AppError::StorageUnavailable`] si le stockage ne répond pas.
     pub fn put_folder(&self, folder: &Folder) -> Result<Folder, AppError> {
@@ -91,7 +91,7 @@ impl<'a> Trash<'a> {
 
     /// Remet la note `at` de la corbeille à son chemin d'origine, en recréant ses dossiers ;
     /// si le nom y est pris, elle reçoit le premier suffixe libre et ses liens vers ses pièces
-    /// jointes suivent. Rend son chemin dans la bibliothèque.
+    /// jointes suivent. Rend son chemin dans l'espace de travail.
     ///
     /// # Errors
     ///
@@ -120,7 +120,7 @@ impl<'a> Trash<'a> {
     }
 
     /// Remet le dossier `at` de la corbeille à son chemin d'origine, avec tout ce qu'il contient.
-    /// S'il existe déjà dans la bibliothèque, son contenu y est remis élément par élément ;
+    /// S'il existe déjà dans l'espace de travail, son contenu y est remis élément par élément ;
     /// les noms pris reçoivent un suffixe libre. La racine de la corbeille remet tout.
     ///
     /// # Errors
@@ -191,7 +191,7 @@ mod tests {
         Folder::parse(text).unwrap()
     }
 
-    fn library() -> InMemoryNoteStore {
+    fn workspace() -> InMemoryNoteStore {
         InMemoryNoteStore::with_notes(&[
             (
                 "Travail/lundi.md",
@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn a_trashed_note_keeps_its_original_path() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         let at = trash.put_note(&note("Travail/lundi.md")).unwrap();
         assert_eq!(at, note("Travail/lundi.md"));
@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn two_notes_deleted_from_the_same_path_do_not_overwrite_each_other() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_note(&note("Travail/lundi.md")).unwrap();
         store
@@ -245,7 +245,7 @@ mod tests {
 
     #[test]
     fn a_trashed_folder_goes_whole_and_twice_gets_a_number() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         assert_eq!(
             trash.put_folder(&folder("Travail")).unwrap(),
@@ -269,8 +269,8 @@ mod tests {
     }
 
     #[test]
-    fn the_library_itself_cannot_go_to_the_trash() {
-        let store = library();
+    fn the_workspace_itself_cannot_go_to_the_trash() {
+        let store = workspace();
         assert_eq!(
             Trash::new(&store).put_folder(&Folder::root()),
             Err(AppError::RootCannotBeTrashed)
@@ -279,7 +279,7 @@ mod tests {
 
     #[test]
     fn the_trash_lists_note_titles() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_note(&note("Travail/lundi.md")).unwrap();
         assert_eq!(trash.contents().unwrap().notes[0].title(), "Lundi");
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn a_restored_note_goes_back_even_if_its_folder_was_deleted() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_folder(&folder("Travail")).unwrap();
         let back = trash
@@ -299,7 +299,7 @@ mod tests {
 
     #[test]
     fn a_restored_note_whose_name_is_taken_gets_a_suffix_and_its_links_follow() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_note(&note("Travail/lundi.md")).unwrap();
         store.write(&note("Travail/lundi.md"), "# Nouveau").unwrap();
@@ -313,7 +313,7 @@ mod tests {
 
     #[test]
     fn restoring_a_note_missing_from_the_trash_is_reported() {
-        let store = library();
+        let store = workspace();
         assert_eq!(
             Trash::new(&store).restore_note(&note("Travail/absente.md")),
             Err(AppError::NoteNotFound(note("Travail/absente.md")))
@@ -322,7 +322,7 @@ mod tests {
 
     #[test]
     fn a_restored_folder_goes_back_whole() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_folder(&folder("Travail")).unwrap();
         trash.restore_folder(&folder("Travail")).unwrap();
@@ -338,7 +338,7 @@ mod tests {
 
     #[test]
     fn a_folder_restored_onto_an_existing_one_is_merged_into_it() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_folder(&folder("Travail")).unwrap();
         store
@@ -383,7 +383,7 @@ mod tests {
 
     #[test]
     fn restoring_the_trash_root_restores_everything() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_note(&note("Travail/lundi.md")).unwrap();
         store.write(&note("racine.md"), "# Racine").unwrap();
@@ -396,7 +396,7 @@ mod tests {
 
     #[test]
     fn restoring_a_folder_missing_from_the_trash_is_reported() {
-        let store = library();
+        let store = workspace();
         assert_eq!(
             Trash::new(&store).restore_folder(&folder("Absent")),
             Err(AppError::FolderNotFound(folder("Absent")))
@@ -405,7 +405,7 @@ mod tests {
 
     #[test]
     fn emptying_the_trash_deletes_what_it_holds_only() {
-        let store = library();
+        let store = workspace();
         let trash = Trash::new(&store);
         trash.put_note(&note("Travail/lundi.md")).unwrap();
         trash.empty().unwrap();

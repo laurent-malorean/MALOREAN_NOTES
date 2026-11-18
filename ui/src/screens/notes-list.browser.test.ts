@@ -124,7 +124,7 @@ describe("liste des notes", () => {
     );
   });
 
-  it("vide la liste pour une bibliothèque sans note", () => {
+  it("vide la liste pour un espace de travail sans note", () => {
     const container = list();
     renderNotesList(container, notes, null, noActions);
     renderNotesList(container, [], null, noActions);

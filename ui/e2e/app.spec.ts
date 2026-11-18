@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
-const LIBRARY: Notes = {
+const WORKSPACE: Notes = {
   "courses.md": { content: "# Courses\n- [ ] pain\n- lait", modified: 30 },
   "idee.md": { content: "# Idée\nUne **bonne** idée.", modified: 20 },
   "vieille-note.md": { content: "# Vieille note\ntexte", modified: 10 },
@@ -13,7 +13,7 @@ async function launch(
   options: { notes?: Notes; folders?: string[]; remembered?: boolean } = {},
 ) {
   const params = new URLSearchParams({
-    notes: JSON.stringify(options.notes ?? LIBRARY),
+    notes: JSON.stringify(options.notes ?? WORKSPACE),
     folders: JSON.stringify(options.folders ?? []),
     remembered: options.remembered === false ? "0" : "1",
   });
@@ -30,11 +30,11 @@ test("au premier lancement, l'accueil propose de choisir un dossier", async ({ p
   await launch(page, { remembered: false });
   await expect(page.getByText("Choisir un dossier de notes")).toBeVisible();
   await page.getByRole("button", { name: "Choisir un dossier de notes" }).click();
-  await expect(page.locator(".library-name")).toHaveText("Notes");
+  await expect(page.locator(".workspace-name")).toHaveText("Notes");
   await expect(titles(page)).toHaveText(["Courses", "Idée", "Vieille note"]);
 });
 
-test("la dernière bibliothèque est rouverte et la note la plus récente est ouverte", async ({
+test("le dernier espace de travail est rouvert et la note la plus récente est ouverte", async ({
   page,
 }) => {
   await launch(page);
@@ -123,9 +123,9 @@ test("un échec d'enregistrement est affiché, puis rattrapé", async ({ page })
     .toBe("# Courses\n- [ ] pain\n- lait bio!");
 });
 
-test("une bibliothèque vide s'ouvre sans erreur", async ({ page }) => {
+test("un espace de travail vide s'ouvre sans erreur", async ({ page }) => {
   await launch(page, { notes: {} });
-  await expect(page.locator(".library-name")).toHaveText("Notes");
+  await expect(page.locator(".workspace-name")).toHaveText("Notes");
   await expect(titles(page)).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("");
 });
@@ -202,7 +202,7 @@ test("glisser une note sur un dossier l'y range, et le nom pris reçoit un suffi
   page,
 }) => {
   await launch(page, {
-    notes: { ...LIBRARY, "Perso/idee.md": { content: "# Idée\nautre", modified: 5 } },
+    notes: { ...WORKSPACE, "Perso/idee.md": { content: "# Idée\nautre", modified: 5 } },
     folders: ["Perso"],
   });
   await page.locator(".note-item", { hasText: "Idée" }).dragTo(folderItem(page, "Perso"));

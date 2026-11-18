@@ -36,7 +36,7 @@ describe("réglage du dossier des modèles", () => {
     ]);
   });
 
-  it("propose aucun dossier, puis chaque dossier de la bibliothèque, et montre le choix en cours", () => {
+  it("propose aucun dossier, puis chaque dossier de l'espace de travail, et montre le choix en cours", () => {
     const { select } = open("Travail/Gabarits");
     expect([...select.options].map((o) => [o.value, o.text])).toEqual([
       ["", "Aucun"],

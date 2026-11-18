@@ -11,7 +11,7 @@ describe("palette de commandes", () => {
       ["new-note-from-template", "Nouvelle note depuis un modèle", "Cmd+Maj+N"],
       ["daily-note", "Note du jour", "Cmd+Maj+J"],
       ["new-folder", "Nouveau dossier", null],
-      ["search-library", "Rechercher dans toutes les notes", null],
+      ["search-workspace", "Rechercher dans toutes les notes", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],
       ["toggle-focus", "Mode focus", "Cmd+Maj+F"],
       ["toggle-typewriter", "Mode machine à écrire", "Cmd+Maj+T"],
@@ -26,7 +26,7 @@ describe("palette de commandes", () => {
       ["sort-notes", "Trier la liste", null],
       ["show-trash", "Corbeille", null],
       ["open-settings", "Réglages", "Cmd+,"],
-      ["choose-library", "Changer de dossier de notes", null],
+      ["choose-workspace", "Changer de dossier de notes", null],
     ]);
   });
 

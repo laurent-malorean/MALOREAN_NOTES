@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
-const LIBRARY: Notes = {
+const WORKSPACE: Notes = {
   "courses.md": { content: "# Courses\n- pain", modified: 30 },
   "idee.md": { content: "# Idée\nUne idée.", modified: 20 },
   "Travail/lundi.md": { content: "# Lundi\nréunion", modified: 10 },
@@ -10,7 +10,7 @@ const LIBRARY: Notes = {
 
 async function launch(page: Page) {
   const params = new URLSearchParams({
-    notes: JSON.stringify(LIBRARY),
+    notes: JSON.stringify(WORKSPACE),
     folders: JSON.stringify(["Travail"]),
     remembered: "1",
   });
@@ -44,7 +44,7 @@ test("la note ouverte placée dans la corbeille laisse la place à la suivante, 
   await expect(editorLines(page).first()).toHaveText("Idée");
 
   await page.getByRole("button", { name: "Corbeille" }).click();
-  await expect(page.locator(".library-name")).toHaveText("Corbeille");
+  await expect(page.locator(".workspace-name")).toHaveText("Corbeille");
   await expect(trashLabels(page)).toHaveText(["Courses"]);
   await expect(page.locator(".trash-origin")).toHaveText(["Notes"]);
   await page.getByRole("button", { name: "Restaurer" }).click();
@@ -77,7 +77,7 @@ test("un dossier placé dans la corbeille part avec ses notes et revient entier"
   await expect(titles(page)).toHaveText(["Lundi"]);
   await trashFromMenu(page, '.folder-item:has-text("Travail")');
   await expect(folders(page)).toHaveText(["Notes"]);
-  await expect(page.locator(".library-name")).toHaveText("Notes");
+  await expect(page.locator(".workspace-name")).toHaveText("Notes");
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
 
   await page.getByRole("button", { name: "Corbeille" }).click();

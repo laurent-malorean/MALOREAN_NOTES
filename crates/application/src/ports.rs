@@ -48,7 +48,7 @@ pub enum StoreError {
     Unavailable(String),
 }
 
-/// Les notes d'une bibliothèque, rangées dans ses dossiers.
+/// Les notes d'un espace de travail, rangées dans ses dossiers.
 pub trait NoteStore: Send + Sync + Debug {
     /// Les notes du dossier, sans celles de ses sous-dossiers. Une note qui n'est pas
     /// du texte UTF-8 y figure quand même, avec ce qui en est lisible.
@@ -110,12 +110,12 @@ pub trait NoteStore: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si le dossier ne peut pas être lu.
     fn names(&self, folder: &Folder) -> Result<Vec<FileName>, StoreError>;
 
-    /// Tous les dossiers de la bibliothèque, à toute profondeur, sans la racine. Ni les
+    /// Tous les dossiers de l'espace de travail, à toute profondeur, sans la racine. Ni les
     /// dossiers cachés ni les dossiers de pièces jointes n'en font partie.
     ///
     /// # Errors
     ///
-    /// [`StoreError::Unavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`StoreError::Unavailable`] si l'espace de travail ne peut pas être lue.
     fn folders(&self) -> Result<Vec<Folder>, StoreError>;
 
     /// Crée le dossier, vide, dans son dossier parent.
@@ -159,8 +159,8 @@ pub trait NoteStore: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si le stockage ne répond pas.
     fn trash_folder(&self, folder: &Folder, at: &Folder) -> Result<(), StoreError>;
 
-    /// Remet la note `at` de la corbeille (et ses pièces jointes) au chemin `to` de la
-    /// bibliothèque, en recréant les dossiers qui manquent. Les dossiers de la corbeille
+    /// Remet la note `at` de la corbeille (et ses pièces jointes) au chemin `to` de
+    /// l'espace de travail, en recréant les dossiers qui manquent. Les dossiers de la corbeille
     /// qu'elle laisse vides en disparaissent.
     ///
     /// # Errors
@@ -169,8 +169,8 @@ pub trait NoteStore: Send + Sync + Debug {
     /// si `to` est pris, [`StoreError::Unavailable`] si le stockage ne répond pas.
     fn restore_note(&self, at: &NotePath, to: &NotePath) -> Result<(), StoreError>;
 
-    /// Remet le dossier `at` de la corbeille, avec tout ce qu'il contient, au chemin `to` de la
-    /// bibliothèque, en recréant les dossiers qui manquent. Si `to` existe déjà, le dossier de
+    /// Remet le dossier `at` de la corbeille, avec tout ce qu'il contient, au chemin `to` de
+    /// l'espace de travail, en recréant les dossiers qui manquent. Si `to` existe déjà, le dossier de
     /// la corbeille doit être vide : il en est alors simplement retiré.
     ///
     /// # Errors
@@ -242,24 +242,24 @@ impl AttachmentLocation {
     }
 }
 
-/// Ce qui a changé dans la bibliothèque hors de l'application.
+/// Ce qui a changé dans l'espace de travail hors de l'application.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct LibraryChange {
+pub struct WorkspaceChange {
     /// Les notes créées, modifiées, supprimées ou renommées. Vide quand seuls des dossiers
     /// ont changé : il faut tout de même relire les dossiers et la liste.
     pub notes: Vec<NotePath>,
 }
 
-/// Reçoit chaque changement de la bibliothèque, depuis un fil de la surveillance.
-pub type ChangeListener = Arc<dyn Fn(LibraryChange) + Send + Sync>;
+/// Reçoit chaque changement de l'espace de travail, depuis un fil de la surveillance.
+pub type ChangeListener = Arc<dyn Fn(WorkspaceChange) + Send + Sync>;
 
 /// Une surveillance en cours ; elle s'arrête quand on la lâche.
 pub trait Watching: Send + Sync + Debug {}
 
-/// Écoute les changements faits dans la bibliothèque hors de l'application : fichiers
+/// Écoute les changements faits dans l'espace de travail hors de l'application : fichiers
 /// cachés, corbeille et dossiers de pièces jointes exceptés.
-pub trait LibraryWatcher: Send + Sync + Debug {
-    /// Commence à surveiller la bibliothèque située à `location` ; chaque changement
+pub trait WorkspaceWatcher: Send + Sync + Debug {
+    /// Commence à surveiller l'espace de travail situé à `location` ; chaque changement
     /// (regroupé avec ceux qui le suivent de près) est passé à `listener`.
     ///
     /// # Errors
@@ -267,7 +267,7 @@ pub trait LibraryWatcher: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si le dossier ne peut pas être surveillé.
     fn watch(
         &self,
-        location: &LibraryLocation,
+        location: &WorkspaceLocation,
         listener: ChangeListener,
     ) -> Result<Box<dyn Watching>, StoreError>;
 }
@@ -278,18 +278,18 @@ pub trait Clock: Send + Sync + Debug {
     fn now(&self) -> Moment;
 }
 
-/// Emplacement d'une bibliothèque, tel que l'utilisateur l'a choisi.
+/// Emplacement d'un espace de travail, tel que l'utilisateur l'a choisi.
 ///
 /// L'application ne l'interprète pas : seul l'adaptateur de stockage sait le traduire.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LibraryLocation(String);
+pub struct WorkspaceLocation(String);
 
 /// Emplacement refusé parce qu'il est vide.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("l'emplacement de la bibliothèque est vide")]
+#[error("l'emplacement de l'espace de travail est vide")]
 pub struct EmptyLocation;
 
-impl LibraryLocation {
+impl WorkspaceLocation {
     /// L'emplacement choisi par l'utilisateur.
     ///
     /// # Errors
@@ -311,31 +311,31 @@ impl LibraryLocation {
     }
 }
 
-/// Ouvre la bibliothèque qui se trouve à un emplacement.
-pub trait LibraryOpener: Send + Sync + Debug {
-    /// Les notes de la bibliothèque située à `location`.
+/// Ouvre l'espace de travail qui se trouve à un emplacement.
+pub trait WorkspaceOpener: Send + Sync + Debug {
+    /// Les notes de l'espace de travail situé à `location`.
     ///
     /// # Errors
     ///
     /// [`StoreError::Unavailable`] si rien d'utilisable ne se trouve à cet emplacement.
-    fn open(&self, location: &LibraryLocation) -> Result<Arc<dyn NoteStore>, StoreError>;
+    fn open(&self, location: &WorkspaceLocation) -> Result<Arc<dyn NoteStore>, StoreError>;
 }
 
 /// Préférences gardées d'un lancement à l'autre.
 pub trait Preferences: Send + Sync + Debug {
-    /// La dernière bibliothèque ouverte, s'il y en a une.
+    /// Le dernier espace de travail ouvert, s'il y en a une.
     ///
     /// # Errors
     ///
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
-    fn last_library(&self) -> Result<Option<LibraryLocation>, StoreError>;
+    fn last_workspace(&self) -> Result<Option<WorkspaceLocation>, StoreError>;
 
-    /// Se souvenir de cette bibliothèque pour le prochain lancement.
+    /// Se souvenir de cet espace de travail pour le prochain lancement.
     ///
     /// # Errors
     ///
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
-    fn remember_library(&self, location: &LibraryLocation) -> Result<(), StoreError>;
+    fn remember_workspace(&self, location: &WorkspaceLocation) -> Result<(), StoreError>;
 }
 
 #[cfg(test)]
@@ -344,12 +344,12 @@ mod tests {
 
     #[test]
     fn a_location_is_given_back_as_chosen() {
-        let location = LibraryLocation::new("/Users/moi/Notes").unwrap();
+        let location = WorkspaceLocation::new("/Users/moi/Notes").unwrap();
         assert_eq!(location.as_str(), "/Users/moi/Notes");
     }
 
     #[test]
     fn an_empty_location_is_refused() {
-        assert_eq!(LibraryLocation::new(""), Err(EmptyLocation));
+        assert_eq!(WorkspaceLocation::new(""), Err(EmptyLocation));
     }
 }

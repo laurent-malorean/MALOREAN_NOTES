@@ -11,7 +11,7 @@ describe("image d'une note", () => {
     expect(imageIn("/lib", "rome.md", "vue.png", asset)).toBe("asset:///lib/vue.png");
   });
 
-  it("sans note, à la racine de la bibliothèque", () => {
+  it("sans note, à la racine de l'espace de travail", () => {
     expect(imageIn("/lib", null, "vue.png", asset)).toBe("asset:///lib/vue.png");
   });
 });

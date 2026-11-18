@@ -25,13 +25,13 @@ function setup() {
 }
 
 describe("mémoire de la disposition", () => {
-  it("ne garde rien tant qu'aucune bibliothèque n'est ouverte", () => {
+  it("ne garde rien tant qu'aucun espace de travail n'est ouvert", () => {
     const t = setup();
     t.memory.save(noteOpened(columnsStarted, "a.md"));
     expect(t.items.size).toBe(0);
   });
 
-  it("garde les colonnes de la bibliothèque ouverte, et les retrouve à sa réouverture", async () => {
+  it("garde les colonnes de l'espace de travail ouvert, et les retrouve à sa réouverture", async () => {
     const t = setup();
     expect(await t.memory.restore("/notes")).toBeNull();
     expect(t.calls).toEqual(["toutes les notes"]);
@@ -44,7 +44,7 @@ describe("mémoire de la disposition", () => {
     expect(activeNote((await t.memory.restore("/autres")) ?? columnsStarted)).toBe("a.md");
   });
 
-  it("pendant qu'on lit la bibliothèque qui s'ouvre, les colonnes restent gardées pour la précédente", async () => {
+  it("pendant qu'on lit l'espace de travail qui s'ouvre, les colonnes restent gardées pour le précédent", async () => {
     const t = setup();
     await t.memory.restore("/notes");
     const opening = t.memory.restore("/autres");

@@ -1,4 +1,4 @@
-//! Les liens entre notes de la bibliothèque ouverte, vus depuis la page.
+//! Les liens entre notes de l'espace de travail ouvert, vus depuis la page.
 
 use application::use_cases::NoteLinks;
 use domain::NotePath;
@@ -12,8 +12,8 @@ impl Session {
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; bibliothèque illisible, aucune
-    /// bibliothèque ouverte.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
+    /// espace de travail ouvert.
     pub fn resolve_link(&self, title: &str) -> Result<Option<String>, ApiError> {
         let store = self.store()?;
         Ok(NoteLinks::new(&*store)
@@ -26,7 +26,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note absente,
-    /// bibliothèque illisible, aucune bibliothèque ouverte.
+    /// espace de travail illisible, aucun espace de travail ouvert.
     pub fn list_backlinks(&self, path: &str) -> Result<Vec<LinkingNoteItem>, ApiError> {
         let store = self.store()?;
         let notes = NoteLinks::new(&*store).backlinks(&NotePath::parse(path)?)?;
@@ -45,7 +45,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -58,7 +58,7 @@ mod tests {
             Arc::new(FixedClock::default()),
         );
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         session
     }
@@ -90,7 +90,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_paths_and_closed_libraries_are_refused() {
+    fn invalid_paths_and_closed_workspaces_are_refused() {
         let session = opened(&[]);
         assert!(session.list_backlinks("../secret.md").is_err());
         let closed = Session::new(

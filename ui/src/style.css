@@ -43,18 +43,18 @@ button {
   padding: 0.6rem 1.2rem;
 }
 
-.workspace {
+.main-area {
   height: 100%;
   display: grid;
   grid-template-columns: var(--folders-width) var(--sidebar-width) 1fr;
 }
-.workspace.panels-hidden {
+.main-area.panels-hidden {
   grid-template-columns: 1fr;
 }
-.workspace.panels-hidden > aside {
+.main-area.panels-hidden > aside {
   display: none;
 }
-.workspace[hidden],
+.main-area[hidden],
 .welcome[hidden] {
   display: none;
 }

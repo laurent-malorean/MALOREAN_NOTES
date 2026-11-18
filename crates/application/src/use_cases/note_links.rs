@@ -18,7 +18,7 @@ pub struct LinkingNote {
     pub modified: Modified,
 }
 
-/// Les liens entre les notes de la bibliothèque.
+/// Les liens entre les notes de l'espace de travail.
 ///
 /// Comme la recherche, chaque demande relit toutes les notes (fiche de décision 0016).
 #[derive(Debug)]
@@ -27,7 +27,7 @@ pub struct NoteLinks<'a> {
 }
 
 impl<'a> NoteLinks<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
@@ -49,7 +49,7 @@ impl<'a> NoteLinks<'a> {
     ///
     /// # Errors
     ///
-    /// [`AppError::StorageUnavailable`] si la bibliothèque ne peut pas être lue.
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn resolve(&self, title: &str) -> Result<Option<NotePath>, AppError> {
         Ok(self
             .all_notes()?
@@ -64,7 +64,7 @@ impl<'a> NoteLinks<'a> {
     /// # Errors
     ///
     /// [`AppError::NoteNotFound`] si la note n'existe pas, [`AppError::StorageUnavailable`]
-    /// si la bibliothèque ne peut pas être lue.
+    /// si l'espace de travail ne peut pas être lue.
     pub fn backlinks(&self, path: &NotePath) -> Result<Vec<LinkingNote>, AppError> {
         let title = displayed_title(&self.store.read(path)?.content);
         Ok(self

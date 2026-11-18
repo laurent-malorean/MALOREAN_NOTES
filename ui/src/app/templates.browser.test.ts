@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   fakeColumns,
   fakePane,
-  libraryScreen,
+  workspaceScreen,
   recordedScreen,
   settle,
 } from "../../test-support/app-fixture";
-import type { LibraryNoteItem } from "../bridge";
+import type { WorkspaceNoteItem } from "../bridge";
 import { createLayout } from "../screens/layout";
 import { columnsStarted, noteOpened } from "../state/columns";
 import { welcome } from "../state/screen";
@@ -14,7 +14,7 @@ import { createTemplates } from "./templates";
 
 const root = document.createElement("div");
 const layout = createLayout(root);
-const NOTES: LibraryNoteItem[] = [
+const NOTES: WorkspaceNoteItem[] = [
   { path: "Modèles/reunion.md", title: "Réunion", folder: "Modèles" },
   { path: "Modèles/journal.md", title: "Journal", folder: "Modèles" },
   { path: "courses.md", title: "Courses", folder: "" },
@@ -30,7 +30,7 @@ function setup(stored: Record<string, string> = {}) {
   const log: string[] = [];
   const shown: string[] = [];
   const { screen } = recordedScreen(
-    libraryScreen([], (s) => ({ ...s, folders: ["Modèles", "Travail"], folder: "Travail" })),
+    workspaceScreen([], (s) => ({ ...s, folders: ["Modèles", "Travail"], folder: "Travail" })),
   );
   const columns = fakeColumns(noteOpened(columnsStarted, "a.md"));
   const pane = fakePane("a.md");
@@ -46,7 +46,7 @@ function setup(stored: Record<string, string> = {}) {
     storage,
     screen,
     columns: columns.open,
-    library: {
+    workspace: {
       path: () => "/lib",
       refreshList: async () => void log.push("liste"),
       refreshTags: async () => void log.push("étiquettes"),
@@ -111,7 +111,7 @@ describe("modèles de note", () => {
     expect(t.pane.editor.focus).toHaveBeenCalled();
   });
 
-  it("le réglage propose les dossiers de la bibliothèque et garde le choix", () => {
+  it("le réglage propose les dossiers de l'espace de travail et garde le choix", () => {
     const t = setup({ "malorean.templates:/lib": "Modèles" });
     const [group] = t.templates.settingsGroups();
     const select = group?.querySelector("select") as HTMLSelectElement;
@@ -125,7 +125,7 @@ describe("modèles de note", () => {
     expect(t.items.has("malorean.templates:/lib")).toBe(false);
   });
 
-  it("sans bibliothèque ouverte, pas de réglage des modèles", () => {
+  it("sans espace de travail ouvert, pas de réglage des modèles", () => {
     const t = setup();
     t.screen.show(welcome);
     expect(t.templates.settingsGroups()).toEqual([]);

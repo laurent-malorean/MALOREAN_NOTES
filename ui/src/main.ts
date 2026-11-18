@@ -9,7 +9,7 @@ import { createFoldMemory } from "./app/fold-memory";
 import { createFolders } from "./app/folders";
 import { createJournal } from "./app/journal";
 import { createLayoutMemory } from "./app/layout-memory";
-import { createLibrary } from "./app/library";
+import { createWorkspace } from "./app/workspace";
 import { createMessages } from "./app/messages";
 import { paneMaker } from "./app/panes";
 import { createRecentNotes } from "./app/recent-notes";
@@ -49,7 +49,7 @@ const columns = createOpenColumns({
 const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage });
 const recent = createRecentNotes({ backend: bridge, screen, columns, storage: localStorage });
 const search = createSearch({ backend: bridge, screen, run });
-const library = createLibrary({
+const workspace = createWorkspace({
   backend: bridge,
   screen,
   columns,
@@ -64,19 +64,19 @@ const folders = createFolders({
   backend: bridge,
   screen,
   columns,
-  ...{ refreshList: library.refreshList, recent, list: layout.foldersList, run },
+  ...{ refreshList: workspace.refreshList, recent, list: layout.foldersList, run },
 });
 const trash = createTrash({
   backend: bridge,
   screen,
   columns,
   ask: (name) => askTrash(layout.confirmation, name),
-  ...{ refreshList: library.refreshList, refreshTags: library.refreshTags },
+  ...{ refreshList: workspace.refreshList, refreshTags: workspace.refreshTags },
 });
 const tags = createTags({ backend: bridge, screen, columns, run });
 const shared = createSharedNotes({
   backend: bridge,
-  events: savingEvents({ columns, messages, library, recent }),
+  events: savingEvents({ columns, messages, workspace, recent }),
 });
 const writing = connectWritingModes(layout, { columns, storage: localStorage });
 const settings = connectSettings(
@@ -89,30 +89,36 @@ const settings = connectSettings(
   },
 );
 const templates = createTemplates({
-  ...{ backend: bridge, storage: localStorage, screen, columns, library },
+  ...{ backend: bridge, storage: localStorage, screen, columns, workspace },
   ...{ picker: layout.picker, show: messages.show, run },
 });
-const journal = createJournal({ backend: bridge, storage: localStorage, screen, columns, library });
+const journal = createJournal({
+  backend: bridge,
+  storage: localStorage,
+  screen,
+  columns,
+  workspace,
+});
 const newPane = paneMaker({
   backend: bridge,
   shared,
   events: {
     openNote: (path) => actions.open(path),
-    openLink: (title) => run(library.followLink(title)),
+    openLink: (title) => run(workspace.followLink(title)),
     error: messages.error,
   },
-  libraryPath: library.path,
+  workspacePath: workspace.path,
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),
 });
 
 const actions: ScreenActions = screenActions({
-  ...{ backend: bridge, columns, folders, library, trash, tags, recent, run },
+  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, run },
 });
 
 layout.chooseButtons.forEach((button) =>
-  button.addEventListener("click", () => run(library.choose())),
+  button.addEventListener("click", () => run(workspace.choose())),
 );
-layout.newNoteButton.addEventListener("click", () => run(library.createNote()));
+layout.newNoteButton.addEventListener("click", () => run(workspace.createNote()));
 connectSearchField(layout.searchField, search.type);
 layout.trashButton.addEventListener("click", () => run(trash.show()));
 layout.newFolderButton.addEventListener("click", folders.startCreation);
@@ -125,14 +131,14 @@ const windowDisplay = connectWindowDisplay(layout, {
 connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField },
-  ...{ library, templates, journal, folders, trash, settings, tags, recent },
+  ...{ workspace, templates, journal, folders, trash, settings, tags, recent },
 });
-connectExternalChanges({ backend: bridge, screen, columns, library, messages });
+connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
 
 screen.show(welcome);
 void columns.change(columns.current());
 bridge
-  .reopenLastLibrary()
+  .reopenLastWorkspace()
   // La note du jour, une fois les colonnes retrouvées.
-  .then((opened) => (opened ? library.open(opened).then(journal.atLaunch) : undefined))
+  .then((opened) => (opened ? workspace.open(opened).then(journal.atLaunch) : undefined))
   .catch(messages.error);

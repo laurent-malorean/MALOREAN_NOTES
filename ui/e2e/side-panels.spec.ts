@@ -33,7 +33,7 @@ const columnEdges = (page: Page) =>
 /** Où commence et finit la zone que les colonnes doivent occuper : après les panneaux montrés. */
 const editingArea = (page: Page) =>
   page.evaluate(() => {
-    const shown = [...document.querySelectorAll<HTMLElement>(".workspace > aside")].filter(
+    const shown = [...document.querySelectorAll<HTMLElement>(".main-area > aside")].filter(
       (aside) => aside.offsetParent !== null,
     );
     const left = shown.length ? Math.max(...shown.map((a) => a.getBoundingClientRect().right)) : 0;

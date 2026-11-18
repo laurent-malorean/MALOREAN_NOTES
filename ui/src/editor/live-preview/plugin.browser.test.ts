@@ -100,9 +100,9 @@ describe("aperçu en direct : images", () => {
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
   it("affiche l'image à l'adresse donnée par le traducteur, avec son texte de remplacement", () => {
-    const { parent } = mount("![un chat](chat.png)", (src) => `asset://bibliotheque/${src}`);
+    const { parent } = mount("![un chat](chat.png)", (src) => `asset://espace/${src}`);
     const image = parent.querySelector<HTMLImageElement>("img.cm-lp-image");
-    expect(image?.getAttribute("src")).toBe("asset://bibliotheque/chat.png");
+    expect(image?.getAttribute("src")).toBe("asset://espace/chat.png");
     expect(image?.alt).toBe("un chat");
     expect(image?.title).toBe("un chat");
   });

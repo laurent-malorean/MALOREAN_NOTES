@@ -92,7 +92,7 @@ describe("notes récentes", () => {
     );
   });
 
-  it("sont gardées pour chaque bibliothèque", () => {
+  it("sont gardées pour chaque espace de travail", () => {
     const storage = memoryStorage();
     saveRecent(storage, "/a", ["b.md", "a.md"]);
     expect(storage.values).toEqual({ "malorean.recent:/a": '["b.md","a.md"]' });

@@ -19,10 +19,10 @@ export interface CommandsDeps {
   readonly columns: Pick<OpenColumns, "update" | "split" | "openNote" | "activePane">;
   readonly writing: Pick<WritingModes, "toggleFocus" | "toggleTypewriter" | "toggleOutline">;
   readonly window: WindowDisplay;
-  /** La fenêtre de choix au clavier, et le champ de recherche dans toute la bibliothèque. */
+  /** La fenêtre de choix au clavier, et le champ de recherche dans tout l'espace de travail. */
   readonly picker: HTMLDialogElement;
   readonly searchField: HTMLElement;
-  readonly library: {
+  readonly workspace: {
     createNote(): Promise<void>;
     choose(): Promise<void>;
     sortBy(order: NoteOrder): Promise<void>;
@@ -49,7 +49,7 @@ async function quickOpen(
   label = "Ouvrir une note",
   open: (path: string) => Promise<void> = deps.columns.openNote,
 ) {
-  if (deps.screen.get().kind !== "library") return;
+  if (deps.screen.get().kind !== "workspace") return;
   const notes = await deps.backend.listAllNotes();
   openPicker(deps.picker, {
     label,
@@ -70,7 +70,7 @@ function chooseOrder(deps: CommandsDeps) {
     empty: "Aucun tri ne correspond",
     entries: (query) => matching(NOTE_ORDERS, query, (choice) => choice.label),
     describe: ({ order, label }) => ({ label, detail: order === current ? "actuel" : undefined }),
-    choose: ({ order }) => deps.run(deps.library.sortBy(order)),
+    choose: ({ order }) => deps.run(deps.workspace.sortBy(order)),
   });
 }
 
@@ -79,11 +79,11 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
   const { run, columns, writing } = deps;
   return {
     "quick-open": () => run(quickOpen(deps)),
-    "new-note": () => run(deps.library.createNote()),
+    "new-note": () => run(deps.workspace.createNote()),
     "new-note-from-template": () => run(deps.templates.newNote()),
     "daily-note": () => run(deps.journal.open()),
     "new-folder": () => deps.folders.startCreation(),
-    "search-library": () => deps.searchField.focus(),
+    "search-workspace": () => deps.searchField.focus(),
     "find-in-note": () => columns.activePane().editor.openFind(),
     "toggle-focus": () => writing.toggleFocus(),
     "toggle-typewriter": () => writing.toggleTypewriter(),
@@ -103,13 +103,13 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),
-    "choose-library": () => run(deps.library.choose()),
+    "choose-workspace": () => run(deps.workspace.choose()),
   };
 }
 
 /** La palette de commandes : une action de l'application, par quelques lettres de son nom. */
 function openPalette(deps: CommandsDeps, actions: Readonly<Record<CommandId, () => void>>) {
-  if (deps.screen.get().kind !== "library") return;
+  if (deps.screen.get().kind !== "workspace") return;
   openPicker(deps.picker, {
     label: "Palette de commandes",
     placeholder: "Nom de la commande",

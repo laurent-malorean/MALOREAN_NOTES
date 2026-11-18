@@ -25,7 +25,7 @@ function setup() {
       move: (path, into) => done(`déplacer ${path} ${into}`)(),
       fold: (path) => void calls.push(`plier ${path}`),
     },
-    library: {
+    workspace: {
       moveNote: (path, into) => done(`déplacer la note ${path} ${into}`)(),
       changePin: (path, change) =>
         done(`${change === backend.pinNote ? "épingler" : "désépingler"} ${path}`)(),

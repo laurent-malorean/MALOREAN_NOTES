@@ -23,11 +23,11 @@ export function showFullScreen(button: HTMLElement, on: boolean): void {
 
 /** Cache ou montre ensemble les listes des dossiers et des notes ; les colonnes prennent la place. */
 export function showSidePanels(
-  workspace: HTMLElement,
+  mainArea: HTMLElement,
   button: HTMLElement,
   panels: SidePanels,
 ): void {
-  workspace.classList.toggle("panels-hidden", panels === "hidden");
+  mainArea.classList.toggle("panels-hidden", panels === "hidden");
   button.setAttribute("aria-pressed", String(panels === "shown"));
 }
 

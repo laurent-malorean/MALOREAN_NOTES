@@ -2,23 +2,23 @@ import { describe, expect, it } from "vitest";
 import {
   fakeColumns,
   fakePane,
-  libraryScreen,
+  workspaceScreen,
   recordedScreen,
   settle,
 } from "../../test-support/app-fixture";
-import type { LibraryChanged } from "../bridge";
+import type { WorkspaceChanged } from "../bridge";
 import { columnsStarted, noteOpened } from "../state/columns";
 import { type Screen, welcome } from "../state/screen";
 import { connectExternalChanges } from "./external-changes";
 
-function setup(start: Screen = libraryScreen(), options: { failListen?: boolean } = {}) {
+function setup(start: Screen = workspaceScreen(), options: { failListen?: boolean } = {}) {
   const { screen } = recordedScreen(start);
   const columns = fakeColumns(noteOpened(noteOpened(columnsStarted, "a.md"), "b.md"));
   const log: string[] = [];
-  let announce: (change: LibraryChanged) => void = () => {};
+  let announce: (change: WorkspaceChanged) => void = () => {};
   connectExternalChanges({
     backend: {
-      onLibraryChanged: async (handler) => {
+      onWorkspaceChanged: async (handler) => {
         if (options.failListen) throw new Error("sourde");
         announce = handler;
         return () => {};
@@ -30,7 +30,7 @@ function setup(start: Screen = libraryScreen(), options: { failListen?: boolean 
     },
     screen,
     columns: columns.open,
-    library: {
+    workspace: {
       refreshFolders: async () => void log.push("dossiers"),
       refreshList: async () => void log.push("liste"),
     },
@@ -70,7 +70,7 @@ describe("modifications faites hors de l'application", () => {
   });
 
   it("une écoute impossible est signalée", async () => {
-    const t = setup(libraryScreen(), { failListen: true });
+    const t = setup(workspaceScreen(), { failListen: true });
     await settle();
     expect(t.log).toEqual(["erreur sourde"]);
   });

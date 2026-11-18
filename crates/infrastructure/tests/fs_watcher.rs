@@ -10,19 +10,21 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
-use application::{LibraryChange, LibraryLocation, LibraryWatcher, StoreError};
+use application::{StoreError, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher};
 use domain::NotePath;
-use infrastructure::FsLibraryWatcher;
+use infrastructure::FsWorkspaceWatcher;
 
 /// Le disque du Mac annonce les changements avec un peu de retard.
 const ARRIVAL: Duration = Duration::from_secs(10);
 /// Temps pendant lequel on vérifie qu'un changement ignoré n'arrive pas.
 const SILENCE: Duration = Duration::from_millis(1500);
 
-fn watch(folder: &tempfile::TempDir) -> (Box<dyn application::Watching>, Receiver<LibraryChange>) {
+fn watch(
+    folder: &tempfile::TempDir,
+) -> (Box<dyn application::Watching>, Receiver<WorkspaceChange>) {
     let (sender, received) = channel();
-    let location = LibraryLocation::new(folder.path().to_str().unwrap()).unwrap();
-    let watching = FsLibraryWatcher
+    let location = WorkspaceLocation::new(folder.path().to_str().unwrap()).unwrap();
+    let watching = FsWorkspaceWatcher
         .watch(
             &location,
             Arc::new(move |change| {
@@ -37,7 +39,7 @@ fn watch(folder: &tempfile::TempDir) -> (Box<dyn application::Watching>, Receive
 
 /// Attend un changement qui annonce `note` ; ceux qui n'en parlent pas sont sautés.
 /// Chaque attente dure au plus [`ARRIVAL`] : sans annonce, la surveillance a échoué.
-fn announces(received: &Receiver<LibraryChange>, note: &str) -> bool {
+fn announces(received: &Receiver<WorkspaceChange>, note: &str) -> bool {
     let wanted = NotePath::parse(note).unwrap();
     while let Ok(change) = received.recv_timeout(ARRIVAL) {
         if change.notes.contains(&wanted) {
@@ -86,8 +88,8 @@ fn nothing_is_announced_once_watching_stops() {
 
 #[test]
 fn a_missing_folder_cannot_be_watched() {
-    let location = LibraryLocation::new("/dossier/qui/n-existe/pas").unwrap();
-    let result = FsLibraryWatcher.watch(&location, Arc::new(|_| {}));
+    let location = WorkspaceLocation::new("/dossier/qui/n-existe/pas").unwrap();
+    let result = FsWorkspaceWatcher.watch(&location, Arc::new(|_| {}));
     assert!(
         matches!(result, Err(StoreError::Unavailable(message)) if message.starts_with("surveillance impossible"))
     );

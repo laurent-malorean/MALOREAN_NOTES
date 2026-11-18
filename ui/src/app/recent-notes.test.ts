@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   fakeColumns,
   fakePane,
-  libraryScreen,
+  workspaceScreen,
   listed,
   recordedScreen,
 } from "../../test-support/app-fixture";
 import { activeNote, columnsStarted, noteOpened } from "../state/columns";
-import { libraryOpened, recentOn, type Screen, selectedNote, welcome } from "../state/screen";
+import { workspaceOpened, recentOn, type Screen, selectedNote, welcome } from "../state/screen";
 import { createRecentNotes } from "./recent-notes";
 
 function memoryStorage(values: Record<string, string> = {}) {
@@ -21,7 +21,7 @@ function memoryStorage(values: Record<string, string> = {}) {
 
 const KEY = "malorean.recent:/lib";
 
-function setup(start: Screen = libraryScreen(), stored: Record<string, string> = {}) {
+function setup(start: Screen = workspaceScreen(), stored: Record<string, string> = {}) {
   const { screen } = recordedScreen(start);
   const columns = fakeColumns(noteOpened(columnsStarted, "b.md"));
   const log: string[] = [];
@@ -44,8 +44,8 @@ function setup(start: Screen = libraryScreen(), stored: Record<string, string> =
   return { recent, screen, columns, log, storage, visit };
 }
 
-describe("notes récentes de la bibliothèque", () => {
-  it("la note montrée par la colonne active passe en tête, et c'est gardé pour la bibliothèque", () => {
+describe("notes récentes de l'espace de travail", () => {
+  it("la note montrée par la colonne active passe en tête, et c'est gardé pour l'espace de travail", () => {
     const t = setup();
     t.visit("a.md");
     t.visit("Travail/c.md");
@@ -55,32 +55,32 @@ describe("notes récentes de la bibliothèque", () => {
     expect(t.storage.values).toEqual({ [KEY]: '["a.md","Travail/c.md"]' });
   });
 
-  it("au relancement, reprennent celles gardées pour la bibliothèque ouverte", () => {
-    const t = setup(libraryScreen(), { [KEY]: '["b.md","a.md"]' });
+  it("au relancement, reprennent celles gardées pour l'espace de travail ouvert", () => {
+    const t = setup(workspaceScreen(), { [KEY]: '["b.md","a.md"]' });
     expect(t.recent.paths()).toEqual(["b.md", "a.md"]);
   });
 
-  it("chaque bibliothèque a les siennes ; l'accueil n'en a pas", () => {
+  it("chaque espace de travail a les siennes ; l'accueil n'en a pas", () => {
     const t = setup(welcome, { [KEY]: '["b.md"]' });
     t.visit("a.md");
     expect(t.recent.paths()).toEqual([]);
     expect(t.storage.values).toEqual({ [KEY]: '["b.md"]' });
-    t.screen.show(libraryOpened({ name: "Autre", path: "/autre" }, [], []));
+    t.screen.show(workspaceOpened({ name: "Autre", path: "/autre" }, [], []));
     t.visit("a.md");
-    t.screen.show(libraryScreen());
+    t.screen.show(workspaceScreen());
     expect(t.recent.paths()).toEqual(["b.md"]);
     expect(t.storage.values["malorean.recent:/autre"]).toBe('["a.md"]');
   });
 
   it("une note renommée ou déplacée reste, sous son nouveau chemin", () => {
-    const t = setup(libraryScreen(), { [KEY]: '["b.md","a.md"]' });
+    const t = setup(workspaceScreen(), { [KEY]: '["b.md","a.md"]' });
     t.recent.moved((path) => (path === "b.md" ? "Travail/b.md" : path));
     expect(t.recent.paths()).toEqual(["Travail/b.md", "a.md"]);
     expect(t.storage.values).toEqual({ [KEY]: '["Travail/b.md","a.md"]' });
   });
 
   it("les relire rend les notes dans leur ordre et oublie celles parties, pas celle ouverte entre-temps", async () => {
-    const t = setup(libraryScreen(), { [KEY]: '["b.md","partie.md","a.md"]' });
+    const t = setup(workspaceScreen(), { [KEY]: '["b.md","partie.md","a.md"]' });
     const answer = t.recent.list();
     t.visit("Travail/c.md");
     expect((await answer).map((note) => note.path)).toEqual(["b.md", "a.md"]);
@@ -88,10 +88,10 @@ describe("notes récentes de la bibliothèque", () => {
     expect(t.recent.paths()).toEqual(["Travail/c.md", "b.md", "a.md"]);
   });
 
-  it("une réponse arrivée après un changement de bibliothèque ne touche pas aux nouvelles", async () => {
-    const t = setup(libraryScreen(), { [KEY]: '["partie.md"]' });
+  it("une réponse arrivée après un changement d'espace de travail ne touche pas aux notes du nouveau", async () => {
+    const t = setup(workspaceScreen(), { [KEY]: '["partie.md"]' });
     const answer = t.recent.list();
-    t.screen.show(libraryOpened({ name: "Autre", path: "/autre" }, [], []));
+    t.screen.show(workspaceOpened({ name: "Autre", path: "/autre" }, [], []));
     t.visit("partie.md");
     await answer;
     expect(t.recent.paths()).toEqual(["partie.md"]);
@@ -99,7 +99,7 @@ describe("notes récentes de la bibliothèque", () => {
   });
 
   it("Récentes enregistre ce qui est tapé, montre les notes récentes et ouvre la première", async () => {
-    const t = setup(libraryScreen(), { [KEY]: '["a.md","b.md"]' });
+    const t = setup(workspaceScreen(), { [KEY]: '["a.md","b.md"]' });
     await t.recent.show();
     expect(t.log).toEqual(["enregistrer b.md", "récentes a.md b.md"]);
     expect(recentOn(t.screen.get())).toBe(true);

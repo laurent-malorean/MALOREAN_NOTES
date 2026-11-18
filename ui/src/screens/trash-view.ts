@@ -13,9 +13,9 @@ export interface TrashActions {
 const EMPTY = "La corbeille est vide";
 const PLACE_SEPARATOR = " / ";
 
-/** L'emplacement d'origine d'un élément rangé dans `folder`, depuis la bibliothèque. */
-function origin(libraryName: string, folder: string): string {
-  return [libraryName, ...(folder ? folder.split("/") : [])].join(PLACE_SEPARATOR);
+/** L'emplacement d'origine d'un élément rangé dans `folder`, depuis l'espace de travail. */
+function origin(workspaceName: string, folder: string): string {
+  return [workspaceName, ...(folder ? folder.split("/") : [])].join(PLACE_SEPARATOR);
 }
 
 function row(kind: "note" | "folder", label: string, place: string, restore: () => void) {
@@ -70,7 +70,7 @@ function emptyButton(empty: () => void): HTMLElement {
 /** Affiche la corbeille : les notes de la racine, puis chaque dossier suivi de ses notes. */
 export function renderTrash(
   container: HTMLElement,
-  libraryName: string,
+  workspaceName: string,
   trash: TrashInfo,
   actions: TrashActions,
 ): void {
@@ -84,13 +84,15 @@ export function renderTrash(
     trash.notes
       .filter((note) => parentOf(note.path) === folder)
       .map((note) =>
-        row("note", note.title, origin(libraryName, folder), () => actions.restoreNote(note.path)),
+        row("note", note.title, origin(workspaceName, folder), () =>
+          actions.restoreNote(note.path),
+        ),
       );
   container.replaceChildren(
     emptyButton(actions.empty),
     ...notesIn(""),
     ...trash.folders.flatMap((folder) => [
-      row("folder", nameOf(folder), origin(libraryName, parentOf(folder)), () =>
+      row("folder", nameOf(folder), origin(workspaceName, parentOf(folder)), () =>
         actions.restoreFolder(folder),
       ),
       ...notesIn(folder),

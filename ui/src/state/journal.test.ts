@@ -27,7 +27,7 @@ describe("réglages du journal", () => {
     expect(loadJournal(memoryStorage().storage, "/notes")).toEqual(DEFAULT_JOURNAL);
   });
 
-  it("chaque bibliothèque garde les siens", () => {
+  it("chaque espace de travail garde les siens", () => {
     const { storage, items } = memoryStorage();
     saveJournal(storage, "/notes", { folder: "Perso/Jours", atLaunch: false });
     saveJournal(storage, "/autres", { folder: "Carnet", atLaunch: true });

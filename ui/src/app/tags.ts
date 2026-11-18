@@ -20,7 +20,7 @@ export interface TagsDeps {
 
 export interface Tags {
   /**
-   * Montre les notes de toute la bibliothèque qui portent cette étiquette, ce qui est tapé étant
+   * Montre les notes de tout l'espace de travail qui portent cette étiquette, ce qui est tapé étant
    * enregistré d'abord ; la colonne active montre la première. Rechoisir celle du filtre ne
    * relit rien.
    */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { libraryScreen, listed } from "../../test-support/app-fixture";
+import { workspaceScreen, listed } from "../../test-support/app-fixture";
 import { notesRefreshed, type Screen, welcome } from "../state/screen";
 import { createCurrentScreen } from "./current-screen";
 
@@ -14,10 +14,10 @@ describe("écran affiché", () => {
   it("dessine chaque nouvel état", () => {
     const drawn: Screen[] = [];
     const screen = createCurrentScreen((next) => drawn.push(next));
-    const library = libraryScreen();
-    screen.show(library);
-    expect(screen.get()).toBe(library);
-    expect(drawn).toEqual([library]);
+    const workspace = workspaceScreen();
+    screen.show(workspace);
+    expect(screen.get()).toBe(workspace);
+    expect(drawn).toEqual([workspace]);
   });
 
   it("applique une réponse à l'écran tel qu'il est à son arrivée", async () => {
@@ -32,7 +32,7 @@ describe("écran affiché", () => {
           paths.map((path) => listed(path)),
         ),
     );
-    const later = libraryScreen([listed("a.md")]);
+    const later = workspaceScreen([listed("a.md")]);
     screen.show(later);
     answer(["b.md"]);
     await pending;

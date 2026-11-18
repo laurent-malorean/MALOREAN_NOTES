@@ -9,7 +9,7 @@ import type { RecentNotes } from "./recent-notes";
 export interface SavingDeps {
   readonly columns: Pick<OpenColumns, "update">;
   readonly messages: Messages;
-  readonly library: {
+  readonly workspace: {
     refreshFolders(): Promise<void>;
     refreshList(): Promise<void>;
     refreshTags(): Promise<void>;
@@ -35,11 +35,11 @@ function noteSaved(deps: SavingDeps, from: string, saved: SaveResult) {
     deps.messages.show(
       `Cette note a aussi changé hors de l'application : l'autre version est gardée dans « ${saved.conflictCopy} ».`,
     );
-    run(deps.library.refreshFolders());
+    run(deps.workspace.refreshFolders());
   } else if (saved.tagsChanged) {
-    run(deps.library.refreshTags());
+    run(deps.workspace.refreshTags());
   }
-  run(deps.library.refreshList());
+  run(deps.workspace.refreshList());
 }
 
 /** Les colonnes, la liste et les messages suivent ce que font les notes partagées. */

@@ -1,6 +1,6 @@
 // Journal : son dossier et la création de la note du jour au lancement, gardés pour chaque
-// bibliothèque, et le modèle dont part la note du jour.
-import type { LibraryNoteItem } from "../bridge";
+// espace de travail, et le modèle dont part la note du jour.
+import type { WorkspaceNoteItem } from "../bridge";
 import type { PreferenceStorage } from "./focus-preference";
 import { templatesIn } from "./templates-folder";
 
@@ -18,11 +18,11 @@ export interface JournalSettings {
 
 export const DEFAULT_JOURNAL: JournalSettings = { folder: "Journal", atLaunch: true };
 
-/** Les réglages du journal de cette bibliothèque ; ceux par défaut pour ce qui manque ou est illisible. */
-export function loadJournal(storage: PreferenceStorage, library: string): JournalSettings {
+/** Les réglages du journal de cet espace de travail ; ceux par défaut pour ce qui manque ou est illisible. */
+export function loadJournal(storage: PreferenceStorage, workspace: string): JournalSettings {
   try {
     // Rien de gardé donne `null`, qui ne se décompose pas : les réglages par défaut, plus bas.
-    const stored = JSON.parse(String(storage.getItem(KEY + library))) as Record<string, unknown>;
+    const stored = JSON.parse(String(storage.getItem(KEY + workspace))) as Record<string, unknown>;
     const { folder, atLaunch } = stored;
     return {
       folder: typeof folder === "string" && folder !== "" ? folder : DEFAULT_JOURNAL.folder,
@@ -33,14 +33,14 @@ export function loadJournal(storage: PreferenceStorage, library: string): Journa
   }
 }
 
-/** Garde les réglages du journal de cette bibliothèque ; sans effet si le stockage est refusé. */
+/** Garde les réglages du journal de cet espace de travail ; sans effet si le stockage est refusé. */
 export function saveJournal(
   storage: PreferenceStorage,
-  library: string,
+  workspace: string,
   settings: JournalSettings,
 ): void {
   try {
-    storage.setItem(KEY + library, JSON.stringify(settings));
+    storage.setItem(KEY + workspace, JSON.stringify(settings));
   } catch {
     // Confort : les perdre redonne seulement les réglages par défaut.
   }
@@ -53,7 +53,7 @@ export function journalFolder(typed: string): string {
 
 /** Le modèle de la note du jour : la note titrée « Journal » du dossier des modèles, s'il y en a une. */
 export function journalTemplate(
-  notes: readonly LibraryNoteItem[],
+  notes: readonly WorkspaceNoteItem[],
   templatesFolder: string,
 ): string | null {
   const template = templatesIn(notes, templatesFolder).find((n) => n.title === TEMPLATE_TITLE);

@@ -1,8 +1,8 @@
 /** Les éléments de la fenêtre, cherchés une seule fois. */
 export interface Layout {
   readonly welcome: HTMLElement;
-  readonly workspace: HTMLElement;
-  readonly libraryName: HTMLElement;
+  readonly mainArea: HTMLElement;
+  readonly workspaceName: HTMLElement;
   readonly foldersList: HTMLElement;
   /** L'entrée Récentes, entre les dossiers et la liste des étiquettes. */
   readonly recentButton: HTMLButtonElement;
@@ -42,7 +42,7 @@ const TEMPLATE = `
       <p>Vos notes sont de simples fichiers Markdown, dans le dossier de votre choix.</p>
       <button class="primary" data-choose>Choisir un dossier de notes</button>
     </section>
-    <section class="workspace" hidden>
+    <section class="main-area" hidden>
       <aside class="folders">
         <header class="sidebar-header">
           <span>Dossiers</span>
@@ -58,7 +58,7 @@ const TEMPLATE = `
       </aside>
       <aside class="sidebar">
         <header class="sidebar-header">
-          <span class="library-name"></span>
+          <span class="workspace-name"></span>
           <button class="icon" data-new title="Nouvelle note">＋</button>
         </header>
         <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
@@ -89,8 +89,8 @@ export function createLayout(root: HTMLElement): Layout {
   const find = <T extends HTMLElement>(selector: string) => root.querySelector(selector) as T;
   return {
     welcome: find(".welcome"),
-    workspace: find(".workspace"),
-    libraryName: find(".library-name"),
+    mainArea: find(".main-area"),
+    workspaceName: find(".workspace-name"),
     foldersList: find(".folders-list"),
     recentButton: find("[data-recent]"),
     tagsList: find(".tags-list"),

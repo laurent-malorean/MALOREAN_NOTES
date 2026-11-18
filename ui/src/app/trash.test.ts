@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   fakeColumns,
   fakePane,
-  libraryScreen,
+  workspaceScreen,
   listed,
   recordedScreen,
 } from "../../test-support/app-fixture";
@@ -14,7 +14,7 @@ import { createTrash } from "./trash";
 const EMPTY_TRASH = { notes: [], folders: ["vieux"] };
 
 function setup(
-  start: Screen = libraryScreen(),
+  start: Screen = workspaceScreen(),
   columnsStart: Columns = columnsStarted,
   options: { accept?: boolean; listed?: NoteListItem[] } = {},
 ) {
@@ -41,7 +41,7 @@ function setup(
     ask: async (name) => (asked.push(name), options.accept ?? true),
     refreshList: async () => {
       log.push("liste");
-      if (options.listed) screen.show(libraryScreen(options.listed));
+      if (options.listed) screen.show(workspaceScreen(options.listed));
     },
     refreshTags: async () => void log.push("étiquettes"),
   });
@@ -54,7 +54,7 @@ const open = (...paths: string[]) => paths.reduce(noteOpened, columnsStarted);
 
 describe("corbeille : une note", () => {
   it("demande d'abord, par son titre ; refusée, rien ne part", async () => {
-    const t = setup(libraryScreen(notes), open("a.md"), { accept: false });
+    const t = setup(workspaceScreen(notes), open("a.md"), { accept: false });
     await t.trash.trashNote("a.md");
     await t.trash.trashNote("inconnue.md");
     expect(t.asked).toEqual(["Alpha", "inconnue.md"]);
@@ -68,7 +68,7 @@ describe("corbeille : une note", () => {
   });
 
   it("acceptée, elle part ; si la colonne active la montrait, la suivante de la liste s'y ouvre", async () => {
-    const t = setup(libraryScreen(notes), open("c.md", "a.md"), { listed: notes.slice(1) });
+    const t = setup(workspaceScreen(notes), open("c.md", "a.md"), { listed: notes.slice(1) });
     const pane = fakePane("a.md");
     t.columns.panes.set(t.columns.columns().active, pane);
     await t.trash.trashNote("a.md");
@@ -80,7 +80,7 @@ describe("corbeille : une note", () => {
   });
 
   it("une note d'un onglet en arrière-plan ferme seulement son onglet", async () => {
-    const t = setup(libraryScreen(notes), open("a.md", "c.md"), { listed: notes.slice(1) });
+    const t = setup(workspaceScreen(notes), open("a.md", "c.md"), { listed: notes.slice(1) });
     await t.trash.trashNote("a.md");
     expect(t.tabs()).toEqual(["c.md"]);
   });
@@ -94,14 +94,14 @@ describe("corbeille : une note", () => {
 
 describe("corbeille : un dossier", () => {
   it("demande d'abord, par son nom", async () => {
-    const t = setup(libraryScreen(), open(), { accept: false });
+    const t = setup(workspaceScreen(), open(), { accept: false });
     await t.trash.trashFolder("projets/plans");
     expect(t.asked).toEqual(["plans"]);
     expect(t.log).toEqual([]);
   });
 
   it("si on y était, la liste revient à la racine, dans son tri, et sa première note s'ouvre", async () => {
-    const inside = libraryScreen([], (s) => ({ ...s, folder: "projets/plans", order: "title" }));
+    const inside = workspaceScreen([], (s) => ({ ...s, folder: "projets/plans", order: "title" }));
     const t = setup(inside, open("projets/plans/a.md", "b.md"), { listed: [listed("r.md")] });
     const pane = fakePane("projets/plans/a.md");
     t.columns.panes.set(2, pane);
@@ -119,7 +119,7 @@ describe("corbeille : un dossier", () => {
   });
 
   it("ailleurs, la liste est relue ; la note active partie, une autre s'ouvre", async () => {
-    const t = setup(libraryScreen(), open("b.md", "projets/a.md"), { listed: [listed("r.md")] });
+    const t = setup(workspaceScreen(), open("b.md", "projets/a.md"), { listed: [listed("r.md")] });
     await t.trash.trashFolder("projets");
     expect(t.log).toEqual(["corbeille projets/", "dossiers", "étiquettes", "liste"]);
     expect(t.tabs()).toEqual(["b.md", "r.md"]);
@@ -127,7 +127,7 @@ describe("corbeille : un dossier", () => {
 
   it("un dossier au nom voisin, ou une note active ailleurs, ne bougent pas", async () => {
     const t = setup(
-      libraryScreen([], (s) => ({ ...s, folder: "projets-bis" })),
+      workspaceScreen([], (s) => ({ ...s, folder: "projets-bis" })),
       open("projets/a.md", "projets-bis/b.md"),
       { listed: [listed("r.md")] },
     );
@@ -137,7 +137,7 @@ describe("corbeille : un dossier", () => {
   });
 
   it("sans note active, aucune autre ne s'ouvre", async () => {
-    const t = setup(libraryScreen(), open(), { listed: [listed("r.md")] });
+    const t = setup(workspaceScreen(), open(), { listed: [listed("r.md")] });
     await t.trash.trashFolder("projets");
     expect(t.tabs()).toEqual([]);
   });
@@ -154,11 +154,11 @@ describe("corbeille : la montrer, restaurer, vider", () => {
     const t = setup();
     await t.trash.show();
     const now = t.screen.get();
-    expect(now.kind === "library" && now.trash).toEqual(EMPTY_TRASH);
+    expect(now.kind === "workspace" && now.trash).toEqual(EMPTY_TRASH);
   });
 
   it("restaurer ou vider relit les dossiers, les étiquettes, la liste et la corbeille", async () => {
-    const t = setup(libraryScreen([], (s) => ({ ...s, folder: "projets" })));
+    const t = setup(workspaceScreen([], (s) => ({ ...s, folder: "projets" })));
     await t.trash.restoreNote("a.md");
     await t.trash.restoreFolder("vieux");
     await t.trash.empty();
@@ -172,6 +172,6 @@ describe("corbeille : la montrer, restaurer, vider", () => {
       ...reread,
     ]);
     const now = t.screen.get();
-    expect(now.kind === "library" && now.folders).toEqual(["projets"]);
+    expect(now.kind === "workspace" && now.folders).toEqual(["projets"]);
   });
 });

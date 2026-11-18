@@ -1,4 +1,4 @@
-//! Les pièces jointes des notes de la bibliothèque ouverte, vues depuis la page.
+//! Les pièces jointes des notes de l'espace de travail ouvert, vues depuis la page.
 
 use application::use_cases::{AttachFile, AttachmentSource, OpenAttachment};
 use domain::NotePath;
@@ -12,7 +12,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, fichier trop
-    /// gros, ni image ni PDF, note absente, stockage indisponible, aucune bibliothèque ouverte.
+    /// gros, ni image ni PDF, note absente, stockage indisponible, aucun espace de travail ouvert.
     pub fn attach_file(
         &self,
         path: &str,
@@ -33,7 +33,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, lien qui ne vise
-    /// pas une pièce jointe de la note, pièce jointe absente, aucune bibliothèque ouverte.
+    /// pas une pièce jointe de la note, pièce jointe absente, aucun espace de travail ouvert.
     pub fn attachment_location(&self, path: &str, target: &str) -> Result<String, ApiError> {
         let store = self.store()?;
         let location = OpenAttachment::new(&*store).execute(&NotePath::parse(path)?, target)?;
@@ -45,7 +45,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -58,7 +58,7 @@ mod tests {
             Arc::new(FixedClock::default()),
         );
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         session
     }

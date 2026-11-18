@@ -6,14 +6,14 @@ use domain::{Folder, NotePath};
 
 use crate::{AppError, NoteStore};
 
-/// Déplace une note, avec ses pièces jointes, dans un autre dossier de la bibliothèque.
+/// Déplace une note, avec ses pièces jointes, dans un autre dossier de l'espace de travail.
 #[derive(Debug)]
 pub struct MoveNote<'a> {
     store: &'a dyn NoteStore,
 }
 
 impl<'a> MoveNote<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }

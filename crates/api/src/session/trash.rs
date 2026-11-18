@@ -1,4 +1,4 @@
-//! La corbeille de la bibliothèque ouverte, vue depuis la page.
+//! La corbeille de l'espace de travail ouvert, vue depuis la page.
 
 use application::use_cases::Trash;
 use domain::{Folder, NotePath};
@@ -12,7 +12,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note absente,
-    /// stockage indisponible, aucune bibliothèque ouverte.
+    /// stockage indisponible, aucun espace de travail ouvert.
     pub fn trash_note(&self, path: &str) -> Result<String, ApiError> {
         let store = self.store()?;
         Ok(Trash::new(&*store)
@@ -25,8 +25,8 @@ impl Session {
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, bibliothèque
-    /// elle-même, dossier absent, stockage indisponible, aucune bibliothèque ouverte.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, espace de travail
+    /// lui-même, dossier absent, stockage indisponible, aucun espace de travail ouvert.
     pub fn trash_folder(&self, path: &str) -> Result<String, ApiError> {
         let store = self.store()?;
         Ok(Trash::new(&*store)
@@ -38,8 +38,8 @@ impl Session {
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; corbeille illisible, aucune
-    /// bibliothèque ouverte.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; corbeille illisible, aucun
+    /// espace de travail ouvert.
     pub fn list_trash(&self) -> Result<TrashInfo, ApiError> {
         let store = self.store()?;
         let contents = Trash::new(&*store).contents()?;
@@ -56,12 +56,12 @@ impl Session {
         })
     }
 
-    /// Remet une note de la corbeille à sa place ; rend son chemin dans la bibliothèque.
+    /// Remet une note de la corbeille à sa place ; rend son chemin dans l'espace de travail.
     ///
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note absente de
-    /// la corbeille, stockage indisponible, aucune bibliothèque ouverte.
+    /// la corbeille, stockage indisponible, aucun espace de travail ouvert.
     pub fn restore_note(&self, path: &str) -> Result<SavedNote, ApiError> {
         let store = self.store()?;
         let restored = Trash::new(&*store).restore_note(&NotePath::parse(path)?)?;
@@ -75,7 +75,7 @@ impl Session {
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, dossier absent
-    /// de la corbeille, stockage indisponible, aucune bibliothèque ouverte.
+    /// de la corbeille, stockage indisponible, aucun espace de travail ouvert.
     pub fn restore_folder(&self, path: &str) -> Result<String, ApiError> {
         let store = self.store()?;
         Ok(Trash::new(&*store)
@@ -87,8 +87,8 @@ impl Session {
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; suppression impossible, aucune
-    /// bibliothèque ouverte.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; suppression impossible, aucun
+    /// espace de travail ouvert.
     pub fn empty_trash(&self) -> Result<(), ApiError> {
         let store = self.store()?;
         Ok(Trash::new(&*store).empty()?)
@@ -99,7 +99,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -112,7 +112,7 @@ mod tests {
             Arc::new(FixedClock::default()),
         );
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         session
     }
@@ -152,11 +152,11 @@ mod tests {
     }
 
     #[test]
-    fn the_library_itself_cannot_be_trashed() {
+    fn the_workspace_itself_cannot_be_trashed() {
         let session = opened(&[]);
         assert_eq!(
             session.trash_folder("").unwrap_err().message,
-            "la bibliothèque elle-même ne peut pas aller dans la corbeille"
+            "l'espace de travail lui-même ne peut pas aller dans la corbeille"
         );
     }
 

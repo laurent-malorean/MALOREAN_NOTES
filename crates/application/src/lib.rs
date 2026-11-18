@@ -8,7 +8,7 @@ pub mod use_cases;
 
 pub use error::AppError;
 pub use ports::{
-    AttachmentLocation, ChangeListener, Clock, EmptyLocation, LibraryChange, LibraryLocation,
-    LibraryOpener, LibraryWatcher, NoteStore, Preferences, StoreError, StoredNote, TrashContents,
-    Watching,
+    AttachmentLocation, ChangeListener, Clock, EmptyLocation, NoteStore, Preferences, StoreError,
+    StoredNote, TrashContents, Watching, WorkspaceChange, WorkspaceLocation, WorkspaceOpener,
+    WorkspaceWatcher,
 };

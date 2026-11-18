@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   folderSelected,
-  libraryOpened,
+  workspaceOpened,
   recentShown,
   searchAnswered,
   searchTyped,
@@ -42,25 +42,25 @@ function layout() {
   return createLayout(root);
 }
 
-const library = { name: "Notes", path: "/Users/moi/Notes" };
+const workspace = { name: "Notes", path: "/Users/moi/Notes" };
 
 describe("affichage de l'écran", () => {
   it("montre l'accueil et cache l'espace de travail", () => {
     const view = layout();
     renderScreen(view, welcome, ignore);
-    expect([view.welcome.hidden, view.workspace.hidden]).toEqual([false, true]);
+    expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([false, true]);
   });
 
-  it("montre la bibliothèque, son nom et ses notes", () => {
+  it("montre l'espace de travail, son nom et ses notes", () => {
     const view = layout();
-    const screen = libraryOpened(
-      library,
+    const screen = workspaceOpened(
+      workspace,
       ["Travail"],
       [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
     renderScreen(view, screen, ignore);
-    expect([view.welcome.hidden, view.workspace.hidden]).toEqual([true, false]);
-    expect(view.libraryName.textContent).toBe("Notes");
+    expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([true, false]);
+    expect(view.workspaceName.textContent).toBe("Notes");
     expect(view.notesList.querySelector(".note-item.selected .note-title")?.textContent).toBe(
       "Alpha",
     );
@@ -76,7 +76,7 @@ describe("affichage de l'écran", () => {
       pinned: false,
       tags: [],
     };
-    const sorted = libraryOpened(library, [], [note], [], "title");
+    const sorted = workspaceOpened(workspace, [], [note], [], "title");
     renderScreen(view, sorted, { ...ignore, sortNotes: (order) => asked.push(order) });
     expect(view.noteOrder.value).toBe("title");
     view.noteOrder.value = "modified";
@@ -88,15 +88,15 @@ describe("affichage de l'écran", () => {
 
   it("montre la colonne des dossiers et le nom du dossier affiché", () => {
     const view = layout();
-    const opened = libraryOpened(
-      library,
+    const opened = workspaceOpened(
+      workspace,
       ["Travail", "Travail/Réunions", "Travail/Réunions/2026"],
       [],
     );
     renderScreen(view, opened, ignore);
     expect(view.foldersList.querySelectorAll(".folder-item")).toHaveLength(4);
     renderScreen(view, folderSelected(opened, "Travail/Réunions/2026", []), ignore);
-    expect(view.libraryName.textContent).toBe("2026");
+    expect(view.workspaceName.textContent).toBe("2026");
     expect(view.foldersList.querySelector(".folder-item.selected")?.textContent).toBe("2026");
   });
 
@@ -104,7 +104,7 @@ describe("affichage de l'écran", () => {
     const view = layout();
     renderScreen(
       view,
-      libraryOpened(library, ["Travail", "Travail/Réunions"], [], ["Travail"]),
+      workspaceOpened(workspace, ["Travail", "Travail/Réunions"], [], ["Travail"]),
       ignore,
     );
     expect(view.foldersList.querySelectorAll(".folder-item")).toHaveLength(2);
@@ -120,8 +120,8 @@ describe("affichage de l'écran", () => {
     };
     renderScreen(
       view,
-      libraryOpened(
-        library,
+      workspaceOpened(
+        workspace,
         ["Travail"],
         [{ path: "a.md", title: "A", modified: 0, pinned: false, tags: [] }],
       ),
@@ -134,8 +134,8 @@ describe("affichage de l'écran", () => {
 
   it("montre les notes trouvées à la place de la liste pendant une recherche", () => {
     const view = layout();
-    const opened = libraryOpened(
-      library,
+    const opened = workspaceOpened(
+      workspace,
       [],
       [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
@@ -151,8 +151,8 @@ describe("affichage de l'écran", () => {
 
   it("sous le seuil de recherche, garde le texte et montre les notes du dossier", () => {
     const view = layout();
-    const opened = libraryOpened(
-      library,
+    const opened = workspaceOpened(
+      workspace,
       [],
       [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
@@ -164,7 +164,7 @@ describe("affichage de l'écran", () => {
 
   it("vide le champ de recherche quand la recherche s'arrête", () => {
     const view = layout();
-    const opened = libraryOpened(library, ["Travail"], []);
+    const opened = workspaceOpened(workspace, ["Travail"], []);
     renderScreen(view, searchTyped(opened, "pain"), ignore);
     renderScreen(view, folderSelected(searchTyped(opened, "pain"), "Travail", []), ignore);
     expect(view.searchField.value).toBe("");
@@ -174,23 +174,23 @@ describe("affichage de l'écran", () => {
     const view = layout();
     view.searchField.value = "pain";
     view.searchField.setSelectionRange(1, 1);
-    renderScreen(view, searchTyped(libraryOpened(library, [], []), "pain"), ignore);
+    renderScreen(view, searchTyped(workspaceOpened(workspace, [], []), "pain"), ignore);
     expect(view.searchField.selectionStart).toBe(1);
   });
 
   it("revient à l'accueil", () => {
     const view = layout();
-    renderScreen(view, libraryOpened(library, [], []), ignore);
+    renderScreen(view, workspaceOpened(workspace, [], []), ignore);
     renderScreen(view, welcome, ignore);
-    expect([view.welcome.hidden, view.workspace.hidden]).toEqual([false, true]);
+    expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([false, true]);
   });
 });
 
 describe("affichage de la corbeille", () => {
   it("montre la corbeille à la place des notes, et elle seule en évidence", () => {
     const view = layout();
-    const opened = libraryOpened(
-      library,
+    const opened = workspaceOpened(
+      workspace,
       ["Travail"],
       [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
@@ -199,7 +199,7 @@ describe("affichage de la corbeille", () => {
       notes: [{ path: "x.md", title: "Jetée" }],
     });
     renderScreen(view, screen, ignore);
-    expect(view.libraryName.textContent).toBe("Corbeille");
+    expect(view.workspaceName.textContent).toBe("Corbeille");
     expect(view.notesList.querySelector(".trash-label")?.textContent).toBe("Jetée");
     expect(view.trashButton.classList.contains("selected")).toBe(true);
     expect(view.foldersList.querySelector(".folder-item.selected")).toBeNull();
@@ -217,7 +217,7 @@ describe("affichage du filtre par étiquette", () => {
     pinned: false,
     tags: ["perso"],
   };
-  const opened = tagsRefreshed(libraryOpened(library, ["Travail"], []), [
+  const opened = tagsRefreshed(workspaceOpened(workspace, ["Travail"], []), [
     { name: "perso", count: 1 },
   ]);
 
@@ -236,7 +236,7 @@ describe("affichage du filtre par étiquette", () => {
     const calls: string[] = [];
     const screen = tagSelected(opened, "perso", [tagged]);
     renderScreen(view, screen, { ...ignore, clearTag: () => calls.push("retirer") });
-    expect(view.libraryName.textContent).toBe("#perso");
+    expect(view.workspaceName.textContent).toBe("#perso");
     expect(view.tagFilter.hidden).toBe(false);
     expect(view.tagFilter.querySelector(".tag-filter-name")?.textContent).toBe("#perso");
     expect(view.tagsList.querySelector(".tag-item.selected")).not.toBeNull();
@@ -256,7 +256,7 @@ describe("affichage du filtre par étiquette", () => {
     expect(view.tagFilter.hidden).toBe(false);
     renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
     expect(view.tagFilter.hidden).toBe(true);
-    expect(view.libraryName.textContent).toBe("Corbeille");
+    expect(view.workspaceName.textContent).toBe("Corbeille");
   });
 });
 
@@ -268,7 +268,7 @@ describe("affichage de Récentes", () => {
     pinned: false,
     tags: [],
   });
-  const opened = libraryOpened(library, ["Travail"], [note("a.md", "Alpha")]);
+  const opened = workspaceOpened(workspace, ["Travail"], [note("a.md", "Alpha")]);
 
   it("l'entrée Récentes est juste au-dessus de la liste des étiquettes ; un clic la demande", () => {
     const view = layout();
@@ -285,7 +285,7 @@ describe("affichage de Récentes", () => {
     const view = layout();
     const screen = recentShown(opened, [note("Travail/b.md", "Bêta"), note("a.md", "Alpha")]);
     renderScreen(view, screen, ignore);
-    expect(view.libraryName.textContent).toBe("Récentes");
+    expect(view.workspaceName.textContent).toBe("Récentes");
     expect(view.recentButton.classList.contains("selected")).toBe(true);
     expect(view.foldersList.querySelector(".folder-item.selected")).toBeNull();
     expect(view.noteOrder.parentElement?.hidden).toBe(true);
@@ -298,10 +298,10 @@ describe("affichage de Récentes", () => {
     const screen = recentShown(opened, [note("a.md", "Alpha")]);
     renderScreen(view, searchTyped(screen, "pain"), ignore);
     expect(view.recentButton.classList.contains("selected")).toBe(false);
-    expect(view.libraryName.textContent).toBe("Notes");
+    expect(view.workspaceName.textContent).toBe("Notes");
     expect(view.noteOrder.parentElement?.hidden).toBe(false);
     renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
     expect(view.recentButton.classList.contains("selected")).toBe(false);
-    expect(view.libraryName.textContent).toBe("Corbeille");
+    expect(view.workspaceName.textContent).toBe("Corbeille");
   });
 });

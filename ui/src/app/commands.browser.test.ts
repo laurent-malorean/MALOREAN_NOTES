@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   fakeColumns,
   fakePane,
-  libraryScreen,
+  workspaceScreen,
   recordedScreen,
   settle,
 } from "../../test-support/app-fixture";
@@ -15,7 +15,7 @@ import { commandActions, connectCommands, type CommandsDeps } from "./commands";
 const root = document.createElement("div");
 const layout = createLayout(root);
 const log: string[] = [];
-const { screen } = recordedScreen(libraryScreen());
+const { screen } = recordedScreen(workspaceScreen());
 let columns = fakeColumns();
 let fullScreen = false;
 let tagFilter = false;
@@ -48,7 +48,7 @@ const deps: CommandsDeps = {
   },
   picker: layout.picker,
   searchField: layout.searchField,
-  library: {
+  workspace: {
     createNote: async () => void log.push("nouvelle note"),
     choose: async () => void log.push("changer de dossier"),
     sortBy: async (order) => void log.push(`trier par ${order}`),
@@ -83,7 +83,7 @@ beforeEach(() => {
   log.length = 0;
   fullScreen = false;
   recentPaths = [];
-  screen.show(libraryScreen());
+  screen.show(workspaceScreen());
   columns = fakeColumns(["a.md", "b.md", "c.md"].reduce(noteOpened, columnsStarted));
   columns.panes.set(columns.columns().active, fakePane("c.md"));
 });
@@ -104,7 +104,7 @@ describe("commandes de la palette", () => {
       "split-column",
       "show-trash",
       "open-settings",
-      "choose-library",
+      "choose-workspace",
     ] as const)
       actions[id]();
     await settle();
@@ -128,7 +128,7 @@ describe("commandes de la palette", () => {
   it("chercher met le curseur dans la recherche, ou dans la note", () => {
     const actions = commandActions(deps);
     const focus = vi.spyOn(layout.searchField, "focus");
-    actions["search-library"]();
+    actions["search-workspace"]();
     expect(focus).toHaveBeenCalled();
     actions["find-in-note"]();
     expect(columns.open.activePane().editor.openFind).toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe("commandes de la palette", () => {
     expect(columns.columns().list[0]?.tabs.map((tab) => tab.note)).toEqual(["a.md", "b.md"]);
   });
 
-  it("l'ouverture rapide propose les notes de toute la bibliothèque et ouvre la choisie", async () => {
+  it("l'ouverture rapide propose les notes de tout l'espace de travail et ouvre la choisie", async () => {
     commandActions(deps)["quick-open"]();
     await settle();
     expect(picker().open).toBe(true);
@@ -180,7 +180,7 @@ describe("commandes de la palette", () => {
   });
 
   it("trier la liste propose les deux tris, marque celui en cours et applique le choisi", async () => {
-    screen.show(libraryScreen([], (now) => ({ ...now, order: "title" })));
+    screen.show(workspaceScreen([], (now) => ({ ...now, order: "title" })));
     commandActions(deps)["sort-notes"]();
     expect(picker().getAttribute("aria-label")).toBe("Trier la liste");
     expect(options()).toEqual(["Date de modification", "Titreactuel"]);

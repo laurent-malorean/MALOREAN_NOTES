@@ -4,9 +4,9 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
 import type { AttachedFile } from "./generated/AttachedFile";
-import type { LibraryChanged } from "./generated/LibraryChanged";
-import type { LibraryInfo } from "./generated/LibraryInfo";
-import type { LibraryNoteItem } from "./generated/LibraryNoteItem";
+import type { WorkspaceChanged } from "./generated/WorkspaceChanged";
+import type { WorkspaceInfo } from "./generated/WorkspaceInfo";
+import type { WorkspaceNoteItem } from "./generated/WorkspaceNoteItem";
 import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
@@ -20,9 +20,9 @@ import type { TrashInfo } from "./generated/TrashInfo";
 
 export type {
   AttachedFile,
-  LibraryChanged,
-  LibraryInfo,
-  LibraryNoteItem,
+  WorkspaceChanged,
+  WorkspaceInfo,
+  WorkspaceNoteItem,
   LinkingNoteItem,
   NoteContent,
   NoteListItem,
@@ -43,26 +43,26 @@ export function errorMessage(error: unknown): string {
   return String(error);
 }
 
-export const reopenLastLibrary = () => invoke<LibraryInfo | null>("reopen_last_library");
-export const chooseLibrary = () => invoke<LibraryInfo | null>("choose_library");
+export const reopenLastWorkspace = () => invoke<WorkspaceInfo | null>("reopen_last_workspace");
+export const chooseWorkspace = () => invoke<WorkspaceInfo | null>("choose_workspace");
 /**
- * Les notes d'un dossier, désigné par son chemin (`""` pour la racine de la bibliothèque), dans
+ * Les notes d'un dossier, désigné par son chemin (`""` pour la racine de l'espace de travail), dans
  * l'ordre du tri de la liste.
  */
 export const listNotes = (folder: string, order: NoteOrderItem) =>
   invoke<NoteListItem[]>("list_notes", { folder, order });
-/** Les notes de toute la bibliothèque qui contiennent tous les mots de `query`, dans l'ordre du tri. */
+/** Les notes de tout l'espace de travail qui contiennent tous les mots de `query`, dans l'ordre du tri. */
 export const searchNotes = (query: string, order: NoteOrderItem) =>
   invoke<SearchResultItem[]>("search_notes", { query, order });
-/** Toutes les notes de la bibliothèque, la plus récente en premier : pour l'ouverture rapide. */
-export const listAllNotes = () => invoke<LibraryNoteItem[]>("list_all_notes");
-/** Les notes de toute la bibliothèque qui portent l'étiquette `tag` : le filtre par étiquette. */
+/** Toutes les notes de l'espace de travail, la plus récente en premier : pour l'ouverture rapide. */
+export const listAllNotes = () => invoke<WorkspaceNoteItem[]>("list_all_notes");
+/** Les notes de tout l'espace de travail qui portent l'étiquette `tag` : le filtre par étiquette. */
 export const listTaggedNotes = (tag: string, order: NoteOrderItem) =>
   invoke<NoteListItem[]>("list_tagged_notes", { tag, order });
 /** Les notes récentes `paths`, dans cet ordre, sans celles qui n'existent plus. */
 export const listRecentNotes = (paths: readonly string[]) =>
   invoke<NoteListItem[]>("list_recent_notes", { paths });
-/** Chaque étiquette de la bibliothèque et son nombre de notes, par ordre alphabétique. */
+/** Chaque étiquette de l'espace de travail et son nombre de notes, par ordre alphabétique. */
 export const listTags = () => invoke<TagItem[]>("list_tags");
 /** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */
 export const resolveLink = (title: string) => invoke<string | null>("resolve_link", { title });
@@ -80,7 +80,7 @@ export const createNoteFromTemplate = (template: string, folder: string) =>
 /** La note du jour dans le dossier `journal`, créée par Rust si besoin, depuis `template` s'il y en a un. */
 export const createDailyNote = (journal: string, template: string | null) =>
   invoke<SavedNote>("create_daily_note", { journal, template });
-/** L'adresse qui charge dans la fenêtre un fichier de la bibliothèque, comme une image. */
+/** L'adresse qui charge dans la fenêtre un fichier de l'espace de travail, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);
 export const listFolders = () => invoke<string[]>("list_folders");
 /** Crée le dossier `name` dans `parent` ; rend son chemin. */
@@ -115,11 +115,11 @@ export const emptyTrash = () => invoke<null>("empty_trash");
 export const setFullScreen = (on: boolean) => getCurrentWindow().setFullscreen(on);
 /** La fenêtre est-elle en plein écran (y compris par le bouton vert ou le menu du Mac) ? */
 export const isFullScreen = () => getCurrentWindow().isFullscreen();
-/** Même nom côté Rust (`LIBRARY_CHANGED_EVENT`). */
-const LIBRARY_CHANGED_EVENT = "library-changed";
-/** Prévient de chaque changement fait dans la bibliothèque hors de l'application. */
-export const onLibraryChanged = (handler: (change: LibraryChanged) => void) =>
-  listen<LibraryChanged>(LIBRARY_CHANGED_EVENT, (event) => handler(event.payload));
+/** Même nom côté Rust (`WORKSPACE_CHANGED_EVENT`). */
+const WORKSPACE_CHANGED_EVENT = "workspace-changed";
+/** Prévient de chaque changement fait dans l'espace de travail hors de l'application. */
+export const onWorkspaceChanged = (handler: (change: WorkspaceChanged) => void) =>
+  listen<WorkspaceChanged>(WORKSPACE_CHANGED_EVENT, (event) => handler(event.payload));
 
 /** Prévient à chaque changement de taille de la fenêtre, entrée et sortie du plein écran comprises. */
 export const onWindowResized = (handler: () => void) => getCurrentWindow().onResized(handler);

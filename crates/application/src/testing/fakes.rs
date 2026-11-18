@@ -6,14 +6,14 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 
 use crate::{
-    AttachmentLocation, ChangeListener, Clock, LibraryChange, LibraryLocation, LibraryOpener,
-    LibraryWatcher, NoteStore, Preferences, StoreError, StoredNote, TrashContents, Watching,
+    AttachmentLocation, ChangeListener, Clock, NoteStore, Preferences, StoreError, StoredNote,
+    TrashContents, Watching, WorkspaceChange, WorkspaceLocation, WorkspaceOpener, WorkspaceWatcher,
 };
 
 /// Emplacement fictif d'une pièce jointe en mémoire.
 const MEMORY_LOCATION: &str = "mémoire://";
 
-/// Bibliothèque en mémoire ; chaque écriture avance la date de modification d'un cran.
+/// Espace de travail en mémoire ; chaque écriture avance la date de modification d'un cran.
 #[derive(Debug, Default)]
 pub struct InMemoryNoteStore {
     state: Mutex<State>,
@@ -108,7 +108,7 @@ fn transfer(
 }
 
 impl InMemoryNoteStore {
-    /// Une bibliothèque qui contient déjà ces notes (chemin, contenu).
+    /// Un espace de travail qui contient déjà ces notes (chemin, contenu).
     #[must_use]
     pub fn with_notes(notes: &[(&str, &str)]) -> Self {
         let store = Self::default();
@@ -412,7 +412,7 @@ fn stored(name: &NotePath, content: &str, modified: Modified) -> StoredNote {
     }
 }
 
-/// Ouvre toujours la même bibliothèque en mémoire, quel que soit l'emplacement.
+/// Ouvre toujours le même espace de travail en mémoire, quel que soit l'emplacement.
 #[derive(Debug)]
 pub struct FakeOpener {
     store: Arc<InMemoryNoteStore>,
@@ -426,8 +426,8 @@ impl FakeOpener {
     }
 }
 
-impl LibraryOpener for FakeOpener {
-    fn open(&self, _location: &LibraryLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
+impl WorkspaceOpener for FakeOpener {
+    fn open(&self, _location: &WorkspaceLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
         Ok(self.store.clone())
     }
 }
@@ -435,11 +435,11 @@ impl LibraryOpener for FakeOpener {
 /// Préférences en mémoire.
 #[derive(Debug, Default)]
 pub struct FakePreferences {
-    last: Mutex<Option<LibraryLocation>>,
+    last: Mutex<Option<WorkspaceLocation>>,
 }
 
 impl Preferences for FakePreferences {
-    fn last_library(&self) -> Result<Option<LibraryLocation>, StoreError> {
+    fn last_workspace(&self) -> Result<Option<WorkspaceLocation>, StoreError> {
         Ok(self
             .last
             .lock()
@@ -447,7 +447,7 @@ impl Preferences for FakePreferences {
             .clone())
     }
 
-    fn remember_library(&self, location: &LibraryLocation) -> Result<(), StoreError> {
+    fn remember_workspace(&self, location: &WorkspaceLocation) -> Result<(), StoreError> {
         *self.last.lock().unwrap_or_else(PoisonError::into_inner) = Some(location.clone());
         Ok(())
     }
@@ -483,7 +483,7 @@ impl Clock for FixedClock {
 /// Surveillance simulée : le test annonce lui-même les changements avec [`FakeWatcher::announce`].
 #[derive(Default)]
 pub struct FakeWatcher {
-    listener: Mutex<Option<(LibraryLocation, ChangeListener)>>,
+    listener: Mutex<Option<(WorkspaceLocation, ChangeListener)>>,
 }
 
 impl std::fmt::Debug for FakeWatcher {
@@ -501,14 +501,14 @@ struct FakeWatching;
 impl Watching for FakeWatching {}
 
 impl FakeWatcher {
-    /// La bibliothèque surveillée en ce moment, s'il y en a une.
+    /// L'espace de travail surveillé en ce moment, s'il y en a une.
     #[must_use]
-    pub fn watched(&self) -> Option<LibraryLocation> {
+    pub fn watched(&self) -> Option<WorkspaceLocation> {
         self.lock().as_ref().map(|(location, _)| location.clone())
     }
 
-    /// Annonce un changement fait hors de l'application ; rien si aucune bibliothèque n'est surveillée.
-    pub fn announce(&self, change: LibraryChange) {
+    /// Annonce un changement fait hors de l'application ; rien si aucun espace de travail n'est surveillée.
+    pub fn announce(&self, change: WorkspaceChange) {
         let listener = self
             .lock()
             .as_ref()
@@ -518,15 +518,15 @@ impl FakeWatcher {
         }
     }
 
-    fn lock(&self) -> MutexGuard<'_, Option<(LibraryLocation, ChangeListener)>> {
+    fn lock(&self) -> MutexGuard<'_, Option<(WorkspaceLocation, ChangeListener)>> {
         self.listener.lock().unwrap_or_else(PoisonError::into_inner)
     }
 }
 
-impl LibraryWatcher for FakeWatcher {
+impl WorkspaceWatcher for FakeWatcher {
     fn watch(
         &self,
-        location: &LibraryLocation,
+        location: &WorkspaceLocation,
         listener: ChangeListener,
     ) -> Result<Box<dyn Watching>, StoreError> {
         *self.lock() = Some((location.clone(), listener));
@@ -543,20 +543,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_fake_watcher_announces_changes_of_the_watched_library_only() {
+    fn the_fake_watcher_announces_changes_of_the_watched_workspace_only() {
         let watcher = FakeWatcher::default();
-        watcher.announce(LibraryChange::default());
+        watcher.announce(WorkspaceChange::default());
         assert_eq!(watcher.watched(), None);
         let heard = Arc::new(Mutex::new(Vec::new()));
         let kept = Arc::clone(&heard);
-        let location = LibraryLocation::new("/Users/moi/Notes").unwrap();
+        let location = WorkspaceLocation::new("/Users/moi/Notes").unwrap();
         let _watching = watcher
             .watch(
                 &location,
                 Arc::new(move |change| kept.lock().unwrap().push(change)),
             )
             .unwrap();
-        let change = LibraryChange {
+        let change = WorkspaceChange {
             notes: vec![NotePath::parse("a.md").unwrap()],
         };
         watcher.announce(change.clone());

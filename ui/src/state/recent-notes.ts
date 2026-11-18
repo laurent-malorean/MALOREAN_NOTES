@@ -1,5 +1,5 @@
-// Notes récentes : les notes ouvertes le plus récemment dans la bibliothèque, la plus récente
-// d'abord, sans doublon ; gardées pour chaque bibliothèque.
+// Notes récentes : les notes ouvertes le plus récemment dans l'espace de travail, la plus récente
+// d'abord, sans doublon ; gardées pour chaque espace de travail.
 import type { PreferenceStorage } from "./focus-preference";
 
 /** Au-delà, la plus anciennement ouverte est oubliée. */
@@ -41,12 +41,12 @@ export function recentFirst<T extends { readonly path: string }>(
   return [...first, ...notes.filter((note) => !recent.includes(note.path))];
 }
 
-/** Les notes récentes gardées pour cette bibliothèque ; aucune si rien n'est gardé, si c'est illisible ou refusé. */
-export function loadRecent(storage: PreferenceStorage, library: string): string[] {
+/** Les notes récentes gardées pour cet espace de travail ; aucune si rien n'est gardé, si c'est illisible ou refusé. */
+export function loadRecent(storage: PreferenceStorage, workspace: string): string[] {
   let stored: unknown = null;
   try {
     // Rien de gardé : `JSON.parse(null)` donne `null`.
-    stored = JSON.parse(storage.getItem(KEY + library) as string);
+    stored = JSON.parse(storage.getItem(KEY + workspace) as string);
   } catch {
     // Valeur abîmée ou stockage refusé : comme si rien n'était gardé.
   }
@@ -54,15 +54,15 @@ export function loadRecent(storage: PreferenceStorage, library: string): string[
   return readable ? (stored as string[]).slice(0, RECENT_NOTES_LIMIT) : [];
 }
 
-/** Garde les notes récentes de cette bibliothèque ; sans effet si le stockage est refusé. */
+/** Garde les notes récentes de cet espace de travail ; sans effet si le stockage est refusé. */
 export function saveRecent(
   storage: PreferenceStorage,
-  library: string,
+  workspace: string,
   recent: readonly string[],
 ): void {
   try {
-    if (recent.length === 0) storage.removeItem(KEY + library);
-    else storage.setItem(KEY + library, JSON.stringify(recent));
+    if (recent.length === 0) storage.removeItem(KEY + workspace);
+    else storage.setItem(KEY + workspace, JSON.stringify(recent));
   } catch {
     // Confort : le perdre vide seulement les notes récentes au lancement suivant.
   }

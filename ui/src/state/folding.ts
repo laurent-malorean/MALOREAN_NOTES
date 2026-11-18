@@ -1,5 +1,5 @@
 // Dossiers pliés de la colonne des dossiers : ceux dont les sous-dossiers sont cachés,
-// gardés pour chaque bibliothèque d'un lancement à l'autre.
+// gardés pour chaque espace de travail d'un lancement à l'autre.
 import { movedPath } from "./folders";
 import type { PreferenceStorage } from "./focus-preference";
 
@@ -38,12 +38,12 @@ export function foldedMoved(folded: readonly string[], from: string, to: string)
   return folded.map((f) => movedPath(f, from, to));
 }
 
-/** Les dossiers pliés de cette bibliothèque ; aucun si rien n'est gardé, si c'est illisible ou refusé. */
-export function loadFolded(storage: PreferenceStorage, library: string): string[] {
+/** Les dossiers pliés de cet espace de travail ; aucun si rien n'est gardé, si c'est illisible ou refusé. */
+export function loadFolded(storage: PreferenceStorage, workspace: string): string[] {
   let stored: unknown = null;
   try {
     // Rien de gardé : `JSON.parse(null)` donne `null`.
-    stored = JSON.parse(storage.getItem(KEY + library) as string);
+    stored = JSON.parse(storage.getItem(KEY + workspace) as string);
   } catch {
     // Valeur abîmée ou stockage refusé : comme si rien n'était gardé.
   }
@@ -51,15 +51,15 @@ export function loadFolded(storage: PreferenceStorage, library: string): string[
   return readable ? (stored as string[]) : [];
 }
 
-/** Garde les dossiers pliés de cette bibliothèque ; sans effet si le stockage est refusé. */
+/** Garde les dossiers pliés de cet espace de travail ; sans effet si le stockage est refusé. */
 export function saveFolded(
   storage: PreferenceStorage,
-  library: string,
+  workspace: string,
   folded: readonly string[],
 ): void {
   try {
-    if (folded.length === 0) storage.removeItem(KEY + library);
-    else storage.setItem(KEY + library, JSON.stringify(folded));
+    if (folded.length === 0) storage.removeItem(KEY + workspace);
+    else storage.setItem(KEY + workspace, JSON.stringify(folded));
   } catch {
     // Confort : le perdre déplie seulement les dossiers au lancement suivant.
   }

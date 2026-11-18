@@ -1,4 +1,4 @@
-// Une colonne et ses voisines pour les tests d'écran : bibliothèque en mémoire, minuteur manuel.
+// Une colonne et ses voisines pour les tests d'écran : espace de travail en mémoire, minuteur manuel.
 import { EditorView } from "@codemirror/view";
 import type { AttachmentOrigin } from "../src/bridge";
 import type { LinkingNoteItem } from "../src/bridge/generated/LinkingNoteItem";
@@ -12,7 +12,7 @@ import {
   type SharedNotesBackend as SharedBackend,
 } from "../src/screens/shared-notes";
 
-/** Une bibliothèque en mémoire : chaque note, son contenu ; l'empreinte est le contenu même. */
+/** Un espace de travail en mémoire : chaque note, son contenu ; l'empreinte est le contenu même. */
 export function fakeBackend(notes: Record<string, string>) {
   const calls: string[] = [];
   const backlinks: Record<string, LinkingNoteItem[]> = {};
@@ -110,7 +110,7 @@ function column(shared: SharedNotes, backend: PaneBackend, events: string[], err
 }
 
 /**
- * Des colonnes qui partagent les notes qu'elles montrent, sur une bibliothèque en mémoire ;
+ * Des colonnes qui partagent les notes qu'elles montrent, sur un espace de travail en mémoire ;
  * `columns[0]` est aussi à plat, pour les tests d'une seule colonne.
  */
 export function mountColumns(

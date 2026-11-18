@@ -30,7 +30,7 @@ describe("tri de la liste", () => {
     ]);
   });
 
-  it("est gardé pour chaque bibliothèque", () => {
+  it("est gardé pour chaque espace de travail", () => {
     const storage = memoryStorage();
     saveNoteOrder(storage, "/a", "title");
     expect(storage.values).toEqual({ "malorean.order:/a": "title" });

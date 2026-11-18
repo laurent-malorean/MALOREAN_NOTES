@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { LibraryNoteItem } from "../bridge";
+import type { WorkspaceNoteItem } from "../bridge";
 import { MAX_QUICK_OPEN_RESULTS, matchingNotes } from "./quick-open";
 
-const note = (title: string, folder = ""): LibraryNoteItem => ({
+const note = (title: string, folder = ""): WorkspaceNoteItem => ({
   path: `${folder ? `${folder}/` : ""}${title.toLowerCase()}.md`,
   title,
   folder,
 });
 
-const titles = (notes: readonly LibraryNoteItem[], query: string) =>
+const titles = (notes: readonly WorkspaceNoteItem[], query: string) =>
   matchingNotes(notes, query).map((n) => n.title);
 
 describe("ouverture rapide : notes proposées", () => {

@@ -1,7 +1,7 @@
-// La bibliothèque ouverte : son choix, ses dossiers et la liste de ses notes (et son tri), les notes
+// L'espace de travail ouvert : son choix, ses dossiers et la liste de ses notes (et son tri), les notes
 // qu'on y crée, déplace ou épingle, et les liens qui mènent d'une note à l'autre.
 import type * as Bridge from "../bridge";
-import type { LibraryInfo, NoteContent } from "../bridge";
+import type { WorkspaceInfo, NoteContent } from "../bridge";
 import { notesMoved, noteShown, notesRemoved } from "../state/columns";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { loadNoteOrder, type NoteOrder, saveNoteOrder } from "../state/note-order";
@@ -10,7 +10,7 @@ import {
   activeTag,
   folderRevealed,
   foldersRefreshed,
-  libraryOpened,
+  workspaceOpened,
   noteOrder,
   notesRefreshed,
   orderChosen,
@@ -24,10 +24,10 @@ import type { FoldMemory } from "./fold-memory";
 import type { LayoutMemory } from "./layout-memory";
 import type { RecentNotes } from "./recent-notes";
 
-export interface LibraryDeps {
+export interface WorkspaceDeps {
   readonly backend: Pick<
     typeof Bridge,
-    | "chooseLibrary"
+    | "chooseWorkspace"
     | "listFolders"
     | "listNotes"
     | "listTaggedNotes"
@@ -38,11 +38,11 @@ export interface LibraryDeps {
   >;
   readonly screen: CurrentScreen;
   readonly columns: OpenColumns;
-  /** Les colonnes gardées pour chaque bibliothèque. */
+  /** Les colonnes gardées pour chaque espace de travail. */
   readonly layout: Pick<LayoutMemory, "restore">;
-  /** Les dossiers pliés gardés pour chaque bibliothèque. */
+  /** Les dossiers pliés gardés pour chaque espace de travail. */
   readonly folds: Pick<FoldMemory, "load">;
-  /** Là où le tri de la liste de chaque bibliothèque est gardé. */
+  /** Là où le tri de la liste de chaque espace de travail est gardé. */
   readonly storage: PreferenceStorage;
   /** Montre un message quelques secondes. */
   show(message: string): void;
@@ -52,12 +52,12 @@ export interface LibraryDeps {
   readonly recent: Pick<RecentNotes, "list" | "moved">;
 }
 
-export interface Library {
-  /** Le dossier de la bibliothèque ouverte. */
+export interface Workspace {
+  /** Le dossier de l'espace de travail ouvert. */
   path(): string;
-  /** Ouvre cette bibliothèque. */
-  open(library: LibraryInfo): Promise<void>;
-  /** Fait choisir une autre bibliothèque, ce qui est tapé étant enregistré dans celle d'où l'on vient. */
+  /** Ouvre cet espace de travail. */
+  open(workspace: WorkspaceInfo): Promise<void>;
+  /** Fait choisir un autre espace de travail, ce qui est tapé étant enregistré dans celui d'où l'on vient. */
   choose(): Promise<void>;
   /** Relit les dossiers et la liste des étiquettes. */
   refreshFolders(): Promise<void>;
@@ -68,7 +68,7 @@ export interface Library {
    * récentes), et la recherche en cours.
    */
   refreshList(): Promise<void>;
-  /** Trie la liste (et la recherche en cours) autrement ; ce tri est gardé pour la bibliothèque. */
+  /** Trie la liste (et la recherche en cours) autrement ; ce tri est gardé pour l'espace de travail. */
   sortBy(order: NoteOrder): Promise<void>;
   /** Crée une note dans le dossier affiché et l'ouvre, prête à écrire. */
   createNote(): Promise<void>;
@@ -88,7 +88,7 @@ export interface Library {
 }
 
 /** Les notes que la liste montre : celles du dossier, du filtre par étiquette, ou les récentes. */
-function listedNotes(deps: LibraryDeps) {
+function listedNotes(deps: WorkspaceDeps) {
   const shown = deps.screen.get();
   const tag = activeTag(shown);
   const order = noteOrder(shown);
@@ -98,23 +98,23 @@ function listedNotes(deps: LibraryDeps) {
     : deps.backend.listTaggedNotes(tag, order);
 }
 
-async function refreshList(deps: LibraryDeps) {
+async function refreshList(deps: WorkspaceDeps) {
   await deps.screen.answer(listedNotes(deps), notesRefreshed);
   const screen = deps.screen.get();
   // Stryker disable next-line ConditionalExpression: l'accueil n'a pas de recherche, la seconde condition l'écarte aussi ; TypeScript exige la première.
-  if (screen.kind === "library" && screen.search) await deps.search(screen.search.query);
+  if (screen.kind === "workspace" && screen.search) await deps.search(screen.search.query);
 }
 
-async function openLibrary(deps: LibraryDeps, library: LibraryInfo) {
-  const order = loadNoteOrder(deps.storage, library.path);
+async function openWorkspace(deps: WorkspaceDeps, workspace: WorkspaceInfo) {
+  const order = loadNoteOrder(deps.storage, workspace.path);
   const folders = await deps.backend.listFolders();
   const notes = await deps.backend.listNotes("", order);
   const tags = await deps.backend.listTags();
-  const folded = deps.folds.load(library.path);
-  const opened = libraryOpened(library, folders, notes, folded, order);
+  const folded = deps.folds.load(workspace.path);
+  const opened = workspaceOpened(workspace, folders, notes, folded, order);
   deps.screen.show(tagsRefreshed(opened, tags));
-  const restored = await deps.layout.restore(library.path);
-  // Sans colonnes gardées : celles d'avant montraient peut-être des notes d'une autre bibliothèque.
+  const restored = await deps.layout.restore(workspace.path);
+  // Sans colonnes gardées : celles d'avant montraient peut-être des notes d'un autre espace de travail.
   await deps.columns.change(
     restored ??
       noteShown(
@@ -124,27 +124,27 @@ async function openLibrary(deps: LibraryDeps, library: LibraryInfo) {
   );
 }
 
-async function sortBy(deps: LibraryDeps, library: string, order: NoteOrder) {
+async function sortBy(deps: WorkspaceDeps, workspace: string, order: NoteOrder) {
   deps.screen.show(orderChosen(deps.screen.get(), order));
-  saveNoteOrder(deps.storage, library, order);
+  saveNoteOrder(deps.storage, workspace, order);
   await refreshList(deps);
 }
 
-async function createNote(deps: LibraryDeps) {
+async function createNote(deps: WorkspaceDeps) {
   const created = await deps.backend.createNote(currentFolder(deps.screen.get()));
   await refreshList(deps);
   await deps.columns.openNote(created.path);
   deps.columns.activePane().editor.focus();
 }
 
-async function followLink(deps: LibraryDeps, title: string) {
+async function followLink(deps: WorkspaceDeps, title: string) {
   await deps.columns.activePane().flush();
   const path = await deps.backend.resolveLink(title);
   if (path === null) return deps.show(`Aucune note ne porte le titre « ${title} ».`);
   await deps.columns.openNote(path);
 }
 
-async function moveNote(deps: LibraryDeps, path: string, into: string) {
+async function moveNote(deps: WorkspaceDeps, path: string, into: string) {
   const source = await deps.columns.flushedPath(path);
   const moved = await deps.backend.moveNote(source, into);
   deps.recent.moved((note) => (note === source ? moved.path : note));
@@ -156,7 +156,7 @@ async function moveNote(deps: LibraryDeps, path: string, into: string) {
 }
 
 async function changePin(
-  deps: LibraryDeps,
+  deps: WorkspaceDeps,
   path: string,
   change: (path: string) => Promise<NoteContent>,
 ) {
@@ -166,20 +166,20 @@ async function changePin(
   await refreshList(deps);
 }
 
-export function createLibrary(deps: LibraryDeps): Library {
-  let libraryPath = "";
+export function createWorkspace(deps: WorkspaceDeps): Workspace {
+  let workspacePath = "";
   const refreshTags = () => deps.screen.answer(deps.backend.listTags(), tagsRefreshed);
-  const open = (library: LibraryInfo) => {
-    libraryPath = library.path;
-    return openLibrary(deps, library);
+  const open = (workspace: WorkspaceInfo) => {
+    workspacePath = workspace.path;
+    return openWorkspace(deps, workspace);
   };
   return {
-    path: () => libraryPath,
+    path: () => workspacePath,
     open,
     choose: async () => {
       await deps.columns.flushAll();
-      const library = await deps.backend.chooseLibrary();
-      if (library) await open(library);
+      const workspace = await deps.backend.chooseWorkspace();
+      if (workspace) await open(workspace);
     },
     refreshFolders: async () => {
       await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
@@ -187,7 +187,7 @@ export function createLibrary(deps: LibraryDeps): Library {
     },
     refreshTags,
     refreshList: () => refreshList(deps),
-    sortBy: (order) => sortBy(deps, libraryPath, order),
+    sortBy: (order) => sortBy(deps, workspacePath, order),
     createNote: () => createNote(deps),
     followLink: (title) => followLink(deps, title),
     moveNote: (path, into) => moveNote(deps, path, into),

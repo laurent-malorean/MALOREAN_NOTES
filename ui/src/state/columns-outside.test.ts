@@ -23,27 +23,27 @@ describe("notes changées hors de l'application", () => {
   });
 
   it("une note annoncée qui n'est ouverte nulle part ne change rien", () => {
-    const library = [note("a.md", "A"), note("b.md", "B"), note("c.md", "C")];
-    expect(notesChangedOutside(columns, ["c.md"], library)).toEqual(columns);
+    const workspace = [note("a.md", "A"), note("b.md", "B"), note("c.md", "C")];
+    expect(notesChangedOutside(columns, ["c.md"], workspace)).toEqual(columns);
   });
 
   it("une note ouverte partie, une note apparue : c'est un renommage, ses onglets la suivent", () => {
-    const library = [note("a.md", "A"), note("c.md", "Cé")];
-    const next = notesChangedOutside(columns, ["b.md", "c.md"], library);
+    const workspace = [note("a.md", "A"), note("c.md", "Cé")];
+    const next = notesChangedOutside(columns, ["b.md", "c.md"], workspace);
     expect(tabs(next)).toEqual([["a.md A", "c.md Cé"], ["c.md Cé"]]);
     expect(next.active).toBe(0);
     expect(next.list.map((c) => c.activeTab)).toEqual([1, 4]);
   });
 
   it("le renommage se reconnaît parmi d'autres changements : note ouverte modifiée, note fermée supprimée", () => {
-    const library = [note("a.md", "A2"), note("c.md", "Cé")];
-    const next = notesChangedOutside(columns, ["a.md", "b.md", "c.md", "x.md"], library);
+    const workspace = [note("a.md", "A2"), note("c.md", "Cé")];
+    const next = notesChangedOutside(columns, ["a.md", "b.md", "c.md", "x.md"], workspace);
     expect(tabs(next)).toEqual([["a.md A2", "c.md Cé"], ["c.md Cé"]]);
   });
 
   it("une note apparue déjà ouverte n'est pas le nouveau nom d'une note partie", () => {
-    const library = [note("a.md", "A2")];
-    const next = notesChangedOutside(columns, ["b.md", "a.md"], library);
+    const workspace = [note("a.md", "A2")];
+    const next = notesChangedOutside(columns, ["b.md", "a.md"], workspace);
     expect(tabs(next)).toEqual([["a.md A2", "b.md B"], ["b.md B"]]);
   });
 

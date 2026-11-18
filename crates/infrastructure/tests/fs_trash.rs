@@ -20,8 +20,8 @@ fn folder(text: &str) -> Folder {
     Folder::parse(text).unwrap()
 }
 
-/// Une bibliothèque avec `Travail/voyage.md` et son image `Travail/voyage.assets/vue.png`.
-fn library_with_a_trip() -> (TempDir, FsNoteStore) {
+/// Un espace de travail avec `Travail/voyage.md` et son image `Travail/voyage.assets/vue.png`.
+fn workspace_with_a_trip() -> (TempDir, FsNoteStore) {
     let dir = TempDir::new().unwrap();
     let store = FsNoteStore::new(dir.path().to_path_buf());
     store.create_folder(&folder("Travail")).unwrap();
@@ -35,7 +35,7 @@ fn library_with_a_trip() -> (TempDir, FsNoteStore) {
 
 #[test]
 fn a_trashed_note_and_its_attachments_go_to_the_hidden_trash_folder_at_their_path() {
-    let (dir, store) = library_with_a_trip();
+    let (dir, store) = workspace_with_a_trip();
     let voyage = note("Travail/voyage.md");
     store.trash_note(&voyage, &voyage).unwrap();
     assert!(dir.path().join(".trash/Travail/voyage.md").is_file());
@@ -47,8 +47,8 @@ fn a_trashed_note_and_its_attachments_go_to_the_hidden_trash_folder_at_their_pat
 }
 
 #[test]
-fn the_trash_folder_is_never_a_library_folder() {
-    let (_dir, store) = library_with_a_trip();
+fn the_trash_folder_is_never_a_workspace_folder() {
+    let (_dir, store) = workspace_with_a_trip();
     let voyage = note("Travail/voyage.md");
     store.trash_note(&voyage, &voyage).unwrap();
     assert_eq!(store.folders().unwrap(), [folder("Travail")]);
@@ -57,7 +57,7 @@ fn the_trash_folder_is_never_a_library_folder() {
 
 #[test]
 fn a_restored_note_brings_its_attachments_back() {
-    let (dir, store) = library_with_a_trip();
+    let (dir, store) = workspace_with_a_trip();
     let voyage = note("Travail/voyage.md");
     store.trash_note(&voyage, &voyage).unwrap();
     store.restore_note(&voyage, &voyage).unwrap();
@@ -70,7 +70,7 @@ fn a_restored_note_brings_its_attachments_back() {
 
 #[test]
 fn a_place_taken_by_attachments_alone_is_taken() {
-    let (dir, store) = library_with_a_trip();
+    let (dir, store) = workspace_with_a_trip();
     fs::create_dir_all(dir.path().join(".trash/Travail/voyage.assets")).unwrap();
     let voyage = note("Travail/voyage.md");
     assert!(store.trash_note(&voyage, &voyage).is_err());
@@ -87,7 +87,7 @@ fn a_place_taken_by_attachments_alone_is_taken() {
 
 #[test]
 fn hidden_finder_files_do_not_keep_an_emptied_trash_folder() {
-    let (dir, store) = library_with_a_trip();
+    let (dir, store) = workspace_with_a_trip();
     let voyage = note("Travail/voyage.md");
     store.trash_note(&voyage, &voyage).unwrap();
     fs::write(dir.path().join(".trash/Travail/.DS_Store"), "x").unwrap();
@@ -98,7 +98,7 @@ fn hidden_finder_files_do_not_keep_an_emptied_trash_folder() {
 
 #[test]
 fn emptying_the_trash_removes_the_hidden_folder() {
-    let (dir, store) = library_with_a_trip();
+    let (dir, store) = workspace_with_a_trip();
     store
         .trash_folder(&folder("Travail"), &folder("Travail"))
         .unwrap();
@@ -108,7 +108,7 @@ fn emptying_the_trash_removes_the_hidden_folder() {
 
 #[test]
 fn the_trash_root_cannot_be_restored_as_a_folder() {
-    let (_dir, store) = library_with_a_trip();
+    let (_dir, store) = workspace_with_a_trip();
     let voyage = note("Travail/voyage.md");
     store.trash_note(&voyage, &voyage).unwrap();
     assert!(

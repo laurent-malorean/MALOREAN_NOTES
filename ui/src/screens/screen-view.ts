@@ -20,33 +20,33 @@ export type ScreenActions = FolderActions &
 const TRASH_TITLE = "Corbeille";
 const RECENT_TITLE = "Récentes";
 
-/** Le nom du dossier affiché : celui de la bibliothèque pour la racine. */
-function folderName(libraryName: string, folder: string): string {
-  return folder === "" ? libraryName : nameOf(folder);
+/** Le nom du dossier affiché : celui de l'espace de travail pour la racine. */
+function folderName(workspaceName: string, folder: string): string {
+  return folder === "" ? workspaceName : nameOf(folder);
 }
 
-type LibraryScreen = Extract<Screen, { kind: "library" }>;
+type WorkspaceScreen = Extract<Screen, { kind: "workspace" }>;
 
 /** Le titre de la liste : la corbeille, Récentes, l'étiquette du filtre ou le dossier affiché. */
-function listTitle(screen: LibraryScreen, tag: string | null, recent: boolean): string {
+function listTitle(screen: WorkspaceScreen, tag: string | null, recent: boolean): string {
   if (screen.trash) return TRASH_TITLE;
   if (recent) return RECENT_TITLE;
-  return tag === null ? folderName(screen.library.name, screen.folder) : `#${tag}`;
+  return tag === null ? folderName(screen.workspace.name, screen.folder) : `#${tag}`;
 }
 
 /** La liste des notes : la corbeille, les notes trouvées, ou celles du dossier ou du filtre. */
 function renderList(
   layout: Layout,
-  screen: LibraryScreen,
+  screen: WorkspaceScreen,
   search: Search | null,
   actions: ScreenActions,
 ) {
   if (screen.trash) {
-    renderTrash(layout.notesList, screen.library.name, screen.trash, actions);
+    renderTrash(layout.notesList, screen.workspace.name, screen.trash, actions);
   } else if (search) {
     renderSearchResults(
       layout.notesList,
-      screen.library.name,
+      screen.workspace.name,
       search.results,
       screen.selected,
       actions,
@@ -59,13 +59,13 @@ function renderList(
 /** La colonne des dossiers : le dossier en évidence (aucun hors de ses notes), Récentes, les étiquettes. */
 function renderNavigation(
   layout: Layout,
-  screen: LibraryScreen,
+  screen: WorkspaceScreen,
   shown: { readonly tag: string | null; readonly recent: boolean },
   actions: ScreenActions,
 ) {
   renderFoldersList(
     layout.foldersList,
-    screen.library.name,
+    screen.workspace.name,
     screen.folders,
     screen.trash || screen.tag !== null || screen.recent ? null : screen.folder,
     actions,
@@ -76,14 +76,14 @@ function renderNavigation(
   renderTagFilter(layout.tagFilter, shown.tag, actions.clearTag);
 }
 
-function renderLibrary(layout: Layout, screen: LibraryScreen, actions: ScreenActions) {
+function renderWorkspace(layout: Layout, screen: WorkspaceScreen, actions: ScreenActions) {
   layout.welcome.hidden = true;
-  layout.workspace.hidden = false;
+  layout.mainArea.hidden = false;
   const search = screen.search && searchable(screen.search.query) ? screen.search : null;
   // Le filtre et Récentes se voient quand la liste montre leurs notes : ni recherche, ni corbeille.
   const aside = screen.trash !== null || search !== null;
   const shown = { tag: aside ? null : screen.tag, recent: !aside && screen.recent };
-  layout.libraryName.textContent = listTitle(screen, shown.tag, shown.recent);
+  layout.workspaceName.textContent = listTitle(screen, shown.tag, shown.recent);
   renderNavigation(layout, screen, shown, actions);
   // La corbeille n'a pas de tri : ses notes sont rangées par chemin ; les récentes, par ouverture.
   renderNoteOrder(
@@ -102,10 +102,10 @@ export function renderScreen(layout: Layout, screen: Screen, actions: ScreenActi
   switch (screen.kind) {
     case "welcome":
       layout.welcome.hidden = false;
-      layout.workspace.hidden = true;
+      layout.mainArea.hidden = true;
       return;
-    case "library":
-      return renderLibrary(layout, screen, actions);
+    case "workspace":
+      return renderWorkspace(layout, screen, actions);
     // Stryker disable all: cas impossible, le compilateur vérifie que tous les cas sont traités.
     /* istanbul ignore next -- cas impossible : le compilateur vérifie que tous les cas sont traités */
     default: {

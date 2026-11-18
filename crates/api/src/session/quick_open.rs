@@ -1,23 +1,23 @@
-//! L'ouverture rapide : toutes les notes de la bibliothèque ouverte, vues depuis la page.
+//! L'ouverture rapide : toutes les notes de l'espace de travail ouvert, vues depuis la page.
 
 use application::use_cases::ListAllNotes;
 
 use super::Session;
-use crate::{ApiError, LibraryNoteItem};
+use crate::{ApiError, WorkspaceNoteItem};
 
 impl Session {
-    /// Toutes les notes de la bibliothèque, la plus récemment modifiée en premier.
+    /// Toutes les notes de l'espace de travail, la plus récemment modifiée en premier.
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; bibliothèque illisible, aucune
-    /// bibliothèque ouverte.
-    pub fn list_all_notes(&self) -> Result<Vec<LibraryNoteItem>, ApiError> {
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
+    /// espace de travail ouvert.
+    pub fn list_all_notes(&self) -> Result<Vec<WorkspaceNoteItem>, ApiError> {
         let store = self.store()?;
         Ok(ListAllNotes::new(&*store)
             .execute()?
             .into_iter()
-            .map(|note| LibraryNoteItem {
+            .map(|note| WorkspaceNoteItem {
                 path: note.path().to_path(),
                 title: note.title().to_owned(),
                 folder: note.path().folder().to_path(),
@@ -30,7 +30,7 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::LibraryLocation;
+    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -49,17 +49,17 @@ mod tests {
         let session = session(&[("a.md", "# Alpha"), ("Travail/b.md", "# Bêta")]);
         assert!(session.list_all_notes().is_err());
         session
-            .open_library(LibraryLocation::new("/Users/moi/Notes").unwrap())
+            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
             .unwrap();
         assert_eq!(
             session.list_all_notes().unwrap(),
             [
-                LibraryNoteItem {
+                WorkspaceNoteItem {
                     path: "Travail/b.md".into(),
                     title: "Bêta".into(),
                     folder: "Travail".into(),
                 },
-                LibraryNoteItem {
+                WorkspaceNoteItem {
                     path: "a.md".into(),
                     title: "Alpha".into(),
                     folder: String::new(),

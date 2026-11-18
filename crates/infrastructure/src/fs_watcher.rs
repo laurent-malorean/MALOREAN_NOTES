@@ -1,4 +1,4 @@
-//! Surveillance du dossier de la bibliothèque sur disque (FSEvents sur le Mac).
+//! Surveillance du dossier de l'espace de travail sur disque (FSEvents sur le Mac).
 
 use std::fs;
 use std::path::{Component, Path};
@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use application::{
-    ChangeListener, LibraryChange, LibraryLocation, LibraryWatcher, StoreError, Watching,
+    ChangeListener, StoreError, Watching, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher,
 };
 use domain::NotePath;
 use notify_debouncer_mini::notify::{RecommendedWatcher, RecursiveMode};
@@ -17,9 +17,9 @@ const GROUPING_DELAY: Duration = Duration::from_millis(300);
 const HIDDEN_PREFIX: &str = ".";
 const ATTACHMENT_SUFFIX: &str = ".assets";
 
-/// Surveille les bibliothèques sur disque.
+/// Surveille les espaces de travail sur disque.
 #[derive(Debug)]
-pub struct FsLibraryWatcher;
+pub struct FsWorkspaceWatcher;
 
 /// Une surveillance en cours ; la lâcher arrête d'écouter le disque.
 /// Le verrou ne sert qu'à la partager entre fils.
@@ -35,10 +35,10 @@ impl std::fmt::Debug for FsWatching {
 
 impl Watching for FsWatching {}
 
-impl LibraryWatcher for FsLibraryWatcher {
+impl WorkspaceWatcher for FsWorkspaceWatcher {
     fn watch(
         &self,
-        location: &LibraryLocation,
+        location: &WorkspaceLocation,
         listener: ChangeListener,
     ) -> Result<Box<dyn Watching>, StoreError> {
         // Le disque annonce des chemins sans lien symbolique (/private/var et non /var).
@@ -50,11 +50,11 @@ impl LibraryWatcher for FsLibraryWatcher {
                 move |result: DebounceEventResult| match result {
                     Ok(events) => {
                         let paths = events.iter().map(|event| event.path.as_path());
-                        if let Some(change) = library_change(&announced_root, paths) {
+                        if let Some(change) = workspace_change(&announced_root, paths) {
                             listener(change);
                         }
                     }
-                    Err(error) => tracing::warn!(%error, "surveillance de la bibliothèque"),
+                    Err(error) => tracing::warn!(%error, "surveillance de l'espace de travail"),
                 },
             )
             .map_err(unavailable)?;
@@ -70,12 +70,15 @@ impl LibraryWatcher for FsLibraryWatcher {
 
 /// Ce qu'il faut annoncer pour ces chemins changés ; rien s'ils sont tous à ignorer :
 /// fichiers ou dossiers cachés (corbeille, fichiers d'enregistrement en cours),
-/// dossiers de pièces jointes, chemins hors de la bibliothèque.
-fn library_change<'a>(root: &Path, paths: impl Iterator<Item = &'a Path>) -> Option<LibraryChange> {
+/// dossiers de pièces jointes, chemins hors de l'espace de travail.
+fn workspace_change<'a>(
+    root: &Path,
+    paths: impl Iterator<Item = &'a Path>,
+) -> Option<WorkspaceChange> {
     let mut relevant = false;
     let mut notes: Vec<NotePath> = Vec::new();
     for path in paths {
-        let Some(parts) = library_parts(root, path) else {
+        let Some(parts) = workspace_parts(root, path) else {
             continue;
         };
         relevant = true;
@@ -85,11 +88,11 @@ fn library_change<'a>(root: &Path, paths: impl Iterator<Item = &'a Path>) -> Opt
             notes.push(note);
         }
     }
-    relevant.then_some(LibraryChange { notes })
+    relevant.then_some(WorkspaceChange { notes })
 }
 
-/// Les éléments du chemin depuis la racine, s'il compte pour la bibliothèque.
-fn library_parts(root: &Path, path: &Path) -> Option<Vec<String>> {
+/// Les éléments du chemin depuis la racine, s'il compte pour l'espace de travail.
+fn workspace_parts(root: &Path, path: &Path) -> Option<Vec<String>> {
     let relative = path.strip_prefix(root).ok()?;
     let parts: Vec<String> = relative
         .components()
@@ -118,7 +121,7 @@ mod tests {
     fn change(paths: &[&str]) -> Option<Vec<String>> {
         let root = PathBuf::from("/Users/moi/Notes");
         let paths: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
-        library_change(&root, paths.iter().map(PathBuf::as_path))
+        workspace_change(&root, paths.iter().map(PathBuf::as_path))
             .map(|c| c.notes.iter().map(NotePath::to_path).collect())
     }
 

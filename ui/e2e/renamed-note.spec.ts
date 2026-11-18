@@ -2,14 +2,14 @@ import { expect, type Page, test } from "@playwright/test";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
-const LIBRARY: Notes = {
+const WORKSPACE: Notes = {
   "courses.md": { content: "# Courses\n- pain", modified: 30 },
   "idee.md": { content: "# Idée\ntexte", modified: 20 },
 };
 
 async function launch(page: Page, folders: string[] = []) {
   const params = new URLSearchParams({
-    notes: JSON.stringify(LIBRARY),
+    notes: JSON.stringify(WORKSPACE),
     folders: JSON.stringify(folders),
     remembered: "1",
   });

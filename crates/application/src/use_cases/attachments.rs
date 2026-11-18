@@ -31,7 +31,7 @@ pub struct AttachFile<'a> {
 }
 
 impl<'a> AttachFile<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte et l'horloge.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert et l'horloge.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore, clock: &'a dyn Clock) -> Self {
         Self { store, clock }
@@ -79,7 +79,7 @@ pub struct OpenAttachment<'a> {
 }
 
 impl<'a> OpenAttachment<'a> {
-    /// Le cas d'usage, branché sur la bibliothèque ouverte.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }

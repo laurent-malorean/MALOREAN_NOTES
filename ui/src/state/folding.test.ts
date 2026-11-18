@@ -76,10 +76,10 @@ describe("dossiers pliés", () => {
   });
 });
 
-describe("la racine de la bibliothèque se plie comme un dossier", () => {
+describe("la racine de l'espace de travail se plie comme un dossier", () => {
   const ONE_LEVEL = ["archives"];
 
-  it("elle a des sous-dossiers dès que la bibliothèque en a un, pas sinon", () => {
+  it("elle a des sous-dossiers dès que l'espace de travail en a un, pas sinon", () => {
     expect(hasSubfolders(ONE_LEVEL, "")).toBe(true);
     expect(hasSubfolders(FOLDERS, "")).toBe(true);
     expect(hasSubfolders([], "")).toBe(false);
@@ -121,7 +121,7 @@ describe("la racine de la bibliothèque se plie comme un dossier", () => {
 });
 
 describe("dossiers pliés gardés", () => {
-  it("chaque bibliothèque garde les siens", () => {
+  it("chaque espace de travail garde les siens", () => {
     const { storage, items } = memoryStorage();
     expect(loadFolded(storage, "/notes")).toEqual([]);
     saveFolded(storage, "/notes", ["Travail", "Perso"]);

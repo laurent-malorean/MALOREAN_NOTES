@@ -13,7 +13,7 @@ function setup() {
       error: (error) => log.push(`erreur ${(error as Error).message}`),
       run: (action) => void action.then(() => log.push("fait")),
     },
-    library: {
+    workspace: {
       refreshFolders: async () => void log.push("dossiers"),
       refreshList: async () => void log.push("liste"),
       refreshTags: async () => void log.push("étiquettes"),
