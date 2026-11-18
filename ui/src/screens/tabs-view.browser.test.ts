@@ -26,6 +26,7 @@ function mount() {
     drag: (tab) => asked.push(`glisser ${tab}`),
     print: (note) => asked.push(`imprimer ${note}`),
     copy: (note) => asked.push(`copier ${note}`),
+    copyMarkdown: (note) => asked.push(`copier en Markdown ${note}`),
   });
   const tabs = [...list.querySelectorAll<HTMLElement>('[role="tab"]')];
   return { list, asked, tabs };
@@ -73,6 +74,7 @@ describe("onglets d'une colonne", () => {
         drag: () => {},
         print: () => {},
         copy: () => {},
+        copyMarkdown: () => {},
       },
     );
     expect(list.children).toHaveLength(0);
@@ -87,6 +89,7 @@ describe("onglets d'une colonne", () => {
       drag: () => {},
       print: () => {},
       copy: () => {},
+      copyMarkdown: () => {},
     };
     renderTabs(list, { ...column, tabs: [...column.tabs] }, actions);
     expect(list.children[0]).toBe(tabs[0]);
@@ -117,19 +120,24 @@ describe("onglets d'une colonne", () => {
       "Fermer",
       "Imprimer…",
       "Copier en texte mis en forme",
+      "Copier en Markdown",
     ]);
     entries()[2]?.click();
-    tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    entries()[3]?.click();
-    tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    entries()[4]?.click();
-    tabs[0]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    entries()[5]?.click();
+    for (const [tab, entry] of [
+      [1, 3],
+      [1, 4],
+      [0, 5],
+      [1, 6],
+    ] as const) {
+      tabs[tab]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+      entries()[entry]?.click();
+    }
     expect(asked).toEqual([
       "placer 1 right",
       "fermer 2",
       "imprimer Travail/liste-de-noel.md",
       "copier Travail/reunion.md",
+      "copier en Markdown Travail/liste-de-noel.md",
     ]);
   });
 

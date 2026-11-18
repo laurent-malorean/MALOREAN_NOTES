@@ -2,7 +2,7 @@
 import type { Column, Placement, Tab } from "../state/columns";
 import { nameOf } from "../state/folders";
 import { showContextMenu } from "./context-menu";
-import { COPY_LABEL, noteMenu } from "./note-menu";
+import { COPY_LABEL, MARKDOWN_COPY_LABEL, noteMenu } from "./note-menu";
 
 /** Ce qu'on peut demander depuis la barre d'onglets d'une colonne. */
 export interface TabActions {
@@ -18,6 +18,8 @@ export interface TabActions {
   print(note: string): void;
   /** Copier cette note en texte mis en forme. */
   copy(note: string): void;
+  /** Copier le texte Markdown de cette note, tel quel. */
+  copyMarkdown(note: string): void;
 }
 
 const NOTE_EXTENSION = ".md";
@@ -59,7 +61,8 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
     });
     const printing = { label: "Imprimer…", run: () => actions.print(tab.note) };
     const copying = { label: COPY_LABEL, run: () => actions.copy(tab.note) };
-    showContextMenu(event.clientX, event.clientY, [...menu, printing, copying]);
+    const markdown = { label: MARKDOWN_COPY_LABEL, run: () => actions.copyMarkdown(tab.note) };
+    showContextMenu(event.clientX, event.clientY, [...menu, printing, copying, markdown]);
   });
   element.append(label, close);
   return element;

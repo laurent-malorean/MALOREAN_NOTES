@@ -22,6 +22,7 @@ export type CommandId =
   | "export-note"
   | "print-note"
   | "copy-note"
+  | "copy-markdown"
   | "sort-notes"
   | "show-trash"
   | "open-settings"
@@ -59,6 +60,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "export-note", label: "Exporter…", shortcut: "Cmd+E" },
   { id: "print-note", label: "Imprimer…", shortcut: "Cmd+P" },
   { id: "copy-note", label: "Copier en texte mis en forme", shortcut: "Cmd+Maj+C" },
+  { id: "copy-markdown", label: "Copier en Markdown", shortcut: "Ctrl+Cmd+C" },
   { id: "sort-notes", label: "Trier la liste" },
   { id: "show-trash", label: "Corbeille" },
   { id: "open-settings", label: "Réglages", shortcut: "Cmd+," },

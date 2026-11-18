@@ -13,6 +13,8 @@ export interface NoteMenuActions {
 
 /** Le choix « Copier en texte mis en forme », dans le menu d'une note et celui d'un onglet. */
 export const COPY_LABEL = "Copier en texte mis en forme";
+/** Le choix « Copier en Markdown », juste après. */
+export const MARKDOWN_COPY_LABEL = "Copier en Markdown";
 
 /** Les choix du menu d'une note, dans l'ordre. */
 export function noteMenu(actions: NoteMenuActions): MenuEntry[] {

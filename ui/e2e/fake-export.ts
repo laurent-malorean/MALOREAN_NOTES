@@ -17,6 +17,8 @@ export interface FakeExports {
   printed: string[];
   /** Chaque copie mise en forme posée dans le presse-papiers : ses deux formats. */
   copied: { html: string; text: string }[];
+  /** Chaque texte Markdown posé seul dans le presse-papiers, en texte brut. */
+  copiedMarkdown: string[];
 }
 
 const sheet = () => document.querySelector(".print-sheet")?.innerHTML ?? "";
@@ -46,6 +48,10 @@ export function fakeExport(exports: FakeExports): Record<string, Handler> {
     },
     copy_rich_text: ({ html = "", text = "" }) => {
       exports.copied.push({ html, text });
+      return null;
+    },
+    copy_plain_text: ({ text = "" }) => {
+      exports.copiedMarkdown.push(text);
       return null;
     },
   };

@@ -105,7 +105,7 @@ fn printing_asks_the_window_for_its_print_panel() {
 }
 
 #[test]
-fn copying_puts_the_html_and_the_plain_text_on_the_clipboard() {
+fn copying_puts_the_html_and_the_plain_text_or_the_markdown_on_the_clipboard() {
     let clipboard = Arc::new(InMemoryClipboard::default());
     let session = Session::new(
         Arc::new(FakeOpener::new(Arc::new(InMemoryNoteStore::default()))),
@@ -125,15 +125,31 @@ fn copying_puts_the_html_and_the_plain_text_on_the_clipboard() {
     call(&window, "copy_rich_text", args).unwrap();
     assert_eq!(
         clipboard.copied(),
-        Some(("<p><em>Été</em></p>".to_owned(), "Été".to_owned()))
+        Some((Some("<p><em>Été</em></p>".to_owned()), "Été".to_owned()))
     );
     assert!(BRIDGE_SOURCE.contains("\"copy_rich_text\", { html, text }"));
+    call(
+        &window,
+        "copy_plain_text",
+        json!({ "text": "# Été\n\n*là*\n" }),
+    )
+    .unwrap();
+    assert_eq!(
+        clipboard.copied(),
+        Some((None, "# Été\n\n*là*\n".to_owned()))
+    );
+    assert!(BRIDGE_SOURCE.contains("\"copy_plain_text\", { text }"));
 }
 
 #[test]
 fn copying_without_a_clipboard_says_so() {
     let window = window(&[], Arc::new(InMemoryExportStore::default()));
     let refused = call(&window, "copy_rich_text", json!({ "html": "", "text": "" }));
+    assert_eq!(
+        refused.unwrap_err()["message"],
+        "le presse-papiers n'est pas disponible"
+    );
+    let refused = call(&window, "copy_plain_text", json!({ "text": "" }));
     assert_eq!(
         refused.unwrap_err()["message"],
         "le presse-papiers n'est pas disponible"

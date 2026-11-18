@@ -21,6 +21,7 @@ function mount() {
   const errors: unknown[] = [];
   const printed: string[] = [];
   const copied: string[] = [];
+  const markdown: string[] = [];
   const columns = createOpenColumns({
     container,
     outline,
@@ -34,6 +35,7 @@ function mount() {
     changed,
     printNote: (path) => printed.push(path),
     copyNote: (path) => copied.push(path),
+    copyMarkdown: (path) => markdown.push(path),
     run: (action) => void action.catch((error: unknown) => errors.push(error)),
   });
   const sections = () => [...container.querySelectorAll<HTMLElement>(".column")];
@@ -49,6 +51,7 @@ function mount() {
     ...{ container, outline, screen, shown, columns, panes, log, changed, sections, tabs, notes },
     printed,
     copied,
+    markdown,
   };
 }
 
@@ -122,7 +125,7 @@ describe("colonnes et onglets de l'application", () => {
     expect(m.notes()).toBe("b.md | c.md,c.md");
   });
 
-  it("le menu d'un onglet imprime sa note, ou la copie en texte mis en forme", async () => {
+  it("le menu d'un onglet imprime sa note, ou la copie en texte mis en forme ou en Markdown", async () => {
     const m = await twoColumns();
     const menu = () => {
       m.tabs(0)[0]?.dispatchEvent(
@@ -130,10 +133,12 @@ describe("colonnes et onglets de l'application", () => {
       );
       return [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
     };
-    menu().at(-2)?.click();
+    menu().at(-3)?.click();
     expect(m.printed).toEqual(["a.md"]);
-    menu().at(-1)?.click();
+    menu().at(-2)?.click();
     expect(m.copied).toEqual(["a.md"]);
+    menu().at(-1)?.click();
+    expect(m.markdown).toEqual(["a.md"]);
   });
 
   it("une colonne fermée rend son éditeur, et le plan passe à la colonne restante", async () => {

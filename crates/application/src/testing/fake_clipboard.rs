@@ -4,15 +4,16 @@ use std::sync::{Mutex, PoisonError};
 
 use crate::{Clipboard, StoreError};
 
-/// Presse-papiers en mémoire : garde la dernière copie, ses deux formats.
+/// Presse-papiers en mémoire : garde la dernière copie, ses formats.
 #[derive(Debug, Default)]
 pub struct InMemoryClipboard {
-    copied: Mutex<Option<(String, String)>>,
+    copied: Mutex<Option<(Option<String>, String)>>,
 }
 
 impl InMemoryClipboard {
-    /// La dernière copie : le texte mis en forme, puis le texte brut ; rien avant la première.
-    pub fn copied(&self) -> Option<(String, String)> {
+    /// La dernière copie : le texte mis en forme (aucun pour une copie en texte brut seul), puis
+    /// le texte brut ; rien avant la première.
+    pub fn copied(&self) -> Option<(Option<String>, String)> {
         self.copied
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -23,7 +24,12 @@ impl InMemoryClipboard {
 impl Clipboard for InMemoryClipboard {
     fn copy_rich_text(&self, html: &str, text: &str) -> Result<(), StoreError> {
         *self.copied.lock().unwrap_or_else(PoisonError::into_inner) =
-            Some((html.to_owned(), text.to_owned()));
+            Some((Some(html.to_owned()), text.to_owned()));
+        Ok(())
+    }
+
+    fn copy_plain_text(&self, text: &str) -> Result<(), StoreError> {
+        *self.copied.lock().unwrap_or_else(PoisonError::into_inner) = Some((None, text.to_owned()));
         Ok(())
     }
 }
@@ -34,7 +40,7 @@ mod tests {
     use crate::testing::clipboard_contract::{ReadableClipboard, clipboard_contract};
 
     impl ReadableClipboard for InMemoryClipboard {
-        fn read(&self) -> Option<(String, String)> {
+        fn read(&self) -> Option<(Option<String>, String)> {
             self.copied()
         }
     }

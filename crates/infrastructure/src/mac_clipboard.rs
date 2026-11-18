@@ -1,5 +1,5 @@
-//! Le presse-papiers du Mac (`NSPasteboard`), où la note copiée est posée en HTML et en texte brut
-//! (fiche 0027).
+//! Le presse-papiers du Mac (`NSPasteboard`), où la note copiée est posée en HTML et en texte brut,
+//! ou en texte Markdown seul (fiche 0027).
 
 use application::{Clipboard, StoreError};
 use objc2::rc::Retained;
@@ -34,24 +34,30 @@ impl MacClipboard {
             None => NSPasteboard::generalPasteboard(),
         }
     }
-}
 
-impl Clipboard for MacClipboard {
-    fn copy_rich_text(&self, html: &str, text: &str) -> Result<(), StoreError> {
+    /// Vide le presse-papiers, puis y pose chaque texte sous son type.
+    fn put(&self, formats: &[(&str, &str)]) -> Result<(), StoreError> {
         let pasteboard = self.pasteboard();
         pasteboard.clearContents();
-        let refused = [(html, HTML_TYPE), (text, TEXT_TYPE)]
-            .into_iter()
-            .any(|(content, kind)| {
-                !pasteboard
-                    .setString_forType(&NSString::from_str(content), &NSString::from_str(kind))
-            });
+        let refused = formats.iter().any(|(content, kind)| {
+            !pasteboard.setString_forType(&NSString::from_str(content), &NSString::from_str(kind))
+        });
         if refused {
             return Err(StoreError::Unavailable(
                 "le presse-papiers a refusé la copie".to_owned(),
             ));
         }
         Ok(())
+    }
+}
+
+impl Clipboard for MacClipboard {
+    fn copy_rich_text(&self, html: &str, text: &str) -> Result<(), StoreError> {
+        self.put(&[(html, HTML_TYPE), (text, TEXT_TYPE)])
+    }
+
+    fn copy_plain_text(&self, text: &str) -> Result<(), StoreError> {
+        self.put(&[(text, TEXT_TYPE)])
     }
 }
 
@@ -62,10 +68,11 @@ mod tests {
     use super::*;
 
     impl ReadableClipboard for MacClipboard {
-        fn read(&self) -> Option<(String, String)> {
+        fn read(&self) -> Option<(Option<String>, String)> {
             let pasteboard = self.pasteboard();
             let read = |kind: &str| pasteboard.stringForType(&NSString::from_str(kind));
-            Some((read(HTML_TYPE)?.to_string(), read(TEXT_TYPE)?.to_string()))
+            let html = read(HTML_TYPE).map(|html| html.to_string());
+            Some((html, read(TEXT_TYPE)?.to_string()))
         }
     }
 

@@ -76,14 +76,28 @@ impl Session {
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué : presse-papiers absent ou qui refuse.
     pub fn copy_rich_text(&self, html: &str, text: &str) -> Result<(), ApiError> {
-        let clipboard = self
-            .clipboard
-            .as_deref()
-            .ok_or_else(ApiError::clipboard_unavailable)?;
-        clipboard
+        self.clipboard()?
             .copy_rich_text(html, text)
             .map_err(AppError::from)?;
         Ok(())
+    }
+
+    /// Pose le texte Markdown `text` d'une note dans le presse-papiers, en texte brut seul.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué : presse-papiers absent ou qui refuse.
+    pub fn copy_plain_text(&self, text: &str) -> Result<(), ApiError> {
+        self.clipboard()?
+            .copy_plain_text(text)
+            .map_err(AppError::from)?;
+        Ok(())
+    }
+
+    fn clipboard(&self) -> Result<&dyn Clipboard, ApiError> {
+        self.clipboard
+            .as_deref()
+            .ok_or_else(ApiError::clipboard_unavailable)
     }
 }
 

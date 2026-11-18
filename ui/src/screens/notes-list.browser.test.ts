@@ -14,6 +14,7 @@ const noActions: NoteActions = {
   exportNote: () => {},
   printNote: () => {},
   copyNote: () => {},
+  copyMarkdown: () => {},
 };
 
 /** Les actions demandées, notées dans l'ordre : `ouvrir a.md`, `épingler a.md`… */
@@ -32,6 +33,7 @@ function recorded(): { readonly asked: string[]; readonly actions: NoteActions }
       exportNote: (path) => asked.push(`exporter ${path}`),
       printNote: (path) => asked.push(`imprimer ${path}`),
       copyNote: (path) => asked.push(`copier ${path}`),
+      copyMarkdown: (path) => asked.push(`copier en Markdown ${path}`),
     },
   };
 }
@@ -197,6 +199,7 @@ describe("notes épinglées", () => {
       "Exporter…",
       "Imprimer…",
       "Copier en texte mis en forme",
+      "Copier en Markdown",
       "Placer dans la corbeille",
     ]);
     expect(document.querySelector<HTMLElement>(".context-menu")?.style.left).toBe("12px");
@@ -214,6 +217,7 @@ describe("notes épinglées", () => {
       "Exporter…",
       "Imprimer…",
       "Copier en texte mis en forme",
+      "Copier en Markdown",
       "Placer dans la corbeille",
     ]);
     menuButtons()[4]?.click();
@@ -245,6 +249,15 @@ describe("notes épinglées", () => {
     rightClick(container.querySelectorAll(".note-item")[1] as Element);
     menuButtons()[7]?.click();
     expect(asked).toEqual(["copier a.md"]);
+  });
+
+  it("un clic droit sur une note propose de la copier en Markdown", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    renderNotesList(container, withPinned, null, actions);
+    rightClick(container.querySelectorAll(".note-item")[1] as Element);
+    menuButtons()[8]?.click();
+    expect(asked).toEqual(["copier en Markdown a.md"]);
   });
 });
 

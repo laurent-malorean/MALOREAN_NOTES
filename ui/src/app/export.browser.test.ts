@@ -50,6 +50,10 @@ function setup({
         log.push(`copier ${text}`);
         return null;
       },
+      copyPlainText: async (text) => {
+        log.push(`copier en Markdown ${text}`);
+        return null;
+      },
       fileAddress: (path) => (path.endsWith("vide.gif") ? PIXEL : `asset://${path}`),
     },
     columns: columns.open,
@@ -204,5 +208,14 @@ describe("copie en texte mis en forme depuis l'export", () => {
     t.exporting.copyNote("Travail/autre.md");
     await expect.poll(() => t.shown).toEqual(["Note copiée"]);
     expect(t.log).toEqual(["lire Travail/autre.md", "copier Voyage\n\nloin"]);
+  });
+});
+
+describe("copie en Markdown depuis l'export", () => {
+  it("copie le texte de la note demandée, tel quel", async () => {
+    const t = setup();
+    t.exporting.copyMarkdown("Travail/autre.md");
+    await expect.poll(() => t.shown).toEqual(["Markdown copié"]);
+    expect(t.log).toEqual(["lire Travail/autre.md", "copier en Markdown # Voyage\n*loin*"]);
   });
 });

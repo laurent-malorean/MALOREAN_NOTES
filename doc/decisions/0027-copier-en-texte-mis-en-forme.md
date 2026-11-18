@@ -22,6 +22,13 @@ Pistes regardées pour écrire dans le presse-papiers :
 - **Texte brut** (`plainText`) : la note lue par le même analyseur, sans syntaxe ni en-tête : paragraphes séparés d'une ligne vide, puces « • », numéros gardés, cases ☐ et ☑, cellules séparées par des tabulations, texte des liens et des images seulement.
 - **Rust** : port `Clipboard::copy_rich_text(html, text)`, adaptateur `MacClipboard` (presse-papiers général par défaut), faux `InMemoryClipboard` ; session `with_clipboard`, commande `copy_rich_text(html, text)`.
 
+### Ajout : Copier en Markdown (2026-11-18)
+
+- **Action « Copier en Markdown »** : palette, **Ctrl+Cmd+C**, menu d'une note dans la liste et menu d'un onglet, juste après « Copier en texte mis en forme ». Raccourci : Cmd+Maj+Alt+C, d'abord envisagé, est écarté parce qu'Option change la lettre tapée sur Mac (« ç ») et que la table des raccourcis lit la lettre tapée (pour suivre le clavier AZERTY) ; Ctrl+Cmd+C est libre dans l'application, dans l'éditeur et dans le menu par défaut de Tauri, et rejoint les autres raccourcis Ctrl+Cmd.
+- **Mêmes notes visées** que la copie mise en forme : la logique « note cliquée, ou sélection, ou note active » est partagée (`copyText`), seul le format change.
+- **Le texte tel quel, en-tête compris**, comme le fichier de l'export Markdown : copier en Markdown, c'est emporter la note pour la coller dans un autre outil qui lit le Markdown, étiquettes comprises ; l'en-tête s'efface d'un geste s'il gêne, il ne se retrouve pas. Les liens vers les pièces jointes restent ceux de la note (rien n'est copié à côté).
+- **Texte brut seul** (`public.utf8-plain-text`), aucun HTML : l'application qui colle reçoit la syntaxe Markdown, jamais une mise en forme. Port `Clipboard::copy_plain_text(text)`, qui vide le presse-papiers comme `copy_rich_text` ; commande `copy_plain_text(text)`. Messages « Markdown copié » ou « Sélection copiée ».
+
 ## Conséquences
 
 - Collée dans un mail ou un document, la note ressemble à l'export PDF ; collée dans un champ de texte, elle se lit sans marques Markdown.

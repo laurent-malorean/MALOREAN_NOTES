@@ -57,6 +57,7 @@ const backend: FakeBackend = {
   exported: {},
   printed: [],
   copied: [],
+  copiedMarkdown: [],
   searchDuration: 0,
   enterFullScreenFromTheSystem: async () => {
     backend.fullScreen = true;

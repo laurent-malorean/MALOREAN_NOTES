@@ -69,6 +69,7 @@ const deps: CommandsDeps = {
     exportNote: (path) => void log.push(`exporter ${path}`),
     printNote: (path) => void log.push(`imprimer ${path}`),
     copyNote: (path) => void log.push(`copier ${path}`),
+    copyMarkdown: (path) => void log.push(`copier en Markdown ${path}`),
   },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
@@ -115,6 +116,7 @@ describe("commandes de la palette", () => {
       "export-note",
       "print-note",
       "copy-note",
+      "copy-markdown",
       "show-trash",
       "open-settings",
       "switch-workspace",
@@ -138,6 +140,7 @@ describe("commandes de la palette", () => {
       "exporter undefined",
       "imprimer undefined",
       "copier undefined",
+      "copier en Markdown undefined",
       "corbeille",
       "réglages",
       "changer d'espace de travail",
@@ -296,6 +299,11 @@ describe("raccourcis clavier", () => {
   it("Cmd+Maj+C copie en texte mis en forme la sélection ou la note de la colonne active", () => {
     expect(press("C", { metaKey: true, shiftKey: true }).defaultPrevented).toBe(true);
     expect(log).toEqual(["copier undefined"]);
+  });
+
+  it("Ctrl+Cmd+C copie en Markdown la sélection ou la note de la colonne active", () => {
+    expect(press("c", { metaKey: true, ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(log).toEqual(["copier en Markdown undefined"]);
   });
 
   it("Cmd+O ouvre l'ouverture rapide", async () => {

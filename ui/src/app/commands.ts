@@ -108,6 +108,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "export-note": () => deps.exporting.exportNote(),
     "print-note": () => deps.exporting.printNote(),
     "copy-note": () => deps.exporting.copyNote(),
+    "copy-markdown": () => deps.exporting.copyMarkdown(),
     "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),
@@ -159,6 +160,7 @@ function shortcutActions(
     "export-note": done(actions["export-note"]),
     "print-note": done(actions["print-note"]),
     "copy-note": done(actions["copy-note"]),
+    "copy-markdown": done(actions["copy-markdown"]),
   };
 }
 

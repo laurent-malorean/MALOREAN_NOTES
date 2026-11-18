@@ -116,6 +116,17 @@ pub async fn copy_rich_text(
     in_background(move || session.copy_rich_text(&html, &text)).await
 }
 
+/// Pose le texte Markdown `text` d'une note dans le presse-papiers du Mac, en texte brut seul.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::copy_plain_text`].
+#[tauri::command]
+pub async fn copy_plain_text(session: SharedSession<'_>, text: String) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.copy_plain_text(&text)).await
+}
+
 /// Fait `print` sur le WKWebView et la NSWindow de la fenêtre, sur le fil principal, et rend
 /// son résultat sans bloquer ce fil.
 async fn on_page<R: Runtime>(

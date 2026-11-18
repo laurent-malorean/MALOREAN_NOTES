@@ -372,4 +372,10 @@ describe("pont vers Rust : pièces jointes", () => {
     await bridge.copyRichText("<p>a</p>", "a");
     expect(calls).toEqual([{ command: "copy_rich_text", args: { html: "<p>a</p>", text: "a" } }]);
   });
+
+  it("pose le texte Markdown dans le presse-papiers, en texte brut seul", async () => {
+    const calls = recordCalls(null);
+    await bridge.copyPlainText("# a\n");
+    expect(calls).toEqual([{ command: "copy_plain_text", args: { text: "# a\n" } }]);
+  });
 });

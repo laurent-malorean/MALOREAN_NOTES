@@ -2,6 +2,7 @@
 // du Mac ; Rust écrit le Markdown, WebKit imprime en PDF le rendu HTML posé sur la feuille d'impression.
 // Impression : le même rendu sur la même feuille, puis la fenêtre d'impression du Mac.
 // Copie en texte mis en forme : le même rendu, aux styles en ligne, dans le presse-papiers.
+// Copie en Markdown : le texte de la note tel quel, en texte brut, dans le presse-papiers.
 import type * as Bridge from "../bridge";
 import { openPicker } from "../screens/picker";
 import { activeNote } from "../state/columns";
@@ -11,6 +12,7 @@ import { matching } from "../state/quick-open";
 import { noteHtml } from "../rendering/note-html";
 import type { OpenColumns } from "./columns";
 import { imageIn } from "./panes";
+import { copyMarkdown } from "./note-copy";
 import { copyNote } from "./rich-copy";
 
 export interface ExportDeps {
@@ -22,6 +24,7 @@ export interface ExportDeps {
     | "exportPdf"
     | "printPage"
     | "copyRichText"
+    | "copyPlainText"
     | "fileAddress"
   >;
   readonly columns: Pick<OpenColumns, "current" | "flushedPath" | "activePane">;
@@ -48,6 +51,11 @@ export interface Exporting {
    * active, ou sa note si rien n'est sélectionné.
    */
   copyNote(path?: string): void;
+  /**
+   * Copie le texte Markdown de la note tel quel, en texte brut ; sans chemin, la sélection de la
+   * colonne active, ou sa note si rien n'est sélectionné.
+   */
+  copyMarkdown(path?: string): void;
 }
 
 /** Pose le rendu de la note sur la feuille d'impression, ses images chargées (ou en échec). */
@@ -101,5 +109,6 @@ export function createExport(deps: ExportDeps): Exporting {
       if (note !== null) deps.run(printNote(deps, note));
     },
     copyNote: (path) => copyNote(deps, path),
+    copyMarkdown: (path) => copyMarkdown(deps, path),
   };
 }

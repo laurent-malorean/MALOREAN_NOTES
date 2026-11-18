@@ -46,6 +46,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     exportNote: (path) => exporting.exportNote(path),
     printNote: (path) => exporting.printNote(path),
     copyNote: (path) => exporting.copyNote(path),
+    copyMarkdown: (path) => exporting.copyMarkdown(path),
     trashFolder: (path) => run(trash.trashFolder(path)),
     restoreNote: (path) => run(trash.restoreNote(path)),
     restoreFolder: (path) => run(trash.restoreFolder(path)),

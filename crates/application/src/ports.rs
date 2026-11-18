@@ -322,6 +322,14 @@ pub trait Clipboard: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si le presse-papiers refuse l'un des deux formats.
     fn copy_rich_text(&self, html: &str, text: &str) -> Result<(), StoreError>;
+
+    /// Remplace le contenu du presse-papiers par le texte brut `text` seul (le texte Markdown
+    /// d'une note, tel quel).
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si le presse-papiers refuse le texte.
+    fn copy_plain_text(&self, text: &str) -> Result<(), StoreError>;
 }
 
 /// Donne le moment présent.

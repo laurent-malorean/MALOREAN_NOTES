@@ -184,6 +184,8 @@ export const printPage = () => invoke<null>("print_page");
 /** Pose dans le presse-papiers du Mac le texte mis en forme `html` et le texte brut `text`. */
 export const copyRichText = (html: string, text: string) =>
   invoke<null>("copy_rich_text", { html, text });
+/** Pose dans le presse-papiers du Mac le texte Markdown `text`, en texte brut seul. */
+export const copyPlainText = (text: string) => invoke<null>("copy_plain_text", { text });
 /** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
 export const openAttachment = (path: string, target: string) =>
   invoke<null>("open_attachment", { path, target });

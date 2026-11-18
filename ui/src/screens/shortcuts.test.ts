@@ -101,6 +101,11 @@ describe("raccourcis clavier", () => {
     expect(key("c", { metaKey: true })).toBeNull();
   });
 
+  it("Ctrl+Cmd+C copie en Markdown ; Ctrl+C reste à l'éditeur", () => {
+    expect(key("c", { metaKey: true, ctrlKey: true })).toBe("copy-markdown");
+    expect(key("c", { ctrlKey: true })).toBeNull();
+  });
+
   it("Ctrl+Cmd+T divise la colonne", () => {
     expect(key("t", { metaKey: true, ctrlKey: true })).toBe("split-column");
     expect(key("t", { ctrlKey: true })).toBeNull();

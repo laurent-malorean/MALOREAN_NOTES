@@ -1,7 +1,7 @@
 import type { NoteListItem } from "../bridge";
 import type { Placement } from "../state/columns";
 import { showContextMenu } from "./context-menu";
-import { COPY_LABEL, noteMenu, openOnClick } from "./note-menu";
+import { COPY_LABEL, MARKDOWN_COPY_LABEL, noteMenu, openOnClick } from "./note-menu";
 import { startDragging, stopDragging } from "./dragging";
 import { tagChips } from "./tags-view";
 
@@ -23,6 +23,8 @@ export interface NoteActions {
   readonly printNote: (path: string) => void;
   /** Copier la note en texte mis en forme, pour la coller dans un mail ou un document. */
   readonly copyNote: (path: string) => void;
+  /** Copier le texte Markdown de la note, tel quel. */
+  readonly copyMarkdown: (path: string) => void;
 }
 
 /** Les touches qui placent la note choisie dans la corbeille. */
@@ -53,6 +55,7 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
     const exporting = { label: "Exporter…", run: () => actions.exportNote(note.path) };
     const printing = { label: "Imprimer…", run: () => actions.printNote(note.path) };
     const copying = { label: COPY_LABEL, run: () => actions.copyNote(note.path) };
+    const markdown = { label: MARKDOWN_COPY_LABEL, run: () => actions.copyMarkdown(note.path) };
     const placing = noteMenu({
       place: (placement) => actions.place(note.path, placement),
       close: () => actions.closeNote(note.path),
@@ -63,6 +66,7 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
       exporting,
       printing,
       copying,
+      markdown,
       trashing,
     ]);
   });

@@ -5,8 +5,8 @@ import type * as Bridge from "../bridge";
 import { noteHtml } from "../rendering/note-html";
 import { plainText } from "../rendering/note-text";
 import { noteStyles, styledHtml, withEmbeddedImages } from "../rendering/rich-text";
-import { activeNote } from "../state/columns";
 import type { OpenColumns } from "./columns";
+import { copyText } from "./note-copy";
 import { imageIn } from "./panes";
 
 export interface RichCopyDeps {
@@ -49,21 +49,12 @@ async function copy(deps: RichCopyDeps, path: string, markdown: string, done: st
   deps.show(done);
 }
 
-async function copyWhole(deps: RichCopyDeps, path: string) {
-  const note = await deps.backend.readNote(await deps.columns.flushedPath(path));
-  await copy(deps, note.path, note.content, "Note copiée");
-}
-
 /**
  * Copie en texte mis en forme la note `path` (menu d'une note, d'un onglet) ; sans chemin (palette,
  * raccourci), la sélection de la colonne active, ou sa note entière si rien n'est sélectionné.
  */
 export function copyNote(deps: RichCopyDeps, path?: string): void {
-  if (path !== undefined) return deps.run(copyWhole(deps, path));
-  const shown = activeNote(deps.columns.current());
-  if (shown === null) return;
-  const selection = deps.columns.activePane().editor.selectedText();
-  deps.run(
-    selection === "" ? copyWhole(deps, shown) : copy(deps, shown, selection, "Sélection copiée"),
+  copyText(deps, path, (text) =>
+    copy(deps, text.path, text.markdown, text.selection ? "Sélection copiée" : "Note copiée"),
   );
 }

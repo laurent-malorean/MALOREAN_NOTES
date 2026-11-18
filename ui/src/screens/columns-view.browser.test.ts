@@ -30,6 +30,7 @@ function mount() {
     placeTab: (tab, placement) => tabs.push(`placer ${tab} ${placement}`),
     printNote: (path) => tabs.push(`imprimer ${path}`),
     copyNote: (path) => tabs.push(`copier ${path}`),
+    copyMarkdown: (path) => tabs.push(`copier en Markdown ${path}`),
     dropTab: (tab, drop) => drops.push({ tab, drop }),
   });
   return {
@@ -64,6 +65,14 @@ const dividers = (container: HTMLElement) => [
 ];
 const splitButton = (column: HTMLElement) =>
   column.querySelector<HTMLButtonElement>(".column-split") as HTMLButtonElement;
+
+/** Ouvre le menu du premier onglet de `column` et clique le choix à la position `entry`. */
+function menuChoice(column: HTMLElement, entry: number) {
+  column
+    .querySelector<HTMLElement>('[role="tab"]')
+    ?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+  [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].at(entry)?.click();
+}
 
 describe("colonnes à l'écran", () => {
   it("une section par colonne, un séparateur entre deux voisines, chacune à sa largeur", () => {
@@ -168,24 +177,14 @@ describe("colonnes à l'écran", () => {
     expect(labels).toEqual(["B×", "c×"]);
     second.querySelector<HTMLElement>('[role="tab"]')?.click();
     second.querySelector<HTMLElement>(".tab-close")?.click();
-    second
-      .querySelector<HTMLElement>('[role="tab"]')
-      ?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
-    second
-      .querySelector<HTMLElement>('[role="tab"]')
-      ?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].at(-2)?.click();
-    second
-      .querySelector<HTMLElement>('[role="tab"]')
-      ?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
-    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].at(-1)?.click();
+    for (const entry of [0, -3, -2, -1]) menuChoice(second, entry);
     expect(tabs).toEqual([
       "activer 3",
       "fermer 3",
       "placer 3 newTab",
       "imprimer b.md",
       "copier b.md",
+      "copier en Markdown b.md",
     ]);
     view.render({
       ...columns,
