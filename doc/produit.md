@@ -35,6 +35,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.
 - Exporter une note en PDF (mise en forme, thème clair) ou en Markdown (le fichier tel quel, pièces jointes copiées à côté), à l'endroit choisi dans la fenêtre d'enregistrement du Mac : palette, Cmd+E ou menu de la note.
 - Imprimer une note, mise en forme comme l'export PDF, depuis la fenêtre d'impression du Mac (qui permet aussi de garder un PDF) : palette, Cmd+P, menu de la note ou de son onglet.
+- Copier une note en texte mis en forme, pour la coller dans un mail ou un document : la mise en forme de l'export PDF et, pour les applications qui n'en veulent pas, le texte sans marques Markdown ; images incluses tant qu'elles restent légères. Palette ou Cmd+Maj+C (la sélection seule si du texte est sélectionné), menu de la note ou de son onglet.
 - Note du jour : la note de la date du jour, rangée dans le journal sous sa date et titrée en toutes lettres, créée au besoin depuis le modèle « Journal » ; ouverte par Cmd+Maj+J, la palette, et au lancement si les réglages le demandent.
 
 ## Hors première version

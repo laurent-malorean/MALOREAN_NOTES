@@ -47,6 +47,8 @@ export interface Editor {
   reload(content: string): void;
   /** Le texte montré. */
   content(): string;
+  /** Le texte sélectionné (sélection principale), vide sans sélection. */
+  selectedText(): string;
   /**
    * Suit ce qui a été tapé dans une autre colonne sur la même note, devenue `content` :
    * curseur, sélection et défilement gardés, sans le signaler ni l'ajouter à l'historique.
@@ -209,6 +211,8 @@ export function createEditor(
     },
     reload: (content) => reload(view, content),
     content: () => view.state.doc.toString(),
+    selectedText: () =>
+      view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to),
     follow: follower(view),
     focus: () => view.focus(),
     setFocusMode: (unit) => view.dispatch({ effects: focus.change(unit) }),

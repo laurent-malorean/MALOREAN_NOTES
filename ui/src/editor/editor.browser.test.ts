@@ -366,3 +366,13 @@ describe("éditeur : la même note tapée dans une autre colonne", () => {
     expect(other.scrollDOM.scrollTop).toBe(0);
   });
 });
+
+describe("éditeur : sélection", () => {
+  it("rend le texte sélectionné, ou rien sans sélection", () => {
+    const { editor, view } = mount();
+    editor.show("# Titre\n**gras** et la suite");
+    expect(editor.selectedText()).toBe("");
+    view.dispatch({ selection: { anchor: 8, head: 16 } });
+    expect(editor.selectedText()).toBe("**gras**");
+  });
+});

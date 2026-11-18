@@ -1,5 +1,5 @@
 //! Commandes de l'export d'une note : le fichier choisi, puis le Markdown ou le PDF écrit ; et
-//! la fenêtre d'impression du Mac, sur le même rendu.
+//! la fenêtre d'impression du Mac, sur le même rendu ; la copie mise en forme dans le presse-papiers.
 
 use std::ffi::c_void;
 use std::path::PathBuf;
@@ -98,6 +98,22 @@ pub async fn print_page<R: Runtime>(webview: Webview<R>) -> Result<(), ApiError>
     on_page(webview, crate::pdf::print_with_panel)
         .await?
         .map_err(|reason| ApiError::print_failed(&reason))
+}
+
+/// Pose une note copiée dans le presse-papiers du Mac, en texte mis en forme `html` (styles en
+/// ligne) et en texte brut `text` à la fois.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::copy_rich_text`].
+#[tauri::command]
+pub async fn copy_rich_text(
+    session: SharedSession<'_>,
+    html: String,
+    text: String,
+) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.copy_rich_text(&html, &text)).await
 }
 
 /// Fait `print` sur le WKWebView et la NSWindow de la fenêtre, sur le fil principal, et rend

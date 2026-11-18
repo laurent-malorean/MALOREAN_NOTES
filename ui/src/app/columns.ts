@@ -31,6 +31,8 @@ export interface ColumnsDeps {
   changed(columns: Columns): void;
   /** Ouvrir la fenêtre d'impression sur une note (menu d'un onglet). */
   printNote(path: string): void;
+  /** Copier une note en texte mis en forme (menu d'un onglet). */
+  copyNote(path: string): void;
   run(action: Promise<unknown>): void;
 }
 
@@ -94,6 +96,7 @@ function viewHandlers(state: ColumnsState, deps: ColumnsDeps, open: OpenColumns)
     closeTab: (tabId) => update((now) => tabClosed(now, tabId)),
     placeTab: (tabId, placement) => update((now) => tabPlaced(now, tabId, placement)),
     printNote: (path) => deps.printNote(path),
+    copyNote: (path) => deps.copyNote(path),
     dropTab: (tabId, drop) =>
       deps.run(open.changeFlushed(() => tabDropped(state.columns, tabId, drop))),
     split: () => deps.run(open.split()),

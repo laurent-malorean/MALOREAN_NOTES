@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 use api::{Session, commands};
 use infrastructure::{
-    FsExportStore, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, SystemClock,
+    FsExportStore, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, MacClipboard,
+    SystemClock,
 };
 use tauri::Manager;
 
@@ -24,7 +25,8 @@ fn main() {
                 Arc::new(SystemClock),
             )
             .with_watcher(Arc::new(FsWorkspaceWatcher))
-            .with_exports(Arc::new(FsExportStore));
+            .with_exports(Arc::new(FsExportStore))
+            .with_clipboard(Arc::new(MacClipboard::default()));
             app.manage(Arc::new(session));
             Ok(())
         })

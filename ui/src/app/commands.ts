@@ -107,6 +107,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "split-column": () => run(columns.split()),
     "export-note": () => deps.exporting.exportNote(),
     "print-note": () => deps.exporting.printNote(),
+    "copy-note": () => deps.exporting.copyNote(),
     "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),
@@ -157,6 +158,7 @@ function shortcutActions(
     "switch-workspace": done(actions["switch-workspace"]),
     "export-note": done(actions["export-note"]),
     "print-note": done(actions["print-note"]),
+    "copy-note": done(actions["copy-note"]),
   };
 }
 

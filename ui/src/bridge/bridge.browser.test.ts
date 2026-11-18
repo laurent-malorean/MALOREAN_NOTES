@@ -366,4 +366,10 @@ describe("pont vers Rust : pièces jointes", () => {
     await bridge.printPage();
     expect(calls).toEqual([{ command: "print_page", args: {} }]);
   });
+
+  it("pose la copie mise en forme dans le presse-papiers, en HTML et en texte brut", async () => {
+    const calls = recordCalls(null);
+    await bridge.copyRichText("<p>a</p>", "a");
+    expect(calls).toEqual([{ command: "copy_rich_text", args: { html: "<p>a</p>", text: "a" } }]);
+  });
 });

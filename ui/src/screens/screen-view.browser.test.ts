@@ -27,6 +27,7 @@ const ignore: ScreenActions = {
   closeNote: () => {},
   exportNote: () => {},
   printNote: () => {},
+  copyNote: () => {},
   trashFolder: () => {},
   fold: () => {},
   restoreNote: () => {},

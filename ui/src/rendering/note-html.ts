@@ -1,6 +1,6 @@
 // Rendu HTML d'une note : le Markdown mis en forme, sans sa syntaxe ni son en-tête, lu par le même
-// analyseur que l'éditeur. Sert à l'export PDF ; servira à « Imprimer » et à « Copier en texte mis
-// en forme ». Le HTML écrit dans la note n'est pas interprété : il reste du texte.
+// analyseur que l'éditeur. Sert à l'export PDF, à « Imprimer » et à « Copier en texte mis en forme ».
+// Le HTML écrit dans la note n'est pas interprété : il reste du texte.
 import { markdownLanguage } from "@codemirror/lang-markdown";
 import { type Language, LanguageDescription } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";

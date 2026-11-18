@@ -25,6 +25,7 @@ describe("palette de commandes", () => {
       ["split-column", "Diviser la colonne", "Ctrl+Cmd+T"],
       ["export-note", "Exporter…", "Cmd+E"],
       ["print-note", "Imprimer…", "Cmd+P"],
+      ["copy-note", "Copier en texte mis en forme", "Cmd+Maj+C"],
       ["sort-notes", "Trier la liste", null],
       ["show-trash", "Corbeille", null],
       ["open-settings", "Réglages", "Cmd+,"],

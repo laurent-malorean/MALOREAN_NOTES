@@ -312,6 +312,18 @@ pub trait ExportStore: Send + Sync + Debug {
     ) -> Result<(), StoreError>;
 }
 
+/// Le presse-papiers du système, où une note copiée est posée pour être collée ailleurs.
+pub trait Clipboard: Send + Sync + Debug {
+    /// Remplace le contenu du presse-papiers par la même note en deux formats à la fois : le
+    /// texte mis en forme `html` et le texte brut `text` ; l'application qui colle prend celui
+    /// qu'elle sait lire.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si le presse-papiers refuse l'un des deux formats.
+    fn copy_rich_text(&self, html: &str, text: &str) -> Result<(), StoreError>;
+}
+
 /// Donne le moment présent.
 pub trait Clock: Send + Sync + Debug {
     /// La date et l'heure locales, à la minute.

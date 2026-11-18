@@ -3,8 +3,8 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use application::ExportStore;
 use application::use_cases::ExportMarkdown;
+use application::{AppError, Clipboard, ExportStore};
 use domain::NotePath;
 use domain::export::{ExportDestination, export_file_name};
 
@@ -59,6 +59,30 @@ impl Session {
             .ok_or_else(ApiError::exports_unavailable)?;
         let destination = ExportDestination::parse(destination)?;
         ExportMarkdown::new(&*store, exports).execute(&NotePath::parse(path)?, &destination)?;
+        Ok(())
+    }
+
+    /// La même session, qui peut copier dans le presse-papiers.
+    #[must_use]
+    pub fn with_clipboard(mut self, clipboard: Arc<dyn Clipboard>) -> Self {
+        self.clipboard = Some(clipboard);
+        self
+    }
+
+    /// Pose une note copiée dans le presse-papiers, en texte mis en forme `html` et en texte
+    /// brut `text` à la fois.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué : presse-papiers absent ou qui refuse.
+    pub fn copy_rich_text(&self, html: &str, text: &str) -> Result<(), ApiError> {
+        let clipboard = self
+            .clipboard
+            .as_deref()
+            .ok_or_else(ApiError::clipboard_unavailable)?;
+        clipboard
+            .copy_rich_text(html, text)
+            .map_err(AppError::from)?;
         Ok(())
     }
 }

@@ -46,6 +46,10 @@ function setup({
         log.push(`imprimer ${layout.printSheet.innerHTML}`);
         return null;
       },
+      copyRichText: async (_html, text) => {
+        log.push(`copier ${text}`);
+        return null;
+      },
       fileAddress: (path) => (path.endsWith("vide.gif") ? PIXEL : `asset://${path}`),
     },
     columns: columns.open,
@@ -191,5 +195,14 @@ describe("impression d'une note", () => {
     t.exporting.printNote();
     await settle();
     expect(t.log).toEqual([]);
+  });
+});
+
+describe("copie en texte mis en forme depuis l'export", () => {
+  it("copie la note demandée, ou à défaut celle de la colonne active", async () => {
+    const t = setup();
+    t.exporting.copyNote("Travail/autre.md");
+    await expect.poll(() => t.shown).toEqual(["Note copiée"]);
+    expect(t.log).toEqual(["lire Travail/autre.md", "copier Voyage\n\nloin"]);
   });
 });

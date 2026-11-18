@@ -1,5 +1,5 @@
 // Export simulé pour les parcours : la fenêtre d'enregistrement rend un fichier choisi d'avance,
-// chaque fichier exporté est gardé en mémoire, chaque impression aussi. Les vraies règles sont testées côté Rust.
+// chaque fichier exporté est gardé en mémoire, chaque impression et chaque copie aussi. Les vraies règles sont testées côté Rust.
 
 type Handler = (args: Record<string, string>) => unknown;
 
@@ -15,6 +15,8 @@ export interface FakeExports {
   exported: Record<string, string>;
   /** Chaque fenêtre d'impression ouverte : le HTML de la feuille d'impression à ce moment. */
   printed: string[];
+  /** Chaque copie mise en forme posée dans le presse-papiers : ses deux formats. */
+  copied: { html: string; text: string }[];
 }
 
 const sheet = () => document.querySelector(".print-sheet")?.innerHTML ?? "";
@@ -40,6 +42,10 @@ export function fakeExport(exports: FakeExports): Record<string, Handler> {
     },
     print_page: () => {
       exports.printed.push(sheet());
+      return null;
+    },
+    copy_rich_text: ({ html = "", text = "" }) => {
+      exports.copied.push({ html, text });
       return null;
     },
   };

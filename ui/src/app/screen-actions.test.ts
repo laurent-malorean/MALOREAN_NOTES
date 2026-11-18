@@ -46,6 +46,7 @@ function setup() {
     exporting: {
       exportNote: (path) => void calls.push(`exporter ${path}`),
       printNote: (path) => void calls.push(`imprimer ${path}`),
+      copyNote: (path) => void calls.push(`copier ${path}`),
     },
     run: (action) => void ran.push(action),
   });
@@ -64,6 +65,7 @@ describe("demandes de l'écran", () => {
     t.actions.unpin("b.md");
     t.actions.exportNote("c.md");
     t.actions.printNote("b.md");
+    t.actions.copyNote("c.md");
     t.actions.trash("a.md");
     t.actions.trashFolder("projets");
     t.actions.restoreNote("a.md");
@@ -85,6 +87,7 @@ describe("demandes de l'écran", () => {
       "désépingler b.md",
       "exporter c.md",
       "imprimer b.md",
+      "copier c.md",
       "jeter a.md",
       "jeter le dossier projets",
       "rendre a.md",

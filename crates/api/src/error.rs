@@ -36,6 +36,13 @@ impl ApiError {
         }
     }
 
+    /// La session n'a pas de presse-papiers où copier.
+    pub(crate) fn clipboard_unavailable() -> Self {
+        Self {
+            message: "le presse-papiers n'est pas disponible".to_owned(),
+        }
+    }
+
     /// WebKit n'a pas pu imprimer la page en PDF.
     pub(crate) fn pdf_failed(reason: &str) -> Self {
         Self {
@@ -123,6 +130,10 @@ mod tests {
         assert_eq!(
             ApiError::exports_unavailable().message,
             "l'export n'est pas disponible"
+        );
+        assert_eq!(
+            ApiError::clipboard_unavailable().message,
+            "le presse-papiers n'est pas disponible"
         );
         assert_eq!(
             ApiError::pdf_failed("la fenêtre n'est pas prête").message,

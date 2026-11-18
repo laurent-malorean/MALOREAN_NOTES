@@ -68,6 +68,7 @@ const deps: CommandsDeps = {
   exporting: {
     exportNote: (path) => void log.push(`exporter ${path}`),
     printNote: (path) => void log.push(`imprimer ${path}`),
+    copyNote: (path) => void log.push(`copier ${path}`),
   },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
@@ -113,6 +114,7 @@ describe("commandes de la palette", () => {
       "split-column",
       "export-note",
       "print-note",
+      "copy-note",
       "show-trash",
       "open-settings",
       "switch-workspace",
@@ -135,6 +137,7 @@ describe("commandes de la palette", () => {
       "diviser",
       "exporter undefined",
       "imprimer undefined",
+      "copier undefined",
       "corbeille",
       "réglages",
       "changer d'espace de travail",
@@ -288,6 +291,11 @@ describe("raccourcis clavier", () => {
   it("Cmd+P imprime la note de la colonne active", () => {
     expect(press("p", { metaKey: true }).defaultPrevented).toBe(true);
     expect(log).toEqual(["imprimer undefined"]);
+  });
+
+  it("Cmd+Maj+C copie en texte mis en forme la sélection ou la note de la colonne active", () => {
+    expect(press("C", { metaKey: true, shiftKey: true }).defaultPrevented).toBe(true);
+    expect(log).toEqual(["copier undefined"]);
   });
 
   it("Cmd+O ouvre l'ouverture rapide", async () => {

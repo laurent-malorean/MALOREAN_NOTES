@@ -181,6 +181,9 @@ export const exportMarkdown = (path: string, destination: string) =>
 export const exportPdf = (destination: string) => invoke<null>("export_pdf", { destination });
 /** Ouvre la fenêtre d'impression du Mac sur la feuille d'impression de la page. */
 export const printPage = () => invoke<null>("print_page");
+/** Pose dans le presse-papiers du Mac le texte mis en forme `html` et le texte brut `text`. */
+export const copyRichText = (html: string, text: string) =>
+  invoke<null>("copy_rich_text", { html, text });
 /** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
 export const openAttachment = (path: string, target: string) =>
   invoke<null>("open_attachment", { path, target });

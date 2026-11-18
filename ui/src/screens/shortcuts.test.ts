@@ -96,6 +96,11 @@ describe("raccourcis clavier", () => {
     expect(key("p", { ctrlKey: true })).toBeNull();
   });
 
+  it("Cmd+Maj+C copie en texte mis en forme ; Cmd+C reste la copie de l'éditeur", () => {
+    expect(key("C", { metaKey: true, shiftKey: true })).toBe("copy-note");
+    expect(key("c", { metaKey: true })).toBeNull();
+  });
+
   it("Ctrl+Cmd+T divise la colonne", () => {
     expect(key("t", { metaKey: true, ctrlKey: true })).toBe("split-column");
     expect(key("t", { ctrlKey: true })).toBeNull();

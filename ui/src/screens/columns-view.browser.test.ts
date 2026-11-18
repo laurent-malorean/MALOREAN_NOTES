@@ -29,6 +29,7 @@ function mount() {
     closeTab: (tab) => tabs.push(`fermer ${tab}`),
     placeTab: (tab, placement) => tabs.push(`placer ${tab} ${placement}`),
     printNote: (path) => tabs.push(`imprimer ${path}`),
+    copyNote: (path) => tabs.push(`copier ${path}`),
     dropTab: (tab, drop) => drops.push({ tab, drop }),
   });
   return {
@@ -174,8 +175,18 @@ describe("colonnes à l'écran", () => {
     second
       .querySelector<HTMLElement>('[role="tab"]')
       ?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].at(-2)?.click();
+    second
+      .querySelector<HTMLElement>('[role="tab"]')
+      ?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].at(-1)?.click();
-    expect(tabs).toEqual(["activer 3", "fermer 3", "placer 3 newTab", "imprimer b.md"]);
+    expect(tabs).toEqual([
+      "activer 3",
+      "fermer 3",
+      "placer 3 newTab",
+      "imprimer b.md",
+      "copier b.md",
+    ]);
     view.render({
       ...columns,
       list: [

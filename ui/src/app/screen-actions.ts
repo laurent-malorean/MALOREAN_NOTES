@@ -45,6 +45,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     closeNote: (path) => run(columns.update((now) => noteClosed(now, path))),
     exportNote: (path) => exporting.exportNote(path),
     printNote: (path) => exporting.printNote(path),
+    copyNote: (path) => exporting.copyNote(path),
     trashFolder: (path) => run(trash.trashFolder(path)),
     restoreNote: (path) => run(trash.restoreNote(path)),
     restoreFolder: (path) => run(trash.restoreFolder(path)),

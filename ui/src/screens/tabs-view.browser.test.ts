@@ -25,6 +25,7 @@ function mount() {
     place: (tab, placement) => asked.push(`placer ${tab} ${placement}`),
     drag: (tab) => asked.push(`glisser ${tab}`),
     print: (note) => asked.push(`imprimer ${note}`),
+    copy: (note) => asked.push(`copier ${note}`),
   });
   const tabs = [...list.querySelectorAll<HTMLElement>('[role="tab"]')];
   return { list, asked, tabs };
@@ -65,7 +66,14 @@ describe("onglets d'une colonne", () => {
     renderTabs(
       list,
       { ...column, tabs: [], activeTab: null },
-      { activate: () => {}, close: () => {}, place: () => {}, drag: () => {}, print: () => {} },
+      {
+        activate: () => {},
+        close: () => {},
+        place: () => {},
+        drag: () => {},
+        print: () => {},
+        copy: () => {},
+      },
     );
     expect(list.children).toHaveLength(0);
   });
@@ -78,6 +86,7 @@ describe("onglets d'une colonne", () => {
       place: () => {},
       drag: () => {},
       print: () => {},
+      copy: () => {},
     };
     renderTabs(list, { ...column, tabs: [...column.tabs] }, actions);
     expect(list.children[0]).toBe(tabs[0]);
@@ -107,13 +116,21 @@ describe("onglets d'une colonne", () => {
       "Ouvrir à droite",
       "Fermer",
       "Imprimer…",
+      "Copier en texte mis en forme",
     ]);
     entries()[2]?.click();
     tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     entries()[3]?.click();
     tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     entries()[4]?.click();
-    expect(asked).toEqual(["placer 1 right", "fermer 2", "imprimer Travail/liste-de-noel.md"]);
+    tabs[0]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    entries()[5]?.click();
+    expect(asked).toEqual([
+      "placer 1 right",
+      "fermer 2",
+      "imprimer Travail/liste-de-noel.md",
+      "copier Travail/reunion.md",
+    ]);
   });
 
   it("un onglet se glisse : son début et sa fin sont annoncés, il porte son identifiant", () => {

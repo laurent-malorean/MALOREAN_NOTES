@@ -1,12 +1,15 @@
 //! Faux en mémoire et tests de contrat, pour les tests des couches.
 
 pub mod attachment_contract;
+pub mod clipboard_contract;
 pub mod contract;
 pub mod export_contract;
+mod fake_clipboard;
 mod fake_exports;
 mod fakes;
 pub mod preferences_contract;
 mod trash_contract;
 
+pub use fake_clipboard::InMemoryClipboard;
 pub use fake_exports::InMemoryExportStore;
 pub use fakes::{FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore};

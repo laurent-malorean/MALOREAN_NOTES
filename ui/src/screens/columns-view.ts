@@ -24,6 +24,8 @@ export interface ColumnsHandlers {
   placeTab(tabId: number, placement: Placement): void;
   /** Imprimer la note d'un onglet (menu de l'onglet). */
   printNote(path: string): void;
+  /** Copier la note d'un onglet en texte mis en forme (menu de l'onglet). */
+  copyNote(path: string): void;
   /** Un onglet glissé est lâché là. */
   dropTab(tabId: number, drop: TabDrop): void;
   /** Diviser la colonne active. */
@@ -212,6 +214,7 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
           close: handlers.closeTab,
           place: handlers.placeTab,
           print: handlers.printNote,
+          copy: handlers.copyNote,
           drag: (tabId) => (tabId === null ? dragging.stop() : (moving = tabId)),
         });
         if (index === 0) return [entry.parts.element];

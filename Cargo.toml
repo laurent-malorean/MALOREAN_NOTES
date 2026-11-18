@@ -17,10 +17,11 @@ api = { path = "crates/api" }
 # Surveillance du dossier de l'espace de travail (changements faits hors de l'application).
 notify-debouncer-mini = "0.6"
 jiff = "1"
-# Imprimer la page en PDF par WebKit (fiche 0025) ; déjà tirés par Tauri (wry), sur macOS.
+# Imprimer la page en PDF par WebKit (fiche 0025), copier dans le presse-papiers (fiche 0027) ;
+# déjà tirés par Tauri (wry), sur macOS.
 objc2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSObject", "NSString", "NSURL", "NSDictionary"] }
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPrintInfo", "NSPrintOperation", "NSResponder", "NSView", "NSWindow"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSPasteboard", "NSPrintInfo", "NSPrintOperation", "NSResponder", "NSView", "NSWindow"] }
 objc2-web-kit = { version = "0.3", default-features = false, features = ["std", "objc2-app-kit", "WKWebView"] }
 proptest = "1"
 serde = { version = "1", features = ["derive"] }

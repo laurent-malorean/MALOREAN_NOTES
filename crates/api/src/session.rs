@@ -20,8 +20,8 @@ use application::use_cases::{
     PinNote, ReadNote, RenameFolder, SearchNotes, SearchResult,
 };
 use application::{
-    AppError, Clock, ExportStore, NoteStore, Preferences, StoredNote, Watching, WorkspaceLocation,
-    WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
+    AppError, Clipboard, Clock, ExportStore, NoteStore, Preferences, StoredNote, Watching,
+    WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
@@ -54,6 +54,7 @@ pub struct Session {
     watcher: Option<Arc<dyn WorkspaceWatcher>>,
     watching: Mutex<Option<Box<dyn Watching>>>,
     exports: Option<Arc<dyn ExportStore>>,
+    clipboard: Option<Arc<dyn Clipboard>>,
 }
 
 /// L'espace de travail ouvert : où il est, et ses notes.
@@ -80,6 +81,7 @@ impl Session {
             watcher: None,
             watching: Mutex::new(None),
             exports: None,
+            clipboard: None,
         }
     }
 
