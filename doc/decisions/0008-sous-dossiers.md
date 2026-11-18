@@ -10,11 +10,11 @@ Jusqu'ici, une bibliothèque n'avait qu'un niveau : une note était désignée p
 
 ## Décision
 
-- Le domaine connaît trois valeurs : **nom de dossier** (`FolderName`, tel que l'utilisateur l'a écrit, jamais caché ni terminé par `.assets`), **dossier** (`Folder`, suite de noms ; la racine est la bibliothèque) et **chemin de note** (`NotePath`, dossier + nom de fichier). Tout ce qui vient de la page est converti en l'une d'elles à l'entrée ; un chemin qui sortirait de la bibliothèque ne peut pas s'écrire.
+- Le domaine connaît trois valeurs : **nom de dossier** (`FolderName`, tel que l'utilisateur l'a écrit, jamais caché, ni terminé par `.assets`, ni `node_modules`), **dossier** (`Folder`, suite de noms ; la racine est la bibliothèque) et **chemin de note** (`NotePath`, dossier + nom de fichier). Tout ce qui vient de la page est converti en l'une d'elles à l'entrée ; un chemin qui sortirait de la bibliothèque ne peut pas s'écrire.
 - Entre la page et Rust, une note ou un dossier voyage sous forme de chemin relatif : `Travail/Réunions/lundi.md`, `Travail/Réunions`, `""` pour la racine.
 - Le nom d'une note suit toujours son titre, mais seulement parmi les notes de **son** dossier : deux dossiers peuvent contenir chacun `idee.md`.
 - Le port de stockage liste les notes d'un dossier (sans ses sous-dossiers), tous les dossiers, crée un dossier et **déplace** un dossier. Renommer un dossier, c'est le déplacer à côté de lui-même : une seule opération à tester. Les règles (pas de dossier dans lui-même, la racine ne bouge pas) sont dans les cas d'usage, pas dans le stockage.
-- Sur le disque, les dossiers cachés, les dossiers de pièces jointes et les liens symboliques ne sont pas des dossiers de notes. Les noms sont comparés à l'identique : sur un disque qui ignore la casse, renommer `travail` en `Travail` fonctionne.
+- Sur le disque, les dossiers cachés, les dossiers de pièces jointes, les dossiers de dépendances (`node_modules`, majuscules ignorées) et les liens symboliques ne sont pas des dossiers de notes. Les dossiers de dépendances sont écartés depuis le 18/11/2026 : un espace de travail ouvert sur un dossier de code en contenait des milliers (plus de 15 000 dossiers et 4 500 fichiers `.md` de paquets, pour 14 notes), envoyés à la page qui saturait mémoire et processeur. Les noms sont comparés à l'identique : sur un disque qui ignore la casse, renommer `travail` en `Travail` fonctionne.
 - Le glisser-déposer de la fenêtre est laissé à la page (`dragDropEnabled: false`) : c'est elle qui gère le déplacement des dossiers, et plus tard celui des notes et des images.
 
 ## Conséquences

@@ -6,6 +6,8 @@ use crate::FileName;
 
 const SEPARATOR: char = '/';
 const ATTACHMENT_SUFFIX: &str = ".assets";
+/// Le dossier de dépendances : les paquets d'outils de programmation, pas des notes.
+const DEPENDENCY_FOLDER: &str = "node_modules";
 const FIRST_DUPLICATE_NUMBER: u32 = 2;
 
 /// Nom d'un dossier : un seul élément de chemin, tel que l'utilisateur l'a écrit.
@@ -30,13 +32,14 @@ impl FolderName {
     /// # Errors
     ///
     /// [`InvalidFolderName`] si le nom est vide, caché, contient un séparateur
-    /// ou désigne un dossier de pièces jointes (`….assets`).
+    /// ou désigne un dossier de pièces jointes (`….assets`) ou de dépendances (`node_modules`).
     pub fn parse(name: &str) -> Result<Self, InvalidFolderName> {
         let trimmed = name.trim();
         let is_safe = !trimmed.is_empty()
             && !trimmed.starts_with('.')
             && !trimmed.contains(['/', '\\', '\0'])
-            && !trimmed.to_lowercase().ends_with(ATTACHMENT_SUFFIX);
+            && !trimmed.to_lowercase().ends_with(ATTACHMENT_SUFFIX)
+            && !trimmed.eq_ignore_ascii_case(DEPENDENCY_FOLDER);
         if is_safe {
             Ok(Self(trimmed.to_owned()))
         } else {
@@ -275,6 +278,17 @@ mod tests {
                 FolderName::parse(bad),
                 Err(InvalidFolderName(bad.to_owned())),
                 "{bad:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_dependency_folder_is_not_a_folder_of_the_workspace() {
+        for dependencies in ["node_modules", "Node_Modules"] {
+            assert_eq!(
+                FolderName::parse(dependencies),
+                Err(InvalidFolderName(dependencies.to_owned())),
+                "{dependencies:?}"
             );
         }
     }

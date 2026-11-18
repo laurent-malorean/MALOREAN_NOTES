@@ -262,6 +262,25 @@ fn hidden_attachment_and_linked_folders_are_not_note_folders() {
 }
 
 #[test]
+fn dependency_folders_and_their_notes_are_not_in_the_workspace() {
+    let (dir, store) = workspace();
+    fs::create_dir_all(dir.path().join("Projet/node_modules/paquet")).unwrap();
+    fs::write(
+        dir.path().join("Projet/node_modules/paquet/README.md"),
+        "# Paquet",
+    )
+    .unwrap();
+    fs::write(dir.path().join("Projet/lisez-moi.md"), "# Projet").unwrap();
+    let folders: Vec<String> = store
+        .folders()
+        .unwrap()
+        .iter()
+        .map(Folder::to_path)
+        .collect();
+    assert_eq!(folders, ["Projet"]);
+}
+
+#[test]
 fn a_folder_whose_name_is_not_text_is_skipped() {
     use std::ffi::OsStr;
     use std::os::unix::ffi::OsStrExt;

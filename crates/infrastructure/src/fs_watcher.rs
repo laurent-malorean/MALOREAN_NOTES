@@ -8,14 +8,14 @@ use std::time::Duration;
 use application::{
     ChangeListener, StoreError, Watching, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher,
 };
-use domain::NotePath;
+use domain::{FolderName, NotePath};
 use notify_debouncer_mini::notify::{RecommendedWatcher, RecursiveMode};
 use notify_debouncer_mini::{DebounceEventResult, Debouncer, new_debouncer};
 
 /// Les changements qui se suivent de près sont annoncés ensemble.
 const GROUPING_DELAY: Duration = Duration::from_millis(300);
+/// Remplace un élément de chemin qui n'est pas un nom (`..`) : un nom caché, donc ignoré.
 const HIDDEN_PREFIX: &str = ".";
-const ATTACHMENT_SUFFIX: &str = ".assets";
 
 /// Surveille les espaces de travail sur disque.
 #[derive(Debug)]
@@ -70,7 +70,7 @@ impl WorkspaceWatcher for FsWorkspaceWatcher {
 
 /// Ce qu'il faut annoncer pour ces chemins changés ; rien s'ils sont tous à ignorer :
 /// fichiers ou dossiers cachés (corbeille, fichiers d'enregistrement en cours),
-/// dossiers de pièces jointes, chemins hors de l'espace de travail.
+/// dossiers de pièces jointes ou de dépendances, chemins hors de l'espace de travail.
 fn workspace_change<'a>(
     root: &Path,
     paths: impl Iterator<Item = &'a Path>,
@@ -101,10 +101,9 @@ fn workspace_parts(root: &Path, path: &Path) -> Option<Vec<String>> {
             _ => HIDDEN_PREFIX.to_owned(),
         })
         .collect();
-    let ignored = parts.is_empty()
-        || parts
-            .iter()
-            .any(|part| part.starts_with(HIDDEN_PREFIX) || part.ends_with(ATTACHMENT_SUFFIX));
+    // Les règles d'un nom de dossier sont celles de tout l'espace de travail : un élément
+    // caché, de pièces jointes ou de dépendances met le chemin hors de l'espace.
+    let ignored = parts.is_empty() || parts.iter().any(|part| FolderName::parse(part).is_err());
     (!ignored).then_some(parts)
 }
 
@@ -147,13 +146,15 @@ mod tests {
     }
 
     #[test]
-    fn hidden_files_trash_and_attachments_are_ignored() {
+    fn hidden_files_trash_attachments_and_dependencies_are_ignored() {
         assert_eq!(
             change(&[
                 "/Users/moi/Notes/.a.md.enregistrement",
                 "/Users/moi/Notes/.trash/a.md",
                 "/Users/moi/Notes/voyage.assets/mer.png",
                 "/Users/moi/Notes/voyage.assets",
+                "/Users/moi/Notes/Projet/node_modules/paquet/README.md",
+                "/Users/moi/Notes/Projet/node_modules",
                 "/Users/moi/Notes",
                 "/Users/moi/Autre/a.md",
                 "/Users/moi/Notes/../Autre/a.md",

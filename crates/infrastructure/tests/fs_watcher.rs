@@ -78,6 +78,19 @@ fn hidden_files_and_attachments_are_not_announced() {
 }
 
 #[test]
+fn changes_in_a_dependency_folder_are_not_announced() {
+    let folder = tempfile::tempdir().unwrap();
+    fs::create_dir_all(folder.path().join("Projet/node_modules/paquet")).unwrap();
+    let (_watching, received) = watch(&folder);
+    fs::write(
+        folder.path().join("Projet/node_modules/paquet/README.md"),
+        "x",
+    )
+    .unwrap();
+    assert!(received.recv_timeout(SILENCE).is_err());
+}
+
+#[test]
 fn nothing_is_announced_once_watching_stops() {
     let folder = tempfile::tempdir().unwrap();
     let (watching, received) = watch(&folder);
