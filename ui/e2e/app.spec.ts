@@ -225,6 +225,8 @@ test("la note ouverte glissée dans un dossier reste ouverte, avec ce qu'on vien
 }) => {
   await launch(page, { folders: ["Perso"] });
   await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  // La note s'ouvre après sa lecture : cliquer avant visait encore la note ouverte au lancement.
+  await expect(editorLines(page).first()).toHaveText("Vieille note");
   await editorLines(page).last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" ajouté");
