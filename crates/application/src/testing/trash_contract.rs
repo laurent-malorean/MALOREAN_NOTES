@@ -54,7 +54,7 @@ fn with_work_notes(store: &impl NoteStore) {
 }
 
 /// Joue tout le contrat de la corbeille ; `empty_store` fabrique une bibliothèque vide à chaque appel.
-pub fn trash_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
+pub(super) fn trash_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     a_new_library_has_an_empty_trash(&empty_store());
     a_trashed_note_goes_to_its_original_path_in_the_trash(&empty_store());
     trashing_a_missing_note_or_onto_a_taken_place_is_refused(&empty_store());

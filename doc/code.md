@@ -49,14 +49,14 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Immutabilité** : les types du domaine n'exposent pas de méthode `&mut self` ; on fabrique une nouvelle valeur.
 - **Types plutôt que conventions** : un identifiant, une unité, un statut a son propre type (`NoteId`, `enum Status`), pas un `String` ou un `u64` nu. Un état impossible ne doit pas pouvoir s'écrire.
 - **Convertir à la frontière, une fois** : ce qui arrive du dehors (commande Tauri, fichier lu, préférence) est converti en type du domaine dès l'entrée (`TryFrom`, `FromStr`, constructeur qui rend un `Result`). Ensuite, plus aucune revalidation : si on a le type, la donnée est valide. Une fonction qui vérifie sans rien rendre (`fn is_valid(&str) -> bool`) est un signal d'alarme.
-- **Pas de paramètre booléen qui change le comportement** : `save(note, true)` ne se lit pas. On écrit deux fonctions ou on passe un `enum` nommé. *Vérifié par : Clippy (`fn_params_excessive_bools`, à activer).*
-- **Modules profonds** : un module offre une interface petite et cache beaucoup de travail. Il cache une décision (format du fichier, ordre de tri) que le reste du code n'a pas à connaître. Visibilité la plus étroite possible : privé par défaut, `pub(crate)` ensuite, `pub` seulement pour ce qu'une autre crate appelle. *Vérifié par : lint `unreachable_pub` (à activer).*
+- **Pas de paramètre booléen qui change le comportement** : `save(note, true)` ne se lit pas. On écrit deux fonctions ou on passe un `enum` nommé. *Vérifié par : Clippy (`fn_params_excessive_bools`).*
+- **Modules profonds** : un module offre une interface petite et cache beaucoup de travail. Il cache une décision (format du fichier, ordre de tri) que le reste du code n'a pas à connaître. Visibilité la plus étroite possible : privé par défaut, `pub(crate)` ensuite, `pub` seulement pour ce qu'une autre crate appelle. *Vérifié par : lint `unreachable_pub`.*
 - **Pas de passe-plat** : une fonction ou un type qui ne fait que transmettre à un autre, sans rien ajouter, est supprimé. On découpe une fonction quand la partie extraite a un nom de l'ontologie et un sens seul, pas seulement pour passer sous un seuil.
 - **Pas de valeur en dur** : une constante nommée pour chaque seuil, statut ou chaîne qui porte un sens. Une valeur qu'on voudrait régler sans toucher au code (apparence, limites, réglages par défaut) vit dans un fichier de configuration ou de thème, à un seul endroit.
 - **Pas de code mort** : fonction, import, variable non utilisés sont supprimés. *Vérifié par : lints `unused` en erreur.*
-- **Commentaires** : disent **pourquoi** et **l'intention**, pas ce que fait la ligne. Le `///` d'un élément public décrit ce qu'on obtient, dans le vocabulaire de l'ontologie, et une section `# Errors` dit dans quels cas il échoue. On écrit ce commentaire **avant** le code : s'il est difficile à écrire, l'interface est mal pensée. *Vérifié par : lints `missing_docs` et Clippy `missing_errors_doc` (à activer).*
+- **Commentaires** : disent **pourquoi** et **l'intention**, pas ce que fait la ligne. Le `///` d'un élément public décrit ce qu'on obtient, dans le vocabulaire de l'ontologie, et une section `# Errors` dit dans quels cas il échoue. On écrit ce commentaire **avant** le code : s'il est difficile à écrire, l'interface est mal pensée. *Vérifié par : lints `missing_docs` et Clippy `missing_errors_doc`.*
 - **Pas de duplication de règle** : la même règle écrite deux fois sera un jour écrite différemment. Mais on factorise une **règle**, pas une **ressemblance** : deux codes semblables qui répondent à deux besoins différents restent séparés. Une abstraction qui demande un nouveau paramètre ou un nouveau cas à chaque usage est mauvaise : on la défait (on recopie le code chez chaque appelant) puis on cherche la bonne.
-- **Conventions Rust** : celles des *Rust API Guidelines*. Noms de conversion `as_` (gratuite), `to_` (coûteuse), `into_` (consomme) ; conversions par `From` / `TryFrom` plutôt que par des fonctions maison ; tout type public implémente `Debug`, et `Clone`, `PartialEq`, `Eq`, `Hash`, `Default` quand ils ont un sens. *Vérifié par : Clippy (`wrong_self_convention`) et lint `missing_debug_implementations` (à activer).*
+- **Conventions Rust** : celles des *Rust API Guidelines*. Noms de conversion `as_` (gratuite), `to_` (coûteuse), `into_` (consomme) ; conversions par `From` / `TryFrom` plutôt que par des fonctions maison ; tout type public implémente `Debug`, et `Clone`, `PartialEq`, `Eq`, `Hash`, `Default` quand ils ont un sens. *Vérifié par : Clippy (`wrong_self_convention`) et lint `missing_debug_implementations`.*
 - **Exception à un lint** : `#[expect(lint, reason = "…")]`, jamais `#[allow]` sans raison. *Vérifié par : Clippy (`allow_attributes`, `allow_attributes_without_reason`).*
 - **Code `unsafe`** : interdit. Seule exception : une frontière FFI avec macOS, isolée dans `infrastructure`, avec `// SAFETY:` qui justifie chaque bloc. *Vérifié par : lint `unsafe_code` en erreur, levé localement avec raison.*
 
@@ -171,6 +171,9 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 [workspace.lints.rust]
 unsafe_code = "deny"
 unused = { level = "deny", priority = -1 }
+unreachable_pub = "deny"
+missing_docs = "deny"
+missing_debug_implementations = "deny"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
@@ -187,24 +190,13 @@ let_underscore_must_use = "deny"
 allow_attributes = "deny"
 allow_attributes_without_reason = "deny"
 disallowed_methods = "deny"
-```
-
-Chaque crate reprend ces règles avec `[lints] workspace = true`.
-
-**À activer** (le code actuel ne les respecte pas encore ; écarts suivis dans `TODO.md`) :
-
-```toml
-[workspace.lints.rust]
-unreachable_pub = "deny"
-missing_docs = "deny"
-missing_debug_implementations = "deny"
-
-[workspace.lints.clippy]
 missing_errors_doc = "deny"
 fn_params_excessive_bools = "deny"
 ```
 
-Côté interface : `@typescript-eslint/switch-exhaustiveness-check` et `@typescript-eslint/prefer-readonly` (ces deux règles demandent l'analyse typée d'ESLint).
+Chaque crate reprend ces règles avec `[lints] workspace = true`.
+
+**À activer** côté interface (écart suivi dans `TODO.md`) : `@typescript-eslint/switch-exhaustiveness-check` et `@typescript-eslint/prefer-readonly` (ces deux règles demandent l'analyse typée d'ESLint).
 
 `clippy.toml` à la racine :
 

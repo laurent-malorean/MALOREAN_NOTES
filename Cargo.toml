@@ -37,6 +37,9 @@ unicode-normalization = "0.1"
 [workspace.lints.rust]
 unsafe_code = "deny"
 unused = { level = "deny", priority = -1 }
+unreachable_pub = "deny"
+missing_docs = "deny"
+missing_debug_implementations = "deny"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
@@ -53,3 +56,5 @@ let_underscore_must_use = "deny"
 allow_attributes = "deny"
 allow_attributes_without_reason = "deny"
 disallowed_methods = "deny"
+missing_errors_doc = "deny"
+fn_params_excessive_bools = "deny"
