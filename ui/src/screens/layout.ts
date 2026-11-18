@@ -2,7 +2,10 @@
 export interface Layout {
   readonly welcome: HTMLElement;
   readonly mainArea: HTMLElement;
-  readonly workspaceName: HTMLElement;
+  /** Le sélecteur d'espace de travail : le nom de l'espace ouvert, en tête des dossiers. */
+  readonly workspaceSwitcher: HTMLButtonElement;
+  /** Le titre de la liste des notes : dossier, étiquette, Récentes ou Corbeille. */
+  readonly listHeading: HTMLElement;
   readonly foldersList: HTMLElement;
   /** L'entrée Récentes, entre les dossiers et la liste des étiquettes. */
   readonly recentButton: HTMLButtonElement;
@@ -26,7 +29,10 @@ export interface Layout {
   readonly fullScreenButton: HTMLButtonElement;
   readonly sidePanelsButton: HTMLButtonElement;
   readonly status: HTMLElement;
-  readonly chooseButtons: readonly HTMLButtonElement[];
+  /** Sur l'accueil : ajouter un premier espace de travail. */
+  readonly addButton: HTMLButtonElement;
+  /** Sous la liste des notes : passer à un autre espace de travail. */
+  readonly switchButton: HTMLButtonElement;
   readonly newNoteButton: HTMLButtonElement;
   readonly settingsButton: HTMLButtonElement;
   readonly settings: HTMLDialogElement;
@@ -40,12 +46,12 @@ const TEMPLATE = `
     <section class="welcome">
       <h1>MALOREAN Notes</h1>
       <p>Vos notes sont de simples fichiers Markdown, dans le dossier de votre choix.</p>
-      <button class="primary" data-choose>Choisir un dossier de notes</button>
+      <button class="primary" data-add>Choisir un dossier de notes</button>
     </section>
     <section class="main-area" hidden>
       <aside class="folders">
         <header class="sidebar-header">
-          <span>Dossiers</span>
+          <button class="workspace-switcher" aria-haspopup="menu" title="Changer d'espace de travail (Cmd+Maj+E)"></button>
           <button class="icon" data-new-folder title="Nouveau dossier">＋</button>
         </header>
         <nav class="folders-list"></nav>
@@ -58,14 +64,14 @@ const TEMPLATE = `
       </aside>
       <aside class="sidebar">
         <header class="sidebar-header">
-          <span class="workspace-name"></span>
+          <span class="list-heading"></span>
           <button class="icon" data-new title="Nouvelle note">＋</button>
         </header>
         <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
         <div class="tag-filter" hidden></div>
         <label class="note-order">Trier par <select aria-label="Trier la liste"></select></label>
         <nav class="notes-list"></nav>
-        <footer class="sidebar-footer"><button class="link" data-choose>Changer de dossier</button></footer>
+        <footer class="sidebar-footer"><button class="link" data-switch>Changer d'espace de travail</button></footer>
       </aside>
       <main class="editor">
         <div class="editor-tools">
@@ -90,7 +96,8 @@ export function createLayout(root: HTMLElement): Layout {
   return {
     welcome: find(".welcome"),
     mainArea: find(".main-area"),
-    workspaceName: find(".workspace-name"),
+    workspaceSwitcher: find(".workspace-switcher"),
+    listHeading: find(".list-heading"),
     foldersList: find(".folders-list"),
     recentButton: find("[data-recent]"),
     tagsList: find(".tags-list"),
@@ -109,7 +116,8 @@ export function createLayout(root: HTMLElement): Layout {
     fullScreenButton: find("[data-full-screen]"),
     sidePanelsButton: find("[data-side-panels]"),
     status: find(".status"),
-    chooseButtons: [...root.querySelectorAll<HTMLButtonElement>("[data-choose]")],
+    addButton: find("[data-add]"),
+    switchButton: find("[data-switch]"),
     newNoteButton: find("[data-new]"),
     settingsButton: find("[data-settings]"),
     settings: find(".settings"),

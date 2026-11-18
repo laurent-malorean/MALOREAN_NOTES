@@ -81,6 +81,11 @@ describe("raccourcis clavier", () => {
     expect(key("j", { metaKey: true })).toBeNull();
   });
 
+  it("Cmd+Maj+E change d'espace de travail", () => {
+    expect(key("E", { metaKey: true, shiftKey: true })).toBe("switch-workspace");
+    expect(key("e", { metaKey: true })).toBeNull();
+  });
+
   it("Ctrl+Cmd+T divise la colonne", () => {
     expect(key("t", { metaKey: true, ctrlKey: true })).toBe("split-column");
     expect(key("t", { ctrlKey: true })).toBeNull();

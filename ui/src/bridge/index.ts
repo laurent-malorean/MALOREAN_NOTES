@@ -4,8 +4,10 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
 import type { AttachedFile } from "./generated/AttachedFile";
+import type { ChosenFolder } from "./generated/ChosenFolder";
 import type { WorkspaceChanged } from "./generated/WorkspaceChanged";
 import type { WorkspaceInfo } from "./generated/WorkspaceInfo";
+import type { WorkspaceItem } from "./generated/WorkspaceItem";
 import type { WorkspaceNoteItem } from "./generated/WorkspaceNoteItem";
 import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
 import type { NoteContent } from "./generated/NoteContent";
@@ -20,8 +22,10 @@ import type { TrashInfo } from "./generated/TrashInfo";
 
 export type {
   AttachedFile,
+  ChosenFolder,
   WorkspaceChanged,
   WorkspaceInfo,
+  WorkspaceItem,
   WorkspaceNoteItem,
   LinkingNoteItem,
   NoteContent,
@@ -44,7 +48,20 @@ export function errorMessage(error: unknown): string {
 }
 
 export const reopenLastWorkspace = () => invoke<WorkspaceInfo | null>("reopen_last_workspace");
-export const chooseWorkspace = () => invoke<WorkspaceInfo | null>("choose_workspace");
+/** Les espaces de travail, dans l'ordre où on les a ajoutés, l'ouvert marqué. */
+export const listWorkspaces = () => invoke<WorkspaceItem[]>("list_workspaces");
+/** Fait choisir le dossier d'un nouvel espace de travail ; rend aussi le nom proposé, ou rien. */
+export const chooseWorkspaceFolder = () => invoke<ChosenFolder | null>("choose_workspace_folder");
+/** Ajoute l'espace de travail `name` sur le dossier `folder`, et l'ouvre. */
+export const addWorkspace = (name: string, folder: string) =>
+  invoke<WorkspaceInfo>("add_workspace", { name, folder });
+/** Ouvre l'espace de travail `name` à la place de celui qui l'était. */
+export const openWorkspace = (name: string) => invoke<WorkspaceInfo>("open_workspace", { name });
+/** Renomme un espace de travail, sans toucher à ses fichiers ; rend le nom gardé. */
+export const renameWorkspace = (name: string, newName: string) =>
+  invoke<string>("rename_workspace", { name, newName });
+/** Retire un espace de travail de la liste, sans toucher à ses fichiers. */
+export const removeWorkspace = (name: string) => invoke<null>("remove_workspace", { name });
 /**
  * Les notes d'un dossier, désigné par son chemin (`""` pour la racine de l'espace de travail), dans
  * l'ordre du tri de la liste.

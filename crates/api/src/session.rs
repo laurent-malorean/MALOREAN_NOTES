@@ -15,12 +15,12 @@ mod workspace;
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use application::use_cases::{
-    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, PinNote, ReadNote,
-    RenameFolder, SearchNotes, SearchResult,
+    CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenedWorkspace,
+    PinNote, ReadNote, RenameFolder, SearchNotes, SearchResult,
 };
 use application::{
     AppError, Clock, NoteStore, Preferences, StoredNote, Watching, WorkspaceLocation,
-    WorkspaceOpener, WorkspaceWatcher,
+    WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
@@ -57,6 +57,7 @@ pub struct Session {
 /// L'espace de travail ouvert : où il est, et ses notes.
 #[derive(Debug, Clone)]
 struct OpenWorkspaceState {
+    name: WorkspaceName,
     location: WorkspaceLocation,
     store: Arc<dyn NoteStore>,
 }
@@ -233,16 +234,29 @@ impl Session {
         Ok(moved.to_path())
     }
 
-    fn keep(&self, location: &WorkspaceLocation, store: Arc<dyn NoteStore>) -> WorkspaceInfo {
-        let opened = OpenWorkspaceState {
-            location: location.clone(),
-            store,
+    fn keep(&self, opened: OpenedWorkspace) -> WorkspaceInfo {
+        let info = workspace::workspace_info(&opened);
+        let state = OpenWorkspaceState {
+            name: opened.workspace.name,
+            location: opened.workspace.location,
+            store: opened.store,
         };
         *self
             .workspace
             .write()
-            .unwrap_or_else(PoisonError::into_inner) = Some(opened);
-        workspace::workspace_info(location)
+            .unwrap_or_else(PoisonError::into_inner) = Some(state);
+        info
+    }
+
+    /// L'espace de travail `name` s'appelle maintenant `kept` : s'il est ouvert, il garde ce nom.
+    fn renamed(&self, name: &WorkspaceName, kept: &WorkspaceName) {
+        let mut open = self
+            .workspace
+            .write()
+            .unwrap_or_else(PoisonError::into_inner);
+        if let Some(state) = open.as_mut().filter(|state| state.name.same_as(name)) {
+            state.name = kept.clone();
+        }
     }
 
     fn opened(&self) -> Result<OpenWorkspaceState, ApiError> {
@@ -298,7 +312,6 @@ fn note_content(note: StoredNote) -> NoteContent {
 mod tests {
     use std::sync::Arc;
 
-    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -316,9 +329,7 @@ mod tests {
 
     fn opened(notes: &[(&str, &str)]) -> Session {
         let session = session_with(notes);
-        session
-            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         session
     }
 

@@ -5,6 +5,7 @@ pub mod ports;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod use_cases;
+pub mod workspaces;
 
 pub use error::AppError;
 pub use ports::{
@@ -12,3 +13,4 @@ pub use ports::{
     StoredNote, TrashContents, Watching, WorkspaceChange, WorkspaceLocation, WorkspaceOpener,
     WorkspaceWatcher,
 };
+pub use workspaces::{Workspace, WorkspaceName, Workspaces};

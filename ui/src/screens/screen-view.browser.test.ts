@@ -60,10 +60,19 @@ describe("affichage de l'écran", () => {
     );
     renderScreen(view, screen, ignore);
     expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([true, false]);
-    expect(view.workspaceName.textContent).toBe("Notes");
+    expect(view.workspaceSwitcher.textContent).toBe("Notes");
+    expect(view.listHeading.textContent).toBe("Notes");
     expect(view.notesList.querySelector(".note-item.selected .note-title")?.textContent).toBe(
       "Alpha",
     );
+  });
+
+  it("le sélecteur montre le nom de l'espace de travail, même sur un dossier ou une étiquette", () => {
+    const view = layout();
+    const opened = workspaceOpened({ name: "Perso", path: "/p" }, ["2026"], []);
+    renderScreen(view, folderSelected(opened, "2026", []), ignore);
+    expect(view.workspaceSwitcher.textContent).toBe("Perso");
+    expect(view.listHeading.textContent).toBe("2026");
   });
 
   it("montre le tri de la liste et en demande un autre ; la corbeille n'en a pas", () => {
@@ -96,7 +105,7 @@ describe("affichage de l'écran", () => {
     renderScreen(view, opened, ignore);
     expect(view.foldersList.querySelectorAll(".folder-item")).toHaveLength(4);
     renderScreen(view, folderSelected(opened, "Travail/Réunions/2026", []), ignore);
-    expect(view.workspaceName.textContent).toBe("2026");
+    expect(view.listHeading.textContent).toBe("2026");
     expect(view.foldersList.querySelector(".folder-item.selected")?.textContent).toBe("2026");
   });
 
@@ -199,7 +208,7 @@ describe("affichage de la corbeille", () => {
       notes: [{ path: "x.md", title: "Jetée" }],
     });
     renderScreen(view, screen, ignore);
-    expect(view.workspaceName.textContent).toBe("Corbeille");
+    expect(view.listHeading.textContent).toBe("Corbeille");
     expect(view.notesList.querySelector(".trash-label")?.textContent).toBe("Jetée");
     expect(view.trashButton.classList.contains("selected")).toBe(true);
     expect(view.foldersList.querySelector(".folder-item.selected")).toBeNull();
@@ -236,7 +245,7 @@ describe("affichage du filtre par étiquette", () => {
     const calls: string[] = [];
     const screen = tagSelected(opened, "perso", [tagged]);
     renderScreen(view, screen, { ...ignore, clearTag: () => calls.push("retirer") });
-    expect(view.workspaceName.textContent).toBe("#perso");
+    expect(view.listHeading.textContent).toBe("#perso");
     expect(view.tagFilter.hidden).toBe(false);
     expect(view.tagFilter.querySelector(".tag-filter-name")?.textContent).toBe("#perso");
     expect(view.tagsList.querySelector(".tag-item.selected")).not.toBeNull();
@@ -256,7 +265,7 @@ describe("affichage du filtre par étiquette", () => {
     expect(view.tagFilter.hidden).toBe(false);
     renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
     expect(view.tagFilter.hidden).toBe(true);
-    expect(view.workspaceName.textContent).toBe("Corbeille");
+    expect(view.listHeading.textContent).toBe("Corbeille");
   });
 });
 
@@ -285,7 +294,7 @@ describe("affichage de Récentes", () => {
     const view = layout();
     const screen = recentShown(opened, [note("Travail/b.md", "Bêta"), note("a.md", "Alpha")]);
     renderScreen(view, screen, ignore);
-    expect(view.workspaceName.textContent).toBe("Récentes");
+    expect(view.listHeading.textContent).toBe("Récentes");
     expect(view.recentButton.classList.contains("selected")).toBe(true);
     expect(view.foldersList.querySelector(".folder-item.selected")).toBeNull();
     expect(view.noteOrder.parentElement?.hidden).toBe(true);
@@ -298,10 +307,10 @@ describe("affichage de Récentes", () => {
     const screen = recentShown(opened, [note("a.md", "Alpha")]);
     renderScreen(view, searchTyped(screen, "pain"), ignore);
     expect(view.recentButton.classList.contains("selected")).toBe(false);
-    expect(view.workspaceName.textContent).toBe("Notes");
+    expect(view.listHeading.textContent).toBe("Notes");
     expect(view.noteOrder.parentElement?.hidden).toBe(false);
     renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
     expect(view.recentButton.classList.contains("selected")).toBe(false);
-    expect(view.workspaceName.textContent).toBe("Corbeille");
+    expect(view.listHeading.textContent).toBe("Corbeille");
   });
 });

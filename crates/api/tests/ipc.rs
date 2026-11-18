@@ -11,12 +11,16 @@ use api::commands::{FILE_NAME_HEADER, MEDIA_TYPE_HEADER, NOTE_HEADER};
 use api::commands::{WORKSPACE_CHANGED_EVENT, invoke_handler};
 use api::{
     AttachedFile, LinkingNoteItem, NoteContent, NoteListItem, SaveResult, SavedNote,
-    SearchResultItem, Session, TrashInfo, WorkspaceChanged, WorkspaceInfo, WorkspaceNoteItem,
+    SearchResultItem, Session, TrashInfo, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
+    WorkspaceNoteItem,
 };
 use application::testing::{
     FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore,
 };
-use application::{Preferences, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher};
+use application::{
+    Preferences, Workspace, WorkspaceChange, WorkspaceLocation, WorkspaceName, WorkspaceWatcher,
+    Workspaces,
+};
 use domain::NotePath;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
@@ -40,8 +44,12 @@ fn window_watched_by(
     watcher: Arc<FakeWatcher>,
 ) -> WebviewWindow<MockRuntime> {
     let preferences = FakePreferences::default();
+    let first = Workspace {
+        name: WorkspaceName::new("Notes").unwrap(),
+        location: WorkspaceLocation::new("/Users/moi/Notes").unwrap(),
+    };
     preferences
-        .remember_workspace(&WorkspaceLocation::new("/Users/moi/Notes").unwrap())
+        .save_workspaces(&Workspaces::default().added(first).unwrap())
         .unwrap();
     let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
     let session = Session::new(
@@ -232,7 +240,10 @@ fn every_command_called_by_the_page_exists() {
         .filter_map(|rest| rest.split('"').nth(1))
         .collect();
     assert!(called.len() >= 6, "commandes trouvées : {called:?}");
-    for command in called.into_iter().filter(|c| *c != "choose_workspace") {
+    for command in called
+        .into_iter()
+        .filter(|c| *c != "choose_workspace_folder")
+    {
         let result = call(&window, command, json!({}));
         let message = result.err().map(|e| e.to_string()).unwrap_or_default();
         assert!(!message.contains("not found"), "{command} : {message}");
@@ -260,6 +271,31 @@ fn the_window_can_load_the_files_of_the_open_workspace_only() {
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     assert!(scope.is_allowed(image));
     assert!(!scope.is_allowed("/Users/moi/Documents/secret.png"));
+}
+
+#[test]
+fn workspaces_are_handled_by_name_with_the_argument_names_used_by_the_page() {
+    let window = window(&[]);
+    let scope = window.asset_protocol_scope();
+    let added: WorkspaceInfo = ok(call(
+        &window,
+        "add_workspace",
+        json!({ "name": "Travail", "folder": "/Users/moi/Travail" }),
+    ));
+    assert_eq!(added.name, "Travail");
+    assert!(scope.is_allowed("/Users/moi/Travail/a.assets/b.png"));
+    let kept: String = ok(call(
+        &window,
+        "rename_workspace",
+        json!({ "name": "Travail", "newName": "Bureau" }),
+    ));
+    assert_eq!(kept, "Bureau");
+    let opened: WorkspaceInfo = ok(call(&window, "open_workspace", json!({ "name": "Notes" })));
+    assert_eq!(opened.path, "/Users/moi/Notes");
+    call(&window, "remove_workspace", json!({ "name": "Bureau" })).unwrap();
+    let listed: Vec<WorkspaceItem> = ok(call(&window, "list_workspaces", json!({})));
+    let names: Vec<_> = listed.iter().map(|w| (w.name.as_str(), w.active)).collect();
+    assert_eq!(names, [("Notes", true)]);
 }
 
 #[test]

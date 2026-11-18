@@ -30,7 +30,6 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -48,9 +47,7 @@ mod tests {
     fn every_note_comes_with_its_title_and_folder() {
         let session = session(&[("a.md", "# Alpha"), ("Travail/b.md", "# Bêta")]);
         assert!(session.list_all_notes().is_err());
-        session
-            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         assert_eq!(
             session.list_all_notes().unwrap(),
             [

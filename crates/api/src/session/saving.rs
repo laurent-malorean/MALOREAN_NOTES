@@ -42,7 +42,6 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -54,9 +53,7 @@ mod tests {
             Arc::new(FakePreferences::default()),
             Arc::new(FixedClock::default()),
         );
-        session
-            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         session
     }
 

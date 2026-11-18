@@ -57,8 +57,8 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 | Emplacement | Contenu | Perte acceptable ? |
 |---|---|---|
 | Espace de travail (dossier choisi par l'utilisateur, iCloud Drive possible) | notes `.md`, dossiers, pièces jointes — **seule source de vérité** | non |
-| `~/Library/Application Support/<app>/` | préférences, liste des espaces de travail ouverts | non |
-| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes, dossier des modèles, réglages du journal, dossiers pliés, tri de la liste et notes récentes de chaque espace de travail ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
+| `~/Library/Application Support/<app>/` | préférences (`preferences.json`) : liste des espaces de travail (nom, dossier) et celui ouvert en dernier, port `Preferences` | non |
+| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes, dossier des modèles, réglages du journal, dossiers pliés, tri de la liste et notes récentes de chaque espace de travail, rangés sous son dossier (renommer l'espace ne les perd pas) ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
 | `~/Library/Caches/<app>/` | index de recherche, aperçus — reconstructibles | oui |
 | `~/Library/Logs/<app>/` | journaux | oui |
 | Trousseau macOS | secrets éventuels | non |
@@ -98,6 +98,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0021-tri-de-la-liste.md` | Tri de la liste : choisi par l'interface, rangé par Rust |
 | `0022-notes-recentes.md` | Notes récentes : tenues par l'interface, relues par Rust |
 | `0023-note-du-jour.md` | Note du jour : un fichier daté dans le journal, créé par Rust, ouvert au lancement |
+| `0024-espaces-de-travail.md` | Espaces de travail : une liste gardée par Rust, chaque espace désigné par son nom |
 
 ## Décisions ouvertes
 

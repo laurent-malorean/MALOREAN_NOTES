@@ -29,7 +29,7 @@ test("Récentes montre les notes ouvertes, la plus récente d'abord, même aprè
   await expect(page.locator(".cm-line").first()).toHaveText("Lundi");
 
   await recentEntry(page).click();
-  await expect(page.locator(".workspace-name")).toHaveText("Récentes");
+  await expect(page.locator(".list-heading")).toHaveText("Récentes");
   await expect(titles(page)).toHaveText(["Lundi", "Idée", "Courses"]);
   await page.locator(".note-item", { hasText: "Courses" }).click();
   await expect(page.locator(".cm-line").first()).toHaveText("Courses");

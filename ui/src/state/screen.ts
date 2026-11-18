@@ -71,6 +71,13 @@ export function workspaceOpened(
   };
 }
 
+/** Le même espace de travail, sous un autre nom ; son dossier ne change pas. */
+export function workspaceRenamed(screen: Screen, name: string): Screen {
+  return screen.kind === "workspace"
+    ? { ...screen, workspace: { ...screen.workspace, name } }
+    : screen;
+}
+
 /** Le même espace de travail, sur un autre dossier, rendu visible, et sa note la plus récente. */
 export function folderSelected(
   screen: Screen,

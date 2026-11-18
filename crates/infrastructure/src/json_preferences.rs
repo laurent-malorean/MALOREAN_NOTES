@@ -2,16 +2,81 @@
 
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use application::{Preferences, StoreError, WorkspaceLocation};
+use application::{
+    Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
+};
 use serde::{Deserialize, Serialize};
+
+/// Un espace de travail tel qu'il est écrit dans le fichier.
+#[derive(Serialize, Deserialize)]
+struct StoredWorkspace {
+    name: String,
+    folder: String,
+}
 
 #[derive(Default, Serialize, Deserialize)]
 struct Stored {
-    // Nom d’avant le passage à « espace de travail » : un fichier déjà écrit reste lu.
-    #[serde(alias = "last_library")]
+    /// Le seul dossier gardé avant les espaces de travail (`last_library` avant encore) : il
+    /// devient le premier espace de travail, nommé d'après lui. Lu, jamais réécrit.
+    #[serde(alias = "last_library", skip_serializing)]
     last_workspace: Option<String>,
+    #[serde(default)]
+    workspaces: Vec<StoredWorkspace>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    active: Option<String>,
+}
+
+impl Stored {
+    fn workspaces(self) -> Workspaces {
+        if self.workspaces.is_empty() {
+            return self
+                .last_workspace
+                .map_or_else(Workspaces::default, |folder| {
+                    let name = folder_name(&folder);
+                    let active = WorkspaceName::new(&name).ok();
+                    Workspaces::from_saved(workspace(&name, folder).into_iter().collect(), active)
+                });
+        }
+        let active = self.active.and_then(|name| WorkspaceName::new(&name).ok());
+        let list = self
+            .workspaces
+            .into_iter()
+            .filter_map(|w| workspace(&w.name, w.folder))
+            .collect();
+        Workspaces::from_saved(list, active)
+    }
+
+    fn of(workspaces: &Workspaces) -> Self {
+        Self {
+            last_workspace: None,
+            workspaces: workspaces
+                .list()
+                .iter()
+                .map(|w| StoredWorkspace {
+                    name: w.name.as_str().to_owned(),
+                    folder: w.location.as_str().to_owned(),
+                })
+                .collect(),
+            active: workspaces.active().map(|w| w.name.as_str().to_owned()),
+        }
+    }
+}
+
+/// Un espace de travail lu dans le fichier ; rien si son nom ou son dossier est vide.
+fn workspace(name: &str, folder: String) -> Option<Workspace> {
+    Some(Workspace {
+        name: WorkspaceName::new(name).ok()?,
+        location: WorkspaceLocation::new(folder).ok()?,
+    })
+}
+
+/// Le nom du dossier, dernier élément de son emplacement.
+fn folder_name(folder: &str) -> String {
+    Path::new(folder)
+        .file_name()
+        .map_or_else(|| folder.to_owned(), |n| n.to_string_lossy().into_owned())
 }
 
 /// Préférences gardées dans un fichier JSON.
@@ -52,18 +117,12 @@ impl JsonPreferences {
 }
 
 impl Preferences for JsonPreferences {
-    fn last_workspace(&self) -> Result<Option<WorkspaceLocation>, StoreError> {
-        // Un emplacement vide gardé par erreur vaut « aucun espace de travail ».
-        Ok(self
-            .load()?
-            .last_workspace
-            .and_then(|l| WorkspaceLocation::new(l).ok()))
+    fn workspaces(&self) -> Result<Workspaces, StoreError> {
+        Ok(self.load()?.workspaces())
     }
 
-    fn remember_workspace(&self, location: &WorkspaceLocation) -> Result<(), StoreError> {
-        let mut stored = self.load()?;
-        stored.last_workspace = Some(location.as_str().to_owned());
-        self.save(&stored)
+    fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError> {
+        self.save(&Stored::of(workspaces))
     }
 }
 

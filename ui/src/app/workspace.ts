@@ -1,4 +1,4 @@
-// L'espace de travail ouvert : son choix, ses dossiers et la liste de ses notes (et son tri), les notes
+// L'espace de travail ouvert : ses dossiers et la liste de ses notes (et son tri), les notes
 // qu'on y crée, déplace ou épingle, et les liens qui mènent d'une note à l'autre.
 import type * as Bridge from "../bridge";
 import type { WorkspaceInfo, NoteContent } from "../bridge";
@@ -27,7 +27,6 @@ import type { RecentNotes } from "./recent-notes";
 export interface WorkspaceDeps {
   readonly backend: Pick<
     typeof Bridge,
-    | "chooseWorkspace"
     | "listFolders"
     | "listNotes"
     | "listTaggedNotes"
@@ -57,8 +56,6 @@ export interface Workspace {
   path(): string;
   /** Ouvre cet espace de travail. */
   open(workspace: WorkspaceInfo): Promise<void>;
-  /** Fait choisir un autre espace de travail, ce qui est tapé étant enregistré dans celui d'où l'on vient. */
-  choose(): Promise<void>;
   /** Relit les dossiers et la liste des étiquettes. */
   refreshFolders(): Promise<void>;
   /** Relit la liste des étiquettes : une note en a gagné, perdu, ou a disparu. */
@@ -176,11 +173,6 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
   return {
     path: () => workspacePath,
     open,
-    choose: async () => {
-      await deps.columns.flushAll();
-      const workspace = await deps.backend.chooseWorkspace();
-      if (workspace) await open(workspace);
-    },
     refreshFolders: async () => {
       await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
       await refreshTags();

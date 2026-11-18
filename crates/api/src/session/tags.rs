@@ -43,7 +43,6 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -70,9 +69,7 @@ mod tests {
                 .is_err()
         );
         assert!(session.list_tags().is_err());
-        session
-            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         let tagged = session
             .list_tagged_notes("perso", NoteOrderItem::Title)
             .unwrap();

@@ -44,7 +44,7 @@ test("la note ouverte placée dans la corbeille laisse la place à la suivante, 
   await expect(editorLines(page).first()).toHaveText("Idée");
 
   await page.getByRole("button", { name: "Corbeille" }).click();
-  await expect(page.locator(".workspace-name")).toHaveText("Corbeille");
+  await expect(page.locator(".list-heading")).toHaveText("Corbeille");
   await expect(trashLabels(page)).toHaveText(["Courses"]);
   await expect(page.locator(".trash-origin")).toHaveText(["Notes"]);
   await page.getByRole("button", { name: "Restaurer" }).click();
@@ -77,7 +77,7 @@ test("un dossier placé dans la corbeille part avec ses notes et revient entier"
   await expect(titles(page)).toHaveText(["Lundi"]);
   await trashFromMenu(page, '.folder-item:has-text("Travail")');
   await expect(folders(page)).toHaveText(["Notes"]);
-  await expect(page.locator(".workspace-name")).toHaveText("Notes");
+  await expect(page.locator(".list-heading")).toHaveText("Notes");
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
 
   await page.getByRole("button", { name: "Corbeille" }).click();

@@ -83,7 +83,8 @@ function renderWorkspace(layout: Layout, screen: WorkspaceScreen, actions: Scree
   // Le filtre et Récentes se voient quand la liste montre leurs notes : ni recherche, ni corbeille.
   const aside = screen.trash !== null || search !== null;
   const shown = { tag: aside ? null : screen.tag, recent: !aside && screen.recent };
-  layout.workspaceName.textContent = listTitle(screen, shown.tag, shown.recent);
+  layout.workspaceSwitcher.textContent = screen.workspace.name;
+  layout.listHeading.textContent = listTitle(screen, shown.tag, shown.recent);
   renderNavigation(layout, screen, shown, actions);
   // La corbeille n'a pas de tri : ses notes sont rangées par chemin ; les récentes, par ouverture.
   renderNoteOrder(

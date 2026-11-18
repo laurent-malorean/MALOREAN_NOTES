@@ -26,7 +26,10 @@ describe("palette de commandes", () => {
       ["sort-notes", "Trier la liste", null],
       ["show-trash", "Corbeille", null],
       ["open-settings", "Réglages", "Cmd+,"],
-      ["choose-workspace", "Changer de dossier de notes", null],
+      ["switch-workspace", "Changer d'espace de travail", "Cmd+Maj+E"],
+      ["add-workspace", "Ajouter un espace de travail", null],
+      ["rename-workspace", "Renommer l'espace de travail", null],
+      ["remove-workspace", "Retirer un espace de travail", null],
     ]);
   });
 
@@ -40,7 +43,6 @@ describe("palette de commandes", () => {
       "Rechercher dans toutes les notes",
       "Rechercher dans la note",
       "Plan de la note",
-      "Changer de dossier de notes",
     ]);
     expect(labels("")).toHaveLength(COMMANDS.length);
   });

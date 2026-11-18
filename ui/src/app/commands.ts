@@ -12,6 +12,7 @@ import { noteOrder } from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { WritingModes } from "./writing-modes";
+import type { Workspaces } from "./workspaces";
 
 export interface CommandsDeps {
   readonly backend: Pick<typeof Bridge, "listAllNotes">;
@@ -24,9 +25,10 @@ export interface CommandsDeps {
   readonly searchField: HTMLElement;
   readonly workspace: {
     createNote(): Promise<void>;
-    choose(): Promise<void>;
     sortBy(order: NoteOrder): Promise<void>;
   };
+  /** Les espaces de travail : passer de l'un à l'autre, en ajouter, renommer, retirer. */
+  readonly workspaces: Pick<Workspaces, "choose" | "add" | "rename" | "chooseRemoval">;
   readonly templates: { newNote(): Promise<void> };
   /** La note du jour du journal. */
   readonly journal: { open(): Promise<void> };
@@ -103,7 +105,10 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),
-    "choose-workspace": () => run(deps.workspace.choose()),
+    "switch-workspace": () => run(deps.workspaces.choose()),
+    "add-workspace": () => run(deps.workspaces.add()),
+    "rename-workspace": () => run(deps.workspaces.rename()),
+    "remove-workspace": () => run(deps.workspaces.chooseRemoval()),
   };
 }
 
@@ -144,6 +149,7 @@ function shortcutActions(
     "split-column": done(actions["split-column"]),
     "new-note-from-template": done(actions["new-note-from-template"]),
     "daily-note": done(actions["daily-note"]),
+    "switch-workspace": done(actions["switch-workspace"]),
   };
 }
 

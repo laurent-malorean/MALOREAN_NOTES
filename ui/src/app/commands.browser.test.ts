@@ -50,8 +50,13 @@ const deps: CommandsDeps = {
   searchField: layout.searchField,
   workspace: {
     createNote: async () => void log.push("nouvelle note"),
-    choose: async () => void log.push("changer de dossier"),
     sortBy: async (order) => void log.push(`trier par ${order}`),
+  },
+  workspaces: {
+    choose: async () => void log.push("changer d'espace de travail"),
+    add: async () => void log.push("ajouter un espace de travail"),
+    rename: async () => void log.push("renommer l'espace de travail"),
+    chooseRemoval: async () => void log.push("retirer un espace de travail"),
   },
   templates: { newNote: async () => void log.push("depuis un modèle") },
   journal: { open: async () => void log.push("note du jour") },
@@ -104,7 +109,10 @@ describe("commandes de la palette", () => {
       "split-column",
       "show-trash",
       "open-settings",
-      "choose-workspace",
+      "switch-workspace",
+      "add-workspace",
+      "rename-workspace",
+      "remove-workspace",
     ] as const)
       actions[id]();
     await settle();
@@ -121,7 +129,10 @@ describe("commandes de la palette", () => {
       "diviser",
       "corbeille",
       "réglages",
-      "changer de dossier",
+      "changer d'espace de travail",
+      "ajouter un espace de travail",
+      "renommer l'espace de travail",
+      "retirer un espace de travail",
     ]);
   });
 
@@ -228,6 +239,7 @@ describe("raccourcis clavier", () => {
       ["t", { metaKey: true, ctrlKey: true }],
       ["N", { metaKey: true, shiftKey: true }],
       ["J", { metaKey: true, shiftKey: true }],
+      ["E", { metaKey: true, shiftKey: true }],
     ];
     for (const [key, modifiers] of keys) expect(press(key, modifiers).defaultPrevented).toBe(true);
     await settle();
@@ -241,6 +253,7 @@ describe("raccourcis clavier", () => {
       "diviser",
       "depuis un modèle",
       "note du jour",
+      "changer d'espace de travail",
     ]);
   });
 

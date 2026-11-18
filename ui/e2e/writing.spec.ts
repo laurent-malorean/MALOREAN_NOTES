@@ -137,7 +137,7 @@ test("Cmd+clic sur un lien ouvre la note visée, qui liste ses liens entrants", 
     "courses.md": { content: "# Courses\npain", modified: 1 },
     "Travail/lundi.md": { content: "# Lundi\nPenser aux [[courses]]", modified: 2 },
   });
-  await page.getByRole("button", { name: "Travail" }).click();
+  await page.locator(".backlink").filter({ hasText: "Lundi" }).click();
   const link = page.locator(".cm-note-link", { hasText: "courses" });
   await link.click({ modifiers: ["Meta"] });
   await expect(page.locator(".cm-line").first()).toHaveText("Courses");

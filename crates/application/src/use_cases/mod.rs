@@ -28,4 +28,4 @@ pub use save_note::{SaveNote, SaveOutcome};
 pub use search_notes::{MAX_RESULTS, SearchNotes, SearchResult};
 pub use tags::{ListTaggedNotes, ListTags};
 pub use trash::{Trash, TrashView};
-pub use workspace::{OpenWorkspace, OpenedWorkspace, ReopenLastWorkspace};
+pub use workspace::{ManageWorkspaces, OpenedWorkspace};

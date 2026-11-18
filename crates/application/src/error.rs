@@ -52,6 +52,21 @@ pub enum AppError {
     /// Le lien ne mène pas à une pièce jointe de la note.
     #[error("« {0} » n'est pas une pièce jointe de la note")]
     NotAnAttachment(String),
+    /// Le nom d'un espace de travail est vide.
+    #[error("le nom de l'espace de travail est vide")]
+    EmptyWorkspaceName,
+    /// Aucun espace de travail ne porte ce nom.
+    #[error("aucun espace de travail ne s'appelle « {0} »")]
+    WorkspaceNotFound(String),
+    /// Un autre espace de travail porte déjà ce nom (majuscules ignorées).
+    #[error("un espace de travail s'appelle déjà « {0} »")]
+    WorkspaceNameTaken(String),
+    /// Le dossier est déjà celui d'un autre espace de travail, nommé ici.
+    #[error("ce dossier est déjà l'espace de travail « {0} »")]
+    WorkspaceFolderTaken(String),
+    /// L'espace de travail ouvert ne se retire pas de la liste.
+    #[error("l'espace de travail « {0} » est ouvert : passez à un autre avant de le retirer")]
+    OpenWorkspaceKept(String),
     /// Le stockage ne répond pas ; la cause est lisible.
     #[error("stockage indisponible : {0}")]
     StorageUnavailable(String),
@@ -118,6 +133,30 @@ mod tests {
         assert_eq!(
             AppError::RootIsFixed.to_string(),
             "l'espace de travail lui-même ne peut être ni renommé ni déplacé"
+        );
+    }
+
+    #[test]
+    fn workspace_errors_name_the_workspace() {
+        assert_eq!(
+            AppError::EmptyWorkspaceName.to_string(),
+            "le nom de l'espace de travail est vide"
+        );
+        assert_eq!(
+            AppError::WorkspaceNotFound("Perso".into()).to_string(),
+            "aucun espace de travail ne s'appelle « Perso »"
+        );
+        assert_eq!(
+            AppError::WorkspaceNameTaken("Notes".into()).to_string(),
+            "un espace de travail s'appelle déjà « Notes »"
+        );
+        assert_eq!(
+            AppError::WorkspaceFolderTaken("Notes".into()).to_string(),
+            "ce dossier est déjà l'espace de travail « Notes »"
+        );
+        assert_eq!(
+            AppError::OpenWorkspaceKept("Notes".into()).to_string(),
+            "l'espace de travail « Notes » est ouvert : passez à un autre avant de le retirer"
         );
     }
 

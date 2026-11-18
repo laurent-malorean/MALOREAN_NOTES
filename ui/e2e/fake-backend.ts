@@ -2,6 +2,7 @@
 // Doublure volontairement simple ; les vraies règles sont testées côté Rust.
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
+import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 
 interface FakeNote {
   content: string;
@@ -14,6 +15,8 @@ export interface FakeBackend {
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
   trash: { notes: Record<string, FakeNote>; folders: string[] };
   rememberedWorkspace: boolean;
+  /** Le dossier que rendra le prochain choix de dossier ; `null` : l'utilisateur annule. */
+  nextFolder: string | null;
   failNextSave: boolean;
   calls: string[];
   fullScreen: boolean;
@@ -43,6 +46,7 @@ const backend: FakeBackend = {
   folders: JSON.parse(params.get("folders") ?? "[]") as string[],
   trash: { notes: {}, folders: [] },
   rememberedWorkspace: params.get("remembered") === "1",
+  nextFolder: FIRST.path,
   failNextSave: false,
   calls: [],
   fullScreen: false,
@@ -67,7 +71,7 @@ const backend: FakeBackend = {
 window.backend = backend;
 let clock = 1_000;
 
-const workspace = { name: "Notes", path: "/Users/moi/Notes" };
+const workspace = FIRST;
 
 // La note du jour au lancement n'est voulue que par les parcours du journal (`journal=1`) : les
 // autres commencent sur la note choisie, comme avant le journal. Un choix déjà gardé reste.
@@ -371,8 +375,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
         folder: folderOf(path),
       })),
   list_backlinks: ({ path = "" }) => listBacklinks(path),
-  reopen_last_workspace: () => (backend.rememberedWorkspace ? workspace : null),
-  choose_workspace: () => workspace,
+  ...fakeWorkspaces(params, backend, backend.rememberedWorkspace),
   list_notes: ({ folder = "", order }) =>
     Object.entries(backend.notes)
       .filter(([path]) => folderOf(path) === folder)

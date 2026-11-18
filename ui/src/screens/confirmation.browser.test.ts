@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { askConfirmation, askTrash } from "./confirmation";
+import { askConfirmation, askTrash, askWorkspaceRemoval } from "./confirmation";
 
 function dialog() {
   const element = document.createElement("dialog");
@@ -72,5 +72,14 @@ describe("confirmation", () => {
       "Placer « Courses » dans la corbeille ?",
     );
     expect(button(element, "Placer dans la corbeille").className).toBe("danger");
+  });
+
+  it("retirer un espace de travail dit que ses notes restent", () => {
+    const element = dialog();
+    void askWorkspaceRemoval(element, "Travail");
+    expect(element.querySelector(".confirmation-question")?.textContent).toBe(
+      "Retirer « Travail » de la liste des espaces de travail ? Ses notes restent dans leur dossier.",
+    );
+    expect(button(element, "Retirer").className).toBe("danger");
   });
 });

@@ -26,10 +26,26 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     expect(calls).toEqual([{ command: "reopen_last_workspace", args: {} }]);
   });
 
-  it("fait choisir un espace de travail", async () => {
+  it("fait choisir le dossier d'un nouvel espace de travail", async () => {
     const calls = recordCalls(null);
-    expect(await bridge.chooseWorkspace()).toBeNull();
-    expect(calls).toEqual([{ command: "choose_workspace", args: {} }]);
+    expect(await bridge.chooseWorkspaceFolder()).toBeNull();
+    expect(calls).toEqual([{ command: "choose_workspace_folder", args: {} }]);
+  });
+
+  it("désigne chaque espace de travail par son nom", async () => {
+    const calls = recordCalls(null);
+    await bridge.listWorkspaces();
+    await bridge.addWorkspace("Travail", "/t");
+    await bridge.openWorkspace("Notes");
+    await bridge.renameWorkspace("Travail", "Bureau");
+    await bridge.removeWorkspace("Bureau");
+    expect(calls).toEqual([
+      { command: "list_workspaces", args: {} },
+      { command: "add_workspace", args: { name: "Travail", folder: "/t" } },
+      { command: "open_workspace", args: { name: "Notes" } },
+      { command: "rename_workspace", args: { name: "Travail", newName: "Bureau" } },
+      { command: "remove_workspace", args: { name: "Bureau" } },
+    ]);
   });
 
   it("liste les notes d'une étiquette, et les étiquettes", async () => {

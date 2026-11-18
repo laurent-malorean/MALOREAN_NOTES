@@ -30,7 +30,10 @@ test("au premier lancement, l'accueil propose de choisir un dossier", async ({ p
   await launch(page, { remembered: false });
   await expect(page.getByText("Choisir un dossier de notes")).toBeVisible();
   await page.getByRole("button", { name: "Choisir un dossier de notes" }).click();
-  await expect(page.locator(".workspace-name")).toHaveText("Notes");
+  await expect(page.locator(".name-prompt-input")).toHaveValue("Notes");
+  await page.getByRole("button", { name: "Ajouter" }).click();
+  await expect(page.locator(".workspace-switcher")).toHaveText("Notes");
+  await expect(page.locator(".list-heading")).toHaveText("Notes");
   await expect(titles(page)).toHaveText(["Courses", "Idée", "Vieille note"]);
 });
 
@@ -125,7 +128,7 @@ test("un échec d'enregistrement est affiché, puis rattrapé", async ({ page })
 
 test("un espace de travail vide s'ouvre sans erreur", async ({ page }) => {
   await launch(page, { notes: {} });
-  await expect(page.locator(".workspace-name")).toHaveText("Notes");
+  await expect(page.locator(".list-heading")).toHaveText("Notes");
   await expect(titles(page)).toHaveCount(0);
   await expect(page.getByRole("status")).toHaveText("");
 });

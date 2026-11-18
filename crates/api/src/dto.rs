@@ -8,7 +8,29 @@ use ts_rs::TS;
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct WorkspaceInfo {
-    /// Le nom du dossier, affiché en tête de la liste.
+    /// Le nom de l'espace de travail, montré par le sélecteur et à la racine des dossiers.
+    pub name: String,
+    /// L'emplacement complet de son dossier, pour charger les images des notes.
+    pub path: String,
+}
+
+/// Un espace de travail de la liste, désigné par son nom.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct WorkspaceItem {
+    /// Le nom de l'espace de travail.
+    pub name: String,
+    /// Vrai pour l'espace de travail ouvert.
+    pub active: bool,
+}
+
+/// Le dossier choisi pour un nouvel espace de travail, et le nom qu'on lui propose.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ChosenFolder {
+    /// Le nom du dossier, proposé pour l'espace de travail.
     pub name: String,
     /// L'emplacement complet du dossier.
     pub path: String,

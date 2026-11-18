@@ -8,6 +8,7 @@ use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 use crate::{
     AttachmentLocation, ChangeListener, Clock, NoteStore, Preferences, StoreError, StoredNote,
     TrashContents, Watching, WorkspaceChange, WorkspaceLocation, WorkspaceOpener, WorkspaceWatcher,
+    Workspaces,
 };
 
 /// Emplacement fictif d'une pièce jointe en mémoire.
@@ -435,20 +436,23 @@ impl WorkspaceOpener for FakeOpener {
 /// Préférences en mémoire.
 #[derive(Debug, Default)]
 pub struct FakePreferences {
-    last: Mutex<Option<WorkspaceLocation>>,
+    workspaces: Mutex<Workspaces>,
 }
 
 impl Preferences for FakePreferences {
-    fn last_workspace(&self) -> Result<Option<WorkspaceLocation>, StoreError> {
+    fn workspaces(&self) -> Result<Workspaces, StoreError> {
         Ok(self
-            .last
+            .workspaces
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone())
     }
 
-    fn remember_workspace(&self, location: &WorkspaceLocation) -> Result<(), StoreError> {
-        *self.last.lock().unwrap_or_else(PoisonError::into_inner) = Some(location.clone());
+    fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError> {
+        *self
+            .workspaces
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = workspaces.clone();
         Ok(())
     }
 }

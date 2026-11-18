@@ -10,6 +10,7 @@ import { createFolders } from "./app/folders";
 import { createJournal } from "./app/journal";
 import { createLayoutMemory } from "./app/layout-memory";
 import { createWorkspace } from "./app/workspace";
+import { createWorkspaces } from "./app/workspaces";
 import { createMessages } from "./app/messages";
 import { paneMaker } from "./app/panes";
 import { createRecentNotes } from "./app/recent-notes";
@@ -21,12 +22,14 @@ import { createTags } from "./app/tags";
 import { createTemplates } from "./app/templates";
 import { createTrash } from "./app/trash";
 import { connectWritingModes } from "./app/writing-modes";
-import { askTrash } from "./screens/confirmation";
+import { askTrash, askWorkspaceRemoval } from "./screens/confirmation";
 import { createLayout } from "./screens/layout";
+import { askName } from "./screens/name-prompt";
 import { renderScreen, type ScreenActions } from "./screens/screen-view";
 import { connectSearchField } from "./screens/search-field";
 import { createSharedNotes } from "./screens/shared-notes";
 import { connectWindowDisplay } from "./screens/window-display";
+import { connectWorkspaceSwitcher } from "./screens/workspace-switcher";
 import { welcome } from "./state/screen";
 import "./theme.css";
 import "./style.css";
@@ -50,15 +53,8 @@ const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage
 const recent = createRecentNotes({ backend: bridge, screen, columns, storage: localStorage });
 const search = createSearch({ backend: bridge, screen, run });
 const workspace = createWorkspace({
-  backend: bridge,
-  screen,
-  columns,
-  layout: layoutMemory,
-  folds: foldMemory,
-  storage: localStorage,
-  show: messages.show,
-  search: search.search,
-  recent,
+  ...{ backend: bridge, screen, columns, layout: layoutMemory, folds: foldMemory, recent },
+  ...{ storage: localStorage, show: messages.show, search: search.search },
 });
 const folders = createFolders({
   backend: bridge,
@@ -99,6 +95,11 @@ const journal = createJournal({
   columns,
   workspace,
 });
+const workspaces = createWorkspaces({
+  ...{ backend: bridge, screen, columns, workspace, picker: layout.picker, run },
+  askName: (options) => askName(layout.confirmation, options),
+  askRemoval: (name) => askWorkspaceRemoval(layout.confirmation, name),
+});
 const newPane = paneMaker({
   backend: bridge,
   shared,
@@ -115,9 +116,9 @@ const actions: ScreenActions = screenActions({
   ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, run },
 });
 
-layout.chooseButtons.forEach((button) =>
-  button.addEventListener("click", () => run(workspace.choose())),
-);
+layout.addButton.addEventListener("click", () => run(workspaces.add()));
+layout.switchButton.addEventListener("click", () => run(workspaces.choose()));
+connectWorkspaceSwitcher(layout.workspaceSwitcher, workspaces.menu, messages.error);
 layout.newNoteButton.addEventListener("click", () => run(workspace.createNote()));
 connectSearchField(layout.searchField, search.type);
 layout.trashButton.addEventListener("click", () => run(trash.show()));
@@ -131,7 +132,7 @@ const windowDisplay = connectWindowDisplay(layout, {
 connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField },
-  ...{ workspace, templates, journal, folders, trash, settings, tags, recent },
+  ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent },
 });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
 

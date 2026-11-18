@@ -77,9 +77,7 @@ mod tests {
     fn changes_made_outside_the_app_are_announced_with_note_paths() {
         let watcher = Arc::new(FakeWatcher::default());
         let session = session(&watcher);
-        session
-            .open_workspace(location("/Users/moi/Notes"))
-            .unwrap();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         let announced = Arc::new(Mutex::new(Vec::new()));
         let kept = Arc::clone(&announced);
         session
@@ -100,11 +98,9 @@ mod tests {
     fn the_open_workspace_is_the_one_watched() {
         let watcher = Arc::new(FakeWatcher::default());
         let session = session(&watcher);
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         session
-            .open_workspace(location("/Users/moi/Notes"))
-            .unwrap();
-        session
-            .open_workspace(location("/Users/moi/Autres"))
+            .add_workspace("Autres", "/Users/moi/Autres")
             .unwrap();
         session.watch_workspace(|_| {}).unwrap();
         assert_eq!(watcher.watched(), Some(location("/Users/moi/Autres")));

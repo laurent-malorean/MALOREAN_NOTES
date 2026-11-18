@@ -22,7 +22,10 @@ export type CommandId =
   | "sort-notes"
   | "show-trash"
   | "open-settings"
-  | "choose-workspace";
+  | "switch-workspace"
+  | "add-workspace"
+  | "rename-workspace"
+  | "remove-workspace";
 
 export interface Command {
   readonly id: CommandId;
@@ -53,7 +56,10 @@ export const COMMANDS: readonly Command[] = [
   { id: "sort-notes", label: "Trier la liste" },
   { id: "show-trash", label: "Corbeille" },
   { id: "open-settings", label: "Réglages", shortcut: "Cmd+," },
-  { id: "choose-workspace", label: "Changer de dossier de notes" },
+  { id: "switch-workspace", label: "Changer d'espace de travail", shortcut: "Cmd+Maj+E" },
+  { id: "add-workspace", label: "Ajouter un espace de travail" },
+  { id: "rename-workspace", label: "Renommer l'espace de travail" },
+  { id: "remove-workspace", label: "Retirer un espace de travail" },
 ];
 
 /** Les commandes dont le nom correspond à ce qui est tapé ; celles qui commencent par lui d'abord. */

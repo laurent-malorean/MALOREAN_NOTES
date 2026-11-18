@@ -15,7 +15,10 @@ describe("mise en page", () => {
     document.body.replaceChildren(root);
     const layout = createLayout(root);
     for (const element of [
-      layout.workspaceName,
+      layout.workspaceSwitcher,
+      layout.listHeading,
+      layout.addButton,
+      layout.switchButton,
       layout.foldersList,
       layout.tagsList,
       layout.tagFilter,
@@ -34,7 +37,9 @@ describe("mise en page", () => {
     ]) {
       expect(element).toBeInstanceOf(HTMLElement);
     }
-    expect(layout.chooseButtons).toHaveLength(2);
+    expect(layout.addButton.textContent).toBe("Choisir un dossier de notes");
+    expect(layout.switchButton.textContent).toBe("Changer d'espace de travail");
+    expect(layout.workspaceSwitcher.getAttribute("aria-haspopup")).toBe("menu");
     expect(layout.settings).toBeInstanceOf(HTMLDialogElement);
     expect(layout.picker).toBeInstanceOf(HTMLDialogElement);
     expect(layout.confirmation).toBeInstanceOf(HTMLDialogElement);

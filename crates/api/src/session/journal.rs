@@ -33,7 +33,6 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -51,9 +50,7 @@ mod tests {
     fn the_daily_note_is_created_once_in_the_journal() {
         let session = session(&[("Modèles/journal.md", "# Journal\n{{time}}")]);
         assert!(session.create_daily_note("Journal", None).is_err());
-        session
-            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         let created = session
             .create_daily_note("Journal", Some("Modèles/journal.md"))
             .unwrap();

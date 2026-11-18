@@ -32,14 +32,10 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
   const calls: string[] = [];
   const messages: string[] = [];
   const storage = memoryStorage();
-  const state = {
-    chosen: { name: "Autres", path: "/autres" } as { name: string; path: string } | null,
-    restored: null as Columns | null,
-  };
+  const state = { restored: null as Columns | null };
   const recentMoves: string[] = [];
   const workspace = createWorkspace({
     backend: {
-      chooseWorkspace: async () => (calls.push("choisir"), state.chosen),
       listFolders: async () => (calls.push("dossiers"), ["projets"]),
       listNotes: async (folder, order) => (
         calls.push(`notes de «${folder}»${sortedBy(order)}`),
@@ -110,7 +106,7 @@ describe("espace de travail ouvert", () => {
     expect(other.kind === "workspace" && other.folded).toEqual([]);
   });
 
-  it("s'ouvre avec le tri gardé pour elle", async () => {
+  it("s'ouvre avec le tri gardé pour lui", async () => {
     const t = setup(welcome);
     t.storage.values["malorean.order:/notes"] = "title";
     await t.workspace.open({ name: "Notes", path: "/notes" });
@@ -143,23 +139,11 @@ describe("espace de travail ouvert", () => {
     expect(t.calls).toEqual(["notes #perso par title"]);
   });
 
-  it("retrouve les colonnes gardées pour elle, s'il y en a", async () => {
+  it("retrouve les colonnes gardées pour lui, s'il y en a", async () => {
     const t = setup(welcome, noteOpened(columnsStarted, "un.md"));
     t.state.restored = noteOpened(noteOpened(columnsStarted, "a.md"), "b.md");
     await t.workspace.open({ name: "Notes", path: "/notes" });
     expect(t.columns.columns()).toBe(t.state.restored);
-  });
-
-  it("en choisir une autre enregistre d'abord ce qui est tapé ; renoncer ne change rien", async () => {
-    const t = setup();
-    await t.workspace.choose();
-    expect(t.columns.log[0]).toBe("tout enregistrer");
-    expect(t.workspace.path()).toBe("/autres");
-    t.state.chosen = null;
-    t.calls.length = 0;
-    await t.workspace.choose();
-    expect(t.calls).toEqual(["choisir"]);
-    expect(t.workspace.path()).toBe("/autres");
   });
 
   it("relit ses dossiers, et la liste du dossier affiché avec la recherche en cours", async () => {

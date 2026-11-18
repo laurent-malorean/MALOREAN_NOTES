@@ -48,3 +48,10 @@ export const askTrash = (dialog: HTMLDialogElement, name: string) =>
     question: `Placer « ${name} » dans la corbeille ?`,
     confirm: "Placer dans la corbeille",
   });
+
+/** Demande avant de retirer l'espace de travail `name` de la liste ; ses fichiers restent. */
+export const askWorkspaceRemoval = (dialog: HTMLDialogElement, name: string) =>
+  askConfirmation(dialog, {
+    question: `Retirer « ${name} » de la liste des espaces de travail ? Ses notes restent dans leur dossier.`,
+    confirm: "Retirer",
+  });

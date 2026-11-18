@@ -4,9 +4,13 @@ Les mots du projet. On les emploie partout — documentation, code, tests, inter
 
 | Mot | Code | Définition |
 |---|---|---|
-| Espace de travail | `Workspace` | Dossier racine choisi par l'utilisateur, qui contient toutes ses notes. |
+| Espace de travail | `Workspace` | Un nom et un dossier racine choisi par l'utilisateur, qui contient toutes ses notes (comme un « vault » d'Obsidian). Un seul est ouvert à la fois. Deux espaces de travail n'ont jamais le même nom (majuscules ignorées) ni le même dossier. Entre l'interface et Rust, un espace de travail est désigné par son nom. Autrefois « bibliothèque ». |
+| Nom d'espace de travail | `WorkspaceName` | Le nom donné à un espace de travail, celui de son dossier par défaut, sans espaces autour ; jamais vide. Le renommer ne touche pas aux fichiers. |
+| Liste des espaces de travail | `Workspaces`, `listWorkspaces` | Les espaces de travail connus, dans l'ordre où on les a ajoutés, et celui ouvert en dernier, rouvert au lancement ; gardée par Rust avec les préférences de l'application. On y ajoute un espace (choisir un dossier, puis un nom), on en renomme un, on en retire un : retirer l'oublie sans toucher à ses fichiers ; l'espace ouvert ne se retire pas. |
+| Sélecteur d'espace de travail | `workspace-switcher` | En tête de la colonne des dossiers, le nom de l'espace de travail ouvert ; un clic ouvre son menu : chaque espace (l'ouvert coché), « Ajouter un espace de travail… », « Renommer l'espace de travail… », « Retirer « … » de la liste… » pour chacun des autres. La palette a les mêmes actions ; Cmd+Maj+E fait choisir l'espace où passer. Passer à un autre espace enregistre d'abord ce qui est tapé, puis retrouve ses colonnes, ses dossiers pliés, son tri et ses notes récentes. |
+| Titre de la liste | `list-heading` | En tête de la liste des notes : le nom du dossier affiché (celui de l'espace de travail pour la racine), `#étiquette`, « Récentes » ou « Corbeille ». |
 | Dossier | `Folder` | Dossier sur le disque, dans l'espace de travail, qui range des notes et d'autres dossiers. |
-| Racine | `Folder::root` | L'espace de travail lui-même, vue comme le premier des dossiers. |
+| Racine | `Folder::root` | Le dossier de l'espace de travail lui-même, vu comme le premier des dossiers, sous le nom de l'espace. |
 | Nom de dossier | `FolderName` | Nom d'un dossier, tel que l'utilisateur l'a écrit ; jamais caché ni terminé par `.assets`. |
 | Icône de dossier | `folder-icon` | Contour de dossier dessiné devant chaque dossier de la colonne des dossiers, de la couleur d'accent ; sa couleur et sa taille sont dans le thème. |
 | Dossier plié | `folded`, `FoldedFolders` | Dossier de la colonne des dossiers dont les sous-dossiers sont cachés ; déplié, ils sont montrés sous lui. La racine se plie comme les autres dès que l'espace de travail a un dossier : pliée, elle cache tous les dossiers. Au départ, tous les dossiers sont dépliés. Choisir un dossier, ou y déposer une note, déplie ceux qui le contiennent. Les dossiers pliés de chaque espace de travail sont gardés d'un lancement à l'autre. |

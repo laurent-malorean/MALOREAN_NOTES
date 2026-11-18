@@ -23,7 +23,6 @@ impl Session {
 mod tests {
     use std::sync::Arc;
 
-    use application::WorkspaceLocation;
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
@@ -41,9 +40,7 @@ mod tests {
         );
         let paths = ["Travail/b.md", "partie.md", "a.md"].map(String::from);
         assert!(session.list_recent_notes(&paths).is_err());
-        session
-            .open_workspace(WorkspaceLocation::new("/Users/moi/Notes").unwrap())
-            .unwrap();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         let notes = session.list_recent_notes(&paths).unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title.as_str()).collect();
         assert_eq!(titles, ["Bêta", "Alpha"]);

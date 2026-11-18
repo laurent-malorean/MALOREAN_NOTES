@@ -39,13 +39,13 @@ test("les étiquettes se voient sous la date ; un clic filtre tout l'espace de t
   await expect(titles(page)).toHaveText(["Courses", "Randonnée"]);
   await expect(filterBar(page)).toBeVisible();
   await expect(filterBar(page)).toContainText("#perso");
-  await expect(page.locator(".workspace-name")).toHaveText("#perso");
+  await expect(page.locator(".list-heading")).toHaveText("#perso");
   await expect(tagsList(page).locator(".tag-item.selected")).toHaveText("#perso2");
 
   await filterBar(page).getByRole("button", { name: "Retirer le filtre" }).click();
   await expect(filterBar(page)).toBeHidden();
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
-  await expect(page.locator(".workspace-name")).toHaveText("Notes");
+  await expect(page.locator(".list-heading")).toHaveText("Notes");
 });
 
 test("la liste des étiquettes filtre ; Échap retire le filtre ; choisir un dossier aussi", async ({

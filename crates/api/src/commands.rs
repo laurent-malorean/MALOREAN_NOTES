@@ -5,18 +5,19 @@ use std::sync::Arc;
 use application::use_cases::AttachmentSource;
 use percent_encoding::percent_decode_str;
 use tauri::ipc::{Invoke, InvokeBody, Request};
-use tauri::{AppHandle, Emitter, Manager, Runtime, State};
-use tauri_plugin_dialog::DialogExt;
+use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
     ApiError, AttachedFile, LinkingNoteItem, NoteContent, NoteListItem, NoteOrderItem, SaveResult,
-    SavedNote, SearchResultItem, Session, TagItem, TrashInfo, WorkspaceInfo, WorkspaceNoteItem,
+    SavedNote, SearchResultItem, Session, TagItem, TrashInfo, WorkspaceNoteItem,
 };
 
 /// Événement envoyé à la page quand l'espace de travail change hors de l'application ;
 /// il porte un [`crate::WorkspaceChanged`].
 pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
+
+pub mod workspaces;
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
 
@@ -26,73 +27,6 @@ async fn in_background<T: Send + 'static>(
     tauri::async_runtime::spawn_blocking(job)
         .await
         .map_err(|e| ApiError::internal(&e))?
-}
-
-/// Un espace de travail vient d'être ouvert : la fenêtre peut charger ses fichiers (images des
-/// notes), rien d'autre, et la page apprend ce qui y change hors de l'application.
-/// Un espace de travail ouvert auparavant reste lisible jusqu'à la fermeture de l'application.
-/// Une surveillance impossible n'empêche pas d'ouvrir l'espace de travail : elle est journalisée.
-fn follow_workspace<R: Runtime>(
-    app: &AppHandle<R>,
-    session: &Session,
-    workspace: Option<WorkspaceInfo>,
-) -> Result<Option<WorkspaceInfo>, ApiError> {
-    let Some(workspace) = workspace else {
-        return Ok(None);
-    };
-    app.asset_protocol_scope()
-        .allow_directory(&workspace.path, true)
-        .map_err(|e| ApiError::internal(&e))?;
-    let page = app.clone();
-    let watched = session.watch_workspace(move |change| {
-        if let Err(error) = page.emit(WORKSPACE_CHANGED_EVENT, change) {
-            tracing::warn!(%error, "changement de l'espace de travail non transmis à la page");
-        }
-    });
-    if let Err(error) = watched {
-        tracing::warn!(message = %error.message, "espace de travail ouvert sans surveillance");
-    }
-    Ok(Some(workspace))
-}
-
-/// Rouvre le dernier espace de travail au lancement ; rien au premier lancement.
-///
-/// # Errors
-///
-/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
-#[tauri::command]
-pub async fn reopen_last_workspace<R: Runtime>(
-    app: AppHandle<R>,
-    session: SharedSession<'_>,
-) -> Result<Option<WorkspaceInfo>, ApiError> {
-    let session = Arc::clone(&session);
-    in_background(move || follow_workspace(&app, &session, session.reopen_last_workspace()?)).await
-}
-
-/// Demande un dossier à l'utilisateur et l'ouvre ; rien s'il annule.
-///
-/// # Errors
-///
-/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
-/// S'y ajoute un nom de dossier illisible.
-#[tauri::command]
-pub async fn choose_workspace<R: Runtime>(
-    app: AppHandle<R>,
-    session: SharedSession<'_>,
-) -> Result<Option<WorkspaceInfo>, ApiError> {
-    let session = Arc::clone(&session);
-    in_background(move || {
-        let chosen = app.dialog().file().blocking_pick_folder();
-        let folder = chosen
-            .map(|folder| folder.into_path().map_err(|e| ApiError::internal(&e)))
-            .transpose()?;
-        follow_workspace(
-            &app,
-            &session,
-            session.open_chosen_folder(folder.as_deref())?,
-        )
-    })
-    .await
 }
 
 /// Les notes d'un dossier (`""` pour la racine), la plus récente en premier.
@@ -507,8 +441,13 @@ pub async fn open_attachment<R: Runtime>(
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
-        reopen_last_workspace,
-        choose_workspace,
+        workspaces::reopen_last_workspace,
+        workspaces::list_workspaces,
+        workspaces::choose_workspace_folder,
+        workspaces::add_workspace,
+        workspaces::open_workspace,
+        workspaces::rename_workspace,
+        workspaces::remove_workspace,
         list_notes,
         search_notes,
         resolve_link,

@@ -5,10 +5,10 @@
  */
 export type WorkspaceInfo = { 
 /**
- * Le nom du dossier, affiché en tête de la liste.
+ * Le nom de l'espace de travail, montré par le sélecteur et à la racine des dossiers.
  */
 name: string, 
 /**
- * L'emplacement complet du dossier.
+ * L'emplacement complet de son dossier, pour charger les images des notes.
  */
 path: string, };

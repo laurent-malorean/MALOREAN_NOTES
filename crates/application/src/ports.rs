@@ -3,6 +3,7 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
+use crate::Workspaces;
 use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 
 /// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
@@ -323,19 +324,19 @@ pub trait WorkspaceOpener: Send + Sync + Debug {
 
 /// Préférences gardées d'un lancement à l'autre.
 pub trait Preferences: Send + Sync + Debug {
-    /// Le dernier espace de travail ouvert, s'il y en a une.
+    /// Les espaces de travail connus, et celui ouvert en dernier ; aucun au premier lancement.
     ///
     /// # Errors
     ///
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
-    fn last_workspace(&self) -> Result<Option<WorkspaceLocation>, StoreError>;
+    fn workspaces(&self) -> Result<Workspaces, StoreError>;
 
-    /// Se souvenir de cet espace de travail pour le prochain lancement.
+    /// Garde cette liste d'espaces de travail, à la place de la précédente.
     ///
     /// # Errors
     ///
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
-    fn remember_workspace(&self, location: &WorkspaceLocation) -> Result<(), StoreError>;
+    fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError>;
 }
 
 #[cfg(test)]
