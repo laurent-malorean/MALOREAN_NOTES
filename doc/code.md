@@ -119,8 +119,8 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Types partagés générés** : les types échangés sont générés depuis Rust (`ts-rs`), jamais réécrits à la main. *Vérifié par : la mini CI régénère et refuse toute différence.*
 - **TypeScript strict** : `strict`, `noUncheckedIndexedAccess` ; pas de `any` ; un `@ts-expect-error` ou un `eslint-disable` porte sa raison. *Vérifié par : `tsc --noEmit` et ESLint.*
 - **Mêmes limites qu'en Rust** : 60 lignes par fonction, complexité 10, 6 paramètres, 600 lignes par fichier. *Vérifié par : ESLint (`max-lines-per-function`, `complexity`, `max-params`, `max-lines`).*
-- **Les états d'écran sont des unions discriminées** : `{ kind: "loading" } | { kind: "ready"; notes: … } | { kind: "error"; message: … }`, jamais plusieurs booléens (`isLoading`, `hasError`) qui peuvent se contredire. Un `switch` sur `kind` traite tous les cas. *Vérifié par : ESLint (`@typescript-eslint/switch-exhaustiveness-check`, à activer).*
-- **`unknown` plutôt que `any`** pour une valeur venue du dehors ; on la convertit vers un type précis avant de s'en servir. Les données d'état sont `readonly`. *Vérifié par : ESLint (`@typescript-eslint/prefer-readonly`, à activer).*
+- **Les états d'écran sont des unions discriminées** : `{ kind: "loading" } | { kind: "ready"; notes: … } | { kind: "error"; message: … }`, jamais plusieurs booléens (`isLoading`, `hasError`) qui peuvent se contredire. Un `switch` sur `kind` traite tous les cas. *Vérifié par : ESLint avec analyse typée (`@typescript-eslint/switch-exhaustiveness-check` : un `switch` sur une union qui oublie un cas est refusé, même s'il a un `default`).*
+- **`unknown` plutôt que `any`** pour une valeur venue du dehors ; on la convertit vers un type précis avant de s'en servir. Les données d'état sont `readonly`. *Vérifié par : ESLint avec analyse typée (`@typescript-eslint/prefer-readonly` : un membre privé d'une classe jamais réaffecté doit être `readonly`) ; les types de données d'état, eux, relèvent de la relecture.*
 - **CodeMirror : l'état d'abord** : le document et la sélection ne changent que par des transactions ; une extension calcule l'affichage (décorations) à partir de l'état et ne touche jamais le DOM de l'éditeur directement.
 - **Le fichier d'assemblage ne contient pas de logique.** `ui/src/main.ts` crée chaque partie et les relie entre elles, une ligne de branchement par domaine : ni condition, ni calcul, ni état. Le fonctionnement vit dans un module par domaine sous `ui/src/app/` (colonnes et onglets, espace de travail ouvert, liste des espaces de travail, dossiers, étiquettes, notes récentes, journal, recherche, corbeille, enregistrement, export, modifications extérieures, outils d'écriture, réglages, commandes et raccourcis) ; chacun reçoit ce dont il a besoin en paramètre et se teste seul, avec des doublures (`ui/test-support/app-fixture.ts`). Une nouvelle fonction s'ajoute dans le module de son domaine, pas dans l'assemblage : deux évolutions de domaines différents ne touchent pas le même fichier. *Vérifié par : `scripts/ci.sh` (150 lignes au plus pour `ui/src/main.ts`) et revue.*
 - **Un module = un écran ou un sujet.** Éditeur : une extension CodeMirror par fonctionnalité (mise en forme en direct, mode focus, collage d'images) dans `ui/src/editor/`.
@@ -198,7 +198,7 @@ fn_params_excessive_bools = "deny"
 
 Chaque crate reprend ces règles avec `[lints] workspace = true`.
 
-**À activer** côté interface (écart suivi dans `TODO.md`) : `@typescript-eslint/switch-exhaustiveness-check` et `@typescript-eslint/prefer-readonly` (ces deux règles demandent l'analyse typée d'ESLint).
+Côté interface, ESLint lit les types du projet (`parserOptions.projectService`, `ui/eslint.config.js`) pour appliquer `@typescript-eslint/switch-exhaustiveness-check` et `@typescript-eslint/prefer-readonly`. Le lint passe ainsi d'environ 2 s à environ 3 s.
 
 `clippy.toml` à la racine :
 

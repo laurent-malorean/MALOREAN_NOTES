@@ -16,7 +16,19 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
+    // Analyse typée : les règles qui ont besoin des types du projet (doc/code.md).
+    languageOptions: {
+      parserOptions: {
+        projectService: { allowDefaultProject: ["eslint.config.js", "vitest.stryker.config.ts"] },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
+      "@typescript-eslint/switch-exhaustiveness-check": [
+        "error",
+        { considerDefaultExhaustiveForUnions: false, requireDefaultForNonUnion: false },
+      ],
+      "@typescript-eslint/prefer-readonly": "error",
       "max-lines-per-function": ["error", { max: 60, skipBlankLines: true, skipComments: true }],
       "max-lines": ["error", { max: 600 }],
       complexity: ["error", 10],
