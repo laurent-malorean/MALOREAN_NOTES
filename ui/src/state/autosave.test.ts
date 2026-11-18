@@ -24,6 +24,7 @@ const result = (path: string, fingerprint = "f-enregistree"): SaveResult => ({
   title: "Titre",
   fingerprint,
   conflictCopy: null,
+  tagsChanged: false,
 });
 
 describe("enregistrement automatique", () => {
@@ -286,6 +287,7 @@ describe("enregistrement automatique : empreinte de la note", () => {
         title: "A",
         fingerprint: "f",
         conflictCopy: "a (conflit).md",
+        tagsChanged: false,
       }),
       onSaved: (done) => copies.push(done.conflictCopy),
     });

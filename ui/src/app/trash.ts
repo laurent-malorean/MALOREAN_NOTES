@@ -6,7 +6,6 @@ import {
   currentFolder,
   folderSelected,
   foldersRefreshed,
-  notesRefreshed,
   type Screen,
   selectedNote,
   trashShown,
@@ -31,8 +30,10 @@ export interface TrashDeps {
   readonly columns: Pick<OpenColumns, "current" | "change" | "flushAll" | "flushedPath" | "forget">;
   /** Demande s'il faut placer l'élément ainsi nommé dans la corbeille. */
   ask(name: string): Promise<boolean>;
-  /** Relit la liste des notes du dossier affiché. */
+  /** Relit la liste des notes du dossier affiché (ou du filtre par étiquette). */
   refreshList(): Promise<void>;
+  /** Relit la liste des étiquettes : une note partie ou revenue change leurs nombres. */
+  refreshTags(): Promise<void>;
 }
 
 export interface Trash {
@@ -61,6 +62,7 @@ async function trashNote(deps: TrashDeps, path: string) {
   await deps.backend.trashNote(source);
   deps.columns.forget(gone);
   await deps.refreshList();
+  await deps.refreshTags();
   const columns = deps.columns.current();
   const replaced = activeNote(columns) === source ? noteShown(columns, next) : columns;
   await deps.columns.change(notesRemoved(replaced, gone));
@@ -80,6 +82,7 @@ async function trashFolder(deps: TrashDeps, path: string) {
   await deps.backend.trashFolder(path);
   deps.columns.forget(gone);
   await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
+  await deps.refreshTags();
   let next = deps.columns.current();
   if (listInside) {
     await deps.screen.answer(deps.backend.listNotes(""), (now, answer) =>
@@ -97,14 +100,12 @@ async function trashFolder(deps: TrashDeps, path: string) {
 
 export function createTrash(deps: TrashDeps): Trash {
   const show = () => deps.screen.answer(deps.backend.listTrash(), trashShown);
-  /** Restaure ou vide : la corbeille, les dossiers et les notes affichées sont relus. */
+  /** Restaure ou vide : la corbeille, les dossiers, les étiquettes et la liste sont relus. */
   const change = async (change: Promise<unknown>) => {
     await change;
     await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
-    await deps.screen.answer(
-      deps.backend.listNotes(currentFolder(deps.screen.get())),
-      notesRefreshed,
-    );
+    await deps.refreshTags();
+    await deps.refreshList();
     await show();
   };
   /** Placer une note ou un dossier dans la corbeille attend d'abord sa confirmation. */

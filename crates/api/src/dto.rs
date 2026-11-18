@@ -28,6 +28,20 @@ pub struct NoteListItem {
     pub modified: u64,
     /// La note est épinglée en tête de liste.
     pub pinned: bool,
+    /// Les étiquettes de son en-tête, dans l'ordre où elles sont écrites.
+    pub tags: Vec<String>,
+}
+
+/// Une étiquette de la liste des étiquettes.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TagItem {
+    /// L'étiquette, telle qu'écrite dans les en-têtes.
+    pub name: String,
+    /// Le nombre de notes qui la portent.
+    #[ts(type = "number")]
+    pub count: usize,
 }
 
 /// Une note trouvée par la recherche.
@@ -89,6 +103,8 @@ pub struct SaveResult {
     /// Le chemin de la copie de conflit qui garde la version trouvée sur le disque,
     /// si la note avait changé hors de l'application.
     pub conflict_copy: Option<String>,
+    /// Les étiquettes de la note ont changé : la liste des étiquettes est à relire.
+    pub tags_changed: bool,
 }
 
 /// Changement fait dans la bibliothèque hors de l'application, annoncé à la page.

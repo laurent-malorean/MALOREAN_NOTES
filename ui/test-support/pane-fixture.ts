@@ -38,6 +38,7 @@ export function fakeBackend(notes: Record<string, string>) {
         title: content,
         fingerprint: content,
         conflictCopy: null,
+        tagsChanged: false,
       };
       return Promise.resolve(result);
     },

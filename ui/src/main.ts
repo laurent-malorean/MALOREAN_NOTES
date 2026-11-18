@@ -15,6 +15,7 @@ import { savingEvents } from "./app/saving";
 import { screenActions } from "./app/screen-actions";
 import { createSearch } from "./app/search";
 import { connectSettings } from "./app/settings";
+import { createTags } from "./app/tags";
 import { createTemplates } from "./app/templates";
 import { createTrash } from "./app/trash";
 import { connectWritingModes } from "./app/writing-modes";
@@ -67,8 +68,9 @@ const trash = createTrash({
   screen,
   columns,
   ask: (name) => askTrash(layout.confirmation, name),
-  refreshList: library.refreshList,
+  ...{ refreshList: library.refreshList, refreshTags: library.refreshTags },
 });
+const tags = createTags({ backend: bridge, screen, columns, run });
 const shared = createSharedNotes({
   backend: bridge,
   events: savingEvents({ columns, messages, library }),
@@ -100,7 +102,7 @@ const newPane = paneMaker({
 });
 
 const actions: ScreenActions = screenActions({
-  ...{ backend: bridge, columns, folders, library, trash, run },
+  ...{ backend: bridge, columns, folders, library, trash, tags, run },
 });
 
 layout.chooseButtons.forEach((button) =>
@@ -129,6 +131,7 @@ connectCommands({
   folders,
   trash,
   settings,
+  tags,
   run,
 });
 connectExternalChanges({ backend: bridge, screen, columns, library, messages });

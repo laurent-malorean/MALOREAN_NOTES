@@ -46,7 +46,11 @@ function setup(stored: Record<string, string> = {}) {
     storage,
     screen,
     columns: columns.open,
-    library: { path: () => "/lib", refreshList: async () => void log.push("liste") },
+    library: {
+      path: () => "/lib",
+      refreshList: async () => void log.push("liste"),
+      refreshTags: async () => void log.push("étiquettes"),
+    },
     picker: layout.picker,
     show: (message) => shown.push(message),
     run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
@@ -99,7 +103,7 @@ describe("modèles de note", () => {
     layout.picker.querySelector<HTMLElement>(".picker-option")?.click();
     await settle();
     expect(t.columns.log[0]).toBe("enregistrer Modèles/reunion.md");
-    expect(t.log).toEqual(["créer Travail depuis Modèles/reunion.md", "liste"]);
+    expect(t.log).toEqual(["créer Travail depuis Modèles/reunion.md", "liste", "étiquettes"]);
     expect(t.columns.columns().list[0]?.tabs.map((tab) => tab.note)).toEqual([
       "a.md",
       "Travail/reunion.md",

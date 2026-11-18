@@ -10,6 +10,7 @@ const noActions: NoteActions = {
   trash: () => {},
   place: () => {},
   closeNote: () => {},
+  selectTag: () => {},
 };
 
 /** Les actions demandées, notées dans l'ordre : `ouvrir a.md`, `épingler a.md`… */
@@ -24,6 +25,7 @@ function recorded(): { readonly asked: string[]; readonly actions: NoteActions }
       trash: (path) => asked.push(`jeter ${path}`),
       place: (path, placement) => asked.push(`placer ${path} ${placement}`),
       closeNote: (path) => asked.push(`fermer ${path}`),
+      selectTag: (tag) => asked.push(`filtrer #${tag}`),
     },
   };
 }
@@ -31,8 +33,14 @@ function recorded(): { readonly asked: string[]; readonly actions: NoteActions }
 afterEach(() => closeContextMenu());
 
 const notes = [
-  { path: "b.md", title: "Bêta", modified: Date.UTC(2026, 10, 16, 14, 30), pinned: false },
-  { path: "a.md", title: "Alpha", modified: Date.UTC(2026, 10, 15, 9, 0), pinned: false },
+  {
+    path: "b.md",
+    title: "Bêta",
+    modified: Date.UTC(2026, 10, 16, 14, 30),
+    pinned: false,
+    tags: [],
+  },
+  { path: "a.md", title: "Alpha", modified: Date.UTC(2026, 10, 15, 9, 0), pinned: false, tags: [] },
 ];
 
 function list() {
@@ -42,6 +50,19 @@ function list() {
 }
 
 describe("liste des notes", () => {
+  it("montre les étiquettes de chaque note sous sa date ; un clic filtre sans ouvrir la note", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    const tagged = [{ ...notes[0], tags: ["perso", "loisirs"] }, notes[1]];
+    renderNotesList(container, tagged as typeof notes, null, actions);
+    const [first, second] = [...container.querySelectorAll(".note-item")];
+    expect(first?.lastElementChild?.className).toBe("note-tags");
+    expect(first?.lastElementChild?.previousElementSibling?.className).toBe("note-date");
+    expect(second?.querySelector(".note-tags")).toBeNull();
+    container.querySelectorAll<HTMLElement>(".note-tag")[1]?.click();
+    expect(asked).toEqual(["filtrer #loisirs"]);
+  });
+
   it("affiche les titres dans l'ordre reçu", () => {
     const container = list();
     renderNotesList(container, notes, null, noActions);
@@ -85,7 +106,15 @@ describe("liste des notes", () => {
     const container = list();
     renderNotesList(
       container,
-      [{ path: "x.md", title: "<img src=x onerror=alert(1)>", modified: 0, pinned: false }],
+      [
+        {
+          path: "x.md",
+          title: "<img src=x onerror=alert(1)>",
+          modified: 0,
+          pinned: false,
+          tags: [],
+        },
+      ],
       null,
       noActions,
     );
@@ -105,8 +134,8 @@ describe("liste des notes", () => {
 
 describe("notes épinglées", () => {
   const withPinned = [
-    { path: "p.md", title: "Épinglée", modified: 0, pinned: true },
-    { path: "a.md", title: "Alpha", modified: 0, pinned: false },
+    { path: "p.md", title: "Épinglée", modified: 0, pinned: true, tags: [] },
+    { path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] },
   ];
   const rightClick = (target: Element) => {
     const event = new MouseEvent("contextmenu", {

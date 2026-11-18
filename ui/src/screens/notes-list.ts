@@ -3,6 +3,7 @@ import type { Placement } from "../state/columns";
 import { showContextMenu } from "./context-menu";
 import { noteMenu, openOnClick } from "./note-menu";
 import { startDragging, stopDragging } from "./dragging";
+import { tagChips } from "./tags-view";
 
 /** Ce que l'utilisateur peut demander depuis la liste des notes. */
 export interface NoteActions {
@@ -14,6 +15,8 @@ export interface NoteActions {
   readonly place: (path: string, placement: Placement) => void;
   /** Fermer l'onglet de la note dans la colonne active. */
   readonly closeNote: (path: string) => void;
+  /** Filtrer la liste par une étiquette de la note. */
+  readonly selectTag: (tag: string) => void;
 }
 
 /** Les touches qui placent la note choisie dans la corbeille. */
@@ -57,7 +60,8 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
 /**
- * Affiche la liste des notes ; un clic ouvre la note (Cmd+clic : dans un nouvel onglet), un clic droit l'épingle, la désépingle ou
+ * Affiche la liste des notes, avec les étiquettes de chacune sous sa date (un clic filtre la
+ * liste par l'une d'elles) ; un clic ouvre la note (Cmd+clic : dans un nouvel onglet), un clic droit l'épingle, la désépingle ou
  * la place dans la corbeille, et on peut la glisser vers un dossier.
  */
 export function renderNotesList(
@@ -80,7 +84,8 @@ export function renderNotesList(
       const date = document.createElement("span");
       date.className = "note-date";
       date.textContent = dateFormat.format(new Date(note.modified));
-      item.append(heading, date);
+      const tags = tagChips(note.tags, actions.selectTag);
+      item.append(...(tags ? [heading, date, tags] : [heading, date]));
       openOnClick(item, note.path, actions);
       offerActions(item, note, actions);
       item.draggable = true;

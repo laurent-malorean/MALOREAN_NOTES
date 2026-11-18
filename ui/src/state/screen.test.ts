@@ -25,6 +25,7 @@ const note = (path: string, modified: number): NoteListItem => ({
   title: path,
   modified,
   pinned: false,
+  tags: [],
 });
 
 describe("état de l'écran", () => {
@@ -44,6 +45,8 @@ describe("état de l'écran", () => {
       search: null,
       trash: null,
       folded: [],
+      tag: null,
+      tags: [],
     });
   });
 
@@ -58,6 +61,8 @@ describe("état de l'écran", () => {
       search: null,
       trash: null,
       folded: [],
+      tag: null,
+      tags: [],
     });
   });
 
@@ -76,6 +81,8 @@ describe("état de l'écran", () => {
       search: null,
       trash: null,
       folded: [],
+      tag: null,
+      tags: [],
     });
   });
 
@@ -94,6 +101,8 @@ describe("état de l'écran", () => {
       search: null,
       trash: null,
       folded: [],
+      tag: null,
+      tags: [],
     });
   });
 

@@ -20,4 +20,8 @@ fingerprint: string,
  * Le chemin de la copie de conflit qui garde la version trouvée sur le disque,
  * si la note avait changé hors de l'application.
  */
-conflictCopy: string | null, };
+conflictCopy: string | null, 
+/**
+ * Les étiquettes de la note ont changé : la liste des étiquettes est à relire.
+ */
+tagsChanged: boolean, };

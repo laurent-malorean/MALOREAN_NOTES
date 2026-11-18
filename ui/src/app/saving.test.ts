@@ -16,6 +16,7 @@ function setup() {
     library: {
       refreshFolders: async () => void log.push("dossiers"),
       refreshList: async () => void log.push("liste"),
+      refreshTags: async () => void log.push("étiquettes"),
     },
   });
   const tabs = () => columns.columns().list[0]?.tabs.map((tab) => `${tab.note} ${tab.title}`);
@@ -25,7 +26,13 @@ function setup() {
 describe("enregistrement : ce que les notes partagées annoncent", () => {
   it("une note enregistrée sous un autre nom garde ses onglets, à son nouveau titre ; la liste est relue", () => {
     const { events, log, tabs } = setup();
-    events.saved("a.md", { path: "neuf.md", title: "Neuf", fingerprint: "1", conflictCopy: null });
+    events.saved("a.md", {
+      path: "neuf.md",
+      title: "Neuf",
+      fingerprint: "1",
+      conflictCopy: null,
+      tagsChanged: false,
+    });
     expect(tabs()).toEqual(["neuf.md Neuf", "b.md null"]);
     expect(log).toEqual(["liste"]);
   });
@@ -37,12 +44,37 @@ describe("enregistrement : ce que les notes partagées annoncent", () => {
       title: "B",
       fingerprint: "1",
       conflictCopy: "b (conflit).md",
+      tagsChanged: false,
     });
     expect(log).toEqual([
       "message Cette note a aussi changé hors de l'application : l'autre version est gardée dans « b (conflit).md ».",
       "dossiers",
       "liste",
     ]);
+  });
+
+  it("une note dont les étiquettes ont changé fait relire la liste des étiquettes", () => {
+    const { events, log } = setup();
+    events.saved("b.md", {
+      path: "b.md",
+      title: "B",
+      fingerprint: "1",
+      conflictCopy: null,
+      tagsChanged: true,
+    });
+    expect(log).toEqual(["étiquettes", "liste"]);
+  });
+
+  it("avec une copie de conflit, les dossiers relus suffisent : ils relisent les étiquettes", () => {
+    const { events, log } = setup();
+    events.saved("b.md", {
+      path: "b.md",
+      title: "B",
+      fingerprint: "1",
+      conflictCopy: "b (conflit).md",
+      tagsChanged: true,
+    });
+    expect(log.slice(1)).toEqual(["dossiers", "liste"]);
   });
 
   it("une note lue donne son titre à ses onglets", async () => {

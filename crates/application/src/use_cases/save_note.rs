@@ -2,6 +2,7 @@
 
 use domain::conflict::conflict_copy_name;
 use domain::saving::plan_save;
+use domain::tag::tags;
 use domain::{Fingerprint, NotePath};
 
 use crate::{AppError, Clock, NoteStore, StoreError};
@@ -16,6 +17,9 @@ pub struct SaveOutcome {
     /// La copie de conflit qui garde la version trouvée sur le disque, si elle avait
     /// changé hors de l'application depuis la dernière lecture.
     pub conflict_copy: Option<NotePath>,
+    /// Les étiquettes écrites ne sont plus celles de la note sur le disque (ou d'une note
+    /// absente) : la liste des étiquettes est à relire.
+    pub tags_changed: bool,
 }
 
 /// Enregistre une note ; si son titre a changé, le fichier (et ses pièces jointes) est renommé.
@@ -51,7 +55,9 @@ impl<'a> SaveNote<'a> {
         content: &str,
         known: &Fingerprint,
     ) -> Result<SaveOutcome, AppError> {
-        let conflict_copy = self.keep_changed_version(current, content, known)?;
+        let on_disk = self.on_disk(current)?;
+        let conflict_copy =
+            self.keep_changed_version(current, on_disk.as_deref(), content, known)?;
         let existing = self.store.names(current.folder())?;
         let plan = plan_save(current.name(), content, &existing);
         self.store.write(current, plan.content())?;
@@ -62,7 +68,17 @@ impl<'a> SaveNote<'a> {
             path: current.renamed(plan.file_name().clone()),
             fingerprint: Fingerprint::of(plan.content()),
             conflict_copy,
+            tags_changed: tags(on_disk.as_deref().unwrap_or_default()) != tags(content),
         })
+    }
+
+    /// Le contenu de la note sur le disque, ou rien si elle n'existe plus.
+    fn on_disk(&self, current: &NotePath) -> Result<Option<String>, AppError> {
+        match self.store.read(current) {
+            Ok(note) => Ok(Some(note.content)),
+            Err(StoreError::NotFound(_)) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     /// Garde la version du disque dans une copie de conflit si elle a changé ailleurs
@@ -70,15 +86,14 @@ impl<'a> SaveNote<'a> {
     fn keep_changed_version(
         &self,
         current: &NotePath,
+        on_disk: Option<&str>,
         content: &str,
         known: &Fingerprint,
     ) -> Result<Option<NotePath>, AppError> {
-        let on_disk = match self.store.read(current) {
-            Ok(note) => note.content,
-            Err(StoreError::NotFound(_)) => return Ok(None),
-            Err(error) => return Err(error.into()),
+        let Some(on_disk) = on_disk else {
+            return Ok(None);
         };
-        if Fingerprint::of(&on_disk) == *known || on_disk == content {
+        if Fingerprint::of(on_disk) == *known || on_disk == content {
             return Ok(None);
         }
         let existing = self.store.names(current.folder())?;
@@ -87,7 +102,7 @@ impl<'a> SaveNote<'a> {
             &self.clock.now(),
             &existing,
         ));
-        self.store.write(&copy, &on_disk)?;
+        self.store.write(&copy, on_disk)?;
         Ok(Some(copy))
     }
 }
@@ -186,6 +201,30 @@ mod tests {
         let written = store.read(&outcome.path).unwrap().content;
         assert_eq!(outcome.fingerprint, Fingerprint::of(&written));
         assert_eq!(outcome.conflict_copy, None);
+    }
+
+    #[test]
+    fn the_outcome_says_whether_the_tags_changed() {
+        let store = InMemoryNoteStore::with_notes(&[("a.md", "---\ntags: [x]\n---\n# A")]);
+        let known = Fingerprint::of("---\ntags: [x]\n---\n# A");
+        let same = save_knowing(&store, "a.md", "---\ntags: [x]\n---\n# A\ntexte", &known);
+        assert!(!same.tags_changed);
+        let changed = save_knowing(
+            &store,
+            "a.md",
+            "---\ntags: [y]\n---\n# A",
+            &same.fingerprint,
+        );
+        assert!(changed.tags_changed);
+    }
+
+    #[test]
+    fn a_recreated_note_has_changed_tags_only_if_it_has_some() {
+        let store = InMemoryNoteStore::with_notes(&[]);
+        let known = Fingerprint::of("");
+        assert!(!save_knowing(&store, "a.md", "# A", &known).tags_changed);
+        let store = InMemoryNoteStore::with_notes(&[]);
+        assert!(save_knowing(&store, "a.md", "---\ntags: [x]\n---\n# A", &known).tags_changed);
     }
 
     #[test]

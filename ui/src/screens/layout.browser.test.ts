@@ -17,6 +17,8 @@ describe("mise en page", () => {
     for (const element of [
       layout.libraryName,
       layout.foldersList,
+      layout.tagsList,
+      layout.tagFilter,
       layout.newFolderButton,
       layout.searchField,
       layout.notesList,
@@ -39,5 +41,8 @@ describe("mise en page", () => {
     expect(layout.settings.getAttribute("aria-label")).toBe("Réglages");
     expect(layout.settingsButton.textContent).toBe("Réglages");
     expect(layout.columns.children).toHaveLength(0);
+    expect(layout.tagFilter.hidden).toBe(true);
+    expect(layout.tagsList.hidden).toBe(true);
+    expect(layout.tagsList.getAttribute("aria-label")).toBe("Étiquettes");
   });
 });

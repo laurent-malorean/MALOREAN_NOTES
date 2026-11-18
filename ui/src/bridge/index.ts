@@ -13,6 +13,7 @@ import type { NoteListItem } from "./generated/NoteListItem";
 import type { SaveResult } from "./generated/SaveResult";
 import type { SavedNote } from "./generated/SavedNote";
 import type { SearchResultItem } from "./generated/SearchResultItem";
+import type { TagItem } from "./generated/TagItem";
 import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
 import type { TrashInfo } from "./generated/TrashInfo";
 
@@ -27,6 +28,7 @@ export type {
   SaveResult,
   SavedNote,
   SearchResultItem,
+  TagItem,
   TrashedNoteItem,
   TrashInfo,
 };
@@ -47,6 +49,11 @@ export const listNotes = (folder: string) => invoke<NoteListItem[]>("list_notes"
 export const searchNotes = (query: string) => invoke<SearchResultItem[]>("search_notes", { query });
 /** Toutes les notes de la bibliothèque, la plus récente en premier : pour l'ouverture rapide. */
 export const listAllNotes = () => invoke<LibraryNoteItem[]>("list_all_notes");
+/** Les notes de toute la bibliothèque qui portent l'étiquette `tag` : le filtre par étiquette. */
+export const listTaggedNotes = (tag: string) =>
+  invoke<NoteListItem[]>("list_tagged_notes", { tag });
+/** Chaque étiquette de la bibliothèque et son nombre de notes, par ordre alphabétique. */
+export const listTags = () => invoke<TagItem[]>("list_tags");
 /** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */
 export const resolveLink = (title: string) => invoke<string | null>("resolve_link", { title });
 /** Les liens entrants de la note `path` : les notes qui pointent vers elle. */

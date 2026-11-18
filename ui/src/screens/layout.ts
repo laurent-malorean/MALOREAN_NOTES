@@ -4,6 +4,10 @@ export interface Layout {
   readonly workspace: HTMLElement;
   readonly libraryName: HTMLElement;
   readonly foldersList: HTMLElement;
+  /** La liste des étiquettes, sous les dossiers. */
+  readonly tagsList: HTMLElement;
+  /** La barre du filtre par étiquette, au-dessus de la liste des notes. */
+  readonly tagFilter: HTMLElement;
   readonly newFolderButton: HTMLButtonElement;
   readonly trashButton: HTMLButtonElement;
   readonly searchField: HTMLInputElement;
@@ -41,6 +45,7 @@ const TEMPLATE = `
           <button class="icon" data-new-folder title="Nouveau dossier">＋</button>
         </header>
         <nav class="folders-list"></nav>
+        <nav class="tags-list" aria-label="Étiquettes" hidden></nav>
         <footer class="sidebar-footer">
           <button class="trash-item" data-trash>Corbeille</button>
           <button class="trash-item" data-settings title="Réglages (Cmd+,)">Réglages</button>
@@ -52,6 +57,7 @@ const TEMPLATE = `
           <button class="icon" data-new title="Nouvelle note">＋</button>
         </header>
         <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
+        <div class="tag-filter" hidden></div>
         <nav class="notes-list"></nav>
         <footer class="sidebar-footer"><button class="link" data-choose>Changer de dossier</button></footer>
       </aside>
@@ -80,6 +86,8 @@ export function createLayout(root: HTMLElement): Layout {
     workspace: find(".workspace"),
     libraryName: find(".library-name"),
     foldersList: find(".folders-list"),
+    tagsList: find(".tags-list"),
+    tagFilter: find(".tag-filter"),
     newFolderButton: find("[data-new-folder]"),
     trashButton: find("[data-trash]"),
     searchField: find(".search-field"),

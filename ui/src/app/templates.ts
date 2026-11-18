@@ -17,7 +17,7 @@ export interface TemplatesDeps {
   readonly storage: PreferenceStorage;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "flushedPath" | "update" | "activePane">;
-  readonly library: Pick<Library, "path" | "refreshList">;
+  readonly library: Pick<Library, "path" | "refreshList" | "refreshTags">;
   /** La fenêtre de choix au clavier. */
   readonly picker: HTMLDialogElement;
   /** Montre un message quelques secondes. */
@@ -40,6 +40,8 @@ async function createFrom(deps: TemplatesDeps, template: string) {
     currentFolder(deps.screen.get()),
   );
   await deps.library.refreshList();
+  // Un modèle peut porter des étiquettes.
+  await deps.library.refreshTags();
   await deps.columns.update((now) => notePlaced(now, created.path, "newTab"));
   deps.columns.activePane().editor.focus();
 }

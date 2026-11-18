@@ -37,6 +37,10 @@ function setup() {
       restoreFolder: (path) => done(`rendre le dossier ${path}`)(),
       empty: done("vider"),
     },
+    tags: {
+      select: (tag) => done(`filtrer #${tag}`)(),
+      clear: () => (calls.push("retirer le filtre"), true),
+    },
     run: (action) => void ran.push(action),
   });
   return { actions, calls, ran, columns };
@@ -58,6 +62,8 @@ describe("demandes de l'écran", () => {
     t.actions.restoreFolder("projets");
     t.actions.empty();
     t.actions.fold("projets");
+    t.actions.selectTag("perso");
+    t.actions.clearTag();
     await Promise.all(t.ran);
     expect(t.calls).toEqual([
       "choisir projets",
@@ -73,8 +79,10 @@ describe("demandes de l'écran", () => {
       "rendre le dossier projets",
       "vider",
       "plier projets",
+      "filtrer #perso",
+      "retirer le filtre",
     ]);
-    expect(t.ran).toHaveLength(12);
+    expect(t.ran).toHaveLength(13);
   });
 
   it("ouvre une note, la place ou la ferme dans les colonnes", async () => {

@@ -19,4 +19,8 @@ modified: number,
 /**
  * La note est épinglée en tête de liste.
  */
-pinned: boolean, };
+pinned: boolean, 
+/**
+ * Les étiquettes de son en-tête, dans l'ordre où elles sont écrites.
+ */
+tags: Array<string>, };

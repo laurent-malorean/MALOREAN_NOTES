@@ -4,6 +4,8 @@ import {
   libraryOpened,
   searchAnswered,
   searchTyped,
+  tagSelected,
+  tagsRefreshed,
   trashShown,
   welcome,
 } from "../state/screen";
@@ -27,6 +29,8 @@ const ignore: ScreenActions = {
   restoreNote: () => {},
   restoreFolder: () => {},
   empty: () => {},
+  selectTag: () => {},
+  clearTag: () => {},
 };
 
 function layout() {
@@ -49,7 +53,7 @@ describe("affichage de l'écran", () => {
     const screen = libraryOpened(
       library,
       ["Travail"],
-      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
     renderScreen(view, screen, ignore);
     expect([view.welcome.hidden, view.workspace.hidden]).toEqual([true, false]);
@@ -96,7 +100,7 @@ describe("affichage de l'écran", () => {
       libraryOpened(
         library,
         ["Travail"],
-        [{ path: "a.md", title: "A", modified: 0, pinned: false }],
+        [{ path: "a.md", title: "A", modified: 0, pinned: false, tags: [] }],
       ),
       actions,
     );
@@ -110,7 +114,7 @@ describe("affichage de l'écran", () => {
     const opened = libraryOpened(
       library,
       [],
-      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
     const result = { path: "b.md", title: "Bêta", folder: "", modified: 0, excerpt: [] };
     const calls: string[] = [];
@@ -127,7 +131,7 @@ describe("affichage de l'écran", () => {
     const opened = libraryOpened(
       library,
       [],
-      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
     renderScreen(view, searchTyped(opened, "pa"), ignore);
     expect(view.searchField.value).toBe("pa");
@@ -165,7 +169,7 @@ describe("affichage de la corbeille", () => {
     const opened = libraryOpened(
       library,
       ["Travail"],
-      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false }],
+      [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
     const screen = trashShown(opened, {
       folders: [],
@@ -179,5 +183,50 @@ describe("affichage de la corbeille", () => {
     renderScreen(view, folderSelected(screen, "", []), ignore);
     expect(view.trashButton.classList.contains("selected")).toBe(false);
     expect(view.foldersList.querySelector(".folder-item.selected")).not.toBeNull();
+  });
+});
+
+describe("affichage du filtre par étiquette", () => {
+  const tagged = { path: "b.md", title: "Bêta", modified: 0, pinned: false, tags: ["perso"] };
+  const opened = tagsRefreshed(libraryOpened(library, ["Travail"], []), [
+    { name: "perso", count: 1 },
+  ]);
+
+  it("montre la liste des étiquettes sous les dossiers ; un clic filtre", () => {
+    const view = layout();
+    const calls: string[] = [];
+    renderScreen(view, opened, { ...ignore, selectTag: (tag) => calls.push(tag) });
+    expect(view.tagFilter.hidden).toBe(true);
+    expect(view.tagsList.querySelector(".tag-item.selected")).toBeNull();
+    view.tagsList.querySelector<HTMLElement>(".tag-item")?.click();
+    expect(calls).toEqual(["perso"]);
+  });
+
+  it("nomme l'étiquette en tête et dans la barre ; aucun dossier n'est en évidence", () => {
+    const view = layout();
+    const calls: string[] = [];
+    const screen = tagSelected(opened, "perso", [tagged]);
+    renderScreen(view, screen, { ...ignore, clearTag: () => calls.push("retirer") });
+    expect(view.libraryName.textContent).toBe("#perso");
+    expect(view.tagFilter.hidden).toBe(false);
+    expect(view.tagFilter.querySelector(".tag-filter-name")?.textContent).toBe("#perso");
+    expect(view.tagsList.querySelector(".tag-item.selected")).not.toBeNull();
+    expect(view.foldersList.querySelector(".folder-item.selected")).toBeNull();
+    expect(view.notesList.querySelector(".note-title")?.textContent).toBe("Bêta");
+    view.tagFilter.querySelector<HTMLElement>(".tag-filter-clear")?.click();
+    expect(calls).toEqual(["retirer"]);
+  });
+
+  it("pendant une recherche ou dans la corbeille, la barre du filtre est cachée", () => {
+    const view = layout();
+    const screen = tagSelected(opened, "perso", [tagged]);
+    renderScreen(view, searchTyped(screen, "pain"), ignore);
+    expect(view.tagFilter.hidden).toBe(true);
+    expect(view.tagsList.querySelector(".tag-item.selected")).toBeNull();
+    renderScreen(view, searchTyped(screen, "pa"), ignore);
+    expect(view.tagFilter.hidden).toBe(false);
+    renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
+    expect(view.tagFilter.hidden).toBe(true);
+    expect(view.libraryName.textContent).toBe("Corbeille");
   });
 });

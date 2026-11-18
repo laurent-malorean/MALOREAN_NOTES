@@ -4,6 +4,7 @@ mod attachments;
 mod links;
 mod quick_open;
 mod saving;
+mod tags;
 mod templates;
 mod trash;
 mod watching;
@@ -22,11 +23,22 @@ use application::{
 
 use domain::search::{ExcerptPart, SearchQuery};
 use domain::title::displayed_title;
-use domain::{Fingerprint, Folder, FolderName, NotePath};
+use domain::{Fingerprint, Folder, FolderName, NotePath, NoteSummary};
 
 use crate::{
     ApiError, ExcerptPartItem, LibraryInfo, NoteContent, NoteListItem, SavedNote, SearchResultItem,
 };
+
+/// Une ligne de la liste des notes.
+fn list_item(note: &NoteSummary) -> NoteListItem {
+    NoteListItem {
+        path: note.path().to_path(),
+        title: note.title().to_owned(),
+        modified: note.modified().0,
+        pinned: note.is_pinned(),
+        tags: note.tags().to_vec(),
+    }
+}
 
 /// État partagé par les commandes : les adaptateurs et la bibliothèque ouverte.
 #[derive(Debug)]
@@ -114,15 +126,7 @@ impl Session {
     pub fn list_notes(&self, folder: &str) -> Result<Vec<NoteListItem>, ApiError> {
         let store = self.store()?;
         let notes = ListNotes::new(&*store).execute(&Folder::parse(folder)?)?;
-        Ok(notes
-            .into_iter()
-            .map(|n| NoteListItem {
-                path: n.path().to_path(),
-                title: n.title().to_owned(),
-                modified: n.modified().0,
-                pinned: n.is_pinned(),
-            })
-            .collect())
+        Ok(notes.iter().map(list_item).collect())
     }
 
     /// Les notes de toute la bibliothèque qui contiennent tous les mots de `query` ;
@@ -430,6 +434,13 @@ mod tests {
         let notes = session.list_notes("").unwrap();
         assert_eq!(notes[0].path, "a.md");
         assert_eq!(notes[0].title, "Alpha");
+        assert!(notes[0].tags.is_empty());
+    }
+
+    #[test]
+    fn notes_are_listed_with_their_tags() {
+        let session = opened(&[("a.md", "---\ntags: [perso]\n---\n# Alpha")]);
+        assert_eq!(session.list_notes("").unwrap()[0].tags, ["perso"]);
     }
 
     #[test]

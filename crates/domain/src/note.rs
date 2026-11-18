@@ -2,6 +2,7 @@
 
 use crate::NotePath;
 use crate::front_matter::is_pinned;
+use crate::tag::tags;
 use crate::title::displayed_title;
 
 /// Date de dernière modification, en millisecondes depuis le 1er janvier 1970.
@@ -15,10 +16,12 @@ pub struct NoteSummary {
     title: String,
     modified: Modified,
     pinned: bool,
+    tags: Vec<String>,
 }
 
 impl NoteSummary {
-    /// Le résumé d'une note : son titre affiché et son épinglage sont tirés de son contenu.
+    /// Le résumé d'une note : son titre affiché, son épinglage et ses étiquettes sont tirés
+    /// de son contenu.
     #[must_use]
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
         Self {
@@ -26,6 +29,7 @@ impl NoteSummary {
             title: displayed_title(content),
             modified,
             pinned: is_pinned(content),
+            tags: tags(content),
         }
     }
 
@@ -33,6 +37,12 @@ impl NoteSummary {
     #[must_use]
     pub fn is_pinned(&self) -> bool {
         self.pinned
+    }
+
+    /// Les étiquettes de son en-tête, dans l'ordre où elles sont écrites.
+    #[must_use]
+    pub fn tags(&self) -> &[String] {
+        &self.tags
     }
 
     /// Le dossier et le nom de fichier de la note.
@@ -117,7 +127,18 @@ mod tests {
         );
         assert!(pinned.is_pinned());
         assert_eq!(pinned.title(), "Titre");
+        assert!(pinned.tags().is_empty());
         assert!(!summary("y.md", 0).is_pinned());
+    }
+
+    #[test]
+    fn a_summary_carries_the_tags_of_its_header() {
+        let note = NoteSummary::new(
+            NotePath::parse("x.md").unwrap(),
+            "---\ntags: [perso, loisirs]\n---\n# Titre",
+            Modified(0),
+        );
+        assert_eq!(note.tags(), ["perso", "loisirs"]);
     }
 
     #[test]

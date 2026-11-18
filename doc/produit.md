@@ -26,6 +26,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
 - Recherche plein texte instantanée.
 - Notes épinglées en tête de liste ; tri par date de modification.
+- Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur toute la bibliothèque ; liste des étiquettes avec leur nombre de notes.
 - Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
 - Coller une image : elle devient une pièce jointe liée.
 - Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.

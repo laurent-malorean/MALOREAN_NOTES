@@ -94,6 +94,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
 | `0018-plein-ecran-et-panneaux-lateraux.md` | Plein écran et panneaux latéraux : deux réglages indépendants |
 | `0019-modeles-de-note.md` | Modèles de note : un dossier choisi dans les réglages, la note créée par Rust |
+| `0020-etiquettes.md` | Étiquettes : lues dans l'en-tête par Rust, un filtre sur toute la bibliothèque |
 
 ## Décisions ouvertes
 

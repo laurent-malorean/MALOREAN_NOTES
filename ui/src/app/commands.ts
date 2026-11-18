@@ -25,6 +25,8 @@ export interface CommandsDeps {
   readonly folders: { startCreation(): void };
   readonly trash: { show(): Promise<void> };
   readonly settings: { open(): void };
+  /** Le filtre par étiquette, que retire Échap ; faux s'il n'y en avait pas. */
+  readonly tags: { clear(): boolean };
   run(action: Promise<unknown>): void;
 }
 
@@ -104,7 +106,8 @@ function shortcutActions(
     "toggle-typewriter": done(actions["toggle-typewriter"]),
     "toggle-outline": done(actions["toggle-outline"]),
     "toggle-full-screen": done(actions["toggle-full-screen"]),
-    "leave-full-screen": () => deps.window.leaveFullScreen(),
+    // Échap fait une chose à la fois : quitter le plein écran, sinon retirer le filtre par étiquette.
+    "leave-full-screen": () => deps.window.leaveFullScreen() || deps.tags.clear(),
     "toggle-side-panels": done(actions["toggle-side-panels"]),
     "open-settings": done(actions["open-settings"]),
     "quick-open": done(actions["quick-open"]),

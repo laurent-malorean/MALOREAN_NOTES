@@ -78,6 +78,7 @@ export const listed = (path: string, title = path): NoteListItem => ({
   title,
   modified: 0,
   pinned: false,
+  tags: [],
 });
 
 /** Une bibliothèque ouverte, puis changée par `change`. */

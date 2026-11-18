@@ -1,4 +1,4 @@
-import type { LibraryInfo, NoteListItem, SearchResultItem, TrashInfo } from "../bridge";
+import type { LibraryInfo, NoteListItem, SearchResultItem, TagItem, TrashInfo } from "../bridge";
 import { movedPath } from "./folders";
 import { foldedMoved, foldToggled, parentsUnfolded } from "./folding";
 import { initialSelection } from "./selection";
@@ -16,7 +16,9 @@ export interface Search {
  * Ce que montre la fenêtre : l'accueil, ou une bibliothèque ouverte avec ses dossiers,
  * le dossier choisi (`""` pour la racine), ses notes, la note sélectionnée, la recherche
  * en cours et la corbeille affichée (`null` pour l'une et l'autre : la liste montre les notes
- * du dossier), et les dossiers pliés de la colonne des dossiers.
+ * du dossier), les dossiers pliés de la colonne des dossiers, le filtre par étiquette (`null` :
+ * aucun ; sinon `notes` sont les notes de toute la bibliothèque qui portent cette étiquette) et la
+ * liste des étiquettes.
  */
 export type Screen =
   | { readonly kind: "welcome" }
@@ -30,6 +32,8 @@ export type Screen =
       readonly search: Search | null;
       readonly trash: TrashInfo | null;
       readonly folded: readonly string[];
+      readonly tag: string | null;
+      readonly tags: readonly TagItem[];
     };
 
 /** L'écran du lancement, avant toute bibliothèque. */
@@ -55,6 +59,8 @@ export function libraryOpened(
     search: null,
     trash: null,
     folded,
+    tag: null,
+    tags: [],
   };
 }
 
@@ -67,7 +73,7 @@ export function folderSelected(
   if (screen.kind !== "library") return screen;
   const selected = initialSelection(notes);
   const folded = parentsUnfolded(screen.folded, folder);
-  return { ...screen, folder, notes, selected, search: null, trash: null, folded };
+  return { ...screen, folder, notes, selected, search: null, trash: null, folded, tag: null };
 }
 
 /** La même bibliothèque, avec ce dossier plié, ou déplié s'il était plié. */
@@ -159,4 +165,29 @@ export function selectedNote(screen: Screen): string | null {
 /** Le dossier affiché ; la racine sur l'accueil. */
 export function currentFolder(screen: Screen): string {
   return screen.kind === "library" ? screen.folder : "";
+}
+
+/**
+ * Le filtre par étiquette : les notes de toute la bibliothèque qui portent `tag`, la première
+ * sélectionnée ; la recherche est vidée et la corbeille quittée.
+ */
+export function tagSelected(screen: Screen, tag: string, notes: readonly NoteListItem[]): Screen {
+  if (screen.kind !== "library") return screen;
+  const selected = initialSelection(notes);
+  return { ...screen, tag, notes, selected, search: null, trash: null };
+}
+
+/** Le filtre retiré : les notes du dossier reviennent, la note sélectionnée reste la même. */
+export function tagCleared(screen: Screen, notes: readonly NoteListItem[]): Screen {
+  return screen.kind === "library" ? { ...screen, tag: null, notes } : screen;
+}
+
+/** La même bibliothèque, avec la liste des étiquettes relue. */
+export function tagsRefreshed(screen: Screen, tags: readonly TagItem[]): Screen {
+  return screen.kind === "library" ? { ...screen, tags } : screen;
+}
+
+/** L'étiquette du filtre, s'il y en a un. */
+export function activeTag(screen: Screen): string | null {
+  return screen.kind === "library" ? screen.tag : null;
 }

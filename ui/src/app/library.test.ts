@@ -8,7 +8,7 @@ import {
 } from "../../test-support/app-fixture";
 import type { NoteContent } from "../bridge";
 import { activeNote, type Columns, columnsStarted, noteOpened } from "../state/columns";
-import { type Screen, searchTyped, welcome } from "../state/screen";
+import { type Screen, searchTyped, tagSelected, welcome } from "../state/screen";
 import { createLibrary } from "./library";
 
 const content = (path: string, text: string): NoteContent => ({
@@ -32,6 +32,8 @@ function setup(start: Screen = libraryScreen(), columnsStart = columnsStarted) {
       chooseLibrary: async () => (calls.push("choisir"), state.chosen),
       listFolders: async () => (calls.push("dossiers"), ["projets"]),
       listNotes: async (folder) => (calls.push(`notes de «${folder}»`), [listed(`${folder}n.md`)]),
+      listTaggedNotes: async (tag) => (calls.push(`notes #${tag}`), [listed(`${tag}.md`)]),
+      listTags: async () => (calls.push("étiquettes"), [{ name: "perso", count: 2 }]),
       createNote: async (folder) => (calls.push(`créer dans «${folder}»`), { path: "neuve.md" }),
       resolveLink: async (title) => (calls.push(`lien ${title}`), title === "A" ? "a.md" : null),
       moveNote: async (path, into) => (
@@ -55,9 +57,10 @@ describe("bibliothèque ouverte", () => {
     expect(t.library.path()).toBe("");
     await t.library.open({ name: "Notes", path: "/notes" });
     expect(t.library.path()).toBe("/notes");
-    expect(t.calls).toEqual(["dossiers", "notes de «»", "disposition de /notes"]);
+    expect(t.calls).toEqual(["dossiers", "notes de «»", "étiquettes", "disposition de /notes"]);
     const now = t.screen.get();
     expect(now.kind === "library" && now.folders).toEqual(["projets"]);
+    expect(now.kind === "library" && now.tags).toEqual([{ name: "perso", count: 2 }]);
     expect(now.kind === "library" && now.library.path).toBe("/notes");
     expect(activeNote(t.columns.columns())).toBe("n.md");
     expect(t.columns.columns().list[0]?.tabs.map((tab) => tab.note)).toEqual(["n.md"]);
@@ -96,12 +99,30 @@ describe("bibliothèque ouverte", () => {
     const t = setup(libraryScreen([], (screen) => ({ ...screen, folder: "projets" })));
     await t.library.refreshFolders();
     await t.library.refreshList();
-    expect(t.calls).toEqual(["dossiers", "notes de «projets»"]);
+    expect(t.calls).toEqual(["dossiers", "étiquettes", "notes de «projets»"]);
     const now = t.screen.get();
     expect(now.kind === "library" && now.notes).toEqual([listed("projetsn.md")]);
+    expect(now.kind === "library" && now.tags).toEqual([{ name: "perso", count: 2 }]);
     t.screen.show(searchTyped(t.screen.get(), "courses"));
     await t.library.refreshList();
-    expect(t.calls.slice(2)).toEqual(["notes de «projets»", "chercher courses"]);
+    expect(t.calls.slice(3)).toEqual(["notes de «projets»", "chercher courses"]);
+  });
+
+  it("avec un filtre par étiquette, la liste relue est celle des notes qui la portent", async () => {
+    const t = setup(tagSelected(libraryScreen(), "perso", []));
+    await t.library.refreshList();
+    expect(t.calls).toEqual(["notes #perso"]);
+    const now = t.screen.get();
+    expect(now.kind === "library" && now.notes).toEqual([listed("perso.md")]);
+    expect(now.kind === "library" && now.tag).toBe("perso");
+  });
+
+  it("relit la liste des étiquettes seule", async () => {
+    const t = setup();
+    await t.library.refreshTags();
+    expect(t.calls).toEqual(["étiquettes"]);
+    const now = t.screen.get();
+    expect(now.kind === "library" && now.tags).toEqual([{ name: "perso", count: 2 }]);
   });
 
   it("sur l'accueil, la liste relue ne cherche rien", async () => {

@@ -11,6 +11,7 @@ export interface SavingDeps {
   readonly library: {
     refreshFolders(): Promise<void>;
     refreshList(): Promise<void>;
+    refreshTags(): Promise<void>;
   };
 }
 
@@ -31,6 +32,8 @@ function noteSaved(deps: SavingDeps, from: string, saved: SaveResult) {
       `Cette note a aussi changé hors de l'application : l'autre version est gardée dans « ${saved.conflictCopy} ».`,
     );
     run(deps.library.refreshFolders());
+  } else if (saved.tagsChanged) {
+    run(deps.library.refreshTags());
   }
   run(deps.library.refreshList());
 }

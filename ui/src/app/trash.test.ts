@@ -40,6 +40,7 @@ function setup(
       log.push("liste");
       if (options.listed) screen.show(libraryScreen(options.listed));
     },
+    refreshTags: async () => void log.push("étiquettes"),
   });
   const tabs = () => columns.columns().list[0]?.tabs.map((tab) => tab.note);
   return { trash, screen, columns, log, asked, tabs };
@@ -68,7 +69,7 @@ describe("corbeille : une note", () => {
     const pane = fakePane("a.md");
     t.columns.panes.set(t.columns.columns().active, pane);
     await t.trash.trashNote("a.md");
-    expect(t.log).toEqual(["corbeille a.md", "liste"]);
+    expect(t.log).toEqual(["corbeille a.md", "liste", "étiquettes"]);
     expect(t.columns.log).toEqual(["enregistrer a.md", "colonnes"]);
     expect(pane.forget).toHaveBeenCalled();
     expect(t.tabs()).toEqual(["c.md", "b.md"]);
@@ -102,7 +103,7 @@ describe("corbeille : un dossier", () => {
     const pane = fakePane("projets/plans/a.md");
     t.columns.panes.set(2, pane);
     await t.trash.trashFolder("projets");
-    expect(t.log).toEqual(["corbeille projets/", "dossiers", "notes de «»"]);
+    expect(t.log).toEqual(["corbeille projets/", "dossiers", "étiquettes", "notes de «»"]);
     expect(t.columns.log).toEqual(["tout enregistrer", "colonnes"]);
     expect(pane.forget).toHaveBeenCalled();
     expect(currentFolder(t.screen.get())).toBe("");
@@ -112,7 +113,7 @@ describe("corbeille : un dossier", () => {
   it("ailleurs, la liste est relue ; la note active partie, une autre s'ouvre", async () => {
     const t = setup(libraryScreen(), open("b.md", "projets/a.md"), { listed: [listed("r.md")] });
     await t.trash.trashFolder("projets");
-    expect(t.log).toEqual(["corbeille projets/", "dossiers", "liste"]);
+    expect(t.log).toEqual(["corbeille projets/", "dossiers", "étiquettes", "liste"]);
     expect(t.tabs()).toEqual(["b.md", "r.md"]);
   });
 
@@ -123,7 +124,7 @@ describe("corbeille : un dossier", () => {
       { listed: [listed("r.md")] },
     );
     await t.trash.trashFolder("projets");
-    expect(t.log).toEqual(["corbeille projets/", "dossiers", "liste"]);
+    expect(t.log).toEqual(["corbeille projets/", "dossiers", "étiquettes", "liste"]);
     expect(t.tabs()).toEqual(["projets-bis/b.md"]);
   });
 
@@ -148,12 +149,12 @@ describe("corbeille : la montrer, restaurer, vider", () => {
     expect(now.kind === "library" && now.trash).toEqual(EMPTY_TRASH);
   });
 
-  it("restaurer ou vider relit les dossiers, les notes du dossier affiché, et la corbeille", async () => {
+  it("restaurer ou vider relit les dossiers, les étiquettes, la liste et la corbeille", async () => {
     const t = setup(libraryScreen([], (s) => ({ ...s, folder: "projets" })));
     await t.trash.restoreNote("a.md");
     await t.trash.restoreFolder("vieux");
     await t.trash.empty();
-    const reread = ["dossiers", "notes de «projets»", "corbeille"];
+    const reread = ["dossiers", "étiquettes", "liste", "corbeille"];
     expect(t.log).toEqual([
       "restaurer a.md",
       ...reread,

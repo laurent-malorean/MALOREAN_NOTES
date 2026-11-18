@@ -15,6 +15,8 @@
   --accent: #2f6fdf;
   --on-accent: #ffffff;
   --folder-icon-color: var(--accent);
+  --tag-text: #7a6f5a;
+  --tag-background: #ebe7dd;
   --code: #9a3b26;
   --selected: #e4e1d9;
   --border: #e2dfd7;
@@ -76,6 +78,11 @@
   --folder-icon-stroke: 1.8;
   --folder-icon-gap: 0.3rem;
   --folder-toggle-size: 12px;
+  --tag-text-size: 11px;
+  --tag-radius: 999px;
+  --tags-list-text-size: 13px;
+  --tags-list-max-height: 35%;
+  --tag-filter-text-size: 13px;
   --sidebar-width: 280px;
   --divider-width: 5px;
   --tab-max-width: 14rem;
@@ -116,6 +123,8 @@
   --accent: #6fa0ff;
   --on-accent: #ffffff;
   --folder-icon-color: var(--accent);
+  --tag-text: #b3ab98;
+  --tag-background: #313134;
   --code: #e39a7f;
   --selected: #34343a;
   --border: #333336;

@@ -95,6 +95,34 @@ const fingerprintOf = (content: string) =>
 
 const displayedTitle = (content: string) => titleOf(content) ?? "Sans titre";
 
+/** Les étiquettes d'un en-tête, seulement sous la forme `tags: [a, b]` (Rust lit toutes les formes). */
+const tagsOf = (content: string) =>
+  (/^---\n(?:.*\n)*?tags: \[(.*)\]\n(?:.*\n)*?---\n/.exec(content)?.[1] ?? "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag !== "");
+
+const listItem = ([path, note]: [string, FakeNote]) => ({
+  path,
+  title: titleOf(note.content) ?? "Sans titre",
+  modified: note.modified,
+  pinned: note.content.startsWith(PIN_HEADER),
+  tags: tagsOf(note.content),
+});
+
+const listOrder = (a: ReturnType<typeof listItem>, b: ReturnType<typeof listItem>) =>
+  Number(b.pinned) - Number(a.pinned) || b.modified - a.modified;
+
+function listTags() {
+  const counts = new Map<string, number>();
+  Object.values(backend.notes).forEach((note) =>
+    tagsOf(note.content).forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1)),
+  );
+  return [...counts]
+    .sort(([a], [b]) => a.localeCompare(b, "fr"))
+    .map(([name, count]) => ({ name, count }));
+}
+
 const noteContent = (path: string, content: string) => ({
   path,
   content,
@@ -118,6 +146,7 @@ function save(path: string, content: string, fingerprint: string) {
     throw { message: "stockage indisponible : disque plein" };
   }
   const conflictCopy = keepChangedVersion(path, content, fingerprint);
+  const tagsChanged = tagsOf(backend.notes[path]?.content ?? "").join() !== tagsOf(content).join();
   const target = freeName(folderOf(path), slug(titleOf(content)), path);
   Reflect.deleteProperty(backend.notes, path);
   backend.notes[target] = { content, modified: (clock += 1) };
@@ -126,6 +155,7 @@ function save(path: string, content: string, fingerprint: string) {
     title: displayedTitle(content),
     fingerprint: fingerprintOf(content),
     conflictCopy,
+    tagsChanged,
   };
 }
 
@@ -302,13 +332,14 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   list_notes: ({ folder = "" }) =>
     Object.entries(backend.notes)
       .filter(([path]) => folderOf(path) === folder)
-      .map(([path, n]) => ({
-        path,
-        title: titleOf(n.content) ?? "Sans titre",
-        modified: n.modified,
-        pinned: n.content.startsWith(PIN_HEADER),
-      }))
-      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.modified - a.modified),
+      .map(listItem)
+      .sort(listOrder),
+  list_tagged_notes: ({ tag = "" }) =>
+    Object.entries(backend.notes)
+      .map(listItem)
+      .filter((note) => note.tags.includes(tag))
+      .sort(listOrder),
+  list_tags: () => listTags(),
   // Épingler ne change pas la date de la note.
   pin_note: ({ path = "" }) =>
     rewritePin(path, (c) => (c.startsWith(PIN_HEADER) ? c : PIN_HEADER + c)),

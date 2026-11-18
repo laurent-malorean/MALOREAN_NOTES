@@ -32,6 +32,16 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     expect(calls).toEqual([{ command: "choose_library", args: {} }]);
   });
 
+  it("liste les notes d'une étiquette, et les étiquettes", async () => {
+    const calls = recordCalls([]);
+    expect(await bridge.listTaggedNotes("perso")).toEqual([]);
+    expect(await bridge.listTags()).toEqual([]);
+    expect(calls).toEqual([
+      { command: "list_tagged_notes", args: { tag: "perso" } },
+      { command: "list_tags", args: {} },
+    ]);
+  });
+
   it("liste les notes", async () => {
     const calls = recordCalls([]);
     expect(await bridge.listNotes("Travail")).toEqual([]);
@@ -67,7 +77,13 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
   });
 
   it("enregistre une note avec son nom, son contenu et l'empreinte connue", async () => {
-    const answer = { path: "b.md", title: "B", fingerprint: "f2", conflictCopy: null };
+    const answer = {
+      path: "b.md",
+      title: "B",
+      fingerprint: "f2",
+      conflictCopy: null,
+      tagsChanged: false,
+    };
     const calls = recordCalls(answer);
     expect(await bridge.saveNote("a.md", "# B", "f1")).toEqual(answer);
     expect(calls).toEqual([

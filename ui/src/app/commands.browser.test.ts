@@ -18,6 +18,7 @@ const log: string[] = [];
 const { screen } = recordedScreen(libraryScreen());
 let columns = fakeColumns();
 let fullScreen = false;
+let tagFilter = false;
 
 /** Ce que les commandes pilotent, chaque demande notée dans `log`. */
 const deps: CommandsDeps = {
@@ -54,6 +55,7 @@ const deps: CommandsDeps = {
   folders: { startCreation: () => log.push("nouveau dossier") },
   trash: { show: async () => void log.push("corbeille") },
   settings: { open: () => log.push("réglages") },
+  tags: { clear: () => (log.push("retirer le filtre"), tagFilter) },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
 connectCommands(deps);
@@ -226,11 +228,19 @@ describe("raccourcis clavier", () => {
     expect(picker().getAttribute("aria-label")).toBe("Ouvrir une note");
   });
 
-  it("Échap ne sert qu'en plein écran", () => {
+  it("Échap quitte le plein écran, sinon retire le filtre par étiquette, sinon ne sert pas", () => {
     expect(press("Escape").defaultPrevented).toBe(false);
+    expect(log).toEqual(["quitter le plein écran", "retirer le filtre"]);
+    log.length = 0;
+    tagFilter = true;
+    expect(press("Escape").defaultPrevented).toBe(true);
+    expect(log).toEqual(["quitter le plein écran", "retirer le filtre"]);
+    log.length = 0;
     fullScreen = true;
     expect(press("Escape").defaultPrevented).toBe(true);
-    expect(log).toEqual(["quitter le plein écran", "quitter le plein écran"]);
+    expect(log).toEqual(["quitter le plein écran"]);
+    fullScreen = false;
+    tagFilter = false;
   });
 
   it("une touche déjà prise, ou une fenêtre ouverte, n'est pas servie une seconde fois", () => {

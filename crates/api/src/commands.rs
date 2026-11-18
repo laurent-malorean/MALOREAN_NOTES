@@ -11,7 +11,7 @@ use tauri_plugin_opener::OpenerExt;
 
 use crate::{
     ApiError, AttachedFile, LibraryInfo, LibraryNoteItem, LinkingNoteItem, NoteContent,
-    NoteListItem, SaveResult, SavedNote, SearchResultItem, Session, TrashInfo,
+    NoteListItem, SaveResult, SavedNote, SearchResultItem, Session, TagItem, TrashInfo,
 };
 
 /// Événement envoyé à la page quand la bibliothèque change hors de l'application ;
@@ -146,6 +146,31 @@ pub async fn resolve_link(
 pub async fn list_all_notes(session: SharedSession<'_>) -> Result<Vec<LibraryNoteItem>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.list_all_notes()).await
+}
+
+/// Les notes de toute la bibliothèque qui portent une étiquette.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn list_tagged_notes(
+    session: SharedSession<'_>,
+    tag: String,
+) -> Result<Vec<NoteListItem>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.list_tagged_notes(&tag)).await
+}
+
+/// Chaque étiquette de la bibliothèque et son nombre de notes.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn list_tags(session: SharedSession<'_>) -> Result<Vec<TagItem>, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.list_tags()).await
 }
 
 /// Les liens entrants d'une note.
@@ -455,6 +480,8 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         resolve_link,
         list_backlinks,
         list_all_notes,
+        list_tagged_notes,
+        list_tags,
         read_note,
         save_note,
         create_note,

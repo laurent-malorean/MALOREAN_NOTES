@@ -33,6 +33,7 @@ impl Session {
             title: displayed_title(content),
             fingerprint: saved.fingerprint.as_str().to_owned(),
             conflict_copy: saved.conflict_copy.as_ref().map(NotePath::to_path),
+            tags_changed: saved.tags_changed,
         })
     }
 }
@@ -71,6 +72,7 @@ mod tests {
         assert_eq!(saved.path, "beta.md");
         assert_eq!(saved.title, "Bêta");
         assert_eq!(saved.conflict_copy, None);
+        assert!(!saved.tags_changed);
         assert_eq!(
             saved.fingerprint,
             session.read_note("beta.md").unwrap().fingerprint
