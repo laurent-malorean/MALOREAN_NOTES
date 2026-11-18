@@ -50,6 +50,7 @@ const deps: CommandsDeps = {
     createNote: async () => void log.push("nouvelle note"),
     choose: async () => void log.push("changer de dossier"),
   },
+  templates: { newNote: async () => void log.push("depuis un modèle") },
   folders: { startCreation: () => log.push("nouveau dossier") },
   trash: { show: async () => void log.push("corbeille") },
   settings: { open: () => log.push("réglages") },
@@ -85,6 +86,7 @@ describe("commandes de la palette", () => {
     const actions = commandActions(deps);
     for (const id of [
       "new-note",
+      "new-note-from-template",
       "new-folder",
       "toggle-focus",
       "toggle-typewriter",
@@ -100,6 +102,7 @@ describe("commandes de la palette", () => {
     await settle();
     expect(log).toEqual([
       "nouvelle note",
+      "depuis un modèle",
       "nouveau dossier",
       "focus",
       "machine à écrire",
@@ -186,6 +189,7 @@ describe("raccourcis clavier", () => {
       ["s", { metaKey: true, ctrlKey: true }],
       [",", { metaKey: true }],
       ["t", { metaKey: true, ctrlKey: true }],
+      ["N", { metaKey: true, shiftKey: true }],
     ];
     for (const [key, modifiers] of keys) expect(press(key, modifiers).defaultPrevented).toBe(true);
     await settle();
@@ -197,6 +201,7 @@ describe("raccourcis clavier", () => {
       "panneaux",
       "réglages",
       "diviser",
+      "depuis un modèle",
     ]);
   });
 

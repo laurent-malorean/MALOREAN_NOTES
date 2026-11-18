@@ -14,7 +14,7 @@ mod search_notes;
 mod trash;
 
 pub use attachments::{AttachFile, AttachmentSource, MAX_ATTACHMENT_MEGABYTES, OpenAttachment};
-pub use create_note::CreateNote;
+pub use create_note::{CreateNote, CreateNoteFromTemplate};
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use library::{OpenLibrary, OpenedLibrary, ReopenLastLibrary};
 pub use list_notes::{ListAllNotes, ListNotes};

@@ -3,7 +3,10 @@ import { fakeColumns, fakePane } from "../../test-support/app-fixture";
 import { createLayout } from "../screens/layout";
 import { connectSettings } from "./settings";
 
-function setup(stored: Record<string, string> = {}) {
+function setup(
+  stored: Record<string, string> = {},
+  groups: () => readonly HTMLElement[] = () => [],
+) {
   const items = new Map(Object.entries(stored));
   const storage = {
     getItem: (key: string) => items.get(key) ?? null,
@@ -25,7 +28,7 @@ function setup(stored: Record<string, string> = {}) {
   };
   const settings = connectSettings(
     { page, settings: layout.settings, settingsButton: layout.settingsButton },
-    { columns: columns.open, storage, systemDark },
+    { columns: columns.open, storage, systemDark, groups },
   );
   return { layout, page, pane, items, systemDark, listeners, settings };
 }
@@ -62,6 +65,22 @@ describe("réglages", () => {
     t.layout.settings.close();
     t.settings.open();
     expect(t.layout.settings.open).toBe(true);
+    t.layout.settings.close();
+  });
+
+  it("la fenêtre montre aussi les parties de plus, refaites à chaque ouverture", () => {
+    let opened = 0;
+    const t = setup({}, () => {
+      opened += 1;
+      const part = document.createElement("fieldset");
+      part.className = "de-plus";
+      return [part];
+    });
+    t.settings.open();
+    expect(t.layout.settings.querySelectorAll(".de-plus")).toHaveLength(1);
+    t.layout.settings.close();
+    t.settings.open();
+    expect(opened).toBe(2);
     t.layout.settings.close();
   });
 });

@@ -4,6 +4,7 @@ mod attachments;
 mod links;
 mod quick_open;
 mod saving;
+mod templates;
 mod trash;
 mod watching;
 

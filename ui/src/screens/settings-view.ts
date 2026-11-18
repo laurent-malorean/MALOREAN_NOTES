@@ -96,11 +96,15 @@ function group(name: string, editing: Editing): HTMLElement {
   return fieldset;
 }
 
-/** Ouvre l'écran de réglages sur `settings` ; chaque changement valable est passé à `onChange`. */
+/**
+ * Ouvre l'écran de réglages sur `settings` ; chaque changement valable est passé à `onChange`.
+ * `extra` : des parties de plus, qui gèrent elles-mêmes leurs réglages, après les autres.
+ */
 export function openSettings(
   dialog: HTMLDialogElement,
   settings: Settings,
   onChange: (next: Settings) => void,
+  extra: readonly HTMLElement[],
 ): void {
   let current = settings;
   const editing: Editing = {
@@ -120,7 +124,7 @@ export function openSettings(
   const footer = document.createElement("footer");
   footer.append(close);
   const groups = [...new Set(SETTING_FIELDS.map((f) => f.group))];
-  form.append(title, ...groups.map((name) => group(name, editing)), footer);
+  form.append(title, ...groups.map((name) => group(name, editing)), ...extra, footer);
   dialog.replaceChildren(form);
   dialog.showModal();
 }

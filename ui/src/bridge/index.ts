@@ -57,6 +57,9 @@ export const readNote = (path: string) => invoke<NoteContent>("read_note", { pat
 export const saveNote = (path: string, content: string, fingerprint: string) =>
   invoke<SaveResult>("save_note", { path, content, fingerprint });
 export const createNote = (folder: string) => invoke<SavedNote>("create_note", { folder });
+/** Crée une note dans `folder` depuis le modèle `template`, ses variables remplacées par Rust. */
+export const createNoteFromTemplate = (template: string, folder: string) =>
+  invoke<SavedNote>("create_note_from_template", { template, folder });
 /** L'adresse qui charge dans la fenêtre un fichier de la bibliothèque, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);
 export const listFolders = () => invoke<string[]>("list_folders");

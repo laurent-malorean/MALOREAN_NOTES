@@ -59,6 +59,14 @@ pub fn new_note_name(existing: &[FileName]) -> FileName {
     FileName::from_title(None).deduplicated(|candidate| existing.contains(candidate))
 }
 
+/// Le nom d'une note créée avec le texte `content` : tiré de son titre, ou le premier
+/// suffixe `-2`, `-3`… libre parmi `existing`.
+#[must_use]
+pub fn created_note_name(content: &str, existing: &[FileName]) -> FileName {
+    FileName::from_title(Title::of(content).as_ref())
+        .deduplicated(|candidate| existing.contains(candidate))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,5 +1,5 @@
 // Fenêtre de choix au clavier : on tape pour filtrer, les flèches choisissent, Entrée valide.
-// Sert à l'ouverture rapide et à la palette de commandes.
+// Sert à l'ouverture rapide, à la palette de commandes et au choix d'un modèle de note.
 
 /** Ce qu'un choix montre : son nom, et un détail en plus petit. */
 export interface PickerEntry {

@@ -71,6 +71,11 @@ describe("raccourcis clavier", () => {
     expect(key("w")).toBeNull();
   });
 
+  it("Cmd+Maj+N crée une note depuis un modèle", () => {
+    expect(key("N", { metaKey: true, shiftKey: true })).toBe("new-note-from-template");
+    expect(key("n", { metaKey: true })).toBeNull();
+  });
+
   it("Ctrl+Cmd+T divise la colonne", () => {
     expect(key("t", { metaKey: true, ctrlKey: true })).toBe("split-column");
     expect(key("t", { ctrlKey: true })).toBeNull();

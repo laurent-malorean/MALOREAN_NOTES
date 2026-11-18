@@ -80,6 +80,19 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     await bridge.createNote("Travail");
     expect(calls).toEqual([{ command: "create_note", args: { folder: "Travail" } }]);
   });
+
+  it("crée une note depuis un modèle", async () => {
+    const calls = recordCalls({ path: "Travail/reunion.md" });
+    expect(await bridge.createNoteFromTemplate("Modèles/reunion.md", "Travail")).toEqual({
+      path: "Travail/reunion.md",
+    });
+    expect(calls).toEqual([
+      {
+        command: "create_note_from_template",
+        args: { template: "Modèles/reunion.md", folder: "Travail" },
+      },
+    ]);
+  });
 });
 
 describe("pont vers Rust : message d'erreur", () => {

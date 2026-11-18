@@ -38,6 +38,22 @@ const KNOWN_TYPES: [(&str, AttachmentKind, &str); 9] = [
     ("pdf", AttachmentKind::Pdf, "application/pdf"),
 ];
 
+/// Les mois, en français, pour la date en toutes lettres.
+const MONTHS: [&str; 12] = [
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
+];
+
 /// Date et heure locales à la minute, telles que les donne l'horloge.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Moment {
@@ -87,6 +103,24 @@ impl Moment {
         } else {
             Err(InvalidMoment)
         }
+    }
+
+    /// La date en toutes lettres : `18 novembre 2026`, et `1er` pour le premier du mois.
+    pub(crate) fn long_date(&self) -> String {
+        let day = if self.day == 1 {
+            "1er".to_owned()
+        } else {
+            self.day.to_string()
+        };
+        let month = MONTHS
+            .get(self.month as usize - 1)
+            .unwrap_or_else(|| unreachable!("le mois est entre 1 et 12"));
+        format!("{day} {month} {}", self.year)
+    }
+
+    /// L'heure : `09:05`.
+    pub(crate) fn time(&self) -> String {
+        format!("{:02}:{:02}", self.hour, self.minute)
     }
 
     /// Le moment tel qu'on le lit : `2026-11-16 18h30`.

@@ -21,6 +21,7 @@ export interface CommandsDeps {
   readonly picker: HTMLDialogElement;
   readonly searchField: HTMLElement;
   readonly library: { createNote(): Promise<void>; choose(): Promise<void> };
+  readonly templates: { newNote(): Promise<void> };
   readonly folders: { startCreation(): void };
   readonly trash: { show(): Promise<void> };
   readonly settings: { open(): void };
@@ -54,6 +55,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
   return {
     "quick-open": () => run(quickOpen(deps)),
     "new-note": () => run(deps.library.createNote()),
+    "new-note-from-template": () => run(deps.templates.newNote()),
     "new-folder": () => deps.folders.startCreation(),
     "search-library": () => deps.searchField.focus(),
     "find-in-note": () => columns.activePane().editor.openFind(),
@@ -112,6 +114,7 @@ function shortcutActions(
     "next-tab": done(actions["next-tab"]),
     "previous-tab": done(actions["previous-tab"]),
     "split-column": done(actions["split-column"]),
+    "new-note-from-template": done(actions["new-note-from-template"]),
   };
 }
 

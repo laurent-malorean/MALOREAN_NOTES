@@ -338,6 +338,18 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
     backend.notes[target] = note;
     return { path: target };
   },
+  create_note_from_template: ({ template = "", folder = "" }) => {
+    const model = backend.notes[template];
+    if (!model) throw { message: `la note « ${template} » n'existe pas` };
+    const content = model.content
+      .replace(/^pinned: .*\r?\n/m, "")
+      .replaceAll("{{title}}", displayedTitle(model.content))
+      .replaceAll("{{date}}", "16 novembre 2026")
+      .replaceAll("{{time}}", "18:30");
+    const path = freeName(folder, slug(titleOf(content)));
+    backend.notes[path] = { content, modified: (clock += 1) };
+    return { path };
+  },
   create_note: ({ folder = "" }) => {
     const path = freeName(folder, "sans-titre");
     backend.notes[path] = { content: "", modified: (clock += 1) };

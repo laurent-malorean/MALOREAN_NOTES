@@ -14,7 +14,8 @@ export type Shortcut =
   | "close-tab"
   | "next-tab"
   | "previous-tab"
-  | "split-column";
+  | "split-column"
+  | "new-note-from-template";
 
 const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+f": "toggle-focus",
@@ -31,6 +32,7 @@ const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "ctrl+tab": "next-tab",
   "ctrl+shift+tab": "previous-tab",
   "cmd+ctrl+t": "split-column",
+  "cmd+shift+n": "new-note-from-template",
 };
 
 /** Ce qu'il faut savoir d'une touche pressée. */

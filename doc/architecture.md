@@ -18,7 +18,7 @@ crates/
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
-                      disposition gardée, bibliothèque, dossiers, recherche, corbeille, enregistrement,
+                      disposition gardée, bibliothèque, dossiers, modèles, recherche, corbeille, enregistrement,
                       modifications extérieures, outils d'écriture, réglages, commandes
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
@@ -58,7 +58,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 |---|---|---|
 | Bibliothèque (dossier choisi par l'utilisateur, iCloud Drive possible) | notes `.md`, dossiers, pièces jointes — **seule source de vérité** | non |
 | `~/Library/Application Support/<app>/` | préférences, liste des bibliothèques ouvertes | non |
-| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes de chaque bibliothèque ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
+| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes et dossier des modèles de chaque bibliothèque ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
 | `~/Library/Caches/<app>/` | index de recherche, aperçus — reconstructibles | oui |
 | `~/Library/Logs/<app>/` | journaux | oui |
 | Trousseau macOS | secrets éventuels | non |
@@ -93,6 +93,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0016-liens-entre-notes.md` | Liens entre notes : `[[titre]]`, résolus par le titre à la demande |
 | `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
 | `0018-plein-ecran-et-panneaux-lateraux.md` | Plein écran et panneaux latéraux : deux réglages indépendants |
+| `0019-modeles-de-note.md` | Modèles de note : un dossier choisi dans les réglages, la note créée par Rust |
 
 ## Décisions ouvertes
 

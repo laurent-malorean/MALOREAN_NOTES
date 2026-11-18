@@ -13,6 +13,7 @@ import { paneMaker } from "./app/panes";
 import { savingEvents } from "./app/saving";
 import { createSearch } from "./app/search";
 import { connectSettings } from "./app/settings";
+import { createTemplates } from "./app/templates";
 import { createTrash } from "./app/trash";
 import { connectWritingModes } from "./app/writing-modes";
 import { askTrash } from "./screens/confirmation";
@@ -70,8 +71,17 @@ const shared = createSharedNotes({
 const writing = connectWritingModes(layout, { columns, storage: localStorage });
 const settings = connectSettings(
   { page: document.documentElement, ...layout },
-  { columns, storage: localStorage, systemDark: window.matchMedia("(prefers-color-scheme: dark)") },
+  {
+    columns,
+    storage: localStorage,
+    systemDark: window.matchMedia("(prefers-color-scheme: dark)"),
+    groups: () => templates.settingsGroups(),
+  },
 );
+const templates = createTemplates({
+  ...{ backend: bridge, storage: localStorage, screen, columns, library },
+  ...{ picker: layout.picker, show: messages.show, run },
+});
 const newPane = paneMaker({
   backend: bridge,
   shared,
@@ -124,6 +134,7 @@ connectCommands({
   picker: layout.picker,
   searchField: layout.searchField,
   library,
+  templates,
   folders,
   trash,
   settings,

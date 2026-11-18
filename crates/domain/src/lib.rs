@@ -11,6 +11,7 @@ pub mod links;
 pub mod note;
 pub mod saving;
 pub mod search;
+pub mod template;
 pub mod title;
 
 pub use attachment_name::{

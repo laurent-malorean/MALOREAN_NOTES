@@ -8,7 +8,7 @@ function open(settings: Settings = DEFAULT_SETTINGS) {
   const dialog = document.createElement("dialog");
   document.body.replaceChildren(dialog);
   const changes: Settings[] = [];
-  openSettings(dialog, settings, (next) => changes.push(next));
+  openSettings(dialog, settings, (next) => changes.push(next), []);
   const input = dialog.querySelector<HTMLInputElement>("input[name=charactersPerPage]");
   if (!input) throw new Error("champ introuvable");
   return { dialog, input, changes };
@@ -141,7 +141,7 @@ describe("écran de réglages", () => {
   it("repart des réglages donnés à chaque ouverture", () => {
     const { dialog } = open();
     dialog.close();
-    openSettings(dialog, { ...DEFAULT_SETTINGS, charactersPerPage: 3000 }, () => {});
+    openSettings(dialog, { ...DEFAULT_SETTINGS, charactersPerPage: 3000 }, () => {}, []);
     expect(dialog.querySelectorAll("input")).toHaveLength(1);
     expect(dialog.querySelector("input")?.value).toBe("3000");
   });

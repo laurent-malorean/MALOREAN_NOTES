@@ -8,6 +8,7 @@ describe("palette de commandes", () => {
     expect(COMMANDS.map((c) => [c.id, c.label, c.shortcut ?? null])).toEqual([
       ["quick-open", "Ouvrir une note", "Cmd+O"],
       ["new-note", "Nouvelle note", null],
+      ["new-note-from-template", "Nouvelle note depuis un modèle", "Cmd+Maj+N"],
       ["new-folder", "Nouveau dossier", null],
       ["search-library", "Rechercher dans toutes les notes", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],
@@ -32,6 +33,7 @@ describe("palette de commandes", () => {
     expect(labels("note")).toEqual([
       "Ouvrir une note",
       "Nouvelle note",
+      "Nouvelle note depuis un modèle",
       "Rechercher dans toutes les notes",
       "Rechercher dans la note",
       "Plan de la note",

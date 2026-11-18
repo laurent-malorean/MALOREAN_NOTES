@@ -204,6 +204,21 @@ pub async fn create_note(
     in_background(move || session.create_note(&folder)).await
 }
 
+/// Crée une note dans un dossier (`""` pour la racine) depuis un modèle de note.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn create_note_from_template(
+    session: SharedSession<'_>,
+    template: String,
+    folder: String,
+) -> Result<SavedNote, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.create_note_from_template(&template, &folder)).await
+}
+
 /// Les chemins de tous les dossiers, dans l'ordre de l'arbre.
 ///
 /// # Errors
@@ -443,6 +458,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         read_note,
         save_note,
         create_note,
+        create_note_from_template,
         list_folders,
         create_folder,
         rename_folder,

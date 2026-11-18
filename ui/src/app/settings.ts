@@ -24,6 +24,8 @@ export interface SettingsDeps {
   /** Où les réglages sont gardés d'une session à l'autre. */
   readonly storage: PreferenceStorage;
   readonly systemDark: SystemAppearance;
+  /** Des parties de plus pour la fenêtre des réglages, faites à chaque ouverture : les modèles. */
+  readonly groups: () => readonly HTMLElement[];
 }
 
 export interface AppSettings {
@@ -47,7 +49,7 @@ export function connectSettings(parts: SettingsParts, deps: SettingsDeps): AppSe
   };
   // En apparence automatique, l'application suit le Mac quand il passe de clair à sombre.
   deps.systemDark.addEventListener("change", showSettingsDisplay);
-  const open = () => openSettings(parts.settings, settings, apply);
+  const open = () => openSettings(parts.settings, settings, apply, deps.groups());
   parts.settingsButton.addEventListener("click", open);
   apply(settings);
   return {

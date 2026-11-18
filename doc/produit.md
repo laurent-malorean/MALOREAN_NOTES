@@ -28,6 +28,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Notes épinglées en tête de liste ; tri par date de modification.
 - Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
 - Coller une image : elle devient une pièce jointe liée.
+- Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.
 
 ## Hors première version
 
