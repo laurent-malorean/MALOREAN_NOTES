@@ -27,6 +27,6 @@ Pistes regardées pour le PDF :
 - Le PDF ressemble à la note telle qu'on la lit dans l'application, sans moteur à maintenir ; il dépend de WebKit, déjà là.
 - WebKit écrit le fichier un instant après la réponse de la commande : une erreur d'écriture du PDF (disque plein, droits) n'est pas rapportée à la page.
 - Le code d'impression n'est vérifié que par l'essai réel : ni les tests de Rust (simulateur Tauri) ni les parcours ne l'exécutent. Les tests couvrent tout ce qui l'entoure (fichier choisi, rendu, feuille d'impression, emplacement refusé).
-- « Imprimer » réutilisera la feuille d'impression et le rendu, avec la fenêtre d'impression du Mac ; « Copier en texte mis en forme » réutilisera `noteHtml`.
+- « Imprimer » réutilise la feuille d'impression et le rendu, avec la fenêtre d'impression du Mac ouverte par le même module natif (fiche 0026) ; « Copier en texte mis en forme » réutilisera `noteHtml`.
 - Les pièces jointes sont toutes copiées, même celles qu'aucun lien ne vise plus ; un fichier exporté remplace celui du même nom (la fenêtre d'enregistrement l'a fait confirmer), comme les pièces jointes du même nom dans le dossier copié.
 - L'export n'est pas encore dans le menu d'un onglet.

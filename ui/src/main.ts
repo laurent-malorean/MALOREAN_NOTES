@@ -48,6 +48,7 @@ const columns = createOpenColumns({
   screen,
   newPane: (parts) => newPane(parts),
   changed: (now) => (writing.showTypewriter(), layoutMemory.save(now), recent.visited(now)),
+  printNote: (path) => exporting.printNote(path),
   run,
 });
 const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage });

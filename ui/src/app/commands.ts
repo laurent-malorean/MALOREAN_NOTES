@@ -40,7 +40,7 @@ export interface CommandsDeps {
   readonly tags: { clear(): boolean };
   /** Les notes récentes, que l'ouverture rapide propose d'abord. */
   readonly recent: { paths(): readonly string[] };
-  /** L'export de la note de la colonne active. */
+  /** L'export et l'impression de la note de la colonne active. */
   readonly exporting: Exporting;
   run(action: Promise<unknown>): void;
 }
@@ -106,6 +106,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "previous-tab": () => run(columns.update((now) => tabStepped(now, -1))),
     "split-column": () => run(columns.split()),
     "export-note": () => deps.exporting.exportNote(),
+    "print-note": () => deps.exporting.printNote(),
     "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),
@@ -155,6 +156,7 @@ function shortcutActions(
     "daily-note": done(actions["daily-note"]),
     "switch-workspace": done(actions["switch-workspace"]),
     "export-note": done(actions["export-note"]),
+    "print-note": done(actions["print-note"]),
   };
 }
 

@@ -360,4 +360,10 @@ describe("pont vers Rust : pièces jointes", () => {
       { command: "export_pdf", args: { destination: "/Docs/Lundi.pdf" } },
     ]);
   });
+
+  it("ouvre la fenêtre d'impression sur la page", async () => {
+    const calls = recordCalls(null);
+    await bridge.printPage();
+    expect(calls).toEqual([{ command: "print_page", args: {} }]);
+  });
 });

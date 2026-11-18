@@ -22,7 +22,7 @@ ui/                   interface TypeScript (Vite)
                       modifications extérieures, outils d'écriture, réglages, export, commandes
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
-  src/rendering/      rendu HTML d'une note (export PDF, puis impression et copie mise en forme)
+  src/rendering/      rendu HTML d'une note (export PDF et impression, puis copie mise en forme)
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
 scripts/ci.sh         mini CI locale, avant chaque push
@@ -68,7 +68,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 - La surveillance des fichiers (port `WorkspaceWatcher`, adaptateur FSEvents dans `infrastructure`) détecte les modifications extérieures ; `api` les relaie à la page par l'événement `workspace-changed`. L'application recharge la note, ou garde l'autre version dans une copie de conflit : rien n'est perdu (fiche 0014).
 - Les liens entre notes (`[[titre]]`) et les liens entrants sont calculés à la demande en relisant les notes, comme la recherche (fiche 0016).
 - Les colonnes et leurs onglets sont un état de l'interface seule ; chaque colonne a son éditeur et charge la note de son onglet actif ; une note montrée dans plusieurs colonnes n'a qu'un texte et qu'un enregistrement automatique, partagés entre leurs éditeurs (fiche 0017).
-- Un export écrit hors de l'espace de travail, là où l'utilisateur l'a choisi : le Markdown et ses pièces jointes par le port `ExportStore`, le PDF par l'impression de la page par WebKit (fiche 0025).
+- Un export écrit hors de l'espace de travail, là où l'utilisateur l'a choisi : le Markdown et ses pièces jointes par le port `ExportStore`, le PDF par l'impression de la page par WebKit (fiche 0025). Imprimer ouvre la fenêtre d'impression du Mac sur la même page (fiche 0026).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
 ## Décisions d'architecture
@@ -102,6 +102,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0023-note-du-jour.md` | Note du jour : un fichier daté dans le journal, créé par Rust, ouvert au lancement |
 | `0024-espaces-de-travail.md` | Espaces de travail : une liste gardée par Rust, chaque espace désigné par son nom |
 | `0025-export-pdf-et-markdown.md` | Export : le Markdown écrit par Rust, le PDF imprimé par WebKit depuis le rendu HTML de la note |
+| `0026-imprimer.md` | Imprimer : la feuille d'impression de l'export, dans la fenêtre d'impression du Mac ouverte par le même module natif |
 
 ## Décisions ouvertes
 

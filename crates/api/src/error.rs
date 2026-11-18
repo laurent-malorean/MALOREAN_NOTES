@@ -43,6 +43,13 @@ impl ApiError {
         }
     }
 
+    /// WebKit n'a pas pu ouvrir la fenêtre d'impression.
+    pub(crate) fn print_failed(reason: &str) -> Self {
+        Self {
+            message: format!("l'impression n'a pas pu commencer : {reason}"),
+        }
+    }
+
     pub(crate) fn internal(reason: &impl std::fmt::Display) -> Self {
         tracing::error!(%reason, "erreur interne");
         Self {
@@ -120,6 +127,10 @@ mod tests {
         assert_eq!(
             ApiError::pdf_failed("la fenêtre n'est pas prête").message,
             "le PDF n'a pas pu être écrit : la fenêtre n'est pas prête"
+        );
+        assert_eq!(
+            ApiError::print_failed("la fenêtre n'est pas prête").message,
+            "l'impression n'a pas pu commencer : la fenêtre n'est pas prête"
         );
     }
 

@@ -88,3 +88,17 @@ fn a_pdf_is_refused_outside_a_complete_path() {
     assert!(BRIDGE_SOURCE.contains("\"export_pdf\", { destination }"));
     assert!(BRIDGE_SOURCE.contains("\"choose_export_file\", { title, format, folder }"));
 }
+
+#[test]
+fn printing_asks_the_window_for_its_print_panel() {
+    let window = window(&[], Arc::new(InMemoryExportStore::default()));
+    // Le simulateur de Tauri n'a pas de WebKit : la page n'est jamais imprimée, et le dit.
+    let refused = call(&window, "print_page", json!({}));
+    assert!(
+        refused.unwrap_err()["message"]
+            .as_str()
+            .unwrap()
+            .starts_with("erreur interne")
+    );
+    assert!(BRIDGE_SOURCE.contains("invoke<null>(\"print_page\")"));
+}

@@ -46,7 +46,7 @@ describe("raccourcis clavier", () => {
 
   it("Cmd+Maj+P ouvre la palette de commandes", () => {
     expect(key("p", { metaKey: true, shiftKey: true })).toBe("command-palette");
-    expect(key("p", { metaKey: true })).toBeNull();
+    expect(key("p", { metaKey: true, ctrlKey: true })).toBeNull();
   });
 
   it("Ctrl+Cmd+S cache ou montre les panneaux latéraux", () => {
@@ -88,6 +88,12 @@ describe("raccourcis clavier", () => {
   it("Cmd+E exporte la note", () => {
     expect(key("e", { metaKey: true })).toBe("export-note");
     expect(key("e", { ctrlKey: true })).toBeNull();
+  });
+
+  it("Cmd+P imprime la note", () => {
+    expect(key("p", { metaKey: true })).toBe("print-note");
+    expect(key("P", { metaKey: true })).toBe("print-note");
+    expect(key("p", { ctrlKey: true })).toBeNull();
   });
 
   it("Ctrl+Cmd+T divise la colonne", () => {

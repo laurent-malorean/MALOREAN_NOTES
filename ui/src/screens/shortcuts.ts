@@ -18,7 +18,8 @@ export type Shortcut =
   | "new-note-from-template"
   | "daily-note"
   | "switch-workspace"
-  | "export-note";
+  | "export-note"
+  | "print-note";
 
 const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+f": "toggle-focus",
@@ -39,6 +40,7 @@ const SHORTCUTS: Readonly<Record<string, Shortcut>> = {
   "cmd+shift+j": "daily-note",
   "cmd+shift+e": "switch-workspace",
   "cmd+e": "export-note",
+  "cmd+p": "print-note",
 };
 
 /** Ce qu'il faut savoir d'une touche pressée. */

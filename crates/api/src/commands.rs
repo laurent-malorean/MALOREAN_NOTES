@@ -480,5 +480,6 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         export::choose_export_file,
         export::export_markdown,
         export::export_pdf,
+        export::print_page,
     ]
 }

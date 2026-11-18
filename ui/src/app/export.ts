@@ -1,5 +1,6 @@
 // Export d'une note : le format choisi au clavier, puis le fichier dans la fenêtre d'enregistrement
 // du Mac ; Rust écrit le Markdown, WebKit imprime en PDF le rendu HTML posé sur la feuille d'impression.
+// Impression : le même rendu sur la même feuille, puis la fenêtre d'impression du Mac.
 import type * as Bridge from "../bridge";
 import { openPicker } from "../screens/picker";
 import { activeNote } from "../state/columns";
@@ -13,7 +14,7 @@ import { imageIn } from "./panes";
 export interface ExportDeps {
   readonly backend: Pick<
     typeof Bridge,
-    "readNote" | "chooseExportFile" | "exportMarkdown" | "exportPdf" | "fileAddress"
+    "readNote" | "chooseExportFile" | "exportMarkdown" | "exportPdf" | "printPage" | "fileAddress"
   >;
   readonly columns: Pick<OpenColumns, "current" | "flushedPath">;
   /** Le dossier de l'espace de travail ouvert, où sont les images des notes. */
@@ -32,6 +33,8 @@ export interface ExportDeps {
 export interface Exporting {
   /** Fait choisir le format, puis le fichier, et exporte la note ; sans chemin, celle de la colonne active. */
   exportNote(path?: string): void;
+  /** Ouvre la fenêtre d'impression sur la note mise en forme ; sans chemin, celle de la colonne active. */
+  printNote(path?: string): void;
 }
 
 /** Pose le rendu de la note sur la feuille d'impression, ses images chargées (ou en échec). */
@@ -58,6 +61,13 @@ async function exportAs(deps: ExportDeps, path: string, format: Bridge.ExportFor
   deps.show(`« ${note.title} » exportée dans ${file.path}`);
 }
 
+/** Pose la note enregistrée sur la feuille d'impression, puis ouvre la fenêtre d'impression. */
+async function printNote(deps: ExportDeps, path: string) {
+  const note = await deps.backend.readNote(await deps.columns.flushedPath(path));
+  await prepareSheet(deps, note);
+  await deps.backend.printPage();
+}
+
 function exportNote(deps: ExportDeps, path: string | null) {
   if (path === null) return;
   openPicker(deps.picker, {
@@ -73,5 +83,9 @@ function exportNote(deps: ExportDeps, path: string | null) {
 export function createExport(deps: ExportDeps): Exporting {
   return {
     exportNote: (path) => exportNote(deps, path ?? activeNote(deps.columns.current())),
+    printNote: (path) => {
+      const note = path ?? activeNote(deps.columns.current());
+      if (note !== null) deps.run(printNote(deps, note));
+    },
   };
 }

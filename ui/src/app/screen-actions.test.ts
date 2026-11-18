@@ -43,7 +43,10 @@ function setup() {
       clear: () => (calls.push("retirer le filtre"), true),
     },
     recent: { show: done("récentes") },
-    exporting: { exportNote: (path) => void calls.push(`exporter ${path}`) },
+    exporting: {
+      exportNote: (path) => void calls.push(`exporter ${path}`),
+      printNote: (path) => void calls.push(`imprimer ${path}`),
+    },
     run: (action) => void ran.push(action),
   });
   return { actions, calls, ran, columns };
@@ -60,6 +63,7 @@ describe("demandes de l'écran", () => {
     t.actions.pin("a.md");
     t.actions.unpin("b.md");
     t.actions.exportNote("c.md");
+    t.actions.printNote("b.md");
     t.actions.trash("a.md");
     t.actions.trashFolder("projets");
     t.actions.restoreNote("a.md");
@@ -80,6 +84,7 @@ describe("demandes de l'écran", () => {
       "épingler a.md",
       "désépingler b.md",
       "exporter c.md",
+      "imprimer b.md",
       "jeter a.md",
       "jeter le dossier projets",
       "rendre a.md",

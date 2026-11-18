@@ -179,6 +179,8 @@ export const exportMarkdown = (path: string, destination: string) =>
   invoke<null>("export_markdown", { path, destination });
 /** Imprime la feuille d'impression de la page dans le fichier PDF `destination`. */
 export const exportPdf = (destination: string) => invoke<null>("export_pdf", { destination });
+/** Ouvre la fenêtre d'impression du Mac sur la feuille d'impression de la page. */
+export const printPage = () => invoke<null>("print_page");
 /** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
 export const openAttachment = (path: string, target: string) =>
   invoke<null>("open_attachment", { path, target });

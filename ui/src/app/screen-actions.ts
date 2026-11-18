@@ -22,7 +22,7 @@ export interface ScreenActionsDeps {
   >;
   readonly tags: Tags;
   readonly recent: Pick<RecentNotes, "show">;
-  /** L'export d'une note, demandé par son menu dans la liste. */
+  /** L'export et l'impression d'une note, demandés par son menu dans la liste. */
   readonly exporting: Exporting;
   /** Lance l'action ; son échec est montré. */
   run(action: Promise<unknown>): void;
@@ -44,6 +44,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     place: (path, placement) => run(columns.update((now) => notePlaced(now, path, placement))),
     closeNote: (path) => run(columns.update((now) => noteClosed(now, path))),
     exportNote: (path) => exporting.exportNote(path),
+    printNote: (path) => exporting.printNote(path),
     trashFolder: (path) => run(trash.trashFolder(path)),
     restoreNote: (path) => run(trash.restoreNote(path)),
     restoreFolder: (path) => run(trash.restoreFolder(path)),

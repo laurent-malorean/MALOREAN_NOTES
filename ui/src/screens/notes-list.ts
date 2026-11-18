@@ -19,6 +19,8 @@ export interface NoteActions {
   readonly selectTag: (tag: string) => void;
   /** Exporter la note en PDF ou en Markdown. */
   readonly exportNote: (path: string) => void;
+  /** Ouvrir la fenêtre d'impression du Mac sur la note mise en forme. */
+  readonly printNote: (path: string) => void;
 }
 
 /** Les touches qui placent la note choisie dans la corbeille. */
@@ -47,11 +49,18 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
       : { label: "Épingler", run: () => actions.pin(note.path) };
     const trashing = { label: "Placer dans la corbeille", run: () => actions.trash(note.path) };
     const exporting = { label: "Exporter…", run: () => actions.exportNote(note.path) };
+    const printing = { label: "Imprimer…", run: () => actions.printNote(note.path) };
     const placing = noteMenu({
       place: (placement) => actions.place(note.path, placement),
       close: () => actions.closeNote(note.path),
     });
-    showContextMenu(event.clientX, event.clientY, [...placing, pinning, exporting, trashing]);
+    showContextMenu(event.clientX, event.clientY, [
+      ...placing,
+      pinning,
+      exporting,
+      printing,
+      trashing,
+    ]);
   });
   item.addEventListener("keydown", (event) => {
     if (!TRASH_KEYS.has(event.key)) return;

@@ -14,6 +14,8 @@ export interface TabActions {
   place(tabId: number, placement: Placement): void;
   /** On commence à glisser cet onglet, ou on a fini (`null`). */
   drag(tabId: number | null): void;
+  /** Ouvrir la fenêtre d'impression du Mac sur cette note. */
+  print(note: string): void;
 }
 
 const NOTE_EXTENSION = ".md";
@@ -53,7 +55,8 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
       place: (placement) => actions.place(tab.id, placement),
       close: () => actions.close(tab.id),
     });
-    showContextMenu(event.clientX, event.clientY, menu);
+    const printing = { label: "Imprimer…", run: () => actions.print(tab.note) };
+    showContextMenu(event.clientX, event.clientY, [...menu, printing]);
   });
   element.append(label, close);
   return element;

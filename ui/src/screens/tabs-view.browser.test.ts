@@ -24,6 +24,7 @@ function mount() {
     close: (tab) => asked.push(`fermer ${tab}`),
     place: (tab, placement) => asked.push(`placer ${tab} ${placement}`),
     drag: (tab) => asked.push(`glisser ${tab}`),
+    print: (note) => asked.push(`imprimer ${note}`),
   });
   const tabs = [...list.querySelectorAll<HTMLElement>('[role="tab"]')];
   return { list, asked, tabs };
@@ -64,14 +65,20 @@ describe("onglets d'une colonne", () => {
     renderTabs(
       list,
       { ...column, tabs: [], activeTab: null },
-      { activate: () => {}, close: () => {}, place: () => {}, drag: () => {} },
+      { activate: () => {}, close: () => {}, place: () => {}, drag: () => {}, print: () => {} },
     );
     expect(list.children).toHaveLength(0);
   });
 
   it("redessiner les mêmes onglets garde leurs éléments : un clic commencé avant y aboutit", () => {
     const { list, tabs } = mount();
-    const actions = { activate: () => {}, close: () => {}, place: () => {}, drag: () => {} };
+    const actions = {
+      activate: () => {},
+      close: () => {},
+      place: () => {},
+      drag: () => {},
+      print: () => {},
+    };
     renderTabs(list, { ...column, tabs: [...column.tabs] }, actions);
     expect(list.children[0]).toBe(tabs[0]);
     expect(list.children[1]).toBe(tabs[1]);
@@ -99,11 +106,14 @@ describe("onglets d'une colonne", () => {
       "Ouvrir à gauche",
       "Ouvrir à droite",
       "Fermer",
+      "Imprimer…",
     ]);
     entries()[2]?.click();
     tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
     entries()[3]?.click();
-    expect(asked).toEqual(["placer 1 right", "fermer 2"]);
+    tabs[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    entries()[4]?.click();
+    expect(asked).toEqual(["placer 1 right", "fermer 2", "imprimer Travail/liste-de-noel.md"]);
   });
 
   it("un onglet se glisse : son début et sa fin sont annoncés, il porte son identifiant", () => {

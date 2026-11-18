@@ -1,5 +1,5 @@
 // Export simulé pour les parcours : la fenêtre d'enregistrement rend un fichier choisi d'avance,
-// et chaque fichier exporté est gardé en mémoire. Les vraies règles sont testées côté Rust.
+// chaque fichier exporté est gardé en mémoire, chaque impression aussi. Les vraies règles sont testées côté Rust.
 
 type Handler = (args: Record<string, string>) => unknown;
 
@@ -13,8 +13,11 @@ export interface FakeExports {
   saveDialogs: { name: string; folder: string | null }[];
   /** Les fichiers exportés, par emplacement : le texte d'un Markdown, le HTML imprimé d'un PDF. */
   exported: Record<string, string>;
+  /** Chaque fenêtre d'impression ouverte : le HTML de la feuille d'impression à ce moment. */
+  printed: string[];
 }
 
+const sheet = () => document.querySelector(".print-sheet")?.innerHTML ?? "";
 const DOCUMENTS = "/Users/moi/Documents";
 const EXTENSIONS: Record<string, string> = { pdf: "pdf", markdown: "md" };
 
@@ -32,7 +35,11 @@ export function fakeExport(exports: FakeExports): Record<string, Handler> {
       return null;
     },
     export_pdf: ({ destination = "" }) => {
-      exports.exported[destination] = document.querySelector(".print-sheet")?.innerHTML ?? "";
+      exports.exported[destination] = sheet();
+      return null;
+    },
+    print_page: () => {
+      exports.printed.push(sheet());
       return null;
     },
   };

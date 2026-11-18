@@ -19,6 +19,7 @@ function mount() {
   const panes: ReturnType<typeof fakePane>[] = [];
   const changed = vi.fn();
   const errors: unknown[] = [];
+  const printed: string[] = [];
   const columns = createOpenColumns({
     container,
     outline,
@@ -30,6 +31,7 @@ function mount() {
       return pane;
     },
     changed,
+    printNote: (path) => printed.push(path),
     run: (action) => void action.catch((error: unknown) => errors.push(error)),
   });
   const sections = () => [...container.querySelectorAll<HTMLElement>(".column")];
@@ -41,7 +43,10 @@ function mount() {
       .current()
       .list.map((column) => column.tabs.map((tab) => tab.note).join(","))
       .join(" | ");
-  return { container, outline, screen, shown, columns, panes, log, changed, sections, tabs, notes };
+  return {
+    ...{ container, outline, screen, shown, columns, panes, log, changed, sections, tabs, notes },
+    printed,
+  };
 }
 
 /** Deux colonnes : a et b dans la première, c dans la seconde, qui est active. */
@@ -112,6 +117,13 @@ describe("colonnes et onglets de l'application", () => {
     document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
     await settle();
     expect(m.notes()).toBe("b.md | c.md,c.md");
+  });
+
+  it("le menu d'un onglet imprime sa note", async () => {
+    const m = await twoColumns();
+    m.tabs(0)[0]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].at(-1)?.click();
+    expect(m.printed).toEqual(["a.md"]);
   });
 
   it("une colonne fermée rend son éditeur, et le plan passe à la colonne restante", async () => {

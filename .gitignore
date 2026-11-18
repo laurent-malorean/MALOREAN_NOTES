@@ -13,3 +13,4 @@ mutants.out*/
 ui/reports/
 ui/.stryker-tmp/
 ui/.vitest/
+stats.md

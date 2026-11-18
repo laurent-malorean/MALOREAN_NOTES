@@ -65,7 +65,10 @@ const deps: CommandsDeps = {
   settings: { open: () => log.push("réglages") },
   tags: { clear: () => (log.push("retirer le filtre"), tagFilter) },
   recent: { paths: () => recentPaths },
-  exporting: { exportNote: (path) => void log.push(`exporter ${path}`) },
+  exporting: {
+    exportNote: (path) => void log.push(`exporter ${path}`),
+    printNote: (path) => void log.push(`imprimer ${path}`),
+  },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
 connectCommands(deps);
@@ -109,6 +112,7 @@ describe("commandes de la palette", () => {
       "toggle-side-panels",
       "split-column",
       "export-note",
+      "print-note",
       "show-trash",
       "open-settings",
       "switch-workspace",
@@ -130,6 +134,7 @@ describe("commandes de la palette", () => {
       "panneaux",
       "diviser",
       "exporter undefined",
+      "imprimer undefined",
       "corbeille",
       "réglages",
       "changer d'espace de travail",
@@ -278,6 +283,11 @@ describe("raccourcis clavier", () => {
   it("Cmd+E exporte la note de la colonne active", () => {
     expect(press("e", { metaKey: true }).defaultPrevented).toBe(true);
     expect(log).toEqual(["exporter undefined"]);
+  });
+
+  it("Cmd+P imprime la note de la colonne active", () => {
+    expect(press("p", { metaKey: true }).defaultPrevented).toBe(true);
+    expect(log).toEqual(["imprimer undefined"]);
   });
 
   it("Cmd+O ouvre l'ouverture rapide", async () => {

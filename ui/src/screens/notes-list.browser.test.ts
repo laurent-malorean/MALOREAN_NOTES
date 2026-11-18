@@ -12,6 +12,7 @@ const noActions: NoteActions = {
   closeNote: () => {},
   selectTag: () => {},
   exportNote: () => {},
+  printNote: () => {},
 };
 
 /** Les actions demandées, notées dans l'ordre : `ouvrir a.md`, `épingler a.md`… */
@@ -28,6 +29,7 @@ function recorded(): { readonly asked: string[]; readonly actions: NoteActions }
       closeNote: (path) => asked.push(`fermer ${path}`),
       selectTag: (tag) => asked.push(`filtrer #${tag}`),
       exportNote: (path) => asked.push(`exporter ${path}`),
+      printNote: (path) => asked.push(`imprimer ${path}`),
     },
   };
 }
@@ -188,7 +190,12 @@ describe("notes épinglées", () => {
     renderNotesList(container, withPinned, null, actions);
     const event = rightClick(container.querySelectorAll(".note-item")[1] as Element);
     expect(event.defaultPrevented).toBe(true);
-    expect(menuEntries().slice(4)).toEqual(["Épingler", "Exporter…", "Placer dans la corbeille"]);
+    expect(menuEntries().slice(4)).toEqual([
+      "Épingler",
+      "Exporter…",
+      "Imprimer…",
+      "Placer dans la corbeille",
+    ]);
     expect(document.querySelector<HTMLElement>(".context-menu")?.style.left).toBe("12px");
     menuButtons()[4]?.click();
     expect(asked).toEqual(["épingler a.md"]);
@@ -202,6 +209,7 @@ describe("notes épinglées", () => {
     expect(menuEntries().slice(4)).toEqual([
       "Désépingler",
       "Exporter…",
+      "Imprimer…",
       "Placer dans la corbeille",
     ]);
     menuButtons()[4]?.click();
@@ -215,6 +223,15 @@ describe("notes épinglées", () => {
     rightClick(container.querySelector(".note-item") as Element);
     menuButtons()[5]?.click();
     expect(asked).toEqual(["exporter p.md"]);
+  });
+
+  it("un clic droit sur une note propose de l'imprimer", () => {
+    const container = list();
+    const { asked, actions } = recorded();
+    renderNotesList(container, withPinned, null, actions);
+    rightClick(container.querySelectorAll(".note-item")[1] as Element);
+    menuButtons()[6]?.click();
+    expect(asked).toEqual(["imprimer a.md"]);
   });
 });
 

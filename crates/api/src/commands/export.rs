@@ -1,5 +1,7 @@
-//! Commandes de l'export d'une note : le fichier choisi, puis le Markdown ou le PDF écrit.
+//! Commandes de l'export d'une note : le fichier choisi, puis le Markdown ou le PDF écrit ; et
+//! la fenêtre d'impression du Mac, sur le même rendu.
 
+use std::ffi::c_void;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -77,21 +79,40 @@ pub async fn export_pdf<R: Runtime>(
     destination: String,
 ) -> Result<(), ApiError> {
     let destination = ExportDestination::parse(&destination)?;
+    on_page(webview, move |page, window| {
+        crate::pdf::print_to_pdf(page, window, destination.location())
+    })
+    .await?
+    .map_err(|reason| ApiError::pdf_failed(&reason))
+}
+
+/// Ouvre la fenêtre d'impression du Mac sur la page : seule sa feuille d'impression, où la page a
+/// posé le rendu HTML de la note, paraît sur le papier, comme pour l'export PDF. La réponse vient
+/// dès la fenêtre ouverte ; l'utilisateur imprime, ou garde un PDF, depuis elle.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : impression impossible.
+#[tauri::command]
+pub async fn print_page<R: Runtime>(webview: Webview<R>) -> Result<(), ApiError> {
+    on_page(webview, crate::pdf::print_with_panel)
+        .await?
+        .map_err(|reason| ApiError::print_failed(&reason))
+}
+
+/// Fait `print` sur le WKWebView et la NSWindow de la fenêtre, sur le fil principal, et rend
+/// son résultat sans bloquer ce fil.
+async fn on_page<R: Runtime>(
+    webview: Webview<R>,
+    print: impl FnOnce(*mut c_void, *mut c_void) -> Result<(), String> + Send + 'static,
+) -> Result<Result<(), String>, ApiError> {
     let (sent, received) = std::sync::mpsc::channel();
     webview
         .with_webview(move |page| {
-            let printed =
-                crate::pdf::print_to_pdf(page.inner(), page.ns_window(), destination.location());
-            if let Err(error) = sent.send(printed) {
+            if let Err(error) = sent.send(print(page.inner(), page.ns_window())) {
                 tracing::warn!(%error, "fin de l'impression non transmise");
             }
         })
         .map_err(|e| ApiError::internal(&e))?;
-    in_background(move || {
-        received
-            .recv()
-            .map_err(|e| ApiError::internal(&e))?
-            .map_err(|reason| ApiError::pdf_failed(&reason))
-    })
-    .await
+    in_background(move || received.recv().map_err(|e| ApiError::internal(&e))).await
 }

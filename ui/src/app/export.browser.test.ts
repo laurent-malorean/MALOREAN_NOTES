@@ -42,6 +42,10 @@ function setup({
         log.push(`pdf ${destination} ${layout.printSheet.innerHTML}`);
         return null;
       },
+      printPage: async () => {
+        log.push(`imprimer ${layout.printSheet.innerHTML}`);
+        return null;
+      },
       fileAddress: (path) => (path.endsWith("vide.gif") ? PIXEL : `asset://${path}`),
     },
     columns: columns.open,
@@ -151,5 +155,41 @@ describe("export d'une note", () => {
     expect(t.log).toEqual(["lire Travail/voyage.md", "choisir Voyage pdf null"]);
     expect(t.items.size).toBe(0);
     expect(t.shown).toEqual([]);
+  });
+});
+
+describe("impression d'une note", () => {
+  it("ouvre la fenêtre d'impression sur le rendu de la note enregistrée, posé sur la feuille", async () => {
+    const t = setup({ content: "# Voyage\n*loin*" });
+    t.exporting.printNote("autre.md");
+    await expect
+      .poll(() => t.log)
+      .toEqual(["lire autre.md", "imprimer <h1>Voyage</h1><p><em>loin</em></p>"]);
+    expect(t.columns.log).toContain("enregistrer autre.md");
+    expect(layout.picker.open).toBe(false);
+    expect(t.shown).toEqual([]);
+  });
+
+  it("sans chemin, imprime la note de la colonne active, une fois ses images chargées", async () => {
+    let loaded = (): void => undefined;
+    const decode = vi
+      .spyOn(HTMLImageElement.prototype, "decode")
+      .mockImplementationOnce(() => new Promise<void>((resolve) => (loaded = resolve)));
+    const t = setup({ content: "![](a.png)" });
+    t.exporting.printNote();
+    await settle();
+    await settle();
+    expect(t.log).toEqual(["lire Travail/voyage.md"]);
+    loaded();
+    await expect.poll(() => t.log.at(-1)?.startsWith("imprimer <p><img")).toBe(true);
+    decode.mockRestore();
+  });
+
+  it("sans note dans la colonne active, rien ne s'imprime", async () => {
+    const t = setup();
+    t.columns.open.current = () => columnsStarted;
+    t.exporting.printNote();
+    await settle();
+    expect(t.log).toEqual([]);
   });
 });
