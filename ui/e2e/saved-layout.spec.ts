@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { openNote, waitForLaunchedNote } from "./journey";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
@@ -11,6 +12,7 @@ const WORKSPACE: Notes = {
 async function launch(page: Page, notes: Notes = WORKSPACE) {
   const params = new URLSearchParams({ notes: JSON.stringify(notes), remembered: "1" });
   await page.goto(`/e2e/app.html?${params.toString()}`);
+  await waitForLaunchedNote(page, notes);
 }
 
 const columns = (page: Page) => page.getByRole("region", { name: "Colonne" });
@@ -38,9 +40,9 @@ test("au relancement, les colonnes reviennent avec leurs largeurs, leurs onglets
 }) => {
   await launch(page);
   await page.getByTitle("Diviser la colonne").first().click();
-  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await openNote(page, "Idée", { in: columns(page).nth(1) });
   await firstLine(page, 0).click();
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Vieille note");
   await tabs(page, 1).filter({ hasText: "Courses" }).click();
   const before = await widthOf(page, 0);
   await widenLeft(page, 120);
@@ -67,9 +69,9 @@ test("au relancement, les notes disparues sont oubliées et une colonne sans ong
 }) => {
   await launch(page);
   await page.getByTitle("Diviser la colonne").first().click();
-  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await openNote(page, "Idée", { in: columns(page).nth(1) });
   await firstLine(page, 0).click();
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Vieille note");
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Vieille note×"]);
 
   const { "vieille-note.md": kept } = WORKSPACE;
@@ -84,7 +86,7 @@ test("s'il ne reste rien des colonnes gardées, l'application démarre comme d'h
   page,
 }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await openNote(page, "Idée");
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×"]);
 
   const { "vieille-note.md": kept } = WORKSPACE;

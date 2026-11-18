@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { openNote, waitForEmptyNote, waitForLaunchedNote, waitForNote } from "./journey";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
@@ -11,6 +12,7 @@ const WORKSPACE: Notes = {
 async function launch(page: Page, notes: Notes = WORKSPACE) {
   const params = new URLSearchParams({ notes: JSON.stringify(notes), remembered: "1" });
   await page.goto(`/e2e/app.html?${params.toString()}`);
+  await waitForLaunchedNote(page, notes);
 }
 
 const columns = (page: Page) => page.getByRole("region", { name: "Colonne" });
@@ -40,7 +42,7 @@ test("on écrit dans chaque colonne, chacune enregistre sa note, la liste suit l
 }) => {
   await launch(page);
   await split(page).click();
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Vieille note", { in: columns(page).nth(1) });
   await columns(page).nth(1).locator(".cm-line").last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" à droite");
@@ -113,6 +115,7 @@ test("chaque colonne montre l'onglet de sa note, à son titre, qui suit le titre
   await page.locator(".note-item", { hasText: "Idée" }).click();
   await expect(tabs(page, 1)).toHaveText(["Courses×", "Idée×"]);
   await expect(tabs(page, 0)).toHaveText(["Courses×"]);
+  await waitForNote(columns(page).nth(1), "Idée");
   await firstLine(page, 1).click();
   await page.keyboard.press("End");
   await page.keyboard.type(" neuve");
@@ -153,6 +156,7 @@ test("ouvrir ou créer une note ajoute un onglet dans la colonne où l'on a cliq
   await firstLine(page, 1).click();
   await page.getByTitle("Nouvelle note").click();
   await expect(tabs(page, 1)).toHaveText(["Courses×", "Sans titre×"]);
+  await waitForEmptyNote(columns(page).nth(1));
   await page.keyboard.type("# Liste");
   await expect(tabs(page, 1)).toHaveText(["Courses×", "Liste×"]);
   await expect(tabs(page, 0)).toHaveCount(3);
@@ -160,7 +164,7 @@ test("ouvrir ou créer une note ajoute un onglet dans la colonne où l'on a cliq
 
 test("cliquer un onglet montre sa note, ce qui était tapé étant enregistré", async ({ page }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await openNote(page, "Idée");
   await columns(page).nth(0).locator(".cm-line").last().click();
   await page.keyboard.press("End");
   await page.keyboard.type("!");
@@ -175,6 +179,7 @@ test("fermer le dernier onglet d'une colonne la ferme, enregistre ce qui est tap
 }) => {
   await launch(page);
   await split(page).click();
+  await waitForNote(columns(page).nth(1), "Courses");
   await columns(page).nth(1).locator(".cm-line").last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" complet");
@@ -269,8 +274,8 @@ test("glisser un onglet vers une autre colonne l'y emmène ; vers le bord, une c
   page,
 }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Idée" }).click();
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Idée");
+  await openNote(page, "Vieille note");
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Idée×", "Vieille note×"]);
   await dropTab(page, 1, 0, 0.95);
   await expect(columns(page)).toHaveCount(2);

@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { waitForLaunchedNote } from "./journey";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
@@ -20,6 +21,7 @@ async function launch(page: Page) {
   });
   await page.goto(`/e2e/app.html?${params.toString()}`);
   await expect(page.locator(".workspace-switcher")).toHaveText("Notes");
+  await waitForLaunchedNote(page, NOTES);
 }
 
 const switcher = (page: Page) => page.locator(".workspace-switcher");

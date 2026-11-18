@@ -147,6 +147,11 @@ check_ui() {
 
   step "Interface : parcours utilisateur complets (WebKit)"
   (cd ui && npx --no-install playwright test)
+
+  # Lecture des notes ralentie dans le faux : un parcours qui clique ou tape avant que la note soit
+  # montrée échoue à coup sûr au lieu d'échouer une fois sur cent (doc/code.md, « Parcours »).
+  step "Interface : parcours utilisateur, lecture des notes ralentie à 100 ms"
+  (cd ui && VITE_READ_DELAY=100 npx --no-install playwright test)
 }
 
 # Test de mutation de l'interface (scripts/ui-mutations.sh), en mode incrémental : Stryker ne reteste

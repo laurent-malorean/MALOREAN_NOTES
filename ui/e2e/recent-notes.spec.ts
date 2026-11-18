@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { openNote, waitForNote } from "./journey";
 
 const WORKSPACE = {
   "courses.md": { content: "# Courses\n- pain", modified: 30 },
@@ -13,7 +14,7 @@ async function launch(page: Page) {
     remembered: "1",
   });
   await page.goto(`/e2e/app.html?${params.toString()}`);
-  await expect(page.locator(".cm-line").first()).toHaveText("Courses");
+  await waitForNote(page, "Courses");
 }
 
 const titles = (page: Page) => page.locator(".notes-list .note-title");
@@ -48,7 +49,7 @@ test("une note renommée reste dans les notes récentes ; une note mise à la co
   page,
 }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Idée" }).click();
+  await openNote(page, "Idée");
   await page.locator(".cm-line").first().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" bio");

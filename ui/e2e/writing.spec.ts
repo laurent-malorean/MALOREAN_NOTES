@@ -1,10 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
+import { waitForLaunchedNote } from "./journey";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
 async function launch(page: Page, notes: Notes) {
   const params = new URLSearchParams({ notes: JSON.stringify(notes), remembered: "1" });
   await page.goto(`/e2e/app.html?${params.toString()}`);
+  await waitForLaunchedNote(page, notes);
 }
 
 const savedContent = (page: Page, path: string) =>

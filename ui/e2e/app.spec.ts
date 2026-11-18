@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { openNote, waitForEmptyNote, waitForLaunchedNote } from "./journey";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
@@ -18,6 +19,7 @@ async function launch(
     remembered: options.remembered === false ? "0" : "1",
   });
   await page.goto(`/e2e/app.html?${params.toString()}`);
+  if (options.remembered !== false) await waitForLaunchedNote(page, options.notes ?? WORKSPACE);
 }
 
 const titles = (page: Page) => page.locator(".note-title");
@@ -55,7 +57,7 @@ test("cliquer une note l'ouvre, mise en forme et sans syntaxe", async ({ page })
 
 test("ce qu'on tape est enregistré automatiquement", async ({ page }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Vieille note");
   await editorLines(page).last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" ajouté");
@@ -66,7 +68,7 @@ test("ce qu'on tape est enregistré automatiquement", async ({ page }) => {
 
 test("changer le titre renomme le fichier et la note reste sélectionnée", async ({ page }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Vieille note");
   await editorLines(page).first().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" relue");
@@ -82,6 +84,7 @@ test("une nouvelle note s'ouvre vide et prend le nom de son titre", async ({ pag
   await launch(page);
   await page.getByTitle("Nouvelle note").click();
   await expect(page.locator(".note-item.selected .note-title")).toHaveText("Sans titre");
+  await waitForEmptyNote(page);
   await page.keyboard.type("# Liste de Noël");
   await expect.poll(() => savedContent(page, "liste-de-noel.md")).toBe("# Liste de Noël");
   await expect(page.locator(".note-item.selected .note-title")).toHaveText("Liste de Noël");
@@ -92,6 +95,7 @@ test("taper dans une nouvelle note écrit son titre : la première ligne reste u
 }) => {
   await launch(page);
   await page.getByTitle("Nouvelle note").click();
+  await waitForEmptyNote(page);
   await page.keyboard.type("Liste de Noël");
   await expect.poll(() => savedContent(page, "liste-de-noel.md")).toBe("# Liste de Noël");
   await expect(page.locator(".note-item.selected .note-title")).toHaveText("Liste de Noël");
@@ -99,7 +103,7 @@ test("taper dans une nouvelle note écrit son titre : la première ligne reste u
 
 test("changer de note enregistre tout de suite ce qui ne l'était pas", async ({ page }) => {
   await launch(page);
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Vieille note");
   await editorLines(page).last().click();
   await page.keyboard.press("End");
   await page.keyboard.type("!");
@@ -224,9 +228,7 @@ test("la note ouverte glissée dans un dossier reste ouverte, avec ce qu'on vien
   page,
 }) => {
   await launch(page, { folders: ["Perso"] });
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
-  // La note s'ouvre après sa lecture : cliquer avant visait encore la note ouverte au lancement.
-  await expect(editorLines(page).first()).toHaveText("Vieille note");
+  await openNote(page, "Vieille note");
   await editorLines(page).last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" ajouté");
@@ -308,7 +310,7 @@ test("épingler une note par clic droit la met en tête, sans perdre ce qu'on ta
 }) => {
   await launch(page);
   await expect(titles(page)).toHaveText(["Courses", "Idée", "Vieille note"]);
-  await page.locator(".note-item", { hasText: "Vieille note" }).click();
+  await openNote(page, "Vieille note");
   await editorLines(page).last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" ajouté");

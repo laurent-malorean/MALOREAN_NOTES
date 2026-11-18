@@ -27,6 +27,8 @@ export interface FakeBackend extends FakeExports {
   opened: string[];
   /** Durée d'une recherche en millisecondes, pour simuler un gros espace de travail. */
   searchDuration: number;
+  /** Durée de la lecture d'une note en millisecondes (lecture ralentie, voir `doc/code.md`). */
+  readDelay: number;
   /** Le plein écran demandé par le Mac lui-même (bouton vert, menu). */
   enterFullScreenFromTheSystem: () => Promise<void>;
   /** Une note modifiée (ou supprimée, avec `null`) hors de l'application, puis annoncée. */
@@ -59,6 +61,8 @@ const backend: FakeBackend = {
   copied: [],
   copiedMarkdown: [],
   searchDuration: 0,
+  // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
+  readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
   enterFullScreenFromTheSystem: async () => {
     backend.fullScreen = true;
     await emit("tauri://resize", { width: 1440, height: 900 });
@@ -408,7 +412,10 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   read_note: ({ path = "" }) => {
     const note = backend.notes[path];
     if (!note) throw { message: `la note « ${path} » n'existe pas` };
-    return noteContent(path, note.content);
+    const read = noteContent(path, note.content);
+    return backend.readDelay > 0
+      ? new Promise((resolve) => setTimeout(() => resolve(read), backend.readDelay))
+      : read;
   },
   save_note: ({ path = "", content = "", fingerprint = "" }) => save(path, content, fingerprint),
   list_folders: () => [...backend.folders].sort(treeOrder),
