@@ -996,3 +996,12 @@ button {
   display: block;
   padding: 0.4rem 0.6rem;
 }
+/* Une case à cocher, suivie de son nom sur la même ligne. */
+.setting-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.setting-check input {
+  margin: 0;
+}

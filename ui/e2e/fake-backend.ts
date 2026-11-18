@@ -69,6 +69,12 @@ let clock = 1_000;
 
 const library = { name: "Notes", path: "/Users/moi/Notes" };
 
+// La note du jour au lancement n'est voulue que par les parcours du journal (`journal=1`) : les
+// autres commencent sur la note choisie, comme avant le journal. Un choix déjà gardé reste.
+const JOURNAL_KEY = `malorean.journal:${library.path}`;
+if (params.get("journal") !== "1" && localStorage.getItem(JOURNAL_KEY) === null)
+  localStorage.setItem(JOURNAL_KEY, JSON.stringify({ folder: "Journal", atLaunch: false }));
+
 const titleOf = (content: string) => /^# (.+)$/m.exec(content)?.[1]?.trim() ?? null;
 const slug = (title: string | null) =>
   (title ?? "")
@@ -148,6 +154,33 @@ function keepChangedVersion(path: string, content: string, fingerprint: string) 
   return copy;
 }
 
+/** La note du jour simulée : celle du 16 novembre 2026, le jour de l'horloge figée. */
+const DAILY_NAME = "2026-11-16";
+const DAILY_TITLE = "16 novembre 2026";
+
+/** Comme Rust : une note du jour dont le titre est encore sa date garde son nom daté. */
+const wantedName = (path: string, content: string) =>
+  path.endsWith(`${DAILY_NAME}.md`) && titleOf(content) === DAILY_TITLE
+    ? DAILY_NAME
+    : slug(titleOf(content));
+
+function createDailyNote(journal: string, template: string | null) {
+  const path = inFolder(journal, `${DAILY_NAME}.md`);
+  addFolders(backend.folders, journal);
+  if (path in backend.notes) return { path };
+  const model = template === null ? null : backend.notes[template];
+  if (model === undefined) throw { message: `la note « ${template} » n'existe pas` };
+  const content = model
+    ? model.content
+        .replace(/^# .*$/m, `# ${DAILY_TITLE}`)
+        .replaceAll("{{title}}", DAILY_TITLE)
+        .replaceAll("{{date}}", DAILY_TITLE)
+        .replaceAll("{{time}}", "18:30")
+    : `# ${DAILY_TITLE}\n`;
+  backend.notes[path] = { content, modified: (clock += 1) };
+  return { path };
+}
+
 function save(path: string, content: string, fingerprint: string) {
   if (backend.failNextSave) {
     backend.failNextSave = false;
@@ -155,7 +188,7 @@ function save(path: string, content: string, fingerprint: string) {
   }
   const conflictCopy = keepChangedVersion(path, content, fingerprint);
   const tagsChanged = tagsOf(backend.notes[path]?.content ?? "").join() !== tagsOf(content).join();
-  const target = freeName(folderOf(path), slug(titleOf(content)), path);
+  const target = freeName(folderOf(path), wantedName(path, content), path);
   Reflect.deleteProperty(backend.notes, path);
   backend.notes[target] = { content, modified: (clock += 1) };
   return {
@@ -397,6 +430,8 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
     backend.notes[path] = { content, modified: (clock += 1) };
     return { path };
   },
+  create_daily_note: ({ journal = "", template }) =>
+    createDailyNote(journal, (template as string | null | undefined) ?? null),
   create_note: ({ folder = "" }) => {
     const path = freeName(folder, "sans-titre");
     backend.notes[path] = { content: "", modified: (clock += 1) };

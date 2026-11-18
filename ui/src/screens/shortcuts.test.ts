@@ -76,6 +76,11 @@ describe("raccourcis clavier", () => {
     expect(key("n", { metaKey: true })).toBeNull();
   });
 
+  it("Cmd+Maj+J ouvre la note du jour", () => {
+    expect(key("J", { metaKey: true, shiftKey: true })).toBe("daily-note");
+    expect(key("j", { metaKey: true })).toBeNull();
+  });
+
   it("Ctrl+Cmd+T divise la colonne", () => {
     expect(key("t", { metaKey: true, ctrlKey: true })).toBe("split-column");
     expect(key("t", { ctrlKey: true })).toBeNull();

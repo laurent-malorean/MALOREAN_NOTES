@@ -32,6 +32,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
 - Coller une image : elle devient une pièce jointe liée.
 - Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.
+- Note du jour : la note de la date du jour, rangée dans le journal sous sa date et titrée en toutes lettres, créée au besoin depuis le modèle « Journal » ; ouverte par Cmd+Maj+J, la palette, et au lancement si les réglages le demandent.
 
 ## Hors première version
 

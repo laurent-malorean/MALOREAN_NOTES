@@ -9,6 +9,7 @@ describe("palette de commandes", () => {
       ["quick-open", "Ouvrir une note", "Cmd+O"],
       ["new-note", "Nouvelle note", null],
       ["new-note-from-template", "Nouvelle note depuis un modèle", "Cmd+Maj+N"],
+      ["daily-note", "Note du jour", "Cmd+Maj+J"],
       ["new-folder", "Nouveau dossier", null],
       ["search-library", "Rechercher dans toutes les notes", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],
@@ -32,6 +33,7 @@ describe("palette de commandes", () => {
   it("garde les commandes dont le nom contient chaque mot tapé, sans tenir compte des accents", () => {
     expect(labels("reglage")).toEqual(["Réglages"]);
     expect(labels("note")).toEqual([
+      "Note du jour",
       "Ouvrir une note",
       "Nouvelle note",
       "Nouvelle note depuis un modèle",

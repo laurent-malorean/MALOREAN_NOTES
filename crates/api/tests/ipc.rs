@@ -196,6 +196,15 @@ fn a_created_note_is_untitled() {
 }
 
 #[test]
+fn the_daily_note_is_asked_with_the_argument_names_used_by_the_page() {
+    let window = window(&[]);
+    call(&window, "reopen_last_library", json!({})).unwrap();
+    let args = json!({ "journal": "Journal", "template": null });
+    let created: SavedNote = ok(call(&window, "create_daily_note", args));
+    assert_eq!(created.path, "Journal/2026-11-16.md");
+}
+
+#[test]
 fn a_dangerous_name_sent_by_the_page_is_refused() {
     let window = window(&[]);
     call(&window, "reopen_last_library", json!({})).unwrap();

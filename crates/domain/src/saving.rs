@@ -1,6 +1,7 @@
 //! Décider ce que devient une note qu'on enregistre ou qu'on crée : son nom et son contenu.
 
 use crate::attachments::relink;
+use crate::journal::keeps_date_name;
 use crate::{FileName, Folder, NotePath, Title};
 
 /// Ce que devient une note enregistrée : le nom de fichier qu'elle doit porter
@@ -27,11 +28,16 @@ impl SavePlan {
 
 /// Le nom et le contenu d'une note enregistrée sous `current`.
 ///
-/// Le nom suit le titre ; s'il est pris par une autre note de `existing`, il reçoit
+/// Le nom suit le titre, sauf pour une note du jour dont le titre est encore sa date, qui garde
+/// son nom daté (voir [`crate::journal`]). S'il est pris par une autre note de `existing`, il reçoit
 /// le premier suffixe `-2`, `-3`… libre. La note elle-même ne compte pas comme une autre.
 #[must_use]
 pub fn plan_save(current: &FileName, content: &str, existing: &[FileName]) -> SavePlan {
-    let wanted = FileName::from_title(Title::of(content).as_ref());
+    let wanted = if keeps_date_name(current, content) {
+        current.clone()
+    } else {
+        FileName::from_title(Title::of(content).as_ref())
+    };
     let file_name =
         wanted.deduplicated(|candidate| candidate != current && existing.contains(candidate));
     let content = if &file_name == current {
@@ -161,5 +167,18 @@ mod tests {
             new_note_name(&[name("sans-titre.md")]),
             name("sans-titre-2.md")
         );
+    }
+
+    #[test]
+    fn a_daily_note_keeps_its_date_name_while_its_title_is_its_date() {
+        let current = name("2026-11-18.md");
+        let plan = plan_save(
+            &current,
+            "# 18 novembre 2026\ntexte",
+            std::slice::from_ref(&current),
+        );
+        assert_eq!(plan.file_name(), &current);
+        let plan = plan_save(&current, "# Voyage", std::slice::from_ref(&current));
+        assert_eq!(plan.file_name(), &name("voyage.md"));
     }
 }

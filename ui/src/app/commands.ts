@@ -28,6 +28,8 @@ export interface CommandsDeps {
     sortBy(order: NoteOrder): Promise<void>;
   };
   readonly templates: { newNote(): Promise<void> };
+  /** La note du jour du journal. */
+  readonly journal: { open(): Promise<void> };
   readonly folders: { startCreation(): void };
   readonly trash: { show(): Promise<void> };
   readonly settings: { open(): void };
@@ -79,6 +81,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "quick-open": () => run(quickOpen(deps)),
     "new-note": () => run(deps.library.createNote()),
     "new-note-from-template": () => run(deps.templates.newNote()),
+    "daily-note": () => run(deps.journal.open()),
     "new-folder": () => deps.folders.startCreation(),
     "search-library": () => deps.searchField.focus(),
     "find-in-note": () => columns.activePane().editor.openFind(),
@@ -140,6 +143,7 @@ function shortcutActions(
     "previous-tab": done(actions["previous-tab"]),
     "split-column": done(actions["split-column"]),
     "new-note-from-template": done(actions["new-note-from-template"]),
+    "daily-note": done(actions["daily-note"]),
   };
 }
 

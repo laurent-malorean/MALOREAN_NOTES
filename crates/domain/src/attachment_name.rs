@@ -123,6 +123,27 @@ impl Moment {
         format!("{:02}:{:02}", self.hour, self.minute)
     }
 
+    /// Le jour d'une date ISO `2026-11-18`, à minuit ; rien si ce n'en est pas une.
+    pub(crate) fn of_iso_date(text: &str) -> Option<Self> {
+        let mut parts = text.split('-');
+        let mut number = |digits: usize| {
+            parts
+                .next()
+                .filter(|part| part.len() == digits && part.bytes().all(|b| b.is_ascii_digit()))
+                .and_then(|part| part.parse::<u32>().ok())
+        };
+        let (year, month, day) = (number(4)?, number(2)?, number(2)?);
+        if parts.next().is_some() {
+            return None;
+        }
+        Self::new(i32::try_from(year).ok()?, month, day, 0, 0).ok()
+    }
+
+    /// La date ISO : `2026-11-18`.
+    pub(crate) fn iso_date(&self) -> String {
+        format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
+    }
+
     /// Le moment tel qu'on le lit : `2026-11-16 18h30`.
     pub(crate) fn label(&self) -> String {
         format!(

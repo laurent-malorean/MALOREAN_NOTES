@@ -262,6 +262,21 @@ pub async fn create_note_from_template(
     in_background(move || session.create_note_from_template(&template, &folder)).await
 }
 
+/// La note du jour dans le dossier `journal`, créée si besoin depuis le modèle `template`.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
+#[tauri::command]
+pub async fn create_daily_note(
+    session: SharedSession<'_>,
+    journal: String,
+    template: Option<String>,
+) -> Result<SavedNote, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.create_daily_note(&journal, template.as_deref())).await
+}
+
 /// Les chemins de tous les dossiers, dans l'ordre de l'arbre.
 ///
 /// # Errors
@@ -505,6 +520,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         save_note,
         create_note,
         create_note_from_template,
+        create_daily_note,
         list_folders,
         create_folder,
         rename_folder,

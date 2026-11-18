@@ -117,6 +117,21 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
       },
     ]);
   });
+
+  it("demande la note du jour, avec ou sans modèle", async () => {
+    const calls = recordCalls({ path: "Journal/2026-11-18.md" });
+    expect(await bridge.createDailyNote("Journal", "Modèles/journal.md")).toEqual({
+      path: "Journal/2026-11-18.md",
+    });
+    await bridge.createDailyNote("Journal", null);
+    expect(calls).toEqual([
+      {
+        command: "create_daily_note",
+        args: { journal: "Journal", template: "Modèles/journal.md" },
+      },
+      { command: "create_daily_note", args: { journal: "Journal", template: null } },
+    ]);
+  });
 });
 
 describe("pont vers Rust : message d'erreur", () => {

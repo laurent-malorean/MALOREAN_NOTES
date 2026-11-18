@@ -1,6 +1,7 @@
 //! La bibliothèque ouverte et les cas d'usage qu'on lui applique.
 
 mod attachments;
+mod journal;
 mod links;
 mod quick_open;
 mod recent_notes;

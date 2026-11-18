@@ -77,6 +77,9 @@ export const createNote = (folder: string) => invoke<SavedNote>("create_note", {
 /** Crée une note dans `folder` depuis le modèle `template`, ses variables remplacées par Rust. */
 export const createNoteFromTemplate = (template: string, folder: string) =>
   invoke<SavedNote>("create_note_from_template", { template, folder });
+/** La note du jour dans le dossier `journal`, créée par Rust si besoin, depuis `template` s'il y en a un. */
+export const createDailyNote = (journal: string, template: string | null) =>
+  invoke<SavedNote>("create_daily_note", { journal, template });
 /** L'adresse qui charge dans la fenêtre un fichier de la bibliothèque, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);
 export const listFolders = () => invoke<string[]>("list_folders");

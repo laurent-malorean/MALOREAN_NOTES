@@ -24,7 +24,7 @@ export interface SettingsDeps {
   /** Où les réglages sont gardés d'une session à l'autre. */
   readonly storage: PreferenceStorage;
   readonly systemDark: SystemAppearance;
-  /** Des parties de plus pour la fenêtre des réglages, faites à chaque ouverture : les modèles. */
+  /** Des parties de plus pour la fenêtre des réglages, faites à chaque ouverture : les modèles, le journal. */
   readonly groups: () => readonly HTMLElement[];
 }
 

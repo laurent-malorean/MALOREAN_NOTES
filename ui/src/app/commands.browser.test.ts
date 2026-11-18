@@ -54,6 +54,7 @@ const deps: CommandsDeps = {
     sortBy: async (order) => void log.push(`trier par ${order}`),
   },
   templates: { newNote: async () => void log.push("depuis un modèle") },
+  journal: { open: async () => void log.push("note du jour") },
   folders: { startCreation: () => log.push("nouveau dossier") },
   trash: { show: async () => void log.push("corbeille") },
   settings: { open: () => log.push("réglages") },
@@ -93,6 +94,7 @@ describe("commandes de la palette", () => {
     for (const id of [
       "new-note",
       "new-note-from-template",
+      "daily-note",
       "new-folder",
       "toggle-focus",
       "toggle-typewriter",
@@ -109,6 +111,7 @@ describe("commandes de la palette", () => {
     expect(log).toEqual([
       "nouvelle note",
       "depuis un modèle",
+      "note du jour",
       "nouveau dossier",
       "focus",
       "machine à écrire",
@@ -224,6 +227,7 @@ describe("raccourcis clavier", () => {
       [",", { metaKey: true }],
       ["t", { metaKey: true, ctrlKey: true }],
       ["N", { metaKey: true, shiftKey: true }],
+      ["J", { metaKey: true, shiftKey: true }],
     ];
     for (const [key, modifiers] of keys) expect(press(key, modifiers).defaultPrevented).toBe(true);
     await settle();
@@ -236,6 +240,7 @@ describe("raccourcis clavier", () => {
       "réglages",
       "diviser",
       "depuis un modèle",
+      "note du jour",
     ]);
   });
 

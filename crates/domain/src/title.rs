@@ -17,29 +17,59 @@ impl Title {
     #[must_use]
     pub fn of(content: &str) -> Option<Self> {
         let (_, body) = front_matter::split(content);
-        let mut in_code = false;
-        for line in body.split(['\n', '\r']) {
-            if CODE_FENCES
-                .iter()
-                .any(|fence| line.trim_start().starts_with(fence))
-            {
-                in_code = !in_code;
-                continue;
-            }
-            if in_code {
-                continue;
-            }
-            if let Some(text) = heading_text(line) {
-                return Some(Self(text));
-            }
-        }
-        None
+        title_line(body).map(|line| Self(line.text))
     }
 
     /// Le texte du titre.
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+/// La ligne du titre dans le corps d'une note : où elle commence, sa longueur, son texte.
+struct TitleLine {
+    start: usize,
+    len: usize,
+    text: String,
+}
+
+/// Le premier titre `#` du corps, hors bloc de code.
+fn title_line(body: &str) -> Option<TitleLine> {
+    let mut in_code = false;
+    let mut start = 0;
+    for piece in body.split_inclusive(['\n', '\r']) {
+        let line = piece.trim_end_matches(['\n', '\r']);
+        if CODE_FENCES
+            .iter()
+            .any(|fence| line.trim_start().starts_with(fence))
+        {
+            in_code = !in_code;
+        } else if !in_code && let Some(text) = heading_text(line) {
+            return Some(TitleLine {
+                start,
+                len: line.len(),
+                text,
+            });
+        }
+        start += piece.len();
+    }
+    None
+}
+
+/// Le texte avec `title` pour titre : la ligne de son titre `#` remplacée par `# title`, ou,
+/// s'il n'en a pas, `# title` en tête du corps, après l'en-tête.
+#[must_use]
+pub fn retitled(content: &str, title: &str) -> String {
+    let (_, body) = front_matter::split(content);
+    let head = &content[..content.len() - body.len()];
+    match title_line(body) {
+        Some(line) => format!(
+            "{head}{}# {title}{}",
+            &body[..line.start],
+            &body[line.start + line.len..]
+        ),
+        None => format!("{head}# {title}\n{body}"),
     }
 }
 
@@ -130,5 +160,34 @@ mod tests {
     fn displayed_title_falls_back_to_untitled() {
         assert_eq!(displayed_title("pas de titre"), UNTITLED);
         assert_eq!(displayed_title("# Courses"), "Courses");
+    }
+
+    #[test]
+    fn retitled_replaces_the_title_line_only() {
+        assert_eq!(
+            retitled("Intro\n#  Journal  \n# Autre\n", "18 novembre 2026"),
+            "Intro\n# 18 novembre 2026\n# Autre\n"
+        );
+        assert_eq!(retitled("# Journal\r\ntexte", "Lundi"), "# Lundi\r\ntexte");
+    }
+
+    #[test]
+    fn retitled_skips_the_header_and_code_blocks() {
+        assert_eq!(
+            retitled(
+                "---\n# pas un titre\n---\n```\n# code\n```\n# Journal",
+                "Lundi"
+            ),
+            "---\n# pas un titre\n---\n```\n# code\n```\n# Lundi"
+        );
+    }
+
+    #[test]
+    fn retitled_puts_the_title_first_when_there_is_none() {
+        assert_eq!(
+            retitled("---\ntags: [a]\n---\ntexte\n", "Lundi"),
+            "---\ntags: [a]\n---\n# Lundi\ntexte\n"
+        );
+        assert_eq!(retitled("", "Lundi"), "# Lundi\n");
     }
 }

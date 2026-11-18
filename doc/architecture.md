@@ -18,7 +18,7 @@ crates/
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
-                      disposition gardée, dossiers pliés gardés, bibliothèque, dossiers, demandes de l'écran, modèles, recherche, corbeille, enregistrement,
+                      disposition gardée, dossiers pliés gardés, bibliothèque, dossiers, demandes de l'écran, modèles, journal, recherche, corbeille, enregistrement,
                       modifications extérieures, outils d'écriture, réglages, commandes
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
@@ -58,7 +58,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 |---|---|---|
 | Bibliothèque (dossier choisi par l'utilisateur, iCloud Drive possible) | notes `.md`, dossiers, pièces jointes — **seule source de vérité** | non |
 | `~/Library/Application Support/<app>/` | préférences, liste des bibliothèques ouvertes | non |
-| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes, dossier des modèles, dossiers pliés, tri de la liste et notes récentes de chaque bibliothèque ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
+| Stockage de la page (WebView) | réglages de confort : réglages, mode focus, mode machine à écrire, panneaux latéraux ; disposition des colonnes, dossier des modèles, réglages du journal, dossiers pliés, tri de la liste et notes récentes de chaque bibliothèque ; un réglage illisible reprend sa valeur par défaut, une disposition illisible est ignorée | oui |
 | `~/Library/Caches/<app>/` | index de recherche, aperçus — reconstructibles | oui |
 | `~/Library/Logs/<app>/` | journaux | oui |
 | Trousseau macOS | secrets éventuels | non |
@@ -97,6 +97,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0020-etiquettes.md` | Étiquettes : lues dans l'en-tête par Rust, un filtre sur toute la bibliothèque |
 | `0021-tri-de-la-liste.md` | Tri de la liste : choisi par l'interface, rangé par Rust |
 | `0022-notes-recentes.md` | Notes récentes : tenues par l'interface, relues par Rust |
+| `0023-note-du-jour.md` | Note du jour : un fichier daté dans le journal, créé par Rust, ouvert au lancement |
 
 ## Décisions ouvertes
 

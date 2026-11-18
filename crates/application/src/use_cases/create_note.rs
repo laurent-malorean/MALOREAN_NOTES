@@ -1,5 +1,6 @@
-//! Créer une note : vide, ou depuis un modèle.
+//! Créer une note : vide, depuis un modèle, ou la note du jour du journal.
 
+use domain::journal::{daily_note, daily_note_name};
 use domain::saving::{created_note_name, new_note_name};
 use domain::template::note_from_template;
 use domain::{Folder, NotePath};
@@ -58,6 +59,59 @@ impl<'a> CreateNoteFromTemplate<'a> {
         let note = NotePath::new(folder.clone(), created_note_name(&content, &existing));
         self.store.write(&note, &content)?;
         Ok(note)
+    }
+}
+
+/// La note du jour dans le journal : créée si elle n'existe pas encore, jamais en double.
+#[derive(Debug)]
+pub struct CreateDailyNote<'a> {
+    store: &'a dyn NoteStore,
+    clock: &'a dyn Clock,
+}
+
+impl<'a> CreateDailyNote<'a> {
+    /// Le cas d'usage, branché sur la bibliothèque ouverte et l'horloge.
+    #[must_use]
+    pub fn new(store: &'a dyn NoteStore, clock: &'a dyn Clock) -> Self {
+        Self { store, clock }
+    }
+
+    /// Le chemin de la note du jour dans le dossier `journal`, créé au besoin avec ses parents.
+    /// Si elle existe, elle est gardée telle quelle ; sinon elle est écrite depuis `template`,
+    /// ou avec son seul titre.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::NoteNotFound`] si le modèle n'existe plus ;
+    /// [`AppError::StorageUnavailable`] si le journal ne peut pas être créé, lu ou écrit.
+    pub fn execute(
+        &self,
+        journal: &Folder,
+        template: Option<&NotePath>,
+    ) -> Result<NotePath, AppError> {
+        let now = self.clock.now();
+        let note = NotePath::new(journal.clone(), daily_note_name(&now));
+        self.create_folders(journal)?;
+        if self.store.names(journal)?.contains(note.name()) {
+            return Ok(note);
+        }
+        let template = template.map(|path| self.store.read(path)).transpose()?;
+        let content = daily_note(template.as_ref().map(|t| t.content.as_str()), &now);
+        self.store.write(&note, &content)?;
+        Ok(note)
+    }
+
+    /// Crée `folder` et ceux qui le contiennent, s'ils n'existent pas encore.
+    fn create_folders(&self, folder: &Folder) -> Result<(), AppError> {
+        let existing = self.store.folders()?;
+        let mut current = Folder::root();
+        for name in folder.names() {
+            current = current.join(name.clone());
+            if !existing.contains(&current) {
+                self.store.create_folder(&current)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -130,5 +184,56 @@ mod tests {
         assert_eq!(name.to_path(), "sans-titre-2.md");
         let kept = NotePath::parse("sans-titre.md").unwrap();
         assert_eq!(store.read(&kept).unwrap().content, "garde-moi");
+    }
+
+    fn daily(store: &InMemoryNoteStore, folder: &str, template: Option<&str>) -> NotePath {
+        let template = template.map(|path| NotePath::parse(path).unwrap());
+        CreateDailyNote::new(store, &FixedClock::default())
+            .execute(&Folder::parse(folder).unwrap(), template.as_ref())
+            .unwrap()
+    }
+
+    #[test]
+    fn the_daily_note_is_created_in_the_journal_under_its_date() {
+        let store = InMemoryNoteStore::default();
+        let created = daily(&store, "Perso/Journal", None);
+        assert_eq!(created.to_path(), "Perso/Journal/2026-11-16.md");
+        assert_eq!(
+            store.read(&created).unwrap().content,
+            "# 16 novembre 2026\n"
+        );
+        let folders = store.folders().unwrap();
+        assert!(folders.contains(&Folder::parse("Perso/Journal").unwrap()));
+    }
+
+    #[test]
+    fn the_daily_note_is_created_from_the_journal_template() {
+        let store =
+            InMemoryNoteStore::with_notes(&[("Modèles/journal.md", "# Journal\n## {{time}}\n")]);
+        let created = daily(&store, "Journal", Some("Modèles/journal.md"));
+        assert_eq!(
+            store.read(&created).unwrap().content,
+            "# 16 novembre 2026\n## 18:30\n"
+        );
+    }
+
+    #[test]
+    fn an_existing_daily_note_is_kept_as_it_is() {
+        let store = InMemoryNoteStore::with_notes(&[("Journal/2026-11-16.md", "écrit ce matin")]);
+        let created = daily(&store, "Journal", None);
+        assert_eq!(created.to_path(), "Journal/2026-11-16.md");
+        assert_eq!(store.read(&created).unwrap().content, "écrit ce matin");
+        assert_eq!(store.names(created.folder()).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn a_missing_journal_template_creates_nothing() {
+        let store = InMemoryNoteStore::default();
+        let missing = NotePath::parse("Modèles/absent.md").unwrap();
+        let result = CreateDailyNote::new(&store, &FixedClock::default())
+            .execute(&Folder::parse("Journal").unwrap(), Some(&missing));
+        assert!(result.is_err());
+        let journal = Folder::parse("Journal").unwrap();
+        assert!(store.names(&journal).unwrap().is_empty());
     }
 }

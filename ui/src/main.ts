@@ -7,6 +7,7 @@ import { createCurrentScreen } from "./app/current-screen";
 import { connectExternalChanges } from "./app/external-changes";
 import { createFoldMemory } from "./app/fold-memory";
 import { createFolders } from "./app/folders";
+import { createJournal } from "./app/journal";
 import { createLayoutMemory } from "./app/layout-memory";
 import { createLibrary } from "./app/library";
 import { createMessages } from "./app/messages";
@@ -84,13 +85,14 @@ const settings = connectSettings(
     columns,
     storage: localStorage,
     systemDark: window.matchMedia("(prefers-color-scheme: dark)"),
-    groups: () => templates.settingsGroups(),
+    groups: () => [...templates.settingsGroups(), ...journal.settingsGroups()],
   },
 );
 const templates = createTemplates({
   ...{ backend: bridge, storage: localStorage, screen, columns, library },
   ...{ picker: layout.picker, show: messages.show, run },
 });
+const journal = createJournal({ backend: bridge, storage: localStorage, screen, columns, library });
 const newPane = paneMaker({
   backend: bridge,
   shared,
@@ -123,7 +125,7 @@ const windowDisplay = connectWindowDisplay(layout, {
 connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField },
-  ...{ library, templates, folders, trash, settings, tags, recent },
+  ...{ library, templates, journal, folders, trash, settings, tags, recent },
 });
 connectExternalChanges({ backend: bridge, screen, columns, library, messages });
 
@@ -131,5 +133,6 @@ screen.show(welcome);
 void columns.change(columns.current());
 bridge
   .reopenLastLibrary()
-  .then((opened) => (opened ? library.open(opened) : undefined))
+  // La note du jour, une fois les colonnes retrouvées.
+  .then((opened) => (opened ? library.open(opened).then(journal.atLaunch) : undefined))
   .catch(messages.error);
