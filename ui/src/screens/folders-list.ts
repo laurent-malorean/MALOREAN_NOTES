@@ -7,6 +7,7 @@ import { canMoveInto, folderTree } from "../state/folders";
 import { hasSubfolders, visibleFolders } from "../state/folding";
 import { showContextMenu } from "./context-menu";
 import { type Dragged, dragged, startDragging, stopDragging } from "./dragging";
+import { showFullNameWhenTruncated } from "./truncated-name";
 
 /** Ce que l'utilisateur peut demander depuis la colonne des dossiers. */
 export interface FolderActions {
@@ -92,6 +93,7 @@ function item(
   const label = document.createElement("span");
   label.className = "folder-name";
   label.textContent = name;
+  showFullNameWhenTruncated(label);
   button.append(foldToggle(path, folding, actions), drawing("folder-icon", FOLDER_OUTLINE), label);
   // Le second clic d'un double-clic (renommer) ne rechoisit pas le dossier.
   button.addEventListener("click", (event) => {

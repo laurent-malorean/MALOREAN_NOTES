@@ -47,7 +47,32 @@ button {
   height: 100%;
   display: grid;
   /* La dernière piste tient la colonne Claude Code : vide, elle ne prend aucune place. */
-  grid-template-columns: var(--folders-width) var(--sidebar-width) minmax(0, 1fr) auto;
+  grid-template-columns:
+    clamp(var(--side-panel-min-width), var(--folders-width), var(--side-panel-max-width))
+    clamp(var(--side-panel-min-width), var(--sidebar-width), var(--side-panel-max-width))
+    minmax(0, 1fr) auto;
+}
+.main-area > aside {
+  position: relative;
+  min-width: 0;
+}
+/* Bord d'un panneau latéral : tiré, il règle la largeur ; double-clic, largeur par défaut */
+.panel-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--panel-edge-width);
+  cursor: col-resize;
+  z-index: 1;
+}
+.panel-edge:hover {
+  background: var(--accent);
+}
+.main-area.resizing {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .main-area.panels-hidden {
   grid-template-columns: minmax(0, 1fr) auto;

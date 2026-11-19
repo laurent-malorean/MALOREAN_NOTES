@@ -68,6 +68,16 @@ describe("colonne des dossiers", () => {
   });
 });
 
+describe("nom de dossier coupé", () => {
+  it("au survol, un nom coupé montre son nom complet", () => {
+    const { container } = column(["comptabilité/impôts/déclarations de l'année"]);
+    container.style.width = "120px";
+    const deep = container.querySelector(".folder-item:last-child .folder-name") as HTMLElement;
+    deep.dispatchEvent(new PointerEvent("pointerenter"));
+    expect(deep.title).toBe("déclarations de l'année");
+  });
+});
+
 describe("créer un dossier", () => {
   it("demande son nom en tête de colonne, et le crée avec Entrée", () => {
     const { container, calls, actions } = column();

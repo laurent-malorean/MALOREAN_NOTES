@@ -1,7 +1,9 @@
-// Disposition de la fenêtre : plein écran et panneaux latéraux, réglés indépendamment.
+// Disposition de la fenêtre : plein écran et panneaux latéraux (montrés ou cachés, et leur
+// largeur), réglés indépendamment.
 import { type PreferenceStorage } from "../state/focus-preference";
 import { loadSidePanels, nextSidePanels, saveSidePanels } from "../state/side-panels-preference";
 import { showFullScreen, showSidePanels } from "./editor-tools";
+import { connectPanelEdges } from "./panel-edges";
 
 /** Ce que la fenêtre du Mac sait faire de son plein écran. */
 export interface WindowControl {
@@ -61,6 +63,7 @@ export function connectWindowDisplay(
   };
   parts.sidePanelsButton.addEventListener("click", toggleSidePanels);
   applySidePanels();
+  connectPanelEdges(parts.mainArea, deps.storage);
 
   return {
     toggleFullScreen,

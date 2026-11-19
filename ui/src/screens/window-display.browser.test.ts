@@ -37,6 +37,7 @@ function fakeWindow(options: { failSet?: boolean; failAsk?: boolean; failListen?
 
 function setup(window = fakeWindow(), storage = memoryStorage()) {
   const mainArea = document.createElement("section");
+  mainArea.innerHTML = `<aside class="folders"></aside><aside class="sidebar"></aside>`;
   const fullScreenButton = document.createElement("button");
   const sidePanelsButton = document.createElement("button");
   const error = vi.fn();
@@ -140,5 +141,16 @@ describe("plein écran et panneaux latéraux", () => {
     );
     expect(panelsHidden()).toBe(true);
     expect(sidePanelsButton.getAttribute("aria-pressed")).toBe("false");
+  });
+});
+
+describe("largeur des panneaux latéraux", () => {
+  it("chaque panneau reçoit son bord, à la largeur gardée", () => {
+    const { mainArea } = setup(
+      fakeWindow(),
+      memoryStorage({ "malorean.panel-width.notes": "250" }),
+    );
+    expect(mainArea.querySelectorAll(".panel-edge")).toHaveLength(2);
+    expect(mainArea.style.getPropertyValue("--sidebar-width")).toBe("250px");
   });
 });

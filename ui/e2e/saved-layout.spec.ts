@@ -26,7 +26,7 @@ const widthOf = async (page: Page, index: number) =>
 
 /** Glisse le séparateur des deux colonnes vers la droite. */
 async function widenLeft(page: Page, by: number) {
-  const box = await page.getByRole("separator").boundingBox();
+  const box = await page.getByRole("main").getByRole("separator").boundingBox();
   const x = (box?.x ?? 0) + (box?.width ?? 0) / 2;
   const y = (box?.y ?? 0) + (box?.height ?? 0) / 2;
   await page.mouse.move(x, y);

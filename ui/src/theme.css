@@ -108,6 +108,10 @@
   --workspace-switcher-text-size: 14px;
   --note-order-text-size: 12px;
   --sidebar-width: 280px;
+  /* Largeur d'un panneau latéral réglée à la souris : bornes, et bord qu'on tire */
+  --side-panel-min-width: 9rem;
+  --side-panel-max-width: min(28rem, 30vw);
+  --panel-edge-width: 6px;
   --divider-width: 5px;
   --tab-max-width: 14rem;
   --tab-text-size: 12px;

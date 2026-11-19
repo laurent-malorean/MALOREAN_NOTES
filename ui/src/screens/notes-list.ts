@@ -4,6 +4,7 @@ import { showContextMenu } from "./context-menu";
 import { COPY_LABEL, HISTORY_LABEL, MARKDOWN_COPY_LABEL, noteMenu, openOnClick } from "./note-menu";
 import { startDragging, stopDragging } from "./dragging";
 import { tagChips } from "./tags-view";
+import { showFullNameWhenTruncated } from "./truncated-name";
 
 /** Ce que l'utilisateur peut demander depuis la liste des notes. */
 export interface NoteActions {
@@ -102,6 +103,7 @@ export function renderNotesList(
       const title = document.createElement("span");
       title.className = "note-title";
       title.textContent = note.title;
+      showFullNameWhenTruncated(title);
       const heading = document.createElement("span");
       heading.className = "note-heading";
       heading.append(...(note.pinned ? [pinMark(), title] : [title]));

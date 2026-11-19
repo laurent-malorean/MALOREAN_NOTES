@@ -89,7 +89,7 @@ test("glisser le séparateur règle la largeur des deux colonnes voisines", asyn
     (await columns(page).nth(index).boundingBox())?.width ?? 0;
   const before = await widthOf(0);
   expect(Math.abs(before - (await widthOf(1)))).toBeLessThan(2);
-  const divider = (await page.getByRole("separator").boundingBox()) ?? {
+  const divider = (await page.getByRole("main").getByRole("separator").boundingBox()) ?? {
     x: 0,
     y: 0,
     width: 0,
@@ -200,7 +200,7 @@ test("fermer le dernier onglet d'une colonne la ferme, enregistre ce qui est tap
   await page.keyboard.type(" complet");
   await tabs(page, 1).first().getByRole("button", { name: "Fermer l'onglet" }).click();
   await expect(columns(page)).toHaveCount(1);
-  await expect(page.getByRole("separator")).toHaveCount(0);
+  await expect(page.getByRole("main").getByRole("separator")).toHaveCount(0);
   await expect.poll(() => savedContent(page, "courses.md")).toBe("# Courses\n- pain complet");
   const area = (await page.locator(".columns").boundingBox())?.width ?? 0;
   expect((await columns(page).first().boundingBox())?.width).toBeCloseTo(area, 0);

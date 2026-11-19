@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { closeContextMenu } from "./context-menu";
 import { dragged, stopDragging } from "./dragging";
 import { type NoteActions, renderNotesList } from "./notes-list";
+import "../theme.css";
+import "../style.css";
 
 const noActions: NoteActions = {
   open: () => {},
@@ -78,6 +80,16 @@ describe("liste des notes", () => {
     renderNotesList(container, notes, null, noActions);
     const titles = [...container.querySelectorAll(".note-title")].map((t) => t.textContent);
     expect(titles).toEqual(["Bêta", "Alpha"]);
+  });
+
+  it("au survol, un titre coupé montre son titre complet", () => {
+    const container = list();
+    container.style.width = "60px";
+    const long = { ...notes[1], title: "Compte rendu de la réunion de lundi" } as (typeof notes)[0];
+    renderNotesList(container, [long], null, noActions);
+    const title = container.querySelector(".note-title") as HTMLElement;
+    title.dispatchEvent(new PointerEvent("pointerenter"));
+    expect(title.title).toBe("Compte rendu de la réunion de lundi");
   });
 
   it("affiche la date de modification", () => {

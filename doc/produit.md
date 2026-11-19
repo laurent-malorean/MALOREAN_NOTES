@@ -37,6 +37,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Tri de la liste par date de modification ou par titre, épinglées toujours en tête ; il vaut aussi pour le filtre par étiquette et la recherche, et chaque espace de travail garde le sien.
 - Notes récentes : les 10 dernières notes ouvertes, de tout dossier, montrées par l'entrée « Récentes » comme un dossier et proposées d'abord par l'ouverture rapide ; elles suivent les renommages, perdent les notes jetées, et chaque espace de travail garde les siennes.
 - Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
+- Largeur de la liste des dossiers et de celle des notes réglée en tirant leur bord à la souris, entre un minimum et un maximum ; double-clic sur le bord pour la largeur par défaut ; gardée d'un lancement à l'autre. Un nom de dossier ou de note coupé montre son nom complet au survol.
 - Coller une image : elle devient une pièce jointe liée.
 - Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.
 - Exporter une note en PDF (mise en forme, thème clair) ou en Markdown (le fichier tel quel, pièces jointes copiées à côté), à l'endroit choisi dans la fenêtre d'enregistrement du Mac : palette, Cmd+E ou menu de la note.
