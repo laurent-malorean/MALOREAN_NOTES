@@ -105,7 +105,7 @@ describe("barre des menus", () => {
       [
         "Présentation",
         [
-          "Panneaux latéraux Ctrl+Cmd+S",
+          "Panneaux latéraux Cmd+Shift+B",
           "Plein écran Ctrl+Cmd+F",
           "—",
           "Mode focus Cmd+Shift+F",

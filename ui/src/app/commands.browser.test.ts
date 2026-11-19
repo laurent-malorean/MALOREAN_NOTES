@@ -275,7 +275,7 @@ describe("raccourcis clavier", () => {
       ["t", { metaKey: true, shiftKey: true }],
       ["o", { metaKey: true, shiftKey: true }],
       ["f", { metaKey: true, ctrlKey: true }],
-      ["s", { metaKey: true, ctrlKey: true }],
+      ["B", { metaKey: true, shiftKey: true }],
       [",", { metaKey: true }],
       ["t", { metaKey: true, ctrlKey: true }],
       ["N", { metaKey: true, shiftKey: true }],

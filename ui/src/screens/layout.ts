@@ -84,7 +84,7 @@ const TEMPLATE = `
           <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
           <button class="tool" data-outline title="Plan de la note (Cmd+Maj+O)" aria-pressed="false">Plan</button>
           <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
-          <button class="tool" data-side-panels title="Panneaux latéraux : dossiers et notes (Ctrl+Cmd+S)" aria-pressed="true">Panneaux</button>
+          <button class="tool" data-side-panels title="Panneaux latéraux : dossiers et notes (Cmd+Maj+B)" aria-pressed="true">Panneaux</button>
           <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
           <button class="tool" data-claude title="Colonne Claude Code (Ctrl+Cmd+L)" aria-pressed="false">Claude</button>
         </div>

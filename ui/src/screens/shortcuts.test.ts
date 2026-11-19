@@ -49,8 +49,10 @@ describe("raccourcis clavier", () => {
     expect(key("p", { metaKey: true, ctrlKey: true })).toBeNull();
   });
 
-  it("Ctrl+Cmd+S cache ou montre les panneaux latéraux", () => {
-    expect(key("s", { metaKey: true, ctrlKey: true })).toBe("toggle-side-panels");
+  it("Cmd+Maj+B cache ou montre les panneaux latéraux ; Ctrl+Cmd+S reste aux outils de capture", () => {
+    expect(key("b", { metaKey: true, shiftKey: true })).toBe("toggle-side-panels");
+    expect(key("B", { metaKey: true, shiftKey: true })).toBe("toggle-side-panels");
+    expect(key("s", { metaKey: true, ctrlKey: true })).toBeNull();
   });
 
   it("Échap quitte le plein écran", () => {
