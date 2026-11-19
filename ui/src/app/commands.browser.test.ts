@@ -395,6 +395,59 @@ describe("raccourcis clavier", () => {
     expect(columns.open.activePane().editor.format).toHaveBeenCalledWith("bold");
   });
 
+  it("dans un autre champ de saisie, la mise en forme ne touche pas la note, ni par le menu", () => {
+    const fields = [
+      document.createElement("input"),
+      document.createElement("textarea"),
+      Object.assign(document.createElement("div"), { contentEditable: "true" }),
+    ];
+    const keys: [string, KeyboardEventInit][] = [
+      ["b", { metaKey: true }],
+      ["i", { metaKey: true }],
+      ["k", { metaKey: true }],
+      ["1", { metaKey: true }],
+      ["D", { metaKey: true, shiftKey: true }],
+    ];
+    for (const field of fields) {
+      root.append(field);
+      for (const [key, modifiers] of keys) {
+        const event = new KeyboardEvent("keydown", {
+          key,
+          bubbles: true,
+          cancelable: true,
+          ...modifiers,
+        });
+        field.dispatchEvent(event);
+        // Prise par la page, la touche ne passe pas non plus à la barre des menus.
+        expect(event.defaultPrevented).toBe(true);
+      }
+    }
+    const { editor } = columns.open.activePane();
+    expect(editor.format).not.toHaveBeenCalled();
+    expect(editor.insertToday).not.toHaveBeenCalled();
+  });
+
+  it("dans un autre champ de saisie, les autres raccourcis restent valables", () => {
+    const field = document.createElement("input");
+    root.append(field);
+    field.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "e", metaKey: true, bubbles: true, cancelable: true }),
+    );
+    expect(log).toEqual(["exporter undefined"]);
+  });
+
+  it("dans l'éditeur, une touche de mise en forme qu'il n'a pas prise vise la note", () => {
+    const editorArea = document.createElement("div");
+    editorArea.className = "cm-editor";
+    const content = Object.assign(document.createElement("div"), { contentEditable: "true" });
+    editorArea.append(content);
+    root.append(editorArea);
+    content.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "b", metaKey: true, bubbles: true, cancelable: true }),
+    );
+    expect(columns.open.activePane().editor.format).toHaveBeenCalledWith("bold");
+  });
+
   it("Cmd+O ouvre l'ouverture rapide", async () => {
     press("o", { metaKey: true });
     await settle();

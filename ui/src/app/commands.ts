@@ -115,6 +115,19 @@ function editingActions(columns: CommandsDeps["columns"]) {
   };
 }
 
+/**
+ * La touche est tapée dans un champ de saisie autre que l'éditeur (message à Claude, recherche,
+ * nom) : la mise en forme ne doit pas viser la note derrière lui.
+ */
+function typingElsewhere(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement) || target.closest(".cm-editor") !== null) return false;
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target.isContentEditable
+  );
+}
+
 /** Ce que fait chaque commande de la palette. */
 export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, () => void>> {
   const { run, columns, writing } = deps;
@@ -203,11 +216,15 @@ export function connectCommands(deps: CommandsDeps): Readonly<Record<MenuCommand
     ...commandActions(deps),
     "command-palette": () => openPalette(deps, actions),
   };
+  const editing: ReadonlySet<string> = new Set(Object.keys(editingActions(deps.columns)));
   document.addEventListener("keydown", (event) => {
     // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
     // Une fenêtre ouverte (réglages, choix) garde le clavier : Échap la ferme, sans quitter le plein écran.
     if (event.defaultPrevented || dialogOpen()) return;
     const shortcut = shortcutFor(event);
+    // Prise sans rien faire : passée à la barre des menus, elle mettrait la note en forme.
+    if (shortcut && editing.has(shortcut) && typingElsewhere(event.target))
+      return event.preventDefault();
     if (shortcut && runShortcut(deps, actions, shortcut)) event.preventDefault();
   });
   return actions;

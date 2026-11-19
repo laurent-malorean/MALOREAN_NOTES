@@ -29,7 +29,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Fenêtre en trois parties : dossiers, liste des notes, et jusqu'à trois colonnes d'édition à onglets, côte à côte.
 - Créer, renommer, déplacer, supprimer (corbeille) une note ou un dossier.
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
-- Mise en forme de la sélection (gras, italique, lien, titres de niveau 1 à 3, liste à puces ou numérotée) et insertion de la date du jour : raccourci, palette ou menu Format.
+- Mise en forme de la sélection (gras, italique, lien, titres de niveau 1 à 3, liste à puces ou numérotée) et insertion de la date du jour : raccourci, palette ou menu Format. Tapés dans un autre champ (message à Claude, recherche, nom), ces raccourcis ne touchent jamais la note derrière lui.
 - Ouvrir un lien de la note (vers une autre note, une pièce jointe, une adresse) : Cmd+clic dessus, ou clic dans le lien puis « Ouvrir le lien » (palette, menu Fichier).
 - Recherche plein texte instantanée.
 - Notes épinglées en tête de liste ; tri par date de modification.
