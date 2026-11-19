@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { waitForNote } from "./journey";
 
 type Notes = Record<string, { content: string; modified: number }>;
 
@@ -67,6 +68,8 @@ test("une note créée depuis un modèle, dans le dossier affiché, ouverte dans
   await expect(tabs(page)).toHaveText(["Budget×", "Réunion du 16 novembre 2026×"]);
   await expect(tabs(page).nth(1)).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".note-title")).toContainText(["Réunion du 16 novembre 2026"]);
+  // La liste montre la note avant l'éditeur : attendre qu'il la montre (son en-tête) avant de taper.
+  await waitForNote(page, "---");
   await page.keyboard.type("Ordre du jour");
   await expect.poll(() => savedContent(page, created)).toContain("Ordre du jour");
 });
