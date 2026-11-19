@@ -34,10 +34,9 @@ const box = (element: HTMLElement) => element.getBoundingClientRect();
 const width = (element: HTMLElement) => Math.round(box(element).width);
 const rem = () => Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
 
-/** Tire le bord du panneau jusqu'à l'abscisse `x`, puis le lâche. */
-function drag(panel: HTMLElement, x: number) {
-  // Pris tout contre le bord droit du panneau : l'abscisse `x` est celle où il arrive.
-  const start = box(panel).right;
+/** Tire le bord du panneau, pris à l'abscisse `start`, jusqu'à l'abscisse `x`, puis le lâche. */
+function drag(panel: HTMLElement, x: number, start = box(panel).right) {
+  // Pris tout contre le bord du panneau : l'abscisse `x` est celle où il arrive.
   const edge = edgeOf(panel);
   const down = new PointerEvent("pointerdown", { bubbles: true, cancelable: true, clientX: start });
   edge.dispatchEvent(down);
@@ -166,5 +165,72 @@ describe("bord des panneaux latéraux", () => {
     expect(box(layout.editor).left).toBe(box(layout.mainArea).left);
     layout.mainArea.classList.remove("panels-hidden");
     expect(width(folders())).toBe(320);
+  });
+});
+
+describe("bord de la colonne Claude Code", () => {
+  const claude = () => layout.claudeColumn;
+  /** Tire le bord gauche de la colonne jusqu'à l'abscisse `x`. */
+  const dragClaude = (x: number) => drag(claude(), x, box(claude()).left);
+  /** Monte la fenêtre, colonne Claude Code affichée. */
+  const mountClaude = (storage = memoryStorage()) => {
+    mount(storage);
+    claude().hidden = false;
+    return storage;
+  };
+
+  it("a un bord à sa gauche, qu'on tire pour régler sa largeur", () => {
+    mountClaude();
+    const edge = edgeOf(claude());
+    expect(edge.getAttribute("role")).toBe("separator");
+    expect(edge.getAttribute("aria-label")).toBe("Largeur de la colonne Claude Code");
+    expect(getComputedStyle(edge).cursor).toBe("col-resize");
+    expect(Math.abs(box(edge).left - box(claude()).left)).toBeLessThanOrEqual(1);
+    expect(box(edge).height).toBe(box(claude()).height);
+    expect(width(claude())).toBe(340);
+  });
+
+  it("tiré vers la gauche, elle s'élargit ; les colonnes d'édition prennent le reste", () => {
+    const storage = mountClaude();
+    const right = box(claude()).right;
+    dragClaude(right - 400);
+    expect(width(claude())).toBe(400);
+    expect(Math.round(box(claude()).right)).toBe(Math.round(right));
+    expect(Math.round(box(layout.editor).right)).toBe(Math.round(box(claude()).left));
+    expect(storage.items).toEqual(new Map([["malorean.panel-width.claude", "400"]]));
+    dragClaude(box(claude()).left + 60);
+    expect(width(claude())).toBe(340);
+  });
+
+  it("jamais sous le minimum ni au-delà du maximum", () => {
+    const storage = mountClaude();
+    dragClaude(box(claude()).right - 50);
+    // Au moins 16rem.
+    expect(width(claude())).toBe(16 * rem());
+    expect(storage.items.get("malorean.panel-width.claude")).toBe(String(16 * rem()));
+    dragClaude(0);
+    // Au plus 35 % de la fenêtre (1200 pixels).
+    expect(width(claude())).toBe(420);
+    expect(layout.mainArea.style.getPropertyValue("--claude-column-width")).toBe("420px");
+    dragClaude(box(claude()).left + 10);
+    expect(width(claude())).toBe(410);
+  });
+
+  it("retrouve sa largeur gardée ; un double-clic rend la largeur par défaut", () => {
+    const storage = mountClaude(memoryStorage({ "malorean.panel-width.claude": "380" }));
+    expect(width(claude())).toBe(380);
+    edgeOf(claude()).dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+    expect(width(claude())).toBe(340);
+    expect(storage.items.size).toBe(0);
+  });
+
+  it("panneaux latéraux cachés, la colonne garde son bord et sa largeur", () => {
+    mountClaude(memoryStorage({ "malorean.panel-width.claude": "380" }));
+    layout.mainArea.classList.add("panels-hidden");
+    expect(width(claude())).toBe(380);
+    expect(edgeOf(claude()).offsetParent).not.toBeNull();
+    dragClaude(box(claude()).left - 20);
+    expect(width(claude())).toBe(400);
+    expect(Math.round(box(layout.editor).right)).toBe(Math.round(box(claude()).left));
   });
 });

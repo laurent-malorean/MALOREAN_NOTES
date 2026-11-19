@@ -44,3 +44,28 @@ export async function waitForLaunchedNote(page: Page, notes: Notes) {
   const title = /^# (.+)$/m.exec(latest?.content ?? "")?.[1];
   if (title !== undefined) await waitForNote(page, title);
 }
+
+/** Bords gauche et droit d'un élément à l'écran, arrondis au pixel. */
+export async function edgesOf(locator: Locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("élément absent de l'écran");
+  return { left: Math.round(box.x), right: Math.round(box.x + box.width) };
+}
+
+/** Largeur d'un élément à l'écran, en pixels. */
+export async function widthOf(locator: Locator) {
+  const { left, right } = await edgesOf(locator);
+  return right - left;
+}
+
+/** Tire à la souris le bord d'un panneau de `dx` pixels (vers la droite si positif). */
+export async function dragEdge(page: Page, handle: Locator, dx: number) {
+  const box = await handle.boundingBox();
+  if (!box) throw new Error("bord absent de l'écran");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y, { steps: 5 });
+  await page.mouse.up();
+}

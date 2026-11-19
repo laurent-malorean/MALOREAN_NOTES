@@ -1,10 +1,10 @@
-// Largeur des panneaux latéraux : celle de la liste des dossiers et celle de la liste des notes,
-// réglées en tirant leur bord ; gardées d'un lancement à l'autre, les mêmes pour tous les espaces
+// Largeur des panneaux : celle de la liste des dossiers, celle de la liste des notes et celle de
+// la colonne Claude Code, réglées en tirant leur bord ; gardées d'un lancement à l'autre, les mêmes pour tous les espaces
 // de travail. Le minimum et le maximum viennent du thème : ici, seulement ce qui est gardé.
 import type { PreferenceStorage } from "./focus-preference";
 
-/** Les deux panneaux latéraux dont la largeur se règle. */
-export type Panel = "folders" | "notes";
+/** Les panneaux dont la largeur se règle : les deux panneaux latéraux et la colonne Claude Code. */
+export type Panel = "folders" | "notes" | "claude";
 
 const key = (panel: Panel) => `malorean.panel-width.${panel}`;
 

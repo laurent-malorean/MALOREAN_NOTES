@@ -1,4 +1,5 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+import { dragEdge as drag, edgesOf as edges, widthOf as width } from "./journey";
 
 // Largeur des panneaux latéraux : on tire le bord des dossiers ou des notes à la souris, la
 // largeur reste entre son minimum et son maximum, et revient au relancement.
@@ -31,29 +32,6 @@ const notes = (page: Page) => page.locator(".sidebar");
 const edge = (page: Page, name: string) => page.getByRole("separator", { name });
 const foldersEdge = (page: Page) => edge(page, "Largeur des dossiers");
 const notesEdge = (page: Page) => edge(page, "Largeur de la liste des notes");
-
-/** Bords gauche et droit d'un élément, arrondis au pixel. */
-async function edges(locator: Locator) {
-  const box = await locator.boundingBox();
-  if (!box) throw new Error("élément absent de l'écran");
-  return { left: Math.round(box.x), right: Math.round(box.x + box.width) };
-}
-const width = async (locator: Locator) => {
-  const { left, right } = await edges(locator);
-  return right - left;
-};
-
-/** Tire le bord à la souris de `dx` pixels (vers la droite si positif). */
-async function drag(page: Page, handle: Locator, dx: number) {
-  const box = await handle.boundingBox();
-  if (!box) throw new Error("bord absent de l'écran");
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x + dx, y, { steps: 5 });
-  await page.mouse.up();
-}
 
 /** Les colonnes d'édition commencent juste après la liste des notes. */
 async function expectEditorAfterNotes(page: Page) {

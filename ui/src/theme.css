@@ -87,6 +87,9 @@
   --proposal-text-size: 14px;
   --context-menu-note-text-size: 12px;
   --claude-column-width: 340px;
+  /* Largeur de la colonne Claude Code réglée à la souris : les colonnes d'édition prennent le reste */
+  --claude-column-min-width: 16rem;
+  --claude-column-max-width: min(40rem, 35vw);
   --claude-text-size: 13px;
   --claude-detail-text-size: 11px;
   --claude-input-max-height: 12rem;

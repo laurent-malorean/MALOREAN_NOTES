@@ -32,14 +32,17 @@ describe("largeur d'un panneau", () => {
     const storage = memoryStorage();
     savePanelWidth(storage, "folders", 312.6);
     savePanelWidth(storage, "notes", 250);
+    savePanelWidth(storage, "claude", 420);
     expect(storage.items).toEqual(
       new Map([
         ["malorean.panel-width.folders", "313"],
         ["malorean.panel-width.notes", "250"],
+        ["malorean.panel-width.claude", "420"],
       ]),
     );
     expect(loadPanelWidth(storage, "folders")).toBe(313);
     expect(loadPanelWidth(storage, "notes")).toBe(250);
+    expect(loadPanelWidth(storage, "claude")).toBe(420);
   });
 
   it("oublie la largeur gardée d'un seul panneau", () => {
