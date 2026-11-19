@@ -1,6 +1,7 @@
 //! L'espace de travail ouvert et les cas d'usage qu'on lui applique.
 
 mod attachments;
+mod claude;
 mod export;
 mod history;
 mod index;
@@ -24,9 +25,9 @@ use application::use_cases::{
     PinNote, ReadNote, RefreshIndex, RenameFolder, SearchNotes, SearchResult,
 };
 use application::{
-    AppError, Clipboard, Clock, ExportStore, History, HistoryOpener, IndexOpener, IndexedStore,
-    MemoryHistories, MemoryIndexes, NoteIndex, NoteStore, Preferences, StoredNote, VersionedStore,
-    Watching, WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
+    AppError, ClaudeCode, Clipboard, Clock, ExportStore, History, HistoryOpener, IndexOpener,
+    IndexedStore, MemoryHistories, MemoryIndexes, NoteIndex, NoteStore, Preferences, StoredNote,
+    VersionedStore, Watching, WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
     WritingAssistant,
 };
 
@@ -64,6 +65,7 @@ pub struct Session {
     exports: Option<Arc<dyn ExportStore>>,
     clipboard: Option<Arc<dyn Clipboard>>,
     assistant: Option<Arc<dyn WritingAssistant>>,
+    claude: Option<Arc<dyn ClaudeCode>>,
 }
 
 /// L'espace de travail ouvert : où il est, ses notes, leur index et leur historique, qui suivent
@@ -102,6 +104,7 @@ impl Session {
             exports: None,
             clipboard: None,
             assistant: None,
+            claude: None,
         }
     }
 

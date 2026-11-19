@@ -71,7 +71,7 @@ Une ligne illisible ou d'un type inconnu est ignorée (Claude Code évolue vite)
 
 ### Vérification de la connexion
 
-`claude auth status --json` (n'appelle pas le modèle) : `loggedIn` dit si l'utilisateur est connecté. Introuvable, pas connecté ou en erreur, la colonne dit quoi faire (installer Claude Code, taper `claude auth login` dans le Terminal).
+`claude auth status --json` (n'appelle pas le modèle) : `loggedIn` dit si l'utilisateur est connecté. Introuvable, pas connecté ou en erreur, la colonne dit quoi faire (installer Claude Code, taper `claude auth login` dans le Terminal). Seul `loggedIn` est lu : l'adresse et l'organisation du compte, aussi rendues, ne sont ni gardées, ni montrées, ni écrites dans le journal. Pas connecté, `claude` sort en erreur mais le dit quand même : seule sa réponse compte ; une réponse illisible veut dire « en erreur ». Le programme est cherché à chaque vérification et à chaque tour : installé après le lancement de l'application, il est trouvé. Seul un fichier exécutable compte.
 
 ### Hexagonal
 

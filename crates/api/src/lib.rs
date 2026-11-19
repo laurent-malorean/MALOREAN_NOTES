@@ -9,9 +9,9 @@ mod pdf;
 mod session;
 
 pub use dto::{
-    AppMenu, AssistantStatus, AttachedFile, ChosenFolder, DifferenceItem, DifferenceKind,
-    ExcerptPartItem, ExportFile, ExportFormatItem, LinkingNoteItem, MenuEntryItem, MenuRoleItem,
-    NoteContent, NoteListItem, NoteOrderItem, ProposalItem, SaveResult, SavedNote,
+    AppMenu, AssistantStatus, AttachedFile, ChosenFolder, ClaudeStatusItem, DifferenceItem,
+    DifferenceKind, ExcerptPartItem, ExportFile, ExportFormatItem, LinkingNoteItem, MenuEntryItem,
+    MenuRoleItem, NoteContent, NoteListItem, NoteOrderItem, ProposalItem, SaveResult, SavedNote,
     SearchResultItem, StandardItem, TagItem, TrashInfo, TrashedNoteItem, VersionItem,
     WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem, WritingActionItem,
 };

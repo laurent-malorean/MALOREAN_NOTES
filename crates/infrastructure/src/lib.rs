@@ -16,7 +16,7 @@ mod sqlite_index;
 mod system_clock;
 
 pub use apple_writing::{AppleWritingAssistant, WRITING_HELPER};
-pub use claude_code_cli::ClaudeCodeCli;
+pub use claude_code_cli::{ClaudeCodeCli, claude_folders};
 pub use fs_export_store::FsExportStore;
 pub use fs_history::{FsHistories, FsHistory};
 pub use fs_note_store::{FsNoteStore, FsWorkspaceOpener};

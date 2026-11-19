@@ -1,11 +1,12 @@
 //! Assemblage : seul endroit qui connaît toutes les couches.
 
+use std::env;
 use std::sync::Arc;
 
 use api::{Session, commands};
 use infrastructure::{
-    AppleWritingAssistant, FsExportStore, FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher,
-    JsonPreferences, MacClipboard, SqliteIndexes, SystemClock,
+    AppleWritingAssistant, ClaudeCodeCli, FsExportStore, FsHistories, FsWorkspaceOpener,
+    FsWorkspaceWatcher, JsonPreferences, MacClipboard, SqliteIndexes, SystemClock, claude_folders,
 };
 use tauri::{Manager, RunEvent};
 
@@ -33,7 +34,11 @@ fn main() {
             .with_watcher(Arc::new(FsWorkspaceWatcher))
             .with_exports(Arc::new(FsExportStore))
             .with_clipboard(Arc::new(MacClipboard::default()))
-            .with_writing_assistant(Arc::new(AppleWritingAssistant::installed()));
+            .with_writing_assistant(Arc::new(AppleWritingAssistant::installed()))
+            .with_claude(Arc::new(ClaudeCodeCli::searching(claude_folders(
+                app.path().home_dir().ok().as_deref(),
+                env::var_os("PATH").as_deref(),
+            ))));
             app.manage(Arc::new(session));
             Ok(())
         })

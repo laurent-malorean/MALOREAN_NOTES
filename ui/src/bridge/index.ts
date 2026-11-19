@@ -7,6 +7,7 @@ import type { AppMenu } from "./generated/AppMenu";
 import type { AssistantStatus } from "./generated/AssistantStatus";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { ChosenFolder } from "./generated/ChosenFolder";
+import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
 import type { DifferenceItem } from "./generated/DifferenceItem";
 import type { ExportFile } from "./generated/ExportFile";
 import type { ExportFormatItem } from "./generated/ExportFormatItem";
@@ -35,6 +36,7 @@ export type {
   AssistantStatus,
   AttachedFile,
   ChosenFolder,
+  ClaudeStatusItem,
   DifferenceItem,
   ExportFile,
   ExportFormatItem,
@@ -230,6 +232,8 @@ export const assistantStatus = () => invoke<AssistantStatus>("assistant_status")
 /** Ce que l'assistant d'écriture propose pour la sélection ; rien n'est écrit dans la note. */
 export const proposeRewriting = (action: WritingActionItem, selection: string) =>
   invoke<ProposalItem>("propose_rewriting", { action, selection });
+/** Si Claude Code est installé et connecté, sinon pourquoi et quoi faire ; le modèle n'est pas appelé. */
+export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
 /** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
 export const openAttachment = (path: string, target: string) =>
   invoke<null>("open_attachment", { path, target });

@@ -4,7 +4,7 @@ use std::sync::{Condvar, Mutex, MutexGuard, PoisonError};
 
 use domain::claude::{ClaudeEvent, ConversationId};
 
-use crate::{ClaudeCode, ClaudeError, WorkspaceLocation};
+use crate::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 
 /// Un tour demandé : l'espace de travail, la conversation continuée, le message.
 pub type ClaudeRequest = (WorkspaceLocation, Option<ConversationId>, String);
@@ -16,9 +16,11 @@ struct Turn {
 }
 
 /// Claude Code qui annonce toujours les mêmes événements à chaque tour, puis se termine, ou
-/// attend d'être arrêté. Il garde chaque tour demandé.
+/// attend d'être arrêté. Il est prêt, sauf s'il reçoit une autre vérification de la connexion. Il
+/// garde chaque tour demandé.
 #[derive(Debug, Default)]
 pub struct FakeClaudeCode {
+    status: Option<ClaudeStatus>,
     events: Vec<ClaudeEvent>,
     hangs: bool,
     turn: Mutex<Turn>,
@@ -46,6 +48,13 @@ impl FakeClaudeCode {
         }
     }
 
+    /// Le même Claude Code, dont la vérification de la connexion donne `status`.
+    #[must_use]
+    pub fn with_status(mut self, status: ClaudeStatus) -> Self {
+        self.status = Some(status);
+        self
+    }
+
     /// Les tours demandés, dans l'ordre.
     pub fn requests(&self) -> Vec<ClaudeRequest> {
         self.requests
@@ -60,6 +69,10 @@ impl FakeClaudeCode {
 }
 
 impl ClaudeCode for FakeClaudeCode {
+    fn status(&self) -> ClaudeStatus {
+        self.status.unwrap_or(ClaudeStatus::Ready)
+    }
+
     fn send(
         &self,
         workspace: &WorkspaceLocation,
@@ -145,6 +158,12 @@ mod tests {
             replayed: turn_events(),
             hanging: &hanging,
         });
+    }
+
+    #[test]
+    fn a_claude_code_given_a_status_reports_it() {
+        let claude = FakeClaudeCode::replaying(Vec::new()).with_status(ClaudeStatus::LoggedOut);
+        assert_eq!(claude.status(), ClaudeStatus::LoggedOut);
     }
 
     #[test]

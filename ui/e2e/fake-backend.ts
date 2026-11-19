@@ -2,6 +2,7 @@
 // Doublure volontairement simple ; les vraies règles sont testées côté Rust.
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
+import { type FakeClaude, fakeClaude, fakeClaudeState } from "./fake-claude";
 import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
@@ -13,7 +14,7 @@ interface FakeNote {
   modified: number;
 }
 
-export interface FakeBackend extends FakeExports, FakeMenu, FakeHistory, FakeWriting {
+export interface FakeBackend extends FakeExports, FakeMenu, FakeHistory, FakeWriting, FakeClaude {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -66,6 +67,7 @@ const backend: FakeBackend = {
   versions: {},
   ...fakeMenuState(),
   ...fakeWritingState(params),
+  ...fakeClaudeState(params),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
   readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
@@ -476,6 +478,7 @@ const windowCommands: Record<string, (args: Record<string, unknown>) => unknown>
   "plugin:window|is_fullscreen": () => backend.fullScreen,
   ...fakeMenu(backend),
   ...fakeWriting(backend),
+  ...fakeClaude(backend),
 };
 
 /** Pièces jointes : même nommage que Rust, en plus simple (moment figé). */

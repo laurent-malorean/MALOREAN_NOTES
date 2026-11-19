@@ -418,6 +418,14 @@ describe("pont vers Rust : aide à l'écriture", () => {
   });
 });
 
+describe("pont vers Rust : colonne Claude Code", () => {
+  it("demande si Claude Code est installé et connecté", async () => {
+    const calls = recordCalls({ kind: "ready" });
+    expect(await bridge.claudeStatus()).toEqual({ kind: "ready" });
+    expect(calls).toEqual([{ command: "claude_status", args: {} }]);
+  });
+});
+
 describe("pont vers Rust : barre des menus", () => {
   it("fait construire la barre des menus, puis griser ou activer ses éléments", async () => {
     const calls = recordCalls(null);

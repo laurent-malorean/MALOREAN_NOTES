@@ -429,3 +429,17 @@ pub struct ProposalItem {
     /// La sélection et la proposition comparées mot à mot.
     pub differences: Vec<DifferenceItem>,
 }
+
+/// Si Claude Code peut répondre, sinon pourquoi et quoi faire.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+#[ts(export)]
+pub enum ClaudeStatusItem {
+    /// Claude Code est installé et connecté à l'abonnement de l'utilisateur.
+    Ready,
+    /// Il ne peut pas répondre, pour cette raison, prête à afficher.
+    Unavailable {
+        /// Ce qui manque, et ce qu'on peut faire.
+        reason: String,
+    },
+}

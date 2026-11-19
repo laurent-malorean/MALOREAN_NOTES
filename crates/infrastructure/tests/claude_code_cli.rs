@@ -1,4 +1,4 @@
-//! Claude Code piloté en arrière-plan, avec un faux Claude Code : un script qui note ses
+//! Claude Code piloté en arrière-plan, avec un faux Claude Code : un script connecté qui note ses
 //! arguments, son dossier, son entrée et la clé d'API qu'il voit, puis rejoue un flux enregistré.
 //! Le vrai `claude` n'est jamais lancé.
 
@@ -44,7 +44,8 @@ impl FakeClaude {
         fs::write(
             &script,
             format!(
-                "#!/bin/sh\nprintf '%s\\n' \"$@\" > '{dir}/args'\npwd -P > '{dir}/cwd'\n\
+                "#!/bin/sh\n[ \"$1\" = auth ] && exec echo '{{\"loggedIn\":true}}'\n\
+                 printf '%s\\n' \"$@\" > '{dir}/args'\npwd -P > '{dir}/cwd'\n\
                  printf '%s' \"${{ANTHROPIC_API_KEY-absente}}\" > '{dir}/api_key'\n\
                  cat > '{dir}/input'\ncat '{dir}/stream.jsonl'\n{ending}\n"
             ),

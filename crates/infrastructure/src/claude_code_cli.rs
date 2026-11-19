@@ -2,12 +2,14 @@
 //! de l'espace de travail, lui écrit le message sur son entrée et lit son flux JSON ligne à ligne
 //! (fiche 0032).
 
+use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Write};
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdout, Command, Stdio};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use application::{ClaudeCode, ClaudeError, WorkspaceLocation};
+use application::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 use domain::claude::{ClaudeEvent, ConversationId};
 
 use crate::claude_stream::events_of;
@@ -20,6 +22,23 @@ const TOOLS: &str = "Read,Write,Edit,Glob,Grep,Agent";
 /// l'utilisateur qui serve.
 const API_KEY: &str = "ANTHROPIC_API_KEY";
 
+/// Le nom du programme de Claude Code.
+const PROGRAM: &str = "claude";
+
+/// Les dossiers où l'installation de Claude Code range `claude`, partagés par tout le Mac.
+const SHARED_FOLDERS: [&str; 2] = ["/opt/homebrew/bin", "/usr/local/bin"];
+
+/// Les dossiers où l'installation de Claude Code range `claude`, dans le dossier personnel.
+const HOME_FOLDERS: [&str; 2] = [".local/bin", ".claude/local"];
+
+/// Ce que dit `claude auth status --json` : seul « connecté ou non » est lu, jamais l'adresse
+/// ni l'organisation du compte.
+#[derive(Debug, serde::Deserialize)]
+struct AuthStatus {
+    #[serde(rename = "loggedIn")]
+    logged_in: bool,
+}
+
 /// Le tour en cours : le programme lancé, et s'il a été arrêté.
 #[derive(Debug, Default)]
 struct Turn {
@@ -27,10 +46,23 @@ struct Turn {
     stopped: bool,
 }
 
+/// Les dossiers où chercher `claude`, dans l'ordre : ceux où son installation le range, puis
+/// ceux du `PATH` (une application ouverte depuis le Finder n'a pas celui du Terminal).
+#[must_use]
+pub fn claude_folders(home: Option<&Path>, path: Option<&OsStr>) -> Vec<PathBuf> {
+    let shared = SHARED_FOLDERS.map(PathBuf::from);
+    let personal = home
+        .into_iter()
+        .flat_map(|home| HOME_FOLDERS.map(|folder| home.join(folder)));
+    let searched = path.into_iter().flat_map(std::env::split_paths);
+    shared.into_iter().chain(personal).chain(searched).collect()
+}
+
 /// Claude Code, par le programme `claude` installé sur le Mac.
 #[derive(Debug)]
 pub struct ClaudeCodeCli {
-    program: PathBuf,
+    /// Les programmes possibles, dans l'ordre : le premier qui peut être lancé sert.
+    candidates: Vec<PathBuf>,
     turn: Mutex<Turn>,
 }
 
@@ -39,9 +71,34 @@ impl ClaudeCodeCli {
     #[must_use]
     pub fn new(program: impl Into<PathBuf>) -> Self {
         Self {
-            program: program.into(),
+            candidates: vec![program.into()],
             turn: Mutex::default(),
         }
+    }
+
+    /// Claude Code lancé par le premier programme `claude` trouvé dans `folders`, cherché à
+    /// chaque usage : installé après le lancement de l'application, il est trouvé.
+    #[must_use]
+    pub fn searching(folders: impl IntoIterator<Item = PathBuf>) -> Self {
+        Self {
+            candidates: folders
+                .into_iter()
+                .map(|folder| folder.join(PROGRAM))
+                .collect(),
+            turn: Mutex::default(),
+        }
+    }
+
+    /// Le programme de Claude Code : le premier des possibles qui est un fichier exécutable.
+    fn program(&self) -> Option<&Path> {
+        self.candidates
+            .iter()
+            .map(PathBuf::as_path)
+            .find(|candidate| {
+                candidate
+                    .metadata()
+                    .is_ok_and(|file| file.is_file() && file.permissions().mode() & 0o111 != 0)
+            })
     }
 
     fn turn(&self) -> MutexGuard<'_, Turn> {
@@ -65,7 +122,8 @@ impl ClaudeCodeCli {
         if turn.child.is_some() {
             return Err(ClaudeError::Busy);
         }
-        let mut child = Command::new(&self.program)
+        let program = self.program().ok_or(ClaudeError::Missing)?;
+        let mut child = Command::new(program)
             .args(arguments(conversation))
             .current_dir(workspace.as_str())
             .env_remove(API_KEY)
@@ -127,6 +185,27 @@ fn arguments(conversation: Option<&ConversationId>) -> Vec<&str> {
 }
 
 impl ClaudeCode for ClaudeCodeCli {
+    fn status(&self) -> ClaudeStatus {
+        let Some(program) = self.program() else {
+            return ClaudeStatus::Missing;
+        };
+        let Ok(output) = Command::new(program)
+            .args(["auth", "status", "--json"])
+            .env_remove(API_KEY)
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()
+        else {
+            return ClaudeStatus::Missing;
+        };
+        // Pas connecté, `claude` sort en erreur mais le dit quand même : seule sa réponse compte.
+        match serde_json::from_slice::<AuthStatus>(&output.stdout) {
+            Ok(AuthStatus { logged_in: true }) => ClaudeStatus::Ready,
+            Ok(AuthStatus { logged_in: false }) => ClaudeStatus::LoggedOut,
+            Err(_) => ClaudeStatus::Failed,
+        }
+    }
+
     fn send(
         &self,
         workspace: &WorkspaceLocation,
