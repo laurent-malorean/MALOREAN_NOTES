@@ -1,9 +1,11 @@
 //! Faux en mémoire et tests de contrat, pour les tests des couches.
 
 pub mod attachment_contract;
+pub mod claude_contract;
 pub mod clipboard_contract;
 pub mod contract;
 pub mod export_contract;
+mod fake_claude;
 mod fake_clipboard;
 mod fake_exports;
 mod fake_watcher;
@@ -15,6 +17,7 @@ pub mod preferences_contract;
 mod trash_contract;
 pub mod writing_contract;
 
+pub use fake_claude::{ClaudeRequest, FakeClaudeCode};
 pub use fake_clipboard::InMemoryClipboard;
 pub use fake_exports::InMemoryExportStore;
 pub use fake_watcher::FakeWatcher;

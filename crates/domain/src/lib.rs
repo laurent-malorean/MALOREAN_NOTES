@@ -1,9 +1,10 @@
 //! Règles pures de MALOREAN Notes : titre, nom de fichier, en-tête, pièces jointes, historique,
-//! aide à l'écriture.
+//! aide à l'écriture, événements de Claude Code.
 //! Aucun accès au disque, à l'horloge ni au réseau.
 
 pub mod attachment_name;
 pub mod attachments;
+pub mod claude;
 pub mod conflict;
 pub mod diff;
 pub mod export;

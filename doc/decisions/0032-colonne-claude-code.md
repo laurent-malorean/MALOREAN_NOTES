@@ -51,7 +51,7 @@ Vérifiées dans `claude --help` (2.1.311), sans appeler le modèle :
 | Pas de serveurs MCP (qui pourraient toucher au web ou au système) | `--strict-mcp-config`, sans `--mcp-config` |
 | Pas de commandes ni de compétences lancées par un message qui commence par `/` | `--disable-slash-commands` |
 
-Les sous-agents passent par les mêmes limites. Le nom de l'outil des sous-agents (`Agent`, autrefois `Task`) est confirmé sur le flux enregistré lors du pilote en arrière-plan. La construction de ces arguments est une fonction pure de l'adaptateur, testée ; le faux Claude Code vérifie qu'ils sont bien passés.
+Les sous-agents passent par les mêmes limites. Confirmé sur les flux enregistrés le 19/11 (2.1.311) : l'action qui lance un sous-agent s'appelle `Agent` (la liste d'outils du début l'appelle encore `Task` ; l'adaptateur accepte les deux noms). La construction de ces arguments est une fonction pure de l'adaptateur, testée ; le faux Claude Code vérifie qu'ils sont bien passés.
 
 ### Événements
 
@@ -62,6 +62,10 @@ Les sous-agents passent par les mêmes limites. Le nom de l'outil des sous-agent
 - `user` : l'issue d'une action (blocs `tool_result`, rattachés par `tool_use_id`) ;
 - `parent_tool_use_id` non vide : le message ou l'action appartient au sous-agent lancé par cette action (`--forward-subagent-text` fait suivre les textes des sous-agents) ; une action `Agent` (description, consigne) ouvre un sous-agent, son issue le clôt ;
 - `result` : le bilan (réussi ou en erreur, durée, jetons, nombre de tours).
+- `system` / `permission_denied` (`tool_use_id`) : une action refusée par les autorisations ; son issue (`tool_result` en erreur) suit ;
+- `system` / `task_notification` (`tool_use_id`, `status`, `usage` : `total_tokens`, `tool_uses`, `duration_ms`) : la fin d'un sous-agent.
+
+Constaté sur les flux enregistrés (19/11, 2.1.311) : un sous-agent est lancé **en arrière-plan** ; l'issue de l'action `Agent` arrive tout de suite (« lancé ») et ne dit pas qu'il a fini : c'est `task_notification` qui le dit. Claude répond alors une seconde fois dans le même programme : un deuxième `system` / `init` (même conversation) et un deuxième `result` suivent. Le tour se termine donc à la fin du programme, pas au premier bilan ; le dernier bilan fait foi. Un `claude` qui sort en erreur après avoir donné un bilan (conversation inconnue : `result` en erreur avec `errors`, code de sortie 1) termine le tour normalement, le bilan dit pourquoi ; sans bilan, le tour échoue. Les jetons d'un bilan additionnent ceux lus (dont le cache) et écrits.
 
 Une ligne illisible ou d'un type inconnu est ignorée (Claude Code évolue vite). Une note modifiée par Claude se déduit des actions `Write` et `Edit` réussies dont le fichier est dans l'espace de travail, désigné par son chemin depuis l'espace de travail. La carte des agents se construit dans le domaine, par une fonction pure, à partir de ces seuls événements.
 

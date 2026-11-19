@@ -98,6 +98,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 | Cas d'usage, avec le faux stockage en mémoire | `crates/application` | `cargo test` |
 | Contrat : mêmes tests sur le faux et le vrai stockage | `application::testing::contract`, joué par `crates/infrastructure/tests` | `cargo test` |
 | Contrat de l'assistant d'écriture sur le vrai modèle d'Apple, seulement si ce Mac l'a (sinon la raison est écrite, jamais passée sous silence) ; l'échange avec l'assistant Swift, joué avec des scripts | `application::testing::writing_contract`, `crates/infrastructure/tests/apple_writing.rs` | `cargo test` |
+| Contrat de Claude Code, joué sur le faux et sur l'adaptateur lancé avec un faux Claude Code (script qui note ses arguments, son dossier, son entrée et la clé d'API qu'il voit, puis rejoue un flux) ; traduction des flux enregistrés avec le vrai `claude` (chemins remplacés, rien de personnel) | `application::testing::claude_contract`, `crates/infrastructure/tests/claude_code_cli.rs`, `crates/infrastructure/src/claude_stream_tests.rs`, `crates/infrastructure/tests/claude_streams/` | `cargo test` |
 | Disque réel : erreurs, droits, fichiers illisibles | `crates/infrastructure/tests` (dossiers temporaires) | `tempfile` |
 | Commandes appelées comme par la page (noms, arguments JSON, origine) | `crates/api/tests/ipc.rs` | simulateur Tauri |
 | Logique de l'interface, sans écran | `ui/src/**/*.test.ts` | Vitest |
