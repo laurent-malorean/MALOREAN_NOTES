@@ -7,6 +7,7 @@ use super::*;
 const NOTE_EDITED: &str = include_str!("../tests/claude_streams/note_edited.jsonl");
 const SUB_AGENT: &str = include_str!("../tests/claude_streams/sub_agent.jsonl");
 const REFUSED: &str = include_str!("../tests/claude_streams/refused.jsonl");
+const ESCAPES_REFUSED: &str = include_str!("../tests/claude_streams/escapes_refused.jsonl");
 const UNKNOWN_CONVERSATION: &str =
     include_str!("../tests/claude_streams/unknown_conversation.jsonl");
 
@@ -174,6 +175,92 @@ fn an_action_outside_the_workspace_is_refused_then_fails() {
             finished("toolu_01CJrjtUx1GEyL7FTRDqUMKm", ActionOutcome::Failed),
         ]
     );
+}
+
+/// Chaque action du flux : sa sorte, sa cible, si elle a été refusée, son issue.
+fn actions_of(events: &[ClaudeEvent]) -> Vec<(ActionKind, String, bool, ActionOutcome)> {
+    let mut actions = Vec::new();
+    for event in events {
+        match event {
+            ClaudeEvent::ActionStarted { action, .. } => actions.push((
+                action.kind.clone(),
+                action.target.clone().unwrap_or_default(),
+                false,
+                ActionOutcome::Succeeded,
+            )),
+            ClaudeEvent::ActionRefused { .. } => actions.last_mut().unwrap().2 = true,
+            ClaudeEvent::ActionFinished { outcome, .. } => {
+                actions.last_mut().unwrap().3 = *outcome;
+            }
+            _ => {}
+        }
+    }
+    actions
+}
+
+/// Enregistré avec les options exactes de l'adaptateur (fiche 0032) : chaque échappée hors du
+/// dossier est refusée (chemin en `..`, lien symbolique vers un fichier ou un dossier du dehors,
+/// écriture et recherche au dehors) ; les commandes système et le web n'existent pas, et y
+/// recourir est refusé aussi ; les notes
+/// du dossier sont modifiées et créées sans rien demander.
+#[test]
+fn every_escape_from_the_workspace_is_refused_and_notes_inside_are_written() {
+    use ActionKind::{Edit, Other, Read, Search, Write};
+    use ActionOutcome::{Failed, Succeeded};
+    let refused = |kind, target: &str| (kind, target.to_owned(), true, Failed);
+    let absent = |tool: &str| (Other(tool.to_owned()), String::new(), true, Failed);
+    let done = |kind, target: &str| (kind, target.to_owned(), false, Succeeded);
+    assert_eq!(
+        actions_of(&stream(ESCAPES_REFUSED)),
+        [
+            refused(Read, "/Users/moi/Notes/../Hors/secret.txt"),
+            refused(Read, "/Users/moi/Notes/lien.md"),
+            refused(Read, "/Users/moi/Notes/dossier-lien/secret.txt"),
+            refused(Write, "/Users/moi/Hors/written.txt"),
+            refused(Write, "/Users/moi/Notes/dossier-lien/via-link.txt"),
+            absent("Bash"),
+            absent("WebFetch"),
+            done(Edit, "/Users/moi/Notes/note.md"),
+            done(Write, "/Users/moi/Notes/nouvelle.md"),
+            refused(Search, "*"),
+        ]
+    );
+}
+
+fn result_of(content: &str) -> Vec<ClaudeEvent> {
+    stream(&format!(
+        r#"{{"type":"user","message":{{"content":[{{"type":"tool_result","tool_use_id":"toolu_1","is_error":true,"content":{content}}}]}}}}"#
+    ))
+}
+
+#[test]
+fn a_tool_or_a_sub_agent_left_out_by_the_permissions_is_refused() {
+    let refused = vec![
+        ClaudeEvent::ActionRefused { id: id("toolu_1") },
+        finished("toolu_1", ActionOutcome::Failed),
+    ];
+    assert_eq!(
+        result_of(r#""<tool_use_error>Error: No such tool available: Bash.</tool_use_error>""#),
+        refused
+    );
+    assert_eq!(
+        result_of(
+            r#"[{"type":"text","text":"Agent type 'web-fetch' is unavailable because every tool it may use is denied by the current permission settings."}]"#
+        ),
+        refused
+    );
+}
+
+#[test]
+fn any_other_error_of_an_action_is_a_failure() {
+    let failed = vec![finished("toolu_1", ActionOutcome::Failed)];
+    assert_eq!(result_of(r#""File has not been read yet.""#), failed);
+    assert_eq!(
+        result_of(r#"[{"type":"text","text":"Introuvable"}]"#),
+        failed
+    );
+    assert_eq!(result_of("[{}]"), failed);
+    assert_eq!(result_of("42"), failed);
 }
 
 #[test]

@@ -33,6 +33,10 @@ export const STOPPED = "Réponse arrêtée";
 export const EMPTY =
   "Demandez à Claude de lire, créer ou modifier les notes de cet espace de travail.";
 
+/** Les autorisations de Claude, rappelées sous la zone du message (fiche 0032). */
+export const PERMISSIONS =
+  "Claude lit, crée et modifie les notes de cet espace de travail, sans demander. Rien d'autre : ni autre dossier, ni commande, ni web.";
+
 const TEMPLATE = `
   <header class="claude-header">
     <span class="claude-title">Claude Code</span>
@@ -47,7 +51,8 @@ const TEMPLATE = `
       <button type="button" class="tool" data-stop hidden>Arrêter</button>
       <button type="submit" class="tool claude-send" data-send>Envoyer</button>
     </div>
-  </form>`;
+  </form>
+  <p class="claude-permissions">${PERMISSIONS}</p>`;
 
 function element(tag: string, className: string, text = ""): HTMLElement {
   const created = document.createElement(tag);

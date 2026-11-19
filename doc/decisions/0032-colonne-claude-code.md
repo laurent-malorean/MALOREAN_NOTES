@@ -35,7 +35,8 @@ claude -p --output-format stream-json --verbose
 - **Le message** est écrit sur l'entrée de `claude`, jamais passé en argument : un message qui commence par `-` ne peut pas devenir une option.
 - **Continuer la conversation** : le premier événement (`system`, `init`) et le bilan (`result`) portent l'identifiant de la conversation (`session_id`) ; l'application le garde et le rend par `--resume` au message suivant. « Nouvelle conversation » et le passage à un autre espace de travail l'oublient. Il n'est gardé qu'en mémoire, pas d'un lancement de l'application à l'autre.
 - **Arrêter** : le programme `claude` du tour est tué. Ce qu'il a écrit reste écrit ; la conversation continue au message suivant.
-- **L'abonnement de l'utilisateur** : `claude` lit sa propre connexion (trousseau du Mac). L'adaptateur retire `ANTHROPIC_API_KEY` de l'environnement transmis, pour que ce soit toujours l'abonnement qui serve, jamais une facturation à l'usage. Le modèle est celui choisi par défaut par l'utilisateur.
+- **L'abonnement de l'utilisateur** : `claude` lit sa propre connexion (trousseau du Mac). Le modèle est celui choisi par défaut par l'utilisateur.
+- **L'environnement transmis** : vidé, puis seules quelques variables de l'application sont rendues (dossier personnel, utilisateur, `PATH`, shell, fichiers temporaires, langue, `CLAUDE_CONFIG_DIR` pour trouver la connexion, proxy du réseau et ses certificats). Mesuré le 19/11 : lancée depuis un terminal, l'application transmettait plus de 80 variables, dont des clés d'API, l'accès à l'agent SSH, et les variables d'une session Claude Code parente (`CLAUDECODE`, `CLAUDE_CODE_*`, dont une prise de messagerie et son jeton). Aucune clé d'API n'arrive donc à `claude` (c'est toujours l'abonnement qui sert, jamais une facturation à l'usage), ni `ANTHROPIC_BASE_URL` ou `CLAUDE_CODE_USE_BEDROCK` (qui changeraient qui répond et qui paie), ni aucun réglage de Claude Code par variable. Avec ce seul environnement, `claude auth status` dit bien « connecté » et un tour fonctionne (vérifié avec le vrai `claude`). La vérification de la connexion reçoit le même.
 - **Trouver `claude`** : une application ouverte depuis le Finder n'a pas le `PATH` du Terminal ; l'adaptateur cherche dans les emplacements connus (`/opt/homebrew/bin`, `/usr/local/bin`, `~/.local/bin`, `~/.claude/local`) puis dans le `PATH`.
 
 ### Autorisations et options qui les imposent
@@ -51,7 +52,28 @@ Vérifiées dans `claude --help` (2.1.311), sans appeler le modèle :
 | Pas de serveurs MCP (qui pourraient toucher au web ou au système) | `--strict-mcp-config`, sans `--mcp-config` |
 | Pas de commandes ni de compétences lancées par un message qui commence par `/` | `--disable-slash-commands` |
 
-Les sous-agents passent par les mêmes limites. Confirmé sur les flux enregistrés le 19/11 (2.1.311) : l'action qui lance un sous-agent s'appelle `Agent` (la liste d'outils du début l'appelle encore `Task` ; l'adaptateur accepte les deux noms). La construction de ces arguments est une fonction pure de l'adaptateur, testée ; le faux Claude Code vérifie qu'ils sont bien passés.
+Les sous-agents passent par les mêmes limites.
+
+#### Mesuré avec le vrai `claude` (19/11, 2.1.311)
+
+Trois petits tours (`--model haiku`, options exactes ci-dessus), dans un dossier jetable qui contenait aussi, pour tenter d'élargir les droits : un `.claude/settings.json` et un `.claude/settings.local.json` qui autorisent `Bash`, `WebFetch`, la lecture et l'écriture partout, un dossier de plus et `bypassPermissions`, avec des crochets (`SessionStart`, `PreToolUse`) ; un `.mcp.json` avec un serveur ; un `CLAUDE.md` dans le dossier et un dans le dossier parent ; un lien symbolique vers un fichier du dehors et un vers un dossier du dehors. Les réglages de l'utilisateur autorisent aussi `Bash`, `WebFetch` et `WebSearch`. Un tour avec l'environnement réduit, un avec tout l'environnement d'un terminal.
+
+| Tentative | Résultat |
+|---|---|
+| Lire un fichier hors du dossier (chemin absolu, `/etc/hosts`, `..` relatif ou absolu) | refusé (`permission_denied` : « path outside the working directory ») |
+| Lire par un lien symbolique vers un fichier du dehors, ou à travers un lien vers un dossier du dehors | refusé (« resolves through a symlink to … ») |
+| Écrire hors du dossier (absolu, `../`, à travers un lien vers un dossier du dehors) | refusé, rien d'écrit |
+| Chercher (`Glob`, `Grep`) hors du dossier, dont `~/.claude` | refusé |
+| Lancer une commande (`Bash`), lire le web (`WebFetch`) | outil absent : « No such tool available … disabled for this session, in subagents as well as here » |
+| Sous-agent `general-purpose` qui lit `/etc/hosts` et lance `Bash` | mêmes refus que Claude lui-même |
+| Sous-agent qui n'a que des outils interdits (`web-fetch`) | non lancé : « every tool it may use is denied by the current permission settings » |
+| Écrire `.claude/settings.json` dans le dossier | refusé (personne pour l'accepter) |
+| Modifier une note, en créer une, y compris dans un sous-dossier | fait, sans rien demander |
+| Réglages, crochets, serveur MCP et `CLAUDE.md` posés dans le dossier ou au-dessus | sans effet : aucun crochet lancé, aucun serveur (`mcp_servers` vide), aucun outil en plus (`Task, Edit, Glob, Grep, Read, Write`), aucune extension installée par l'utilisateur, aucun `CLAUDE.md` lu |
+
+Restent appliqués, comme le dit `claude --help` : les réglages imposés par un administrateur du Mac (absents ici) et `--settings` (jamais passé). Le flux du premier tour est gardé pour les tests (`escapes_refused.jsonl`, chemins remplacés par `/Users/moi`). Une action dont l'outil ou le sous-agent est hors des autorisations finit en erreur sans `permission_denied` : l'adaptateur la reconnaît à ce que dit son issue (« No such tool available », « denied by the current permission settings ») et l'annonce refusée, comme les autres. La colonne rappelle en une ligne discrète, sous la zone du message, ce que Claude peut faire : lire, créer et modifier les notes de cet espace de travail, sans demander ; rien d'autre.
+
+Verrous : les arguments exacts et l'environnement exact (liste des variables gardées) sont fixés par des tests du faux Claude Code ; une option ou une variable de plus fait échouer la CI. Confirmé sur les flux enregistrés le 19/11 (2.1.311) : l'action qui lance un sous-agent s'appelle `Agent` (la liste d'outils du début l'appelle encore `Task` ; l'adaptateur accepte les deux noms). La construction de ces arguments est une fonction pure de l'adaptateur, testée ; le faux Claude Code vérifie qu'ils sont bien passés.
 
 ### Événements
 

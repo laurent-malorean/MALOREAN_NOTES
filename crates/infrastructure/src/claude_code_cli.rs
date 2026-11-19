@@ -18,9 +18,30 @@ use crate::claude_stream::events_of;
 /// des sous-agents ; ni commande système, ni web.
 const TOOLS: &str = "Read,Write,Edit,Glob,Grep,Agent";
 
-/// La clé d'une facturation à l'usage : retirée, pour que ce soit toujours l'abonnement de
-/// l'utilisateur qui serve.
-const API_KEY: &str = "ANTHROPIC_API_KEY";
+/// Les seules variables d'environnement transmises à `claude` : son dossier personnel, sa
+/// connexion, ses programmes, la langue, les fichiers temporaires et le proxy du réseau. Toute
+/// autre est retirée : ni clé d'API (c'est toujours l'abonnement de l'utilisateur qui sert), ni
+/// réglage de Claude Code qui élargirait ses droits, ni accès hérité du Terminal (fiche 0032).
+const KEPT_VARIABLES: [&str; 18] = [
+    "HOME",
+    "USER",
+    "LOGNAME",
+    "PATH",
+    "SHELL",
+    "TMPDIR",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "LC_MESSAGES",
+    "CLAUDE_CONFIG_DIR",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy",
+    "NODE_EXTRA_CA_CERTS",
+];
 
 /// Le nom du programme de Claude Code.
 const PROGRAM: &str = "claude";
@@ -44,6 +65,15 @@ struct AuthStatus {
 struct Turn {
     child: Option<Child>,
     stopped: bool,
+}
+
+/// `claude`, lancé avec les seules variables d'environnement gardées de l'application.
+fn claude_command(program: &Path) -> Command {
+    let mut command = Command::new(program);
+    command.env_clear().envs(
+        std::env::vars_os().filter(|(name, _)| KEPT_VARIABLES.iter().any(|kept| name == kept)),
+    );
+    command
 }
 
 /// Les dossiers où chercher `claude`, dans l'ordre : ceux où son installation le range, puis
@@ -123,10 +153,9 @@ impl ClaudeCodeCli {
             return Err(ClaudeError::Busy);
         }
         let program = self.program().ok_or(ClaudeError::Missing)?;
-        let mut child = Command::new(program)
+        let mut child = claude_command(program)
             .args(arguments(conversation))
             .current_dir(workspace.as_str())
-            .env_remove(API_KEY)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -189,9 +218,8 @@ impl ClaudeCode for ClaudeCodeCli {
         let Some(program) = self.program() else {
             return ClaudeStatus::Missing;
         };
-        let Ok(output) = Command::new(program)
+        let Ok(output) = claude_command(program)
             .args(["auth", "status", "--json"])
-            .env_remove(API_KEY)
             .stdin(Stdio::null())
             .stderr(Stdio::null())
             .output()

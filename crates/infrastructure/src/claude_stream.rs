@@ -18,6 +18,13 @@ const TOKEN_COUNTERS: [&str; 4] = [
     "output_tokens",
 ];
 
+/// Ce que dit Claude Code d'une action dont l'outil, ou le sous-agent, est hors des autorisations
+/// (`--tools`) : elle est refusée, comme celles que les autorisations interdisent.
+const LEFT_OUT_MARKS: [&str; 2] = [
+    "No such tool available",
+    "denied by the current permission settings",
+];
+
 /// Les événements de Claude annoncés par une ligne du flux.
 pub(crate) fn events_of(line: &str) -> Vec<ClaudeEvent> {
     let Ok(value) = serde_json::from_str::<Value>(line) else {
@@ -32,7 +39,7 @@ pub(crate) fn events_of(line: &str) -> Vec<ClaudeEvent> {
         (Some("assistant"), _) => blocks(&value)
             .filter_map(|block| assistant_said(block, agent(&value)))
             .collect(),
-        (Some("user"), _) => blocks(&value).filter_map(action_finished).collect(),
+        (Some("user"), _) => blocks(&value).flat_map(action_finished).collect(),
         (Some("result"), _) => vec![ClaudeEvent::Summary(summary(&value))],
         _ => Vec::new(),
     }
@@ -110,17 +117,44 @@ fn kind(tool: &str) -> ActionKind {
     }
 }
 
-fn action_finished(block: &Value) -> Option<ClaudeEvent> {
-    if text(&block["type"])? != "tool_result" {
-        return None;
-    }
-    let outcome = if block["is_error"].as_bool() == Some(true) {
-        ActionOutcome::Failed
-    } else {
-        ActionOutcome::Succeeded
+/// L'issue d'une action ; refusée d'abord si son outil est hors des autorisations.
+fn action_finished(block: &Value) -> Vec<ClaudeEvent> {
+    let Some(id) = action_id(&block["tool_use_id"]) else {
+        return Vec::new();
     };
-    let id = action_id(&block["tool_use_id"])?;
-    Some(ClaudeEvent::ActionFinished { id, outcome })
+    if text(&block["type"]) != Some("tool_result") {
+        return Vec::new();
+    }
+    if block["is_error"].as_bool() != Some(true) {
+        return vec![ClaudeEvent::ActionFinished {
+            id,
+            outcome: ActionOutcome::Succeeded,
+        }];
+    }
+    let mut events = Vec::new();
+    if left_out(&block["content"]) {
+        events.push(ClaudeEvent::ActionRefused { id: id.clone() });
+    }
+    events.push(ClaudeEvent::ActionFinished {
+        id,
+        outcome: ActionOutcome::Failed,
+    });
+    events
+}
+
+/// L'issue en erreur dit que l'outil est hors des autorisations ; elle est un texte, ou une
+/// liste de blocs de texte.
+fn left_out(content: &Value) -> bool {
+    let texts: Vec<&str> = match content.as_array() {
+        Some(blocks) => blocks
+            .iter()
+            .filter_map(|block| text(&block["text"]))
+            .collect(),
+        None => text(content).into_iter().collect(),
+    };
+    texts
+        .iter()
+        .any(|said| LEFT_OUT_MARKS.iter().any(|mark| said.contains(mark)))
 }
 
 fn sub_agent_finished(value: &Value) -> Option<ClaudeEvent> {

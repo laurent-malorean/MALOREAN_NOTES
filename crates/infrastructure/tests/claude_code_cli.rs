@@ -1,5 +1,5 @@
 //! Claude Code piloté en arrière-plan, avec un faux Claude Code : un script connecté qui note ses
-//! arguments, son dossier, son entrée et la clé d'API qu'il voit, puis rejoue un flux enregistré.
+//! arguments, son dossier, son entrée et son environnement, puis rejoue un flux enregistré.
 //! Le vrai `claude` n'est jamais lancé.
 
 #![expect(
@@ -44,9 +44,10 @@ impl FakeClaude {
         fs::write(
             &script,
             format!(
-                "#!/bin/sh\n[ \"$1\" = auth ] && exec echo '{{\"loggedIn\":true}}'\n\
+                "#!/bin/sh\n[ \"$1\" = auth ] && env > '{dir}/auth_env' && \
+                 exec echo '{{\"loggedIn\":true}}'\n\
                  printf '%s\\n' \"$@\" > '{dir}/args'\npwd -P > '{dir}/cwd'\n\
-                 printf '%s' \"${{ANTHROPIC_API_KEY-absente}}\" > '{dir}/api_key'\n\
+                 env > '{dir}/env'\n\
                  cat > '{dir}/input'\ncat '{dir}/stream.jsonl'\n{ending}\n"
             ),
         )
@@ -154,20 +155,83 @@ fn the_message_is_written_on_its_input_never_given_as_an_option() {
     assert!(!fake.received("args").contains("--help"));
 }
 
-/// Joué seul par le test qui suit, avec une clé d'API dans l'environnement ; sans clé, il passe
-/// aussi.
+/// Les seules variables d'environnement que Claude Code reçoit de l'application : de quoi
+/// trouver son dossier personnel, sa connexion, ses programmes, la langue, les fichiers
+/// temporaires et le proxy du réseau. Aucune autre ne peut élargir ses droits ni changer qui paie.
+const KEPT: [&str; 18] = [
+    "HOME",
+    "USER",
+    "LOGNAME",
+    "PATH",
+    "SHELL",
+    "TMPDIR",
+    "LANG",
+    "LC_ALL",
+    "LC_CTYPE",
+    "LC_MESSAGES",
+    "CLAUDE_CONFIG_DIR",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy",
+    "NODE_EXTRA_CA_CERTS",
+];
+
+/// Les variables que le shell du faux Claude Code pose lui-même.
+const SHELL_OWN: [&str; 3] = ["PWD", "SHLVL", "_"];
+
+/// Les noms des variables notées dans `env`, sans celles du shell, triés.
+fn names(env: &str) -> Vec<String> {
+    let mut names: Vec<String> = env
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .map(|(name, _)| name.to_owned())
+        .filter(|name| !SHELL_OWN.contains(&name.as_str()))
+        .collect();
+    names.sort();
+    names
+}
+
+/// Les variables gardées que le test lui-même a reçues, triées.
+fn kept_here() -> Vec<String> {
+    let mut kept: Vec<String> = KEPT
+        .iter()
+        .filter(|name| std::env::var_os(name).is_some())
+        .map(|name| (*name).to_owned())
+        .collect();
+    kept.sort();
+    kept
+}
+
+/// Joué seul par le test qui suit, avec des variables qui élargiraient les droits ou changeraient
+/// qui paie ; sans elles, il passe aussi.
 #[test]
-fn claude_code_never_sees_an_api_key() {
+fn claude_code_receives_only_the_kept_variables() {
     let fake = FakeClaude::new(SUMMARY, "");
     fake.turn(None, "Bonjour").0.unwrap();
-    assert_eq!(fake.received("api_key"), "absente");
+    assert_eq!(names(&fake.received("env")), kept_here());
+    assert_eq!(fake.claude.status(), application::ClaudeStatus::Ready);
+    assert_eq!(names(&fake.received("auth_env")), kept_here());
+    assert!(kept_here().contains(&"HOME".to_owned()));
 }
 
 #[test]
-fn an_api_key_of_the_application_is_left_out_so_the_subscription_serves() {
+fn variables_of_the_application_other_than_the_kept_ones_never_reach_claude_code() {
     let status = Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "claude_code_never_sees_an_api_key", "--quiet"])
+        .args([
+            "--exact",
+            "claude_code_receives_only_the_kept_variables",
+            "--quiet",
+        ])
         .env("ANTHROPIC_API_KEY", "clé-de-test")
+        .env("ANTHROPIC_BASE_URL", "https://ailleurs.example")
+        .env("CLAUDECODE", "1")
+        .env("CLAUDE_CODE_SIMPLE", "1")
+        .env("CLAUDE_CODE_USE_BEDROCK", "1")
+        .env("LANG", "fr_FR.UTF-8")
+        .env("HTTPS_PROXY", "http://proxy.example:3128")
         .output()
         .unwrap();
     let report = String::from_utf8_lossy(&status.stdout);

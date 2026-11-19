@@ -4,6 +4,7 @@ import {
   type ClaudeColumnView,
   createClaudeColumnView,
   EMPTY,
+  PERMISSIONS,
   STOPPED,
   WORKING,
 } from "./claude-column-view";
@@ -39,6 +40,15 @@ beforeEach(() => {
     close: () => log.push("masquer"),
     openNote: (path) => log.push(`ouvrir ${path}`),
     markdown: async (text) => (markdowns.push(text), `<p><strong>${text}</strong></p>`),
+  });
+});
+
+describe("colonne Claude Code : les autorisations", () => {
+  it("disent en une ligne discrète ce que Claude peut faire ici, et rien d'autre", () => {
+    expect(find(".claude-permissions").textContent).toBe(PERMISSIONS);
+    expect(PERMISSIONS).toBe(
+      "Claude lit, crée et modifie les notes de cet espace de travail, sans demander. Rien d'autre : ni autre dossier, ni commande, ni web.",
+    );
   });
 });
 

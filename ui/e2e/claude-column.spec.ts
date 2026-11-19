@@ -32,6 +32,9 @@ test("Ctrl+Cmd+L ouvre la colonne : Claude répond au fil de l'eau, la note qu'i
   await page.keyboard.press("Meta+Control+L");
   await expect(column(page)).toBeVisible();
   await expect(input(page)).toBeFocused();
+  await expect(column(page).locator(".claude-permissions")).toHaveText(
+    "Claude lit, crée et modifie les notes de cet espace de travail, sans demander. Rien d'autre : ni autre dossier, ni commande, ni web.",
+  );
   await send(page, "Écris un plan");
   await expect(conversation(page).locator(".claude-user")).toHaveText("Écris un plan");
   await expect(column(page).getByRole("button", { name: "Arrêter" })).toBeVisible();
