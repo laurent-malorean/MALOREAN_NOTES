@@ -90,6 +90,7 @@
   --claude-text-size: 13px;
   --claude-detail-text-size: 11px;
   --claude-input-max-height: 12rem;
+  --claude-agent-map-max-height: 14rem;
 
   /* Fenêtre */
   --folders-width: 200px;

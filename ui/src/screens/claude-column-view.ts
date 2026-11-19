@@ -7,6 +7,8 @@ import {
   shownTarget,
   summaryText,
 } from "../state/claude-column";
+import type { AgentMap } from "../state/agent-map";
+import { createAgentMapView } from "./agent-map-view";
 
 export interface ClaudeColumnHandlers {
   send(text: string): void;
@@ -25,6 +27,8 @@ export interface ClaudeColumnView {
   showUnavailable(reason: string | null): void;
   /** Met le curseur dans la zone du message. */
   focus(): void;
+  /** Montre la carte des agents, cachée tant qu'aucun sous-agent n'a été lancé. */
+  showAgents(map: AgentMap): void;
 }
 
 export const CHECKING_CLAUDE = "Vérification de Claude Code…";
@@ -44,6 +48,7 @@ const TEMPLATE = `
     <button class="icon" data-close title="Masquer la colonne Claude Code (Ctrl+Cmd+L)" aria-label="Masquer la colonne Claude Code">×</button>
   </header>
   <p class="claude-unavailable" role="alert" hidden></p>
+  <details class="claude-agents" hidden></details>
   <div class="claude-conversation" role="log" aria-live="polite"></div>
   <form class="claude-form">
     <textarea class="claude-input" rows="3" placeholder="Votre message à Claude" aria-label="Message à Claude" spellcheck="true"></textarea>
@@ -184,5 +189,6 @@ export function createClaudeColumnView(
       send.disabled = reason !== null;
     },
     focus: () => input.focus(),
+    showAgents: createAgentMapView(find<HTMLDetailsElement>(".claude-agents")),
   };
 }

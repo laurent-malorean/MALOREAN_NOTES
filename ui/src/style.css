@@ -1343,6 +1343,58 @@ button {
 .claude-unavailable[hidden] {
   display: none;
 }
+.claude-agents {
+  margin: 0 0.8rem 0.6rem;
+  font-size: var(--claude-detail-text-size);
+  color: var(--muted);
+}
+.claude-agents[hidden] {
+  display: none;
+}
+.claude-agents-summary {
+  display: flex;
+  gap: 0.4rem;
+  cursor: pointer;
+  list-style-position: inside;
+}
+.claude-agents-title {
+  font-weight: 600;
+}
+.claude-agents[open] > .claude-agents-summary {
+  margin-bottom: 0.3rem;
+}
+.claude-agent-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: var(--claude-agent-map-max-height);
+  overflow-y: auto;
+}
+.claude-agent-tree .claude-agent-tree {
+  max-height: none;
+  margin-left: 0.8rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--border);
+}
+.claude-agent {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.4rem;
+  padding: 0.1rem 0;
+}
+.claude-agent > .claude-agent-tree {
+  flex-basis: 100%;
+}
+.claude-agent-description {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.claude-agent-running .claude-agent-details {
+  color: var(--accent);
+}
+.claude-agent-failed .claude-agent-details {
+  color: var(--danger);
+}
 .claude-conversation {
   flex: 1;
   overflow-y: auto;

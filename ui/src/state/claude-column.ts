@@ -154,13 +154,19 @@ export function shownTarget(target: string, workspacePath: string): string {
 const SECONDS = new Intl.NumberFormat("fr-FR");
 const COUNT = new Intl.NumberFormat("fr-FR");
 
-/** La durée et les jetons d'un bilan, en petit sous la réponse : « 12,3 s · 1 234 jetons ». */
-export function summaryText(durationMs: number, tokens: number): string {
+/** Une durée en français : « 12,3 s », « 2 min 05 s ». */
+export function durationText(durationMs: number): string {
   const seconds = Math.round(durationMs / 100) / 10;
   const whole = Math.round(seconds);
-  const duration =
-    seconds < 60
-      ? `${SECONDS.format(seconds)} s`
-      : `${Math.floor(whole / 60)} min ${String(whole % 60).padStart(2, "0")} s`;
-  return `${duration} · ${COUNT.format(tokens)} ${tokens > 1 ? "jetons" : "jeton"}`;
+  return seconds < 60
+    ? `${SECONDS.format(seconds)} s`
+    : `${Math.floor(whole / 60)} min ${String(whole % 60).padStart(2, "0")} s`;
 }
+
+/** Un nombre de jetons en français : « 1 234 jetons », « 1 jeton ». */
+export const tokensText = (tokens: number) =>
+  `${COUNT.format(tokens)} ${tokens > 1 ? "jetons" : "jeton"}`;
+
+/** La durée et les jetons d'un bilan, en petit sous la réponse : « 12,3 s · 1 234 jetons ». */
+export const summaryText = (durationMs: number, tokens: number) =>
+  `${durationText(durationMs)} · ${tokensText(tokens)}`;

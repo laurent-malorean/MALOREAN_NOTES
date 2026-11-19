@@ -215,3 +215,67 @@ describe("colonne Claude Code : un tour", () => {
     expect(shown()).toEqual([EMPTY, "Claude travaille…"]);
   });
 });
+
+describe("colonne Claude Code : la carte des agents", () => {
+  const agents = () => find<HTMLDetailsElement>(".claude-agents");
+  const states = () =>
+    [...layout.claudeColumn.querySelectorAll(".claude-agent-details")].map((e) => e.textContent);
+  const launch = (id: string, agent: string | null) =>
+    announce({ kind: "actionStarted", agent, id, action: "subAgent", tool: null, target: id });
+
+  it("suit les sous-agents au fil des événements, l'un sous l'autre", () => {
+    expect(agents().hidden).toBe(true);
+    send("Compte");
+    launch("Compter", null);
+    expect(agents().hidden).toBe(false);
+    launch("Lire", "Compter");
+    expect(states()).toEqual(["en cours · 1 action", "en cours · 0 action"]);
+    announce({
+      kind: "subAgentFinished",
+      id: "Lire",
+      state: "done",
+      durationMs: 1000,
+      tokens: 10,
+      actions: 1,
+    });
+    expect(states()).toEqual(["en cours · 1 action", "terminé · 1 s · 10 jetons · 1 action"]);
+    expect(agents().querySelectorAll(".claude-agent .claude-agent .claude-agent")).toHaveLength(0);
+    expect(agents().querySelectorAll(".claude-agent .claude-agent")).toHaveLength(1);
+  });
+
+  it("un tour arrêté laisse ses sous-agents en cours interrompus", async () => {
+    send("Compte");
+    launch("Compter", null);
+    find<HTMLButtonElement>("[data-stop]").click();
+    turn.reject({ message: "la réponse de Claude a été arrêtée" });
+    await settle();
+    expect(states()).toEqual(["interrompu · 0 action"]);
+  });
+
+  it("un tour fini normalement : ses sous-agents ont fini", async () => {
+    send("Compte");
+    launch("Compter", null);
+    turn.resolve();
+    await settle();
+    expect(states()).toEqual(["terminé · 0 action"]);
+  });
+
+  it("Nouvelle conversation et un autre espace de travail vident la carte", async () => {
+    send("Compte");
+    launch("Compter", null);
+    turn.resolve();
+    await settle();
+    find<HTMLButtonElement>("[data-new-conversation]").click();
+    await settle();
+    expect(agents().hidden).toBe(true);
+    send("Encore");
+    launch("Lire", null);
+    turn.resolve();
+    await settle();
+    column.follow();
+    expect(agents().hidden).toBe(false);
+    workspacePath = "/Users/moi/Travail";
+    column.follow();
+    expect(agents().hidden).toBe(true);
+  });
+});

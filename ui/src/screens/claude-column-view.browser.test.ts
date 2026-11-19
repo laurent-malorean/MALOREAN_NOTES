@@ -52,6 +52,29 @@ describe("colonne Claude Code : les autorisations", () => {
   });
 });
 
+describe("colonne Claude Code : la carte des agents", () => {
+  it("en haut de la colonne, sous l'en-tête, cachée tant qu'aucun sous-agent n'a été lancé", () => {
+    const map = find<HTMLDetailsElement>(".claude-agents");
+    expect(map.previousElementSibling?.className).toBe("claude-unavailable");
+    expect(map.hidden).toBe(true);
+    view.showAgents({
+      agents: [
+        {
+          id: "A",
+          parent: null,
+          description: "Compter",
+          state: "running",
+          durationMs: null,
+          tokens: null,
+          actions: 0,
+        },
+      ],
+    });
+    expect(map.hidden).toBe(false);
+    expect(map.querySelector(".claude-agent-description")?.textContent).toBe("Compter");
+  });
+});
+
 describe("colonne Claude Code : la conversation", () => {
   it("vide, elle dit ce qu'on peut demander", () => {
     view.render(NEW_CONVERSATION, "/Notes");
