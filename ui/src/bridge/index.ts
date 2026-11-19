@@ -280,6 +280,6 @@ const CLAUDE_EVENT = "claude-event";
 /** Prévient de chaque événement de Claude du tour en cours, dès qu'il arrive. */
 export const onClaudeEvent = (handler: (event: ClaudeEventItem) => void) =>
   listen<ClaudeEventItem>(CLAUDE_EVENT, (event) => handler(event.payload));
-/** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
-export const openAttachment = (path: string, target: string) =>
-  invoke<null>("open_attachment", { path, target });
+/** Ouvre ce que vise la cible d'un lien Markdown de la note : adresse web dans le navigateur, pièce jointe avec l'application du Mac. */
+export const openLinkTarget = (path: string, target: string) =>
+  invoke<null>("open_link_target", { path, target });

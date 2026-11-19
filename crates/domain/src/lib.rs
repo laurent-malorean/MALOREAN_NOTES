@@ -1,4 +1,4 @@
-//! Règles pures de MALOREAN Notes : titre, nom de fichier, en-tête, pièces jointes, historique,
+//! Règles pures de MALOREAN Notes : titre, nom de fichier, en-tête, pièces jointes, adresses web, historique,
 //! aide à l'écriture, événements de Claude Code.
 //! Aucun accès au disque, à l'horloge ni au réseau.
 
@@ -21,6 +21,7 @@ pub mod search;
 pub mod tag;
 pub mod template;
 pub mod title;
+pub mod web_address;
 pub mod writing;
 
 pub use attachment_name::{
@@ -32,3 +33,4 @@ pub use file_name::{FileName, InvalidFileName};
 pub use folder::{Folder, FolderName, InvalidFolderName, NotePath};
 pub use note::{Modified, NoteOrder, NoteSummary};
 pub use title::Title;
+pub use web_address::WebAddress;

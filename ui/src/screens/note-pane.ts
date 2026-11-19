@@ -15,7 +15,7 @@ export interface PaneBackend {
     file: File,
     origin: AttachmentOrigin,
   ) => Promise<AttachedFile>;
-  readonly openAttachment: (path: string, target: string) => Promise<unknown>;
+  readonly openLinkTarget: (path: string, target: string) => Promise<unknown>;
 }
 
 /** Ce qu'une colonne annonce à l'application. */
@@ -77,7 +77,7 @@ class NotePane implements Pane, Viewer {
           attach: (file, origin) => this.attach(file, origin),
           open: (target) => {
             if (this.shown !== null)
-              void backend.openAttachment(this.shown, target).catch(events.error);
+              void backend.openLinkTarget(this.shown, target).catch(events.error);
           },
         },
         openLink: events.openLink,

@@ -1,4 +1,4 @@
-// Liens entre notes : `[[titre]]` dans le texte, mis en forme ; Cmd+clic ouvre la note visée.
+// Liens entre notes : `[[titre]]` dans le texte, mis en forme ; un clic ou un Cmd+clic ouvre la note visée.
 import { type Extension, RangeSetBuilder } from "@codemirror/state";
 import {
   Decoration,
@@ -7,6 +7,7 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
+import { type LinkFinder, linkClicks } from "./link-click";
 
 const OPENING = "[[";
 const CLOSING = "]]";
@@ -52,6 +53,18 @@ export function noteLinkAt(text: string, pos: number): string | null {
   return noteLinksIn(text).find((link) => link.from <= pos && pos <= link.to)?.title ?? null;
 }
 
+/** Les liens entre notes de la ligne de la position `pos` : le texte montré de chacun l'ouvre par `open`. */
+export function noteLinkFinder(open: (title: string) => void): LinkFinder {
+  return (state, pos) => {
+    const line = state.doc.lineAt(pos);
+    return noteLinksIn(line.text).map((link) => ({
+      from: line.from + link.textFrom,
+      to: line.from + link.textTo,
+      open: () => open(link.title),
+    }));
+  };
+}
+
 const linkMark = Decoration.mark({ class: "cm-note-link-mark" });
 const linkText = Decoration.mark({ class: "cm-note-link" });
 
@@ -84,10 +97,14 @@ const linkStyle = ViewPlugin.fromClass(
   { decorations: (plugin) => plugin.decorations },
 );
 
-/** Les liens entre notes : mis en forme ; Cmd+clic sur l'un d'eux appelle `open` avec son titre. */
+/**
+ * Les liens entre notes : mis en forme ; un clic sur le texte de l'un d'eux, ou un Cmd+clic
+ * n'importe où sur lui, appelle `open` avec son titre.
+ */
 export function noteLinks(open: (title: string) => void): Extension {
   return [
     linkStyle,
+    linkClicks(noteLinkFinder(open)),
     EditorView.domEventHandlers({
       mousedown(event, view) {
         if (!event.metaKey) return false;

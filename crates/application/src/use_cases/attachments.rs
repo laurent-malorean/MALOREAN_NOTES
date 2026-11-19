@@ -1,6 +1,6 @@
-//! Joindre un fichier collé ou glissé à une note, et ouvrir une pièce jointe.
+//! Joindre un fichier collé ou glissé à une note, et ouvrir la cible d'un lien Markdown.
 
-use domain::{AttachmentName, NotePath};
+use domain::{AttachmentName, NotePath, WebAddress};
 
 use crate::{AppError, AttachmentLocation, Clock, NoteStore};
 
@@ -72,31 +72,45 @@ impl<'a> AttachFile<'a> {
     }
 }
 
-/// Retrouve la pièce jointe que vise un lien de la note, pour l'ouvrir.
+/// Ce que vise la cible d'un lien Markdown de la note.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LinkDestination {
+    /// Une adresse web, à ouvrir dans le navigateur du Mac.
+    Web(WebAddress),
+    /// Une pièce jointe de la note, à ouvrir avec l'application du Mac.
+    Attachment(AttachmentLocation),
+}
+
+/// Retrouve ce que vise un lien Markdown de la note, pour l'ouvrir.
 #[derive(Debug)]
-pub struct OpenAttachment<'a> {
+pub struct OpenLinkTarget<'a> {
     store: &'a dyn NoteStore,
 }
 
-impl<'a> OpenAttachment<'a> {
+impl<'a> OpenLinkTarget<'a> {
     /// Le cas d'usage, branché sur l'espace de travail ouvert.
     #[must_use]
     pub fn new(store: &'a dyn NoteStore) -> Self {
         Self { store }
     }
 
-    /// L'emplacement de la pièce jointe visée par `target`, la cible d'un lien de la note.
-    /// Seules les pièces jointes de la note s'ouvrent ainsi.
+    /// Ce que vise `target`, la cible d'un lien de la note : une adresse web, sinon une pièce
+    /// jointe de la note. Rien d'autre ne s'ouvre ainsi.
     ///
     /// # Errors
     ///
-    /// [`AppError::NotAnAttachment`] si le lien ne vise pas une pièce jointe de la note,
-    /// [`AppError::AttachmentNotFound`] si elle n'existe pas,
+    /// [`AppError::NotAnAttachment`] si le lien ne vise ni une adresse web ni une pièce jointe
+    /// de la note, [`AppError::AttachmentNotFound`] si la pièce jointe n'existe pas,
     /// [`AppError::StorageUnavailable`] si le stockage ne répond pas.
-    pub fn execute(&self, note: &NotePath, target: &str) -> Result<AttachmentLocation, AppError> {
+    pub fn execute(&self, note: &NotePath, target: &str) -> Result<LinkDestination, AppError> {
+        if let Some(address) = WebAddress::in_link(target) {
+            return Ok(LinkDestination::Web(address));
+        }
         let name = AttachmentName::in_link(note.name(), target)
             .ok_or_else(|| AppError::NotAnAttachment(target.to_owned()))?;
-        Ok(self.store.attachment_location(note, &name)?)
+        Ok(LinkDestination::Attachment(
+            self.store.attachment_location(note, &name)?,
+        ))
     }
 }
 
@@ -218,16 +232,32 @@ mod tests {
             },
         )
         .unwrap();
-        let location = OpenAttachment::new(&store)
+        let destination = OpenLinkTarget::new(&store)
             .execute(&path("voyage.md"), "voyage.assets/Billet%201.pdf")
             .unwrap();
+        let LinkDestination::Attachment(location) = destination else {
+            panic!("pas une pièce jointe : {destination:?}");
+        };
         assert_eq!(location.as_str(), "mémoire://voyage.md/Billet 1.pdf");
+    }
+
+    #[test]
+    fn a_web_address_is_opened_as_it_is_written() {
+        let store = InMemoryNoteStore::with_notes(&[("voyage.md", "# Voyage")]);
+        let destination =
+            OpenLinkTarget::new(&store).execute(&path("voyage.md"), "<https://a.fr/b>");
+        assert_eq!(
+            destination,
+            Ok(LinkDestination::Web(
+                WebAddress::in_link("https://a.fr/b").unwrap()
+            ))
+        );
     }
 
     #[test]
     fn other_links_do_not_open() {
         let store = InMemoryNoteStore::with_notes(&[("voyage.md", "# Voyage")]);
-        let open = OpenAttachment::new(&store);
+        let open = OpenLinkTarget::new(&store);
         assert_eq!(
             open.execute(&path("voyage.md"), "../secret.pdf"),
             Err(AppError::NotAnAttachment("../secret.pdf".into()))

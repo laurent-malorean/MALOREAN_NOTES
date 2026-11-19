@@ -79,15 +79,11 @@ describe("liens entre notes dans l'éditeur", () => {
     expect(view.hasFocus).toBe(false);
   });
 
-  it("un clic simple, ou un Cmd+clic hors d'un lien, n'ouvre rien et laisse l'éditeur faire", () => {
+  it("un Cmd+clic hors d'un lien n'ouvre rien et laisse l'éditeur faire", () => {
     const { view, opened } = mount("Voir [[Courses]] ici\nautre ligne [[Agenda]]");
-    for (const [pos, metaKey] of [
-      [9, false],
-      [18, true],
-      [24, true],
-    ] as const) {
+    for (const pos of [18, 24]) {
       view.contentDOM.blur();
-      click(view, pos, metaKey);
+      click(view, pos, true);
       expect(view.hasFocus, `${pos}`).toBe(true);
     }
     expect(opened).toEqual([]);

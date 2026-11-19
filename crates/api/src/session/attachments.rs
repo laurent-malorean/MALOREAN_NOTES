@@ -1,6 +1,6 @@
 //! Les pièces jointes des notes de l'espace de travail ouvert, vues depuis la page.
 
-use application::use_cases::{AttachFile, AttachmentSource, OpenAttachment};
+use application::use_cases::{AttachFile, AttachmentSource, LinkDestination, OpenLinkTarget};
 use domain::NotePath;
 
 use super::Session;
@@ -28,16 +28,17 @@ impl Session {
         Ok(AttachedFile { markdown })
     }
 
-    /// Où se trouve la pièce jointe visée par la cible d'un lien de la note, pour l'ouvrir.
+    /// Ce que vise la cible d'un lien Markdown de la note, pour l'ouvrir : une adresse web ou
+    /// une pièce jointe de la note.
     ///
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, lien qui ne vise
-    /// pas une pièce jointe de la note, pièce jointe absente, aucun espace de travail ouvert.
-    pub fn attachment_location(&self, path: &str, target: &str) -> Result<String, ApiError> {
+    /// ni une adresse web ni une pièce jointe de la note, pièce jointe absente, aucun espace de
+    /// travail ouvert.
+    pub fn link_destination(&self, path: &str, target: &str) -> Result<LinkDestination, ApiError> {
         let store = self.store()?;
-        let location = OpenAttachment::new(&*store).execute(&NotePath::parse(path)?, target)?;
-        Ok(location.as_str().to_owned())
+        Ok(OpenLinkTarget::new(&*store).execute(&NotePath::parse(path)?, target)?)
     }
 }
 
@@ -80,10 +81,25 @@ mod tests {
             file_name: "billet.pdf",
         };
         session.attach_file("voyage.md", dropped, b"x").unwrap();
-        let location = session
-            .attachment_location("voyage.md", "voyage.assets/billet.pdf")
+        let destination = session
+            .link_destination("voyage.md", "voyage.assets/billet.pdf")
             .unwrap();
-        assert_eq!(location, "mémoire://voyage.md/billet.pdf");
+        let LinkDestination::Attachment(location) = destination else {
+            panic!("pas une pièce jointe : {destination:?}");
+        };
+        assert_eq!(location.as_str(), "mémoire://voyage.md/billet.pdf");
+    }
+
+    #[test]
+    fn a_web_address_of_a_link_is_given_to_open() {
+        let session = opened(&[("voyage.md", "# Voyage")]);
+        let destination = session
+            .link_destination("voyage.md", "https://example.com/a")
+            .unwrap();
+        let LinkDestination::Web(address) = destination else {
+            panic!("pas une adresse web : {destination:?}");
+        };
+        assert_eq!(address.as_str(), "https://example.com/a");
     }
 
     #[test]
@@ -98,7 +114,7 @@ mod tests {
         let invalid = session.attach_file("../x.md", dropped, b"x").unwrap_err();
         assert_eq!(invalid.message, "nom de note invalide : « ../x.md »");
         let elsewhere = session
-            .attachment_location("voyage.md", "../secret.pdf")
+            .link_destination("voyage.md", "../secret.pdf")
             .unwrap_err();
         assert_eq!(
             elsewhere.message,

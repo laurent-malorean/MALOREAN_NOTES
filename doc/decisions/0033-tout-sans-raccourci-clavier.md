@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-19
 - **Statut** : acceptée
+- **Note (19/11/2026)** : un simple clic sur le texte d'un lien l'ouvre désormais (Cmd+clic aussi), et une adresse web s'ouvre dans le navigateur : voir la fiche 0035.
 
 ## Contexte
 

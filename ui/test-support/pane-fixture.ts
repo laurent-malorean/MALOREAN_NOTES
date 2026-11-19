@@ -59,7 +59,7 @@ export function fakeBackend(notes: Record<string, string>) {
       if (backend.fail) return Promise.reject(new Error("refusé"));
       return Promise.resolve({ markdown: `![](${file.name})` });
     },
-    openAttachment: (path, target) => {
+    openLinkTarget: (path, target) => {
       calls.push(`ouvrir ${path} ${target}`);
       return backend.fail ? Promise.reject(new Error("introuvable")) : Promise.resolve(null);
     },

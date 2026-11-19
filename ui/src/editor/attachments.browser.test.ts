@@ -191,12 +191,9 @@ describe("ouvrir une pièce jointe", () => {
     expect(view.hasFocus).toBe(false);
   });
 
-  it("un clic simple, ou un Cmd+clic hors d'un lien, place le curseur sans rien ouvrir", () => {
+  it("un Cmd+clic hors d'un lien place le curseur sans rien ouvrir", () => {
     const { view, opened } = mount(PDF);
     // L'éditeur prend la main : le curseur quitte le début de la note.
-    click(view, coordsOf(view, 3), false);
-    expect(view.state.selection.main.head).not.toBe(0);
-    view.dispatch({ selection: { anchor: 0 } });
     click(view, coordsOf(view, PDF.length - 2), true);
     expect(view.state.selection.main.head).not.toBe(0);
     expect(opened).toEqual([]);

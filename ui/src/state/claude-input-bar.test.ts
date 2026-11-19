@@ -150,6 +150,9 @@ describe("notes jointes", () => {
     expect(attachedNotes(renamed)).toEqual([]);
     expect(attachedNotes(noteDetached(renamed, "autre.md"))).toEqual([]);
     expect(attachedNotes(openNoteFollowed(renamed, plan))).toEqual([plan]);
+    // Revenue à la note retirée après une autre : elle est jointe de nouveau.
+    const back = openNoteFollowed(openNoteFollowed(renamed, plan), alpha);
+    expect(attachedNotes(back)).toEqual([alpha]);
   });
 
   it("le titre de la note ouverte suit celui de son onglet", () => {

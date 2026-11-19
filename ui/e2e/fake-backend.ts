@@ -522,7 +522,7 @@ function attachFile(bytes: Uint8Array) {
   return { markdown: /\.pdf$/i.test(name) ? `[${name}](${target})` : `![](${target})` };
 }
 
-commands.open_attachment = ({ target = "" }) => void backend.opened.push(target);
+commands.open_link_target = ({ target = "" }) => void backend.opened.push(target);
 
 mockWindows("main");
 mockIPC(

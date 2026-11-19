@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use application::use_cases::AttachmentSource;
+use application::use_cases::{AttachmentSource, LinkDestination};
 use percent_encoding::percent_decode_str;
 use tauri::ipc::{Invoke, InvokeBody, Request};
 use tauri::{AppHandle, Runtime, State};
@@ -433,25 +433,30 @@ pub async fn attach_file(
     .await
 }
 
-/// Ouvre avec l'application du Mac la pièce jointe visée par la cible d'un lien de la note.
-/// Seules les pièces jointes de la note s'ouvrent ainsi.
+/// Ouvre ce que vise la cible d'un lien Markdown de la note : une adresse web dans le
+/// navigateur du Mac, une pièce jointe de la note avec l'application du Mac. Rien d'autre ne
+/// s'ouvre ainsi.
 ///
 /// # Errors
 ///
-/// Le message de l'erreur, prêt à afficher : voir [`Session::attachment_location`]. S'y ajoute
+/// Le message de l'erreur, prêt à afficher : voir [`Session::link_destination`]. S'y ajoute
 /// l'échec de l'ouverture par le Mac.
 #[tauri::command]
-pub async fn open_attachment<R: Runtime>(
+pub async fn open_link_target<R: Runtime>(
     app: AppHandle<R>,
     session: SharedSession<'_>,
     path: String,
     target: String,
 ) -> Result<(), ApiError> {
     let session = Arc::clone(&session);
-    let location = in_background(move || session.attachment_location(&path, &target)).await?;
-    app.opener()
-        .open_path(location, None::<&str>)
-        .map_err(|e| ApiError::internal(&e))
+    let destination = in_background(move || session.link_destination(&path, &target)).await?;
+    let opened = match destination {
+        LinkDestination::Web(address) => app.opener().open_url(address.as_str(), None::<&str>),
+        LinkDestination::Attachment(location) => {
+            app.opener().open_path(location.as_str(), None::<&str>)
+        }
+    };
+    opened.map_err(|e| ApiError::internal(&e))
 }
 
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
@@ -492,7 +497,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         restore_folder,
         empty_trash,
         attach_file,
-        open_attachment,
+        open_link_target,
         history::list_versions,
         history::compare_version,
         history::keep_version,

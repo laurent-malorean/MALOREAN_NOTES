@@ -364,9 +364,9 @@ describe("pont vers Rust : pièces jointes", () => {
 
   it("demande d'ouvrir une pièce jointe de la note", async () => {
     const calls = recordCalls(null);
-    await bridge.openAttachment("a.md", "a.assets/b.pdf");
+    await bridge.openLinkTarget("a.md", "a.assets/b.pdf");
     expect(calls).toEqual([
-      { command: "open_attachment", args: { path: "a.md", target: "a.assets/b.pdf" } },
+      { command: "open_link_target", args: { path: "a.md", target: "a.assets/b.pdf" } },
     ]);
   });
 

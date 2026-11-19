@@ -576,11 +576,11 @@ fn an_incomplete_attachment_is_refused() {
 }
 
 #[test]
-fn only_attachments_of_the_note_can_be_opened() {
+fn only_web_addresses_and_attachments_of_the_note_can_be_opened() {
     let window = opened_with(&[("a.md", "# A")]);
     let elsewhere = call(
         &window,
-        "open_attachment",
+        "open_link_target",
         json!({ "path": "a.md", "target": "../../etc/passwd" }),
     );
     assert_eq!(
@@ -589,7 +589,7 @@ fn only_attachments_of_the_note_can_be_opened() {
     );
     let missing = call(
         &window,
-        "open_attachment",
+        "open_link_target",
         json!({ "path": "a.md", "target": "a.assets/absent.pdf" }),
     );
     assert_eq!(
