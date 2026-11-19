@@ -3,6 +3,7 @@
 import * as bridge from "./bridge";
 import { createOpenColumns } from "./app/columns";
 import { connectAppMenu } from "./app/app-menu";
+import { connectButtons } from "./app/buttons";
 import { connectCommands } from "./app/commands";
 import { createCurrentScreen } from "./app/current-screen";
 import { createExport } from "./app/export";
@@ -24,15 +25,14 @@ import { connectSettings } from "./app/settings";
 import { createTags } from "./app/tags";
 import { createTemplates } from "./app/templates";
 import { createTrash } from "./app/trash";
+import { createWritingAssistant } from "./app/writing-assistant";
 import { connectWritingModes } from "./app/writing-modes";
 import { askTrash, askWorkspaceRemoval } from "./screens/confirmation";
 import { createLayout } from "./screens/layout";
 import { askName } from "./screens/name-prompt";
 import { renderScreen, type ScreenActions } from "./screens/screen-view";
-import { connectSearchField } from "./screens/search-field";
 import { createSharedNotes } from "./screens/shared-notes";
 import { connectWindowDisplay } from "./screens/window-display";
-import { connectWorkspaceSwitcher } from "./screens/workspace-switcher";
 import { welcome } from "./state/screen";
 import "./theme.css";
 import "./style.css";
@@ -101,6 +101,7 @@ const exporting = createExport({
   ...{ sheet: layout.printSheet, storage: localStorage, show: messages.show, run },
 });
 const history = createHistory({ ...messages, backend: bridge, columns, layout });
+const assistant = createWritingAssistant({ ...messages, backend: bridge, columns, layout });
 const workspaces = createWorkspaces({
   ...{ backend: bridge, screen, columns, workspace, picker: layout.picker, run },
   askName: (options) => askName(layout.confirmation, options),
@@ -121,23 +122,17 @@ const actions: ScreenActions = screenActions({
   ...{ history, run },
 });
 
-layout.addButton.addEventListener("click", () => run(workspaces.add()));
-layout.switchButton.addEventListener("click", () => run(workspaces.choose()));
-connectWorkspaceSwitcher(layout.workspaceSwitcher, workspaces.menu, messages.error);
-layout.newNoteButton.addEventListener("click", () => run(workspace.createNote()));
-connectSearchField(layout.searchField, search.type);
-layout.trashButton.addEventListener("click", () => run(trash.show()));
-layout.newFolderButton.addEventListener("click", folders.startCreation);
+connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders });
 
 const windowDisplay = connectWindowDisplay(layout, {
   ...{ window: bridge, storage: localStorage, error: messages.error },
 });
 const commands = connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
-  ...{ picker: layout.picker, searchField: layout.searchField, exporting },
+  ...{ picker: layout.picker, searchField: layout.searchField, exporting, assistant },
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent, history },
 });
-const menu = connectAppMenu({ backend: bridge, actions: commands, error: messages.error });
+const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...messages });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
 
 screen.show(welcome);

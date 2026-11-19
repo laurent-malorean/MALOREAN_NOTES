@@ -10,6 +10,9 @@ export type CommandId =
   | "search-workspace"
   | "find-in-note"
   | "find-and-replace"
+  | "correct-selection"
+  | "rephrase-selection"
+  | "summarize-selection"
   | "toggle-focus"
   | "toggle-typewriter"
   | "toggle-outline"
@@ -51,6 +54,9 @@ export const COMMANDS: readonly Command[] = [
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },
   { id: "find-and-replace", label: "Rechercher et remplacer", shortcut: "Alt+Cmd+F" },
+  { id: "correct-selection", label: "Corriger la sélection", shortcut: "Ctrl+Cmd+K" },
+  { id: "rephrase-selection", label: "Reformuler la sélection", shortcut: "Ctrl+Cmd+R" },
+  { id: "summarize-selection", label: "Résumer la sélection", shortcut: "Ctrl+Cmd+U" },
   { id: "toggle-focus", label: "Mode focus", shortcut: "Cmd+Maj+F" },
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },

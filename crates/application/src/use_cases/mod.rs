@@ -17,6 +17,7 @@ mod search_notes;
 mod tags;
 mod trash;
 mod workspace;
+mod writing;
 
 pub use attachments::{AttachFile, AttachmentSource, MAX_ATTACHMENT_MEGABYTES, OpenAttachment};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
@@ -37,3 +38,4 @@ pub use search_notes::{MAX_RESULTS, SearchNotes, SearchResult};
 pub use tags::{ListTaggedNotes, ListTags};
 pub use trash::{Trash, TrashView};
 pub use workspace::{ManageWorkspaces, OpenedWorkspace};
+pub use writing::{Proposal, ProposeRewriting};

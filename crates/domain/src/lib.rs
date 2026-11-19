@@ -1,4 +1,5 @@
-//! Règles pures de MALOREAN Notes : titre, nom de fichier, en-tête, pièces jointes, historique.
+//! Règles pures de MALOREAN Notes : titre, nom de fichier, en-tête, pièces jointes, historique,
+//! aide à l'écriture.
 //! Aucun accès au disque, à l'horloge ni au réseau.
 
 pub mod attachment_name;
@@ -18,6 +19,7 @@ pub mod search;
 pub mod tag;
 pub mod template;
 pub mod title;
+pub mod writing;
 
 pub use attachment_name::{
     AttachmentKind, AttachmentName, InvalidMoment, Moment, RefusedAttachment,

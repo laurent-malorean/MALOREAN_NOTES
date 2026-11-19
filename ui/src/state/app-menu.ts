@@ -79,6 +79,10 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "find-in-note", label: "Rechercher…" },
       { command: "find-and-replace", label: "Rechercher et remplacer…" },
       { command: "search-workspace", label: "Rechercher dans toutes les notes…" },
+      "separator",
+      { command: "correct-selection", label: "Corriger la sélection…" },
+      { command: "rephrase-selection", label: "Reformuler la sélection…" },
+      { command: "summarize-selection", label: "Résumer la sélection…" },
     ],
   },
   {
@@ -128,6 +132,16 @@ export const NOTE_COMMANDS: ReadonlySet<MenuCommandId> = new Set<MenuCommandId>(
   "note-history",
 ]);
 
+/**
+ * Les commandes de l'aide à l'écriture : grisées tant que l'assistant d'écriture n'a pas dit qu'il
+ * peut répondre, et pour de bon sur un Mac sans Apple Intelligence.
+ */
+export const ASSISTANT_COMMANDS: ReadonlySet<MenuCommandId> = new Set<MenuCommandId>([
+  "correct-selection",
+  "rephrase-selection",
+  "summarize-selection",
+]);
+
 /** Un raccourci écrit comme dans la palette (`Cmd+Maj+N`), écrit pour le Mac (`Cmd+Shift+N`). */
 export function accelerator(shortcut: string): string {
   return shortcut.replace("Maj", "Shift");
@@ -152,11 +166,14 @@ function entry(item: MenuItemDef, noteShown: boolean): MenuEntryItem {
     id: command.id,
     label: item.label ?? command.label,
     accelerator: command.shortcut === undefined ? null : accelerator(command.shortcut),
-    enabled: noteShown || !NOTE_COMMANDS.has(command.id),
+    enabled: (noteShown || !NOTE_COMMANDS.has(command.id)) && !ASSISTANT_COMMANDS.has(command.id),
   };
 }
 
-/** La barre des menus à construire, ses commandes d'une note grisées si aucune note n'est montrée. */
+/**
+ * La barre des menus à construire, ses commandes d'une note grisées si aucune note n'est montrée,
+ * celles de l'aide à l'écriture grisées en attendant l'assistant d'écriture.
+ */
 export function menuBar(noteShown: boolean, menus: readonly MenuDef[] = APP_MENU): AppMenu[] {
   return menus.map((menu) => ({
     title: menu.title,

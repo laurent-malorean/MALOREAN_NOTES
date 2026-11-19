@@ -4,6 +4,8 @@
 export interface MenuEntry {
   readonly label: string;
   readonly run: () => void;
+  /** Montré grisé : on ne peut pas le choisir. */
+  readonly disabled?: boolean;
 }
 
 let open: { readonly element: HTMLElement; readonly close: () => void } | null = null;
@@ -13,8 +15,16 @@ export function closeContextMenu(): void {
   open?.close();
 }
 
-/** Ouvre un menu à la position `x`, `y` de la fenêtre ; il remplace celui qui serait ouvert. */
-export function showContextMenu(x: number, y: number, entries: readonly MenuEntry[]): void {
+/**
+ * Ouvre un menu à la position `x`, `y` de la fenêtre ; il remplace celui qui serait ouvert. `note`,
+ * s'il y en a une, s'écrit sous les choix (pourquoi certains sont grisés).
+ */
+export function showContextMenu(
+  x: number,
+  y: number,
+  entries: readonly MenuEntry[],
+  note?: string,
+): void {
   closeContextMenu();
   const element = document.createElement("div");
   element.className = "context-menu";
@@ -37,11 +47,18 @@ export function showContextMenu(x: number, y: number, entries: readonly MenuEntr
     const button = document.createElement("button");
     button.setAttribute("role", "menuitem");
     button.textContent = entry.label;
+    button.disabled = entry.disabled === true;
     button.addEventListener("click", () => {
       close();
       entry.run();
     });
     element.append(button);
+  }
+  if (note !== undefined) {
+    const paragraph = document.createElement("p");
+    paragraph.className = "context-menu-note";
+    paragraph.textContent = note;
+    element.append(paragraph);
   }
   document.addEventListener("mousedown", onPointer);
   document.addEventListener("keydown", onKey);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { settle } from "../../test-support/app-fixture";
-import type { AppMenu } from "../bridge";
-import { menuBar, NOTE_COMMANDS } from "../state/app-menu";
+import type { AppMenu, AssistantStatus } from "../bridge";
+import { ASSISTANT_COMMANDS, menuBar, NOTE_COMMANDS } from "../state/app-menu";
 import { columnsStarted, noteOpened } from "../state/columns";
 import type { MenuCommandId } from "../state/commands";
 import { connectAppMenu } from "./app-menu";
@@ -10,6 +10,7 @@ interface Options {
   failInstall?: boolean;
   failListen?: boolean;
   failEnable?: boolean;
+  assistant?: Promise<AssistantStatus>;
 }
 
 function setup(options: Options = {}) {
@@ -41,6 +42,8 @@ function setup(options: Options = {}) {
       },
     },
     actions,
+    // Par défaut, l'assistant d'écriture ne répond jamais : ses commandes restent grisées.
+    assistant: { status: options.assistant ?? new Promise(() => {}) },
     error: (error) => log.push(`erreur ${(error as Error).message}`),
   });
   return {
@@ -81,6 +84,24 @@ describe("barre des menus", () => {
     await settle();
     const ids = [...NOTE_COMMANDS].join(",");
     expect(log).toEqual(["construire", `activer ${ids}`, `griser ${ids}`]);
+  });
+
+  it("rend actives les commandes de l'aide à l'écriture quand l'assistant peut répondre, une fois la barre construite", async () => {
+    const { log, finishInstall } = setup({ assistant: Promise.resolve({ kind: "available" }) });
+    await settle();
+    expect(log).toEqual(["construire"]);
+    finishInstall();
+    await settle();
+    expect(log).toEqual(["construire", `activer ${[...ASSISTANT_COMMANDS].join(",")}`]);
+  });
+
+  it("laisse grisées les commandes de l'aide à l'écriture sur un Mac où l'assistant ne peut pas répondre", async () => {
+    const { log, finishInstall } = setup({
+      assistant: Promise.resolve({ kind: "unavailable", reason: "pas d'Apple Intelligence" }),
+    });
+    finishInstall();
+    await settle();
+    expect(log).toEqual(["construire"]);
   });
 
   it("lance la commande de l'élément choisi, et rien pour un identifiant inconnu", () => {

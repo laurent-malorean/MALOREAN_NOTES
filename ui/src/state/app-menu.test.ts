@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { MenuEntryItem } from "../bridge";
 import { keyOf } from "../screens/shortcuts";
-import { APP_MENU, accelerator, menuBar, menuCommand, NOTE_COMMANDS } from "./app-menu";
+import {
+  APP_MENU,
+  ASSISTANT_COMMANDS,
+  accelerator,
+  menuBar,
+  menuCommand,
+  NOTE_COMMANDS,
+} from "./app-menu";
 import { COMMANDS, MENU_COMMANDS, type MenuCommandId, PALETTE } from "./commands";
 
 type CommandEntry = Extract<MenuEntryItem, { kind: "command" }>;
@@ -89,6 +96,10 @@ describe("barre des menus", () => {
           "Rechercher… Cmd+F",
           "Rechercher et remplacer… Alt+Cmd+F",
           "Rechercher dans toutes les notes…",
+          "—",
+          "Corriger la sélection… Ctrl+Cmd+K",
+          "Reformuler la sélection… Ctrl+Cmd+R",
+          "Résumer la sélection… Ctrl+Cmd+U",
         ],
       ],
       [
@@ -195,9 +206,11 @@ describe("barre des menus", () => {
   });
 
   it("grise les commandes d'une note tant qu'aucune note n'est montrée, et elles seules", () => {
-    for (const entry of commandEntries(false))
+    const assistant = (entry: { id: string }) => ASSISTANT_COMMANDS.has(entry.id as MenuCommandId);
+    for (const entry of commandEntries(false).filter((e) => !assistant(e)))
       expect(entry.enabled).toBe(!NOTE_COMMANDS.has(entry.id as MenuCommandId));
-    for (const entry of commandEntries(true)) expect(entry.enabled).toBe(true);
+    for (const entry of commandEntries(true).filter((e) => !assistant(e)))
+      expect(entry.enabled).toBe(true);
     expect([...NOTE_COMMANDS]).toEqual([
       "find-in-note",
       "find-and-replace",
@@ -209,6 +222,20 @@ describe("barre des menus", () => {
       "copy-markdown",
       "note-history",
     ]);
+  });
+
+  it("grise les commandes de l'aide à l'écriture en attendant l'assistant d'écriture, note montrée ou non", () => {
+    const enabled = (noteShown: boolean) =>
+      commandEntries(noteShown)
+        .filter((entry) => ASSISTANT_COMMANDS.has(entry.id as MenuCommandId))
+        .map((entry) => [entry.id, entry.enabled]);
+    const greyed = [
+      ["correct-selection", false],
+      ["rephrase-selection", false],
+      ["summarize-selection", false],
+    ];
+    expect(enabled(true)).toEqual(greyed);
+    expect(enabled(false)).toEqual(greyed);
   });
 
   it("refuse un menu qui nomme une commande inconnue", () => {

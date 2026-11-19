@@ -1,5 +1,5 @@
 //! Propriétés de l'historique, vérifiées sur des versions et des textes générés au hasard :
-//! la conservation des versions et les différences entre deux textes.
+//! la conservation des versions et les différences entre deux textes, par ligne et par mot.
 
 #![expect(
     clippy::unwrap_used,
@@ -9,7 +9,7 @@
 use std::collections::{HashMap, HashSet};
 
 use domain::Moment;
-use domain::diff::{Difference, differences};
+use domain::diff::{Difference, differences, word_differences};
 use domain::history::{KEEP_ALL_MINUTES, ONE_PER_DAY_DAYS, Version, retained};
 use proptest::prelude::*;
 
@@ -152,5 +152,24 @@ proptest! {
         prop_assert_eq!(&to, &joined(&new));
         let same = found.iter().filter(|d| matches!(d, Difference::Same(_))).count();
         prop_assert_eq!(same, longest_common(&joined(&old), &joined(&new)));
+    }
+
+    #[test]
+    fn word_differences_give_back_both_texts_without_two_pieces_alike_in_a_row(
+        old in "[ab \n]{0,30}", new in "[ab \n]{0,30}",
+    ) {
+        let found = word_differences(&old, &new);
+        let from: String = found.iter().filter_map(|d| match d {
+            Difference::Same(t) | Difference::Removed(t) => Some(t.as_str()),
+            Difference::Added(_) => None,
+        }).collect();
+        let to: String = found.iter().filter_map(|d| match d {
+            Difference::Same(t) | Difference::Added(t) => Some(t.as_str()),
+            Difference::Removed(_) => None,
+        }).collect();
+        prop_assert_eq!(from, old);
+        prop_assert_eq!(to, new);
+        let kind = |d: &Difference| std::mem::discriminant(d);
+        prop_assert!(found.windows(2).all(|pair| kind(&pair[0]) != kind(&pair[1])));
     }
 }

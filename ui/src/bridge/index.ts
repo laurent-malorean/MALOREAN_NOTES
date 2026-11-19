@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { ApiError } from "./generated/ApiError";
 import type { AppMenu } from "./generated/AppMenu";
+import type { AssistantStatus } from "./generated/AssistantStatus";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { ChosenFolder } from "./generated/ChosenFolder";
 import type { DifferenceItem } from "./generated/DifferenceItem";
@@ -19,6 +20,7 @@ import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
 import type { NoteOrderItem } from "./generated/NoteOrderItem";
+import type { ProposalItem } from "./generated/ProposalItem";
 import type { SaveResult } from "./generated/SaveResult";
 import type { SavedNote } from "./generated/SavedNote";
 import type { SearchResultItem } from "./generated/SearchResultItem";
@@ -26,9 +28,11 @@ import type { TagItem } from "./generated/TagItem";
 import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
 import type { TrashInfo } from "./generated/TrashInfo";
 import type { VersionItem } from "./generated/VersionItem";
+import type { WritingActionItem } from "./generated/WritingActionItem";
 
 export type {
   AppMenu,
+  AssistantStatus,
   AttachedFile,
   ChosenFolder,
   DifferenceItem,
@@ -44,6 +48,7 @@ export type {
   NoteContent,
   NoteListItem,
   NoteOrderItem,
+  ProposalItem,
   SaveResult,
   SavedNote,
   SearchResultItem,
@@ -51,6 +56,7 @@ export type {
   TrashedNoteItem,
   TrashInfo,
   VersionItem,
+  WritingActionItem,
 };
 
 /** Le message lisible d'une erreur rendue par Rust, ou de toute autre erreur. */
@@ -219,6 +225,11 @@ export const copyRichText = (html: string, text: string) =>
   invoke<null>("copy_rich_text", { html, text });
 /** Pose dans le presse-papiers du Mac le texte Markdown `text`, en texte brut seul. */
 export const copyPlainText = (text: string) => invoke<null>("copy_plain_text", { text });
+/** Si l'assistant d'écriture (le modèle d'IA du Mac) peut répondre, sinon pourquoi. */
+export const assistantStatus = () => invoke<AssistantStatus>("assistant_status");
+/** Ce que l'assistant d'écriture propose pour la sélection ; rien n'est écrit dans la note. */
+export const proposeRewriting = (action: WritingActionItem, selection: string) =>
+  invoke<ProposalItem>("propose_rewriting", { action, selection });
 /** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
 export const openAttachment = (path: string, target: string) =>
   invoke<null>("open_attachment", { path, target });

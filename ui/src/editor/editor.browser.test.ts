@@ -375,4 +375,30 @@ describe("éditeur : sélection", () => {
     view.dispatch({ selection: { anchor: 8, head: 16 } });
     expect(editor.selectedText()).toBe("**gras**");
   });
+
+  it("rend les bornes de la sélection, du début à la fin quel que soit le sens", () => {
+    const { editor, view } = mount();
+    editor.show("# Titre\n**gras** et la suite");
+    view.dispatch({ selection: { anchor: 16, head: 8 } });
+    expect(editor.selectedRange()).toEqual({ from: 8, to: 16 });
+  });
+
+  it("remplace un passage comme une frappe : enregistré, annulable, le curseur après lui", () => {
+    const { editor, view, changes } = mount();
+    editor.show("Une fote ici.");
+    editor.replaceRange(4, 8, "faute");
+    expect(editor.content()).toBe("Une faute ici.");
+    expect(changes).toEqual(["Une faute ici."]);
+    expect(view.state.selection.main.head).toBe(9);
+    undo(view);
+    expect(editor.content()).toBe("Une fote ici.");
+  });
+
+  it("reconnaît ce qui lui appartient à l'écran, et rien d'autre", () => {
+    const { parent, editor } = mount();
+    editor.show("Texte");
+    expect(editor.owns(parent.querySelector(".cm-line"))).toBe(true);
+    expect(editor.owns(parent)).toBe(false);
+    expect(editor.owns(null)).toBe(false);
+  });
 });

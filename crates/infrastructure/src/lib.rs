@@ -1,6 +1,8 @@
 //! Adaptateurs de sortie : espace de travail Markdown sur disque, son historique, sa surveillance,
-//! son index SQLite, exports, préférences, horloge, presse-papiers du Mac.
+//! son index SQLite, exports, préférences, horloge, presse-papiers du Mac, assistant d'écriture
+//! (modèle d'IA du Mac).
 
+mod apple_writing;
 mod fs_export_store;
 mod fs_history;
 mod fs_note_store;
@@ -11,6 +13,7 @@ mod mac_clipboard;
 mod sqlite_index;
 mod system_clock;
 
+pub use apple_writing::{AppleWritingAssistant, WRITING_HELPER};
 pub use fs_export_store::FsExportStore;
 pub use fs_history::{FsHistories, FsHistory};
 pub use fs_note_store::{FsNoteStore, FsWorkspaceOpener};

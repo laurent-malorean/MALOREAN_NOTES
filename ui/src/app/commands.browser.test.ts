@@ -73,6 +73,7 @@ const deps: CommandsDeps = {
     copyMarkdown: (path) => void log.push(`copier en Markdown ${path}`),
   },
   history: { show: (path) => void log.push(`historique ${path}`) },
+  assistant: { propose: (action) => void log.push(`aide à l'écriture ${action}`) },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
 const connected = connectCommands(deps);
@@ -120,6 +121,9 @@ describe("commandes de la palette", () => {
       "copy-note",
       "copy-markdown",
       "note-history",
+      "correct-selection",
+      "rephrase-selection",
+      "summarize-selection",
       "show-trash",
       "open-settings",
       "switch-workspace",
@@ -146,6 +150,9 @@ describe("commandes de la palette", () => {
       "copier undefined",
       "copier en Markdown undefined",
       "historique undefined",
+      "aide à l'écriture correct",
+      "aide à l'écriture rephrase",
+      "aide à l'écriture summarize",
       "corbeille",
       "réglages",
       "changer d'espace de travail",
@@ -333,6 +340,17 @@ describe("raccourcis clavier", () => {
   it("Cmd+Y ouvre l'historique de la note de la colonne active", () => {
     expect(press("y", { metaKey: true }).defaultPrevented).toBe(true);
     expect(log).toEqual(["historique undefined"]);
+  });
+
+  it("Ctrl+Cmd+K, R et U corrigent, reformulent et résument la sélection", () => {
+    expect(press("k", { metaKey: true, ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(press("r", { metaKey: true, ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(press("u", { metaKey: true, ctrlKey: true }).defaultPrevented).toBe(true);
+    expect(log).toEqual([
+      "aide à l'écriture correct",
+      "aide à l'écriture rephrase",
+      "aide à l'écriture summarize",
+    ]);
   });
 
   it("Cmd+O ouvre l'ouverture rapide", async () => {

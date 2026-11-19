@@ -6,13 +6,14 @@ import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
+import { type FakeWriting, fakeWriting, fakeWritingState } from "./fake-writing";
 
 interface FakeNote {
   content: string;
   modified: number;
 }
 
-export interface FakeBackend extends FakeExports, FakeMenu, FakeHistory {
+export interface FakeBackend extends FakeExports, FakeMenu, FakeHistory, FakeWriting {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -64,6 +65,7 @@ const backend: FakeBackend = {
   copiedMarkdown: [],
   versions: {},
   ...fakeMenuState(),
+  ...fakeWritingState(params),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
   readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
@@ -473,6 +475,7 @@ const windowCommands: Record<string, (args: Record<string, unknown>) => unknown>
   "plugin:window|set_fullscreen": ({ value }) => void (backend.fullScreen = value === true),
   "plugin:window|is_fullscreen": () => backend.fullScreen,
   ...fakeMenu(backend),
+  ...fakeWriting(backend),
 };
 
 /** Pièces jointes : même nommage que Rust, en plus simple (moment figé). */

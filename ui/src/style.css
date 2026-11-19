@@ -280,8 +280,19 @@ button {
   font: inherit;
   cursor: pointer;
 }
-.context-menu button:hover {
+.context-menu button:hover:enabled {
   background: var(--selected);
+}
+.context-menu button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.context-menu-note {
+  max-width: 16rem;
+  margin: 0.25rem 0.7rem;
+  font-size: var(--context-menu-note-text-size);
+  color: var(--muted);
+  white-space: pre-line;
 }
 .note-date {
   font-size: 0.8rem;
@@ -1059,6 +1070,60 @@ button {
 }
 .history-legend .removed {
   background: var(--difference-removed-background);
+}
+
+/* Proposition de l'aide à l'écriture : la sélection et la proposition côte à côte */
+.proposal {
+  width: min(var(--proposal-width), 92vw);
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 10px 30px var(--shadow);
+  font-family: var(--sans);
+  font-size: var(--proposal-text-size);
+}
+.proposal::backdrop {
+  background: var(--shadow);
+}
+.proposal-title {
+  margin: 0 0 0.8rem;
+  font-size: 1.1em;
+}
+.proposal-body {
+  display: flex;
+  gap: 0.8rem;
+  max-height: var(--proposal-height);
+  margin-bottom: 1rem;
+}
+.proposal-side {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.proposal-side-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+.proposal-text {
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--text-font);
+  white-space: pre-wrap;
+}
+.proposal-part.added {
+  background: var(--difference-added-background);
+}
+.proposal-part.removed {
+  background: var(--difference-removed-background);
+  text-decoration: line-through;
 }
 
 /* Fenêtre de choix au clavier : ouverture rapide, palette de commandes */

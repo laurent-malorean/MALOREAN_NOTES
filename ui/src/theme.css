@@ -82,6 +82,10 @@
   --history-height: 70vh;
   --history-versions-width: 15rem;
   --history-text-size: 13px;
+  --proposal-width: 60rem;
+  --proposal-height: 50vh;
+  --proposal-text-size: 14px;
+  --context-menu-note-text-size: 12px;
 
   /* Fenêtre */
   --folders-width: 200px;

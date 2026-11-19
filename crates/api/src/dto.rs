@@ -355,26 +355,77 @@ pub struct VersionItem {
     pub label: String,
 }
 
-/// D'où vient une ligne de la comparaison entre la note actuelle et une version.
+/// D'où vient un morceau de la comparaison de deux textes : une ligne entre la note actuelle et
+/// une version, ou des mots entre une sélection et sa proposition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub enum DifferenceKind {
-    /// La ligne est dans la note et dans la version.
+    /// Le morceau est dans les deux textes.
     Same,
-    /// La ligne n'est que dans la note actuelle : restaurer la version la retire.
+    /// Le morceau n'est que dans le premier (la note actuelle, la sélection) : restaurer la
+    /// version ou accepter la proposition le retire.
     Removed,
-    /// La ligne n'est que dans la version : restaurer la version la remet.
+    /// Le morceau n'est que dans le second (la version, la proposition) : restaurer la version ou
+    /// accepter la proposition le met.
     Added,
 }
 
-/// Une ligne de la comparaison entre la note actuelle et une version.
+/// Un morceau de la comparaison de deux textes : une ligne, ou des mots.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct DifferenceItem {
-    /// D'où vient la ligne.
+    /// D'où vient le morceau.
     pub kind: DifferenceKind,
-    /// Le texte de la ligne.
+    /// Son texte.
     pub text: String,
+}
+
+/// Une action d'aide à l'écriture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum WritingActionItem {
+    /// Corriger l'orthographe, la grammaire et la ponctuation.
+    Correct,
+    /// Reformuler.
+    Rephrase,
+    /// Résumer.
+    Summarize,
+}
+
+impl From<WritingActionItem> for domain::writing::WritingAction {
+    fn from(action: WritingActionItem) -> Self {
+        match action {
+            WritingActionItem::Correct => Self::Correct,
+            WritingActionItem::Rephrase => Self::Rephrase,
+            WritingActionItem::Summarize => Self::Summarize,
+        }
+    }
+}
+
+/// Si l'assistant d'écriture peut répondre, sinon pourquoi.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+#[ts(export)]
+pub enum AssistantStatus {
+    /// Les actions d'aide à l'écriture sont possibles.
+    Available,
+    /// Elles ne le sont pas, pour cette raison, prête à afficher.
+    Unavailable {
+        /// Ce qui manque, et ce qu'on peut faire.
+        reason: String,
+    },
+}
+
+/// Ce que l'assistant d'écriture propose pour une sélection.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ProposalItem {
+    /// Le texte proposé à la place de la sélection.
+    pub text: String,
+    /// La sélection et la proposition comparées mot à mot.
+    pub differences: Vec<DifferenceItem>,
 }

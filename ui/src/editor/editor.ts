@@ -49,6 +49,12 @@ export interface Editor {
   content(): string;
   /** Le texte sélectionné (sélection principale), vide sans sélection. */
   selectedText(): string;
+  /** Le début et la fin de la sélection principale, dans le texte. */
+  selectedRange(): { readonly from: number; readonly to: number };
+  /** Remplace le texte de `from` à `to` par `insert`, comme une frappe : signalé et annulable. */
+  replaceRange(from: number, to: number, insert: string): void;
+  /** L'élément `target` fait-il partie de cet éditeur à l'écran ? */
+  owns(target: EventTarget | null): boolean;
   /**
    * Suit ce qui a été tapé dans une autre colonne sur la même note, devenue `content` :
    * curseur, sélection et défilement gardés, sans le signaler ni l'ajouter à l'historique.
@@ -165,6 +171,26 @@ function follower(view: EditorView) {
   };
 }
 
+/** La sélection principale : son texte, ses bornes, et le remplacement d'un passage. */
+function selectionParts(
+  view: EditorView,
+): Pick<Editor, "selectedText" | "selectedRange" | "replaceRange"> {
+  return {
+    selectedText: () =>
+      view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to),
+    selectedRange: () => ({
+      from: view.state.selection.main.from,
+      to: view.state.selection.main.to,
+    }),
+    // Comme une frappe : signalé à l'enregistrement, aux autres colonnes et à l'annulation.
+    replaceRange: (from, to, insert) =>
+      view.dispatch({
+        changes: { from, to, insert },
+        selection: { anchor: from + insert.length },
+      }),
+  };
+}
+
 export function createEditor(
   parent: HTMLElement,
   onChange: (content: string, changes: ChangeSet) => void,
@@ -213,8 +239,8 @@ export function createEditor(
     },
     reload: (content) => reload(view, content),
     content: () => view.state.doc.toString(),
-    selectedText: () =>
-      view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to),
+    ...selectionParts(view),
+    owns: (target) => target instanceof Node && view.dom.contains(target),
     follow: follower(view),
     focus: () => view.focus(),
     setFocusMode: (unit) => view.dispatch({ effects: focus.change(unit) }),

@@ -9,11 +9,11 @@ mod pdf;
 mod session;
 
 pub use dto::{
-    AppMenu, AttachedFile, ChosenFolder, DifferenceItem, DifferenceKind, ExcerptPartItem,
-    ExportFile, ExportFormatItem, LinkingNoteItem, MenuEntryItem, MenuRoleItem, NoteContent,
-    NoteListItem, NoteOrderItem, SaveResult, SavedNote, SearchResultItem, StandardItem, TagItem,
-    TrashInfo, TrashedNoteItem, VersionItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
-    WorkspaceNoteItem,
+    AppMenu, AssistantStatus, AttachedFile, ChosenFolder, DifferenceItem, DifferenceKind,
+    ExcerptPartItem, ExportFile, ExportFormatItem, LinkingNoteItem, MenuEntryItem, MenuRoleItem,
+    NoteContent, NoteListItem, NoteOrderItem, ProposalItem, SaveResult, SavedNote,
+    SearchResultItem, StandardItem, TagItem, TrashInfo, TrashedNoteItem, VersionItem,
+    WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem, WritingActionItem,
 };
 pub use error::ApiError;
 pub use session::Session;

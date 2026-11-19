@@ -11,6 +11,7 @@ pub mod testing;
 pub mod use_cases;
 mod versioned_store;
 pub mod workspaces;
+mod writing;
 
 pub use error::AppError;
 pub use history::{History, HistoryOpener, HistoryPlace};
@@ -25,3 +26,4 @@ pub use ports::{
 };
 pub use versioned_store::VersionedStore;
 pub use workspaces::{Workspace, WorkspaceName, Workspaces};
+pub use writing::{AssistError, Unavailability, WritingAssistant};

@@ -13,6 +13,7 @@ import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { NoteHistory } from "./history";
+import type { WritingAssistance } from "./writing-assistant";
 import type { WritingModes } from "./writing-modes";
 import type { Workspaces } from "./workspaces";
 
@@ -46,6 +47,8 @@ export interface CommandsDeps {
   readonly exporting: Exporting;
   /** L'historique de la note de la colonne active. */
   readonly history: NoteHistory;
+  /** L'aide à l'écriture, sur la sélection de la colonne active. */
+  readonly assistant: Pick<WritingAssistance, "propose">;
   run(action: Promise<unknown>): void;
 }
 
@@ -95,6 +98,9 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "search-workspace": () => deps.searchField.focus(),
     "find-in-note": () => columns.activePane().editor.openFind(),
     "find-and-replace": () => columns.activePane().editor.openReplace(),
+    "correct-selection": () => deps.assistant.propose("correct"),
+    "rephrase-selection": () => deps.assistant.propose("rephrase"),
+    "summarize-selection": () => deps.assistant.propose("summarize"),
     "toggle-focus": () => writing.toggleFocus(),
     "toggle-typewriter": () => writing.toggleTypewriter(),
     "toggle-outline": () => writing.toggleOutline(),

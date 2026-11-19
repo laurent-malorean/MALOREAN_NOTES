@@ -3,6 +3,7 @@ tmp/
 CLAUDE.local.md
 .DS_Store
 target/
+crates/app/binaries/
 node_modules/
 ui/dist/
 todo.md 

@@ -3,7 +3,7 @@
 use domain::history::Version;
 use domain::{Folder, NotePath, RefusedAttachment};
 
-use crate::StoreError;
+use crate::{AssistError, StoreError, Unavailability};
 
 /// Ce qui peut empêcher un cas d'usage d'aboutir.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -74,6 +74,31 @@ pub enum AppError {
     /// Le stockage ne répond pas ; la cause est lisible.
     #[error("stockage indisponible : {0}")]
     StorageUnavailable(String),
+    /// L'assistant d'écriture ne peut pas répondre sur ce Mac ; la raison est lisible.
+    #[error("{0}")]
+    AssistantUnavailable(Unavailability),
+    /// La sélection est trop longue pour l'aide à l'écriture.
+    #[error("la sélection dépasse {limit} caractères : choisissez un passage plus court")]
+    SelectionTooLong {
+        /// Le nombre de caractères permis.
+        limit: usize,
+    },
+    /// Le modèle a refusé de traiter le texte.
+    #[error("le modèle d'Apple a refusé de traiter ce texte")]
+    AssistantRefused,
+    /// Le modèle n'a pas pu répondre ; la cause est lisible.
+    #[error("l'aide à l'écriture a échoué : {0}")]
+    AssistantFailed(String),
+}
+
+impl From<AssistError> for AppError {
+    fn from(error: AssistError) -> Self {
+        match error {
+            AssistError::Unavailable(reason) => Self::AssistantUnavailable(reason),
+            AssistError::Refused => Self::AssistantRefused,
+            AssistError::Failed(reason) => Self::AssistantFailed(reason),
+        }
+    }
 }
 
 impl From<StoreError> for AppError {
@@ -107,6 +132,23 @@ mod tests {
         assert_eq!(
             message,
             "la version du 18 novembre 2026 à 14:30 n'existe plus"
+        );
+    }
+
+    #[test]
+    fn an_assistant_error_is_reported_with_its_reason() {
+        let unavailable = AssistError::Unavailable(Unavailability::AppleIntelligenceDisabled);
+        assert_eq!(
+            AppError::from(unavailable).to_string(),
+            "Apple Intelligence n'est pas activé : Réglages Système, « Apple Intelligence et Siri »"
+        );
+        assert_eq!(
+            AppError::from(AssistError::Refused).to_string(),
+            "le modèle d'Apple a refusé de traiter ce texte"
+        );
+        assert_eq!(
+            AppError::from(AssistError::Failed("trop long".to_owned())).to_string(),
+            "l'aide à l'écriture a échoué : trop long"
         );
     }
 

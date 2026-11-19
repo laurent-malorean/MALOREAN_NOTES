@@ -1,5 +1,6 @@
-//! Différences entre deux textes, ligne par ligne : ce que l'historique surligne entre une
-//! version et la note actuelle.
+//! Différences entre deux textes : ligne par ligne, ce que l'historique surligne entre une
+//! version et la note actuelle ; mot par mot, ce que l'aide à l'écriture surligne entre une
+//! sélection et sa proposition.
 
 /// Au-delà de ce nombre de lignes ajoutées ou retirées, la recherche des différences s'arrête :
 /// le texte est montré comme entièrement remplacé, plutôt que de faire attendre.
@@ -23,7 +24,48 @@ pub enum Difference {
 pub fn differences(old: &str, new: &str) -> Vec<Difference> {
     let old: Vec<&str> = old.lines().collect();
     let new: Vec<&str> = new.lines().collect();
-    let prefix = old.iter().zip(&new).take_while(|(a, b)| a == b).count();
+    compared(&old, &new)
+}
+
+/// Ce qui change d'`old` à `new`, mot par mot : chaque morceau garde ses espaces et ses retours à
+/// la ligne, si bien que les morceaux mis bout à bout redonnent les textes ; les morceaux voisins
+/// de même sorte sont réunis.
+#[must_use]
+pub fn word_differences(old: &str, new: &str) -> Vec<Difference> {
+    let mut merged: Vec<Difference> = Vec::new();
+    for difference in compared(&words(old), &words(new)) {
+        match (merged.last_mut(), difference) {
+            (Some(Difference::Same(last)), Difference::Same(next))
+            | (Some(Difference::Removed(last)), Difference::Removed(next))
+            | (Some(Difference::Added(last)), Difference::Added(next)) => last.push_str(&next),
+            (_, difference) => merged.push(difference),
+        }
+    }
+    merged
+}
+
+/// Les mots et les suites d'espaces du texte, dans l'ordre.
+fn words(text: &str) -> Vec<&str> {
+    let mut result = Vec::new();
+    let mut start = 0;
+    let mut previous_space = None;
+    for (at, character) in text.char_indices() {
+        let space = character.is_whitespace();
+        if previous_space.is_some_and(|previous| previous != space) {
+            result.push(&text[start..at]);
+            start = at;
+        }
+        previous_space = Some(space);
+    }
+    if start < text.len() {
+        result.push(&text[start..]);
+    }
+    result
+}
+
+/// Les différences entre deux suites de morceaux (lignes ou mots).
+fn compared(old: &[&str], new: &[&str]) -> Vec<Difference> {
+    let prefix = old.iter().zip(new).take_while(|(a, b)| a == b).count();
     let suffix = old[prefix..]
         .iter()
         .rev()
@@ -200,6 +242,43 @@ mod tests {
         assert_eq!(differences("", "a\nb"), [added("a"), added("b")]);
         assert_eq!(differences("a", ""), [removed("a")]);
         assert_eq!(differences("", ""), []);
+    }
+
+    #[test]
+    fn a_changed_word_is_removed_then_added_in_its_sentence() {
+        assert_eq!(
+            word_differences("Les note sont là.", "Les notes sont là."),
+            [
+                same("Les "),
+                removed("note"),
+                added("notes"),
+                same(" sont là.")
+            ]
+        );
+    }
+
+    #[test]
+    fn words_compare_with_their_spaces_and_line_breaks() {
+        assert_eq!(
+            word_differences("un\ndeux  trois", "un\ndeux trois quatre"),
+            [
+                same("un\ndeux"),
+                removed("  "),
+                added(" "),
+                same("trois"),
+                added(" quatre"),
+            ]
+        );
+    }
+
+    #[test]
+    fn identical_or_empty_texts_have_no_change() {
+        assert_eq!(
+            word_differences("même texte", "même texte"),
+            [same("même texte")]
+        );
+        assert_eq!(word_differences("", ""), []);
+        assert_eq!(word_differences("", "neuf"), [added("neuf")]);
     }
 
     #[test]

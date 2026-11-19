@@ -2,14 +2,14 @@
 import type { DifferenceKind } from "./DifferenceKind";
 
 /**
- * Une ligne de la comparaison entre la note actuelle et une version.
+ * Un morceau de la comparaison de deux textes : une ligne, ou des mots.
  */
 export type DifferenceItem = { 
 /**
- * D'où vient la ligne.
+ * D'où vient le morceau.
  */
 kind: DifferenceKind, 
 /**
- * Le texte de la ligne.
+ * Son texte.
  */
 text: string, };

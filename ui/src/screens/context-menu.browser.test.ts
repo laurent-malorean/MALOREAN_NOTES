@@ -26,6 +26,28 @@ describe("menu contextuel", () => {
     expect(roles).toEqual(["menuitem", "menuitem"]);
   });
 
+  it("montre grisé un choix impossible, et sous les choix une note qui dit pourquoi", () => {
+    showContextMenu(
+      0,
+      0,
+      [
+        { label: "Corriger", run: () => {}, disabled: true },
+        { label: "Autre", run: () => {} },
+      ],
+      "Apple Intelligence n'est pas activé",
+    );
+    const buttons = [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
+    expect(buttons.map((b) => b.disabled)).toEqual([true, false]);
+    const note = document.querySelector(".context-menu .context-menu-note");
+    expect(note?.textContent).toBe("Apple Intelligence n'est pas activé");
+    expect(menu()?.lastElementChild).toBe(note);
+  });
+
+  it("n'a pas de note quand rien n'est à expliquer", () => {
+    showContextMenu(0, 0, [{ label: "Épingler", run: () => {} }]);
+    expect(document.querySelector(".context-menu-note")).toBeNull();
+  });
+
   it("fait le choix cliqué puis se ferme", () => {
     const chosen: string[] = [];
     showContextMenu(0, 0, [{ label: "Épingler", run: () => chosen.push("épingler") }]);

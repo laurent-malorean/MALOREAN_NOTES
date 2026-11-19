@@ -401,6 +401,23 @@ describe("pont vers Rust : pièces jointes", () => {
   });
 });
 
+describe("pont vers Rust : aide à l'écriture", () => {
+  it("demande si l'assistant d'écriture peut répondre", async () => {
+    const calls = recordCalls({ kind: "available" });
+    expect(await bridge.assistantStatus()).toEqual({ kind: "available" });
+    expect(calls).toEqual([{ command: "assistant_status", args: {} }]);
+  });
+
+  it("demande la proposition pour une sélection, avec l'action", async () => {
+    const proposal = { text: "Une faute.", differences: [] };
+    const calls = recordCalls(proposal);
+    expect(await bridge.proposeRewriting("correct", "Une fote.")).toEqual(proposal);
+    expect(calls).toEqual([
+      { command: "propose_rewriting", args: { action: "correct", selection: "Une fote." } },
+    ]);
+  });
+});
+
 describe("pont vers Rust : barre des menus", () => {
   it("fait construire la barre des menus, puis griser ou activer ses éléments", async () => {
     const calls = recordCalls(null);

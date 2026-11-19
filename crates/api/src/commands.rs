@@ -21,6 +21,7 @@ pub mod export;
 pub mod history;
 pub mod menu;
 pub mod workspaces;
+pub mod writing;
 
 type SharedSession<'a> = State<'a, Arc<Session>>;
 
@@ -503,5 +504,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         export::copy_plain_text,
         menu::install_menu,
         menu::enable_menu_items,
+        writing::assistant_status,
+        writing::propose_rewriting,
     ]
 }

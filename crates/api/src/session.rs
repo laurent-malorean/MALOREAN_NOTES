@@ -14,6 +14,7 @@ mod templates;
 mod trash;
 mod watching;
 mod workspace;
+mod writing;
 
 use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex, PoisonError, RwLock};
@@ -26,6 +27,7 @@ use application::{
     AppError, Clipboard, Clock, ExportStore, History, HistoryOpener, IndexOpener, IndexedStore,
     MemoryHistories, MemoryIndexes, NoteIndex, NoteStore, Preferences, StoredNote, VersionedStore,
     Watching, WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
+    WritingAssistant,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
@@ -61,6 +63,7 @@ pub struct Session {
     watching: Mutex<Option<Box<dyn Watching>>>,
     exports: Option<Arc<dyn ExportStore>>,
     clipboard: Option<Arc<dyn Clipboard>>,
+    assistant: Option<Arc<dyn WritingAssistant>>,
 }
 
 /// L'espace de travail ouvert : où il est, ses notes, leur index et leur historique, qui suivent
@@ -98,6 +101,7 @@ impl Session {
             watching: Mutex::new(None),
             exports: None,
             clipboard: None,
+            assistant: None,
         }
     }
 

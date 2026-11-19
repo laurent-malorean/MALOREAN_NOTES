@@ -1,7 +1,7 @@
 # 0005 — Aide à l'écriture par le modèle d'IA intégré au Mac
 
 - **Date** : 2026-11-16
-- **Statut** : proposée
+- **Statut** : acceptée ; le moteur 1 est précisé par la fiche 0031 (le moteur de repli reste à faire)
 
 ## Contexte
 

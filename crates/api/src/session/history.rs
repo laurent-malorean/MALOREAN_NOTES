@@ -126,7 +126,7 @@ impl Session {
     }
 }
 
-fn difference_item(difference: Difference) -> DifferenceItem {
+pub(super) fn difference_item(difference: Difference) -> DifferenceItem {
     let (kind, text) = match difference {
         Difference::Same(text) => (DifferenceKind::Same, text),
         Difference::Removed(text) => (DifferenceKind::Removed, text),

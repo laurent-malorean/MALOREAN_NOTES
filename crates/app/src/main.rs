@@ -4,8 +4,8 @@ use std::sync::Arc;
 
 use api::{Session, commands};
 use infrastructure::{
-    FsExportStore, FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences,
-    MacClipboard, SqliteIndexes, SystemClock,
+    AppleWritingAssistant, FsExportStore, FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher,
+    JsonPreferences, MacClipboard, SqliteIndexes, SystemClock,
 };
 use tauri::{Manager, RunEvent};
 
@@ -32,7 +32,8 @@ fn main() {
             .with_histories(Arc::new(FsHistories))
             .with_watcher(Arc::new(FsWorkspaceWatcher))
             .with_exports(Arc::new(FsExportStore))
-            .with_clipboard(Arc::new(MacClipboard::default()));
+            .with_clipboard(Arc::new(MacClipboard::default()))
+            .with_writing_assistant(Arc::new(AppleWritingAssistant::installed()));
             app.manage(Arc::new(session));
             Ok(())
         })

@@ -12,14 +12,14 @@ clippy.toml           seuils et méthodes interdites
 crates/
   domain/             règles pures, types, erreurs métier
   application/        cas d'usage, lectures, événements, ports (traits)
-  infrastructure/     stockage Markdown, historique des versions, index SQLite, fichiers exportés, presse-papiers, système macOS, horloge réelle, journal
+  infrastructure/     stockage Markdown, historique des versions, index SQLite, fichiers exportés, presse-papiers, assistant d'écriture (assistant Swift du modèle d'Apple, swift/), système macOS, horloge réelle, journal
   api/                pont Tauri : commandes et événements, types exportés en TypeScript
-  app/                binaire Tauri : assemblage, configuration, permissions
+  app/                binaire Tauri : assemblage, configuration, permissions, programme annexe (assistant Swift)
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
                       disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, recherche, corbeille, enregistrement,
-                      modifications extérieures, historique, outils d'écriture, réglages, export, commandes, barre des menus
+                      modifications extérieures, historique, aide à l'écriture, outils d'écriture, réglages, export, commandes, barre des menus, boutons de la fenêtre
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
   src/rendering/      rendu HTML d'une note (export PDF, impression, copie mise en forme), styles en ligne, texte brut
@@ -75,6 +75,7 @@ En cas d'erreur : le cas d'usage rend une erreur typée ; `api` la traduit en me
 - Les colonnes et leurs onglets sont un état de l'interface seule ; chaque colonne a son éditeur et charge la note de son onglet actif ; une note montrée dans plusieurs colonnes n'a qu'un texte et qu'un enregistrement automatique, partagés entre leurs éditeurs (fiche 0017).
 - Un export écrit hors de l'espace de travail, là où l'utilisateur l'a choisi : le Markdown et ses pièces jointes par le port `ExportStore`, le PDF par l'impression de la page par WebKit (fiche 0025). Imprimer ouvre la fenêtre d'impression du Mac sur la même page (fiche 0026). Copier en texte mis en forme pose le même rendu, aux styles en ligne, et le texte brut dans le presse-papiers du Mac par le port `Clipboard` ; copier en Markdown y pose le texte de la note seul, tel quel (fiche 0027).
 - La barre des menus du Mac est décrite par la page (`ui/src/state/app-menu.ts`, tirée de la liste des commandes) et construite par Rust (`install_menu`) ; un élément choisi revient à la page par l'événement `menu-command` et lance la même commande que la palette. Les touches passent d'abord par la page, qui empêche WebKit de les donner au menu quand elle les prend (fiche 0029).
+- L'aide à l'écriture ne garde rien et n'écrit rien : la sélection part au port `WritingAssistant`, dont l'adaptateur lance l'assistant Swift `malorean-writing` (programme annexe posé à côté de celui de l'application) qui interroge le modèle d'IA du Mac ; la proposition revient à la page, qui ne change la note qu'avec l'accord de l'utilisateur, comme une frappe (fiche 0031).
 - L'application n'impose aucun format : un fichier `.md` écrit par un autre outil est une note valide.
 
 ## Décisions d'architecture
@@ -87,7 +88,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0002-notes-markdown-nom-tire-du-titre.md` | Notes en fichiers Markdown, nom tiré du titre, pièces jointes par note |
 | `0003-apercu-en-direct-par-masquage.md` | Aperçu en direct : syntaxe masquée hors de la ligne en cours |
 | `0004-strategie-de-tests.md` | Niveaux de tests, seuils, mutation, garde-fou avant envoi |
-| `0005-aide-ecriture-modele-apple.md` | Aide à l'écriture par le modèle d'IA du Mac (proposée) |
+| `0005-aide-ecriture-modele-apple.md` | Aide à l'écriture par le modèle d'IA du Mac, sans compte ni clé |
 | `0006-seuils-et-mutation-a-chaque-envoi.md` | Seuils qui ne baissent jamais, test de mutation à chaque envoi |
 | `0007-images-par-le-protocole-asset.md` | Images des notes : chargées par le protocole `asset` de Tauri |
 | `0008-sous-dossiers.md` | Sous-dossiers : une note est désignée par son chemin depuis l'espace de travail |
@@ -113,6 +114,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0028-index-sqlite.md` | Index : une base SQLite (FTS5) par espace de travail, dans le dossier de support de l'application, que les fichiers peuvent toujours reconstruire |
 | `0029-barre-des-menus.md` | Barre des menus du Mac : décrite par la page à partir de la liste des commandes, construite par Rust |
 | `0030-historique-des-versions.md` | Historique des versions : des copies Markdown datées dans `.history/`, sans Git ; règles de conservation et différences dans le domaine |
+| `0031-aide-ecriture-assistant-swift.md` | Aide à l'écriture : le modèle d'Apple par un assistant Swift lancé à chaque demande (programme annexe, JSON), découpage et consignes dans le domaine, proposition acceptée avant toute modification |
 
 ## Décisions ouvertes
 
