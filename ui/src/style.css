@@ -1358,6 +1358,48 @@ button {
   flex: 1;
   font-weight: 600;
 }
+.claude-account {
+  margin: 0 0.8rem 0.6rem;
+  font-size: var(--claude-detail-text-size);
+  color: var(--muted);
+}
+.claude-account-summary {
+  cursor: pointer;
+  list-style-position: inside;
+  overflow-wrap: anywhere;
+}
+.claude-account[open] > .claude-account-summary {
+  margin-bottom: 0.4rem;
+}
+.claude-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.claude-account-progress,
+.claude-account-address,
+.claude-account-note {
+  margin: 0.4rem 0 0;
+}
+.claude-account-progress {
+  color: var(--text);
+}
+.claude-account-progress[hidden],
+.claude-account-address[hidden] {
+  display: none;
+}
+.claude-account-link {
+  overflow-wrap: anywhere;
+  user-select: text;
+  color: var(--text);
+}
+.claude-account .tool[hidden] {
+  display: none;
+}
+.claude-account .tool:disabled {
+  opacity: var(--claude-account-disabled-opacity);
+  cursor: default;
+}
 .claude-unavailable {
   margin: 0 0.8rem 0.6rem;
   padding: 0.5rem 0.6rem;

@@ -44,7 +44,7 @@ fn status_of(answer: &str, exit: u8) -> (ClaudeStatus, TempDir) {
 #[test]
 fn a_logged_in_claude_code_is_ready_and_only_asked_for_its_status() {
     let (status, folder) = status_of(LOGGED_IN, 0);
-    assert_eq!(status, ClaudeStatus::Ready);
+    assert!(matches!(status, ClaudeStatus::Ready(_)));
     let args = fs::read_to_string(folder.path().join("args")).unwrap();
     assert_eq!(args, "auth\nstatus\n--json\n");
 }
@@ -96,7 +96,7 @@ fn claude_code_is_found_in_the_first_folder_that_holds_it() {
     fake_claude(&first, LOGGED_IN, 0);
     fake_claude(&second, LOGGED_OUT, 0);
     let claude = ClaudeCodeCli::searching([empty, not_runnable, a_folder, first.clone(), second]);
-    assert_eq!(claude.status(), ClaudeStatus::Ready);
+    assert!(matches!(claude.status(), ClaudeStatus::Ready(_)));
     assert!(first.join("args").exists());
 }
 
@@ -113,7 +113,7 @@ fn claude_code_installed_after_the_launch_of_the_application_is_found() {
     let claude = ClaudeCodeCli::searching([places.path().to_path_buf()]);
     assert_eq!(claude.status(), ClaudeStatus::Missing);
     fake_claude(places.path(), LOGGED_IN, 0);
-    assert_eq!(claude.status(), ClaudeStatus::Ready);
+    assert!(matches!(claude.status(), ClaudeStatus::Ready(_)));
 }
 
 #[test]

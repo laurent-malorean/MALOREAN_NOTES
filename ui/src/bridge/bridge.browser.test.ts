@@ -447,6 +447,21 @@ describe("pont vers Rust : colonne Claude Code", () => {
     await emit("claude-event", { kind: "changedNote", path: "plan.md" });
     expect(received).toEqual(["changedNote"]);
   });
+
+  it("déconnecte et connecte Claude Code, et transmet l'adresse de connexion", async () => {
+    const calls = recordCalls(null);
+    await bridge.logOutOfClaude();
+    await bridge.logInToClaude();
+    expect(calls).toEqual([
+      { command: "log_out_of_claude", args: {} },
+      { command: "log_in_to_claude", args: {} },
+    ]);
+    mockIPC(() => null, { shouldMockEvents: true });
+    const addresses: string[] = [];
+    await bridge.onClaudeSignIn((address) => addresses.push(address));
+    await emit("claude-sign-in", "https://claude.ai/x");
+    expect(addresses).toEqual(["https://claude.ai/x"]);
+  });
 });
 
 describe("pont vers Rust : barre des menus", () => {

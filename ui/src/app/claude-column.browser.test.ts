@@ -6,6 +6,7 @@ import { CHECKING_CLAUDE, EMPTY } from "../screens/claude-column-view";
 import { type ClaudeColumn, createClaudeColumn } from "./claude-column";
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+const READY: ClaudeStatusItem = { kind: "ready", email: "moi@example.com", organization: "Moi" };
 
 let layout: Layout;
 let column: ClaudeColumn;
@@ -56,6 +57,10 @@ function createColumn() {
         { path: "a.md", title: "Alpha", folder: "" },
         { path: "Projets/plan.md", title: "Plan", folder: "Projets" },
       ],
+      logOutOfClaude: async () => (log.push("déconnecter"), null),
+      logInToClaude: async () => (log.push("connecter"), null),
+      onClaudeSignIn: async () => () => {},
+      copyPlainText: async () => null,
     },
     layout,
     workspace: { path: () => workspacePath },
@@ -82,7 +87,7 @@ beforeEach(() => {
   layout = createLayout(root);
   layout.mainArea.hidden = false;
   log = [];
-  status = Promise.resolve({ kind: "ready" });
+  status = Promise.resolve(READY);
   workspacePath = "/Users/moi/Notes";
   columns = showing(null);
   stored = new Map();
@@ -114,7 +119,7 @@ describe("colonne Claude Code : affichée ou masquée", () => {
     column.toggle();
     expect(unavailable().textContent).toBe(CHECKING_CLAUDE);
     expect(CHECKING_CLAUDE).toBe("Vérification de Claude Code…");
-    answer({ kind: "ready" });
+    answer(READY);
     await settle();
     expect(unavailable().hidden).toBe(true);
     expect(document.activeElement).toBe(find(".claude-input"));
@@ -199,7 +204,11 @@ describe("colonne Claude Code : un tour", () => {
   it("un arrêt en échec est signalé", async () => {
     column = createClaudeColumn({
       backend: {
-        claudeStatus: async () => ({ kind: "ready" }),
+        claudeStatus: async () => READY,
+        logOutOfClaude: async () => null,
+        logInToClaude: async () => null,
+        onClaudeSignIn: async () => () => {},
+        copyPlainText: async () => null,
         sendToClaude: () => new Promise(() => {}),
         stopClaude: () => Promise.reject(new Error("fil arrêté")),
         newConversation: () => Promise.reject(new Error("fil perdu")),
@@ -486,5 +495,52 @@ describe("colonne Claude Code : la barre de saisie", () => {
       actions: 0,
     });
     expect(agentsChip.hidden).toBe(true);
+  });
+});
+
+describe("colonne Claude Code : compte Claude", () => {
+  const summary = () => find(".claude-account-summary").textContent;
+  const logOut = () => find<HTMLButtonElement>("[data-log-out]");
+
+  it("chaque vérification de la connexion montre le compte en haut de la colonne", async () => {
+    column.toggle();
+    await settle();
+    column.toggle();
+    let answer: (status: ClaudeStatusItem) => void = () => {};
+    status = new Promise((resolve) => (answer = resolve));
+    column.toggle();
+    expect(summary()).toBe("Compte Claude · vérification…");
+    answer(READY);
+    await settle();
+    expect(summary()).toBe("Compte Claude · moi@example.com · Moi");
+  });
+
+  it("pendant un tour, on ne peut pas changer de compte", async () => {
+    column.toggle();
+    await settle();
+    expect(logOut().disabled).toBe(false);
+    send("Bonjour");
+    expect(logOut().disabled).toBe(true);
+    turn.resolve();
+    await settle();
+    expect(logOut().disabled).toBe(false);
+  });
+
+  it("se déconnecter empêche d'écrire, oublie la conversation, puis revérifie la connexion", async () => {
+    column.toggle();
+    await settle();
+    send("Bonjour");
+    turn.resolve();
+    await settle();
+    log.length = 0;
+    status = Promise.resolve({ kind: "unavailable", reason: "pas connecté" });
+    logOut().click();
+    expect(unavailable().textContent).toBe("Changement du compte Claude en cours…");
+    expect(find<HTMLTextAreaElement>(".claude-input").disabled).toBe(true);
+    await settle();
+    expect(log).toEqual(["déconnecter", "vérifier"]);
+    expect(shown()).toEqual([EMPTY]);
+    expect(unavailable().textContent).toBe("pas connecté");
+    expect(summary()).toBe("Compte Claude · non connecté");
   });
 });

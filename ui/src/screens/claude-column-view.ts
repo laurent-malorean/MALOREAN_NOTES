@@ -55,6 +55,7 @@ const TEMPLATE = `
     <button class="tool" data-new-conversation title="Oublier la conversation et en commencer une neuve">Nouvelle conversation</button>
     <button class="icon" data-close title="Masquer la colonne Claude Code (Ctrl+Cmd+L)" aria-label="Masquer la colonne Claude Code">×</button>
   </header>
+  <details class="claude-account"></details>
   <p class="claude-unavailable" role="alert" hidden></p>
   <details class="claude-agents" hidden></details>
   <div class="claude-conversation" role="log" aria-live="polite"></div>

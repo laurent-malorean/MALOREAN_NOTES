@@ -35,7 +35,10 @@ impl Session {
             .as_ref()
             .map_or(ClaudeStatus::Missing, |claude| claude.status())
         {
-            ClaudeStatus::Ready => ClaudeStatusItem::Ready,
+            ClaudeStatus::Ready(account) => ClaudeStatusItem::Ready {
+                email: account.email,
+                organization: account.organization,
+            },
             reason => ClaudeStatusItem::Unavailable {
                 reason: reason.to_string(),
             },
@@ -79,7 +82,37 @@ impl Session {
         Ok(())
     }
 
-    /// Arrête le tour en cours, s'il y en a un ; ce que Claude a déjà écrit reste écrit.
+    /// Déconnecte Claude Code de son compte Claude, pour tout le Mac ; la conversation en cours
+    /// est oubliée.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a empêché la déconnexion : Claude Code
+    /// introuvable, occupé, ou qui n'a pas pu.
+    pub fn log_out_of_claude(&self) -> Result<(), ApiError> {
+        let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
+        claude.log_out()?;
+        self.new_conversation();
+        Ok(())
+    }
+
+    /// Connecte Claude Code à un compte Claude, pour tout le Mac : le navigateur s'ouvre sur la
+    /// page de connexion, dont `on_address` reçoit l'adresse. Rend la main une fois la connexion
+    /// terminée ; la conversation en cours est alors oubliée. [`Self::stop_claude`] l'annule.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a empêché la connexion : Claude Code
+    /// introuvable, occupé, connexion annulée ou qui n'a pas abouti.
+    pub fn log_in_to_claude(&self, mut on_address: impl FnMut(String)) -> Result<(), ApiError> {
+        let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
+        claude.log_in(&mut |address| on_address(address.to_owned()))?;
+        self.new_conversation();
+        Ok(())
+    }
+
+    /// Arrête le tour en cours, s'il y en a un (ce que Claude a déjà écrit reste écrit), ou
+    /// annule la connexion en cours.
     pub fn stop_claude(&self) {
         if let Some(claude) = &self.claude {
             claude.stop();

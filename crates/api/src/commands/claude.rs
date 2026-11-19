@@ -11,6 +11,10 @@ use crate::{ApiError, ClaudeStatusItem, TurnSettingsItem};
 /// [`crate::ClaudeEventItem`].
 pub const CLAUDE_EVENT: &str = "claude-event";
 
+/// Événement envoyé à la page pendant une connexion de Claude Code : il porte l'adresse de la
+/// page de connexion, à montrer si le navigateur ne s'est pas ouvert.
+pub const CLAUDE_SIGN_IN: &str = "claude-sign-in";
+
 /// Si Claude Code peut répondre, sinon pourquoi et quoi faire ; le modèle n'est pas appelé.
 ///
 /// # Errors
@@ -47,7 +51,42 @@ pub async fn send_to_claude<R: Runtime>(
     .await
 }
 
-/// Arrête le tour en cours, s'il y en a un ; ce que Claude a déjà écrit reste écrit.
+/// Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris).
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::log_out_of_claude`].
+#[tauri::command]
+pub async fn log_out_of_claude(session: SharedSession<'_>) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.log_out_of_claude()).await
+}
+
+/// Connecte Claude Code à un compte Claude, pour tout le Mac : le navigateur s'ouvre sur la page
+/// de connexion, dont l'adresse est envoyée à la page ([`CLAUDE_SIGN_IN`]). Rend la main une fois
+/// la connexion terminée ; `stop_claude` l'annule.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::log_in_to_claude`].
+#[tauri::command]
+pub async fn log_in_to_claude<R: Runtime>(
+    app: AppHandle<R>,
+    session: SharedSession<'_>,
+) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || {
+        session.log_in_to_claude(|address| {
+            if let Err(error) = app.emit(CLAUDE_SIGN_IN, address) {
+                tracing::warn!(%error, "adresse de connexion non transmise à la page");
+            }
+        })
+    })
+    .await
+}
+
+/// Arrête le tour en cours, s'il y en a un (ce que Claude a déjà écrit reste écrit), ou annule la
+/// connexion en cours.
 ///
 /// # Errors
 ///

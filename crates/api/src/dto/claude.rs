@@ -4,18 +4,36 @@ use domain::claude::{ActionKind, ActionOutcome, AgentState, ClaudeEvent, TurnOut
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-/// Si Claude Code peut répondre, sinon pourquoi et quoi faire.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+/// Si Claude Code peut répondre, et avec quel compte Claude, sinon pourquoi et quoi faire. Sa
+/// forme de débogage tait le compte : il n'est jamais écrit dans le journal.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 #[ts(export)]
 pub enum ClaudeStatusItem {
-    /// Claude Code est installé et connecté à l'abonnement de l'utilisateur.
-    Ready,
+    /// Claude Code est installé et connecté à ce compte Claude.
+    Ready {
+        /// L'adresse e-mail du compte, si Claude Code la donne.
+        email: Option<String>,
+        /// Le nom de l'organisation du compte, si Claude Code le donne.
+        organization: Option<String>,
+    },
     /// Il ne peut pas répondre, pour cette raison, prête à afficher.
     Unavailable {
         /// Ce qui manque, et ce qu'on peut faire.
         reason: String,
     },
+}
+
+impl std::fmt::Debug for ClaudeStatusItem {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Ready { .. } => formatter.write_str("Ready { .. }"),
+            Self::Unavailable { reason } => formatter
+                .debug_struct("Unavailable")
+                .field("reason", reason)
+                .finish(),
+        }
+    }
 }
 
 /// Ce que fait une action de Claude.

@@ -3,13 +3,15 @@
 //! (fiche 0032).
 
 use std::ffi::OsStr;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::process::{Child, ChildStdout, Command, Stdio};
+use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use std::sync::mpsc;
 use std::sync::{Mutex, MutexGuard, PoisonError};
+use std::thread;
 
-use application::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use application::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 use domain::claude::{ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings};
 
 use crate::claude_stream::events_of;
@@ -52,15 +54,23 @@ const SHARED_FOLDERS: [&str; 2] = ["/opt/homebrew/bin", "/usr/local/bin"];
 /// Les dossiers où l'installation de Claude Code range `claude`, dans le dossier personnel.
 const HOME_FOLDERS: [&str; 2] = [".local/bin", ".claude/local"];
 
-/// Ce que dit `claude auth status --json` : seul « connecté ou non » est lu, jamais l'adresse
-/// ni l'organisation du compte.
-#[derive(Debug, serde::Deserialize)]
+/// Ce que dit `claude auth status --json` : connecté ou non, et le compte. Jamais écrit dans le
+/// journal (pas de forme de débogage).
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct AuthStatus {
-    #[serde(rename = "loggedIn")]
     logged_in: bool,
+    email: Option<String>,
+    org_name: Option<String>,
 }
 
-/// Le tour en cours : le programme lancé, et s'il a été arrêté.
+/// L'adresse de la page de connexion dans une ligne de `claude auth login`, s'il y en a une.
+fn sign_in_address(line: &str) -> Option<&str> {
+    let start = line.find("https://")?;
+    line[start..].split_whitespace().next()
+}
+
+/// Le tour ou la connexion en cours : le programme lancé, et s'il a été arrêté. Un seul à la fois.
 #[derive(Debug, Default)]
 struct Turn {
     child: Option<Child>,
@@ -149,35 +159,45 @@ impl ClaudeCodeCli {
                 workspace.as_str()
             )));
         }
-        let mut turn = self.turn();
-        if turn.child.is_some() {
-            return Err(ClaudeError::Busy);
-        }
-        let program = self.program().ok_or(ClaudeError::Missing)?;
-        let mut child = claude_command(program)
-            .args(arguments(conversation, settings))
-            .current_dir(workspace.as_str())
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .map_err(|_| ClaudeError::Missing)?;
-        let (Some(mut stdin), Some(stdout)) = (child.stdin.take(), child.stdout.take()) else {
-            unreachable!("l'entrée et la sortie sont demandées en tuyaux")
-        };
-        *turn = Turn {
-            child: Some(child),
-            stopped: false,
-        };
-        drop(turn);
+        let (mut stdin, stdout) = self.launch(|command| {
+            command
+                .args(arguments(conversation, settings))
+                .current_dir(workspace.as_str())
+                .stderr(Stdio::null());
+        })?;
         // Un programme qui s'arrête sans tout lire ne garde pas le message : sa fin, lue sur sa
         // sortie, dit ce qu'il en est.
         stdin.write_all(message.as_bytes()).ok();
         Ok(stdout)
     }
 
-    /// Attend la fin du programme du tour et dit comment le tour s'est terminé.
-    fn finish(&self, summarized: bool) -> Result<(), ClaudeError> {
+    /// Lance `claude`, réglé par `configure`, comme seul programme en cours (tour ou connexion),
+    /// l'entrée et la sortie en tuyaux ; rend son entrée et sa sortie.
+    fn launch(
+        &self,
+        configure: impl FnOnce(&mut Command),
+    ) -> Result<(ChildStdin, ChildStdout), ClaudeError> {
+        let mut turn = self.turn();
+        if turn.child.is_some() {
+            return Err(ClaudeError::Busy);
+        }
+        let program = self.program().ok_or(ClaudeError::Missing)?;
+        let mut command = claude_command(program);
+        command.stdin(Stdio::piped()).stdout(Stdio::piped());
+        configure(&mut command);
+        let mut child = command.spawn().map_err(|_| ClaudeError::Missing)?;
+        let (Some(stdin), Some(stdout)) = (child.stdin.take(), child.stdout.take()) else {
+            unreachable!("l'entrée et la sortie sont demandées en tuyaux")
+        };
+        *turn = Turn {
+            child: Some(child),
+            stopped: false,
+        };
+        Ok((stdin, stdout))
+    }
+
+    /// Attend la fin du programme en cours : rend s'il a été arrêté, sinon s'il a réussi.
+    fn wait(&self) -> Result<bool, ClaudeError> {
         let mut turn = self.turn();
         let succeeded = turn
             .child
@@ -185,12 +205,30 @@ impl ClaudeCodeCli {
             .is_some_and(|mut child| child.wait().is_ok_and(|status| status.success()));
         if turn.stopped {
             Err(ClaudeError::Stopped)
-        } else if summarized || succeeded {
+        } else {
+            Ok(succeeded)
+        }
+    }
+
+    /// Attend la fin du programme du tour et dit comment le tour s'est terminé.
+    fn finish(&self, summarized: bool) -> Result<(), ClaudeError> {
+        if self.wait()? || summarized {
             Ok(())
         } else {
             Err(ClaudeError::Failed("aucun bilan".to_owned()))
         }
     }
+}
+
+/// Envoie chaque ligne lue sur `output` à `lines`, sur un fil à part.
+fn forward_lines(output: impl Read + Send + 'static, lines: mpsc::Sender<String>) {
+    thread::spawn(move || {
+        for line in BufReader::new(output).lines().map_while(Result::ok) {
+            if lines.send(line).is_err() {
+                break;
+            }
+        }
+    });
 }
 
 /// Le nom que Claude Code donne au dernier modèle de chaque famille (`--model`).
@@ -257,9 +295,62 @@ impl ClaudeCode for ClaudeCodeCli {
         };
         // Pas connecté, `claude` sort en erreur mais le dit quand même : seule sa réponse compte.
         match serde_json::from_slice::<AuthStatus>(&output.stdout) {
-            Ok(AuthStatus { logged_in: true }) => ClaudeStatus::Ready,
-            Ok(AuthStatus { logged_in: false }) => ClaudeStatus::LoggedOut,
+            Ok(AuthStatus {
+                logged_in: true,
+                email,
+                org_name,
+            }) => ClaudeStatus::Ready(ClaudeAccount {
+                email,
+                organization: org_name,
+            }),
+            Ok(_) => ClaudeStatus::LoggedOut,
             Err(_) => ClaudeStatus::Failed,
+        }
+    }
+
+    fn log_out(&self) -> Result<(), ClaudeError> {
+        let (stdin, stdout) = self.launch(|command| {
+            command.args(["auth", "logout"]).stderr(Stdio::null());
+        })?;
+        drop(stdin);
+        // Ce qu'il écrit n'est pas lu : seule sa fin compte.
+        std::io::copy(&mut BufReader::new(stdout), &mut std::io::sink()).ok();
+        if self.wait()? {
+            Ok(())
+        } else {
+            Err(ClaudeError::LogoutFailed)
+        }
+    }
+
+    fn log_in(&self, on_address: &mut dyn FnMut(&str)) -> Result<(), ClaudeError> {
+        // Toujours l'abonnement Claude, jamais une facturation à l'usage (`--console`).
+        let (stdin, stdout) = self.launch(|command| {
+            command
+                .args(["auth", "login", "--claudeai"])
+                .stderr(Stdio::piped());
+        })?;
+        let stderr = self
+            .turn()
+            .child
+            .as_mut()
+            .and_then(|child| child.stderr.take());
+        let (lines, received) = mpsc::channel();
+        if let Some(stderr) = stderr {
+            forward_lines(stderr, lines.clone());
+        }
+        forward_lines(stdout, lines);
+        for line in received {
+            if let Some(address) = sign_in_address(&line) {
+                on_address(address);
+            }
+        }
+        // L'entrée reste ouverte jusqu'à la fin : fermée, `claude` cesserait d'attendre le
+        // navigateur (« Input ended before a code was pasted »).
+        drop(stdin);
+        if self.wait()? {
+            Ok(())
+        } else {
+            Err(ClaudeError::LoginFailed)
         }
     }
 
@@ -295,6 +386,19 @@ impl ClaudeCode for ClaudeCodeCli {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_sign_in_address_is_read_from_the_line_that_holds_it() {
+        assert_eq!(
+            sign_in_address("If the browser didn't open, visit: https://claude.ai/oauth?a=1 "),
+            Some("https://claude.ai/oauth?a=1")
+        );
+        assert_eq!(
+            sign_in_address("Sign in at: https://claude.ai/x"),
+            Some("https://claude.ai/x")
+        );
+        assert_eq!(sign_in_address("Opening browser to sign in…"), None);
+    }
 
     fn chosen(model: Option<ClaudeModel>, effort: Option<Effort>) -> Vec<String> {
         let settings = TurnSettings { model, effort };

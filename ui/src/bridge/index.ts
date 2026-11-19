@@ -253,8 +253,20 @@ export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
  */
 export const sendToClaude = (message: string, settings: TurnSettingsItem) =>
   invoke<null>("send_to_claude", { message, settings });
-/** Arrête le tour en cours ; ce que Claude a déjà écrit reste écrit. */
+/** Arrête le tour en cours (ce que Claude a déjà écrit reste écrit), ou annule la connexion en cours. */
 export const stopClaude = () => invoke<null>("stop_claude");
+/** Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris). */
+export const logOutOfClaude = () => invoke<null>("log_out_of_claude");
+/**
+ * Connecte Claude Code à un compte Claude, pour tout le Mac : le navigateur s'ouvre sur la page de
+ * connexion, dont l'adresse arrive par `onClaudeSignIn` ; se termine avec la connexion.
+ */
+export const logInToClaude = () => invoke<null>("log_in_to_claude");
+/** Même nom côté Rust (`CLAUDE_SIGN_IN`). */
+const CLAUDE_SIGN_IN = "claude-sign-in";
+/** Prévient de l'adresse de la page de connexion pendant une connexion de Claude Code. */
+export const onClaudeSignIn = (handler: (address: string) => void) =>
+  listen<string>(CLAUDE_SIGN_IN, (event) => handler(event.payload));
 /** Oublie la conversation en cours : le message suivant en commence une neuve. */
 export const newConversation = () => invoke<null>("new_conversation");
 /** Même nom côté Rust (`CLAUDE_EVENT`). */

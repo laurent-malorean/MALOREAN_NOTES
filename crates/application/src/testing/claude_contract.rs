@@ -12,7 +12,7 @@ use std::thread;
 
 use domain::claude::{ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings};
 
-use crate::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 
 /// Deux Claude Code préparés pour le contrat, dans l'espace de travail `workspace`.
 #[derive(Debug)]
@@ -61,7 +61,7 @@ fn turn_with(
 }
 
 fn a_connected_claude_code_is_ready(codes: &ClaudeCodes<'_>) {
-    assert_eq!(codes.replaying.status(), ClaudeStatus::Ready);
+    assert!(matches!(codes.replaying.status(), ClaudeStatus::Ready(_)));
 }
 
 fn a_turn_gives_every_event_in_order(codes: &ClaudeCodes<'_>) {
@@ -122,4 +122,69 @@ fn a_running_turn_is_alone_and_stops_on_request(codes: &ClaudeCodes<'_>) {
         assert_eq!(second, (Err(ClaudeError::Busy), Vec::new()));
         assert_eq!(running.join().unwrap(), Err(ClaudeError::Stopped));
     });
+}
+
+/// Deux Claude Code connectés, préparés pour le contrat du compte Claude.
+#[derive(Debug)]
+pub struct ClaudeAccounts<'a> {
+    /// L'espace de travail où un tour est tenté pendant une connexion.
+    pub workspace: WorkspaceLocation,
+    /// Un Claude Code dont la connexion donne `address`, puis le connecte à `account`.
+    pub signing_in: &'a dyn ClaudeCode,
+    /// L'adresse de connexion qu'il donne.
+    pub address: String,
+    /// Le compte auquel il se connecte.
+    pub account: ClaudeAccount,
+    /// Un Claude Code dont la connexion donne une adresse, puis attend le navigateur jusqu'à être
+    /// annulée.
+    pub waiting: &'a dyn ClaudeCode,
+}
+
+/// Joue tout le contrat du compte Claude.
+pub fn claude_account_contract(accounts: &ClaudeAccounts<'_>) {
+    logging_out_leaves_claude_code_logged_out(accounts);
+    logging_in_gives_the_sign_in_address_then_the_account(accounts);
+    a_login_waiting_for_the_browser_is_alone_and_cancelled_on_request(accounts);
+}
+
+fn logging_out_leaves_claude_code_logged_out(accounts: &ClaudeAccounts<'_>) {
+    assert_eq!(accounts.signing_in.log_out(), Ok(()));
+    assert_eq!(accounts.signing_in.status(), ClaudeStatus::LoggedOut);
+}
+
+fn logging_in_gives_the_sign_in_address_then_the_account(accounts: &ClaudeAccounts<'_>) {
+    let mut addresses = Vec::new();
+    let end = accounts
+        .signing_in
+        .log_in(&mut |address| addresses.push(address.to_owned()));
+    assert_eq!(end, Ok(()));
+    assert_eq!(addresses, std::slice::from_ref(&accounts.address));
+    assert_eq!(
+        accounts.signing_in.status(),
+        ClaudeStatus::Ready(accounts.account.clone())
+    );
+}
+
+fn a_login_waiting_for_the_browser_is_alone_and_cancelled_on_request(
+    accounts: &ClaudeAccounts<'_>,
+) {
+    let (sender, received) = mpsc::channel();
+    thread::scope(|scope| {
+        let running = scope.spawn(|| {
+            accounts.waiting.log_in(&mut |address| {
+                sender.send(address.to_owned()).unwrap();
+            })
+        });
+        received.recv().unwrap();
+        let mut addresses = 0;
+        let second = accounts.waiting.log_in(&mut |_| addresses += 1);
+        let logged_out = accounts.waiting.log_out();
+        let a_turn = turn(accounts.waiting, &accounts.workspace, None);
+        accounts.waiting.stop();
+        assert_eq!((second, addresses), (Err(ClaudeError::Busy), 0));
+        assert_eq!(logged_out, Err(ClaudeError::Busy));
+        assert_eq!(a_turn, (Err(ClaudeError::Busy), Vec::new()));
+        assert_eq!(running.join().unwrap(), Err(ClaudeError::Stopped));
+    });
+    assert!(matches!(accounts.waiting.status(), ClaudeStatus::Ready(_)));
 }

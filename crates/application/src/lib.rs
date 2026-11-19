@@ -14,7 +14,7 @@ mod versioned_store;
 pub mod workspaces;
 mod writing;
 
-pub use claude::{ClaudeCode, ClaudeError, ClaudeStatus};
+pub use claude::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus};
 pub use error::AppError;
 pub use history::{History, HistoryOpener, HistoryPlace};
 pub use indexed_store::IndexedStore;

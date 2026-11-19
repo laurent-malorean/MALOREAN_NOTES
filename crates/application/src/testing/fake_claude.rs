@@ -4,7 +4,7 @@ use std::sync::{Condvar, Mutex, MutexGuard, PoisonError};
 
 use domain::claude::{ClaudeEvent, ConversationId, TurnSettings};
 
-use crate::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 
 /// Un tour demandé : l'espace de travail, la conversation continuée, les réglages, le message.
 pub type ClaudeRequest = (
@@ -22,18 +22,25 @@ struct Turn {
 
 /// Claude Code qui annonce toujours les mêmes événements à chaque tour, puis se termine, ou
 /// attend d'être arrêté. Il est prêt, sauf s'il reçoit une autre vérification de la connexion. Il
-/// garde chaque tour demandé.
+/// garde chaque tour demandé. Se déconnecter le laisse déconnecté ; se connecter donne
+/// [`FakeClaudeCode::SIGN_IN_ADDRESS`], puis le connecte au compte prévu, ou attend d'être arrêté.
 #[derive(Debug, Default)]
 pub struct FakeClaudeCode {
-    status: Option<ClaudeStatus>,
+    status: Mutex<Option<ClaudeStatus>>,
     events: Vec<ClaudeEvent>,
     hangs: bool,
+    signed_in_as: ClaudeAccount,
+    login_waits: bool,
+    auth_fails: bool,
     turn: Mutex<Turn>,
     stopped: Condvar,
     requests: Mutex<Vec<ClaudeRequest>>,
 }
 
 impl FakeClaudeCode {
+    /// L'adresse de connexion que donne le faux Claude Code.
+    pub const SIGN_IN_ADDRESS: &str = "https://claude.ai/oauth/authorize?faux=1";
+
     /// Un Claude Code dont chaque tour annonce `events`, puis se termine.
     #[must_use]
     pub fn replaying(events: Vec<ClaudeEvent>) -> Self {
@@ -55,8 +62,29 @@ impl FakeClaudeCode {
 
     /// Le même Claude Code, dont la vérification de la connexion donne `status`.
     #[must_use]
-    pub fn with_status(mut self, status: ClaudeStatus) -> Self {
-        self.status = Some(status);
+    pub fn with_status(self, status: ClaudeStatus) -> Self {
+        *self.status.lock().unwrap_or_else(PoisonError::into_inner) = Some(status);
+        self
+    }
+
+    /// Le même Claude Code, que se connecter connecte à `account`.
+    #[must_use]
+    pub fn signing_in_as(mut self, account: ClaudeAccount) -> Self {
+        self.signed_in_as = account;
+        self
+    }
+
+    /// Le même Claude Code, dont la connexion attend le navigateur jusqu'à être annulée.
+    #[must_use]
+    pub const fn waiting_for_the_browser(mut self) -> Self {
+        self.login_waits = true;
+        self
+    }
+
+    /// Le même Claude Code, qui ne parvient ni à se connecter, ni à se déconnecter.
+    #[must_use]
+    pub const fn failing_to_sign_in(mut self) -> Self {
+        self.auth_fails = true;
         self
     }
 
@@ -71,43 +99,28 @@ impl FakeClaudeCode {
     fn turn(&self) -> MutexGuard<'_, Turn> {
         self.turn.lock().unwrap_or_else(PoisonError::into_inner)
     }
-}
 
-impl ClaudeCode for FakeClaudeCode {
-    fn status(&self) -> ClaudeStatus {
-        self.status.unwrap_or(ClaudeStatus::Ready)
+    fn set_status(&self, status: ClaudeStatus) {
+        *self.status.lock().unwrap_or_else(PoisonError::into_inner) = Some(status);
     }
 
-    fn send(
-        &self,
-        workspace: &WorkspaceLocation,
-        conversation: Option<&ConversationId>,
-        settings: TurnSettings,
-        message: &str,
-        on_event: &mut dyn FnMut(ClaudeEvent),
-    ) -> Result<(), ClaudeError> {
-        {
-            let mut turn = self.turn();
-            if turn.running {
-                return Err(ClaudeError::Busy);
-            }
-            *turn = Turn {
-                running: true,
-                stopped: false,
-            };
-        }
-        self.requests
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .push((
-                workspace.clone(),
-                conversation.cloned(),
-                settings,
-                message.to_owned(),
-            ));
-        self.events.iter().cloned().for_each(&mut *on_event);
+    /// Commence un tour ou une connexion, seul : sinon, Claude Code est occupé.
+    fn begin(&self) -> Result<(), ClaudeError> {
         let mut turn = self.turn();
-        while self.hangs && !turn.stopped {
+        if turn.running {
+            return Err(ClaudeError::Busy);
+        }
+        *turn = Turn {
+            running: true,
+            stopped: false,
+        };
+        Ok(())
+    }
+
+    /// Attend d'être arrêté si `waits`, puis termine le tour ou la connexion : arrêté ou non.
+    fn end(&self, waits: bool) -> Result<(), ClaudeError> {
+        let mut turn = self.turn();
+        while waits && !turn.stopped {
             turn = self
                 .stopped
                 .wait(turn)
@@ -119,6 +132,60 @@ impl ClaudeCode for FakeClaudeCode {
         } else {
             Ok(())
         }
+    }
+}
+
+impl ClaudeCode for FakeClaudeCode {
+    fn status(&self) -> ClaudeStatus {
+        self.status
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+            .unwrap_or_else(|| ClaudeStatus::Ready(ClaudeAccount::default()))
+    }
+
+    fn log_out(&self) -> Result<(), ClaudeError> {
+        if self.turn().running {
+            return Err(ClaudeError::Busy);
+        }
+        if self.auth_fails {
+            return Err(ClaudeError::LogoutFailed);
+        }
+        self.set_status(ClaudeStatus::LoggedOut);
+        Ok(())
+    }
+
+    fn log_in(&self, on_address: &mut dyn FnMut(&str)) -> Result<(), ClaudeError> {
+        self.begin()?;
+        on_address(Self::SIGN_IN_ADDRESS);
+        self.end(self.login_waits)?;
+        if self.auth_fails {
+            return Err(ClaudeError::LoginFailed);
+        }
+        self.set_status(ClaudeStatus::Ready(self.signed_in_as.clone()));
+        Ok(())
+    }
+
+    fn send(
+        &self,
+        workspace: &WorkspaceLocation,
+        conversation: Option<&ConversationId>,
+        settings: TurnSettings,
+        message: &str,
+        on_event: &mut dyn FnMut(ClaudeEvent),
+    ) -> Result<(), ClaudeError> {
+        self.begin()?;
+        self.requests
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push((
+                workspace.clone(),
+                conversation.cloned(),
+                settings,
+                message.to_owned(),
+            ));
+        self.events.iter().cloned().for_each(&mut *on_event);
+        self.end(self.hangs)
     }
 
     fn stop(&self) {
@@ -134,7 +201,9 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
-    use crate::testing::claude_contract::{ClaudeCodes, claude_code_contract};
+    use crate::testing::claude_contract::{
+        ClaudeAccounts, ClaudeCodes, claude_account_contract, claude_code_contract,
+    };
 
     fn started() -> ClaudeEvent {
         ClaudeEvent::ConversationStarted(ConversationId::new("conversation-1").unwrap())
@@ -169,6 +238,47 @@ mod tests {
             replayed: turn_events(),
             hanging: &hanging,
         });
+    }
+
+    fn account() -> ClaudeAccount {
+        ClaudeAccount {
+            email: Some("moi@example.com".to_owned()),
+            organization: Some("Moi".to_owned()),
+        }
+    }
+
+    #[test]
+    fn honours_the_claude_account_contract() {
+        let signing_in = FakeClaudeCode::default().signing_in_as(account());
+        let waiting = FakeClaudeCode::default().waiting_for_the_browser();
+        claude_account_contract(&ClaudeAccounts {
+            workspace: workspace(),
+            signing_in: &signing_in,
+            address: FakeClaudeCode::SIGN_IN_ADDRESS.to_owned(),
+            account: account(),
+            waiting: &waiting,
+        });
+    }
+
+    #[test]
+    fn a_claude_code_failing_to_sign_in_stays_as_it_was() {
+        let claude = FakeClaudeCode::default()
+            .with_status(ClaudeStatus::LoggedOut)
+            .failing_to_sign_in();
+        assert_eq!(claude.log_in(&mut |_| {}), Err(ClaudeError::LoginFailed));
+        assert_eq!(claude.status(), ClaudeStatus::LoggedOut);
+        let ready = FakeClaudeCode::default().failing_to_sign_in();
+        assert_eq!(ready.log_out(), Err(ClaudeError::LogoutFailed));
+        assert_eq!(
+            ready.status(),
+            ClaudeStatus::Ready(ClaudeAccount::default())
+        );
+    }
+
+    #[test]
+    fn the_account_never_shows_in_debug_output() {
+        let shown = format!("{:?}", ClaudeStatus::Ready(account()));
+        assert_eq!(shown, "Ready(ClaudeAccount { .. })");
     }
 
     #[test]

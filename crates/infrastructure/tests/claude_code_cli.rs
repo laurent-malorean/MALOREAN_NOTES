@@ -248,7 +248,10 @@ fn claude_code_receives_only_the_kept_variables() {
     let fake = FakeClaude::new(SUMMARY, "");
     fake.turn(None, "Bonjour").0.unwrap();
     assert_eq!(names(&fake.received("env")), kept_here());
-    assert_eq!(fake.claude.status(), application::ClaudeStatus::Ready);
+    assert!(matches!(
+        fake.claude.status(),
+        application::ClaudeStatus::Ready(_)
+    ));
     assert_eq!(names(&fake.received("auth_env")), kept_here());
     assert!(kept_here().contains(&"HOME".to_owned()));
 }

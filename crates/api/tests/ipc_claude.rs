@@ -186,7 +186,10 @@ fn a_turn_without_a_workspace_answers_why_and_stopping_changes_nothing() {
 #[test]
 fn a_connected_claude_code_is_ready_under_the_name_used_by_the_page() {
     let window = window(Some(FakeClaudeCode::default()));
-    assert_eq!(status(&window), json!({ "kind": "ready" }));
+    assert_eq!(
+        status(&window),
+        json!({ "kind": "ready", "email": null, "organization": null })
+    );
     assert!(BRIDGE_SOURCE.contains("\"claude_status\""));
 }
 
@@ -195,7 +198,7 @@ fn a_logged_out_claude_code_tells_how_to_log_in() {
     let window = window(Some(
         FakeClaudeCode::default().with_status(ClaudeStatus::LoggedOut),
     ));
-    let reason = "Claude Code n'est pas connecté à votre abonnement Claude : tapez « claude auth login » dans le Terminal, puis rouvrez la colonne Claude Code";
+    let reason = "Claude Code n'est pas connecté à votre abonnement Claude : cliquez sur « Se connecter », ou tapez « claude auth login » dans le Terminal puis rouvrez la colonne Claude Code";
     assert_eq!(
         status(&window),
         json!({ "kind": "unavailable", "reason": reason })

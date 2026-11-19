@@ -5,6 +5,9 @@
 // `claudeTurn=hanging` : le tour attend d'être arrêté ; `claudeTurn=busy` : Claude répond déjà.
 // `claudeAgents=1` : le tour rejoué lance des sous-agents (`AGENTS_TURN`, sur le modèle du flux
 // enregistré `sub_agent.jsonl`) ; avec `claudeTurn=hanging`, il attend une fois les sous-agents lancés.
+// Connecté au compte `CLAUDE_ACCOUNT` ; se déconnecter le laisse déconnecté ; se connecter donne
+// l'adresse `CLAUDE_SIGN_IN_ADDRESS`, puis le connecte à `CLAUDE_OTHER_ACCOUNT`. `claudeLogin=hanging` :
+// la connexion attend le navigateur jusqu'à être annulée ; `claudeLogin=failed` : elle n'aboutit pas.
 import { emit } from "@tauri-apps/api/event";
 import type { ClaudeEventItem, ClaudeStatusItem, TurnSettingsItem } from "../src/bridge";
 import { FIRST } from "./fake-workspaces";
@@ -23,14 +26,25 @@ export interface FakeClaude {
   claudeMessages: string[];
   /** Les réglages reçus avec chaque message, dans l'ordre. */
   claudeSettings: TurnSettingsItem[];
+  /** Comment se passe chaque connexion : elle aboutit, attend le navigateur, ou échoue. */
+  claudeLogin: "done" | "hanging" | "failed";
+  /** Les connexions et déconnexions demandées, dans l'ordre. */
+  claudeAccountCalls: string[];
 }
+
+/** Le compte (inventé) auquel le faux Claude Code est connecté, puis celui de la connexion. */
+export const CLAUDE_ACCOUNT = { email: "moi@example.com", organization: "Moi" };
+export const CLAUDE_OTHER_ACCOUNT = { email: "autre@example.com", organization: "Autre" };
+export const CLAUDE_SIGN_IN_ADDRESS = "https://claude.ai/oauth/authorize?faux=1";
+export const CLAUDE_LOGIN_FAILED =
+  "la connexion n'a pas abouti : réessayez, ou tapez « claude auth login » dans le Terminal";
 
 /** Les messages de Rust, par vérification de la connexion qui empêche Claude Code de répondre. */
 export const CLAUDE_UNAVAILABLE: Record<string, string> = {
   missing:
     "Claude Code n'est pas installé sur ce Mac : installez-le, tapez « claude auth login » dans le Terminal, puis rouvrez la colonne Claude Code",
   loggedOut:
-    "Claude Code n'est pas connecté à votre abonnement Claude : tapez « claude auth login » dans le Terminal, puis rouvrez la colonne Claude Code",
+    "Claude Code n'est pas connecté à votre abonnement Claude : cliquez sur « Se connecter », ou tapez « claude auth login » dans le Terminal puis rouvrez la colonne Claude Code",
   failed:
     "Claude Code n'a pas pu dire s'il est connecté : tapez « claude auth status » dans le Terminal pour voir ce qui ne va pas",
 };
@@ -121,8 +135,12 @@ async function announce(events: readonly ClaudeEventItem[]) {
 export function fakeClaudeState(params: URLSearchParams): FakeClaude {
   const reason = CLAUDE_UNAVAILABLE[params.get("claude") ?? ""];
   const turn = params.get("claudeTurn");
+  const login = params.get("claudeLogin");
   return {
-    claude: reason === undefined ? { kind: "ready" } : { kind: "unavailable", reason },
+    claude:
+      reason === undefined ? { kind: "ready", ...CLAUDE_ACCOUNT } : { kind: "unavailable", reason },
+    claudeLogin: login === "hanging" || login === "failed" ? login : "done",
+    claudeAccountCalls: [],
     claudeTurn: turn === "hanging" || turn === "busy" ? turn : "replayed",
     claudeAgents: params.get("claudeAgents") === "1",
     claudeMessages: [],
@@ -167,5 +185,20 @@ export function fakeClaude(
     ),
     stop_claude: () => (stop?.(), (stop = null), null),
     new_conversation: () => null,
+    log_out_of_claude: () => {
+      state.claudeAccountCalls.push("logout");
+      state.claude = { kind: "unavailable", reason: CLAUDE_UNAVAILABLE.loggedOut ?? "" };
+      return null;
+    },
+    log_in_to_claude: async () => {
+      state.claudeAccountCalls.push("login");
+      await emit("claude-sign-in", CLAUDE_SIGN_IN_ADDRESS);
+      if (state.claudeLogin === "hanging") {
+        await new Promise((_, reject) => (stop = () => reject({ message: CLAUDE_STOPPED })));
+      }
+      if (state.claudeLogin === "failed") throw { message: CLAUDE_LOGIN_FAILED };
+      state.claude = { kind: "ready", ...CLAUDE_OTHER_ACCOUNT };
+      return null;
+    },
   };
 }
