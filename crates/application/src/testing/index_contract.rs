@@ -6,7 +6,7 @@
 )]
 
 use domain::search::SearchQuery;
-use domain::{Folder, Modified, NotePath, NoteSummary};
+use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 
 use crate::{IndexedNote, NoteIndex, NoteStamp};
 
@@ -37,7 +37,7 @@ fn paths(mut notes: Vec<NoteSummary>) -> Vec<String> {
 
 fn found(index: &impl NoteIndex, query: &str) -> Vec<String> {
     let query = SearchQuery::parse(query).unwrap();
-    let mut found: Vec<(NoteSummary, String)> = index.search(&query).unwrap();
+    let mut found: Vec<(NoteSummary, String)> = index.search(&query, &ContentType::ALL).unwrap();
     found.sort_by(|(a, _), (b, _)| a.path().cmp(b.path()));
     found.into_iter().map(|(n, _)| n.path().to_path()).collect()
 }
@@ -58,6 +58,8 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     search_takes_symbols_as_written(&empty_index());
     search_gives_back_the_content(&empty_index());
     a_kept_note_gives_back_its_last_text(&empty_index());
+    every_note_is_a_page_without_container(&empty_index());
+    search_keeps_to_the_types_asked(&empty_index());
 }
 
 fn a_new_index_knows_no_note(index: &impl NoteIndex) {
@@ -247,7 +249,7 @@ fn search_gives_back_the_content(index: &impl NoteIndex) {
     index.put(&[note("a.md", content, 4)]).unwrap();
     let query = SearchQuery::parse("pain").unwrap();
     assert_eq!(
-        index.search(&query).unwrap(),
+        index.search(&query, &ContentType::ALL).unwrap(),
         [(
             NoteSummary::new(path("a.md"), content, Modified(4)),
             content.to_owned()
@@ -263,4 +265,44 @@ fn a_kept_note_gives_back_its_last_text(index: &impl NoteIndex) {
         Some("# Après".to_owned())
     );
     assert_eq!(index.content(&path("a.md")).unwrap(), None);
+}
+
+/// Tant qu'un seul type existe, une note est une page, que son en-tête nomme un type ou non :
+/// aucune ne disparaît de la liste ni de la recherche (fiche 0034).
+fn every_note_is_a_page_without_container(index: &impl NoteIndex) {
+    index
+        .put(&[
+            note("a.md", "---\ntags: [crm]\n---\n# A\npain", 1),
+            note("b.md", "---\ntype: page\ntags: [crm]\n---\n# B\npain", 2),
+            note("c.md", "---\ntype: kanban\ntags: [crm]\n---\n# C\npain", 3),
+        ])
+        .unwrap();
+    let pages = |notes: &[NoteSummary]| {
+        notes
+            .iter()
+            .all(|n| n.content_type() == ContentType::Page && n.container().is_none())
+    };
+    let query = SearchQuery::parse("pain").unwrap();
+    let found: Vec<NoteSummary> = index
+        .search(&query, &ContentType::ALL)
+        .unwrap()
+        .into_iter()
+        .map(|(n, _)| n)
+        .collect();
+    for notes in [
+        index.all_notes().unwrap(),
+        index.notes_in(&Folder::root()).unwrap(),
+        index.tagged("crm").unwrap(),
+        found,
+    ] {
+        assert_eq!(notes.len(), 3);
+        assert!(pages(&notes));
+    }
+}
+
+fn search_keeps_to_the_types_asked(index: &impl NoteIndex) {
+    index.put(&[note("a.md", "# A\npain", 1)]).unwrap();
+    let query = SearchQuery::parse("pain").unwrap();
+    assert_eq!(index.search(&query, &[ContentType::Page]).unwrap().len(), 1);
+    assert!(index.search(&query, &[]).unwrap().is_empty());
 }

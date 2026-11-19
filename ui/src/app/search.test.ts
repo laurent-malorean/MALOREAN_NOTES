@@ -10,6 +10,8 @@ const found = (path: string): SearchResultItem => ({
   path,
   title: path,
   folder: "",
+  contentType: "page",
+  container: null,
   modified: 0,
   excerpt: [],
 });

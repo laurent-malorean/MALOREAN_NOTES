@@ -19,6 +19,12 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - **Modifications extérieures** : si un fichier change hors de l'application (autre éditeur, synchronisation), l'application le recharge. Si la note était aussi modifiée dans l'application, elle ne perd rien et signale le conflit.
 - **Synchronisation** : l'espace de travail peut vivre dans iCloud Drive ou tout dossier synchronisé ; l'application n'a pas son propre service de synchronisation.
 
+## Principe : types de contenus
+
+- L'index gère des **types de contenu** : chaque élément indexé porte le sien, et ce à quoi il appartient (plus tard, le tableau d'une fiche de CRM, la carte mentale d'un nœud). Un fichier dira son type par la propriété `type:` de son en-tête ; sans elle, c'est une page.
+- **Pour l'instant, un seul type : la page**, celui de toutes les notes. Une note dont l'en-tête nomme un type qui n'existe pas encore reste une page : rien ne disparaît de la liste ni de la recherche.
+- Chaque résultat de recherche montre discrètement son type (« Page »).
+
 ## Principe : tout se fait sans raccourci clavier
 
 - Chaque action de l'application se lance aussi à la souris : un bouton, le menu du clic droit, ou la barre des menus du Mac. Les raccourcis clavier font gagner du temps ; ils ne sont jamais le seul chemin.
@@ -31,7 +37,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
 - Mise en forme de la sélection (gras, italique, lien, titres de niveau 1 à 3, liste à puces ou numérotée) et insertion de la date du jour : raccourci, palette ou menu Format. Tapés dans un autre champ (message à Claude, recherche, nom), ces raccourcis ne touchent jamais la note derrière lui.
 - Ouvrir un lien de la note (vers une autre note, une pièce jointe, une adresse) : Cmd+clic dessus, ou clic dans le lien puis « Ouvrir le lien » (palette, menu Fichier).
-- Recherche plein texte instantanée.
+- Recherche plein texte instantanée ; chaque résultat montre son dossier et, discret, son type de contenu.
 - Notes épinglées en tête de liste ; tri par date de modification.
 - Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur tout l'espace de travail ; liste des étiquettes avec leur nombre de notes.
 - Tri de la liste par date de modification ou par titre, épinglées toujours en tête ; il vaut aussi pour le filtre par étiquette et la recherche, et chaque espace de travail garde le sien.

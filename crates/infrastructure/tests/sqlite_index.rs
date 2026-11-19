@@ -12,7 +12,7 @@ use std::os::unix::fs::PermissionsExt;
 use application::testing::index_contract::note_index_contract;
 use application::{IndexOpener, IndexedNote, NoteIndex, NoteStamp, StoreError, WorkspaceLocation};
 use domain::search::SearchQuery;
-use domain::{Folder, Modified, NotePath};
+use domain::{ContentType, Folder, Modified, NotePath};
 use infrastructure::{FORMAT_VERSION, SqliteIndex, SqliteIndexes};
 use tempfile::TempDir;
 
@@ -79,7 +79,7 @@ fn an_index_is_kept_from_one_launch_to_the_next() {
     assert_eq!(titles(&*again), ["Alpha"]);
     assert_eq!(again.stamps().unwrap(), [note("a.md", "").stamp]);
     let query = SearchQuery::parse("pain").unwrap();
-    assert_eq!(again.search(&query).unwrap().len(), 1);
+    assert_eq!(again.search(&query, &ContentType::ALL).unwrap().len(), 1);
     let other = indexes.open(&location("/Users/moi/Travail")).unwrap();
     assert!(other.all_notes().unwrap().is_empty());
 }
@@ -182,4 +182,33 @@ fn a_replaced_index_does_not_take_back_the_journal_of_the_old_one() {
     let index = SqliteIndex::open(&file).unwrap();
     index.put(&[note("a.md", "# A")]).unwrap();
     assert_eq!(titles(&index), ["A"]);
+}
+
+/// Le schéma de la première version de l'index, sans type de contenu ni conteneur.
+const FIRST_FORMAT: &str = "
+CREATE TABLE notes (id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE, folder TEXT NOT NULL,
+    title TEXT NOT NULL, modified INTEGER NOT NULL, size INTEGER NOT NULL,
+    pinned INTEGER NOT NULL, tags TEXT NOT NULL, content TEXT NOT NULL);
+CREATE TABLE note_tags (note INTEGER NOT NULL REFERENCES notes (id) ON DELETE CASCADE,
+    tag TEXT NOT NULL);
+CREATE VIRTUAL TABLE notes_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
+INSERT INTO notes VALUES (1, 'a.md', '', 'A', 7, 12, 0, '', '# A');
+INSERT INTO notes_text (rowid, folded) VALUES (1, '# a');
+PRAGMA user_version = 1;
+";
+
+#[test]
+fn an_index_of_the_first_format_starts_again_and_keeps_types() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("index.sqlite");
+    let connection = rusqlite::Connection::open(&file).unwrap();
+    connection.execute_batch(FIRST_FORMAT).unwrap();
+    drop(connection);
+    let index = SqliteIndex::open(&file).unwrap();
+    assert!(index.stamps().unwrap().is_empty());
+    index.put(&[note("a.md", "# A\npain")]).unwrap();
+    let query = SearchQuery::parse("pain").unwrap();
+    let found = index.search(&query, &ContentType::ALL).unwrap();
+    assert_eq!(found[0].0.content_type(), ContentType::Page);
+    assert_eq!(found[0].0.container(), None);
 }

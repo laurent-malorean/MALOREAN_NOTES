@@ -342,6 +342,8 @@ fn search_result_item(result: SearchResult) -> SearchResultItem {
         path: result.path.to_path(),
         title: result.title,
         folder: result.path.folder().to_path(),
+        content_type: result.content_type.into(),
+        container: result.container.as_ref().map(NotePath::to_path),
         modified: result.modified.0,
         excerpt,
     }
@@ -363,6 +365,7 @@ mod tests {
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
+    use crate::ContentTypeItem;
 
     const RECENT: NoteOrderItem = NoteOrderItem::Modified;
 
@@ -501,6 +504,8 @@ mod tests {
                 path: "a.md".into(),
                 title: "Alpha".into(),
                 folder: String::new(),
+                content_type: ContentTypeItem::Page,
+                container: None,
                 modified: results[0].modified,
                 excerpt: vec![
                     ExcerptPartItem {

@@ -30,6 +30,7 @@ import type { NoteOrderItem } from "./generated/NoteOrderItem";
 import type { ProposalItem } from "./generated/ProposalItem";
 import type { SaveResult } from "./generated/SaveResult";
 import type { SavedNote } from "./generated/SavedNote";
+import type { ContentTypeItem } from "./generated/ContentTypeItem";
 import type { SearchResultItem } from "./generated/SearchResultItem";
 import type { TagItem } from "./generated/TagItem";
 import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
@@ -62,6 +63,7 @@ export type {
   NoteContent,
   NoteListItem,
   NoteOrderItem,
+  ContentTypeItem,
   ProposalItem,
   SaveResult,
   SavedNote,

@@ -77,7 +77,13 @@ async function twoColumns() {
 
 describe("colonnes et onglets de l'application", () => {
   it("un onglet qui s'ouvre prend le titre de sa note dans la liste ou dans les résultats de la recherche", async () => {
-    const found = { ...listed("b.md", "Note B"), folder: "", excerpt: [] };
+    const found = {
+      ...listed("b.md", "Note B"),
+      folder: "",
+      contentType: "page" as const,
+      container: null,
+      excerpt: [],
+    };
     const start = workspaceScreen([listed("a.md", "Note A")], (screen) => ({
       ...screen,
       search: { query: "note", results: [found] },

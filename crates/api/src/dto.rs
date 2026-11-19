@@ -80,6 +80,23 @@ impl From<NoteOrderItem> for domain::NoteOrder {
     }
 }
 
+/// Le type de contenu d'un élément de l'index.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum ContentTypeItem {
+    /// Une note : le seul type pour l'instant.
+    Page,
+}
+
+impl From<domain::ContentType> for ContentTypeItem {
+    fn from(content_type: domain::ContentType) -> Self {
+        match content_type {
+            domain::ContentType::Page => Self::Page,
+        }
+    }
+}
+
 /// Le format d'export choisi dans l'interface.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -134,6 +151,10 @@ pub struct SearchResultItem {
     pub title: String,
     /// Le dossier de la note : `""` pour la racine.
     pub folder: String,
+    /// Son type de contenu.
+    pub content_type: ContentTypeItem,
+    /// Le chemin de l'élément auquel elle appartient ; `null` pour une page.
+    pub container: Option<String>,
     /// Millisecondes depuis le 1er janvier 1970.
     #[ts(type = "number")]
     pub modified: u64,

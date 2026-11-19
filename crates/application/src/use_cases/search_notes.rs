@@ -2,20 +2,25 @@
 
 use domain::note::compare;
 use domain::search::{Excerpt, SearchQuery, search};
-use domain::{Modified, NoteOrder, NotePath};
+use domain::{ContentType, Modified, NoteOrder, NotePath};
 
 use crate::{AppError, NoteIndex};
 
 /// Au-delà, les notes trouvées ne sont pas montrées : la recherche doit être précisée.
 pub const MAX_RESULTS: usize = 100;
 
-/// Une note trouvée : son chemin, son titre affiché, sa date et un extrait.
+/// Une note trouvée : son chemin, son titre affiché, son type de contenu, son conteneur, sa
+/// date et un extrait.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchResult {
     /// Le dossier et le nom de fichier de la note.
     pub path: NotePath,
     /// Le titre affiché.
     pub title: String,
+    /// Son type de contenu.
+    pub content_type: ContentType,
+    /// L'élément auquel elle appartient ; aucun pour une page.
+    pub container: Option<NotePath>,
     /// La date de dernière modification.
     pub modified: Modified,
     /// Le passage autour du premier mot trouvé.
@@ -27,13 +32,27 @@ pub struct SearchResult {
 #[derive(Debug)]
 pub struct SearchNotes<'a> {
     index: &'a dyn NoteIndex,
+    types: Vec<ContentType>,
 }
 
 impl<'a> SearchNotes<'a> {
-    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert ; il cherche parmi tous
+    /// les types de contenu.
     #[must_use]
     pub fn new(index: &'a dyn NoteIndex) -> Self {
-        Self { index }
+        Self {
+            index,
+            types: ContentType::ALL.to_vec(),
+        }
+    }
+
+    /// Le même cas d'usage, qui ne cherche que parmi ces types de contenu.
+    #[must_use]
+    pub fn among(self, types: &[ContentType]) -> Self {
+        Self {
+            types: types.to_vec(),
+            ..self
+        }
     }
 
     /// Les notes trouvées dans l'ordre du tri de la liste, les épinglées d'abord ;
@@ -47,7 +66,7 @@ impl<'a> SearchNotes<'a> {
         query: &SearchQuery,
         order: NoteOrder,
     ) -> Result<Vec<SearchResult>, AppError> {
-        let mut found = self.index.search(query)?;
+        let mut found = self.index.search(query, &self.types)?;
         found.sort_by(|(a, _), (b, _)| compare(a, b, order));
         found.truncate(MAX_RESULTS);
         // L'extrait n'est tiré que des notes montrées : l'index a déjà vérifié chaque mot.
@@ -58,6 +77,8 @@ impl<'a> SearchNotes<'a> {
                     excerpt: search(query, &content)?,
                     path: note.path().clone(),
                     title: note.title().to_owned(),
+                    content_type: note.content_type(),
+                    container: note.container().cloned(),
                     modified: note.modified(),
                 })
             })
@@ -136,6 +157,32 @@ mod tests {
         let refs: Vec<(&str, &str)> = notes.iter().map(|(n, c)| (n.as_str(), *c)).collect();
         let store = InMemoryNoteStore::with_notes(&refs);
         assert_eq!(found(&store, "pain").len(), MAX_RESULTS);
+    }
+
+    #[test]
+    fn a_result_carries_its_type_and_container() {
+        let store = InMemoryNoteStore::with_notes(&[("a.md", "---\ntype: kanban\n---\n# A\npain")]);
+        let found = SearchNotes::new(&indexed(&store))
+            .execute(&SearchQuery::parse("pain").unwrap(), NoteOrder::Modified)
+            .unwrap();
+        assert_eq!(found[0].content_type, ContentType::Page);
+        assert_eq!(found[0].container, None);
+    }
+
+    #[test]
+    fn the_search_keeps_to_the_types_chosen() {
+        let store = InMemoryNoteStore::with_notes(&[("a.md", "pain")]);
+        let index = indexed(&store);
+        let query = SearchQuery::parse("pain").unwrap();
+        let among = |types: &[ContentType]| {
+            SearchNotes::new(&index)
+                .among(types)
+                .execute(&query, NoteOrder::Modified)
+                .unwrap()
+                .len()
+        };
+        assert_eq!(among(&[ContentType::Page]), 1);
+        assert_eq!(among(&[]), 0);
     }
 
     #[test]

@@ -1,4 +1,5 @@
 import type { SearchResultItem } from "../bridge";
+import { contentTypeLabel } from "../state/content-type";
 import { showContextMenu } from "./context-menu";
 import { type NoteOpening, noteMenu, openOnClick } from "./note-menu";
 
@@ -39,8 +40,19 @@ function line(className: string, text: string): HTMLElement {
   return element;
 }
 
+/** Le dossier de la note trouvée et, discret à sa droite, son type de contenu. */
+function place(folder: string, result: SearchResultItem): HTMLElement {
+  const element = document.createElement("span");
+  element.className = "search-place";
+  element.append(
+    line("search-folder", folder),
+    line("search-type", contentTypeLabel(result.contentType)),
+  );
+  return element;
+}
+
 /**
- * Affiche les notes trouvées (titre, dossier, extrait aux mots surlignés) ; un clic ouvre la note,
+ * Affiche les notes trouvées (titre, dossier, type de contenu, extrait aux mots surlignés) ; un clic ouvre la note,
  * un Cmd+clic l'ouvre dans un nouvel onglet, un clic droit propose le menu d'une note.
  * `null` : aucune réponse encore.
  */
@@ -60,7 +72,7 @@ export function renderSearchResults(
       item.classList.toggle("selected", result.path === selected);
       const folder =
         result.folder === "" ? workspaceName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
-      item.append(line("note-title", result.title), line("search-folder", folder), excerpt(result));
+      item.append(line("note-title", result.title), place(folder, result), excerpt(result));
       openOnClick(item, result.path, actions);
       item.addEventListener("contextmenu", (event) => {
         event.preventDefault();

@@ -7,7 +7,9 @@ use crate::Workspaces;
 use domain::export::ExportDestination;
 use domain::history::Version;
 use domain::search::SearchQuery;
-use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath, NoteSummary};
+use domain::{
+    AttachmentName, ContentType, FileName, Folder, Modified, Moment, NotePath, NoteSummary,
+};
 
 /// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -485,13 +487,18 @@ pub trait NoteIndex: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si l'index ne répond pas.
     fn tagged(&self, tag: &str) -> Result<Vec<NoteSummary>, StoreError>;
 
-    /// Les notes qui contiennent tous les mots de `query` (voir [`domain::search`]), avec leur
-    /// contenu pour en tirer l'extrait, dans aucun ordre.
+    /// Les notes de l'un des types de contenu `types` qui contiennent tous les mots de `query`
+    /// (voir [`domain::search`]), avec leur contenu pour en tirer l'extrait, dans aucun ordre.
+    /// Aucun type : rien n'est trouvé.
     ///
     /// # Errors
     ///
     /// [`StoreError::Unavailable`] si l'index ne répond pas.
-    fn search(&self, query: &SearchQuery) -> Result<Vec<(NoteSummary, String)>, StoreError>;
+    fn search(
+        &self,
+        query: &SearchQuery,
+        types: &[ContentType],
+    ) -> Result<Vec<(NoteSummary, String)>, StoreError>;
 }
 
 /// Ouvre l'index d'un espace de travail : un par espace, rangé hors de lui.

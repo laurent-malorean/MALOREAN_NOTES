@@ -111,6 +111,8 @@
   --recent-item-text-size: 13px;
   --workspace-switcher-text-size: 14px;
   --note-order-text-size: 12px;
+  /* Type de contenu montré sur chaque résultat de recherche, discret */
+  --content-type-text-size: 11px;
   --sidebar-width: 280px;
   /* Largeur d'un panneau latéral réglée à la souris : bornes, et bord qu'on tire */
   --side-panel-min-width: 9rem;

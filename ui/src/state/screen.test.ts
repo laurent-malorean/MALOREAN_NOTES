@@ -184,6 +184,8 @@ describe("recherche", () => {
     path,
     title: path,
     folder: "",
+    contentType: "page",
+    container: null,
     modified: 1,
     excerpt: [{ text: "pain", matched: true }],
   });

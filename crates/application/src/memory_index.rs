@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use domain::search::{SearchQuery, search};
-use domain::{Folder, NotePath, NoteSummary};
+use domain::{ContentType, Folder, NotePath, NoteSummary};
 
 use crate::{IndexOpener, IndexedNote, NoteIndex, NoteStamp, StoreError, WorkspaceLocation};
 
@@ -86,10 +86,15 @@ impl NoteIndex for MemoryIndex {
         Ok(self.summaries(|entry| entry.summary.tags().iter().any(|t| t == tag)))
     }
 
-    fn search(&self, query: &SearchQuery) -> Result<Vec<(NoteSummary, String)>, StoreError> {
+    fn search(
+        &self,
+        query: &SearchQuery,
+        types: &[ContentType],
+    ) -> Result<Vec<(NoteSummary, String)>, StoreError> {
         Ok(self
             .notes()
             .values()
+            .filter(|entry| types.contains(&entry.summary.content_type()))
             .filter(|entry| search(query, &entry.content).is_some())
             .map(|entry| (entry.summary.clone(), entry.content.clone()))
             .collect())

@@ -9,6 +9,8 @@ const results: SearchResultItem[] = [
     path: "Travail/Réunions/lundi.md",
     title: "Lundi",
     folder: "Travail/Réunions",
+    contentType: "page",
+    container: null,
     modified: 2,
     excerpt: [
       { text: "…acheter du ", matched: false },
@@ -20,6 +22,8 @@ const results: SearchResultItem[] = [
     path: "courses.md",
     title: "Courses",
     folder: "",
+    contentType: "page",
+    container: null,
     modified: 1,
     excerpt: [{ text: "Pain", matched: true }],
   },
@@ -41,6 +45,16 @@ describe("résultats de recherche", () => {
     expect(texts(container, ".note-title")).toEqual(["Lundi", "Courses"]);
     expect(texts(container, ".search-folder")).toEqual(["Travail / Réunions", "Notes"]);
     expect(texts(container, ".search-excerpt")).toEqual(["…acheter du pain <b>frais</b>", "Pain"]);
+  });
+
+  it("montre discrètement le type de contenu de chaque note, à côté de son dossier", () => {
+    const container = list();
+    renderSearchResults(container, "Notes", results, null, ignore);
+    expect(texts(container, ".search-place .search-type")).toEqual(["Page", "Page"]);
+    expect(texts(container, ".search-place .search-folder")).toEqual([
+      "Travail / Réunions",
+      "Notes",
+    ]);
   });
 
   it("met en évidence les mots trouvés, et seulement eux", () => {

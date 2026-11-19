@@ -252,8 +252,23 @@ button {
   white-space: nowrap;
   max-width: 100%;
 }
+.search-place {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+}
 .search-folder {
   font-size: 0.75rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-type {
+  flex: none;
+  font-size: var(--content-type-text-size);
   color: var(--muted);
 }
 .search-excerpt {

@@ -256,6 +256,7 @@ test("la recherche trouve les notes de tous les dossiers et ouvre celle qu'on cl
   await field.fill("PAIN");
   await expect(page.locator(".search-result .note-title")).toHaveText(["Courses", "Réunion"]);
   await expect(page.locator(".search-result .search-folder")).toHaveText(["Notes", "Travail"]);
+  await expect(page.locator(".search-result .search-type")).toHaveText(["Page", "Page"]);
   await expect(page.locator(".search-result mark").first()).toHaveText("pain");
   await page.locator(".search-result", { hasText: "Réunion" }).click();
   await expect(editorLines(page).first()).toHaveText("Réunion");

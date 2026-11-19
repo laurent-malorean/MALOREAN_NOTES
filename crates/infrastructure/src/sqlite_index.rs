@@ -8,12 +8,12 @@ use std::sync::{Arc, Mutex, PoisonError};
 
 use application::{IndexOpener, IndexedNote, NoteIndex, NoteStamp, StoreError, WorkspaceLocation};
 use domain::search::{SearchQuery, folded};
-use domain::{Folder, Modified, NotePath, NoteSummary};
+use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, ToSql, params, params_from_iter};
 
 /// Le format de la base : à changer à chaque changement du schéma ; un index d'un autre format
-/// est reconstruit.
-pub const FORMAT_VERSION: i32 = 1;
+/// est reconstruit. 2 : le type de contenu et le conteneur de chaque note (fiche 0034).
+pub const FORMAT_VERSION: i32 = 2;
 const FILE_PREFIX: &str = "index-";
 const FILE_SUFFIX: &str = ".sqlite";
 /// Séparateur des étiquettes d'une note dans sa colonne : une étiquette tient sur une ligne.
@@ -27,7 +27,8 @@ const SETTINGS: &str = "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; 
                         PRAGMA foreign_keys = ON;";
 
 /// Le texte de chaque note est gardé sans majuscule ni accent (`folded`), tel que la recherche
-/// le compare ; la table plein texte le découpe en trigrammes, sans rien y changer.
+/// le compare ; la table plein texte le découpe en trigrammes, sans rien y changer. Le type de
+/// contenu est gardé par son nom ; le conteneur, par son chemin, vide pour une page.
 const SCHEMA: &str = "
 CREATE TABLE notes (
     id INTEGER PRIMARY KEY,
@@ -38,6 +39,8 @@ CREATE TABLE notes (
     size INTEGER NOT NULL,
     pinned INTEGER NOT NULL,
     tags TEXT NOT NULL,
+    type TEXT NOT NULL,
+    container TEXT,
     content TEXT NOT NULL
 );
 CREATE INDEX notes_by_folder ON notes (folder);
@@ -50,7 +53,7 @@ CREATE INDEX note_tags_by_note ON note_tags (note);
 CREATE VIRTUAL TABLE notes_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
 ";
 
-const SUMMARY_COLUMNS: &str = "path, title, modified, pinned, tags";
+const SUMMARY_COLUMNS: &str = "path, title, modified, pinned, tags, type, container";
 
 /// Les index des espaces de travail, un fichier chacun dans `folder`.
 #[derive(Debug)]
@@ -269,16 +272,23 @@ impl NoteIndex for SqliteIndex {
         )
     }
 
-    fn search(&self, query: &SearchQuery) -> Result<Vec<(NoteSummary, String)>, StoreError> {
-        let (filter, words) = search_filter(query);
+    fn search(
+        &self,
+        query: &SearchQuery,
+        types: &[ContentType],
+    ) -> Result<Vec<(NoteSummary, String)>, StoreError> {
+        let (filter, mut values) = search_filter(query);
+        values.extend(types.iter().map(|kind| kind.name().to_owned()));
+        let kinds = vec!["?"; types.len()].join(", ");
         self.run(|connection| {
             let sql = format!(
-                "SELECT n.path, n.title, n.modified, n.pinned, n.tags, n.content \
-                 FROM notes_text JOIN notes AS n ON n.id = notes_text.rowid WHERE {filter}"
+                "SELECT n.path, n.title, n.modified, n.pinned, n.tags, n.type, n.container, \
+                 n.content FROM notes_text JOIN notes AS n ON n.id = notes_text.rowid \
+                 WHERE {filter} AND n.type IN ({kinds})"
             );
             let mut statement = connection.prepare(&sql)?;
-            let rows = statement.query_map(params_from_iter(words), |row| {
-                Ok((summary(row)?, row.get::<_, String>(5)?))
+            let rows = statement.query_map(params_from_iter(values), |row| {
+                Ok((summary(row)?, row.get::<_, String>(7)?))
             })?;
             rows.collect()
         })
@@ -331,8 +341,8 @@ fn keep(connection: &Connection, note: &IndexedNote) -> rusqlite::Result<()> {
     let summary = NoteSummary::new(stamp.path.clone(), &note.content, stamp.modified);
     let tags = summary.tags().join(&TAG_SEPARATOR.to_string());
     connection.execute(
-        "INSERT INTO notes (path, folder, title, modified, size, pinned, tags, content) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        "INSERT INTO notes (path, folder, title, modified, size, pinned, tags, type, container, \
+         content) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
         params![
             stamp.path.to_path(),
             stamp.path.folder().to_path(),
@@ -341,6 +351,8 @@ fn keep(connection: &Connection, note: &IndexedNote) -> rusqlite::Result<()> {
             signed(stamp.size)?,
             summary.is_pinned(),
             tags,
+            summary.content_type().name(),
+            summary.container().map(NotePath::to_path),
             note.content,
         ],
     )?;
@@ -358,7 +370,7 @@ fn keep(connection: &Connection, note: &IndexedNote) -> rusqlite::Result<()> {
     Ok(())
 }
 
-/// Le résumé lu dans les colonnes `path, title, modified, pinned, tags`.
+/// Le résumé lu dans les colonnes `path, title, modified, pinned, tags, type, container`.
 fn summary(row: &Row<'_>) -> rusqlite::Result<NoteSummary> {
     let tags: String = row.get(4)?;
     let tags = if tags.is_empty() {
@@ -372,7 +384,25 @@ fn summary(row: &Row<'_>) -> rusqlite::Result<NoteSummary> {
         Modified(unsigned(row, 2)?),
         row.get(3)?,
         tags,
-    ))
+    )
+    .of_type(content_type(row, 5)?, container(row, 6)?))
+}
+
+fn content_type(row: &Row<'_>, column: usize) -> rusqlite::Result<ContentType> {
+    let name: String = row.get(column)?;
+    ContentType::from_name(&name).ok_or_else(|| {
+        rusqlite::Error::FromSqlConversionFailure(
+            column,
+            rusqlite::types::Type::Text,
+            format!("type de contenu inconnu : {name}").into(),
+        )
+    })
+}
+
+/// Le conteneur de l'élément, s'il en a un.
+fn container(row: &Row<'_>, column: usize) -> rusqlite::Result<Option<NotePath>> {
+    let text: Option<String> = row.get(column)?;
+    text.map(|_| note_path(row, column)).transpose()
 }
 
 fn note_path(row: &Row<'_>, column: usize) -> rusqlite::Result<NotePath> {
@@ -431,6 +461,52 @@ mod tests {
         index.clear().unwrap();
         assert!(file.exists());
         assert!(index.all_notes().unwrap().is_empty());
+    }
+
+    /// Un élément rangé dans un conteneur, comme le gardera un type à venir : le format n'a pas
+    /// à changer pour lui.
+    #[test]
+    fn an_element_kept_with_a_container_is_read_back_with_it() {
+        let dir = TempDir::new().unwrap();
+        let index = SqliteIndex::open(&dir.path().join("index.sqlite")).unwrap();
+        index
+            .run(|connection| {
+                connection.execute(
+                    "INSERT INTO notes (path, folder, title, modified, size, pinned, tags, type, \
+                     container, content) VALUES ('CRM/carte.md', 'CRM', 'Carte', 1, 1, 0, '', \
+                     'page', 'CRM/tableau.md', '# Carte')",
+                    [],
+                )
+            })
+            .unwrap();
+        let all = index.all_notes().unwrap();
+        assert_eq!(
+            all[0].container(),
+            Some(&NotePath::parse("CRM/tableau.md").unwrap())
+        );
+        assert_eq!(all[0].content_type(), ContentType::Page);
+    }
+
+    #[test]
+    fn an_unknown_type_or_container_cannot_be_read() {
+        let dir = TempDir::new().unwrap();
+        let index = SqliteIndex::open(&dir.path().join("index.sqlite")).unwrap();
+        for (kind, container) in [("kanban", "NULL"), ("page", "'../hors.md'")] {
+            index
+                .run(|connection| {
+                    connection.execute("DELETE FROM notes", [])?;
+                    connection.execute(
+                        &format!(
+                            "INSERT INTO notes (path, folder, title, modified, size, pinned, \
+                             tags, type, container, content) VALUES ('a.md', '', 'A', 1, 1, 0, \
+                             '', '{kind}', {container}, '')"
+                        ),
+                        [],
+                    )
+                })
+                .unwrap();
+            assert!(matches!(index.all_notes(), Err(StoreError::Unavailable(_))));
+        }
     }
 
     #[test]

@@ -265,6 +265,8 @@ function searchNotes(query: string, order?: string) {
         path,
         title: titleOf(note.content) ?? "Sans titre",
         folder: folderOf(path),
+        contentType: "page" as const,
+        container: null,
         modified: note.modified,
         excerpt: parts.map((text) => ({ text, matched: words.includes(folded(text)) })),
       };

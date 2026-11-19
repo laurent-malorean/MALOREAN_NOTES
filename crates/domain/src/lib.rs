@@ -6,6 +6,7 @@ pub mod attachment_name;
 pub mod attachments;
 pub mod claude;
 pub mod conflict;
+pub mod content_type;
 pub mod diff;
 pub mod export;
 pub mod file_name;
@@ -26,6 +27,7 @@ pub use attachment_name::{
     AttachmentKind, AttachmentName, InvalidMoment, Moment, RefusedAttachment,
 };
 pub use conflict::{Fingerprint, InvalidFingerprint};
+pub use content_type::ContentType;
 pub use file_name::{FileName, InvalidFileName};
 pub use folder::{Folder, FolderName, InvalidFolderName, NotePath};
 pub use note::{Modified, NoteOrder, NoteSummary};

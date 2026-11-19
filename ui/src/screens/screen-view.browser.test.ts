@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { SearchResultItem } from "../bridge";
 import {
   folderSelected,
   workspaceOpened,
@@ -153,7 +154,15 @@ describe("affichage de l'écran", () => {
       [],
       [{ path: "a.md", title: "Alpha", modified: 0, pinned: false, tags: [] }],
     );
-    const result = { path: "b.md", title: "Bêta", folder: "", modified: 0, excerpt: [] };
+    const result: SearchResultItem = {
+      path: "b.md",
+      title: "Bêta",
+      folder: "",
+      contentType: "page",
+      container: null,
+      modified: 0,
+      excerpt: [],
+    };
     const calls: string[] = [];
     const searching = searchAnswered(searchTyped(opened, "pain"), "pain", [result]);
     renderScreen(view, searching, { ...ignore, open: (p) => calls.push(p) });

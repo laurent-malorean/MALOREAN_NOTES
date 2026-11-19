@@ -2,10 +2,10 @@
 
 use std::cmp::Ordering;
 
-use crate::NotePath;
 use crate::front_matter::is_pinned;
 use crate::tag::{sort_key, tags};
 use crate::title::displayed_title;
+use crate::{ContentType, NotePath};
 
 /// Date de dernière modification, en millisecondes depuis le 1er janvier 1970.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -53,11 +53,14 @@ pub struct NoteSummary {
     modified: Modified,
     pinned: bool,
     tags: Vec<String>,
+    content_type: ContentType,
+    container: Option<NotePath>,
 }
 
 impl NoteSummary {
     /// Le résumé d'une note : son titre affiché, son épinglage et ses étiquettes sont tirés
-    /// de son contenu.
+    /// de son contenu. Toute note est une page, sans conteneur, tant qu'aucun autre type de
+    /// contenu n'existe (fiche 0034) : la propriété `type:` de l'en-tête n'est pas encore lue.
     #[must_use]
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
         Self {
@@ -66,6 +69,8 @@ impl NoteSummary {
             modified,
             pinned: is_pinned(content),
             tags: tags(content),
+            content_type: ContentType::Page,
+            container: None,
         }
     }
 
@@ -85,7 +90,34 @@ impl NoteSummary {
             modified,
             pinned,
             tags,
+            content_type: ContentType::Page,
+            container: None,
         }
+    }
+
+    /// Le même résumé, avec le type de contenu et le conteneur que l'index a gardés.
+    ///
+    /// Écrit par affectations plutôt que `Self { content_type, ..self }` : tant que la page est
+    /// le seul type (fiche 0034), retirer ce champ d'une telle expression garderait la même
+    /// valeur, une erreur introduite équivalente que `exclude_re` de cargo-mutants ne sait pas
+    /// écarter.
+    #[must_use]
+    pub fn of_type(mut self, content_type: ContentType, container: Option<NotePath>) -> Self {
+        self.content_type = content_type;
+        self.container = container;
+        self
+    }
+
+    /// Son type de contenu.
+    #[must_use]
+    pub fn content_type(&self) -> ContentType {
+        self.content_type
+    }
+
+    /// L'élément auquel il appartient ; aucun pour une page.
+    #[must_use]
+    pub fn container(&self) -> Option<&NotePath> {
+        self.container.as_ref()
     }
 
     /// La note est épinglée en tête de liste.
@@ -164,6 +196,29 @@ mod tests {
             read.tags().to_vec(),
         );
         assert_eq!(indexed, read);
+    }
+
+    #[test]
+    fn every_note_is_a_page_without_container_whatever_its_type_property() {
+        for content in [
+            "# Titre",
+            "---\ntype: page\n---\n# T",
+            "---\ntype: kanban\n---\n# T",
+        ] {
+            let read = note("x.md", content, 0);
+            assert_eq!(read.content_type(), ContentType::Page);
+            assert_eq!(read.container(), None);
+        }
+    }
+
+    #[test]
+    fn an_indexed_summary_keeps_the_type_and_container_given() {
+        let board = NotePath::parse("CRM/tableau.md").unwrap();
+        let card =
+            note("CRM/carte.md", "# Carte", 0).of_type(ContentType::Page, Some(board.clone()));
+        assert_eq!(card.container(), Some(&board));
+        assert_eq!(card.title(), "Carte");
+        assert_ne!(card, note("CRM/carte.md", "# Carte", 0));
     }
 
     #[test]
