@@ -49,6 +49,8 @@ export interface CommandsDeps {
   readonly history: NoteHistory;
   /** L'aide à l'écriture, sur la sélection de la colonne active. */
   readonly assistant: Pick<WritingAssistance, "propose">;
+  /** La colonne Claude Code, affichée ou masquée. */
+  readonly claude: { toggle(): void };
   run(action: Promise<unknown>): void;
 }
 
@@ -104,6 +106,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "toggle-focus": () => writing.toggleFocus(),
     "toggle-typewriter": () => writing.toggleTypewriter(),
     "toggle-outline": () => writing.toggleOutline(),
+    "toggle-claude-column": () => deps.claude.toggle(),
     "toggle-full-screen": () => run(deps.window.toggleFullScreen()),
     "toggle-side-panels": () => deps.window.toggleSidePanels(),
     "new-tab": () =>

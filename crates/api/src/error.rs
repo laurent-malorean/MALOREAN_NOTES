@@ -1,6 +1,6 @@
 //! Traduction des erreurs en message pour l'interface : le seul endroit où cela se fait.
 
-use application::{AppError, EmptyLocation};
+use application::{AppError, ClaudeError, EmptyLocation};
 use domain::export::InvalidExportDestination;
 use domain::history::InvalidVersion;
 use domain::{InvalidFileName, InvalidFingerprint, InvalidFolderName};
@@ -75,6 +75,14 @@ impl ApiError {
 
 impl From<AppError> for ApiError {
     fn from(error: AppError) -> Self {
+        Self {
+            message: error.to_string(),
+        }
+    }
+}
+
+impl From<ClaudeError> for ApiError {
+    fn from(error: ClaudeError) -> Self {
         Self {
             message: error.to_string(),
         }

@@ -1,0 +1,178 @@
+import { describe, expect, it } from "vitest";
+import type { ClaudeEventItem } from "../bridge";
+import {
+  ACTION_LABELS,
+  type Conversation,
+  eventReceived,
+  messageSent,
+  NEW_CONVERSATION,
+  shownTarget,
+  stopAsked,
+  summaryText,
+  turnEnded,
+} from "./claude-column";
+
+const play = (conversation: Conversation, ...events: ClaudeEventItem[]) =>
+  events.reduce(eventReceived, conversation);
+
+const started = (id: string, action: "write" | "read" | "other", agent: string | null = null) =>
+  ({
+    kind: "actionStarted",
+    agent,
+    id,
+    action,
+    tool: action === "other" ? "NotebookEdit" : null,
+    target: `/Notes/${id}.md`,
+  }) as const;
+
+const summary = (tokens: number, failure: string | null = null) =>
+  ({ kind: "summary", failure, durationMs: 1500, tokens }) as const;
+
+const asked = messageSent(NEW_CONVERSATION, "Range mes notes");
+
+describe("conversation de la colonne Claude Code", () => {
+  it("le message de l'utilisateur commence un tour", () => {
+    expect(asked).toEqual({
+      entries: [{ kind: "user", text: "Range mes notes" }],
+      turn: "running",
+    });
+  });
+
+  it("les messages de Claude arrivent dans l'ordre, ceux des sous-agents marqués", () => {
+    const now = play(
+      asked,
+      { kind: "message", agent: null, text: "Je regarde." },
+      { kind: "message", agent: "a1", text: "Trouvé." },
+    );
+    expect(now.entries.slice(1)).toEqual([
+      { kind: "claude", text: "Je regarde.", subAgent: false },
+      { kind: "claude", text: "Trouvé.", subAgent: true },
+    ]);
+  });
+
+  it("chaque sorte d'action a son nom ; une action lancée tourne", () => {
+    expect(ACTION_LABELS).toEqual({
+      read: "Lecture",
+      search: "Recherche",
+      write: "Écriture",
+      edit: "Modification",
+      subAgent: "Sous-agent",
+      other: "Outil",
+    });
+    expect(play(asked, started("w", "write")).entries.at(-1)).toMatchObject({ state: "running" });
+  });
+
+  it("une action est nommée, puis suit son issue ; un refus le reste", () => {
+    const now = play(
+      asked,
+      started("w", "write"),
+      started("r", "read", "a1"),
+      started("o", "other"),
+      { kind: "actionFinished", id: "w", succeeded: true },
+      { kind: "actionFinished", id: "r", succeeded: false },
+      { kind: "actionRefused", id: "o" },
+      { kind: "actionFinished", id: "o", succeeded: false },
+    );
+    expect(now.entries.slice(1)).toEqual([
+      {
+        kind: "action",
+        id: "w",
+        label: "Écriture",
+        target: "/Notes/w.md",
+        subAgent: false,
+        state: "succeeded",
+      },
+      {
+        kind: "action",
+        id: "r",
+        label: "Lecture",
+        target: "/Notes/r.md",
+        subAgent: true,
+        state: "failed",
+      },
+      {
+        kind: "action",
+        id: "o",
+        label: "NotebookEdit",
+        target: "/Notes/o.md",
+        subAgent: false,
+        state: "refused",
+      },
+    ]);
+  });
+
+  it("une note modifiée n'est montrée qu'une fois par tour", () => {
+    const changed = { kind: "changedNote", path: "plan.md" } as const;
+    const first = play(asked, changed, changed, { kind: "changedNote", path: "b.md" });
+    expect(first.entries.slice(1)).toEqual([
+      { kind: "changedNote", path: "plan.md" },
+      { kind: "changedNote", path: "b.md" },
+    ]);
+    const next = play(messageSent(turnEnded(first, null), "Encore"), changed);
+    expect(next.entries.at(-1)).toEqual(changed);
+    expect(next.entries).toHaveLength(5);
+  });
+
+  it("le dernier bilan du tour remplace le précédent, pas celui d'un autre tour", () => {
+    const first = turnEnded(play(asked, summary(10)), null);
+    const second = play(messageSent(first, "Encore"), summary(20), started("w", "write"));
+    const now = play(second, summary(30, "conversation inconnue"));
+    expect(now.entries.map((entry) => entry.kind)).toEqual([
+      "user",
+      "summary",
+      "user",
+      "action",
+      "summary",
+    ]);
+    expect(now.entries[1]).toEqual(summary(10));
+    expect(now.entries[4]).toEqual(summary(30, "conversation inconnue"));
+  });
+
+  it("la fin d'un sous-agent ne change pas la conversation", () => {
+    const end = {
+      kind: "subAgentFinished",
+      id: "a1",
+      state: "done",
+      durationMs: 1,
+      tokens: 1,
+      actions: 1,
+    } as const;
+    expect(eventReceived(asked, end)).toEqual(asked);
+  });
+
+  it("un tour se termine normalement, en erreur, ou arrêté à la demande", () => {
+    expect(turnEnded(asked, null)).toEqual({ entries: asked.entries, turn: "idle" });
+    expect(turnEnded(asked, "Claude répond déjà").entries.at(-1)).toEqual({
+      kind: "error",
+      message: "Claude répond déjà",
+    });
+    const stopping = stopAsked(asked);
+    expect(stopping.turn).toBe("stopping");
+    expect(turnEnded(stopping, "la réponse de Claude a été arrêtée")).toEqual({
+      entries: [...asked.entries, { kind: "stopped" }],
+      turn: "idle",
+    });
+  });
+
+  it("l'arrêt ne se demande que pendant un tour", () => {
+    expect(stopAsked(NEW_CONVERSATION)).toBe(NEW_CONVERSATION);
+  });
+});
+
+describe("textes de la colonne Claude Code", () => {
+  it("la cible d'une action dans l'espace de travail s'écrit depuis lui", () => {
+    expect(shownTarget("/Users/moi/Notes/a/plan.md", "/Users/moi/Notes")).toBe("a/plan.md");
+    expect(shownTarget("/Users/moi/Notes/plan.md", "/Users/moi/Notes/")).toBe("plan.md");
+    expect(shownTarget("/Users/moi/Notes2/plan.md", "/Users/moi/Notes")).toBe(
+      "/Users/moi/Notes2/plan.md",
+    );
+    expect(shownTarget("**/*.md", "/Users/moi/Notes")).toBe("**/*.md");
+  });
+
+  it("le bilan donne la durée et les jetons, en français", () => {
+    expect(summaryText(12_340, 1234)).toBe("12,3 s · 1 234 jetons");
+    expect(summaryText(59_940, 1)).toBe("59,9 s · 1 jeton");
+    expect(summaryText(59_960, 0)).toBe("1 min 00 s · 0 jeton");
+    expect(summaryText(125_400, 2)).toBe("2 min 05 s · 2 jetons");
+  });
+});

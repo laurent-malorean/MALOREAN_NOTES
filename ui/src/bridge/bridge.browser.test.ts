@@ -424,6 +424,26 @@ describe("pont vers Rust : colonne Claude Code", () => {
     expect(await bridge.claudeStatus()).toEqual({ kind: "ready" });
     expect(calls).toEqual([{ command: "claude_status", args: {} }]);
   });
+
+  it("envoie un message, arrête le tour, commence une nouvelle conversation", async () => {
+    const calls = recordCalls(null);
+    await bridge.sendToClaude("Range mes notes");
+    await bridge.stopClaude();
+    await bridge.newConversation();
+    expect(calls).toEqual([
+      { command: "send_to_claude", args: { message: "Range mes notes" } },
+      { command: "stop_claude", args: {} },
+      { command: "new_conversation", args: {} },
+    ]);
+  });
+
+  it("transmet chaque événement de Claude annoncé par Rust", async () => {
+    mockIPC(() => null, { shouldMockEvents: true });
+    const received: string[] = [];
+    await bridge.onClaudeEvent((event) => received.push(event.kind));
+    await emit("claude-event", { kind: "changedNote", path: "plan.md" });
+    expect(received).toEqual(["changedNote"]);
+  });
 });
 
 describe("pont vers Rust : barre des menus", () => {

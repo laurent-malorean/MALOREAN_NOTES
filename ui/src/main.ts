@@ -1,6 +1,7 @@
 // Assemblage de l'interface : crée chaque partie et les relie entre elles, sans logique.
 // Le fonctionnement vit dans les modules de chaque domaine, sous `app/` (doc/code.md).
 import * as bridge from "./bridge";
+import { createClaudeColumn } from "./app/claude-column";
 import { createOpenColumns } from "./app/columns";
 import { connectAppMenu } from "./app/app-menu";
 import { connectButtons } from "./app/buttons";
@@ -42,7 +43,7 @@ const messages = createMessages(layout.status, bridge.errorMessage);
 const { run } = messages;
 const foldMemory = createFoldMemory(localStorage);
 const screen = createCurrentScreen(
-  (next) => (renderScreen(layout, next, actions), foldMemory.save(next)),
+  (next) => (renderScreen(layout, next, actions), foldMemory.save(next), claude.follow()),
 );
 const columns = createOpenColumns({
   container: layout.columns,
@@ -102,6 +103,10 @@ const exporting = createExport({
 });
 const history = createHistory({ ...messages, backend: bridge, columns, layout });
 const assistant = createWritingAssistant({ ...messages, backend: bridge, columns, layout });
+const claude = createClaudeColumn({
+  ...{ backend: bridge, layout, workspace, openNote: (path) => actions.open(path) },
+  error: messages.error,
+});
 const workspaces = createWorkspaces({
   ...{ backend: bridge, screen, columns, workspace, picker: layout.picker, run },
   askName: (options) => askName(layout.confirmation, options),
@@ -131,6 +136,7 @@ const commands = connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField, exporting, assistant },
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent, history },
+  claude,
 });
 const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...messages });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });

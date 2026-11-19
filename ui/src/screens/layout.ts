@@ -28,6 +28,10 @@ export interface Layout {
   readonly columns: HTMLElement;
   readonly fullScreenButton: HTMLButtonElement;
   readonly sidePanelsButton: HTMLButtonElement;
+  /** Le bouton qui affiche ou masque la colonne Claude Code. */
+  readonly claudeButton: HTMLButtonElement;
+  /** La colonne Claude Code, à droite des colonnes d'édition. */
+  readonly claudeColumn: HTMLElement;
   readonly status: HTMLElement;
   /** Sur l'accueil : ajouter un premier espace de travail. */
   readonly addButton: HTMLButtonElement;
@@ -82,10 +86,12 @@ const TEMPLATE = `
           <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
           <button class="tool" data-side-panels title="Panneaux latéraux : dossiers et notes (Ctrl+Cmd+S)" aria-pressed="true">Panneaux</button>
           <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
+          <button class="tool" data-claude title="Colonne Claude Code (Ctrl+Cmd+L)" aria-pressed="false">Claude</button>
         </div>
         <div class="columns"></div>
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
       </main>
+      <section class="claude-column" aria-label="Claude Code" hidden></section>
     </section>
     <div class="status" role="status"></div>
     <dialog class="settings" aria-label="Réglages"></dialog>
@@ -118,6 +124,8 @@ export function createLayout(root: HTMLElement): Layout {
     columns: find(".columns"),
     fullScreenButton: find("[data-full-screen]"),
     sidePanelsButton: find("[data-side-panels]"),
+    claudeButton: find("[data-claude]"),
+    claudeColumn: find(".claude-column"),
     status: find(".status"),
     addButton: find("[data-add]"),
     switchButton: find("[data-switch]"),

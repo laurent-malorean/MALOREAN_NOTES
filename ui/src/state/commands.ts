@@ -16,6 +16,7 @@ export type CommandId =
   | "toggle-focus"
   | "toggle-typewriter"
   | "toggle-outline"
+  | "toggle-claude-column"
   | "toggle-full-screen"
   | "toggle-side-panels"
   | "new-tab"
@@ -60,6 +61,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "toggle-focus", label: "Mode focus", shortcut: "Cmd+Maj+F" },
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },
+  { id: "toggle-claude-column", label: "Colonne Claude Code", shortcut: "Ctrl+Cmd+L" },
   { id: "toggle-full-screen", label: "Plein écran", shortcut: "Ctrl+Cmd+F" },
   { id: "toggle-side-panels", label: "Panneaux latéraux", shortcut: "Ctrl+Cmd+S" },
   { id: "new-tab", label: "Nouvel onglet", shortcut: "Cmd+T" },

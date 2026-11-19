@@ -1,11 +1,19 @@
-//! La colonne Claude Code vue depuis la page : si Claude Code peut répondre (fiche 0032).
+//! La colonne Claude Code vue depuis la page : si Claude Code peut répondre, un tour joué dans
+//! l'espace de travail ouvert, la conversation continuée (fiche 0032).
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::path::Path;
+use std::sync::{Arc, PoisonError};
 
-use application::{ClaudeCode, ClaudeStatus};
+use application::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use domain::NotePath;
+use domain::claude::{ActionId, ActionKind, ActionOutcome, ClaudeEvent, ConversationId};
 
 use super::Session;
-use crate::ClaudeStatusItem;
+use crate::{ApiError, ClaudeEventItem, ClaudeStatusItem};
+
+/// La conversation en cours et l'espace de travail où elle a commencé.
+pub(super) type CurrentConversation = Option<(WorkspaceLocation, ConversationId)>;
 
 impl Session {
     /// La même session, dont la colonne Claude Code passe par `claude`. Sans lui, Claude Code se
@@ -30,5 +38,367 @@ impl Session {
                 reason: reason.to_string(),
             },
         }
+    }
+
+    /// Joue un tour : envoie `message` à Claude dans l'espace de travail ouvert, en continuant la
+    /// conversation en cours, et donne à `on_event` chaque événement prêt pour la page dès qu'il
+    /// arrive, avec chaque note modifiée par Claude. Rend la main à la fin du tour.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a empêché le tour : aucun espace de travail
+    /// ouvert, Claude Code introuvable, déjà occupé, arrêté ou parti sans bilan.
+    pub fn send_to_claude(
+        &self,
+        message: &str,
+        mut on_event: impl FnMut(ClaudeEventItem),
+    ) -> Result<(), ApiError> {
+        let location = self.opened()?.location;
+        let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
+        let conversation = self.conversation_in(&location);
+        let mut notes = ChangedNotes::new(&location);
+        claude.send(&location, conversation.as_ref(), message, &mut |event| {
+            if let ClaudeEvent::ConversationStarted(id) = &event {
+                *self.current_conversation() = Some((location.clone(), id.clone()));
+            }
+            let changed = notes.follow(&event);
+            ClaudeEventItem::from_event(event)
+                .into_iter()
+                .chain(changed.map(|path| ClaudeEventItem::ChangedNote { path }))
+                .for_each(&mut on_event);
+        })?;
+        Ok(())
+    }
+
+    /// Arrête le tour en cours, s'il y en a un ; ce que Claude a déjà écrit reste écrit.
+    pub fn stop_claude(&self) {
+        if let Some(claude) = &self.claude {
+            claude.stop();
+        }
+    }
+
+    /// Oublie la conversation en cours : le message suivant en commence une neuve.
+    pub fn new_conversation(&self) {
+        *self.current_conversation() = None;
+    }
+
+    /// La conversation à continuer, si elle a commencé dans l'espace de travail `location`.
+    fn conversation_in(&self, location: &WorkspaceLocation) -> Option<ConversationId> {
+        self.current_conversation()
+            .as_ref()
+            .filter(|(started_in, _)| started_in == location)
+            .map(|(_, id)| id.clone())
+    }
+
+    fn current_conversation(&self) -> std::sync::MutexGuard<'_, CurrentConversation> {
+        self.conversation
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// Suit les créations et modifications de fichiers d'un tour, pour annoncer chaque note de
+/// l'espace de travail que Claude a réussi à écrire.
+struct ChangedNotes<'a> {
+    workspace: &'a Path,
+    /// Les écritures lancées sur une note, en attente de leur issue.
+    writing: HashMap<ActionId, NotePath>,
+}
+
+impl<'a> ChangedNotes<'a> {
+    fn new(workspace: &'a WorkspaceLocation) -> Self {
+        Self {
+            workspace: Path::new(workspace.as_str()),
+            writing: HashMap::new(),
+        }
+    }
+
+    /// Le chemin depuis l'espace de travail de la note que l'événement dit écrite, s'il y en a une.
+    fn follow(&mut self, event: &ClaudeEvent) -> Option<String> {
+        match event {
+            ClaudeEvent::ActionStarted { action, .. }
+                if matches!(action.kind, ActionKind::Write | ActionKind::Edit) =>
+            {
+                if let Some(note) = action.target.as_deref().and_then(|t| self.note_at(t)) {
+                    self.writing.insert(action.id.clone(), note);
+                }
+                None
+            }
+            ClaudeEvent::ActionFinished { id, outcome } => self
+                .writing
+                .remove(id)
+                .filter(|_| *outcome == ActionOutcome::Succeeded)
+                .map(|note| note.to_path()),
+            _ => None,
+        }
+    }
+
+    /// La note que désigne le fichier `target` (absolu, ou relatif à l'espace de travail), s'il
+    /// est une note de l'espace de travail.
+    fn note_at(&self, target: &str) -> Option<NotePath> {
+        let file = self.workspace.join(target);
+        let relative = file.strip_prefix(self.workspace).ok()?.to_str()?;
+        NotePath::parse(relative).ok()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::mpsc;
+    use std::thread;
+    use std::time::Duration;
+
+    use application::testing::{
+        FakeClaudeCode, FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore,
+    };
+    use domain::claude::{ClaudeAction, TurnOutcome, TurnSummary};
+
+    use super::*;
+    use crate::ActionKindItem;
+
+    const NOTES: &str = "/Users/moi/Notes";
+
+    fn id(text: &str) -> ActionId {
+        ActionId::new(text).unwrap()
+    }
+
+    fn started(conversation: &str) -> ClaudeEvent {
+        ClaudeEvent::ConversationStarted(ConversationId::new(conversation).unwrap())
+    }
+
+    fn action(action: &str, kind: ActionKind, target: &str) -> ClaudeEvent {
+        ClaudeEvent::ActionStarted {
+            agent: None,
+            action: ClaudeAction {
+                id: id(action),
+                kind,
+                target: Some(target.to_owned()),
+            },
+        }
+    }
+
+    fn finished(action: &str, outcome: ActionOutcome) -> ClaudeEvent {
+        ClaudeEvent::ActionFinished {
+            id: id(action),
+            outcome,
+        }
+    }
+
+    fn summary() -> ClaudeEvent {
+        ClaudeEvent::Summary(TurnSummary {
+            outcome: TurnOutcome::Succeeded,
+            duration: Duration::from_millis(1200),
+            tokens: 34,
+        })
+    }
+
+    fn session(claude: Option<Arc<FakeClaudeCode>>) -> Session {
+        let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::default()));
+        let session = Session::new(
+            Arc::new(opener),
+            Arc::new(FakePreferences::default()),
+            Arc::new(FixedClock::default()),
+        );
+        match claude {
+            Some(claude) => session.with_claude(claude),
+            None => session,
+        }
+    }
+
+    fn opened(claude: &Arc<FakeClaudeCode>) -> Session {
+        let session = session(Some(Arc::clone(claude)));
+        session.add_workspace("Notes", NOTES).unwrap();
+        session
+    }
+
+    fn turn(session: &Session, message: &str) -> (Result<(), ApiError>, Vec<ClaudeEventItem>) {
+        let mut items = Vec::new();
+        let end = session.send_to_claude(message, |item| items.push(item));
+        (end, items)
+    }
+
+    /// Les notes que la page apprend modifiées pendant un tour qui annonce `events`.
+    fn changed_notes(events: Vec<ClaudeEvent>) -> Vec<String> {
+        let claude = Arc::new(FakeClaudeCode::replaying(events));
+        let (_, items) = turn(&opened(&claude), "Range mes notes");
+        items
+            .into_iter()
+            .filter_map(|item| match item {
+                ClaudeEventItem::ChangedNote { path } => Some(path),
+                _ => None,
+            })
+            .collect()
+    }
+
+    fn conversations(claude: &FakeClaudeCode) -> Vec<Option<String>> {
+        claude
+            .requests()
+            .into_iter()
+            .map(|(_, conversation, _)| conversation.map(|id| id.as_str().to_owned()))
+            .collect()
+    }
+
+    #[test]
+    fn a_turn_is_played_in_the_open_workspace_and_relayed_to_the_page() {
+        let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
+        let (end, items) = turn(&opened(&claude), "Bonjour");
+        assert_eq!(end, Ok(()));
+        assert_eq!(
+            items,
+            vec![ClaudeEventItem::Summary {
+                failure: None,
+                duration_ms: 1200,
+                tokens: 34,
+            }]
+        );
+        let (workspace, _, message) = claude.requests().remove(0);
+        assert_eq!(workspace.as_str(), NOTES);
+        assert_eq!(message, "Bonjour");
+    }
+
+    #[test]
+    fn nothing_is_sent_before_a_workspace_is_open() {
+        let claude = Arc::new(FakeClaudeCode::replaying(vec![summary()]));
+        let (end, items) = turn(&session(Some(Arc::clone(&claude))), "Bonjour");
+        assert_eq!(
+            end.unwrap_err().message,
+            "aucun espace de travail n'est ouvert"
+        );
+        assert!(items.is_empty());
+        assert!(claude.requests().is_empty());
+    }
+
+    #[test]
+    fn without_claude_code_the_turn_says_it_is_missing() {
+        let session = session(None);
+        session.add_workspace("Notes", NOTES).unwrap();
+        let (end, _) = turn(&session, "Bonjour");
+        assert_eq!(end.unwrap_err().message, ClaudeError::Missing.to_string());
+    }
+
+    #[test]
+    fn the_next_message_continues_the_conversation_until_a_new_one() {
+        let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
+        let session = opened(&claude);
+        turn(&session, "Un").0.unwrap();
+        turn(&session, "Deux").0.unwrap();
+        session.new_conversation();
+        turn(&session, "Trois").0.unwrap();
+        assert_eq!(conversations(&claude), [None, Some("c1".to_owned()), None]);
+    }
+
+    #[test]
+    fn another_workspace_starts_a_new_conversation() {
+        let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
+        let session = opened(&claude);
+        turn(&session, "Un").0.unwrap();
+        session
+            .add_workspace("Travail", "/Users/moi/Travail")
+            .unwrap();
+        turn(&session, "Deux").0.unwrap();
+        session.open_workspace("Notes").unwrap();
+        session.open_workspace("Travail").unwrap();
+        turn(&session, "Trois").0.unwrap();
+        assert_eq!(conversations(&claude), [None, None, None]);
+    }
+
+    #[test]
+    fn a_running_turn_stops_on_request() {
+        let claude = Arc::new(FakeClaudeCode::hanging(vec![started("c1")]));
+        let session = opened(&claude);
+        let (sender, received) = mpsc::channel();
+        thread::scope(|scope| {
+            let running = scope
+                .spawn(|| session.send_to_claude("Bonjour", |item| sender.send(item).unwrap()));
+            let (busy, _) = loop {
+                if !claude.requests().is_empty() {
+                    break turn(&session, "Encore");
+                }
+                thread::yield_now();
+            };
+            session.stop_claude();
+            assert_eq!(busy.unwrap_err().message, ClaudeError::Busy.to_string());
+            assert_eq!(
+                running.join().unwrap().unwrap_err().message,
+                ClaudeError::Stopped.to_string()
+            );
+        });
+        drop(sender);
+        assert!(received.try_recv().is_err());
+    }
+
+    #[test]
+    fn stopping_without_claude_code_changes_nothing() {
+        session(None).stop_claude();
+    }
+
+    #[test]
+    fn each_note_written_or_edited_in_the_workspace_is_announced() {
+        let notes = changed_notes(vec![
+            action("w", ActionKind::Write, "/Users/moi/Notes/Projets/plan.md"),
+            finished("w", ActionOutcome::Succeeded),
+            action("e", ActionKind::Edit, "courses.md"),
+            finished("e", ActionOutcome::Succeeded),
+        ]);
+        assert_eq!(notes, ["Projets/plan.md", "courses.md"]);
+    }
+
+    #[test]
+    fn a_failed_or_refused_write_changes_no_note() {
+        let notes = changed_notes(vec![
+            action("w", ActionKind::Write, "/Users/moi/Notes/plan.md"),
+            ClaudeEvent::ActionRefused { id: id("w") },
+            finished("w", ActionOutcome::Failed),
+            finished("w", ActionOutcome::Succeeded),
+        ]);
+        assert!(notes.is_empty());
+    }
+
+    #[test]
+    fn reading_or_writing_outside_the_notes_changes_no_note() {
+        let notes = changed_notes(vec![
+            action("r", ActionKind::Read, "/Users/moi/Notes/plan.md"),
+            finished("r", ActionOutcome::Succeeded),
+            action("o", ActionKind::Write, "/Users/moi/Ailleurs/plan.md"),
+            finished("o", ActionOutcome::Succeeded),
+            action("t", ActionKind::Write, "/Users/moi/Notes/liste.txt"),
+            finished("t", ActionOutcome::Succeeded),
+            action(
+                "u",
+                ActionKind::Edit,
+                "/Users/moi/Notes/../Ailleurs/plan.md",
+            ),
+            finished("u", ActionOutcome::Succeeded),
+            finished("inconnue", ActionOutcome::Succeeded),
+        ]);
+        assert!(notes.is_empty());
+    }
+
+    #[test]
+    fn the_changed_note_follows_the_end_of_its_action() {
+        let claude = Arc::new(FakeClaudeCode::replaying(vec![
+            action("w", ActionKind::Write, "/Users/moi/Notes/plan.md"),
+            finished("w", ActionOutcome::Succeeded),
+        ]));
+        let (_, items) = turn(&opened(&claude), "Écris un plan");
+        assert_eq!(
+            items,
+            vec![
+                ClaudeEventItem::ActionStarted {
+                    agent: None,
+                    id: "w".to_owned(),
+                    action: ActionKindItem::Write,
+                    tool: None,
+                    target: Some("/Users/moi/Notes/plan.md".to_owned()),
+                },
+                ClaudeEventItem::ActionFinished {
+                    id: "w".to_owned(),
+                    succeeded: true,
+                },
+                ClaudeEventItem::ChangedNote {
+                    path: "plan.md".to_owned(),
+                },
+            ]
+        );
     }
 }

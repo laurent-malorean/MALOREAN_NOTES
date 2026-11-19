@@ -7,6 +7,9 @@ import type { AppMenu } from "./generated/AppMenu";
 import type { AssistantStatus } from "./generated/AssistantStatus";
 import type { AttachedFile } from "./generated/AttachedFile";
 import type { ChosenFolder } from "./generated/ChosenFolder";
+import type { ActionKindItem } from "./generated/ActionKindItem";
+import type { AgentStateItem } from "./generated/AgentStateItem";
+import type { ClaudeEventItem } from "./generated/ClaudeEventItem";
 import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
 import type { DifferenceItem } from "./generated/DifferenceItem";
 import type { ExportFile } from "./generated/ExportFile";
@@ -32,10 +35,13 @@ import type { VersionItem } from "./generated/VersionItem";
 import type { WritingActionItem } from "./generated/WritingActionItem";
 
 export type {
+  ActionKindItem,
+  AgentStateItem,
   AppMenu,
   AssistantStatus,
   AttachedFile,
   ChosenFolder,
+  ClaudeEventItem,
   ClaudeStatusItem,
   DifferenceItem,
   ExportFile,
@@ -234,6 +240,20 @@ export const proposeRewriting = (action: WritingActionItem, selection: string) =
   invoke<ProposalItem>("propose_rewriting", { action, selection });
 /** Si Claude Code est installé et connecté, sinon pourquoi et quoi faire ; le modèle n'est pas appelé. */
 export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
+/**
+ * Envoie un message à Claude dans l'espace de travail ouvert, en continuant la conversation en
+ * cours ; se termine avec le tour. Les événements du tour arrivent par `onClaudeEvent`.
+ */
+export const sendToClaude = (message: string) => invoke<null>("send_to_claude", { message });
+/** Arrête le tour en cours ; ce que Claude a déjà écrit reste écrit. */
+export const stopClaude = () => invoke<null>("stop_claude");
+/** Oublie la conversation en cours : le message suivant en commence une neuve. */
+export const newConversation = () => invoke<null>("new_conversation");
+/** Même nom côté Rust (`CLAUDE_EVENT`). */
+const CLAUDE_EVENT = "claude-event";
+/** Prévient de chaque événement de Claude du tour en cours, dès qu'il arrive. */
+export const onClaudeEvent = (handler: (event: ClaudeEventItem) => void) =>
+  listen<ClaudeEventItem>(CLAUDE_EVENT, (event) => handler(event.payload));
 /** Ouvre avec l'application du Mac la pièce jointe que vise la cible d'un lien de la note. */
 export const openAttachment = (path: string, target: string) =>
   invoke<null>("open_attachment", { path, target });

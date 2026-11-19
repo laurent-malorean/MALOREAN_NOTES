@@ -80,6 +80,12 @@ Une ligne illisible ou d'un type inconnu est ignorée (Claude Code évolue vite)
 - Faux `FakeClaudeCode` et contrat `testing` joué sur le faux et sur l'adaptateur, comme les autres ports.
 - `api` relaie les événements à la page au fur et à mesure ; la page tient l'état de la colonne (fonctions pures dans `ui/src/state/`).
 
+### Colonne de discussion
+
+- Commandes `send_to_claude` (le message), `stop_claude`, `new_conversation`, à côté de `claude_status`. `send_to_claude` joue le tour sur un fil d'arrière-plan et se termine avec lui ; chaque événement part aussitôt à la page (événement Tauri `claude-event`, type `ClaudeEventItem`). Le début de la conversation n'est pas envoyé : la session garde l'identifiant, avec l'espace de travail où la conversation a commencé, pour `--resume` ; il est oublié par « Nouvelle conversation » et à l'ouverture d'un espace de travail.
+- `api` ajoute aux événements chaque note modifiée (`changedNote`) : une action `Write` ou `Edit` réussie dont la cible (absolue, ou relative au dossier) est une note (`.md`, chemin sûr) de l'espace de travail. Une écriture refusée ou en erreur ne compte pas.
+- La colonne s'affiche ou se masque par sa commande (Ctrl+Cmd+L, libre dans l'application, l'éditeur et macOS), le bouton « Claude » des outils de l'éditeur, la palette et le menu Présentation. Elle vérifie la connexion à chaque ouverture. Un message de Claude est mis en forme par le rendu des notes (même analyseur que l'éditeur, HTML de la note jamais interprété) ; un lien de ses messages ne fait pas quitter l'application, ses images ne sont pas chargées. Une erreur du tour suivant un « Arrêter » est dite « Réponse arrêtée » ; les autres sont montrées telles que Rust les écrit. Quand un tour annonce plusieurs bilans, la colonne ne montre que le dernier ; une note modifiée deux fois dans un tour n'est montrée qu'une fois.
+
 ### Tests : jamais le vrai Claude
 
 - L'adaptateur reçoit le chemin du programme à lancer. Les tests et la CI lui donnent un **faux Claude Code** : un petit script qui écrit les arguments et le dossier courant reçus dans un fichier, puis rejoue des lignes `stream-json` enregistrées. Le vrai `claude` n'est jamais lancé par un test.

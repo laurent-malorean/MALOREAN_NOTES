@@ -478,7 +478,7 @@ const windowCommands: Record<string, (args: Record<string, unknown>) => unknown>
   "plugin:window|is_fullscreen": () => backend.fullScreen,
   ...fakeMenu(backend),
   ...fakeWriting(backend),
-  ...fakeClaude(backend),
+  ...fakeClaude(backend, (path, content) => backend.changeOutside(path, content)),
 };
 
 /** Pièces jointes : même nommage que Rust, en plus simple (moment figé). */

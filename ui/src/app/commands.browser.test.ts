@@ -74,6 +74,7 @@ const deps: CommandsDeps = {
   },
   history: { show: (path) => void log.push(`historique ${path}`) },
   assistant: { propose: (action) => void log.push(`aide à l'écriture ${action}`) },
+  claude: { toggle: () => log.push("colonne Claude Code") },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
 };
 const connected = connectCommands(deps);
@@ -113,6 +114,7 @@ describe("commandes de la palette", () => {
       "toggle-focus",
       "toggle-typewriter",
       "toggle-outline",
+      "toggle-claude-column",
       "toggle-full-screen",
       "toggle-side-panels",
       "split-column",
@@ -142,6 +144,7 @@ describe("commandes de la palette", () => {
       "focus",
       "machine à écrire",
       "plan",
+      "colonne Claude Code",
       "plein écran",
       "panneaux",
       "diviser",

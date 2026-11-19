@@ -508,5 +508,8 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         writing::assistant_status,
         writing::propose_rewriting,
         claude::claude_status,
+        claude::send_to_claude,
+        claude::stop_claude,
+        claude::new_conversation,
     ]
 }

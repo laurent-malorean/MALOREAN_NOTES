@@ -94,6 +94,7 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "toggle-focus" },
       { command: "toggle-typewriter" },
       { command: "toggle-outline" },
+      { command: "toggle-claude-column" },
       "separator",
       { command: "split-column" },
       { command: "next-tab" },

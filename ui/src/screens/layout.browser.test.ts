@@ -29,6 +29,8 @@ describe("mise en page", () => {
       layout.focusButton,
       layout.fullScreenButton,
       layout.sidePanelsButton,
+      layout.claudeButton,
+      layout.claudeColumn,
       layout.status,
       layout.newNoteButton,
       layout.settingsButton,
@@ -50,5 +52,8 @@ describe("mise en page", () => {
     expect(layout.tagFilter.hidden).toBe(true);
     expect(layout.tagsList.hidden).toBe(true);
     expect(layout.tagsList.getAttribute("aria-label")).toBe("Étiquettes");
+    expect(layout.claudeColumn.hidden).toBe(true);
+    expect(layout.claudeColumn.getAttribute("aria-label")).toBe("Claude Code");
+    expect(layout.claudeButton.getAttribute("aria-pressed")).toBe("false");
   });
 });

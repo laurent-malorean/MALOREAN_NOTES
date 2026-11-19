@@ -111,6 +111,7 @@ describe("barre des menus", () => {
           "Mode focus Cmd+Shift+F",
           "Mode machine à écrire Cmd+Shift+T",
           "Plan de la note Cmd+Shift+O",
+          "Colonne Claude Code Ctrl+Cmd+L",
           "—",
           "Diviser la colonne Ctrl+Cmd+T",
           "Onglet suivant Ctrl+Tab",

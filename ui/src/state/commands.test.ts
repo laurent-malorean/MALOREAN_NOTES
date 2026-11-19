@@ -20,6 +20,7 @@ describe("palette de commandes", () => {
       ["toggle-focus", "Mode focus", "Cmd+Maj+F"],
       ["toggle-typewriter", "Mode machine à écrire", "Cmd+Maj+T"],
       ["toggle-outline", "Plan de la note", "Cmd+Maj+O"],
+      ["toggle-claude-column", "Colonne Claude Code", "Ctrl+Cmd+L"],
       ["toggle-full-screen", "Plein écran", "Ctrl+Cmd+F"],
       ["toggle-side-panels", "Panneaux latéraux", "Ctrl+Cmd+S"],
       ["new-tab", "Nouvel onglet", "Cmd+T"],

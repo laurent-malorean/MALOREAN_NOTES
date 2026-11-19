@@ -66,6 +66,8 @@ pub struct Session {
     clipboard: Option<Arc<dyn Clipboard>>,
     assistant: Option<Arc<dyn WritingAssistant>>,
     claude: Option<Arc<dyn ClaudeCode>>,
+    /// La conversation avec Claude Code à continuer au prochain message.
+    conversation: Mutex<claude::CurrentConversation>,
 }
 
 /// L'espace de travail ouvert : où il est, ses notes, leur index et leur historique, qui suivent
@@ -105,6 +107,7 @@ impl Session {
             clipboard: None,
             assistant: None,
             claude: None,
+            conversation: Mutex::new(None),
         }
     }
 
@@ -285,6 +288,7 @@ impl Session {
             .workspace
             .write()
             .unwrap_or_else(PoisonError::into_inner) = Some(state);
+        self.new_conversation();
         Ok(info)
     }
 
