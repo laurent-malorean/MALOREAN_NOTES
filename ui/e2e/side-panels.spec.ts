@@ -95,7 +95,7 @@ test("les panneaux latéraux se cachent et se montrent, en plein écran comme en
   await launch(page);
   await page.getByTitle("Diviser la colonne").first().click();
   await expect(panelsButton(page)).toHaveAttribute("aria-pressed", "true");
-  await expect(panelsButton(page)).toHaveAttribute("title", /\(Cmd\+Maj\+B\)$/);
+  await expect(panelsButton(page)).toHaveAttribute("title", /\(Cmd\+0\)$/);
   // Bouton : les colonnes prennent toute la largeur, en gardant leurs parts et leur texte en haut.
   await panelsButton(page).click();
   await expect(folders(page)).toBeHidden();
@@ -109,11 +109,11 @@ test("les panneaux latéraux se cachent et se montrent, en plein écran comme en
   await page.keyboard.press("Control+Meta+F");
   await expect.poll(() => fullScreen(page)).toBe(true);
   await expect(folders(page)).toBeHidden();
-  await page.keyboard.press("Meta+Shift+B");
+  await page.keyboard.press("Meta+0");
   await expect(folders(page)).toBeVisible();
   await expect(notes(page)).toBeVisible();
   await expectColumnsFill(page, [0.5, 0.5]);
-  await page.keyboard.press("Meta+Shift+B");
+  await page.keyboard.press("Meta+0");
   await expect(notes(page)).toBeHidden();
   await page.keyboard.press("Escape");
   await expect.poll(() => fullScreen(page)).toBe(false);
@@ -147,7 +147,7 @@ test("la ligne en cours reste au milieu quand les panneaux se cachent", async ({
       return Math.round(Math.abs((line.top + line.bottom) / 2 - (frame.top + frame.bottom) / 2));
     });
   await expect.poll(offCentre).toBeLessThan(15);
-  await page.keyboard.press("Meta+Shift+B");
+  await page.keyboard.press("Meta+0");
   await expect(folders(page)).toBeHidden();
   await page.keyboard.type("suite");
   await expect.poll(offCentre).toBeLessThan(15);

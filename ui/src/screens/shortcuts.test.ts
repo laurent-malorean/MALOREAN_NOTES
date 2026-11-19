@@ -4,7 +4,7 @@ import { keyOf, shortcutFor } from "./shortcuts";
 const key = (
   key: string,
   mods: Partial<Record<"metaKey" | "ctrlKey" | "shiftKey", boolean>> = {},
-) => shortcutFor({ key, metaKey: false, ctrlKey: false, shiftKey: false, ...mods });
+) => shortcutFor({ key, code: "", metaKey: false, ctrlKey: false, shiftKey: false, ...mods });
 
 describe("raccourcis clavier", () => {
   it("Cmd+Maj+F change le mode focus", () => {
@@ -49,10 +49,21 @@ describe("raccourcis clavier", () => {
     expect(key("p", { metaKey: true, ctrlKey: true })).toBeNull();
   });
 
-  it("Cmd+Maj+B cache ou montre les panneaux latéraux ; Ctrl+Cmd+S reste aux outils de capture", () => {
-    expect(key("b", { metaKey: true, shiftKey: true })).toBe("toggle-side-panels");
-    expect(key("B", { metaKey: true, shiftKey: true })).toBe("toggle-side-panels");
+  it("Cmd+0 cache ou montre les panneaux latéraux ; Ctrl+Cmd+S reste aux outils de capture", () => {
+    expect(key("0", { metaKey: true })).toBe("toggle-side-panels");
+    expect(key("0")).toBeNull();
     expect(key("s", { metaKey: true, ctrlKey: true })).toBeNull();
+  });
+
+  it("un chiffre se lit à sa touche quand le clavier en tape un autre signe (AZERTY : « à » pour 0)", () => {
+    const azerty = (char: string, code: string) =>
+      shortcutFor({ key: char, code, metaKey: true, ctrlKey: false, shiftKey: false });
+    expect(azerty("à", "Digit0")).toBe("toggle-side-panels");
+    expect(azerty("&", "Digit1")).toBe("heading-1");
+    expect(azerty("à", "KeyQ")).toBeNull();
+    expect(azerty("o", "Digit0")).toBe("quick-open");
+    expect(azerty("à", "XDigit0")).toBeNull();
+    expect(azerty("à", "Digit01")).toBeNull();
   });
 
   it("la mise en forme et la date du jour, hors de l'éditeur aussi : Cmd+B, Cmd+I, Cmd+K, Cmd+Maj+D", () => {

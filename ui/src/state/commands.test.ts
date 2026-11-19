@@ -32,7 +32,7 @@ describe("palette de commandes", () => {
       ["toggle-outline", "Plan de la note", "Cmd+Maj+O"],
       ["toggle-claude-column", "Colonne Claude Code", "Ctrl+Cmd+L"],
       ["toggle-full-screen", "Plein écran", "Ctrl+Cmd+F"],
-      ["toggle-side-panels", "Panneaux latéraux", "Cmd+Maj+B"],
+      ["toggle-side-panels", "Panneaux latéraux", "Cmd+0"],
       ["new-tab", "Nouvel onglet", "Cmd+T"],
       ["close-tab", "Fermer l'onglet", "Cmd+W"],
       ["next-tab", "Onglet suivant", "Ctrl+Tab"],

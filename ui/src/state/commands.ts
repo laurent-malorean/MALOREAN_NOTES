@@ -87,7 +87,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },
   { id: "toggle-claude-column", label: "Colonne Claude Code", shortcut: "Ctrl+Cmd+L" },
   { id: "toggle-full-screen", label: "Plein écran", shortcut: "Ctrl+Cmd+F" },
-  { id: "toggle-side-panels", label: "Panneaux latéraux", shortcut: "Cmd+Maj+B" },
+  { id: "toggle-side-panels", label: "Panneaux latéraux", shortcut: "Cmd+0" },
   { id: "new-tab", label: "Nouvel onglet", shortcut: "Cmd+T" },
   { id: "close-tab", label: "Fermer l'onglet", shortcut: "Cmd+W" },
   { id: "next-tab", label: "Onglet suivant", shortcut: "Ctrl+Tab" },

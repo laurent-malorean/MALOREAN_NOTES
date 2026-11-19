@@ -28,13 +28,23 @@ const SHORTCUTS: ReadonlyMap<string, Shortcut> = new Map<string, Shortcut>([
 /** Ce qu'il faut savoir d'une touche pressée. */
 export interface KeyPress {
   readonly key: string;
+  /** La touche physique (`Digit0`) : sur un clavier AZERTY, les chiffres se tapent avec Maj. */
+  readonly code: string;
   readonly metaKey: boolean;
   readonly ctrlKey: boolean;
   readonly shiftKey: boolean;
 }
 
-/** L'action demandée par la touche, ou rien. */
+const DIGIT_KEY = /^Digit(\d)$/;
+
+/**
+ * L'action demandée par la touche, ou rien. Un chiffre se lit aussi à sa touche : sur un clavier
+ * AZERTY, Cmd+0 tape « à », comme CodeMirror le fait pour ses propres touches.
+ */
 export function shortcutFor(press: KeyPress): Shortcut | null {
   const modifiers = `${press.metaKey ? "cmd+" : ""}${press.ctrlKey ? "ctrl+" : ""}${press.shiftKey ? "shift+" : ""}`;
-  return SHORTCUTS.get(`${modifiers}${press.key.toLowerCase()}`) ?? null;
+  const digit = DIGIT_KEY.exec(press.code)?.[1];
+  const typed = SHORTCUTS.get(`${modifiers}${press.key.toLowerCase()}`);
+  // Stryker disable next-line ConditionalExpression: sans chiffre, la clé « cmd+undefined » ne désigne aucune commande : même résultat.
+  return typed ?? (digit === undefined ? null : (SHORTCUTS.get(`${modifiers}${digit}`) ?? null));
 }
