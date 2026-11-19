@@ -26,6 +26,7 @@ Un tour = un lancement de `claude`, dans le dossier de l'espace de travail ouver
 ```
 claude -p --output-format stream-json --verbose
        [--resume <identifiant de la conversation>]
+       [--model haiku|sonnet|opus|fable] [--effort low|medium|high|xhigh|max]
        --tools Read,Write,Edit,Glob,Grep,Agent
        --permission-mode acceptEdits --permission-prompts none
        --restricted --strict-mcp-config --disable-slash-commands
@@ -35,7 +36,8 @@ claude -p --output-format stream-json --verbose
 - **Le message** est écrit sur l'entrée de `claude`, jamais passé en argument : un message qui commence par `-` ne peut pas devenir une option.
 - **Continuer la conversation** : le premier événement (`system`, `init`) et le bilan (`result`) portent l'identifiant de la conversation (`session_id`) ; l'application le garde et le rend par `--resume` au message suivant. « Nouvelle conversation » et le passage à un autre espace de travail l'oublient. Il n'est gardé qu'en mémoire, pas d'un lancement de l'application à l'autre.
 - **Arrêter** : le programme `claude` du tour est tué. Ce qu'il a écrit reste écrit ; la conversation continue au message suivant.
-- **L'abonnement de l'utilisateur** : `claude` lit sa propre connexion (trousseau du Mac). Le modèle est celui choisi par défaut par l'utilisateur.
+- **L'abonnement de l'utilisateur** : `claude` lit sa propre connexion (trousseau du Mac).
+- **Le modèle et le niveau d'effort** (réglages du tour) : tant que l'utilisateur n'a rien choisi, ni `--model` ni `--effort` ne sont passés, et Claude Code garde ses propres choix. Choisis sur leur pastille, ils sont passés à chaque tour, y compris avec `--resume` : une conversation se continue avec un autre modèle. Valeurs vérifiées dans `claude --help` (2.1.311), sans appeler le modèle : `--model` prend un alias du dernier modèle d'une famille (`haiku`, `sonnet`, `opus`, `fable`, du plus léger au plus capable), `--effort` un niveau (`low`, `medium`, `high`, `xhigh`, `max`). La page n'envoie que des valeurs de ces listes (types `ClaudeModelItem`, `EffortItem` ; une autre valeur est refusée par Rust avant tout lancement) ; l'adaptateur les traduit en options. Le choix est gardé dans le stockage de la page, d'un lancement à l'autre ; la pastille montre le nom de la famille (« Opus · Medium »), pas le numéro de version, que seul le flux du tour connaît.
 - **L'environnement transmis** : vidé, puis seules quelques variables de l'application sont rendues (dossier personnel, utilisateur, `PATH`, shell, fichiers temporaires, langue, `CLAUDE_CONFIG_DIR` pour trouver la connexion, proxy du réseau et ses certificats). Mesuré le 19/11 : lancée depuis un terminal, l'application transmettait plus de 80 variables, dont des clés d'API, l'accès à l'agent SSH, et les variables d'une session Claude Code parente (`CLAUDECODE`, `CLAUDE_CODE_*`, dont une prise de messagerie et son jeton). Aucune clé d'API n'arrive donc à `claude` (c'est toujours l'abonnement qui sert, jamais une facturation à l'usage), ni `ANTHROPIC_BASE_URL` ou `CLAUDE_CODE_USE_BEDROCK` (qui changeraient qui répond et qui paie), ni aucun réglage de Claude Code par variable. Avec ce seul environnement, `claude auth status` dit bien « connecté » et un tour fonctionne (vérifié avec le vrai `claude`). La vérification de la connexion reçoit le même.
 - **Trouver `claude`** : une application ouverte depuis le Finder n'a pas le `PATH` du Terminal ; l'adaptateur cherche dans les emplacements connus (`/opt/homebrew/bin`, `/usr/local/bin`, `~/.local/bin`, `~/.claude/local`) puis dans le `PATH`.
 
@@ -73,7 +75,7 @@ Trois petits tours (`--model haiku`, options exactes ci-dessus), dans un dossier
 
 Restent appliqués, comme le dit `claude --help` : les réglages imposés par un administrateur du Mac (absents ici) et `--settings` (jamais passé). Le flux du premier tour est gardé pour les tests (`escapes_refused.jsonl`, chemins remplacés par `/Users/moi`). Une action dont l'outil ou le sous-agent est hors des autorisations finit en erreur sans `permission_denied` : l'adaptateur la reconnaît à ce que dit son issue (« No such tool available », « denied by the current permission settings ») et l'annonce refusée, comme les autres. La colonne rappelle en une ligne discrète, sous la zone du message, ce que Claude peut faire : lire, créer et modifier les notes de cet espace de travail, sans demander ; rien d'autre.
 
-Verrous : les arguments exacts et l'environnement exact (liste des variables gardées) sont fixés par des tests du faux Claude Code ; une option ou une variable de plus fait échouer la CI. Confirmé sur les flux enregistrés le 19/11 (2.1.311) : l'action qui lance un sous-agent s'appelle `Agent` (la liste d'outils du début l'appelle encore `Task` ; l'adaptateur accepte les deux noms). La construction de ces arguments est une fonction pure de l'adaptateur, testée ; le faux Claude Code vérifie qu'ils sont bien passés.
+Verrous : les arguments exacts (avec et sans modèle et niveau d'effort, conversation continuée comprise) et l'environnement exact (liste des variables gardées) sont fixés par des tests du faux Claude Code ; une option ou une variable de plus fait échouer la CI. Confirmé sur les flux enregistrés le 19/11 (2.1.311) : l'action qui lance un sous-agent s'appelle `Agent` (la liste d'outils du début l'appelle encore `Task` ; l'adaptateur accepte les deux noms). La construction de ces arguments est une fonction pure de l'adaptateur, testée ; le faux Claude Code vérifie qu'ils sont bien passés.
 
 ### Événements
 
@@ -107,6 +109,18 @@ Une ligne illisible ou d'un type inconnu est ignorée (Claude Code évolue vite)
 - Commandes `send_to_claude` (le message), `stop_claude`, `new_conversation`, à côté de `claude_status`. `send_to_claude` joue le tour sur un fil d'arrière-plan et se termine avec lui ; chaque événement part aussitôt à la page (événement Tauri `claude-event`, type `ClaudeEventItem`). Le début de la conversation n'est pas envoyé : la session garde l'identifiant, avec l'espace de travail où la conversation a commencé, pour `--resume` ; il est oublié par « Nouvelle conversation » et à l'ouverture d'un espace de travail.
 - `api` ajoute aux événements chaque note modifiée (`changedNote`) : une action `Write` ou `Edit` réussie dont la cible (absolue, ou relative au dossier) est une note (`.md`, chemin sûr) de l'espace de travail. Une écriture refusée ou en erreur ne compte pas.
 - La colonne s'affiche ou se masque par sa commande (Ctrl+Cmd+L, libre dans l'application, l'éditeur et macOS), le bouton « Claude » des outils de l'éditeur, la palette et le menu Présentation. Elle vérifie la connexion à chaque ouverture. Un message de Claude est mis en forme par le rendu des notes (même analyseur que l'éditeur, HTML de la note jamais interprété) ; un lien de ses messages ne fait pas quitter l'application, ses images ne sont pas chargées. Une erreur du tour suivant un « Arrêter » est dite « Réponse arrêtée » ; les autres sont montrées telles que Rust les écrit. Quand un tour annonce plusieurs bilans, la colonne ne montre que le dernier ; une note modifiée deux fois dans un tour n'est montrée qu'une fois.
+
+### Barre de saisie
+
+Sous la zone du message, une rangée de pastilles, comme Claude Code dans VS Code, toutes utilisables à la souris :
+
+- **Modèle et niveau d'effort** dans une même pastille (« Opus · Medium », « Modèle par défaut » sans choix) : un clic ouvre leur choix, deux groupes du plus bas au plus haut, « Par défaut » en tête de chacun, l'actuel coché ; un clic ailleurs ou Échap le ferme.
+- **Sous-agents en cours** (« ● 1 agent »), cachée quand aucun ne travaille : un clic déplie la carte des agents.
+- **Durée de la réponse**, mise à jour chaque seconde pendant le tour, cachée ensuite.
+- **Notes jointes** : la note ouverte dans la colonne active est jointe d'office (suivie à chaque changement des colonnes) ; sa croix la retire jusqu'à ce qu'une autre note s'ouvre. « + » ouvre la fenêtre de choix de l'ouverture rapide sur les notes de l'espace de travail ; les notes ainsi jointes sont retirées une fois le message parti. Le message envoyé se termine par « Notes jointes (chemins depuis l'espace de travail) : » et la liste de leurs chemins : Claude les lit lui-même, avec ses outils limités à l'espace de travail ; rien de leur contenu ne passe par l'application. La conversation montre sous le message les titres des notes jointes.
+- **Envoyer**, qui devient un carré d'arrêt (« Arrêter ») pendant la réponse.
+
+Pas de pastille des autorisations (elles sont fixes, voir plus haut) ni de commandes en `/` (`--disable-slash-commands`).
 
 ### Carte des agents
 

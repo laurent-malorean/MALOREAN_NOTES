@@ -9,8 +9,13 @@ import {
 } from "../state/claude-column";
 import type { AgentMap } from "../state/agent-map";
 import { createAgentMapView } from "./agent-map-view";
+import {
+  createInputBarView,
+  type InputBarHandlers,
+  type InputBarView,
+} from "./claude-input-bar-view";
 
-export interface ClaudeColumnHandlers {
+export interface ClaudeColumnHandlers extends Omit<InputBarHandlers, "showAgentMap"> {
   send(text: string): void;
   stop(): void;
   newConversation(): void;
@@ -20,14 +25,17 @@ export interface ClaudeColumnHandlers {
   markdown(text: string): Promise<string>;
 }
 
-export interface ClaudeColumnView {
+export interface ClaudeColumnView extends Omit<InputBarView, "showAgents"> {
   /** Montre la conversation ; les cibles dans l'espace de travail `workspacePath` s'écrivent depuis lui. */
   render(conversation: Conversation, workspacePath: string): void;
   /** Montre pourquoi Claude Code ne peut pas répondre, ou rien ; l'écriture n'est possible que sans raison. */
   showUnavailable(reason: string | null): void;
   /** Met le curseur dans la zone du message. */
   focus(): void;
-  /** Montre la carte des agents, cachée tant qu'aucun sous-agent n'a été lancé. */
+  /**
+   * Montre la carte des agents, cachée tant qu'aucun sous-agent n'a été lancé, et le nombre de
+   * sous-agents en cours dans la barre de saisie.
+   */
   showAgents(map: AgentMap): void;
 }
 
@@ -52,9 +60,10 @@ const TEMPLATE = `
   <div class="claude-conversation" role="log" aria-live="polite"></div>
   <form class="claude-form">
     <textarea class="claude-input" rows="3" placeholder="Votre message à Claude" aria-label="Message à Claude" spellcheck="true"></textarea>
-    <div class="claude-form-buttons">
-      <button type="button" class="tool" data-stop hidden>Arrêter</button>
-      <button type="submit" class="tool claude-send" data-send>Envoyer</button>
+    <div class="claude-input-bar">
+      <div class="claude-chips"></div>
+      <button type="button" class="claude-stop" data-stop hidden title="Arrêter la réponse" aria-label="Arrêter"><span class="claude-stop-square"></span></button>
+      <button type="submit" class="claude-send" data-send title="Envoyer (Entrée)" aria-label="Envoyer">↑</button>
     </div>
   </form>
   <p class="claude-permissions">${PERMISSIONS}</p>`;
@@ -116,10 +125,18 @@ function changedNote(path: string, handlers: ClaudeColumnHandlers) {
   return shown;
 }
 
+function userMessage({ text, notes }: { text: string; notes: readonly string[] }) {
+  const shown = element("div", "claude-entry claude-user", text);
+  if (notes.length > 0) {
+    shown.append(element("div", "claude-user-notes", `Notes jointes : ${notes.join(", ")}`));
+  }
+  return shown;
+}
+
 function entryView(entry: ChatEntry, context: Context) {
   switch (entry.kind) {
     case "user":
-      return element("div", "claude-entry claude-user", entry.text);
+      return userMessage(entry);
     case "claude":
       return reply(entry, context);
     case "action":
@@ -135,6 +152,38 @@ function entryView(entry: ChatEntry, context: Context) {
     case "stopped":
       return element("div", "claude-summary", STOPPED);
   }
+}
+
+/** Entrée (sans Maj ni composition) ou Envoyer fait partir le message, sauf `blocked`. */
+function connectForm(
+  form: HTMLFormElement,
+  input: HTMLTextAreaElement,
+  send: (text: string) => void,
+  blocked: () => boolean,
+) {
+  const submit = () => {
+    const text = input.value.trim();
+    if (text === "" || blocked()) return;
+    input.value = "";
+    send(text);
+  };
+  form.addEventListener("submit", (event) => (event.preventDefault(), submit()));
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    submit();
+  });
+}
+
+/** La carte des agents et la barre de saisie, dont la pastille des sous-agents déplie la carte. */
+function agentsAndBar(find: (selector: string) => HTMLElement, handlers: ClaudeColumnHandlers) {
+  const agentMap = find(".claude-agents") as HTMLDetailsElement;
+  const showMap = createAgentMapView(agentMap);
+  const bar = createInputBarView(find(".claude-chips"), {
+    ...handlers,
+    showAgentMap: () => (agentMap.open = true),
+  });
+  return { ...bar, showAgents: (map: AgentMap) => (showMap(map), bar.showAgents(map)) };
 }
 
 /** Remplit la colonne `container` et branche ses boutons et sa zone de message. */
@@ -153,22 +202,17 @@ export function createClaudeColumnView(
   const fresh = find<HTMLButtonElement>("[data-new-conversation]");
   let running = false;
   const rendered: RenderedMessages = new Map();
-  const submit = () => {
-    const text = input.value.trim();
-    if (text === "" || running) return;
-    input.value = "";
-    handlers.send(text);
-  };
-  form.addEventListener("submit", (event) => (event.preventDefault(), submit()));
-  input.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
-    event.preventDefault();
-    submit();
-  });
+  connectForm(
+    form,
+    input,
+    (text) => handlers.send(text),
+    () => running,
+  );
   stop.addEventListener("click", () => handlers.stop());
   fresh.addEventListener("click", () => handlers.newConversation());
   find<HTMLButtonElement>("[data-close]").addEventListener("click", () => handlers.close());
   return {
+    ...agentsAndBar(find, handlers),
     render: (conversation, workspacePath) => {
       running = conversation.turn !== "idle";
       const context = { workspacePath, handlers, rendered };
@@ -189,6 +233,5 @@ export function createClaudeColumnView(
       send.disabled = reason !== null;
     },
     focus: () => input.focus(),
-    showAgents: createAgentMapView(find<HTMLDetailsElement>(".claude-agents")),
   };
 }

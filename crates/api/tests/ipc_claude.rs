@@ -15,7 +15,9 @@ use application::ClaudeStatus;
 use application::testing::{
     FakeClaudeCode, FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore,
 };
-use domain::claude::{ClaudeEvent, ConversationId, TurnOutcome, TurnSummary};
+use domain::claude::{
+    ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSettings, TurnSummary,
+};
 use serde_json::{Value, json};
 use tauri::ipc::{CallbackFn, InvokeBody};
 use tauri::test::{
@@ -110,7 +112,11 @@ fn each_event_of_a_turn_reaches_the_page_under_the_names_it_uses() {
             .unwrap()
             .push(serde_json::from_str::<Value>(event.payload()).unwrap());
     });
-    let answer = call(&window, "send_to_claude", json!({ "message": "Salut" }));
+    let answer = call(
+        &window,
+        "send_to_claude",
+        json!({ "message": "Salut", "settings": { "model": null, "effort": null } }),
+    );
     assert_eq!(answer, Ok(Value::Null));
     assert_eq!(
         *received.lock().unwrap(),
@@ -119,7 +125,7 @@ fn each_event_of_a_turn_reaches_the_page_under_the_names_it_uses() {
             json!({ "kind": "summary", "failure": null, "durationMs": 1500, "tokens": 20 }),
         ]
     );
-    assert_eq!(claude.requests()[0].2, "Salut");
+    assert_eq!(claude.requests()[0].3, "Salut");
     for name in ["\"send_to_claude\"", "\"claude-event\""] {
         assert!(BRIDGE_SOURCE.contains(name), "{name} absent du pont");
     }
@@ -131,13 +137,30 @@ fn a_new_conversation_is_asked_under_the_name_used_by_the_page() {
         ClaudeEvent::ConversationStarted(ConversationId::new("c1").unwrap()),
     ]));
     let window = opened_window(&claude);
-    call(&window, "send_to_claude", json!({ "message": "Un" })).unwrap();
+    call(
+        &window,
+        "send_to_claude",
+        json!({ "message": "Un", "settings": { "model": null, "effort": null } }),
+    )
+    .unwrap();
     assert_eq!(
         call(&window, "new_conversation", json!({})),
         Ok(Value::Null)
     );
-    call(&window, "send_to_claude", json!({ "message": "Deux" })).unwrap();
+    call(
+        &window,
+        "send_to_claude",
+        json!({ "message": "Deux", "settings": { "model": "opus", "effort": "max" } }),
+    )
+    .unwrap();
     assert_eq!(claude.requests()[1].1, None);
+    assert_eq!(
+        claude.requests()[1].2,
+        TurnSettings {
+            model: Some(ClaudeModel::Opus),
+            effort: Some(Effort::Max),
+        }
+    );
     assert!(BRIDGE_SOURCE.contains("\"new_conversation\""));
 }
 
@@ -148,7 +171,12 @@ fn a_turn_without_a_workspace_answers_why_and_stopping_changes_nothing() {
     assert_eq!(call(&opened, "stop_claude", json!({})), Ok(Value::Null));
     assert!(BRIDGE_SOURCE.contains("\"stop_claude\""));
     let without = window(None);
-    let refused = call(&without, "send_to_claude", json!({ "message": "Salut" })).unwrap_err();
+    let refused = call(
+        &without,
+        "send_to_claude",
+        json!({ "message": "Salut", "settings": { "model": null, "effort": null } }),
+    )
+    .unwrap_err();
     assert_eq!(
         refused,
         json!({ "message": "aucun espace de travail n'est ouvert" })
@@ -201,7 +229,13 @@ fn a_running_turn_stops_under_the_name_used_by_the_page() {
     let claude = Arc::new(FakeClaudeCode::hanging(vec![summary()]));
     let window = opened_window(&claude);
     std::thread::scope(|scope| {
-        let running = scope.spawn(|| call(&window, "send_to_claude", json!({ "message": "Un" })));
+        let running = scope.spawn(|| {
+            call(
+                &window,
+                "send_to_claude",
+                json!({ "message": "Un", "settings": { "model": null, "effort": null } }),
+            )
+        });
         while claude.requests().is_empty() {
             std::thread::yield_now();
         }

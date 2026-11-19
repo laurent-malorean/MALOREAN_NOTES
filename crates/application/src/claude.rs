@@ -3,7 +3,7 @@
 
 use std::fmt::Debug;
 
-use domain::claude::{ClaudeEvent, ConversationId};
+use domain::claude::{ClaudeEvent, ConversationId, TurnSettings};
 
 use crate::WorkspaceLocation;
 
@@ -54,8 +54,9 @@ pub trait ClaudeCode: Send + Sync + Debug {
     fn status(&self) -> ClaudeStatus;
 
     /// Joue un tour : envoie `message` à Claude dans l'espace de travail `workspace`, en
-    /// continuant la conversation `conversation` s'il y en a une, et donne à `on_event` chaque
-    /// événement de Claude dès qu'il arrive. Rend la main à la fin du tour.
+    /// continuant la conversation `conversation` s'il y en a une, avec le modèle et le niveau
+    /// d'effort de `settings`, et donne à `on_event` chaque événement de Claude dès qu'il arrive.
+    /// Rend la main à la fin du tour.
     ///
     /// # Errors
     ///
@@ -66,6 +67,7 @@ pub trait ClaudeCode: Send + Sync + Debug {
         &self,
         workspace: &WorkspaceLocation,
         conversation: Option<&ConversationId>,
+        settings: TurnSettings,
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
     ) -> Result<(), ClaudeError>;

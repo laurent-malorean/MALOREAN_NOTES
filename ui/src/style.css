@@ -1522,11 +1522,141 @@ button {
   color: var(--text);
   font: inherit;
 }
-.claude-form-buttons {
+.claude-form {
+  position: relative;
+}
+.claude-input-bar {
   display: flex;
-  justify-content: flex-end;
+  align-items: flex-end;
   gap: 0.4rem;
 }
-.claude-form-buttons [hidden] {
+.claude-chips {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.claude-attachments {
+  display: contents;
+}
+.claude-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--claude-detail-text-size);
+  white-space: nowrap;
+}
+button.claude-chip {
+  cursor: pointer;
+}
+button.claude-chip:hover {
+  color: var(--text);
+  background: var(--selected);
+}
+.claude-agents-chip {
+  color: var(--accent);
+}
+.claude-elapsed {
+  font-variant-numeric: tabular-nums;
+}
+.claude-attached-title {
+  max-width: var(--claude-attached-title-max-width);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.claude-detach {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.claude-detach:hover {
+  color: var(--danger);
+}
+.claude-settings-menu {
+  position: absolute;
+  z-index: 10;
+  left: 0.8rem;
+  bottom: 100%;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.3rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px var(--shadow);
+}
+.claude-settings-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 7rem;
+}
+.claude-settings-heading {
+  padding: 0.2rem 0.5rem;
+  color: var(--muted);
+  font-size: var(--claude-detail-text-size);
+}
+.claude-settings-choice {
+  text-align: left;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.claude-settings-choice:hover {
+  background: var(--selected);
+}
+.claude-settings-choice[aria-checked="true"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+.claude-send,
+.claude-stop {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--claude-send-size);
+  height: var(--claude-send-size);
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  cursor: pointer;
+}
+.claude-send:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.claude-stop:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.claude-stop-square {
+  width: var(--claude-stop-square-size);
+  height: var(--claude-stop-square-size);
+  background: currentColor;
+  border-radius: 1px;
+}
+.claude-input-bar [hidden] {
   display: none;
+}
+.claude-user-notes {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: var(--claude-detail-text-size);
 }

@@ -7,7 +7,7 @@ export type ActionState = "running" | "succeeded" | "failed" | "refused";
 
 /** Une ligne de la conversation, dans l'ordre où elle arrive. */
 export type ChatEntry =
-  | { readonly kind: "user"; readonly text: string }
+  | { readonly kind: "user"; readonly text: string; readonly notes: readonly string[] }
   | { readonly kind: "claude"; readonly text: string; readonly subAgent: boolean }
   | {
       readonly kind: "action";
@@ -59,9 +59,13 @@ export const ACTION_STATES: Readonly<Record<ActionState, string | null>> = {
 const turnStart = (entries: readonly ChatEntry[]) =>
   entries.map((entry) => entry.kind).lastIndexOf("user") + 1;
 
-/** Le message de l'utilisateur part : un tour commence. */
-export function messageSent(conversation: Conversation, text: string): Conversation {
-  return { entries: [...conversation.entries, { kind: "user", text }], turn: "running" };
+/** Le message de l'utilisateur part, avec les titres des notes jointes : un tour commence. */
+export function messageSent(
+  conversation: Conversation,
+  text: string,
+  notes: readonly string[] = [],
+): Conversation {
+  return { entries: [...conversation.entries, { kind: "user", text, notes }], turn: "running" };
 }
 
 /** L'arrêt du tour est demandé. */

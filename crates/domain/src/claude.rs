@@ -131,6 +131,45 @@ pub struct TurnSummary {
     pub tokens: u64,
 }
 
+/// Le modèle qui répond, du plus léger au plus capable ; chacun désigne le dernier modèle de sa
+/// famille.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ClaudeModel {
+    /// Le plus léger et le plus rapide.
+    Haiku,
+    /// L'équilibre entre rapidité et capacité.
+    Sonnet,
+    /// Le plus capable des modèles courants.
+    Opus,
+    /// Le plus capable.
+    Fable,
+}
+
+/// Combien Claude réfléchit et travaille avant de répondre, du plus bas au plus haut.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Effort {
+    /// Le plus bas.
+    Low,
+    /// Moyen.
+    Medium,
+    /// Élevé.
+    High,
+    /// Très élevé.
+    ExtraHigh,
+    /// Le plus haut.
+    Max,
+}
+
+/// Les réglages d'un tour : le modèle et le niveau d'effort ; sans l'un ou l'autre, Claude Code
+/// garde son propre choix.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct TurnSettings {
+    /// Le modèle choisi, s'il y en a un.
+    pub model: Option<ClaudeModel>,
+    /// Le niveau d'effort choisi, s'il y en a un.
+    pub effort: Option<Effort>,
+}
+
 /// Ce que Claude Code annonce pendant un tour. `agent` est l'action qui a lancé le sous-agent
 /// auteur du message ou de l'action ; aucune pour Claude lui-même.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

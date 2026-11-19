@@ -33,9 +33,15 @@ const asked = messageSent(NEW_CONVERSATION, "Range mes notes");
 describe("conversation de la colonne Claude Code", () => {
   it("le message de l'utilisateur commence un tour", () => {
     expect(asked).toEqual({
-      entries: [{ kind: "user", text: "Range mes notes" }],
+      entries: [{ kind: "user", text: "Range mes notes", notes: [] }],
       turn: "running",
     });
+  });
+
+  it("le message garde les titres des notes jointes", () => {
+    expect(messageSent(NEW_CONVERSATION, "Résume", ["Alpha", "Plan"]).entries).toEqual([
+      { kind: "user", text: "Résume", notes: ["Alpha", "Plan"] },
+    ]);
   });
 
   it("les messages de Claude arrivent dans l'ordre, ceux des sous-agents marqués", () => {

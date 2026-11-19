@@ -10,7 +10,7 @@ use std::process::{Child, ChildStdout, Command, Stdio};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use application::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
-use domain::claude::{ClaudeEvent, ConversationId};
+use domain::claude::{ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings};
 
 use crate::claude_stream::events_of;
 
@@ -140,6 +140,7 @@ impl ClaudeCodeCli {
         &self,
         workspace: &WorkspaceLocation,
         conversation: Option<&ConversationId>,
+        settings: TurnSettings,
         message: &str,
     ) -> Result<ChildStdout, ClaudeError> {
         if !Path::new(workspace.as_str()).is_dir() {
@@ -154,7 +155,7 @@ impl ClaudeCodeCli {
         }
         let program = self.program().ok_or(ClaudeError::Missing)?;
         let mut child = claude_command(program)
-            .args(arguments(conversation))
+            .args(arguments(conversation, settings))
             .current_dir(workspace.as_str())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -192,11 +193,39 @@ impl ClaudeCodeCli {
     }
 }
 
-/// Les arguments d'un tour : flux JSON, conversation continuée, autorisations de Claude.
-fn arguments(conversation: Option<&ConversationId>) -> Vec<&str> {
+/// Le nom que Claude Code donne au dernier modèle de chaque famille (`--model`).
+const fn model_alias(model: ClaudeModel) -> &'static str {
+    match model {
+        ClaudeModel::Haiku => "haiku",
+        ClaudeModel::Sonnet => "sonnet",
+        ClaudeModel::Opus => "opus",
+        ClaudeModel::Fable => "fable",
+    }
+}
+
+/// Le nom que Claude Code donne à chaque niveau d'effort (`--effort`).
+const fn effort_level(effort: Effort) -> &'static str {
+    match effort {
+        Effort::Low => "low",
+        Effort::Medium => "medium",
+        Effort::High => "high",
+        Effort::ExtraHigh => "xhigh",
+        Effort::Max => "max",
+    }
+}
+
+/// Les arguments d'un tour : flux JSON, conversation continuée, modèle et niveau d'effort choisis,
+/// autorisations de Claude.
+fn arguments(conversation: Option<&ConversationId>, settings: TurnSettings) -> Vec<&str> {
     let mut arguments = vec!["-p", "--output-format", "stream-json", "--verbose"];
     if let Some(conversation) = conversation {
         arguments.extend(["--resume", conversation.as_str()]);
+    }
+    if let Some(model) = settings.model {
+        arguments.extend(["--model", model_alias(model)]);
+    }
+    if let Some(effort) = settings.effort {
+        arguments.extend(["--effort", effort_level(effort)]);
     }
     arguments.extend([
         "--tools",
@@ -238,10 +267,11 @@ impl ClaudeCode for ClaudeCodeCli {
         &self,
         workspace: &WorkspaceLocation,
         conversation: Option<&ConversationId>,
+        settings: TurnSettings,
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
     ) -> Result<(), ClaudeError> {
-        let stdout = self.start(workspace, conversation, message)?;
+        let stdout = self.start(workspace, conversation, settings, message)?;
         let mut summarized = false;
         for line in BufReader::new(stdout).lines().map_while(Result::ok) {
             for event in events_of(&line) {
@@ -258,6 +288,50 @@ impl ClaudeCode for ClaudeCodeCli {
             turn.stopped = true;
             // Un programme déjà terminé ne peut plus être tué : le tour s'achève de lui-même.
             child.kill().ok();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn chosen(model: Option<ClaudeModel>, effort: Option<Effort>) -> Vec<String> {
+        let settings = TurnSettings { model, effort };
+        let arguments = arguments(None, settings);
+        arguments[4..arguments.len() - 10]
+            .iter()
+            .map(ToString::to_string)
+            .collect()
+    }
+
+    #[test]
+    fn nothing_chosen_passes_neither_model_nor_effort() {
+        assert!(chosen(None, None).is_empty());
+    }
+
+    #[test]
+    fn each_model_is_passed_by_its_claude_code_alias() {
+        for (model, alias) in [
+            (ClaudeModel::Haiku, "haiku"),
+            (ClaudeModel::Sonnet, "sonnet"),
+            (ClaudeModel::Opus, "opus"),
+            (ClaudeModel::Fable, "fable"),
+        ] {
+            assert_eq!(chosen(Some(model), None), ["--model", alias]);
+        }
+    }
+
+    #[test]
+    fn each_effort_is_passed_by_its_claude_code_level() {
+        for (effort, level) in [
+            (Effort::Low, "low"),
+            (Effort::Medium, "medium"),
+            (Effort::High, "high"),
+            (Effort::ExtraHigh, "xhigh"),
+            (Effort::Max, "max"),
+        ] {
+            assert_eq!(chosen(None, Some(effort)), ["--effort", level]);
         }
     }
 }

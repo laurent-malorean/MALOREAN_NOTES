@@ -11,6 +11,9 @@ import type { ActionKindItem } from "./generated/ActionKindItem";
 import type { AgentStateItem } from "./generated/AgentStateItem";
 import type { ClaudeEventItem } from "./generated/ClaudeEventItem";
 import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
+import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
+import type { EffortItem } from "./generated/EffortItem";
+import type { TurnSettingsItem } from "./generated/TurnSettingsItem";
 import type { DifferenceItem } from "./generated/DifferenceItem";
 import type { ExportFile } from "./generated/ExportFile";
 import type { ExportFormatItem } from "./generated/ExportFormatItem";
@@ -43,6 +46,9 @@ export type {
   ChosenFolder,
   ClaudeEventItem,
   ClaudeStatusItem,
+  ClaudeModelItem,
+  EffortItem,
+  TurnSettingsItem,
   DifferenceItem,
   ExportFile,
   ExportFormatItem,
@@ -242,9 +248,11 @@ export const proposeRewriting = (action: WritingActionItem, selection: string) =
 export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
 /**
  * Envoie un message à Claude dans l'espace de travail ouvert, en continuant la conversation en
- * cours ; se termine avec le tour. Les événements du tour arrivent par `onClaudeEvent`.
+ * cours, avec le modèle et le niveau d'effort choisis ; se termine avec le tour. Les événements du
+ * tour arrivent par `onClaudeEvent`.
  */
-export const sendToClaude = (message: string) => invoke<null>("send_to_claude", { message });
+export const sendToClaude = (message: string, settings: TurnSettingsItem) =>
+  invoke<null>("send_to_claude", { message, settings });
 /** Arrête le tour en cours ; ce que Claude a déjà écrit reste écrit. */
 export const stopClaude = () => invoke<null>("stop_claude");
 /** Oublie la conversation en cours : le message suivant en commence une neuve. */

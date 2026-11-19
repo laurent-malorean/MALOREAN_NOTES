@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import type { ClaudeEventItem, ClaudeStatusItem } from "../bridge";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ClaudeEventItem, ClaudeStatusItem, TurnSettingsItem } from "../bridge";
+import type { Columns } from "../state/columns";
 import { createLayout, type Layout } from "../screens/layout";
 import { CHECKING_CLAUDE, EMPTY } from "../screens/claude-column-view";
 import { type ClaudeColumn, createClaudeColumn } from "./claude-column";
@@ -13,6 +14,57 @@ let status: Promise<ClaudeStatusItem>;
 let turn: { resolve: () => void; reject: (error: unknown) => void };
 let announce: (event: ClaudeEventItem) => void;
 let workspacePath: string;
+let columns: Columns;
+let stored: Map<string, string>;
+let sentSettings: TurnSettingsItem[];
+
+const storage = {
+  getItem: (key: string) => stored.get(key) ?? null,
+  setItem: (key: string, value: string) => void stored.set(key, value),
+  removeItem: (key: string) => void stored.delete(key),
+};
+
+/** Une seule colonne, qui montre la note `path` (titre de l'onglet `title`), ou aucune. */
+const showing = (path: string | null, title: string | null = null): Columns => ({
+  list: [
+    {
+      id: 0,
+      tabs: path === null ? [] : [{ id: 1, note: path, title }],
+      activeTab: path === null ? null : 1,
+      width: 1,
+    },
+  ],
+  active: 0,
+  nextId: 2,
+});
+
+function createColumn() {
+  return createClaudeColumn({
+    backend: {
+      claudeStatus: () => (log.push("vérifier"), status),
+      sendToClaude: (message, settings) =>
+        new Promise((resolve, reject) => {
+          log.push(`envoyer ${message}`);
+          sentSettings.push(settings);
+          turn = { resolve: () => resolve(null), reject };
+        }),
+      stopClaude: async () => (log.push("arrêter"), null),
+      newConversation: async () => (log.push("oublier"), null),
+      onClaudeEvent: async (handler) => ((announce = handler), () => {}),
+      errorMessage: (error) => String((error as { message: string }).message),
+      listAllNotes: async () => [
+        { path: "a.md", title: "Alpha", folder: "" },
+        { path: "Projets/plan.md", title: "Plan", folder: "Projets" },
+      ],
+    },
+    layout,
+    workspace: { path: () => workspacePath },
+    columns: { current: () => columns },
+    storage,
+    openNote: (path) => log.push(`ouvrir ${path}`),
+    error: (error) => log.push(`erreur ${String(error)}`),
+  });
+}
 
 const find = <T extends HTMLElement>(selector: string) =>
   layout.claudeColumn.querySelector(selector) as T;
@@ -32,25 +84,13 @@ beforeEach(() => {
   log = [];
   status = Promise.resolve({ kind: "ready" });
   workspacePath = "/Users/moi/Notes";
-  column = createClaudeColumn({
-    backend: {
-      claudeStatus: () => (log.push("vérifier"), status),
-      sendToClaude: (message) =>
-        new Promise((resolve, reject) => {
-          log.push(`envoyer ${message}`);
-          turn = { resolve: () => resolve(null), reject };
-        }),
-      stopClaude: async () => (log.push("arrêter"), null),
-      newConversation: async () => (log.push("oublier"), null),
-      onClaudeEvent: async (handler) => ((announce = handler), () => {}),
-      errorMessage: (error) => String((error as { message: string }).message),
-    },
-    layout,
-    workspace: { path: () => workspacePath },
-    openNote: (path) => log.push(`ouvrir ${path}`),
-    error: (error) => log.push(`erreur ${String(error)}`),
-  });
+  columns = showing(null);
+  stored = new Map();
+  sentSettings = [];
+  column = createColumn();
 });
+
+afterEach(() => vi.useRealTimers());
 
 describe("colonne Claude Code : affichée ou masquée", () => {
   it("cachée au départ ; sa commande et son bouton l'affichent puis la masquent", async () => {
@@ -165,9 +205,12 @@ describe("colonne Claude Code : un tour", () => {
         newConversation: () => Promise.reject(new Error("fil perdu")),
         onClaudeEvent: async () => () => {},
         errorMessage: String,
+        listAllNotes: () => Promise.reject(new Error("liste perdue")),
       },
       layout,
       workspace: { path: () => workspacePath },
+      columns: { current: () => columns },
+      storage,
       openNote: () => {},
       error: (error) => log.push(`erreur ${String(error)}`),
     });
@@ -175,7 +218,13 @@ describe("colonne Claude Code : un tour", () => {
     send("Bonjour");
     find<HTMLButtonElement>("[data-stop]").click();
     await settle();
-    expect(log).toEqual(["erreur Error: fil perdu", "erreur Error: fil arrêté"]);
+    find<HTMLButtonElement>(".claude-attach").click();
+    await settle();
+    expect(log).toEqual([
+      "erreur Error: fil perdu",
+      "erreur Error: fil arrêté",
+      "erreur Error: liste perdue",
+    ]);
   });
 
   it("Nouvelle conversation oublie la conversation et vide la colonne", async () => {
@@ -277,5 +326,165 @@ describe("colonne Claude Code : la carte des agents", () => {
     workspacePath = "/Users/moi/Travail";
     column.follow();
     expect(agents().hidden).toBe(true);
+  });
+});
+
+describe("colonne Claude Code : la barre de saisie", () => {
+  const chip = (selector: string) => find<HTMLElement>(selector);
+  const settingsChip = () => chip(".claude-settings-chip");
+  const choose = (group: string, label: string) =>
+    (
+      [...find(`.claude-settings-menu [aria-label="${group}"]`).querySelectorAll("button")].find(
+        (item) => item.textContent === label,
+      ) as HTMLButtonElement
+    ).click();
+  const attached = () =>
+    [...layout.claudeColumn.querySelectorAll(".claude-attached-title")].map((e) => e.textContent);
+
+  it("le modèle et l'effort choisis sont passés à chaque tour et gardés d'un lancement à l'autre", async () => {
+    expect(settingsChip().textContent).toBe("Modèle par défaut");
+    send("Un");
+    expect(sentSettings).toEqual([{ model: null, effort: null }]);
+    turn.resolve();
+    await settle();
+    settingsChip().click();
+    choose("Modèle", "Opus");
+    choose("Effort", "Medium");
+    expect(settingsChip().textContent).toBe("Opus · Medium");
+    send("Deux");
+    expect(sentSettings.at(-1)).toEqual({ model: "opus", effort: "medium" });
+    layout.claudeColumn.replaceChildren();
+    column = createColumn();
+    expect(settingsChip().textContent).toBe("Opus · Medium");
+  });
+
+  it("la note ouverte est jointe : le message porte son chemin, la conversation son titre", async () => {
+    columns = showing("Projets/plan.md", "Plan");
+    column.follow();
+    expect(attached()).toEqual(["Plan"]);
+    send("Résume");
+    expect(log).toEqual([
+      "envoyer Résume\n\nNotes jointes (chemins depuis l'espace de travail) :\n- Projets/plan.md",
+    ]);
+    expect(find(".claude-user-notes").textContent).toBe("Notes jointes : Plan");
+    turn.resolve();
+    await settle();
+    expect(attached()).toEqual(["Plan"]);
+  });
+
+  it("la note de l'onglet actif est jointe dès la création de la colonne", () => {
+    columns = {
+      ...showing("a.md", "Alpha"),
+      list: [
+        {
+          id: 0,
+          tabs: [
+            { id: 1, note: "a.md", title: "Alpha" },
+            { id: 2, note: "Projets/plan.md", title: "Plan" },
+          ],
+          activeTab: 2,
+          width: 1,
+        },
+      ],
+    };
+    layout.claudeColumn.replaceChildren();
+    column = createColumn();
+    expect(attached()).toEqual(["Plan"]);
+  });
+
+  it("la croix retire la note ouverte ; une autre note ouverte est jointe à son tour", () => {
+    columns = showing("a.md");
+    column.follow();
+    expect(attached()).toEqual(["a"]);
+    find<HTMLButtonElement>(".claude-detach").click();
+    expect(attached()).toEqual([]);
+    send("Bonjour");
+    expect(log).toEqual(["envoyer Bonjour"]);
+    columns = showing("Projets/plan.md", "Plan");
+    column.follow();
+    expect(attached()).toEqual(["Plan"]);
+  });
+
+  it("« + » joint une note choisie comme à l'ouverture rapide, jusqu'au départ du message", async () => {
+    column.toggle();
+    await settle();
+    find<HTMLButtonElement>(".claude-attach").click();
+    await settle();
+    expect(layout.picker.open).toBe(true);
+    expect(layout.picker.getAttribute("aria-label")).toBe("Joindre une note");
+    const search = layout.picker.querySelector<HTMLInputElement>(".picker-input");
+    expect(search?.placeholder).toBe("Titre de la note");
+    if (search) {
+      search.value = "zzz";
+      search.dispatchEvent(new Event("input"));
+    }
+    expect(layout.picker.querySelector(".picker-empty")?.textContent).toBe(
+      "Aucune note ne correspond",
+    );
+    if (search) {
+      search.value = "";
+      search.dispatchEvent(new Event("input"));
+    }
+    const options = [...layout.picker.querySelectorAll<HTMLElement>(".picker-option")];
+    expect(options.map((option) => option.textContent)).toEqual(["Alpha", "PlanProjets"]);
+    options[1]?.click();
+    expect(attached()).toEqual(["Plan"]);
+    expect(document.activeElement).toBe(find(".claude-input"));
+    send("Lis");
+    expect(log.at(-1)).toContain("- Projets/plan.md");
+    expect(attached()).toEqual([]);
+  });
+
+  it("un autre espace de travail oublie les notes jointes", async () => {
+    find<HTMLButtonElement>(".claude-attach").click();
+    await settle();
+    layout.picker.querySelector<HTMLElement>(".picker-option")?.click();
+    expect(attached()).toEqual(["Alpha"]);
+    workspacePath = "/Users/moi/Travail";
+    column.follow();
+    expect(attached()).toEqual([]);
+  });
+
+  it("la durée de la réponse avance chaque seconde pendant le tour, puis se cache", async () => {
+    vi.useFakeTimers();
+    const elapsed = chip(".claude-elapsed");
+    expect(elapsed.hidden).toBe(true);
+    send("Bonjour");
+    expect(elapsed.hidden).toBe(false);
+    expect(elapsed.textContent).toBe("0 s");
+    vi.advanceTimersByTime(2000);
+    expect(elapsed.textContent).toBe("2 s");
+    turn.resolve();
+    await vi.runOnlyPendingTimersAsync();
+    expect(elapsed.hidden).toBe(true);
+    vi.advanceTimersByTime(5000);
+    expect(elapsed.textContent).toBe("");
+  });
+
+  it("la pastille des sous-agents en cours déplie la carte des agents", () => {
+    const agentsChip = chip(".claude-agents-chip");
+    expect(agentsChip.hidden).toBe(true);
+    send("Compte");
+    announce({
+      kind: "actionStarted",
+      agent: null,
+      id: "A",
+      action: "subAgent",
+      tool: null,
+      target: "Compter",
+    });
+    expect(agentsChip.hidden).toBe(false);
+    expect(agentsChip.textContent).toBe("● 1 agent");
+    agentsChip.click();
+    expect(find<HTMLDetailsElement>(".claude-agents").open).toBe(true);
+    announce({
+      kind: "subAgentFinished",
+      id: "A",
+      state: "done",
+      durationMs: 1,
+      tokens: 1,
+      actions: 0,
+    });
+    expect(agentsChip.hidden).toBe(true);
   });
 });

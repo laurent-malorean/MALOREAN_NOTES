@@ -4,8 +4,10 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 mod claude;
+mod turn_settings;
 
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
+pub use turn_settings::{ClaudeModelItem, EffortItem, TurnSettingsItem};
 
 /// L'espace de travail ouvert.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

@@ -2,12 +2,17 @@
 
 use std::sync::{Condvar, Mutex, MutexGuard, PoisonError};
 
-use domain::claude::{ClaudeEvent, ConversationId};
+use domain::claude::{ClaudeEvent, ConversationId, TurnSettings};
 
 use crate::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 
-/// Un tour demandé : l'espace de travail, la conversation continuée, le message.
-pub type ClaudeRequest = (WorkspaceLocation, Option<ConversationId>, String);
+/// Un tour demandé : l'espace de travail, la conversation continuée, les réglages, le message.
+pub type ClaudeRequest = (
+    WorkspaceLocation,
+    Option<ConversationId>,
+    TurnSettings,
+    String,
+);
 
 #[derive(Debug, Default)]
 struct Turn {
@@ -77,6 +82,7 @@ impl ClaudeCode for FakeClaudeCode {
         &self,
         workspace: &WorkspaceLocation,
         conversation: Option<&ConversationId>,
+        settings: TurnSettings,
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
     ) -> Result<(), ClaudeError> {
@@ -93,7 +99,12 @@ impl ClaudeCode for FakeClaudeCode {
         self.requests
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .push((workspace.clone(), conversation.cloned(), message.to_owned()));
+            .push((
+                workspace.clone(),
+                conversation.cloned(),
+                settings,
+                message.to_owned(),
+            ));
         self.events.iter().cloned().for_each(&mut *on_event);
         let mut turn = self.turn();
         while self.hangs && !turn.stopped {
@@ -119,7 +130,7 @@ impl ClaudeCode for FakeClaudeCode {
 
 #[cfg(test)]
 mod tests {
-    use domain::claude::{ConversationId, TurnOutcome, TurnSummary};
+    use domain::claude::{ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSummary};
     use std::time::Duration;
 
     use super::*;
@@ -170,15 +181,27 @@ mod tests {
     fn each_requested_turn_is_kept() {
         let claude = FakeClaudeCode::replaying(Vec::new());
         let conversation = ConversationId::new("conversation-1").unwrap();
-        claude.send(&workspace(), None, "Un", &mut |_| {}).unwrap();
+        let opus = TurnSettings {
+            model: Some(ClaudeModel::Opus),
+            effort: Some(Effort::High),
+        };
         claude
-            .send(&workspace(), Some(&conversation), "Deux", &mut |_| {})
+            .send(
+                &workspace(),
+                None,
+                TurnSettings::default(),
+                "Un",
+                &mut |_| {},
+            )
+            .unwrap();
+        claude
+            .send(&workspace(), Some(&conversation), opus, "Deux", &mut |_| {})
             .unwrap();
         assert_eq!(
             claude.requests(),
             vec![
-                (workspace(), None, "Un".to_owned()),
-                (workspace(), Some(conversation), "Deux".to_owned()),
+                (workspace(), None, TurnSettings::default(), "Un".to_owned()),
+                (workspace(), Some(conversation), opus, "Deux".to_owned()),
             ]
         );
     }

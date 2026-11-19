@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Runtime};
 
 use super::{SharedSession, in_background};
-use crate::{ApiError, ClaudeStatusItem};
+use crate::{ApiError, ClaudeStatusItem, TurnSettingsItem};
 
 /// Événement envoyé à la page pour chaque événement de Claude d'un tour ; il porte un
 /// [`crate::ClaudeEventItem`].
@@ -22,7 +22,8 @@ pub async fn claude_status(session: SharedSession<'_>) -> Result<ClaudeStatusIte
     in_background(move || Ok(session.claude_status())).await
 }
 
-/// Envoie un message à Claude dans l'espace de travail ouvert ; chaque événement du tour est
+/// Envoie un message à Claude dans l'espace de travail ouvert, avec le modèle et le niveau
+/// d'effort choisis (`settings`) ; chaque événement du tour est
 /// envoyé à la page dès qu'il arrive ([`CLAUDE_EVENT`]). Rend la main à la fin du tour.
 ///
 /// # Errors
@@ -33,10 +34,11 @@ pub async fn send_to_claude<R: Runtime>(
     app: AppHandle<R>,
     session: SharedSession<'_>,
     message: String,
+    settings: TurnSettingsItem,
 ) -> Result<(), ApiError> {
     let session = Arc::clone(&session);
     in_background(move || {
-        session.send_to_claude(&message, |event| {
+        session.send_to_claude(&message, settings.into(), |event| {
             if let Err(error) = app.emit(CLAUDE_EVENT, event) {
                 tracing::warn!(%error, "événement de Claude non transmis à la page");
             }

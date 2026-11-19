@@ -14,7 +14,9 @@ use std::time::Duration;
 
 use application::testing::claude_contract::{ClaudeCodes, claude_code_contract};
 use application::{ClaudeCode, ClaudeError, WorkspaceLocation};
-use domain::claude::{ClaudeEvent, ConversationId, TurnOutcome, TurnSummary};
+use domain::claude::{
+    ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSettings, TurnSummary,
+};
 use infrastructure::ClaudeCodeCli;
 use tempfile::TempDir;
 
@@ -69,12 +71,26 @@ impl FakeClaude {
         conversation: Option<&ConversationId>,
         message: &str,
     ) -> (Result<(), ClaudeError>, Vec<ClaudeEvent>) {
+        self.turn_with(conversation, TurnSettings::default(), message)
+    }
+
+    /// Le tour joué avec `message` et `settings`, en continuant `conversation`.
+    fn turn_with(
+        &self,
+        conversation: Option<&ConversationId>,
+        settings: TurnSettings,
+        message: &str,
+    ) -> (Result<(), ClaudeError>, Vec<ClaudeEvent>) {
         let mut events = Vec::new();
-        let end = self
-            .claude
-            .send(&self.workspace(), conversation, message, &mut |event| {
+        let end = self.claude.send(
+            &self.workspace(),
+            conversation,
+            settings,
+            message,
+            &mut |event| {
                 events.push(event);
-            });
+            },
+        );
         (end, events)
     }
 
@@ -136,6 +152,26 @@ fn a_conversation_is_continued_by_its_id() {
     assert_eq!(
         fake.received("args"),
         format!("-p\n--output-format\nstream-json\n--verbose\n--resume\naae7955b\n{PERMISSIONS}")
+    );
+}
+
+#[test]
+fn the_chosen_model_and_effort_are_passed_even_to_continue_a_conversation() {
+    let fake = FakeClaude::new(SUMMARY, "");
+    let conversation = ConversationId::new("aae7955b").unwrap();
+    let settings = TurnSettings {
+        model: Some(ClaudeModel::Sonnet),
+        effort: Some(Effort::ExtraHigh),
+    };
+    fake.turn_with(Some(&conversation), settings, "Bonjour")
+        .0
+        .unwrap();
+    assert_eq!(
+        fake.received("args"),
+        format!(
+            "-p\n--output-format\nstream-json\n--verbose\n--resume\naae7955b\n\
+             --model\nsonnet\n--effort\nxhigh\n{PERMISSIONS}"
+        )
     );
 }
 
@@ -282,7 +318,13 @@ fn claude_code_exiting_well_without_summary_ends_the_turn_well() {
 fn a_missing_program_means_claude_code_is_missing() {
     let fake = FakeClaude::new(SUMMARY, "");
     let claude = ClaudeCodeCli::new(fake.folder.path().join("introuvable"));
-    let end = claude.send(&fake.workspace(), None, "Bonjour", &mut |_| {});
+    let end = claude.send(
+        &fake.workspace(),
+        None,
+        TurnSettings::default(),
+        "Bonjour",
+        &mut |_| {},
+    );
     assert_eq!(end, Err(ClaudeError::Missing));
 }
 
@@ -293,6 +335,7 @@ fn a_missing_workspace_fails_the_turn_without_launching_claude_code() {
     let end = fake.claude.send(
         &WorkspaceLocation::new(gone.clone()).unwrap(),
         None,
+        TurnSettings::default(),
         "Bonjour",
         &mut |_| {},
     );

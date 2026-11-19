@@ -36,8 +36,7 @@ test("Ctrl+Cmd+L ouvre la colonne : Claude répond au fil de l'eau, la note qu'i
     "Claude lit, crée et modifie les notes de cet espace de travail, sans demander. Rien d'autre : ni autre dossier, ni commande, ni web.",
   );
   await send(page, "Écris un plan");
-  await expect(conversation(page).locator(".claude-user")).toHaveText("Écris un plan");
-  await expect(column(page).getByRole("button", { name: "Arrêter" })).toBeVisible();
+  await expect(conversation(page).locator(".claude-user")).toContainText("Écris un plan");
   await expect(conversation(page).locator(".claude-reply").first()).toHaveText(
     "Je regarde vos notes.",
   );
@@ -49,7 +48,9 @@ test("Ctrl+Cmd+L ouvre la colonne : Claude répond au fil de l'eau, la note qu'i
     "Écritureplan.md",
   ]);
   await expect(column(page).getByRole("button", { name: "Envoyer" })).toBeVisible();
-  expect(await page.evaluate(() => window.backend.claudeMessages)).toEqual(["Écris un plan"]);
+  expect(await page.evaluate(() => window.backend.claudeMessages)).toEqual([
+    "Écris un plan\n\nNotes jointes (chemins depuis l'espace de travail) :\n- a.md",
+  ]);
   await conversation(page).getByRole("button", { name: "plan.md" }).click();
   await waitForNote(page, "Plan");
   await expect(page.locator(".note-title", { hasText: "Plan" })).toBeVisible();
@@ -81,6 +82,7 @@ test("Arrêter interrompt la réponse de Claude ; la conversation peut continuer
   await page.keyboard.press("Meta+Control+L");
   await send(page, "Écris un plan");
   await expect(conversation(page).locator(".claude-reply")).toHaveText("Je regarde vos notes.");
+  await expect(column(page).getByRole("button", { name: "Envoyer" })).toBeHidden();
   await column(page).getByRole("button", { name: "Arrêter" }).click();
   await expect(conversation(page).locator(".claude-summary")).toHaveText("Réponse arrêtée");
   await expect(column(page).getByRole("button", { name: "Envoyer" })).toBeVisible();

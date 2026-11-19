@@ -42,9 +42,7 @@ const layout = createLayout(document.querySelector<HTMLElement>("#app") as HTMLE
 const messages = createMessages(layout.status, bridge.errorMessage);
 const { run } = messages;
 const foldMemory = createFoldMemory(localStorage);
-const screen = createCurrentScreen(
-  (next) => (renderScreen(layout, next, actions), foldMemory.save(next), claude.follow()),
-);
+const screen = createCurrentScreen((s) => (renderScreen(layout, s, actions), foldMemory.save(s)));
 const columns = createOpenColumns({
   container: layout.columns,
   outline: layout.outline,
@@ -54,7 +52,8 @@ const columns = createOpenColumns({
     writing.showTypewriter(),
     layoutMemory.save(now),
     recent.visited(now),
-    menu.follow(now)
+    menu.follow(now),
+    claude.follow()
   ),
   ...{ printNote: (path) => exporting.printNote(path), copyNote: (p) => exporting.copyNote(p) },
   ...{ copyMarkdown: (p) => exporting.copyMarkdown(p), showHistory: (p) => history.show(p) },
@@ -105,7 +104,7 @@ const history = createHistory({ ...messages, backend: bridge, columns, layout })
 const assistant = createWritingAssistant({ ...messages, backend: bridge, columns, layout });
 const claude = createClaudeColumn({
   ...{ backend: bridge, layout, workspace, openNote: (path) => actions.open(path) },
-  error: messages.error,
+  ...{ error: messages.error, columns, storage: localStorage },
 });
 const workspaces = createWorkspaces({
   ...{ backend: bridge, screen, columns, workspace, picker: layout.picker, run },

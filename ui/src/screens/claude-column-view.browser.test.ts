@@ -40,6 +40,9 @@ beforeEach(() => {
     close: () => log.push("masquer"),
     openNote: (path) => log.push(`ouvrir ${path}`),
     markdown: async (text) => (markdowns.push(text), `<p><strong>${text}</strong></p>`),
+    chooseSettings: (settings) => log.push(`régler ${JSON.stringify(settings)}`),
+    attach: () => log.push("joindre"),
+    detach: (path) => log.push(`retirer ${path}`),
   });
 });
 
@@ -87,7 +90,7 @@ describe("colonne Claude Code : la conversation", () => {
   it("montre les messages, Claude en Markdown, ceux des sous-agents marqués", async () => {
     view.render(
       idle(
-        { kind: "user", text: "Bonjour" },
+        { kind: "user", text: "Bonjour", notes: [] },
         { kind: "claude", text: "Salut", subAgent: false },
         { kind: "claude", text: "Trouvé", subAgent: true },
       ),
@@ -215,7 +218,7 @@ describe("colonne Claude Code : écrire et piloter le tour", () => {
   });
 
   it("pendant un tour : Arrêter à la place d'Envoyer, rien ne part, pas de nouvelle conversation", () => {
-    view.render({ entries: [{ kind: "user", text: "Un" }], turn: "running" }, "/Notes");
+    view.render({ entries: [{ kind: "user", text: "Un", notes: [] }], turn: "running" }, "/Notes");
     expect(shown()).toEqual(["Un", WORKING]);
     expect(find(".claude-working").textContent).toBe(WORKING);
     expect(button("send").hidden).toBe(true);
@@ -261,5 +264,153 @@ describe("colonne Claude Code : écrire et piloter le tour", () => {
   it("met le curseur dans la zone du message", () => {
     view.focus();
     expect(document.activeElement).toBe(input());
+  });
+});
+
+describe("colonne Claude Code : la barre de saisie", () => {
+  const menu = () => find(".claude-settings-menu");
+  const chip = () => find<HTMLButtonElement>(".claude-settings-chip");
+  const choices = (group: string) =>
+    [...menu().querySelectorAll(`[aria-label="${group}"] [role="menuitemradio"]`)].map(
+      (item) => `${item.textContent}${item.getAttribute("aria-checked") === "true" ? " ✓" : ""}`,
+    );
+
+  it("sous la zone du message, les pastilles puis Envoyer, un carré d'arrêt pendant la réponse", () => {
+    const bar = find(".claude-input-bar");
+    expect(bar.previousElementSibling).toBe(input());
+    expect(button("send").getAttribute("aria-label")).toBe("Envoyer");
+    expect(button("stop").getAttribute("aria-label")).toBe("Arrêter");
+    expect(button("stop").querySelector(".claude-stop-square")).not.toBeNull();
+    expect(bar.lastElementChild).toBe(button("send"));
+  });
+
+  it("au départ : réglages par défaut, ni sous-agent ni durée, « + » pour joindre", () => {
+    expect(chip().textContent).toBe("");
+    expect(chip().type).toBe("button");
+    expect(chip().title).toBe("Choisir le modèle de Claude et le niveau d'effort");
+    expect(chip().getAttribute("aria-haspopup")).toBe("menu");
+    expect(chip().getAttribute("aria-expanded")).toBe("false");
+    expect(menu().getAttribute("role")).toBe("menu");
+    expect(menu().getAttribute("aria-label")).toBe(chip().title);
+    chip().click();
+    expect(choices("Modèle")[0]).toBe("Par défaut ✓");
+    expect(choices("Effort")[0]).toBe("Par défaut ✓");
+    const group = menu().querySelector(".claude-settings-group") as HTMLElement;
+    expect(group.getAttribute("role")).toBe("group");
+    expect(group.querySelector(".claude-settings-heading")?.textContent).toBe("Modèle");
+    expect(group.querySelectorAll(".claude-settings-choice")).toHaveLength(5);
+    const agents = find<HTMLButtonElement>(".claude-agents-chip");
+    expect(agents.hidden).toBe(true);
+    expect(agents.textContent).toBe("");
+    expect(agents.title).toBe("Montrer la carte des agents");
+    expect(find(".claude-elapsed").hidden).toBe(true);
+    expect(find(".claude-elapsed").title).toBe("Durée de la réponse");
+    expect(find(".claude-attach").textContent).toBe("+");
+    expect(find(".claude-attach").title).toBe("Joindre une note");
+    expect(find(".claude-attachments")).not.toBeNull();
+  });
+
+  it("la pastille des sous-agents se vide quand plus aucun ne travaille, et déplie la carte", () => {
+    const running = {
+      id: "A",
+      parent: null,
+      description: "Compter",
+      state: "running",
+      durationMs: null,
+      tokens: null,
+      actions: 0,
+    } as const;
+    const agents = find<HTMLButtonElement>(".claude-agents-chip");
+    view.showAgents({ agents: [running] });
+    expect(agents.textContent).toBe("● 1 agent");
+    agents.click();
+    expect(find<HTMLDetailsElement>(".claude-agents").open).toBe(true);
+    view.showAgents({ agents: [{ ...running, state: "done" }] });
+    expect(agents.hidden).toBe(true);
+    expect(agents.textContent).toBe("");
+  });
+
+  it("la pastille des réglages ouvre leur choix, l'actuel coché, du plus bas au plus haut", () => {
+    view.showSettings({ model: "opus", effort: null });
+    expect(chip().textContent).toBe("Opus");
+    expect(menu().hidden).toBe(true);
+    chip().click();
+    expect(menu().hidden).toBe(false);
+    expect(chip().getAttribute("aria-expanded")).toBe("true");
+    expect(choices("Modèle")).toEqual(["Par défaut", "Haiku", "Sonnet", "Opus ✓", "Fable"]);
+    expect(choices("Effort")).toEqual([
+      "Par défaut ✓",
+      "Low",
+      "Medium",
+      "High",
+      "Extra high",
+      "Max",
+    ]);
+    (menu().querySelectorAll('[aria-label="Effort"] button')[4] as HTMLButtonElement).click();
+    (menu().querySelectorAll('[aria-label="Modèle"] button')[0] as HTMLButtonElement).click();
+    expect(log).toEqual([
+      'régler {"model":"opus","effort":"extraHigh"}',
+      'régler {"model":null,"effort":null}',
+    ]);
+    view.showSettings({ model: "haiku", effort: "max" });
+    expect(choices("Modèle")[1]).toBe("Haiku ✓");
+    chip().click();
+    expect(menu().hidden).toBe(true);
+    expect(chip().getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("un clic ailleurs ou Échap ferme le choix des réglages", () => {
+    chip().click();
+    menu().dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    expect(menu().hidden).toBe(false);
+    document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    expect(menu().hidden).toBe(true);
+    chip().click();
+    chip().dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+    expect(menu().hidden).toBe(false);
+    chip().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(menu().hidden).toBe(true);
+    expect(document.activeElement).toBe(chip());
+  });
+
+  it("Échap hors du choix des réglages ne déplace pas le curseur", () => {
+    input().focus();
+    find(".claude-chips").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+    );
+    expect(document.activeElement).toBe(input());
+  });
+
+  it("les notes jointes se retirent par leur croix ; « + » en fait joindre d'autres", () => {
+    view.showAttachments([
+      { path: "a.md", title: "Alpha" },
+      { path: "Projets/plan.md", title: "Plan" },
+    ]);
+    const notes = [...container.querySelectorAll<HTMLElement>(".claude-attached-note")];
+    expect(notes.map((note) => note.textContent)).toEqual(["Alpha×", "Plan×"]);
+    expect(notes[1]?.title).toBe("Projets/plan.md");
+    const remove = notes[1]?.querySelector("button") as HTMLButtonElement;
+    expect(remove.getAttribute("aria-label")).toBe("Retirer « Plan » du message");
+    expect(remove.title).toBe("Retirer « Plan » du message");
+    remove.click();
+    find<HTMLButtonElement>(".claude-attach").click();
+    expect(find(".claude-attach").getAttribute("aria-label")).toBe("Joindre une note");
+    expect(log).toEqual(["retirer Projets/plan.md", "joindre"]);
+  });
+
+  it("la durée de la réponse ne se montre que pendant un tour", () => {
+    const elapsed = find(".claude-elapsed");
+    view.showElapsed(65_000);
+    expect(elapsed.hidden).toBe(false);
+    expect(elapsed.textContent).toBe("1 min 05 s");
+    view.showElapsed(null);
+    expect(elapsed.hidden).toBe(true);
+  });
+
+  it("le message de l'utilisateur dit les notes jointes", () => {
+    view.render(idle({ kind: "user", text: "Résume", notes: ["Alpha", "Plan"] }), "/Notes");
+    expect(find(".claude-user-notes").textContent).toBe("Notes jointes : Alpha, Plan");
+    view.render(idle({ kind: "user", text: "Résume", notes: [] }), "/Notes");
+    expect(find(".claude-user-notes")).toBeNull();
   });
 });

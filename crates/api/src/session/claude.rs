@@ -7,7 +7,9 @@ use std::sync::{Arc, PoisonError};
 
 use application::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 use domain::NotePath;
-use domain::claude::{ActionId, ActionKind, ActionOutcome, ClaudeEvent, ConversationId};
+use domain::claude::{
+    ActionId, ActionKind, ActionOutcome, ClaudeEvent, ConversationId, TurnSettings,
+};
 
 use super::Session;
 use crate::{ApiError, ClaudeEventItem, ClaudeStatusItem};
@@ -41,7 +43,7 @@ impl Session {
     }
 
     /// Joue un tour : envoie `message` à Claude dans l'espace de travail ouvert, en continuant la
-    /// conversation en cours, et donne à `on_event` chaque événement prêt pour la page dès qu'il
+    /// conversation en cours avec le modèle et le niveau d'effort de `settings`, et donne à `on_event` chaque événement prêt pour la page dès qu'il
     /// arrive, avec chaque note modifiée par Claude. Rend la main à la fin du tour.
     ///
     /// # Errors
@@ -51,22 +53,29 @@ impl Session {
     pub fn send_to_claude(
         &self,
         message: &str,
+        settings: TurnSettings,
         mut on_event: impl FnMut(ClaudeEventItem),
     ) -> Result<(), ApiError> {
         let location = self.opened()?.location;
         let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
         let conversation = self.conversation_in(&location);
         let mut notes = ChangedNotes::new(&location);
-        claude.send(&location, conversation.as_ref(), message, &mut |event| {
-            if let ClaudeEvent::ConversationStarted(id) = &event {
-                *self.current_conversation() = Some((location.clone(), id.clone()));
-            }
-            let changed = notes.follow(&event);
-            ClaudeEventItem::from_event(event)
-                .into_iter()
-                .chain(changed.map(|path| ClaudeEventItem::ChangedNote { path }))
-                .for_each(&mut on_event);
-        })?;
+        claude.send(
+            &location,
+            conversation.as_ref(),
+            settings,
+            message,
+            &mut |event| {
+                if let ClaudeEvent::ConversationStarted(id) = &event {
+                    *self.current_conversation() = Some((location.clone(), id.clone()));
+                }
+                let changed = notes.follow(&event);
+                ClaudeEventItem::from_event(event)
+                    .into_iter()
+                    .chain(changed.map(|path| ClaudeEventItem::ChangedNote { path }))
+                    .for_each(&mut on_event);
+            },
+        )?;
         Ok(())
     }
 
@@ -151,7 +160,7 @@ mod tests {
     use application::testing::{
         FakeClaudeCode, FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore,
     };
-    use domain::claude::{ClaudeAction, TurnOutcome, TurnSummary};
+    use domain::claude::{ClaudeAction, ClaudeModel, Effort, TurnOutcome, TurnSummary};
 
     use super::*;
     use crate::ActionKindItem;
@@ -213,7 +222,7 @@ mod tests {
 
     fn turn(session: &Session, message: &str) -> (Result<(), ApiError>, Vec<ClaudeEventItem>) {
         let mut items = Vec::new();
-        let end = session.send_to_claude(message, |item| items.push(item));
+        let end = session.send_to_claude(message, TurnSettings::default(), |item| items.push(item));
         (end, items)
     }
 
@@ -234,7 +243,7 @@ mod tests {
         claude
             .requests()
             .into_iter()
-            .map(|(_, conversation, _)| conversation.map(|id| id.as_str().to_owned()))
+            .map(|(_, conversation, _, _)| conversation.map(|id| id.as_str().to_owned()))
             .collect()
     }
 
@@ -251,7 +260,7 @@ mod tests {
                 tokens: 34,
             }]
         );
-        let (workspace, _, message) = claude.requests().remove(0);
+        let (workspace, _, _, message) = claude.requests().remove(0);
         assert_eq!(workspace.as_str(), NOTES);
         assert_eq!(message, "Bonjour");
     }
@@ -288,6 +297,27 @@ mod tests {
     }
 
     #[test]
+    fn the_settings_of_each_turn_reach_claude_code_even_to_continue_the_conversation() {
+        let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
+        let session = opened(&claude);
+        let opus = TurnSettings {
+            model: Some(ClaudeModel::Opus),
+            effort: Some(Effort::Low),
+        };
+        turn(&session, "Un").0.unwrap();
+        session.send_to_claude("Deux", opus, |_| {}).unwrap();
+        let requests = claude.requests();
+        assert_eq!(requests[0].2, TurnSettings::default());
+        assert_eq!(
+            (
+                requests[1].1.as_ref().map(ConversationId::as_str),
+                requests[1].2
+            ),
+            (Some("c1"), opus)
+        );
+    }
+
+    #[test]
     fn another_workspace_starts_a_new_conversation() {
         let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
         let session = opened(&claude);
@@ -308,8 +338,11 @@ mod tests {
         let session = opened(&claude);
         let (sender, received) = mpsc::channel();
         thread::scope(|scope| {
-            let running = scope
-                .spawn(|| session.send_to_claude("Bonjour", |item| sender.send(item).unwrap()));
+            let running = scope.spawn(|| {
+                session.send_to_claude("Bonjour", TurnSettings::default(), |item| {
+                    sender.send(item).unwrap();
+                })
+            });
             let (busy, _) = loop {
                 if !claude.requests().is_empty() {
                     break turn(&session, "Encore");

@@ -6,7 +6,7 @@
 // `claudeAgents=1` : le tour rejoué lance des sous-agents (`AGENTS_TURN`, sur le modèle du flux
 // enregistré `sub_agent.jsonl`) ; avec `claudeTurn=hanging`, il attend une fois les sous-agents lancés.
 import { emit } from "@tauri-apps/api/event";
-import type { ClaudeEventItem, ClaudeStatusItem } from "../src/bridge";
+import type { ClaudeEventItem, ClaudeStatusItem, TurnSettingsItem } from "../src/bridge";
 import { FIRST } from "./fake-workspaces";
 
 type Handler = (args: Record<string, unknown>) => unknown;
@@ -21,6 +21,8 @@ export interface FakeClaude {
   claudeAgents: boolean;
   /** Les messages reçus, dans l'ordre. */
   claudeMessages: string[];
+  /** Les réglages reçus avec chaque message, dans l'ordre. */
+  claudeSettings: TurnSettingsItem[];
 }
 
 /** Les messages de Rust, par vérification de la connexion qui empêche Claude Code de répondre. */
@@ -124,6 +126,7 @@ export function fakeClaudeState(params: URLSearchParams): FakeClaude {
     claudeTurn: turn === "hanging" || turn === "busy" ? turn : "replayed",
     claudeAgents: params.get("claudeAgents") === "1",
     claudeMessages: [],
+    claudeSettings: [],
   };
 }
 
@@ -158,7 +161,10 @@ export function fakeClaude(
   };
   return {
     claude_status: () => state.claude,
-    send_to_claude: ({ message }) => play(String(message)),
+    send_to_claude: ({ message, settings }) => (
+      state.claudeSettings.push(settings as TurnSettingsItem),
+      play(String(message))
+    ),
     stop_claude: () => (stop?.(), (stop = null), null),
     new_conversation: () => null,
   };

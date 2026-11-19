@@ -1,7 +1,7 @@
 // Colonne Claude Code : affichée ou masquée par sa commande ; à l'ouverture, demande si Claude Code
-// peut répondre. Envoie les messages, suit les événements du tour en cours, l'arrête, commence une
-// nouvelle conversation ; une note modifiée par Claude s'ouvre d'un clic. La carte des agents suit
-// les mêmes événements (fiche 0032).
+// peut répondre. Envoie les messages, avec les réglages du tour et les notes jointes, suit les
+// événements du tour en cours et sa durée, l'arrête, commence une nouvelle conversation ; une note
+// modifiée par Claude s'ouvre d'un clic. La carte des agents suit les mêmes événements (fiche 0032).
 import type * as Bridge from "../bridge";
 import { noteHtml } from "../rendering/note-html";
 import {
@@ -10,7 +10,11 @@ import {
   createClaudeColumnView,
 } from "../screens/claude-column-view";
 import type { Layout } from "../screens/layout";
+import { createInputBar } from "./claude-input-bar";
 import { type AgentMap, agentEventReceived, agentTurnEnded, NO_AGENTS } from "../state/agent-map";
+import { messageWithNotes } from "../state/claude-input-bar";
+import type { Columns } from "../state/columns";
+import type { PreferenceStorage } from "../state/focus-preference";
 import {
   type Conversation,
   eventReceived,
@@ -29,8 +33,13 @@ export interface ClaudeColumnDeps {
     | "newConversation"
     | "onClaudeEvent"
     | "errorMessage"
+    | "listAllNotes"
   >;
-  readonly layout: Pick<Layout, "claudeColumn" | "claudeButton">;
+  readonly layout: Pick<Layout, "claudeColumn" | "claudeButton" | "picker">;
+  /** Les colonnes d'édition : la note de la colonne active est jointe au message. */
+  readonly columns: { current(): Columns };
+  /** Là où les réglages du tour sont gardés d'un lancement à l'autre. */
+  readonly storage: PreferenceStorage;
   /** Le dossier de l'espace de travail ouvert. */
   readonly workspace: { path(): string };
   /** Ouvre une note modifiée par Claude dans la colonne active. */
@@ -41,7 +50,10 @@ export interface ClaudeColumnDeps {
 export interface ClaudeColumn {
   /** Affiche la colonne, ou la masque. */
   toggle(): void;
-  /** Suit l'espace de travail ouvert : un autre commence une conversation neuve. */
+  /**
+   * Suit l'espace de travail ouvert (un autre commence une conversation neuve) et la note de la
+   * colonne active, jointe au message.
+   */
   follow(): void;
 }
 
@@ -59,55 +71,71 @@ async function checkStatus(view: ClaudeColumnView, backend: ClaudeColumnDeps["ba
   view.focus();
 }
 
+/** Affiche la colonne, ou la masque ; `shown` est appelé quand elle s'affiche. */
+function toggler(layout: ClaudeColumnDeps["layout"], shown: () => void) {
+  return () => {
+    const hidden = !layout.claudeColumn.hidden;
+    layout.claudeColumn.hidden = hidden;
+    layout.claudeButton.setAttribute("aria-pressed", String(!hidden));
+    if (!hidden) shown();
+  };
+}
+
 export function createClaudeColumn(deps: ClaudeColumnDeps): ClaudeColumn {
   const { backend, layout } = deps;
   let conversation: Conversation = NEW_CONVERSATION;
   let agents: AgentMap = NO_AGENTS;
   let workspacePath = deps.workspace.path();
+  const bar = createInputBar({ ...deps, picker: layout.picker }, () => view);
   const update = (next: Conversation, nextAgents: AgentMap = agents) => {
     conversation = next;
     agents = nextAgents;
     view.render(conversation, workspacePath);
     view.showAgents(agents);
   };
-  const ended = (error: string | null) =>
+  const ended = (error: string | null) => {
+    bar.timeReply(false);
     update(turnEnded(conversation, error), agentTurnEnded(agents, error !== null));
+  };
   const send = (text: string) => {
-    update(messageSent(conversation, text));
-    backend.sendToClaude(text).then(
+    const notes = bar.sent();
+    update(
+      messageSent(
+        conversation,
+        text,
+        notes.map((note) => note.title),
+      ),
+    );
+    bar.timeReply(true);
+    backend.sendToClaude(messageWithNotes(text, notes), bar.settings()).then(
       () => ended(null),
       (error: unknown) => ended(backend.errorMessage(error)),
     );
   };
   const view: ClaudeColumnView = createClaudeColumnView(layout.claudeColumn, {
-    send,
+    ...{ send, openNote: deps.openNote, markdown, close: () => toggle() },
+    ...{ chooseSettings: bar.chooseSettings, attach: bar.attach, detach: bar.detach },
     stop: () => {
       update(stopAsked(conversation));
       backend.stopClaude().catch(deps.error);
     },
     newConversation: () =>
       void backend.newConversation().then(() => update(NEW_CONVERSATION, NO_AGENTS), deps.error),
-    close: () => toggle(),
-    openNote: deps.openNote,
-    markdown,
   });
-  const toggle = () => {
-    const shown = layout.claudeColumn.hidden;
-    layout.claudeColumn.hidden = !shown;
-    layout.claudeButton.setAttribute("aria-pressed", String(shown));
-    if (shown) void checkStatus(view, backend);
-  };
+  const toggle = toggler(layout, () => void checkStatus(view, backend));
   layout.claudeButton.addEventListener("click", toggle);
   void backend.onClaudeEvent((event) =>
     update(eventReceived(conversation, event), agentEventReceived(agents, event)),
   );
   update(conversation);
-  return {
-    toggle,
-    follow: () => {
-      if (deps.workspace.path() === workspacePath) return;
-      workspacePath = deps.workspace.path();
-      update({ ...NEW_CONVERSATION, turn: conversation.turn }, NO_AGENTS);
-    },
+  view.showSettings(bar.settings());
+  const follow = () => {
+    const changed = deps.workspace.path() !== workspacePath;
+    bar.follow(changed);
+    if (!changed) return;
+    workspacePath = deps.workspace.path();
+    update({ ...NEW_CONVERSATION, turn: conversation.turn }, NO_AGENTS);
   };
+  follow();
+  return { toggle, follow };
 }
