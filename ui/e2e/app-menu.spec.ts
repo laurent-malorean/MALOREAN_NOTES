@@ -28,6 +28,7 @@ test("la barre des menus est construite en français, avec les raccourcis de la 
     "MALOREAN Notes",
     "Fichier",
     "Édition",
+    "Format",
     "Présentation",
     "Fenêtre",
     "Aide",

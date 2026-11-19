@@ -356,6 +356,45 @@ describe("raccourcis clavier", () => {
     ]);
   });
 
+  it("la mise en forme, la date du jour et l'ouverture du lien visent l'éditeur de la colonne active", () => {
+    const actions = commandActions(deps);
+    const { editor } = columns.open.activePane();
+    for (const id of [
+      "bold",
+      "italic",
+      "insert-link",
+      "heading-1",
+      "heading-2",
+      "heading-3",
+      "bullet-list",
+      "numbered-list",
+    ] as const) {
+      actions[id]();
+      expect(editor.format).toHaveBeenLastCalledWith(id);
+    }
+    expect(editor.format).toHaveBeenCalledTimes(8);
+    actions["insert-date"]();
+    expect(editor.insertToday).toHaveBeenCalledOnce();
+    actions["open-link"]();
+    expect(editor.openLinkAtCursor).toHaveBeenCalledOnce();
+  });
+
+  it("sans note montrée, la mise en forme, la date du jour et l'ouverture du lien ne font rien", () => {
+    columns.panes.set(columns.columns().active, fakePane(null));
+    const actions = commandActions(deps);
+    const { editor } = columns.open.activePane();
+    for (const id of ["bold", "heading-1", "numbered-list", "insert-date", "open-link"] as const)
+      actions[id]();
+    expect(editor.format).not.toHaveBeenCalled();
+    expect(editor.insertToday).not.toHaveBeenCalled();
+    expect(editor.openLinkAtCursor).not.toHaveBeenCalled();
+  });
+
+  it("Cmd+B met en gras dans la colonne active, même hors de l'éditeur", () => {
+    expect(press("b", { metaKey: true }).defaultPrevented).toBe(true);
+    expect(columns.open.activePane().editor.format).toHaveBeenCalledWith("bold");
+  });
+
   it("Cmd+O ouvre l'ouverture rapide", async () => {
     press("o", { metaKey: true });
     await settle();

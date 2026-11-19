@@ -46,6 +46,7 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "new-folder" },
       "separator",
       { command: "quick-open", label: "Ouverture rapide…" },
+      { command: "open-link" },
       { command: "new-tab", label: "Nouvel onglet…" },
       { command: "close-tab" },
       "separator",
@@ -83,6 +84,23 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "correct-selection", label: "Corriger la sélection…" },
       { command: "rephrase-selection", label: "Reformuler la sélection…" },
       { command: "summarize-selection", label: "Résumer la sélection…" },
+    ],
+  },
+  {
+    title: "Format",
+    items: [
+      { command: "bold" },
+      { command: "italic" },
+      { command: "insert-link" },
+      "separator",
+      { command: "heading-1" },
+      { command: "heading-2" },
+      { command: "heading-3" },
+      "separator",
+      { command: "bullet-list" },
+      { command: "numbered-list" },
+      "separator",
+      { command: "insert-date" },
     ],
   },
   {
@@ -131,6 +149,16 @@ export const NOTE_COMMANDS: ReadonlySet<MenuCommandId> = new Set<MenuCommandId>(
   "copy-note",
   "copy-markdown",
   "note-history",
+  "open-link",
+  "bold",
+  "italic",
+  "insert-link",
+  "heading-1",
+  "heading-2",
+  "heading-3",
+  "bullet-list",
+  "numbered-list",
+  "insert-date",
 ]);
 
 /**

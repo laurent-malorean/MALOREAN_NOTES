@@ -1,6 +1,9 @@
-// Raccourcis de mise en forme : chaque commande transforme le texte autour de la sélection.
+// Mise en forme : chaque commande transforme le texte autour de la sélection ; ses raccourcis
+// viennent de la liste des commandes.
 import { EditorSelection, type EditorState, type TransactionSpec } from "@codemirror/state";
 import { type Command, keymap } from "@codemirror/view";
+import type { FormatCommandId } from "../../state/commands";
+import { commandKeys } from "./command-keys";
 
 const STAR = "*";
 
@@ -114,21 +117,31 @@ export function toggleList(state: EditorState, kind: keyof typeof LISTS): Transa
   };
 }
 
-const command =
-  (transform: (state: EditorState) => TransactionSpec): Command =>
+/** Ce que fait chaque commande de mise en forme au texte. */
+const FORMATTING: Readonly<Record<FormatCommandId, (state: EditorState) => TransactionSpec>> = {
+  bold: (s) => toggleEmphasis(s, 2),
+  italic: (s) => toggleEmphasis(s, 1),
+  "insert-link": makeLink,
+  "heading-1": (s) => setHeading(s, 1),
+  "heading-2": (s) => setHeading(s, 2),
+  "heading-3": (s) => setHeading(s, 3),
+  "bullet-list": (s) => toggleList(s, "bullet"),
+  "numbered-list": (s) => toggleList(s, "numbered"),
+};
+
+/** La commande de mise en forme, comme une frappe : signalée, annulable, le texte gardé en vue. */
+export const formatCommand =
+  (id: FormatCommandId): Command =>
   (view) => {
-    view.dispatch(view.state.update(transform(view.state), { scrollIntoView: true }));
+    view.dispatch(view.state.update(FORMATTING[id](view.state), { scrollIntoView: true }));
     return true;
   };
 
 /** Cmd+B gras, Cmd+I italique, Cmd+K lien, Cmd+1 à 3 titres, Cmd+Maj+8 puces, Cmd+Maj+7 numéros. */
-export const formattingShortcuts = keymap.of([
-  { key: "Mod-b", run: command((s) => toggleEmphasis(s, 2)) },
-  { key: "Mod-i", run: command((s) => toggleEmphasis(s, 1)) },
-  { key: "Mod-k", run: command(makeLink) },
-  { key: "Mod-1", run: command((s) => setHeading(s, 1)) },
-  { key: "Mod-2", run: command((s) => setHeading(s, 2)) },
-  { key: "Mod-3", run: command((s) => setHeading(s, 3)) },
-  { key: "Mod-Shift-8", run: command((s) => toggleList(s, "bullet")) },
-  { key: "Mod-Shift-7", run: command((s) => toggleList(s, "numbered")) },
-]);
+export const formattingShortcuts = keymap.of(
+  commandKeys(
+    Object.fromEntries(
+      (Object.keys(FORMATTING) as FormatCommandId[]).map((id) => [id, formatCommand(id)]),
+    ),
+  ),
+);

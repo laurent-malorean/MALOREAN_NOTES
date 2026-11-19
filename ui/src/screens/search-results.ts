@@ -1,5 +1,11 @@
 import type { SearchResultItem } from "../bridge";
-import { type NoteOpening, openOnClick } from "./note-menu";
+import { showContextMenu } from "./context-menu";
+import { type NoteOpening, noteMenu, openOnClick } from "./note-menu";
+
+/** Ce qu'une note trouvée peut demander : l'ouvrir, ici ou ailleurs, ou fermer son onglet. */
+export interface SearchResultActions extends NoteOpening {
+  readonly closeNote: (path: string) => void;
+}
 
 const NOTHING_FOUND = "Aucune note trouvée";
 const SEARCHING = "Recherche…";
@@ -35,7 +41,7 @@ function line(className: string, text: string): HTMLElement {
 
 /**
  * Affiche les notes trouvées (titre, dossier, extrait aux mots surlignés) ; un clic ouvre la note,
- * un Cmd+clic l'ouvre dans un nouvel onglet.
+ * un Cmd+clic l'ouvre dans un nouvel onglet, un clic droit propose le menu d'une note.
  * `null` : aucune réponse encore.
  */
 export function renderSearchResults(
@@ -43,7 +49,7 @@ export function renderSearchResults(
   workspaceName: string,
   results: readonly SearchResultItem[] | null,
   selected: string | null,
-  actions: NoteOpening,
+  actions: SearchResultActions,
 ): void {
   if (results === null) return container.replaceChildren(message(SEARCHING));
   if (results.length === 0) return container.replaceChildren(message(NOTHING_FOUND));
@@ -56,6 +62,14 @@ export function renderSearchResults(
         result.folder === "" ? workspaceName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
       item.append(line("note-title", result.title), line("search-folder", folder), excerpt(result));
       openOnClick(item, result.path, actions);
+      item.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        const entries = noteMenu({
+          place: (placement) => actions.place(result.path, placement),
+          close: () => actions.closeNote(result.path),
+        });
+        showContextMenu(event.clientX, event.clientY, entries);
+      });
       return item;
     }),
   );

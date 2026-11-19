@@ -18,6 +18,9 @@ export function fakePane(note: string | null = null, log: string[] = []) {
     show: vi.fn(),
     focus: vi.fn(),
     openFind: vi.fn(),
+    format: vi.fn(),
+    insertToday: vi.fn(),
+    openLinkAtCursor: vi.fn(),
   };
   const pane = {
     editor,

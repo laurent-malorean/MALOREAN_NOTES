@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SearchResultItem } from "../bridge";
 import { renderSearchResults } from "./search-results";
 
-const ignore = { open: () => {}, place: () => {} };
+const ignore = { open: () => {}, place: () => {}, closeNote: () => {} };
 
 const results: SearchResultItem[] = [
   {
@@ -55,11 +55,43 @@ describe("résultats de recherche", () => {
     renderSearchResults(container, "Notes", results, null, {
       open: (path) => opened.push(`ouvrir ${path}`),
       place: (path, placement) => opened.push(`placer ${path} ${placement}`),
+      closeNote: (path) => opened.push(`fermer ${path}`),
     });
     const item = container.querySelectorAll<HTMLElement>(".search-result")[1] as HTMLElement;
     item.click();
     item.dispatchEvent(new MouseEvent("click", { bubbles: true, metaKey: true }));
     expect(opened).toEqual(["ouvrir courses.md", "placer courses.md newTab"]);
+  });
+
+  it("le clic droit propose le menu d'une note : l'ouvrir ailleurs sans clavier, ou la fermer", () => {
+    const container = list();
+    const asked: string[] = [];
+    renderSearchResults(container, "Notes", results, null, {
+      open: (path) => asked.push(`ouvrir ${path}`),
+      place: (path, placement) => asked.push(`placer ${path} ${placement}`),
+      closeNote: (path) => asked.push(`fermer ${path}`),
+    });
+    const item = container.querySelectorAll(".search-result")[1] as Element;
+    const buttons = () => [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
+    const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
+    item.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(buttons().map((b) => b.textContent)).toEqual([
+      "Ouvrir dans un nouvel onglet",
+      "Ouvrir à gauche",
+      "Ouvrir à droite",
+      "Fermer",
+    ]);
+    for (const index of [0, 1, 2, 3]) {
+      item.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+      buttons()[index]?.click();
+    }
+    expect(asked).toEqual([
+      "placer courses.md newTab",
+      "placer courses.md left",
+      "placer courses.md right",
+      "fermer courses.md",
+    ]);
   });
 
   it("marque la note ouverte", () => {

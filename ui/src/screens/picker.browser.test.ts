@@ -41,6 +41,8 @@ function press(input: HTMLInputElement, key: string) {
   return event;
 }
 
+const field = (dialog: HTMLElement) => dialog.querySelector("input") as HTMLInputElement;
+
 const options = (dialog: HTMLElement) =>
   [...dialog.querySelectorAll<HTMLElement>("[role=option]")].map((o) => [
     o.querySelector(".picker-label")?.textContent,
@@ -148,6 +150,29 @@ describe("fenêtre de choix au clavier", () => {
     dialog.querySelectorAll<HTMLElement>("[role=option]")[2]?.click();
     expect(chosen).toEqual(["Prune"]);
     expect(dialog.open).toBe(false);
+  });
+
+  it("un clic à côté de la fenêtre la ferme sans rien choisir ; un clic dedans, non", () => {
+    const { dialog, input, chosen } = open();
+    const click = (target: Element) =>
+      target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    click(input);
+    click(dialog.querySelector("[role=listbox]") as Element);
+    expect(dialog.open).toBe(true);
+    click(dialog);
+    expect(dialog.open).toBe(false);
+    expect(chosen).toEqual([]);
+  });
+
+  it("le champ et la liste couvrent toute la fenêtre : un clic dedans ne tombe jamais sur son fond", () => {
+    const { dialog } = open();
+    const box = dialog.getBoundingClientRect();
+    const covered = [field(dialog), dialog.querySelector("[role=listbox]") as HTMLElement]
+      .map((element) => element.getBoundingClientRect())
+      .reduce((height, part) => height + part.height, 0);
+    expect(Math.abs(box.height - covered)).toBeLessThanOrEqual(2);
+    const centre = document.elementFromPoint(box.left + box.width / 2, box.bottom - 3);
+    expect(centre).not.toBe(dialog);
   });
 
   it("repart de zéro à chaque ouverture", () => {

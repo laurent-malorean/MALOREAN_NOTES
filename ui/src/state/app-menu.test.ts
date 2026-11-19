@@ -23,6 +23,7 @@ describe("barre des menus", () => {
       ["MALOREAN Notes", null],
       ["Fichier", null],
       ["Édition", null],
+      ["Format", null],
       ["Présentation", null],
       ["Fenêtre", "window"],
       ["Aide", "help"],
@@ -63,6 +64,7 @@ describe("barre des menus", () => {
           "Nouveau dossier",
           "—",
           "Ouverture rapide… Cmd+O",
+          "Ouvrir le lien",
           "Nouvel onglet… Cmd+T",
           "Fermer l'onglet Cmd+W",
           "—",
@@ -103,6 +105,23 @@ describe("barre des menus", () => {
         ],
       ],
       [
+        "Format",
+        [
+          "Gras Cmd+B",
+          "Italique Cmd+I",
+          "Lien Cmd+K",
+          "—",
+          "Titre 1 Cmd+1",
+          "Titre 2 Cmd+2",
+          "Titre 3 Cmd+3",
+          "—",
+          "Liste à puces Cmd+Shift+8",
+          "Liste numérotée Cmd+Shift+7",
+          "—",
+          "Insérer la date du jour Cmd+Shift+D",
+        ],
+      ],
+      [
         "Présentation",
         [
           "Panneaux latéraux Cmd+Shift+B",
@@ -134,6 +153,12 @@ describe("barre des menus", () => {
   it("aucune commande n'est deux fois dans la barre", () => {
     const ids = commandEntries(true).map((entry) => entry.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("toute commande, avec ou sans raccourci, est dans la barre : tout se fait sans clavier", () => {
+    const ids = new Set(commandEntries(true).map((entry) => entry.id));
+    const missing = MENU_COMMANDS.filter((command) => !ids.has(command.id));
+    expect(missing.map((command) => command.id)).toEqual([]);
   });
 
   it("toute commande qui a un raccourci est dans la barre, pour qu'on le voie", () => {
@@ -222,6 +247,16 @@ describe("barre des menus", () => {
       "copy-note",
       "copy-markdown",
       "note-history",
+      "open-link",
+      "bold",
+      "italic",
+      "insert-link",
+      "heading-1",
+      "heading-2",
+      "heading-3",
+      "bullet-list",
+      "numbered-list",
+      "insert-date",
     ]);
   });
 

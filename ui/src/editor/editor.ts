@@ -12,7 +12,7 @@ import {
   Transaction,
 } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
-import { type AttachmentActions, attachments } from "./attachments";
+import { type AttachmentActions, attachments, linkTargetAt } from "./attachments";
 import { focusMode } from "./focus/focus-mode";
 import type { FocusUnit } from "./focus/focus-range";
 import { liveFormatting } from "./live-formatting";
@@ -20,12 +20,13 @@ import { type ImageResolver, imageResolver, livePreview } from "./live-preview/p
 import { liveTables } from "./live-preview/tables";
 import { openSearchPanel } from "@codemirror/search";
 import { findReplace, openReplacePanel } from "./writing/find-replace";
-import { formattingShortcuts } from "./writing/formatting";
+import { formatCommand, formattingShortcuts } from "./writing/formatting";
 import { charactersPerPage, statusBar } from "./writing/status-bar";
 import { DEFAULT_SETTINGS } from "../state/settings";
+import type { FormatCommandId } from "../state/commands";
 import { outlinePanel } from "./outline/outline-panel";
-import { noteLinks } from "./links/note-links";
-import { type Today, todayShortcut } from "./writing/today";
+import { noteLinkAt, noteLinks } from "./links/note-links";
+import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
@@ -71,6 +72,12 @@ export interface Editor {
   openFind(): void;
   /** Ouvre la recherche, le curseur dans le champ de remplacement, comme Alt+Cmd+F. */
   openReplace(): void;
+  /** Met en forme la sélection, comme le raccourci de la commande. */
+  format(command: FormatCommandId): void;
+  /** Insère la date du jour à la place de la sélection, comme Cmd+Maj+D. */
+  insertToday(): void;
+  /** Ouvre le lien où se trouve le curseur, comme un Cmd+clic dessus ; rien s'il n'y en a pas. */
+  openLinkAtCursor(): void;
   /** Dessine le plan de la note dans `container` ; `null` arrête de le dessiner. */
   setOutline(container: HTMLElement | null): void;
   /** Retire l'éditeur de l'écran, quand sa colonne disparaît. */
@@ -191,6 +198,19 @@ function selectionParts(
   };
 }
 
+/** Ouvre le lien entre notes, sinon la cible du lien Markdown, à la position du curseur. */
+function linkOpener(view: EditorView, options: EditorOptions) {
+  return () => {
+    const { openLink, attachmentActions } = options;
+    const pos = view.state.selection.main.head;
+    const line = view.state.doc.lineAt(pos);
+    const title = noteLinkAt(line.text, pos - line.from);
+    if (openLink && title !== null) return openLink(title);
+    const target = linkTargetAt(view.state, pos);
+    if (attachmentActions && target !== null) attachmentActions.open(target);
+  };
+}
+
 export function createEditor(
   parent: HTMLElement,
   onChange: (content: string, changes: ChangeSet) => void,
@@ -248,6 +268,9 @@ export function createEditor(
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
     openFind: () => void openSearchPanel(view),
     openReplace: () => void openReplacePanel(view),
+    format: (command) => void formatCommand(command)(view),
+    insertToday: () => void insertToday(today)(view),
+    openLinkAtCursor: linkOpener(view, options),
     setOutline: (container) => view.dispatch({ effects: outlineArea.change(container) }),
     destroy: () => view.destroy(),
   };

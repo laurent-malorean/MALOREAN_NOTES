@@ -19,12 +19,18 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - **Modifications extérieures** : si un fichier change hors de l'application (autre éditeur, synchronisation), l'application le recharge. Si la note était aussi modifiée dans l'application, elle ne perd rien et signale le conflit.
 - **Synchronisation** : l'espace de travail peut vivre dans iCloud Drive ou tout dossier synchronisé ; l'application n'a pas son propre service de synchronisation.
 
+## Principe : tout se fait sans raccourci clavier
+
+- Chaque action de l'application se lance aussi à la souris : un bouton, le menu du clic droit, ou la barre des menus du Mac. Les raccourcis clavier font gagner du temps ; ils ne sont jamais le seul chemin.
+
 ## Périmètre de la première version
 
 - Espaces de travail : plusieurs, gardés d'un lancement à l'autre ; un sélecteur en tête des dossiers et la palette (Cmd+Maj+E) pour passer de l'un à l'autre, en ajouter, en renommer, en retirer ; chacun retrouve ses colonnes et ses réglages.
 - Fenêtre en trois parties : dossiers, liste des notes, et jusqu'à trois colonnes d'édition à onglets, côte à côte.
 - Créer, renommer, déplacer, supprimer (corbeille) une note ou un dossier.
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
+- Mise en forme de la sélection (gras, italique, lien, titres de niveau 1 à 3, liste à puces ou numérotée) et insertion de la date du jour : raccourci, palette ou menu Format.
+- Ouvrir un lien de la note (vers une autre note, une pièce jointe, une adresse) : Cmd+clic dessus, ou clic dans le lien puis « Ouvrir le lien » (palette, menu Fichier).
 - Recherche plein texte instantanée.
 - Notes épinglées en tête de liste ; tri par date de modification.
 - Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur tout l'espace de travail ; liste des étiquettes avec leur nombre de notes.
@@ -39,7 +45,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Copier une note en Markdown, telle qu'elle est écrite (en-tête compris), pour la coller dans un autre outil qui lit le Markdown. Palette ou Ctrl+Cmd+C (la sélection seule si du texte est sélectionné), menu de la note ou de son onglet.
 - Note du jour : la note de la date du jour, rangée dans le journal sous sa date et titrée en toutes lettres, créée au besoin depuis le modèle « Journal » ; ouverte par Cmd+Maj+J, la palette, et au lancement si les réglages le demandent.
 - Historique des versions de chaque note : une version est gardée après 5 minutes de frappe, en quittant la note ou l'application, et juste avant un changement fait hors de l'application ; tout est conservé sur 24 h, puis une version par jour pendant 30 jours, puis une par semaine. Cmd+Y, la palette, le menu Fichier ou le menu d'une note montrent la liste datée, la version choisie avec ses différences surlignées par rapport à la note actuelle, et « Restaurer » (le texte actuel est d'abord gardé). Les versions sont des fichiers Markdown du dossier caché `.history/`, lisibles dans le Finder ; elles suivent la note renommée ou jetée.
-- Barre des menus du Mac en français, rangée comme le veut Apple (MALOREAN Notes, Fichier, Édition, Présentation, Fenêtre, Aide) : chaque action de la palette avec le même raccourci ; Cmd+W ferme l'onglet, jamais la fenêtre ; les actions sur une note sont grisées quand aucune note n'est montrée.
+- Barre des menus du Mac en français, rangée comme le veut Apple (MALOREAN Notes, Fichier, Édition, Format, Présentation, Fenêtre, Aide) : chaque action de la palette, toutes sans exception, avec le même raccourci ; Cmd+W ferme l'onglet, jamais la fenêtre ; les actions sur une note sont grisées quand aucune note n'est montrée.
 - Aide à l'écriture par le modèle d'IA du Mac (Apple Intelligence), gratuite, privée et hors connexion : corriger, reformuler ou résumer la sélection, par clic droit sur elle, Ctrl+Cmd+K, R ou U, la palette ou le menu Édition. La proposition s'affiche à côté de la sélection, mots changés surlignés ; « Remplacer », « Insérer dessous » ou « Annuler » : la note ne change jamais sans accord. Sur un Mac sans Apple Intelligence, les actions sont grisées et disent pourquoi. Les outils d'écriture d'Apple restent dans le menu du Mac (Alt+clic droit).
 - Colonne Claude Code, à droite des colonnes d'édition (Ctrl+Cmd+L, le bouton « Claude », la palette ou le menu Présentation) : on discute avec Claude Code, installé sur le Mac et connecté à l'abonnement Claude de l'utilisateur, pour qu'il lise, crée et modifie les notes de l'espace de travail ouvert. Entrée envoie, Maj+Entrée va à la ligne. Sa réponse arrive au fil de l'eau, en Markdown mis en forme ; ses actions s'affichent en bref (lecture, recherche, écriture, modification, sous-agent, et sa cible), les refusées marquées ; chaque note modifiée s'ouvre d'un clic ; le bilan du tour (durée, jetons) en petit. « Arrêter » interrompt la réponse, « Nouvelle conversation » repart de zéro, comme le passage à un autre espace de travail. En haut de la colonne, discrète et repliée, la carte des agents dit combien de sous-agents Claude a lancés et combien travaillent encore ; dépliée, elle montre leur arbre (chacun sous celui qui l'a lancé), avec pour chacun sa description, son état (en cours, terminé, en erreur, interrompu), et une fois fini sa durée, ses jetons et son nombre d'actions ; elle se met à jour au fil de la réponse. Claude Code absent ou non connecté : la colonne dit quoi faire.
 

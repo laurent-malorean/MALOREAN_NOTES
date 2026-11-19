@@ -5,10 +5,16 @@ import { openPicker } from "../screens/picker";
 import { type Shortcut, shortcutFor } from "../screens/shortcuts";
 import type { WindowDisplay } from "../screens/window-display";
 import { activeTabClosed, notePlaced, tabStepped } from "../state/columns";
-import { type CommandId, matchingCommands, type MenuCommandId } from "../state/commands";
+import {
+  type CommandId,
+  type FormatCommandId,
+  matchingCommands,
+  type MenuCommandId,
+} from "../state/commands";
 import { NOTE_ORDERS, type NoteOrder } from "../state/note-order";
 import { matching, matchingNotes } from "../state/quick-open";
 import { noteOrder } from "../state/screen";
+import type { Editor } from "../editor/editor";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
@@ -88,10 +94,32 @@ function chooseOrder(deps: CommandsDeps) {
   });
 }
 
+/** Les commandes qui écrivent dans la note de la colonne active : rien sans note montrée. */
+function editingActions(columns: CommandsDeps["columns"]) {
+  const inNote = (act: (editor: Editor) => void) => () => {
+    const pane = columns.activePane();
+    if (pane.note() !== null) act(pane.editor);
+  };
+  const format = (id: FormatCommandId) => inNote((editor) => editor.format(id));
+  return {
+    "open-link": inNote((editor) => editor.openLinkAtCursor()),
+    bold: format("bold"),
+    italic: format("italic"),
+    "insert-link": format("insert-link"),
+    "heading-1": format("heading-1"),
+    "heading-2": format("heading-2"),
+    "heading-3": format("heading-3"),
+    "bullet-list": format("bullet-list"),
+    "numbered-list": format("numbered-list"),
+    "insert-date": inNote((editor) => editor.insertToday()),
+  };
+}
+
 /** Ce que fait chaque commande de la palette. */
 export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, () => void>> {
   const { run, columns, writing } = deps;
   return {
+    ...editingActions(columns),
     "quick-open": () => run(quickOpen(deps)),
     "new-note": () => run(deps.workspace.createNote()),
     "new-note-from-template": () => run(deps.templates.newNote()),

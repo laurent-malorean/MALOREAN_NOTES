@@ -1,4 +1,5 @@
-// Fenêtre de choix au clavier : on tape pour filtrer, les flèches choisissent, Entrée valide.
+// Fenêtre de choix : on tape pour filtrer, les flèches ou un clic choisissent, Entrée valide ;
+// Échap ou un clic à côté la ferment.
 // Sert à l'ouverture rapide, à la palette de commandes et au choix d'un modèle de note.
 
 /** Ce qu'un choix montre : son nom, et un détail en plus petit. */
@@ -107,6 +108,11 @@ export function openPicker<T>(dialog: HTMLDialogElement, options: PickerOptions<
     event.preventDefault();
   });
 
+  // Le champ et la liste couvrent toute la fenêtre : un clic qui arrive à la fenêtre elle-même
+  // vient de son fond, à côté d'elle. Il la ferme sans rien choisir, comme Échap.
+  dialog.onclick = (event) => {
+    if (event.target === dialog) dialog.close();
+  };
   dialog.className = "picker";
   dialog.setAttribute("aria-label", options.label);
   dialog.replaceChildren(input, list);

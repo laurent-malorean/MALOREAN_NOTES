@@ -55,6 +55,15 @@ describe("raccourcis clavier", () => {
     expect(key("s", { metaKey: true, ctrlKey: true })).toBeNull();
   });
 
+  it("la mise en forme et la date du jour, hors de l'éditeur aussi : Cmd+B, Cmd+I, Cmd+K, Cmd+Maj+D", () => {
+    expect(key("b", { metaKey: true })).toBe("bold");
+    expect(key("i", { metaKey: true })).toBe("italic");
+    expect(key("k", { metaKey: true })).toBe("insert-link");
+    expect(key("1", { metaKey: true })).toBe("heading-1");
+    expect(key("d", { metaKey: true, shiftKey: true })).toBe("insert-date");
+    expect(key("b")).toBeNull();
+  });
+
   it("Échap quitte le plein écran", () => {
     expect(key("Escape")).toBe("leave-full-screen");
     expect(key("Escape", { metaKey: true })).toBeNull();

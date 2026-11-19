@@ -1,6 +1,7 @@
 // Insertion de la date du jour, en toutes lettres : « 16 novembre 2026 », « 1er mars 2027 ».
 import { EditorSelection } from "@codemirror/state";
 import { type Command, keymap } from "@codemirror/view";
+import { commandKeys } from "./command-keys";
 
 const MONTHS = [
   "janvier",
@@ -26,7 +27,8 @@ export function frenchLongDate(date: Date): string {
 /** Donne la date du jour ; remplacée dans les tests par une date fixe. */
 export type Today = () => Date;
 
-const insertToday =
+/** Insère la date du jour à la place de la sélection, curseur après elle. */
+export const insertToday =
   (today: Today): Command =>
   (view) => {
     const text = frenchLongDate(today());
@@ -40,6 +42,6 @@ const insertToday =
     return true;
   };
 
-/** Cmd+Maj+D insère la date du jour à la place de la sélection. */
+/** Cmd+Maj+D (la touche de la liste des commandes) insère la date du jour. */
 export const todayShortcut = (today: Today) =>
-  keymap.of([{ key: "Mod-Shift-d", run: insertToday(today) }]);
+  keymap.of(commandKeys({ "insert-date": insertToday(today) }));

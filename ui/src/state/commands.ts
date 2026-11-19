@@ -3,6 +3,7 @@ import { matching } from "./quick-open";
 
 export type CommandId =
   | "quick-open"
+  | "open-link"
   | "new-note"
   | "new-note-from-template"
   | "daily-note"
@@ -10,6 +11,8 @@ export type CommandId =
   | "search-workspace"
   | "find-in-note"
   | "find-and-replace"
+  | FormatCommandId
+  | "insert-date"
   | "correct-selection"
   | "rephrase-selection"
   | "summarize-selection"
@@ -38,6 +41,17 @@ export type CommandId =
   | "remove-workspace"
   | "rebuild-index";
 
+/** Les commandes de mise en forme : la syntaxe Markdown posée autour de la sélection ou sur ses lignes. */
+export type FormatCommandId =
+  | "bold"
+  | "italic"
+  | "insert-link"
+  | "heading-1"
+  | "heading-2"
+  | "heading-3"
+  | "bullet-list"
+  | "numbered-list";
+
 export interface Command {
   readonly id: CommandId;
   readonly label: string;
@@ -48,6 +62,7 @@ export interface Command {
 /** Les commandes, dans l'ordre de la palette. Une nouvelle action s'ajoute ici. */
 export const COMMANDS: readonly Command[] = [
   { id: "quick-open", label: "Ouvrir une note", shortcut: "Cmd+O" },
+  { id: "open-link", label: "Ouvrir le lien" },
   { id: "new-note", label: "Nouvelle note", shortcut: "Cmd+N" },
   { id: "new-note-from-template", label: "Nouvelle note depuis un modèle", shortcut: "Cmd+Maj+N" },
   { id: "daily-note", label: "Note du jour", shortcut: "Cmd+Maj+J" },
@@ -55,6 +70,15 @@ export const COMMANDS: readonly Command[] = [
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },
   { id: "find-and-replace", label: "Rechercher et remplacer", shortcut: "Alt+Cmd+F" },
+  { id: "bold", label: "Gras", shortcut: "Cmd+B" },
+  { id: "italic", label: "Italique", shortcut: "Cmd+I" },
+  { id: "insert-link", label: "Lien", shortcut: "Cmd+K" },
+  { id: "heading-1", label: "Titre 1", shortcut: "Cmd+1" },
+  { id: "heading-2", label: "Titre 2", shortcut: "Cmd+2" },
+  { id: "heading-3", label: "Titre 3", shortcut: "Cmd+3" },
+  { id: "bullet-list", label: "Liste à puces", shortcut: "Cmd+Maj+8" },
+  { id: "numbered-list", label: "Liste numérotée", shortcut: "Cmd+Maj+7" },
+  { id: "insert-date", label: "Insérer la date du jour", shortcut: "Cmd+Maj+D" },
   { id: "correct-selection", label: "Corriger la sélection", shortcut: "Ctrl+Cmd+K" },
   { id: "rephrase-selection", label: "Reformuler la sélection", shortcut: "Ctrl+Cmd+R" },
   { id: "summarize-selection", label: "Résumer la sélection", shortcut: "Ctrl+Cmd+U" },

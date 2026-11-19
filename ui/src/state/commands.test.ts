@@ -7,6 +7,7 @@ describe("palette de commandes", () => {
   it("propose chaque action de l'application, avec son raccourci", () => {
     expect(COMMANDS.map((c) => [c.id, c.label, c.shortcut ?? null])).toEqual([
       ["quick-open", "Ouvrir une note", "Cmd+O"],
+      ["open-link", "Ouvrir le lien", null],
       ["new-note", "Nouvelle note", "Cmd+N"],
       ["new-note-from-template", "Nouvelle note depuis un modèle", "Cmd+Maj+N"],
       ["daily-note", "Note du jour", "Cmd+Maj+J"],
@@ -14,6 +15,15 @@ describe("palette de commandes", () => {
       ["search-workspace", "Rechercher dans toutes les notes", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],
       ["find-and-replace", "Rechercher et remplacer", "Alt+Cmd+F"],
+      ["bold", "Gras", "Cmd+B"],
+      ["italic", "Italique", "Cmd+I"],
+      ["insert-link", "Lien", "Cmd+K"],
+      ["heading-1", "Titre 1", "Cmd+1"],
+      ["heading-2", "Titre 2", "Cmd+2"],
+      ["heading-3", "Titre 3", "Cmd+3"],
+      ["bullet-list", "Liste à puces", "Cmd+Maj+8"],
+      ["numbered-list", "Liste numérotée", "Cmd+Maj+7"],
+      ["insert-date", "Insérer la date du jour", "Cmd+Maj+D"],
       ["correct-selection", "Corriger la sélection", "Ctrl+Cmd+K"],
       ["rephrase-selection", "Reformuler la sélection", "Ctrl+Cmd+R"],
       ["summarize-selection", "Résumer la sélection", "Ctrl+Cmd+U"],
