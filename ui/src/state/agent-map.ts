@@ -84,6 +84,7 @@ export function agentEventReceived(map: AgentMap, event: ClaudeEventItem): Agent
     }
     // Un refus est toujours suivi de l'issue en erreur de l'action, qui suffit.
     case "actionRefused":
+    case "changeHeldBack":
     case "message":
     case "changedNote":
     case "summary":

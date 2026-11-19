@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ClaudeEventItem } from "../bridge";
 import {
   ACTION_LABELS,
+  ACTION_STATES,
+  ALLOW_CHANGES_MESSAGE,
+  changesHeldBack,
   type Conversation,
   eventReceived,
   messageSent,
@@ -63,6 +66,8 @@ describe("conversation de la colonne Claude Code", () => {
       write: "Écriture",
       edit: "Modification",
       subAgent: "Sous-agent",
+      webSearch: "Recherche sur le web",
+      webPage: "Page web",
       other: "Outil",
     });
     expect(play(asked, started("w", "write")).entries.at(-1)).toMatchObject({ state: "running" });
@@ -105,6 +110,33 @@ describe("conversation de la colonne Claude Code", () => {
         state: "refused",
       },
     ]);
+  });
+
+  it("une modification retenue par le garde-fou du web le reste", () => {
+    const now = play(
+      asked,
+      started("w", "write"),
+      { kind: "changeHeldBack", id: "w" },
+      { kind: "actionFinished", id: "w", succeeded: false },
+    );
+    expect(now.entries.at(-1)).toMatchObject({ id: "w", state: "heldBack" });
+    expect(ACTION_STATES.heldBack).toBe("retenue");
+  });
+
+  it("des modifications retenues se proposent à l'autorisation une fois le tour fini", () => {
+    const held = play(asked, started("w", "write"), { kind: "changeHeldBack", id: "w" });
+    expect(changesHeldBack(held)).toBe(false);
+    const ended = turnEnded(held, null);
+    expect(changesHeldBack(ended)).toBe(true);
+    expect(changesHeldBack(turnEnded(stopAsked(held), "arrêtée"))).toBe(true);
+    const refused = play(asked, started("o", "other"), { kind: "actionRefused", id: "o" });
+    expect(changesHeldBack(turnEnded(refused, null))).toBe(false);
+    // Le tour suivant ne propose plus celles d'avant.
+    expect(changesHeldBack(turnEnded(messageSent(ended, "Encore"), null))).toBe(false);
+    expect(changesHeldBack(NEW_CONVERSATION)).toBe(false);
+    expect(ALLOW_CHANGES_MESSAGE).toBe(
+      "J’autorise les modifications retenues après la lecture du web, pour cette réponse seulement : fais-les maintenant.",
+    );
   });
 
   it("une note modifiée n'est montrée qu'une fois par tour", () => {

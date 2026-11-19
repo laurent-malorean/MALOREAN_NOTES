@@ -3,6 +3,8 @@ import type { ClaudeEventItem, ClaudeStatusItem, TurnSettingsItem } from "../bri
 import type { Columns } from "../state/columns";
 import { createLayout, type Layout } from "../screens/layout";
 import { CHECKING_CLAUDE, EMPTY } from "../screens/claude-column-view";
+import { ALLOW_CHANGES_MESSAGE } from "../state/claude-column";
+import { NO_SETTINGS } from "../state/claude-input-bar";
 import { type ClaudeColumn, createClaudeColumn } from "./claude-column";
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -18,6 +20,7 @@ let workspacePath: string;
 let columns: Columns;
 let stored: Map<string, string>;
 let sentSettings: TurnSettingsItem[];
+let changesAllowed: boolean[];
 
 const storage = {
   getItem: (key: string) => stored.get(key) ?? null,
@@ -43,10 +46,11 @@ function createColumn() {
   return createClaudeColumn({
     backend: {
       claudeStatus: () => (log.push("vérifier"), status),
-      sendToClaude: (message, settings) =>
+      sendToClaude: (message, settings, allowed) =>
         new Promise((resolve, reject) => {
           log.push(`envoyer ${message}`);
           sentSettings.push(settings);
+          changesAllowed.push(allowed);
           turn = { resolve: () => resolve(null), reject };
         }),
       stopClaude: async () => (log.push("arrêter"), null),
@@ -92,6 +96,7 @@ beforeEach(() => {
   columns = showing(null);
   stored = new Map();
   sentSettings = [];
+  changesAllowed = [];
   column = createColumn();
 });
 
@@ -181,6 +186,51 @@ describe("colonne Claude Code : un tour", () => {
     ]);
     find<HTMLButtonElement>(".claude-note-link").click();
     expect(log.at(-1)).toBe("ouvrir plan.md");
+  });
+
+  it("des modifications retenues après une lecture du web s'autorisent d'un clic, pour un tour", async () => {
+    columns = showing("Projets/plan.md", "Plan");
+    column.follow();
+    send("Cherche et note");
+    announce({
+      kind: "actionStarted",
+      agent: null,
+      id: "s",
+      action: "webSearch",
+      tool: null,
+      target: "capitale",
+    });
+    announce({ kind: "actionFinished", id: "s", succeeded: true });
+    announce({
+      kind: "actionStarted",
+      agent: null,
+      id: "e",
+      action: "edit",
+      tool: null,
+      target: "/Users/moi/Notes/a.md",
+    });
+    announce({ kind: "changeHeldBack", id: "e" });
+    announce({ kind: "actionFinished", id: "e", succeeded: false });
+    expect(find(".claude-held-back")).toBeNull();
+    turn.resolve();
+    await settle();
+    expect(shown().slice(1, 3)).toEqual([
+      "Recherche sur le webcapitale",
+      "Modificationa.mdretenue",
+    ]);
+    find<HTMLButtonElement>(".claude-allow-changes").click();
+    expect(log.at(-1)).toBe(`envoyer ${ALLOW_CHANGES_MESSAGE}`);
+    expect(changesAllowed).toEqual([false, true]);
+    expect(sentSettings).toEqual([NO_SETTINGS, NO_SETTINGS]);
+    expect(shown().at(-2)).toBe(ALLOW_CHANGES_MESSAGE);
+    expect(find(".claude-held-back")).toBeNull();
+    turn.resolve();
+    await settle();
+    send("Merci");
+    expect(changesAllowed).toEqual([false, true, false]);
+    expect(log.at(-1)).toBe(
+      "envoyer Merci\n\nNotes jointes (chemins depuis l'espace de travail) :\n- Projets/plan.md",
+    );
   });
 
   it("une erreur du tour est montrée en clair", async () => {

@@ -427,13 +427,17 @@ describe("pont vers Rust : colonne Claude Code", () => {
 
   it("envoie un message, arrête le tour, commence une nouvelle conversation", async () => {
     const calls = recordCalls(null);
-    await bridge.sendToClaude("Range mes notes", { model: "opus", effort: "extraHigh" });
+    await bridge.sendToClaude("Range mes notes", { model: "opus", effort: "extraHigh" }, true);
     await bridge.stopClaude();
     await bridge.newConversation();
     expect(calls).toEqual([
       {
         command: "send_to_claude",
-        args: { message: "Range mes notes", settings: { model: "opus", effort: "extraHigh" } },
+        args: {
+          message: "Range mes notes",
+          settings: { model: "opus", effort: "extraHigh" },
+          changesAllowed: true,
+        },
       },
       { command: "stop_claude", args: {} },
       { command: "new_conversation", args: {} },

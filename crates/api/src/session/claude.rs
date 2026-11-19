@@ -193,7 +193,9 @@ mod tests {
     use application::testing::{
         FakeClaudeCode, FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore,
     };
-    use domain::claude::{ClaudeAction, ClaudeModel, Effort, TurnOutcome, TurnSummary};
+    use domain::claude::{
+        ChangesAfterWeb, ClaudeAction, ClaudeModel, Effort, TurnOutcome, TurnSummary,
+    };
 
     use super::*;
     use crate::ActionKindItem;
@@ -336,6 +338,7 @@ mod tests {
         let opus = TurnSettings {
             model: Some(ClaudeModel::Opus),
             effort: Some(Effort::Low),
+            changes_after_web: ChangesAfterWeb::Allowed,
         };
         turn(&session, "Un").0.unwrap();
         session.send_to_claude("Deux", opus, |_| {}).unwrap();

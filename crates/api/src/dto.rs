@@ -7,6 +7,7 @@ mod claude;
 mod turn_settings;
 
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
+pub(crate) use turn_settings::turn_settings;
 pub use turn_settings::{ClaudeModelItem, EffortItem, TurnSettingsItem};
 
 /// L'espace de travail ouvert.

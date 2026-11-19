@@ -1,7 +1,7 @@
 // Colonne Claude Code : affichée ou masquée par sa commande ; à l'ouverture, demande si Claude Code
 // peut répondre. Envoie les messages, avec les réglages du tour et les notes jointes, suit les
-// événements du tour en cours et sa durée, l'arrête, commence une nouvelle conversation ; une note
-// modifiée par Claude s'ouvre d'un clic. La carte des agents suit les mêmes événements ; le compte
+// événements du tour en cours et sa durée, l'arrête, commence une nouvelle conversation, autorise
+// les modifications retenues par le garde-fou du web ; une note modifiée par Claude s'ouvre d'un clic. La carte des agents suit les mêmes événements ; le compte
 // Claude se montre et se change en haut de la colonne (fiche 0032).
 import type * as Bridge from "../bridge";
 import { noteHtml } from "../rendering/note-html";
@@ -18,6 +18,7 @@ import { messageWithNotes } from "../state/claude-input-bar";
 import type { Columns } from "../state/columns";
 import type { PreferenceStorage } from "../state/focus-preference";
 import {
+  ALLOW_CHANGES_MESSAGE,
   type Conversation,
   eventReceived,
   messageSent,
@@ -124,23 +125,25 @@ export function createClaudeColumn(deps: ClaudeColumnDeps): ClaudeColumn {
     bar.timeReply(false);
     update(turnEnded(conversation, error), agentTurnEnded(agents, error !== null));
   };
-  const send = (text: string) => {
-    const notes = bar.sent();
-    update(
-      messageSent(
-        conversation,
-        text,
-        notes.map((note) => note.title),
-      ),
-    );
+  /** Commence un tour : `shown` dans la conversation, `message` envoyé à Claude. */
+  const play = (shown: Conversation, message: string, changesAllowed: boolean) => {
+    update(shown);
     bar.timeReply(true);
-    backend.sendToClaude(messageWithNotes(text, notes), bar.settings()).then(
+    backend.sendToClaude(message, bar.settings(), changesAllowed).then(
       () => ended(null),
       (error: unknown) => ended(backend.errorMessage(error)),
     );
   };
+  const send = (text: string) => {
+    const notes = bar.sent();
+    const titles = notes.map((note) => note.title);
+    play(messageSent(conversation, text, titles), messageWithNotes(text, notes), false);
+  };
+  // Les modifications retenues par le garde-fou du web, autorisées pour ce seul tour.
+  const allowChanges = () =>
+    play(messageSent(conversation, ALLOW_CHANGES_MESSAGE), ALLOW_CHANGES_MESSAGE, true);
   const view: ClaudeColumnView = createClaudeColumnView(layout.claudeColumn, {
-    ...{ send, openNote: deps.openNote, markdown, close: () => toggle() },
+    ...{ send, allowChanges, openNote: deps.openNote, markdown, close: () => toggle() },
     ...{ chooseSettings: bar.chooseSettings, attach: bar.attach, detach: bar.detach },
     stop: () => {
       update(stopAsked(conversation));

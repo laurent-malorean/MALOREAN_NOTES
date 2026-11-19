@@ -3,7 +3,7 @@
 import type { ActionKindItem, ClaudeEventItem } from "../bridge";
 
 /** Où en est une action de Claude. */
-export type ActionState = "running" | "succeeded" | "failed" | "refused";
+export type ActionState = "running" | "succeeded" | "failed" | "refused" | "heldBack";
 
 /** Une ligne de la conversation, dans l'ordre où elle arrive. */
 export type ChatEntry =
@@ -44,6 +44,8 @@ export const ACTION_LABELS: Readonly<Record<ActionKindItem, string>> = {
   write: "Écriture",
   edit: "Modification",
   subAgent: "Sous-agent",
+  webSearch: "Recherche sur le web",
+  webPage: "Page web",
   other: "Outil",
 };
 
@@ -53,6 +55,7 @@ export const ACTION_STATES: Readonly<Record<ActionState, string | null>> = {
   succeeded: null,
   failed: "en erreur",
   refused: "refusée",
+  heldBack: "retenue",
 };
 
 /** Où commence le tour en cours : après le dernier message de l'utilisateur. */
@@ -73,11 +76,13 @@ export function stopAsked(conversation: Conversation): Conversation {
   return conversation.turn === "running" ? { ...conversation, turn: "stopping" } : conversation;
 }
 
+/** Un refus ou une modification retenue le restent : l'issue en erreur qui suit ne dit rien de plus. */
+const FINAL_STATES: readonly ActionState[] = ["refused", "heldBack"];
+
 const withActionState = (entries: readonly ChatEntry[], id: string, state: ActionState) =>
   entries.map((entry) =>
-    // Un refus reste un refus : l'issue en erreur qui le suit ne dit rien de plus.
     // Stryker disable next-line ConditionalExpression: seule une action a un identifiant, la condition suivante écarte aussi les autres lignes ; TypeScript exige la première.
-    entry.kind === "action" && entry.id === id && entry.state !== "refused"
+    entry.kind === "action" && entry.id === id && !FINAL_STATES.includes(entry.state)
       ? { ...entry, state }
       : entry,
   );
@@ -103,26 +108,43 @@ function withSummary(
   ];
 }
 
+/** L'état que donne un refus ou une modification retenue. */
+const MARKS = { actionRefused: "refused", changeHeldBack: "heldBack" } as const;
+
+/** L'issue d'une action, son refus, ou sa retenue par le garde-fou du web. */
+function withActionEvent(
+  entries: readonly ChatEntry[],
+  event: Extract<ClaudeEventItem, { kind: "actionFinished" | "actionRefused" | "changeHeldBack" }>,
+): readonly ChatEntry[] {
+  const state =
+    event.kind === "actionFinished"
+      ? event.succeeded
+        ? "succeeded"
+        : "failed"
+      : MARKS[event.kind];
+  return withActionState(entries, event.id, state);
+}
+
+/** Une action lancée, qui tourne. */
+const startedAction = (event: Extract<ClaudeEventItem, { kind: "actionStarted" }>): ChatEntry => ({
+  kind: "action",
+  id: event.id,
+  label: event.tool ?? ACTION_LABELS[event.action],
+  target: event.target,
+  subAgent: event.agent !== null,
+  state: "running",
+});
+
 function withEvent(entries: readonly ChatEntry[], event: ClaudeEventItem): readonly ChatEntry[] {
   switch (event.kind) {
     case "message":
       return [...entries, { kind: "claude", text: event.text, subAgent: event.agent !== null }];
     case "actionStarted":
-      return [
-        ...entries,
-        {
-          kind: "action",
-          id: event.id,
-          label: event.tool ?? ACTION_LABELS[event.action],
-          target: event.target,
-          subAgent: event.agent !== null,
-          state: "running",
-        },
-      ];
+      return [...entries, startedAction(event)];
     case "actionFinished":
-      return withActionState(entries, event.id, event.succeeded ? "succeeded" : "failed");
     case "actionRefused":
-      return withActionState(entries, event.id, "refused");
+    case "changeHeldBack":
+      return withActionEvent(entries, event);
     case "changedNote":
       return withChangedNote(entries, event.path);
     case "summary":
@@ -147,6 +169,24 @@ export function turnEnded(conversation: Conversation, error: string | null): Con
         : [{ kind: "error", message: error }];
   return { entries: [...conversation.entries, ...ending], turn: "idle" };
 }
+
+/**
+ * Le tour fini a vu des modifications retenues par le garde-fou du web (Claude avait lu le web) :
+ * la colonne propose de les autoriser.
+ */
+export const changesHeldBack = (conversation: Conversation) =>
+  conversation.turn === "idle" &&
+  conversation.entries.slice(turnStart(conversation.entries)).some(heldBack);
+
+/** Une action retenue par le garde-fou du web. */
+function heldBack(entry: ChatEntry): boolean {
+  // Stryker disable next-line ConditionalExpression: seule une action a un état, la condition suivante écarte aussi les autres lignes ; TypeScript exige la première.
+  return entry.kind === "action" && entry.state === "heldBack";
+}
+
+/** Le message qui autorise les modifications retenues, pour le seul tour qu'il commence. */
+export const ALLOW_CHANGES_MESSAGE =
+  "J’autorise les modifications retenues après la lecture du web, pour cette réponse seulement : fais-les maintenant.";
 
 /** La cible d'une action telle que la colonne l'écrit : un fichier de l'espace de travail, depuis lui. */
 export function shownTarget(target: string, workspacePath: string): string {

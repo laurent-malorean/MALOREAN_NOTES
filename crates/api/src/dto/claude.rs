@@ -51,6 +51,10 @@ pub enum ActionKindItem {
     Edit,
     /// Lancer un sous-agent.
     SubAgent,
+    /// Chercher sur le web.
+    WebSearch,
+    /// Lire une page web.
+    WebPage,
     /// Un outil que l'application ne connaît pas encore.
     Other,
 }
@@ -119,6 +123,12 @@ pub enum ClaudeEventItem {
         /// L'action.
         id: String,
     },
+    /// Une création ou une modification retenue par le garde-fou du web : Claude a lu le web
+    /// pendant le tour ; l'utilisateur peut l'autoriser.
+    ChangeHeldBack {
+        /// L'action.
+        id: String,
+    },
     /// Un sous-agent a fini son travail.
     SubAgentFinished {
         /// L'action qui l'a lancé.
@@ -176,6 +186,8 @@ impl ClaudeEventItem {
                     ActionKind::Write => (ActionKindItem::Write, None),
                     ActionKind::Edit => (ActionKindItem::Edit, None),
                     ActionKind::SubAgent => (ActionKindItem::SubAgent, None),
+                    ActionKind::WebSearch => (ActionKindItem::WebSearch, None),
+                    ActionKind::WebPage => (ActionKindItem::WebPage, None),
                     ActionKind::Other(name) => (ActionKindItem::Other, Some(name)),
                 };
                 Self::ActionStarted {
@@ -191,6 +203,9 @@ impl ClaudeEventItem {
                 succeeded: outcome == ActionOutcome::Succeeded,
             },
             ClaudeEvent::ActionRefused { id } => Self::ActionRefused {
+                id: id.as_str().to_owned(),
+            },
+            ClaudeEvent::ChangeHeldBack { id } => Self::ChangeHeldBack {
                 id: id.as_str().to_owned(),
             },
             ClaudeEvent::SubAgentFinished {
@@ -307,6 +322,14 @@ mod tests {
             (ActionKindItem::SubAgent, None)
         );
         assert_eq!(
+            started(ActionKind::WebSearch),
+            (ActionKindItem::WebSearch, None)
+        );
+        assert_eq!(
+            started(ActionKind::WebPage),
+            (ActionKindItem::WebPage, None)
+        );
+        assert_eq!(
             started(ActionKind::Other("NotebookEdit".to_owned())),
             (ActionKindItem::Other, Some("NotebookEdit".to_owned()))
         );
@@ -341,6 +364,14 @@ mod tests {
         assert_eq!(
             item(ClaudeEvent::ActionRefused { id: id("a") }),
             ClaudeEventItem::ActionRefused { id: "a".to_owned() }
+        );
+    }
+
+    #[test]
+    fn a_change_held_back_is_named_by_its_id() {
+        assert_eq!(
+            serde_json::to_value(item(ClaudeEvent::ChangeHeldBack { id: id("a") })).unwrap(),
+            serde_json::json!({ "kind": "changeHeldBack", "id": "a" })
         );
     }
 

@@ -46,6 +46,10 @@ succeeded: boolean, } | { "kind": "actionRefused",
 /**
  * L'action.
  */
+id: string, } | { "kind": "changeHeldBack", 
+/**
+ * L'action.
+ */
 id: string, } | { "kind": "subAgentFinished", 
 /**
  * L'action qui l'a lancé.

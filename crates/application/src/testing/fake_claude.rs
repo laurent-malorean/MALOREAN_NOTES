@@ -197,7 +197,9 @@ impl ClaudeCode for FakeClaudeCode {
 
 #[cfg(test)]
 mod tests {
-    use domain::claude::{ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSummary};
+    use domain::claude::{
+        ChangesAfterWeb, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSummary,
+    };
     use std::time::Duration;
 
     use super::*;
@@ -294,6 +296,7 @@ mod tests {
         let opus = TurnSettings {
             model: Some(ClaudeModel::Opus),
             effort: Some(Effort::High),
+            changes_after_web: ChangesAfterWeb::Allowed,
         };
         claude
             .send(

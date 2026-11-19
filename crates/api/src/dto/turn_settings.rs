@@ -1,7 +1,7 @@
 //! Réglages d'un tour de Claude Code reçus de la page : le modèle et le niveau d'effort choisis
 //! sur leur pastille (fiche 0032).
 
-use domain::claude::{ClaudeModel, Effort, TurnSettings};
+use domain::claude::{ChangesAfterWeb, ClaudeModel, Effort, TurnSettings};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -71,11 +71,27 @@ impl From<EffortItem> for Effort {
 }
 
 impl From<TurnSettingsItem> for TurnSettings {
+    /// Les réglages choisis ; les modifications après une lecture du web restent retenues.
     fn from(settings: TurnSettingsItem) -> Self {
         Self {
             model: settings.model.map(Into::into),
             effort: settings.effort.map(Into::into),
+            changes_after_web: ChangesAfterWeb::HeldBack,
         }
+    }
+}
+
+/// Les réglages d'un tour : ceux choisis sur la pastille, et les modifications après une lecture
+/// du web autorisées pour ce tour si `changes_allowed` (bouton « Autoriser ses modifications »).
+#[must_use]
+pub(crate) fn turn_settings(settings: TurnSettingsItem, changes_allowed: bool) -> TurnSettings {
+    TurnSettings {
+        changes_after_web: if changes_allowed {
+            ChangesAfterWeb::Allowed
+        } else {
+            ChangesAfterWeb::HeldBack
+        },
+        ..settings.into()
     }
 }
 
@@ -122,6 +138,20 @@ mod tests {
     fn nothing_chosen_leaves_claude_code_its_own_choice() {
         let read = settings(json!({ "model": null, "effort": null }));
         assert_eq!(read, TurnSettings::default());
+    }
+
+    #[test]
+    fn changes_after_a_web_read_are_held_back_unless_allowed_for_the_turn() {
+        let chosen = TurnSettingsItem {
+            model: Some(ClaudeModelItem::Opus),
+            effort: None,
+        };
+        let held = turn_settings(chosen, false);
+        assert_eq!(held.changes_after_web, ChangesAfterWeb::HeldBack);
+        assert_eq!(held.model, Some(ClaudeModel::Opus));
+        let allowed = turn_settings(chosen, true);
+        assert_eq!(allowed.changes_after_web, ChangesAfterWeb::Allowed);
+        assert_eq!(allowed.model, Some(ClaudeModel::Opus));
     }
 
     #[test]

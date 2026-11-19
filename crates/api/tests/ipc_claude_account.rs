@@ -72,7 +72,7 @@ fn send(window: &WebviewWindow<MockRuntime>) {
     call_with(
         window,
         "send_to_claude",
-        json!({ "message": "Salut", "settings": { "model": null, "effort": null } }),
+        json!({ "message": "Salut", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
     )
     .unwrap();
 }

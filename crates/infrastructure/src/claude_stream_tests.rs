@@ -8,6 +8,7 @@ const NOTE_EDITED: &str = include_str!("../tests/claude_streams/note_edited.json
 const SUB_AGENT: &str = include_str!("../tests/claude_streams/sub_agent.jsonl");
 const REFUSED: &str = include_str!("../tests/claude_streams/refused.jsonl");
 const ESCAPES_REFUSED: &str = include_str!("../tests/claude_streams/escapes_refused.jsonl");
+const WEB_HELD_BACK: &str = include_str!("../tests/claude_streams/web_held_back.jsonl");
 const UNKNOWN_CONVERSATION: &str =
     include_str!("../tests/claude_streams/unknown_conversation.jsonl");
 
@@ -188,7 +189,9 @@ fn actions_of(events: &[ClaudeEvent]) -> Vec<(ActionKind, String, bool, ActionOu
                 false,
                 ActionOutcome::Succeeded,
             )),
-            ClaudeEvent::ActionRefused { .. } => actions.last_mut().unwrap().2 = true,
+            ClaudeEvent::ActionRefused { .. } | ClaudeEvent::ChangeHeldBack { .. } => {
+                actions.last_mut().unwrap().2 = true;
+            }
             ClaudeEvent::ActionFinished { outcome, .. } => {
                 actions.last_mut().unwrap().3 = *outcome;
             }
@@ -198,14 +201,14 @@ fn actions_of(events: &[ClaudeEvent]) -> Vec<(ActionKind, String, bool, ActionOu
     actions
 }
 
-/// Enregistré avec les options exactes de l'adaptateur (fiche 0032) : chaque échappée hors du
-/// dossier est refusée (chemin en `..`, lien symbolique vers un fichier ou un dossier du dehors,
-/// écriture et recherche au dehors) ; les commandes système et le web n'existent pas, et y
-/// recourir est refusé aussi ; les notes
-/// du dossier sont modifiées et créées sans rien demander.
+/// Enregistré avec les options de l'adaptateur du 19/11 au matin, sans le web (fiche 0032) :
+/// chaque échappée hors du dossier est refusée (chemin en `..`, lien symbolique vers un fichier
+/// ou un dossier du dehors, écriture et recherche au dehors) ; les commandes système et, ce
+/// jour-là, le web n'existaient pas, et y recourir était refusé aussi ; les notes du dossier sont
+/// modifiées et créées sans rien demander.
 #[test]
 fn every_escape_from_the_workspace_is_refused_and_notes_inside_are_written() {
-    use ActionKind::{Edit, Other, Read, Search, Write};
+    use ActionKind::{Edit, Other, Read, Search, WebPage, Write};
     use ActionOutcome::{Failed, Succeeded};
     let refused = |kind, target: &str| (kind, target.to_owned(), true, Failed);
     let absent = |tool: &str| (Other(tool.to_owned()), String::new(), true, Failed);
@@ -219,7 +222,7 @@ fn every_escape_from_the_workspace_is_refused_and_notes_inside_are_written() {
             refused(Write, "/Users/moi/Hors/written.txt"),
             refused(Write, "/Users/moi/Notes/dossier-lien/via-link.txt"),
             absent("Bash"),
-            absent("WebFetch"),
+            (WebPage, "https://example.com".to_owned(), true, Failed),
             done(Edit, "/Users/moi/Notes/note.md"),
             done(Write, "/Users/moi/Notes/nouvelle.md"),
             refused(Search, "*"),
@@ -248,6 +251,50 @@ fn a_tool_or_a_sub_agent_left_out_by_the_permissions_is_refused() {
             r#"[{"type":"text","text":"Agent type 'web-fetch' is unavailable because every tool it may use is denied by the current permission settings."}]"#
         ),
         refused
+    );
+}
+
+#[test]
+fn a_change_held_back_by_the_web_guard_is_said_so_then_fails() {
+    let held_back = vec![
+        ClaudeEvent::ChangeHeldBack { id: id("toolu_1") },
+        finished("toolu_1", ActionOutcome::Failed),
+    ];
+    let said = format!("PreToolUse:Write hook error: {HELD_BACK}");
+    assert_eq!(result_of(&serde_json::to_string(&said).unwrap()), held_back);
+    let blocks = serde_json::json!([{ "type": "text", "text": said }]);
+    assert_eq!(result_of(&blocks.to_string()), held_back);
+}
+
+/// Enregistré avec les options exactes de l'adaptateur et son garde-fou du web (fiche 0032) :
+/// Claude cherche sur le web, puis sa modification de note est retenue.
+#[test]
+fn after_a_web_search_the_change_of_a_note_is_held_back() {
+    use ActionKind::{Edit, Read, WebSearch};
+    use ActionOutcome::{Failed, Succeeded};
+    let events = stream(WEB_HELD_BACK);
+    assert_eq!(
+        actions_of(&events),
+        [
+            (
+                WebSearch,
+                "capitale de la Mongolie".to_owned(),
+                false,
+                Succeeded
+            ),
+            (Read, "/Users/moi/Notes/a.md".to_owned(), false, Succeeded),
+            (Edit, "/Users/moi/Notes/a.md".to_owned(), true, Failed),
+        ]
+    );
+    assert!(
+        events
+            .iter()
+            .any(|event| matches!(event, ClaudeEvent::ChangeHeldBack { .. }))
+    );
+    assert!(
+        !events
+            .iter()
+            .any(|event| matches!(event, ClaudeEvent::ActionRefused { .. }))
     );
 }
 
@@ -375,6 +422,17 @@ fn each_tool_of_claude_code_gives_its_kind_of_action_and_its_target() {
     assert_eq!(
         action_of("Task", r#"{"description":"Compter"}"#),
         action(ActionKind::SubAgent, Some("Compter"))
+    );
+    assert_eq!(
+        action_of("WebSearch", r#"{"query":"capitale","mode":"standard"}"#),
+        action(ActionKind::WebSearch, Some("capitale"))
+    );
+    assert_eq!(
+        action_of(
+            "WebFetch",
+            r#"{"url":"https://example.com","prompt":"Titre"}"#
+        ),
+        action(ActionKind::WebPage, Some("https://example.com"))
     );
     assert_eq!(
         action_of("NotebookEdit", r#"{"file_path":"/N/a.ipynb"}"#),

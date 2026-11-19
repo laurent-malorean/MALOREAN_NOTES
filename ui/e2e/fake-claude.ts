@@ -5,6 +5,9 @@
 // `claudeTurn=hanging` : le tour attend d'être arrêté ; `claudeTurn=busy` : Claude répond déjà.
 // `claudeAgents=1` : le tour rejoué lance des sous-agents (`AGENTS_TURN`, sur le modèle du flux
 // enregistré `sub_agent.jsonl`) ; avec `claudeTurn=hanging`, il attend une fois les sous-agents lancés.
+// `claudeWeb=1` : Claude cherche sur le web et sa modification est retenue par le garde-fou du web
+// (`WEB_HELD_BACK`, sur le modèle du flux enregistré `web_held_back.jsonl`) ; un tour où
+// l'utilisateur autorise les modifications écrit `plan.md`.
 // Connecté au compte `CLAUDE_ACCOUNT` ; se déconnecter le laisse déconnecté ; se connecter donne
 // l'adresse `CLAUDE_SIGN_IN_ADDRESS`, puis le connecte à `CLAUDE_OTHER_ACCOUNT`. `claudeLogin=hanging` :
 // la connexion attend le navigateur jusqu'à être annulée ; `claudeLogin=failed` : elle n'aboutit pas.
@@ -26,6 +29,10 @@ export interface FakeClaude {
   claudeMessages: string[];
   /** Les réglages reçus avec chaque message, dans l'ordre. */
   claudeSettings: TurnSettingsItem[];
+  /** Vrai si le tour rejoué lit le web avant de modifier une note. */
+  claudeWeb: boolean;
+  /** Pour chaque message, dans l'ordre : vrai si les modifications après le web étaient autorisées. */
+  claudeChangesAllowed: boolean[];
   /** Comment se passe chaque connexion : elle aboutit, attend le navigateur, ou échoue. */
   claudeLogin: "done" | "hanging" | "failed";
   /** Les connexions et déconnexions demandées, dans l'ordre. */
@@ -121,6 +128,41 @@ const AGENTS_ENDED: ClaudeEventItem[] = [
   { kind: "summary", failure: null, durationMs: 5000, tokens: 12000 },
 ];
 
+/** Un tour qui lit le web, puis dont la modification de note est retenue par le garde-fou du web. */
+const WEB_HELD_BACK: ClaudeEventItem[] = [
+  {
+    kind: "actionStarted",
+    agent: null,
+    id: "s",
+    action: "webSearch",
+    tool: null,
+    target: "capitale de la Mongolie",
+  },
+  { kind: "actionFinished", id: "s", succeeded: true },
+  { kind: "actionStarted", agent: null, id: "e", action: "edit", tool: null, target: at("a.md") },
+  { kind: "changeHeldBack", id: "e" },
+  { kind: "actionFinished", id: "e", succeeded: false },
+  { kind: "message", agent: null, text: "Ma modification de a.md a été retenue." },
+  { kind: "summary", failure: null, durationMs: 3000, tokens: 900 },
+];
+
+/** Le tour où l'utilisateur autorise les modifications : la note est écrite. */
+const WEB_ALLOWED_BEFORE: ClaudeEventItem[] = [
+  {
+    kind: "actionStarted",
+    agent: null,
+    id: "w2",
+    action: "write",
+    tool: null,
+    target: at(CLAUDE_NOTE.path),
+  },
+];
+const WEB_ALLOWED_AFTER: ClaudeEventItem[] = [
+  { kind: "actionFinished", id: "w2", succeeded: true },
+  { kind: "changedNote", path: CLAUDE_NOTE.path },
+  { kind: "summary", failure: null, durationMs: 2000, tokens: 500 },
+];
+
 /** Le temps entre deux événements : la réponse arrive au fil de l'eau. */
 const STEP = 20;
 const pause = () => new Promise((resolve) => setTimeout(resolve, STEP));
@@ -145,6 +187,8 @@ export function fakeClaudeState(params: URLSearchParams): FakeClaude {
     claudeAgents: params.get("claudeAgents") === "1",
     claudeMessages: [],
     claudeSettings: [],
+    claudeWeb: params.get("claudeWeb") === "1",
+    claudeChangesAllowed: [],
   };
 }
 
@@ -157,9 +201,17 @@ export function fakeClaude(
   write: (path: string, content: string) => Promise<void>,
 ): Record<string, Handler> {
   let stop: (() => void) | null = null;
-  const play = async (message: string) => {
+  const play = async (message: string, changesAllowed: boolean) => {
     state.claudeMessages.push(message);
+    state.claudeChangesAllowed.push(changesAllowed);
     if (state.claudeTurn === "busy") throw { message: CLAUDE_BUSY };
+    if (state.claudeWeb && !changesAllowed) return announce(WEB_HELD_BACK).then(() => null);
+    if (state.claudeWeb) {
+      await announce(WEB_ALLOWED_BEFORE);
+      await write(CLAUDE_NOTE.path, CLAUDE_NOTE.content);
+      await announce(WEB_ALLOWED_AFTER);
+      return null;
+    }
     const hang = () =>
       new Promise((_, reject) => (stop = () => reject({ message: CLAUDE_STOPPED })));
     if (state.claudeAgents) {
@@ -179,9 +231,9 @@ export function fakeClaude(
   };
   return {
     claude_status: () => state.claude,
-    send_to_claude: ({ message, settings }) => (
+    send_to_claude: ({ message, settings, changesAllowed }) => (
       state.claudeSettings.push(settings as TurnSettingsItem),
-      play(String(message))
+      play(String(message), changesAllowed === true)
     ),
     stop_claude: () => (stop?.(), (stop = null), null),
     new_conversation: () => null,

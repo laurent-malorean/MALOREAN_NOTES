@@ -10,6 +10,8 @@ use domain::claude::{
 };
 use serde_json::Value;
 
+use crate::web_guard::HELD_BACK;
+
 /// Les compteurs de jetons du bilan, lus et écrits, additionnés.
 const TOKEN_COUNTERS: [&str; 4] = [
     "input_tokens",
@@ -99,6 +101,8 @@ fn action(block: &Value) -> Option<ClaudeAction> {
         ActionKind::Read | ActionKind::Write | ActionKind::Edit => "file_path",
         ActionKind::Search => "pattern",
         ActionKind::SubAgent => "description",
+        ActionKind::WebSearch => "query",
+        ActionKind::WebPage => "url",
         ActionKind::Other(_) => "",
     };
     let target = text(&block["input"][field]).map(str::to_owned);
@@ -113,11 +117,14 @@ fn kind(tool: &str) -> ActionKind {
         "Write" => ActionKind::Write,
         "Edit" => ActionKind::Edit,
         "Agent" | "Task" => ActionKind::SubAgent,
+        "WebSearch" => ActionKind::WebSearch,
+        "WebFetch" => ActionKind::WebPage,
         other => ActionKind::Other(other.to_owned()),
     }
 }
 
-/// L'issue d'une action ; refusée d'abord si son outil est hors des autorisations.
+/// L'issue d'une action ; refusée d'abord si son outil est hors des autorisations, retenue
+/// d'abord si le garde-fou du web l'a empêchée.
 fn action_finished(block: &Value) -> Vec<ClaudeEvent> {
     let Some(id) = action_id(&block["tool_use_id"]) else {
         return Vec::new();
@@ -132,7 +139,13 @@ fn action_finished(block: &Value) -> Vec<ClaudeEvent> {
         }];
     }
     let mut events = Vec::new();
-    if left_out(&block["content"]) {
+    let said = texts(&block["content"]);
+    if said.iter().any(|said| said.contains(HELD_BACK)) {
+        events.push(ClaudeEvent::ChangeHeldBack { id: id.clone() });
+    } else if said
+        .iter()
+        .any(|said| LEFT_OUT_MARKS.iter().any(|mark| said.contains(mark)))
+    {
         events.push(ClaudeEvent::ActionRefused { id: id.clone() });
     }
     events.push(ClaudeEvent::ActionFinished {
@@ -142,19 +155,15 @@ fn action_finished(block: &Value) -> Vec<ClaudeEvent> {
     events
 }
 
-/// L'issue en erreur dit que l'outil est hors des autorisations ; elle est un texte, ou une
-/// liste de blocs de texte.
-fn left_out(content: &Value) -> bool {
-    let texts: Vec<&str> = match content.as_array() {
+/// Ce que dit l'issue d'une action : un texte, ou une liste de blocs de texte.
+fn texts(content: &Value) -> Vec<&str> {
+    match content.as_array() {
         Some(blocks) => blocks
             .iter()
             .filter_map(|block| text(&block["text"]))
             .collect(),
         None => text(content).into_iter().collect(),
-    };
-    texts
-        .iter()
-        .any(|said| LEFT_OUT_MARKS.iter().any(|mark| said.contains(mark)))
+    }
 }
 
 fn sub_agent_finished(value: &Value) -> Option<ClaudeEvent> {

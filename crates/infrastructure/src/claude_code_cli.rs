@@ -12,13 +12,21 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::thread;
 
 use application::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
-use domain::claude::{ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings};
+use domain::claude::{
+    ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings,
+};
 
 use crate::claude_stream::events_of;
+use crate::web_guard::WebGuard;
 
 /// Les seuls outils offerts à Claude : lire, chercher, créer et modifier des fichiers, lancer
-/// des sous-agents ; ni commande système, ni web.
-const TOOLS: &str = "Read,Write,Edit,Glob,Grep,Agent";
+/// des sous-agents, chercher sur le web et lire des pages web ; aucune commande système. Nommer
+/// `WebFetch` le garde malgré `--restricted`.
+const TOOLS: &str = "Read,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch";
+
+/// Les outils permis d'office : sans cela, chercher sur le web et lire une page demanderaient
+/// une autorisation, que personne ne donne (`--permission-prompts none`).
+const ALLOWED_TOOLS: &str = "WebSearch,WebFetch";
 
 /// Les seules variables d'environnement transmises à `claude` : son dossier personnel, sa
 /// connexion, ses programmes, la langue, les fichiers temporaires et le proxy du réseau. Toute
@@ -145,30 +153,39 @@ impl ClaudeCodeCli {
         self.turn.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// Lance le programme pour un tour et lui donne `message` ; rend sa sortie.
+    /// Lance le programme pour un tour et lui donne `message` ; rend sa sortie, et le garde-fou
+    /// du web du tour, à garder jusqu'à sa fin (aucun si l'utilisateur a autorisé les
+    /// modifications pour ce tour).
     fn start(
         &self,
         workspace: &WorkspaceLocation,
         conversation: Option<&ConversationId>,
         settings: TurnSettings,
         message: &str,
-    ) -> Result<ChildStdout, ClaudeError> {
+    ) -> Result<(ChildStdout, Option<WebGuard>), ClaudeError> {
         if !Path::new(workspace.as_str()).is_dir() {
             return Err(ClaudeError::Failed(format!(
                 "l'espace de travail {} est introuvable",
                 workspace.as_str()
             )));
         }
+        let guard = match settings.changes_after_web {
+            ChangesAfterWeb::HeldBack => Some(WebGuard::new().map_err(|_| {
+                ClaudeError::Failed("le garde-fou du web n'a pas pu être posé".to_owned())
+            })?),
+            ChangesAfterWeb::Allowed => None,
+        };
+        let hooks = guard.as_ref().map(WebGuard::settings);
         let (mut stdin, stdout) = self.launch(|command| {
             command
-                .args(arguments(conversation, settings))
+                .args(arguments(conversation, settings, hooks.as_deref()))
                 .current_dir(workspace.as_str())
                 .stderr(Stdio::null());
         })?;
         // Un programme qui s'arrête sans tout lire ne garde pas le message : sa fin, lue sur sa
         // sortie, dit ce qu'il en est.
         stdin.write_all(message.as_bytes()).ok();
-        Ok(stdout)
+        Ok((stdout, guard))
     }
 
     /// Lance `claude`, réglé par `configure`, comme seul programme en cours (tour ou connexion),
@@ -253,8 +270,12 @@ const fn effort_level(effort: Effort) -> &'static str {
 }
 
 /// Les arguments d'un tour : flux JSON, conversation continuée, modèle et niveau d'effort choisis,
-/// autorisations de Claude.
-fn arguments(conversation: Option<&ConversationId>, settings: TurnSettings) -> Vec<&str> {
+/// autorisations de Claude, et les crochets du garde-fou du web (`hooks`) s'il y en a un.
+fn arguments<'a>(
+    conversation: Option<&'a ConversationId>,
+    settings: TurnSettings,
+    hooks: Option<&'a str>,
+) -> Vec<&'a str> {
     let mut arguments = vec!["-p", "--output-format", "stream-json", "--verbose"];
     if let Some(conversation) = conversation {
         arguments.extend(["--resume", conversation.as_str()]);
@@ -268,6 +289,8 @@ fn arguments(conversation: Option<&ConversationId>, settings: TurnSettings) -> V
     arguments.extend([
         "--tools",
         TOOLS,
+        "--allowed-tools",
+        ALLOWED_TOOLS,
         "--permission-mode",
         "acceptEdits",
         "--permission-prompts",
@@ -277,6 +300,9 @@ fn arguments(conversation: Option<&ConversationId>, settings: TurnSettings) -> V
         "--disable-slash-commands",
         "--forward-subagent-text",
     ]);
+    if let Some(hooks) = hooks {
+        arguments.extend(["--settings", hooks]);
+    }
     arguments
 }
 
@@ -362,7 +388,8 @@ impl ClaudeCode for ClaudeCodeCli {
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
     ) -> Result<(), ClaudeError> {
-        let stdout = self.start(workspace, conversation, settings, message)?;
+        // Le garde-fou vit jusqu'à la fin du tour : son dossier est effacé avec lui.
+        let (stdout, _guard) = self.start(workspace, conversation, settings, message)?;
         let mut summarized = false;
         for line in BufReader::new(stdout).lines().map_while(Result::ok) {
             for event in events_of(&line) {
@@ -401,9 +428,13 @@ mod tests {
     }
 
     fn chosen(model: Option<ClaudeModel>, effort: Option<Effort>) -> Vec<String> {
-        let settings = TurnSettings { model, effort };
-        let arguments = arguments(None, settings);
-        arguments[4..arguments.len() - 10]
+        let settings = TurnSettings {
+            model,
+            effort,
+            ..TurnSettings::default()
+        };
+        let arguments = arguments(None, settings, None);
+        arguments[4..arguments.len() - 12]
             .iter()
             .map(ToString::to_string)
             .collect()

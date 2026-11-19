@@ -10,7 +10,9 @@
 use std::sync::mpsc;
 use std::thread;
 
-use domain::claude::{ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings};
+use domain::claude::{
+    ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings,
+};
 
 use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 
@@ -84,6 +86,7 @@ fn a_conversation_continued_with_other_settings_gives_every_event_in_order(
     let settings = TurnSettings {
         model: Some(ClaudeModel::Opus),
         effort: Some(Effort::Max),
+        changes_after_web: ChangesAfterWeb::Allowed,
     };
     let (end, events) = turn_with(
         codes.replaying,

@@ -15,7 +15,8 @@ use std::time::Duration;
 use application::testing::claude_contract::{ClaudeCodes, claude_code_contract};
 use application::{ClaudeCode, ClaudeError, WorkspaceLocation};
 use domain::claude::{
-    ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSettings, TurnSummary,
+    ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSettings,
+    TurnSummary,
 };
 use infrastructure::ClaudeCodeCli;
 use tempfile::TempDir;
@@ -50,6 +51,10 @@ impl FakeClaude {
                  exec echo '{{\"loggedIn\":true}}'\n\
                  printf '%s\\n' \"$@\" > '{dir}/args'\npwd -P > '{dir}/cwd'\n\
                  env > '{dir}/env'\n\
+                 previous=; for argument in \"$@\"; do [ \"$previous\" = --settings ] && \
+                 printf '%s' \"$argument\" | sed -n \"s/.*touch '\\([^']*\\)\\/web-read'.*/\\1/p\" \
+                 > '{dir}/guard' && [ -d \"$(cat '{dir}/guard')\" ] && touch '{dir}/guard_alive'; \
+                 previous=$argument; done\n\
                  cat > '{dir}/input'\ncat '{dir}/stream.jsonl'\n{ending}\n"
             ),
         )
@@ -129,19 +134,45 @@ fn the_claude_code_program_honours_the_claude_code_contract() {
     });
 }
 
-/// Les arguments attendus après le flux JSON et la conversation éventuelle.
-const PERMISSIONS: &str = "--tools\nRead,Write,Edit,Glob,Grep,Agent\n\
+/// Les arguments attendus après le flux JSON, la conversation éventuelle, le modèle et le niveau
+/// d'effort.
+const PERMISSIONS: &str = "--tools\nRead,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch\n\
+    --allowed-tools\nWebSearch,WebFetch\n\
     --permission-mode\nacceptEdits\n--permission-prompts\nnone\n--restricted\n\
     --strict-mcp-config\n--disable-slash-commands\n--forward-subagent-text\n";
 
+impl FakeClaude {
+    /// Les arguments reçus, sans les crochets du garde-fou du web passés en dernier par
+    /// `--settings` ; les crochets à part, lus.
+    fn arguments_and_guard(&self) -> (String, serde_json::Value) {
+        let received = self.received("args");
+        let (arguments, hooks) = received.split_once("--settings\n").unwrap();
+        let hooks = hooks.strip_suffix('\n').unwrap();
+        assert!(!hooks.contains('\n'));
+        (arguments.to_owned(), serde_json::from_str(hooks).unwrap())
+    }
+}
+
+/// Les outils que visent les crochets du garde-fou du web, dans l'ordre.
+fn guarded_tools(hooks: &serde_json::Value) -> Vec<&str> {
+    hooks["hooks"]["PreToolUse"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|hook| hook["matcher"].as_str())
+        .collect()
+}
+
 #[test]
-fn a_new_conversation_is_launched_with_the_stream_and_permission_options() {
+fn a_new_conversation_is_launched_with_the_stream_permission_and_web_guard_options() {
     let fake = FakeClaude::new(SUMMARY, "");
     fake.turn(None, "Bonjour").0.unwrap();
+    let (arguments, hooks) = fake.arguments_and_guard();
     assert_eq!(
-        fake.received("args"),
+        arguments,
         format!("-p\n--output-format\nstream-json\n--verbose\n{PERMISSIONS}")
     );
+    assert_eq!(guarded_tools(&hooks), ["WebSearch|WebFetch", "Write|Edit"]);
 }
 
 #[test]
@@ -150,9 +181,34 @@ fn a_conversation_is_continued_by_its_id() {
     let conversation = ConversationId::new("aae7955b").unwrap();
     fake.turn(Some(&conversation), "Bonjour").0.unwrap();
     assert_eq!(
-        fake.received("args"),
+        fake.arguments_and_guard().0,
         format!("-p\n--output-format\nstream-json\n--verbose\n--resume\naae7955b\n{PERMISSIONS}")
     );
+}
+
+#[test]
+fn the_web_guard_of_a_turn_lives_until_the_end_of_the_turn_only() {
+    let fake = FakeClaude::new(SUMMARY, "");
+    fake.turn(None, "Bonjour").0.unwrap();
+    assert!(fake.folder.path().join("guard_alive").exists());
+    let folder = fake.received("guard");
+    assert!(folder.contains("malorean-web-guard-"), "{folder}");
+    assert!(!std::path::Path::new(folder.trim_end()).exists());
+}
+
+#[test]
+fn changes_allowed_by_the_user_launch_the_turn_without_the_web_guard() {
+    let fake = FakeClaude::new(SUMMARY, "");
+    let settings = TurnSettings {
+        changes_after_web: ChangesAfterWeb::Allowed,
+        ..TurnSettings::default()
+    };
+    fake.turn_with(None, settings, "Bonjour").0.unwrap();
+    assert_eq!(
+        fake.received("args"),
+        format!("-p\n--output-format\nstream-json\n--verbose\n{PERMISSIONS}")
+    );
+    assert!(!fake.folder.path().join("guard_alive").exists());
 }
 
 #[test]
@@ -162,12 +218,13 @@ fn the_chosen_model_and_effort_are_passed_even_to_continue_a_conversation() {
     let settings = TurnSettings {
         model: Some(ClaudeModel::Sonnet),
         effort: Some(Effort::ExtraHigh),
+        ..TurnSettings::default()
     };
     fake.turn_with(Some(&conversation), settings, "Bonjour")
         .0
         .unwrap();
     assert_eq!(
-        fake.received("args"),
+        fake.arguments_and_guard().0,
         format!(
             "-p\n--output-format\nstream-json\n--verbose\n--resume\naae7955b\n\
              --model\nsonnet\n--effort\nxhigh\n{PERMISSIONS}"

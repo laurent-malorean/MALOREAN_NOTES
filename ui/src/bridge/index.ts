@@ -250,11 +250,15 @@ export const proposeRewriting = (action: WritingActionItem, selection: string) =
 export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
 /**
  * Envoie un message à Claude dans l'espace de travail ouvert, en continuant la conversation en
- * cours, avec le modèle et le niveau d'effort choisis ; se termine avec le tour. Les événements du
- * tour arrivent par `onClaudeEvent`.
+ * cours, avec le modèle et le niveau d'effort choisis ; se termine avec le tour. Après une lecture
+ * du web, ses créations et modifications de notes sont retenues, sauf si `changesAllowed`
+ * (l'utilisateur les autorise pour ce tour). Les événements du tour arrivent par `onClaudeEvent`.
  */
-export const sendToClaude = (message: string, settings: TurnSettingsItem) =>
-  invoke<null>("send_to_claude", { message, settings });
+export const sendToClaude = (
+  message: string,
+  settings: TurnSettingsItem,
+  changesAllowed: boolean,
+) => invoke<null>("send_to_claude", { message, settings, changesAllowed });
 /** Arrête le tour en cours (ce que Claude a déjà écrit reste écrit), ou annule la connexion en cours. */
 export const stopClaude = () => invoke<null>("stop_claude");
 /** Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris). */

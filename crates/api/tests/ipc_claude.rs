@@ -16,7 +16,8 @@ use application::testing::{
     FakeClaudeCode, FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore,
 };
 use domain::claude::{
-    ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSettings, TurnSummary,
+    ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSettings,
+    TurnSummary,
 };
 use serde_json::{Value, json};
 use tauri::ipc::{CallbackFn, InvokeBody};
@@ -115,7 +116,7 @@ fn each_event_of_a_turn_reaches_the_page_under_the_names_it_uses() {
     let answer = call(
         &window,
         "send_to_claude",
-        json!({ "message": "Salut", "settings": { "model": null, "effort": null } }),
+        json!({ "message": "Salut", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
     );
     assert_eq!(answer, Ok(Value::Null));
     assert_eq!(
@@ -140,7 +141,7 @@ fn a_new_conversation_is_asked_under_the_name_used_by_the_page() {
     call(
         &window,
         "send_to_claude",
-        json!({ "message": "Un", "settings": { "model": null, "effort": null } }),
+        json!({ "message": "Un", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
     )
     .unwrap();
     assert_eq!(
@@ -150,7 +151,11 @@ fn a_new_conversation_is_asked_under_the_name_used_by_the_page() {
     call(
         &window,
         "send_to_claude",
-        json!({ "message": "Deux", "settings": { "model": "opus", "effort": "max" } }),
+        json!({
+            "message": "Deux",
+            "settings": { "model": "opus", "effort": "max" },
+            "changesAllowed": true,
+        }),
     )
     .unwrap();
     assert_eq!(claude.requests()[1].1, None);
@@ -159,6 +164,7 @@ fn a_new_conversation_is_asked_under_the_name_used_by_the_page() {
         TurnSettings {
             model: Some(ClaudeModel::Opus),
             effort: Some(Effort::Max),
+            changes_after_web: ChangesAfterWeb::Allowed,
         }
     );
     assert!(BRIDGE_SOURCE.contains("\"new_conversation\""));
@@ -174,7 +180,7 @@ fn a_turn_without_a_workspace_answers_why_and_stopping_changes_nothing() {
     let refused = call(
         &without,
         "send_to_claude",
-        json!({ "message": "Salut", "settings": { "model": null, "effort": null } }),
+        json!({ "message": "Salut", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
     )
     .unwrap_err();
     assert_eq!(
@@ -236,7 +242,7 @@ fn a_running_turn_stops_under_the_name_used_by_the_page() {
             call(
                 &window,
                 "send_to_claude",
-                json!({ "message": "Un", "settings": { "model": null, "effort": null } }),
+                json!({ "message": "Un", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
             )
         });
         while claude.requests().is_empty() {

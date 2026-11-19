@@ -14,6 +14,7 @@ mod json_preferences;
 mod mac_clipboard;
 mod sqlite_index;
 mod system_clock;
+mod web_guard;
 
 pub use apple_writing::{AppleWritingAssistant, WRITING_HELPER};
 pub use claude_code_cli::{ClaudeCodeCli, claude_folders};

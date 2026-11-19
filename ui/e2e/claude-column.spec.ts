@@ -33,7 +33,7 @@ test("Ctrl+Cmd+L ouvre la colonne : Claude répond au fil de l'eau, la note qu'i
   await expect(column(page)).toBeVisible();
   await expect(input(page)).toBeFocused();
   await expect(column(page).locator(".claude-permissions")).toHaveText(
-    "Claude lit, crée et modifie les notes de cet espace de travail, sans demander. Rien d'autre : ni autre dossier, ni commande, ni web.",
+    "Claude lit, crée et modifie les notes de cet espace de travail, sans demander, et peut chercher et lire sur le web ; après une lecture du web, ses modifications attendent votre accord. Rien d'autre : ni autre dossier, ni commande.",
   );
   await send(page, "Écris un plan");
   await expect(conversation(page).locator(".claude-user")).toContainText("Écris un plan");

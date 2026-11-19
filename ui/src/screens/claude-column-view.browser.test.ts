@@ -6,6 +6,7 @@ import {
   EMPTY,
   PERMISSIONS,
   STOPPED,
+  WEB_HELD_BACK,
   WORKING,
 } from "./claude-column-view";
 
@@ -43,6 +44,7 @@ beforeEach(() => {
     chooseSettings: (settings) => log.push(`régler ${JSON.stringify(settings)}`),
     attach: () => log.push("joindre"),
     detach: (path) => log.push(`retirer ${path}`),
+    allowChanges: () => log.push("autoriser"),
   });
 });
 
@@ -50,8 +52,48 @@ describe("colonne Claude Code : les autorisations", () => {
   it("disent en une ligne discrète ce que Claude peut faire ici, et rien d'autre", () => {
     expect(find(".claude-permissions").textContent).toBe(PERMISSIONS);
     expect(PERMISSIONS).toBe(
-      "Claude lit, crée et modifie les notes de cet espace de travail, sans demander. Rien d'autre : ni autre dossier, ni commande, ni web.",
+      "Claude lit, crée et modifie les notes de cet espace de travail, sans demander, et peut chercher et lire sur le web ; après une lecture du web, ses modifications attendent votre accord. Rien d'autre : ni autre dossier, ni commande.",
     );
+  });
+});
+
+describe("colonne Claude Code : le garde-fou du web", () => {
+  const held = {
+    kind: "action",
+    id: "w",
+    label: "Modification",
+    target: "/Notes/a.md",
+    subAgent: false,
+    state: "heldBack",
+  } as const;
+  const user = { kind: "user", text: "Cherche et note", notes: [] } as const;
+
+  it("une modification retenue est dite « retenue »", () => {
+    view.render({ entries: [user, held], turn: "running" }, "/Notes");
+    expect(find(".claude-action-heldBack .claude-action-state").textContent).toBe("retenue");
+    expect(find(".claude-held-back")).toBeNull();
+  });
+
+  it("le tour fini, la colonne dit pourquoi et propose d'autoriser d'un clic", () => {
+    view.render(idle(user, held), "/Notes");
+    const notice = find(".claude-held-back");
+    expect(notice.getAttribute("role")).toBe("alert");
+    expect(notice.querySelector(".claude-held-back-text")?.textContent).toBe(WEB_HELD_BACK);
+    expect(WEB_HELD_BACK).toBe(
+      "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page lui aurait glissé des instructions. Autoriser ses modifications ?",
+    );
+    const allow = notice.querySelector<HTMLButtonElement>(".claude-allow-changes");
+    expect(allow?.textContent).toBe("Autoriser ses modifications");
+    expect(allow?.title).toBe(
+      "Claude refait les modifications retenues, pour cette réponse seulement",
+    );
+    allow?.click();
+    expect(log).toEqual(["autoriser"]);
+  });
+
+  it("rien à autoriser sans modification retenue", () => {
+    view.render(idle(user, { ...held, state: "refused" }), "/Notes");
+    expect(find(".claude-held-back")).toBeNull();
   });
 });
 

@@ -2,6 +2,7 @@
 // bilans), et la zone où l'on écrit son message (Entrée envoie, Maj+Entrée va à la ligne).
 import {
   ACTION_STATES,
+  changesHeldBack,
   type ChatEntry,
   type Conversation,
   shownTarget,
@@ -19,6 +20,8 @@ export interface ClaudeColumnHandlers extends Omit<InputBarHandlers, "showAgentM
   send(text: string): void;
   stop(): void;
   newConversation(): void;
+  /** Autorise les modifications retenues par le garde-fou du web, pour le tour qu'il commence. */
+  allowChanges(): void;
   close(): void;
   openNote(path: string): void;
   /** Le HTML du Markdown d'un message de Claude. */
@@ -47,7 +50,11 @@ export const EMPTY =
 
 /** Les autorisations de Claude, rappelées sous la zone du message (fiche 0032). */
 export const PERMISSIONS =
-  "Claude lit, crée et modifie les notes de cet espace de travail, sans demander. Rien d'autre : ni autre dossier, ni commande, ni web.";
+  "Claude lit, crée et modifie les notes de cet espace de travail, sans demander, et peut chercher et lire sur le web ; après une lecture du web, ses modifications attendent votre accord. Rien d'autre : ni autre dossier, ni commande.";
+
+/** Ce que dit la colonne quand le garde-fou du web a retenu des modifications (fiche 0032). */
+export const WEB_HELD_BACK =
+  "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page lui aurait glissé des instructions. Autoriser ses modifications ?";
 
 const TEMPLATE = `
   <header class="claude-header">
@@ -155,6 +162,21 @@ function entryView(entry: ChatEntry, context: Context) {
   }
 }
 
+/** L'explication des modifications retenues, et le bouton qui les autorise. */
+function heldBack(handlers: ClaudeColumnHandlers) {
+  const shown = element("div", "claude-held-back");
+  shown.setAttribute("role", "alert");
+  const allow = element(
+    "button",
+    "tool claude-allow-changes",
+    "Autoriser ses modifications",
+  ) as HTMLButtonElement;
+  allow.title = "Claude refait les modifications retenues, pour cette réponse seulement";
+  allow.addEventListener("click", () => handlers.allowChanges());
+  shown.append(element("p", "claude-held-back-text", WEB_HELD_BACK), allow);
+  return shown;
+}
+
 /** Entrée (sans Maj ni composition) ou Envoyer fait partir le message, sauf `blocked`. */
 function connectForm(
   form: HTMLFormElement,
@@ -220,6 +242,7 @@ export function createClaudeColumnView(
       const entries = conversation.entries.map((entry) => entryView(entry, context));
       if (entries.length === 0) entries.push(element("p", "claude-empty", EMPTY));
       if (running) entries.push(element("div", "claude-working", WORKING));
+      if (changesHeldBack(conversation)) entries.push(heldBack(handlers));
       log.replaceChildren(...entries);
       log.scrollTop = log.scrollHeight;
       stop.hidden = !running;

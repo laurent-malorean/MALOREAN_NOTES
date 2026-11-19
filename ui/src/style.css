@@ -1561,6 +1561,22 @@ button {
 .claude-action-refused .claude-action-target {
   text-decoration: line-through;
 }
+.claude-action-heldBack .claude-action-state {
+  color: var(--accent);
+  font-weight: 600;
+}
+.claude-held-back {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+}
+.claude-held-back-text {
+  margin: 0;
+}
 .claude-note-link {
   border: 0;
   background: none;

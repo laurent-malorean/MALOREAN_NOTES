@@ -73,6 +73,10 @@ pub enum ActionKind {
     Edit,
     /// Lancer un sous-agent.
     SubAgent,
+    /// Chercher sur le web.
+    WebSearch,
+    /// Lire une page web.
+    WebPage,
     /// Un outil que l'application ne connaît pas encore, par son nom.
     Other(String),
 }
@@ -85,7 +89,7 @@ pub struct ClaudeAction {
     /// Ce qu'elle fait.
     pub kind: ActionKind,
     /// Ce qu'elle vise, tel que Claude l'a écrit : le fichier, le motif cherché, la description
-    /// du sous-agent.
+    /// du sous-agent, la recherche sur le web, l'adresse de la page web.
     pub target: Option<String>,
 }
 
@@ -160,14 +164,28 @@ pub enum Effort {
     Max,
 }
 
+/// Ce que deviennent les créations et modifications de notes de Claude une fois qu'il a lu le web
+/// pendant le tour (garde-fou du web).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum ChangesAfterWeb {
+    /// Retenues jusqu'à l'accord de l'utilisateur : une page lue pourrait cacher des instructions.
+    #[default]
+    HeldBack,
+    /// Permises pour ce tour : l'utilisateur les a autorisées.
+    Allowed,
+}
+
 /// Les réglages d'un tour : le modèle et le niveau d'effort ; sans l'un ou l'autre, Claude Code
-/// garde son propre choix.
+/// garde son propre choix. Les modifications après une lecture du web sont retenues, sauf si
+/// l'utilisateur les autorise pour ce tour.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct TurnSettings {
     /// Le modèle choisi, s'il y en a un.
     pub model: Option<ClaudeModel>,
     /// Le niveau d'effort choisi, s'il y en a un.
     pub effort: Option<Effort>,
+    /// Les modifications après une lecture du web : retenues, ou autorisées pour ce tour.
+    pub changes_after_web: ChangesAfterWeb,
 }
 
 /// Ce que Claude Code annonce pendant un tour. `agent` est l'action qui a lancé le sous-agent
@@ -199,6 +217,12 @@ pub enum ClaudeEvent {
     },
     /// Une action refusée par les autorisations de Claude.
     ActionRefused {
+        /// L'action.
+        id: ActionId,
+    },
+    /// Une création ou une modification retenue par le garde-fou du web : Claude a lu le web
+    /// pendant le tour.
+    ChangeHeldBack {
         /// L'action.
         id: ActionId,
     },

@@ -56,6 +56,7 @@ describe("carte des agents : construite à partir des événements de Claude", (
       { kind: "message", agent: null, text: "Je regarde." },
       read("r", null),
       { kind: "actionFinished", id: "r", succeeded: true },
+      { kind: "changeHeldBack", id: "r" },
       { kind: "changedNote", path: "a.md" },
       { kind: "summary", failure: null, durationMs: 10, tokens: 5 },
     ];
