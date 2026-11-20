@@ -344,6 +344,7 @@ fn every_changing_tool_needs_the_note_it_changes() {
         "pin_note",
         "unpin_note",
         "add_attachment",
+        "add_entry",
     ] {
         assert_eq!(
             failed(&session, tool, json!({})),
@@ -351,4 +352,57 @@ fn every_changing_tool_needs_the_note_it_changes() {
             "{tool}"
         );
     }
+}
+
+#[test]
+fn an_entry_is_only_ever_added_at_the_end_of_a_research_notebook() {
+    let notebook = "---\ntype: cahier-de-recherche\n---\n# Levures\n";
+    let session = opened(&[("levures.md", notebook), ("note.md", "# Note")]);
+    let added = done(
+        &session,
+        "add_entry",
+        json!({ "path": "levures.md", "text": "Levure A\nmousse" }),
+    );
+    let entry = json!({
+        "anchor": "2026-11-16-18h30",
+        "label": "16 novembre 2026 à 18:30",
+        "text": "Levure A\nmousse",
+        "line": 11,
+    });
+    assert_eq!(added, json!({ "path": "levures.md", "entry": entry }));
+    let corrected = done(
+        &session,
+        "add_entry",
+        json!({ "path": "levures.md", "text": "Levure B", "corrected": "2026-11-16-18h30" }),
+    );
+    assert_eq!(corrected["entry"]["anchor"], "2026-11-16-18h30-2");
+    assert_eq!(
+        text(&session, "levures.md"),
+        format!(
+            "{notebook}\n## 2026\n\n### Novembre\n\n#### Lundi 16\n\n- 18:30 - Levure A\n  \
+             mousse\n- 18:30 - Correction de [l'entrée du 16 novembre 2026 à 18:30]\
+             (#2026-11-16-18h30) : Levure B\n"
+        )
+    );
+    assert_eq!(
+        failed(
+            &session,
+            "add_entry",
+            json!({ "path": "note.md", "text": "x" })
+        ),
+        "cette note n'est pas un cahier de recherche"
+    );
+    assert_eq!(text(&session, "note.md"), "# Note");
+    assert_eq!(
+        failed(
+            &session,
+            "add_entry",
+            json!({ "path": "levures.md", "text": "x", "corrected": "2026-01-01-00h00" })
+        ),
+        "l'entrée « 2026-01-01-00h00 » à corriger n'est pas dans ce cahier"
+    );
+    assert_eq!(
+        failed(&session, "add_entry", json!({ "path": "levures.md" })),
+        "il manque « text »"
+    );
 }

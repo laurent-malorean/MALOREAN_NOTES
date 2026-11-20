@@ -1,6 +1,7 @@
 //! Erreurs des cas d'usage.
 
 use domain::history::Version;
+use domain::research_notebook::RefusedEntry;
 use domain::{Folder, NotePath, RefusedAttachment};
 
 use crate::{AssistError, StoreError, Unavailability};
@@ -89,6 +90,9 @@ pub enum AppError {
     /// Le modèle n'a pas pu répondre ; la cause est lisible.
     #[error("l'aide à l'écriture a échoué : {0}")]
     AssistantFailed(String),
+    /// L'entrée n'est pas ajoutée au cahier de recherche ; la raison est lisible.
+    #[error("{0}")]
+    EntryRefused(#[from] RefusedEntry),
 }
 
 impl From<AssistError> for AppError {

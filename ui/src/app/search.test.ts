@@ -12,6 +12,7 @@ const found = (path: string): SearchResultItem => ({
   folder: "",
   contentType: "note",
   container: null,
+  containerTitle: null,
   modified: 0,
   excerpt: [],
 });

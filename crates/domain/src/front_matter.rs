@@ -5,6 +5,10 @@ const PINNED_KEY: &str = "pinned";
 const PINNED_LINE: &str = "pinned: true";
 /// Valeurs YAML qui épinglent la note, sans tenir compte de la casse.
 const PINNED_VALUES: [&str; 2] = ["true", "yes"];
+/// La clé qui déclare le type de contenu d'une note (fiches 0034 et 0041).
+const TYPE_KEY: &str = "type";
+/// Les guillemets permis autour d'une valeur YAML simple.
+const QUOTES: [char; 2] = ['"', '\''];
 const COMMENT: char = '#';
 
 /// Sépare l'en-tête YAML (s'il existe et est fermé) du contenu de la note.
@@ -73,11 +77,26 @@ impl<'a> Header<'a> {
     }
 }
 
-/// La valeur de la clé `pinned` si la ligne la porte (au premier niveau), commentaire retiré.
-fn pinned_value(line: &str) -> Option<&str> {
-    let rest = line.strip_prefix(PINNED_KEY)?;
+/// La valeur de la clé `key` si la ligne la porte (au premier niveau), commentaire retiré.
+fn key_value<'a>(line: &'a str, key: &str) -> Option<&'a str> {
+    let rest = line.strip_prefix(key)?;
     let value = rest.trim_start_matches([' ', '\t']).strip_prefix(':')?;
     value.split(COMMENT).next().map(str::trim)
+}
+
+/// La valeur de la clé `pinned` si la ligne la porte (au premier niveau), commentaire retiré.
+fn pinned_value(line: &str) -> Option<&str> {
+    key_value(line, PINNED_KEY)
+}
+
+/// Le type de contenu que l'en-tête déclare par sa clé `type:` (la première, au premier
+/// niveau), commentaire et guillemets retirés ; rien sans en-tête ni clé.
+#[must_use]
+pub fn declared_type(content: &str) -> Option<&str> {
+    Header::of(content)?
+        .lines()
+        .find_map(|line| key_value(line, TYPE_KEY))
+        .map(|value| value.trim_matches(QUOTES))
 }
 
 fn line_ending(line: &str) -> &str {
@@ -220,6 +239,20 @@ mod tests {
     fn unpinning_keeps_an_empty_header_when_the_text_below_would_pass_for_one() {
         let note = "---\npinned: true\n---\n---\n# T\n---";
         assert_eq!(unpinned(note), "---\n---\n---\n# T\n---");
+    }
+
+    #[test]
+    fn a_note_declares_its_type_by_the_first_type_key_of_its_header() {
+        let declared = |content| declared_type(content);
+        assert_eq!(declared("---\ntype: kanban\n---\n# T"), Some("kanban"));
+        assert_eq!(
+            declared("---\ntags: [a]\ntype :  \"cahier\" # c\ntype: autre\n---"),
+            Some("cahier")
+        );
+        assert_eq!(declared("---\ntype: 'cahier'\n---"), Some("cahier"));
+        assert_eq!(declared("---\ntypes: a\n  type: b\n---"), None);
+        assert_eq!(declared("# T\ntype: kanban"), None);
+        assert_eq!(declared("---\ntype: kanban"), None);
     }
 
     #[test]

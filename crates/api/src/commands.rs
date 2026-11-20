@@ -22,6 +22,7 @@ pub mod claude;
 pub mod export;
 pub mod history;
 pub mod menu;
+pub mod research_notebook;
 pub mod workspaces;
 pub mod writing;
 
@@ -476,6 +477,10 @@ pub fn open_web_address<R: Runtime>(app: AppHandle<R>, address: &str) -> Result<
 }
 
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
+#[expect(
+    clippy::too_many_lines,
+    reason = "la liste des commandes, une par ligne : rien à découper, aucune logique"
+)]
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
         workspaces::reopen_last_workspace,
@@ -519,6 +524,10 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         history::compare_version,
         history::keep_version,
         history::restore_version,
+        research_notebook::create_research_notebook,
+        research_notebook::add_entry,
+        research_notebook::list_research_notebooks,
+        research_notebook::list_entries,
         export::choose_export_file,
         export::export_markdown,
         export::export_pdf,

@@ -46,6 +46,9 @@ pub enum AppTool {
     UnpinNote,
     /// Joindre à une note un fichier de l'espace de travail (image ou PDF).
     AddAttachment,
+    /// Ajouter une entrée à la fin d'un cahier de recherche, ou une correction d'une de ses
+    /// entrées : jamais rien changer d'autre.
+    AddEntry,
     /// Ce que l'utilisateur regarde : la note ouverte dans la colonne active, le texte
     /// sélectionné.
     ViewedNote,
@@ -55,7 +58,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 19] = [
+    pub const ALL: [Self; 20] = [
         Self::SearchNotes,
         Self::ListTags,
         Self::LinkingNotes,
@@ -73,6 +76,7 @@ impl AppTool {
         Self::PinNote,
         Self::UnpinNote,
         Self::AddAttachment,
+        Self::AddEntry,
         Self::ViewedNote,
         Self::ShowNote,
     ];
@@ -98,6 +102,7 @@ impl AppTool {
             Self::PinNote => "pin_note",
             Self::UnpinNote => "unpin_note",
             Self::AddAttachment => "add_attachment",
+            Self::AddEntry => "add_entry",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
         }
@@ -148,7 +153,8 @@ impl AppTool {
             | Self::RemoveTags
             | Self::PinNote
             | Self::UnpinNote
-            | Self::AddAttachment => true,
+            | Self::AddAttachment
+            | Self::AddEntry => true,
         }
     }
 
@@ -171,6 +177,7 @@ impl AppTool {
             | Self::PinNote
             | Self::UnpinNote
             | Self::AddAttachment
+            | Self::AddEntry
             | Self::ShowNote => Some("path"),
             Self::ListTags | Self::ListTemplates | Self::ViewedNote => None,
         }
@@ -257,7 +264,8 @@ mod tests {
                 "remove_tags",
                 "pin_note",
                 "unpin_note",
-                "add_attachment"
+                "add_attachment",
+                "add_entry"
             ]
         );
     }
@@ -277,6 +285,7 @@ mod tests {
                 path,
                 Some("title"),
                 Some("title"),
+                path,
                 path,
                 path,
                 path,

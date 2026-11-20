@@ -30,14 +30,21 @@ struct TemplateName {
     name: String,
 }
 
-/// Les types de contenu cherchés : celui nommé, ou tous.
+/// Les types de contenu cherchés : celui nommé, ou tous ceux d'une note.
 fn content_types(arguments: &Value) -> Result<Vec<ContentType>, String> {
     optional(arguments, "content_type").map_or_else(
-        || Ok(ContentType::ALL.to_vec()),
+        || Ok(ContentType::FILES.to_vec()),
         |name| {
-            ContentType::from_name(name)
+            ContentType::FILES
+                .into_iter()
+                .find(|kind| kind.name() == name)
                 .map(|kind| vec![kind])
-                .ok_or_else(|| format!("type de contenu inconnu : « {name} » ; le seul : « note »"))
+                .ok_or_else(|| {
+                    format!(
+                        "type de contenu inconnu : « {name} » ; ceux d'une note : « note », \
+                         « cahier-de-recherche »"
+                    )
+                })
         },
     )
 }

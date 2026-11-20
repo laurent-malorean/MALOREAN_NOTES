@@ -214,13 +214,31 @@ fn the_search_uses_the_index_by_words_tag_folder_and_content_type() {
         ("a.md", "---\ntags: [maison]\n---\n# Alpha\ndu pain frais"),
         ("Travail/b.md", "---\ntags: [maison]\n---\n# Bêta\npain"),
         ("Travail/Projets/c.md", "# Gamma\ndu lait"),
+        (
+            "cahier.md",
+            "---\ntype: cahier-de-recherche\n---\n# Cahier\n## 2026\n### Novembre\n\
+             #### Lundi 16\n- 09:42 - du pain\n- 10:00 - du sel",
+        ),
     ]);
     let tools = session.open_tools(notes_workspace(), None).unwrap();
     let key = tools.key().as_str();
     let by_words = found(&session, key, "search_notes", json!({ "query": "PAIN" }));
     let mut found_paths = paths(&by_words);
     found_paths.sort_unstable();
-    assert_eq!(found_paths, ["Travail/b.md", "a.md"]);
+    assert_eq!(found_paths, ["Travail/b.md", "a.md", "cahier.md"]);
+    let notebooks = found(
+        &session,
+        key,
+        "search_notes",
+        json!({ "query": "pain", "content_type": "cahier-de-recherche" }),
+    );
+    assert_eq!(paths(&notebooks), ["cahier.md"]);
+    assert!(
+        notebooks[0]["excerpt"]
+            .as_str()
+            .unwrap()
+            .contains("du pain")
+    );
     let alpha = by_words
         .as_array()
         .unwrap()
@@ -249,7 +267,7 @@ fn the_search_uses_the_index_by_words_tag_folder_and_content_type() {
     );
     assert_eq!(paths(&tagged), ["Travail/b.md"]);
     let everything = found(&session, key, "search_notes", json!({ "query": "  " }));
-    assert_eq!(paths(&everything).len(), 3);
+    assert_eq!(paths(&everything).len(), 4);
     assert!(everything[0].get("excerpt").is_none());
 }
 
@@ -282,7 +300,16 @@ fn a_search_by_an_unknown_content_type_or_an_invalid_folder_is_refused() {
             "search_notes",
             json!({ "content_type": "kanban" })
         ),
-        "type de contenu inconnu : « kanban » ; le seul : « note »"
+        "type de contenu inconnu : « kanban » ; ceux d'une note : « note », « cahier-de-recherche »"
+    );
+    assert!(
+        refused(
+            &session,
+            key,
+            "search_notes",
+            json!({ "content_type": "entree" })
+        )
+        .starts_with("type de contenu inconnu : « entree »")
     );
     assert_eq!(
         refused(&session, key, "search_notes", json!({ "folder": "../x" })),

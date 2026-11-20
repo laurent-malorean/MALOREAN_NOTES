@@ -11,6 +11,7 @@ const results: SearchResultItem[] = [
     folder: "Travail/Réunions",
     contentType: "note",
     container: null,
+    containerTitle: null,
     modified: 2,
     excerpt: [
       { text: "…acheter du ", matched: false },
@@ -24,6 +25,7 @@ const results: SearchResultItem[] = [
     folder: "",
     contentType: "note",
     container: null,
+    containerTitle: null,
     modified: 1,
     excerpt: [{ text: "Pain", matched: true }],
   },
@@ -55,6 +57,23 @@ describe("résultats de recherche", () => {
       "Travail / Réunions",
       "Notes",
     ]);
+  });
+
+  it("montre une entrée d'un cahier de recherche avec le titre de son cahier", () => {
+    const container = list();
+    const entry: SearchResultItem = {
+      path: "Labo/levures.md",
+      title: "20 novembre 2026 à 09:42",
+      folder: "Labo",
+      contentType: "entry",
+      container: "Labo/levures.md",
+      containerTitle: "Levures",
+      modified: 3,
+      excerpt: [{ text: "pain", matched: true }],
+    };
+    renderSearchResults(container, "Notes", [entry], null, ignore);
+    expect(texts(container, ".note-title")).toEqual(["20 novembre 2026 à 09:42"]);
+    expect(texts(container, ".search-place .search-type")).toEqual(["Entrée · Levures"]);
   });
 
   it("met en évidence les mots trouvés, et seulement eux", () => {

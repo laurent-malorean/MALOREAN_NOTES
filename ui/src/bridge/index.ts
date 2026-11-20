@@ -15,6 +15,7 @@ import type { UsageWindowItem } from "./generated/UsageWindowItem";
 import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
 import type { EffortItem } from "./generated/EffortItem";
+import type { EntryItem } from "./generated/EntryItem";
 import type { TurnSettingsItem } from "./generated/TurnSettingsItem";
 import type { DifferenceItem } from "./generated/DifferenceItem";
 import type { ExportFile } from "./generated/ExportFile";
@@ -53,6 +54,7 @@ export type {
   UsageWindowItem,
   ClaudeModelItem,
   EffortItem,
+  EntryItem,
   TurnSettingsItem,
   DifferenceItem,
   ExportFile,
@@ -139,6 +141,16 @@ export const createNoteFromTemplate = (template: string, folder: string) =>
 /** La note du jour dans le dossier `journal`, créée par Rust si besoin, depuis `template` s'il y en a un. */
 export const createDailyNote = (journal: string, template: string | null) =>
   invoke<SavedNote>("create_daily_note", { journal, template });
+/** Crée dans `folder` un cahier de recherche titré `title`. */
+export const createResearchNotebook = (folder: string, title: string) =>
+  invoke<SavedNote>("create_research_notebook", { folder, title });
+/** Ajoute l'entrée `text` à la fin du cahier, à l'heure qu'il est ; avec `corrected`, une correction de cette entrée. */
+export const addEntry = (path: string, text: string, corrected: string | null) =>
+  invoke<EntryItem>("add_entry", { path, text, corrected });
+/** Les cahiers de recherche de l'espace de travail, par titre. */
+export const listResearchNotebooks = () => invoke<WorkspaceNoteItem[]>("list_research_notebooks");
+/** Les entrées du cahier, de la plus ancienne à la plus récente. */
+export const listEntries = (path: string) => invoke<EntryItem[]>("list_entries", { path });
 /** L'adresse qui charge dans la fenêtre un fichier de l'espace de travail, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);
 export const listFolders = () => invoke<string[]>("list_folders");

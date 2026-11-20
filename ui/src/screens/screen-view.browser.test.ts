@@ -160,6 +160,7 @@ describe("affichage de l'écran", () => {
       folder: "",
       contentType: "note",
       container: null,
+      containerTitle: null,
       modified: 0,
       excerpt: [],
     };

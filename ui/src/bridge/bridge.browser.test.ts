@@ -140,6 +140,25 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     ]);
   });
 
+  it("crée un cahier de recherche, y ajoute une entrée, liste les cahiers et leurs entrées", async () => {
+    const calls = recordCalls({ path: "levures.md" });
+    expect(await bridge.createResearchNotebook("Labo", "Levures")).toEqual({ path: "levures.md" });
+    expect(await bridge.addEntry("levures.md", "un", null)).toEqual({ path: "levures.md" });
+    await bridge.addEntry("levures.md", "deux", "2026-11-16-18h30");
+    expect(await bridge.listResearchNotebooks()).toEqual({ path: "levures.md" });
+    expect(await bridge.listEntries("levures.md")).toEqual({ path: "levures.md" });
+    expect(calls).toEqual([
+      { command: "create_research_notebook", args: { folder: "Labo", title: "Levures" } },
+      { command: "add_entry", args: { path: "levures.md", text: "un", corrected: null } },
+      {
+        command: "add_entry",
+        args: { path: "levures.md", text: "deux", corrected: "2026-11-16-18h30" },
+      },
+      { command: "list_research_notebooks", args: {} },
+      { command: "list_entries", args: { path: "levures.md" } },
+    ]);
+  });
+
   it("demande la note du jour, avec ou sans modèle", async () => {
     const calls = recordCalls({ path: "Journal/2026-11-18.md" });
     expect(await bridge.createDailyNote("Journal", "Modèles/journal.md")).toEqual({

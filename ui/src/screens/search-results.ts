@@ -1,5 +1,5 @@
 import type { SearchResultItem } from "../bridge";
-import { contentTypeLabel } from "../state/content-type";
+import { placeLabel } from "../state/content-type";
 import { showContextMenu } from "./context-menu";
 import { type NoteOpening, noteMenu, openOnClick } from "./note-menu";
 
@@ -40,13 +40,13 @@ function line(className: string, text: string): HTMLElement {
   return element;
 }
 
-/** Le dossier de la note trouvée et, discret à sa droite, son type de contenu. */
+/** Le dossier de l'élément trouvé et, discret à sa droite, son type de contenu suivi du titre de son conteneur. */
 function place(folder: string, result: SearchResultItem): HTMLElement {
   const element = document.createElement("span");
   element.className = "search-place";
   element.append(
     line("search-folder", folder),
-    line("search-type", contentTypeLabel(result.contentType)),
+    line("search-type", placeLabel(result.contentType, result.containerTitle)),
   );
   return element;
 }

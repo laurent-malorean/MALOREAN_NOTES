@@ -82,6 +82,7 @@ describe("colonnes et onglets de l'application", () => {
       folder: "",
       contentType: "note" as const,
       container: null,
+      containerTitle: null,
       excerpt: [],
     };
     const start = workspaceScreen([listed("a.md", "Note A")], (screen) => ({

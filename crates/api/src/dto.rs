@@ -87,14 +87,47 @@ impl From<NoteOrderItem> for domain::NoteOrder {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub enum ContentTypeItem {
-    /// Une note : le seul type pour l'instant.
+    /// Une note.
     Note,
+    /// Un cahier de recherche.
+    ResearchNotebook,
+    /// Une entrée d'un cahier de recherche.
+    Entry,
 }
 
 impl From<domain::ContentType> for ContentTypeItem {
     fn from(content_type: domain::ContentType) -> Self {
         match content_type {
             domain::ContentType::Note => Self::Note,
+            domain::ContentType::ResearchNotebook => Self::ResearchNotebook,
+            domain::ContentType::Entry => Self::Entry,
+        }
+    }
+}
+
+/// Une entrée d'un cahier de recherche.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct EntryItem {
+    /// Son ancre, qui la désigne dans un lien : `2026-11-20-09h42`.
+    pub anchor: String,
+    /// Son moment tel qu'on le lit : `20 novembre 2026 à 09:42`.
+    pub label: String,
+    /// Son texte, ses lignes sans retrait.
+    pub text: String,
+    /// Le numéro de sa première ligne dans le cahier, à partir de 0.
+    #[ts(type = "number")]
+    pub line: usize,
+}
+
+impl From<domain::research_notebook::Entry> for EntryItem {
+    fn from(entry: domain::research_notebook::Entry) -> Self {
+        Self {
+            anchor: entry.anchor(),
+            label: entry.label(),
+            text: entry.text().to_owned(),
+            line: entry.line(),
         }
     }
 }
@@ -155,8 +188,11 @@ pub struct SearchResultItem {
     pub folder: String,
     /// Son type de contenu.
     pub content_type: ContentTypeItem,
-    /// Le chemin de l'élément auquel elle appartient ; `null` pour une note.
+    /// Le chemin de l'élément auquel elle appartient (le cahier d'une entrée) ; `null` pour
+    /// une note.
     pub container: Option<String>,
+    /// Le titre affiché de son conteneur ; `null` sans conteneur.
+    pub container_title: Option<String>,
     /// Millisecondes depuis le 1er janvier 1970.
     #[ts(type = "number")]
     pub modified: u64,

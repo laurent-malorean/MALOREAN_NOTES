@@ -324,14 +324,37 @@ function toolsPlayer(state: FakeClaude) {
  * Les commandes de Claude Code ; `write` écrit une note comme Claude, hors de l'application (le vrai
  * Rust l'apprend par la surveillance de l'espace de travail).
  */
+/**
+ * Un tour qui attend d'être arrêté. « Arrêter » cliqué avant que le tour n'en soit là n'est pas
+ * perdu : il s'arrête dès qu'il y arrive.
+ */
+function stopper() {
+  let stop: (() => void) | null = null;
+  let asked = false;
+  return {
+    reset: () => void (asked = false),
+    hang: () =>
+      new Promise((_, reject) => {
+        stop = () => reject({ message: CLAUDE_STOPPED });
+        if (asked) stop();
+      }),
+    stop: () => {
+      if (stop) stop();
+      else asked = true;
+      stop = null;
+    },
+  };
+}
+
 export function fakeClaude(
   state: FakeClaude,
   write: (path: string, content: string) => Promise<void>,
 ): Record<string, Handler> {
-  let stop: (() => void) | null = null;
+  const stopping = stopper();
   const start = turnStarter(state);
   const tools = toolsPlayer(state);
   const play = async (message: string, conversation: string | null, changesAllowed: boolean) => {
+    stopping.reset();
     await start(message, conversation, changesAllowed);
     if (state.claudeTools) return tools.play().then(() => null);
     if (state.claudeWeb && !changesAllowed) return announce(WEB_HELD_BACK).then(() => null);
@@ -341,8 +364,7 @@ export function fakeClaude(
       await announce(WEB_ALLOWED_AFTER);
       return null;
     }
-    const hang = () =>
-      new Promise((_, reject) => (stop = () => reject({ message: CLAUDE_STOPPED })));
+    const { hang } = stopping;
     if (state.claudeAgents) {
       await announce(AGENTS_LAUNCHED);
       if (state.claudeTurn === "hanging") await hang();
@@ -366,7 +388,7 @@ export function fakeClaude(
       state.claudeSettings.push(settings as TurnSettingsItem),
       play(String(message), (conversation as string | null) ?? null, changesAllowed === true)
     ),
-    stop_claude: () => (stop?.(), (stop = null), null),
+    stop_claude: () => (stopping.stop(), null),
     log_out_of_claude: () => {
       state.claudeAccountCalls.push("logout");
       state.claude = { kind: "unavailable", reason: CLAUDE_UNAVAILABLE.loggedOut ?? "" };
@@ -374,10 +396,9 @@ export function fakeClaude(
     },
     log_in_to_claude: async () => {
       state.claudeAccountCalls.push("login");
+      stopping.reset();
       await emit("claude-sign-in", CLAUDE_SIGN_IN_ADDRESS);
-      if (state.claudeLogin === "hanging") {
-        await new Promise((_, reject) => (stop = () => reject({ message: CLAUDE_STOPPED })));
-      }
+      if (state.claudeLogin === "hanging") await stopping.hang();
       if (state.claudeLogin === "failed") throw { message: CLAUDE_LOGIN_FAILED };
       state.claude = { kind: "ready", ...CLAUDE_OTHER_ACCOUNT };
       return null;

@@ -99,11 +99,11 @@ test("panneaux cachés puis montrés, et en plein écran, la largeur réglée re
   await expect(foldersEdge(page)).toBeHidden();
   expect((await edges(page.locator(".editor"))).left).toBe(0);
   await panels.click();
-  expect(await width(folders(page))).toBe(300);
+  await expect.poll(() => width(folders(page))).toBe(300);
 
   await page.getByRole("button", { name: "Plein écran" }).click();
   await expect.poll(() => page.evaluate(() => window.backend.fullScreen)).toBe(true);
-  expect(await width(folders(page))).toBe(300);
+  await expect.poll(() => width(folders(page))).toBe(300);
   await drag(page, notesEdge(page), -20);
   expect(await width(notes(page))).toBe(260);
   await expectEditorAfterNotes(page);

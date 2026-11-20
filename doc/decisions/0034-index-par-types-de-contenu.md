@@ -4,6 +4,7 @@
 - **Statut** : acceptée
 - **Complète** la fiche 0028 : même index, même règle de recherche ; le format de la base passe de 1 à 2.
 - **Révisée** par la fiche 0037 (20/11/2026) : le type de contenu des notes se nomme désormais « note » (`ContentType::Note`), et non plus « page » ; format de l'index 3. Cette fiche garde l'ancien mot.
+- **Complétée** par la fiche 0041 (20/11/2026) : le cahier de recherche et ses entrées, la propriété `type:` lue ; format de l'index 4.
 
 ## Contexte
 

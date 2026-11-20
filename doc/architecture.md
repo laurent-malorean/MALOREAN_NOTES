@@ -133,6 +133,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0037-un-seul-mot-par-notion.md` | Un seul mot par notion : le type de contenu des notes se nomme « note » (format de l'index 3), « interface » remplace « la page », liste des dossiers et liste des notes nommées ; anciens mots refusés par la mini CI |
 | `0039-fenetre-a-propos.md` | Fenêtre « À propos » : une fenêtre de l'interface (icône, nom, version du `package.json`, auteur), son site ouvert dans le navigateur par Rust (`open_web_address`) |
 | `0040-outils-de-l-application-pour-claude.md` | Outils de l'application pour Claude : un serveur MCP local (le protocole dans `api`), joint par un relais (le programme de l'application) et une prise Unix réservée au compte de l'utilisateur, sans aucun port réseau ; une clé par tour ; les outils passent par les cas d'usage, dans l'espace de travail du tour |
+| `0041-cahier-de-recherche.md` | Cahier de recherche : une note `type: cahier-de-recherche` où Rust seul ajoute des entrées datées (titres d'année, de mois, de jour) ; lecture seule dans l'éditeur, fenêtre de saisie, correction par une nouvelle entrée liée par son ancre ; chaque entrée indexée à part avec son cahier pour conteneur (format de l'index 4) ; outil `add_entry` pour Claude |
 
 ## Décisions ouvertes
 

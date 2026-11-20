@@ -17,6 +17,7 @@ pub mod history;
 pub mod journal;
 pub mod links;
 pub mod note;
+pub mod research_notebook;
 pub mod saving;
 pub mod search;
 pub mod tag;

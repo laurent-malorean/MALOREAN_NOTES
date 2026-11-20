@@ -11,10 +11,10 @@ mod session;
 pub use dto::{
     ActionKindItem, AgentStateItem, AppMenu, AssistantStatus, AttachedFile, ChosenFolder,
     ClaudeEventItem, ClaudeModelItem, ClaudeStatusItem, ContentTypeItem, DifferenceItem,
-    DifferenceKind, EffortItem, ExcerptPartItem, ExportFile, ExportFormatItem, LinkingNoteItem,
-    MenuEntryItem, MenuRoleItem, NoteContent, NoteListItem, NoteOrderItem, ProposalItem,
-    SaveResult, SavedNote, SearchResultItem, StandardItem, TagItem, TrashInfo, TrashedNoteItem,
-    TurnSettingsItem, VersionItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
+    DifferenceKind, EffortItem, EntryItem, ExcerptPartItem, ExportFile, ExportFormatItem,
+    LinkingNoteItem, MenuEntryItem, MenuRoleItem, NoteContent, NoteListItem, NoteOrderItem,
+    ProposalItem, SaveResult, SavedNote, SearchResultItem, StandardItem, TagItem, TrashInfo,
+    TrashedNoteItem, TurnSettingsItem, VersionItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
     WorkspaceNoteItem, WritingActionItem,
 };
 pub use error::ApiError;

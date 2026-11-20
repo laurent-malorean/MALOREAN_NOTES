@@ -177,7 +177,7 @@ impl FakeClaude {
 const CHANGING_APP_TOOLS: &str = "mcp__malorean__create_note|mcp__malorean__create_note_from_template|mcp__malorean__trash_n\
     ote|mcp__malorean__rename_note|mcp__malorean__move_note|mcp__malorean__restore_version|mcp\
     __malorean__add_tags|mcp__malorean__remove_tags|mcp__malorean__pin_note|mcp__malorean__unp\
-    in_note|mcp__malorean__add_attachment";
+    in_note|mcp__malorean__add_attachment|mcp__malorean__add_entry";
 
 /// Les outils que visent les crochets du garde-fou du web, dans l'ordre.
 fn guarded_tools(hooks: &serde_json::Value) -> Vec<&str> {
@@ -232,8 +232,8 @@ fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them()
         mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\
         mcp__malorean__rename_note,mcp__malorean__move_note,mcp__malorean__restore_version,\
         mcp__malorean__add_tags,mcp__malorean__remove_tags,mcp__malorean__pin_note,\
-        mcp__malorean__unpin_note,mcp__malorean__add_attachment,mcp__malorean__viewed_note,\
-        mcp__malorean__show_note";
+        mcp__malorean__unpin_note,mcp__malorean__add_attachment,mcp__malorean__add_entry,\
+        mcp__malorean__viewed_note,mcp__malorean__show_note";
     let (start, end) = PERMISSIONS.split_once("--disable").unwrap();
     assert_eq!(
         format!("{before}{after}"),

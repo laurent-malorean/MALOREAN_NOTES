@@ -23,9 +23,14 @@ folder: string,
  */
 contentType: ContentTypeItem, 
 /**
- * Le chemin de l'élément auquel elle appartient ; `null` pour une note.
+ * Le chemin de l'élément auquel elle appartient (le cahier d'une entrée) ; `null` pour
+ * une note.
  */
 container: string | null, 
+/**
+ * Le titre affiché de son conteneur ; `null` sans conteneur.
+ */
+containerTitle: string | null, 
 /**
  * Millisecondes depuis le 1er janvier 1970.
  */

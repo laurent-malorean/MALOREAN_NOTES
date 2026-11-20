@@ -60,6 +60,115 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     a_kept_note_gives_back_its_last_text(&empty_index());
     every_note_is_of_the_note_type_without_container(&empty_index());
     search_keeps_to_the_types_asked(&empty_index());
+    a_research_notebook_is_of_its_type_and_lists_no_entry(&empty_index());
+    each_entry_is_searched_on_its_own_with_its_notebook_for_container(&empty_index());
+    entries_follow_their_notebook_kept_again_removed_or_cleared(&empty_index());
+}
+
+/// Un cahier de recherche du 16 novembre 2026 : une entrée sur le pain, une sur le levain.
+const NOTEBOOK: &str = "---\ntype: cahier-de-recherche\ntags: [labo]\n---\n# Levures\n\n\
+                        ## 2026\n\n### Novembre\n\n#### Lundi 16\n\n- 09:42 - du pain\n\
+                        - 10:00 - du levain\n  qui monte\n";
+
+fn entry(title: &str, modified: u64) -> NoteSummary {
+    NoteSummary::indexed(
+        path("Labo/levures.md"),
+        title.to_owned(),
+        Modified(modified),
+        false,
+        Vec::new(),
+    )
+    .of_type(ContentType::Entry, Some(path("Labo/levures.md")))
+}
+
+fn found_items(
+    index: &dyn NoteIndex,
+    query: &str,
+    types: &[ContentType],
+) -> Vec<(NoteSummary, String)> {
+    let query = SearchQuery::parse(query).unwrap();
+    let mut found = index.search(&query, types).unwrap();
+    found.sort_by(|(a, x), (b, y)| a.path().cmp(b.path()).then_with(|| x.cmp(y)));
+    found
+}
+
+fn a_research_notebook_is_of_its_type_and_lists_no_entry(index: &impl NoteIndex) {
+    index.put(&[note("Labo/levures.md", NOTEBOOK, 5)]).unwrap();
+    for notes in [
+        index.all_notes().unwrap(),
+        index.notes_in(&folder("Labo")).unwrap(),
+        index.tagged("labo").unwrap(),
+    ] {
+        assert_eq!(
+            notes,
+            [NoteSummary::new(
+                path("Labo/levures.md"),
+                NOTEBOOK,
+                Modified(5)
+            )]
+        );
+        assert_eq!(notes[0].content_type(), ContentType::ResearchNotebook);
+    }
+}
+
+fn each_entry_is_searched_on_its_own_with_its_notebook_for_container(index: &impl NoteIndex) {
+    index
+        .put(&[
+            note("Labo/levures.md", NOTEBOOK, 5),
+            note("pain.md", "# Pain\n- 09:42 - du pain", 6),
+        ])
+        .unwrap();
+    let notebook = NoteSummary::new(path("Labo/levures.md"), NOTEBOOK, Modified(5));
+    assert_eq!(
+        found_items(index, "pain", &ContentType::ALL),
+        [
+            (
+                NoteSummary::new(path("pain.md"), "# Pain\n- 09:42 - du pain", Modified(6)),
+                "# Pain\n- 09:42 - du pain".to_owned()
+            ),
+            (notebook.clone(), NOTEBOOK.to_owned()),
+            (entry("16 novembre 2026 à 09:42", 5), "du pain".to_owned()),
+        ]
+    );
+    assert_eq!(
+        found_items(index, "levain monte", &[ContentType::Entry]),
+        [(
+            entry("16 novembre 2026 à 10:00", 5),
+            "du levain\nqui monte".to_owned()
+        )]
+    );
+    // Les mots de deux entrées ne trouvent que le cahier, qui les a tous.
+    assert_eq!(
+        found_items(index, "pain levain", &ContentType::ALL),
+        [(notebook, NOTEBOOK.to_owned())]
+    );
+    assert_eq!(found_items(index, "pain", &[ContentType::Note]).len(), 1);
+}
+
+fn entries_follow_their_notebook_kept_again_removed_or_cleared<I: NoteIndex>(index: &I) {
+    let entries = |index: &dyn NoteIndex| found_items(index, "du", &[ContentType::Entry]).len();
+    index.put(&[note("Labo/levures.md", NOTEBOOK, 5)]).unwrap();
+    assert_eq!(entries(index), 2);
+    let shorter = NOTEBOOK.replace("- 10:00 - du levain\n  qui monte\n", "");
+    index.put(&[note("Labo/levures.md", &shorter, 6)]).unwrap();
+    assert_eq!(
+        found_items(index, "du", &[ContentType::Entry]),
+        [(entry("16 novembre 2026 à 09:42", 6), "du pain".to_owned())]
+    );
+    index
+        .put(&[note(
+            "Labo/levures.md",
+            "# Plus un cahier\n- 09:42 - du pain",
+            7,
+        )])
+        .unwrap();
+    assert_eq!(entries(index), 0);
+    index.put(&[note("Labo/levures.md", NOTEBOOK, 8)]).unwrap();
+    index.remove(&[path("Labo/levures.md")]).unwrap();
+    assert_eq!(entries(index), 0);
+    index.put(&[note("Labo/levures.md", NOTEBOOK, 9)]).unwrap();
+    index.clear().unwrap();
+    assert_eq!(entries(index), 0);
 }
 
 fn a_new_index_knows_no_note(index: &impl NoteIndex) {
@@ -267,8 +376,8 @@ fn a_kept_note_gives_back_its_last_text(index: &impl NoteIndex) {
     assert_eq!(index.content(&path("a.md")).unwrap(), None);
 }
 
-/// Tant qu'un seul type existe, toute note est du type note, que son en-tête nomme un type ou
-/// non : aucune ne disparaît de la liste ni de la recherche (fiches 0034 et 0037).
+/// Une note dont l'en-tête ne déclare pas un type de note connu est du type note : aucune ne
+/// disparaît de la liste ni de la recherche (fiches 0034, 0037 et 0041).
 fn every_note_is_of_the_note_type_without_container(index: &impl NoteIndex) {
     index
         .put(&[

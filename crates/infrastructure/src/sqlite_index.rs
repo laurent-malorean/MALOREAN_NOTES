@@ -7,14 +7,16 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use application::{IndexOpener, IndexedNote, NoteIndex, NoteStamp, StoreError, WorkspaceLocation};
+use domain::research_notebook::{entry_summary, indexed_entries};
 use domain::search::{SearchQuery, folded};
 use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, ToSql, params, params_from_iter};
 
 /// Le format de la base : à changer à chaque changement du schéma ; un index d'un autre format
 /// est reconstruit. 2 : le type de contenu et le conteneur de chaque note (fiche 0034). 3 : le
-/// type des notes se nomme « note », et non plus « page » (fiche 0037).
-pub const FORMAT_VERSION: i32 = 3;
+/// type des notes se nomme « note », et non plus « page » (fiche 0037). 4 : les cahiers de
+/// recherche et leurs entrées (fiche 0041).
+pub const FORMAT_VERSION: i32 = 4;
 const FILE_PREFIX: &str = "index-";
 const FILE_SUFFIX: &str = ".sqlite";
 /// Séparateur des étiquettes d'une note dans sa colonne : une étiquette tient sur une ligne.
@@ -22,14 +24,15 @@ const TAG_SEPARATOR: char = '\n';
 /// Les trigrammes de la recherche plein texte ne trouvent que les mots d'au moins 3 caractères.
 const TRIGRAM: usize = 3;
 /// Les tables du schéma, toutes présentes dans une base utilisable.
-const EXPECTED_TABLES: i64 = 3;
+const EXPECTED_TABLES: i64 = 5;
 
 const SETTINGS: &str = "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; \
                         PRAGMA foreign_keys = ON;";
 
 /// Le texte de chaque note est gardé sans majuscule ni accent (`folded`), tel que la recherche
 /// le compare ; la table plein texte le découpe en trigrammes, sans rien y changer. Le type de
-/// contenu est gardé par son nom ; le conteneur, par son chemin, vide pour une note.
+/// contenu est gardé par son nom ; le conteneur, par son chemin, vide pour une note. Les entrées
+/// d'un cahier de recherche ont leur table, rattachée à leur cahier, et leur table plein texte.
 const SCHEMA: &str = "
 CREATE TABLE notes (
     id INTEGER PRIMARY KEY,
@@ -52,6 +55,14 @@ CREATE TABLE note_tags (
 CREATE INDEX note_tags_by_tag ON note_tags (tag);
 CREATE INDEX note_tags_by_note ON note_tags (note);
 CREATE VIRTUAL TABLE notes_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
+CREATE TABLE entries (
+    id INTEGER PRIMARY KEY,
+    note INTEGER NOT NULL REFERENCES notes (id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL
+);
+CREATE INDEX entries_by_note ON entries (note);
+CREATE VIRTUAL TABLE entries_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
 ";
 
 const SUMMARY_COLUMNS: &str = "path, title, modified, pinned, tags, type, container";
@@ -172,7 +183,8 @@ fn usable(file: &Path) -> Option<Connection> {
         .ok()?;
     let tables: i64 = connection
         .query_row(
-            "SELECT count(*) FROM sqlite_master WHERE name IN ('notes', 'note_tags', 'notes_text')",
+            "SELECT count(*) FROM sqlite_master WHERE name IN ('notes', 'note_tags', 'notes_text', \
+             'entries', 'entries_text')",
             [],
             |row| row.get(0),
         )
@@ -278,10 +290,10 @@ impl NoteIndex for SqliteIndex {
         query: &SearchQuery,
         types: &[ContentType],
     ) -> Result<Vec<(NoteSummary, String)>, StoreError> {
-        let (filter, mut values) = search_filter(query);
+        let (filter, mut values) = search_filter(query, "notes_text");
         values.extend(types.iter().map(|kind| kind.name().to_owned()));
         let kinds = vec!["?"; types.len()].join(", ");
-        self.run(|connection| {
+        let mut found = self.run(|connection| {
             let sql = format!(
                 "SELECT n.path, n.title, n.modified, n.pinned, n.tags, n.type, n.container, \
                  n.content FROM notes_text JOIN notes AS n ON n.id = notes_text.rowid \
@@ -291,6 +303,35 @@ impl NoteIndex for SqliteIndex {
             let rows = statement.query_map(params_from_iter(values), |row| {
                 Ok((summary(row)?, row.get::<_, String>(7)?))
             })?;
+            rows.collect::<rusqlite::Result<Vec<_>>>()
+        })?;
+        if types.contains(&ContentType::Entry) {
+            found.extend(self.found_entries(query)?);
+        }
+        Ok(found)
+    }
+}
+
+impl SqliteIndex {
+    /// Les entrées des cahiers de recherche qui contiennent tous les mots de `query`, chacune
+    /// avec son texte, dans l'ordre où elles ont été gardées.
+    fn found_entries(&self, query: &SearchQuery) -> Result<Vec<(NoteSummary, String)>, StoreError> {
+        let (filter, values) = search_filter(query, "entries_text");
+        self.run(|connection| {
+            let sql = format!(
+                "SELECT n.path, e.title, n.modified, e.content FROM entries_text \
+                 JOIN entries AS e ON e.id = entries_text.rowid JOIN notes AS n ON n.id = e.note \
+                 WHERE {filter} ORDER BY e.id"
+            );
+            let mut statement = connection.prepare(&sql)?;
+            let rows = statement.query_map(params_from_iter(values), |row| {
+                let notebook = note_path(row, 0)?;
+                let modified = Modified(unsigned(row, 2)?);
+                Ok((
+                    entry_summary(&notebook, row.get(1)?, modified),
+                    row.get::<_, String>(3)?,
+                ))
+            })?;
             rows.collect()
         })
     }
@@ -298,7 +339,7 @@ impl NoteIndex for SqliteIndex {
 
 /// La condition de recherche et ses paramètres : les mots d'au moins trois caractères passent par
 /// les trigrammes (une phrase chacun, toutes exigées), les plus courts par le texte lui-même.
-fn search_filter(query: &SearchQuery) -> (String, Vec<String>) {
+fn search_filter(query: &SearchQuery, table: &str) -> (String, Vec<String>) {
     let (long, short): (Vec<String>, Vec<String>) = query
         .words()
         .into_iter()
@@ -306,7 +347,7 @@ fn search_filter(query: &SearchQuery) -> (String, Vec<String>) {
     let mut conditions = Vec::new();
     let mut words = Vec::new();
     if !long.is_empty() {
-        conditions.push("notes_text MATCH ?".to_owned());
+        conditions.push(format!("{table} MATCH ?"));
         let phrases: Vec<String> = long
             .iter()
             .map(|word| format!("\"{}\"", word.replace('"', "\"\"")))
@@ -314,7 +355,7 @@ fn search_filter(query: &SearchQuery) -> (String, Vec<String>) {
         words.push(phrases.join(" "));
     }
     for word in short {
-        conditions.push("instr(notes_text.folded, ?) > 0".to_owned());
+        conditions.push(format!("instr({table}.folded, ?) > 0"));
         words.push(word);
     }
     (conditions.join(" AND "), words)
@@ -330,6 +371,10 @@ fn forget(connection: &Connection, path: &NotePath) -> rusqlite::Result<()> {
         )
         .optional()?;
     if let Some(id) = id {
+        connection.execute(
+            "DELETE FROM entries_text WHERE rowid IN (SELECT id FROM entries WHERE note = ?1)",
+            [id],
+        )?;
         connection.execute("DELETE FROM notes_text WHERE rowid = ?1", [id])?;
         connection.execute("DELETE FROM notes WHERE id = ?1", [id])?;
     }
@@ -366,6 +411,16 @@ fn keep(connection: &Connection, note: &IndexedNote) -> rusqlite::Result<()> {
         connection.execute(
             "INSERT INTO note_tags (note, tag) VALUES (?1, ?2)",
             params![id, tag],
+        )?;
+    }
+    for (entry, text) in indexed_entries(&summary, &note.content) {
+        connection.execute(
+            "INSERT INTO entries (note, title, content) VALUES (?1, ?2, ?3)",
+            params![id, entry.title(), text],
+        )?;
+        connection.execute(
+            "INSERT INTO entries_text (rowid, folded) VALUES (?1, ?2)",
+            params![connection.last_insert_rowid(), folded(&text)],
         )?;
     }
     Ok(())

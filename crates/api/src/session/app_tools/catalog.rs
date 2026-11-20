@@ -46,15 +46,15 @@ fn search_notes() -> Described {
         "Cherche des notes de l'espace de travail avec l'index de MALOREAN Notes, sans \
          parcourir les fichiers : les notes qui contiennent tous les mots de `query` \
          (majuscules et accents ignorés), et/ou qui portent l'étiquette `tag`, et/ou rangées \
-         dans `folder` (sous-dossiers compris), et/ou d'un type de contenu (`note`). Rend \
-         100 notes au plus : chemin, titre, dossier, étiquettes, et un extrait autour des \
-         mots trouvés.",
+         dans `folder` (sous-dossiers compris), et/ou d'un type de contenu (`note` ou \
+         `cahier-de-recherche`). Rend 100 notes au plus : chemin, titre, dossier, étiquettes, \
+         et un extrait autour des mots trouvés.",
         input(
             json!({
                 "query": text("Les mots cherchés dans le texte des notes."),
                 "tag": text("Une étiquette que les notes doivent porter."),
                 "folder": text("Un dossier depuis l'espace de travail : `Travail/Projets`."),
-                "content_type": text("Un type de contenu ; le seul pour l'instant : `note`."),
+                "content_type": text("Un type de contenu : `note` ou `cahier-de-recherche`."),
             }),
             &[],
         ),
@@ -229,6 +229,26 @@ fn add_attachment() -> Described {
     )
 }
 
+fn add_entry() -> Described {
+    (
+        "Ajoute une entrée à la fin d'un cahier de recherche (une note dont l'en-tête porte \
+         `type: cahier-de-recherche`), à l'heure qu'il est, sous les titres d'année, de mois et \
+         de jour qui manquent. C'est la seule façon d'écrire dans un cahier : il ne se modifie \
+         jamais, ni par cet outil ni par vos outils de fichiers. Pour corriger une entrée, \
+         ajoutez une correction : donnez son ancre dans `corrected` (`2026-11-20-09h42`, telle \
+         que cet outil la rend ou qu'un lien `(#2026-11-20-09h42)` du cahier l'écrit) ; \
+         l'entrée corrigée ne change pas. Rend l'entrée ajoutée : ancre, moment et texte.",
+        input(
+            json!({
+                "path": text("Chemin du cahier depuis l'espace de travail : `dossier/nom.md`."),
+                "text": text("Le texte de l'entrée ; plusieurs lignes permises."),
+                "corrected": text("L'ancre de l'entrée que celle-ci corrige, s'il y a lieu."),
+            }),
+            &["path", "text"],
+        ),
+    )
+}
+
 fn viewed_note() -> Described {
     (
         "Ce que l'utilisateur regarde dans MALOREAN Notes : la note ouverte dans la colonne \
@@ -267,6 +287,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::PinNote => pin_note(),
         AppTool::UnpinNote => unpin_note(),
         AppTool::AddAttachment => add_attachment(),
+        AppTool::AddEntry => add_entry(),
         AppTool::ViewedNote => viewed_note(),
         AppTool::ShowNote => show_note(),
     }
@@ -325,7 +346,7 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 19] = [
+        let expected: [(AppTool, &[&str]); 20] = [
             (AppTool::SearchNotes, &[]),
             (AppTool::ListTags, &[]),
             (AppTool::LinkingNotes, path),
@@ -343,6 +364,7 @@ mod tests {
             (AppTool::PinNote, path),
             (AppTool::UnpinNote, path),
             (AppTool::AddAttachment, &["path", "file"]),
+            (AppTool::AddEntry, &["path", "text"]),
             (AppTool::ViewedNote, &[]),
             (AppTool::ShowNote, path),
         ];

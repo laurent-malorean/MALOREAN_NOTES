@@ -6,6 +6,7 @@ import { type FakeClaude, fakeClaude, fakeClaudeState } from "./fake-claude";
 import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
+import { fakeEntryResults, fakeNotebook, isNotebook } from "./fake-notebook";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 import { type FakeWriting, fakeWriting, fakeWritingState } from "./fake-writing";
 
@@ -250,26 +251,44 @@ const treeOrder = (a: string, b: string) =>
 /** Sans majuscule ni accent, comme la vraie recherche. */
 const folded = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/** Recherche simplifiée : toutes les notes qui contiennent tous les mots ; l'extrait est la note entière. */
+/**
+ * Recherche simplifiée : toutes les notes qui contiennent tous les mots, chacune suivie des entrées
+ * de cahier qui les ont aussi ; l'extrait est le texte entier.
+ */
 function searchNotes(query: string, order?: string) {
   const words = folded(query).split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
+  const has = (text: string) => words.every((word) => folded(text).includes(word));
+  const excerpt = (text: string) =>
+    text
+      .replace(/\s+/g, " ")
+      .split(new RegExp(`(${words.join("|")})`, "i"))
+      .filter(Boolean)
+      .map((part) => ({ text: part, matched: words.includes(folded(part)) }));
   const sort = listOrder(order);
   return Object.entries(backend.notes)
-    .filter(([, note]) => words.every((word) => folded(note.content).includes(word)))
+    .filter(([, note]) => has(note.content))
     .sort((a, b) => sort(listItem(a), listItem(b)))
-    .map(([path, note]) => {
-      const line = note.content.replace(/\s+/g, " ");
-      const parts = line.split(new RegExp(`(${words.join("|")})`, "i")).filter(Boolean);
-      return {
-        path,
-        title: titleOf(note.content) ?? "Sans titre",
-        folder: folderOf(path),
-        contentType: "note" as const,
-        container: null,
-        modified: note.modified,
-        excerpt: parts.map((text) => ({ text, matched: words.includes(folded(text)) })),
-      };
+    .flatMap(([path, note]) => {
+      const found = { path, folder: folderOf(path), modified: note.modified, container: null };
+      const notebook = isNotebook(note.content);
+      return [
+        {
+          ...found,
+          title: titleOf(note.content) ?? "Sans titre",
+          contentType: notebook ? ("researchNotebook" as const) : ("note" as const),
+          containerTitle: null,
+          excerpt: excerpt(note.content),
+        },
+        ...fakeEntryResults(path, note.content, has).map((entry) => ({
+          ...found,
+          title: entry.title,
+          contentType: "entry" as const,
+          container: path,
+          containerTitle: entry.containerTitle,
+          excerpt: excerpt(entry.text),
+        })),
+      ];
     });
 }
 
@@ -387,6 +406,7 @@ const trashCommands: Record<string, (args: Record<string, string>) => unknown> =
 
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
+  ...fakeNotebook(backend, { freeName, slug, tick: () => (clock += 1) }),
   search_notes: ({ query = "", order }) =>
     new Promise((resolve) =>
       setTimeout(() => resolve(searchNotes(query, order)), backend.searchDuration),

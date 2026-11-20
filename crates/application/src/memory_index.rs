@@ -4,35 +4,38 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
+use domain::research_notebook::indexed_entries;
 use domain::search::{SearchQuery, search};
 use domain::{ContentType, Folder, NotePath, NoteSummary};
 
 use crate::{IndexOpener, IndexedNote, NoteIndex, NoteStamp, StoreError, WorkspaceLocation};
 
-/// Ce que l'index en mémoire sait d'une note.
+/// Ce que l'index en mémoire sait d'une note : avec, pour un cahier de recherche, chacune de
+/// ses entrées et son texte.
 #[derive(Debug)]
-struct Entry {
+struct Known {
     stamp: NoteStamp,
     summary: NoteSummary,
     content: String,
+    entries: Vec<(NoteSummary, String)>,
 }
 
 /// Index rangé en mémoire, vide à sa création.
 #[derive(Debug, Default)]
 pub struct MemoryIndex {
-    notes: Mutex<BTreeMap<NotePath, Entry>>,
+    notes: Mutex<BTreeMap<NotePath, Known>>,
 }
 
 impl MemoryIndex {
-    fn notes(&self) -> MutexGuard<'_, BTreeMap<NotePath, Entry>> {
+    fn notes(&self) -> MutexGuard<'_, BTreeMap<NotePath, Known>> {
         self.notes.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    fn summaries(&self, keep: impl Fn(&Entry) -> bool) -> Vec<NoteSummary> {
+    fn summaries(&self, keep: impl Fn(&Known) -> bool) -> Vec<NoteSummary> {
         self.notes()
             .values()
-            .filter(|entry| keep(entry))
-            .map(|entry| entry.summary.clone())
+            .filter(|known| keep(known))
+            .map(|known| known.summary.clone())
             .collect()
     }
 }
@@ -47,12 +50,14 @@ impl NoteIndex for MemoryIndex {
         for note in notes {
             let stamp = note.stamp.clone();
             let summary = NoteSummary::new(stamp.path.clone(), &note.content, stamp.modified);
-            let entry = Entry {
+            let entries = indexed_entries(&summary, &note.content);
+            let kept = Known {
                 stamp,
                 summary,
                 content: note.content.clone(),
+                entries,
             };
-            known.insert(note.stamp.path.clone(), entry);
+            known.insert(note.stamp.path.clone(), kept);
         }
         Ok(())
     }
@@ -71,11 +76,11 @@ impl NoteIndex for MemoryIndex {
     }
 
     fn content(&self, note: &NotePath) -> Result<Option<String>, StoreError> {
-        Ok(self.notes().get(note).map(|entry| entry.content.clone()))
+        Ok(self.notes().get(note).map(|known| known.content.clone()))
     }
 
     fn notes_in(&self, folder: &Folder) -> Result<Vec<NoteSummary>, StoreError> {
-        Ok(self.summaries(|entry| entry.stamp.path.folder() == folder))
+        Ok(self.summaries(|known| known.stamp.path.folder() == folder))
     }
 
     fn all_notes(&self) -> Result<Vec<NoteSummary>, StoreError> {
@@ -83,7 +88,7 @@ impl NoteIndex for MemoryIndex {
     }
 
     fn tagged(&self, tag: &str) -> Result<Vec<NoteSummary>, StoreError> {
-        Ok(self.summaries(|entry| entry.summary.tags().iter().any(|t| t == tag)))
+        Ok(self.summaries(|known| known.summary.tags().iter().any(|t| t == tag)))
     }
 
     fn search(
@@ -91,12 +96,15 @@ impl NoteIndex for MemoryIndex {
         query: &SearchQuery,
         types: &[ContentType],
     ) -> Result<Vec<(NoteSummary, String)>, StoreError> {
-        Ok(self
-            .notes()
-            .values()
-            .filter(|entry| types.contains(&entry.summary.content_type()))
-            .filter(|entry| search(query, &entry.content).is_some())
-            .map(|entry| (entry.summary.clone(), entry.content.clone()))
+        let notes = self.notes();
+        let items = notes.values().flat_map(|known| {
+            std::iter::once((&known.summary, &known.content))
+                .chain(known.entries.iter().map(|(summary, text)| (summary, text)))
+        });
+        Ok(items
+            .filter(|(summary, _)| types.contains(&summary.content_type()))
+            .filter(|(_, text)| search(query, text).is_some())
+            .map(|(summary, text)| (summary.clone(), text.clone()))
             .collect())
     }
 }

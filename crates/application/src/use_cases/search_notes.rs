@@ -1,5 +1,7 @@
 //! Retrouver des notes de tout l'espace de travail par les mots qu'elles contiennent.
 
+use std::collections::HashMap;
+
 use domain::note::compare;
 use domain::search::{Excerpt, SearchQuery, search};
 use domain::{ContentType, Modified, NoteOrder, NotePath};
@@ -19,8 +21,11 @@ pub struct SearchResult {
     pub title: String,
     /// Son type de contenu.
     pub content_type: ContentType,
-    /// L'élément auquel elle appartient ; aucun pour une note.
+    /// L'élément auquel elle appartient (le cahier de recherche d'une entrée) ; aucun pour
+    /// une note.
     pub container: Option<NotePath>,
+    /// Le titre affiché de son conteneur, s'il en a un.
+    pub container_title: Option<String>,
     /// La date de dernière modification.
     pub modified: Modified,
     /// Le passage autour du premier mot trouvé.
@@ -69,6 +74,16 @@ impl<'a> SearchNotes<'a> {
         let mut found = self.index.search(query, &self.types)?;
         found.sort_by(|(a, _), (b, _)| compare(a, b, order));
         found.truncate(MAX_RESULTS);
+        let titles: HashMap<NotePath, String> =
+            if found.iter().any(|(n, _)| n.container().is_some()) {
+                self.index
+                    .all_notes()?
+                    .into_iter()
+                    .map(|note| (note.path().clone(), note.title().to_owned()))
+                    .collect()
+            } else {
+                HashMap::new()
+            };
         // L'extrait n'est tiré que des notes montrées : l'index a déjà vérifié chaque mot.
         Ok(found
             .into_iter()
@@ -78,6 +93,7 @@ impl<'a> SearchNotes<'a> {
                     path: note.path().clone(),
                     title: note.title().to_owned(),
                     content_type: note.content_type(),
+                    container_title: note.container().and_then(|c| titles.get(c).cloned()),
                     container: note.container().cloned(),
                     modified: note.modified(),
                 })
@@ -167,6 +183,23 @@ mod tests {
             .unwrap();
         assert_eq!(found[0].content_type, ContentType::Note);
         assert_eq!(found[0].container, None);
+        assert_eq!(found[0].container_title, None);
+    }
+
+    #[test]
+    fn an_entry_is_found_with_its_notebook_and_its_title() {
+        let notebook = "---\ntype: cahier-de-recherche\n---\n# Levures\n## 2026\n### Novembre\n\
+                        #### Lundi 16\n- 09:42 - du pain\n- 10:00 - du levain";
+        let store = InMemoryNoteStore::with_notes(&[("labo.md", notebook)]);
+        let found = SearchNotes::new(&indexed(&store))
+            .among(&[ContentType::Entry])
+            .execute(&SearchQuery::parse("pain").unwrap(), NoteOrder::Modified)
+            .unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].title, "16 novembre 2026 à 09:42");
+        assert_eq!(found[0].content_type, ContentType::Entry);
+        assert_eq!(found[0].container, Some(found[0].path.clone()));
+        assert_eq!(found[0].container_title.as_deref(), Some("Levures"));
     }
 
     #[test]

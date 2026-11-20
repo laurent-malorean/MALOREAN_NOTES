@@ -186,6 +186,7 @@ describe("recherche", () => {
     folder: "",
     contentType: "note",
     container: null,
+    containerTitle: null,
     modified: 1,
     excerpt: [{ text: "pain", matched: true }],
   });

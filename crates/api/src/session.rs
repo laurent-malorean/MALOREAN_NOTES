@@ -12,6 +12,7 @@ mod journal;
 mod links;
 mod quick_open;
 mod recent_notes;
+mod research_notebook;
 mod saving;
 mod tags;
 mod templates;
@@ -357,6 +358,7 @@ fn search_result_item(result: SearchResult) -> SearchResultItem {
         folder: result.path.folder().to_path(),
         content_type: result.content_type.into(),
         container: result.container.as_ref().map(NotePath::to_path),
+        container_title: result.container_title,
         modified: result.modified.0,
         excerpt,
     }
@@ -519,6 +521,7 @@ mod tests {
                 folder: String::new(),
                 content_type: ContentTypeItem::Note,
                 container: None,
+                container_title: None,
                 modified: results[0].modified,
                 excerpt: vec![
                     ExcerptPartItem {

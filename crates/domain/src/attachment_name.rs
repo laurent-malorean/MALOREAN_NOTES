@@ -39,7 +39,7 @@ const KNOWN_TYPES: [(&str, AttachmentKind, &str); 9] = [
 ];
 
 /// Les mois, en français, pour la date en toutes lettres.
-const MONTHS: [&str; 12] = [
+pub(crate) const MONTHS: [&str; 12] = [
     "janvier",
     "février",
     "mars",
@@ -117,6 +117,11 @@ impl Moment {
             .get(self.month as usize - 1)
             .unwrap_or_else(|| unreachable!("le mois est entre 1 et 12"));
         format!("{day} {month} {}", self.year)
+    }
+
+    /// Ses parties : année, mois, jour, heure et minute.
+    pub(crate) fn parts(&self) -> (i32, u32, u32, u32, u32) {
+        (self.year, self.month, self.day, self.hour, self.minute)
     }
 
     /// L'heure : `09:05`.
