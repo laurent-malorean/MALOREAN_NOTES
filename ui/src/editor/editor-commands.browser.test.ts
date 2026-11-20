@@ -53,7 +53,9 @@ describe("éditeur : commandes lancées par le menu ou la palette, sans clavier"
 
   it("ouvre le lien entre notes où se trouve le curseur, sur n'importe quelle ligne", () => {
     const opened: string[] = [];
-    const openLink = (title: string) => opened.push(title);
+    // Comme un simple clic : la note se suit dans l'onglet actif, pas dans un nouvel onglet.
+    const openLink = (title: string, inNewTab: boolean) =>
+      opened.push(inNewTab ? `${title} (nouvel onglet)` : title);
     const { editor } = mount("# Titre\nvoir [[Voyage]] ici", 16, 16, { openLink });
     editor.openLinkAtCursor();
     expect(opened).toEqual(["Voyage"]);

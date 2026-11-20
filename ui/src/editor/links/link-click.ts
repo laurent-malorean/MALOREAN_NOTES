@@ -71,9 +71,12 @@ function follow(view: EditorView, down: MouseEvent, link: ClickedLink) {
   document.addEventListener("mouseup", up, { once: true });
 }
 
-/** Un clic du bouton principal, sans touche : Cmd, Maj, Alt et Ctrl gardent leur effet. */
+/**
+ * Un clic sans touche : Cmd, Maj, Alt et Ctrl gardent leur effet. Les autres boutons que le
+ * principal n'arrivent pas jusqu'ici : CodeMirror ne les transmet pas (mesuré par les tests).
+ */
 const plainClick = (event: MouseEvent) =>
-  event.button === 0 && !event.metaKey && !event.shiftKey && !event.altKey && !event.ctrlKey;
+  !event.metaKey && !event.shiftKey && !event.altKey && !event.ctrlKey;
 
 /** Un simple clic sur le texte d'un lien trouvé par `find` l'ouvre au relâchement du bouton. */
 export function linkClicks(find: LinkFinder): Extension {

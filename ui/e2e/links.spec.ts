@@ -79,3 +79,48 @@ test("les crochets d'un lien entre notes se cachent, et reviennent quand le curs
   await page.keyboard.type("x");
   await expect(line).toHaveText("Penser aux [[coursexs]] demain");
 });
+
+const scrollOf = (page: Page) =>
+  page
+    .locator(".cm-scroller")
+    .first()
+    .evaluate((element) => Math.round(element.scrollTop));
+
+test("« ← » ramène à la note d'où l'on vient, à la même position ; « → » repart", async ({
+  page,
+}) => {
+  const lines = Array.from({ length: 80 }, (_, i) => `ligne ${i}`);
+  await launch(page, {
+    "courses.md": { content: "# Courses\npain\nlait", modified: 1 },
+    "lundi.md": { content: `# Lundi\n${lines.join("\n")}\nvoir [[courses]] fin`, modified: 2 },
+  });
+  const back = page.getByRole("button", { name: "Revenir à la note précédente" });
+  const forward = page.getByRole("button", { name: "Aller à la note suivante" });
+  await expect(back).toBeHidden();
+  // Défilé vers le bas, le curseur posé sur « ligne 75 », le lien à l'écran.
+  await page
+    .locator(".cm-scroller")
+    .first()
+    .evaluate((element) => (element.scrollTop = element.scrollHeight));
+  await page.locator(".cm-line", { hasText: "ligne 75" }).click();
+  const link = page.locator(".cm-note-link", { hasText: "courses" });
+  await expect(link).toBeVisible();
+  const scrolled = await scrollOf(page);
+  expect(scrolled).toBeGreaterThan(100);
+  await link.click();
+  await waitForNote(page, /Courses/);
+  await expect(back).toBeEnabled();
+  await expect(forward).toBeDisabled();
+  await back.click();
+  await expect(page.locator(".cm-line", { hasText: "ligne 75" })).toBeVisible();
+  await expect.poll(() => scrollOf(page)).toBe(scrolled);
+  // Le curseur est revenu sur « ligne 75 » : ce qu'on tape y va.
+  await page.keyboard.type("Z");
+  const typed = page.locator(".cm-line", { hasText: "Z" });
+  await expect(typed).toHaveCount(1);
+  expect((await typed.textContent())?.replace("Z", "")).toBe("ligne 75");
+  await expect(back).toBeDisabled();
+  await forward.click();
+  await waitForNote(page, /Courses/);
+  await expect(forward).toBeDisabled();
+});

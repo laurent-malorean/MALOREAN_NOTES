@@ -4,7 +4,13 @@ import type { NoteListItem } from "../src/bridge";
 import type { OpenColumns } from "../src/app/columns";
 import { createCurrentScreen } from "../src/app/current-screen";
 import type { Pane } from "../src/screens/note-pane";
-import { type Columns, columnsStarted, noteOpened, noteShown } from "../src/state/columns";
+import {
+  type Columns,
+  columnsStarted,
+  noteFollowed,
+  noteOpened,
+  noteShown,
+} from "../src/state/columns";
 import { workspaceOpened, type Screen } from "../src/state/screen";
 
 /** Un éditeur de colonne simulé : chaque demande est notée dans `log`. */
@@ -21,6 +27,8 @@ export function fakePane(note: string | null = null, log: string[] = []) {
     format: vi.fn(),
     insertToday: vi.fn(),
     openLinkAtCursor: vi.fn(),
+    position: vi.fn(() => ({ anchor: 0, head: 0, top: 0, offset: 0 })),
+    restore: vi.fn(),
   };
   const pane = {
     editor,
@@ -71,6 +79,11 @@ export function fakeColumns(start: Columns = columnsStarted) {
       log.push(`ouvrir ${path}`);
       columns = noteOpened(columns, path);
     },
+    followNote: async (path) => {
+      log.push(`suivre ${path}`);
+      columns = noteFollowed(columns, path, null);
+    },
+    walk: async (columnId, step) => void log.push(`parcours ${columnId} ${step}`),
   };
   return { open, log, panes, columns: () => columns };
 }

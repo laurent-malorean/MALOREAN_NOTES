@@ -70,8 +70,11 @@ export interface Workspace {
   sortBy(order: NoteOrder): Promise<void>;
   /** Crée une note dans le dossier affiché et l'ouvre, prête à écrire. */
   createNote(): Promise<void>;
-  /** Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord. */
-  followLink(title: string): Promise<void>;
+  /**
+   * Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord : dans
+   * l'onglet actif, qui garde la note quittée dans son parcours, ou dans un nouvel onglet.
+   */
+  followLink(title: string, inNewTab: boolean): Promise<void>;
   /**
    * Déplace une note dans un autre dossier, dont ceux qui le contiennent se déplient ; la liste
    * reste sur le dossier affiché.
@@ -137,11 +140,11 @@ async function createNote(deps: WorkspaceDeps) {
   deps.columns.activePane().editor.focus();
 }
 
-async function followLink(deps: WorkspaceDeps, title: string) {
+async function followLink(deps: WorkspaceDeps, title: string, inNewTab: boolean) {
   await deps.columns.activePane().flush();
   const path = await deps.backend.resolveLink(title);
   if (path === null) return deps.show(`Aucune note ne porte le titre « ${title} ».`);
-  await deps.columns.openNote(path);
+  await (inNewTab ? deps.columns.openNote(path) : deps.columns.followNote(path));
 }
 
 async function moveNote(deps: WorkspaceDeps, path: string, into: string) {
@@ -185,7 +188,7 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
     refreshList: () => refreshList(deps),
     sortBy: (order) => sortBy(deps, workspacePath, order),
     createNote: () => createNote(deps),
-    followLink: (title) => followLink(deps, title),
+    followLink: (title, inNewTab) => followLink(deps, title, inNewTab),
     moveNote: (path, into) => moveNote(deps, path, into),
     changePin: (path, change) => changePin(deps, path, change),
     rebuildIndex: async () => {

@@ -1,5 +1,12 @@
 // Les colonnes d'édition à l'écran : une section par colonne, un séparateur entre deux voisines.
-import { type Columns, MAX_COLUMNS, type Placement, type TabDrop } from "../state/columns";
+import {
+  type Column,
+  type Columns,
+  MAX_COLUMNS,
+  type Placement,
+  type TabDrop,
+} from "../state/columns";
+import { trailOf, type TrailStep } from "../state/trail";
 import { renderTabs } from "./tabs-view";
 
 /** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément et la place des liens entrants. */
@@ -36,6 +43,8 @@ export interface ColumnsHandlers {
   split(): void;
   /** Le séparateur `divider` glisse de `delta`, en part de la zone d'édition. */
   resize(divider: number, delta: number): void;
+  /** Revenir à la note précédente (`-1`) ou aller à la suivante (`1`) dans l'onglet actif de la colonne. */
+  walk(columnId: number, step: TrailStep): void;
 }
 
 export interface ColumnsView {
@@ -46,6 +55,8 @@ export interface ColumnsView {
 /** Une colonne à l'écran : ses parties, ses onglets, son bouton « Diviser », le séparateur à sa gauche. */
 interface ShownColumn {
   readonly parts: ColumnParts;
+  /** Les flèches « ← » et « → » du parcours de l'onglet actif. */
+  readonly trail: TrailButtons;
   readonly tabs: HTMLElement;
   readonly split: HTMLButtonElement;
   readonly divider: HTMLElement;
@@ -59,6 +70,46 @@ interface TabDragging {
   stop(): void;
   /** Lâcher au bord d'une colonne en ouvre une : faux à trois colonnes. */
   edges(): boolean;
+}
+
+/** Les flèches du parcours : leur groupe, « ← » et « → ». */
+interface TrailButtons {
+  readonly group: HTMLElement;
+  readonly back: HTMLButtonElement;
+  readonly forward: HTMLButtonElement;
+}
+
+function trailButton(text: string, label: string, onClick: () => void): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.className = "icon trail-step";
+  button.textContent = text;
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+/** Les flèches « ← » et « → » en tête de la colonne, devant ses onglets. */
+function trailButtons(id: number, handlers: ColumnsHandlers): TrailButtons {
+  const group = document.createElement("nav");
+  group.className = "note-trail";
+  group.setAttribute("aria-label", "Parcours de l'onglet");
+  const back = trailButton("←", "Revenir à la note précédente", () => handlers.walk(id, -1));
+  const forward = trailButton("→", "Aller à la note suivante", () => handlers.walk(id, 1));
+  group.append(back, forward);
+  return { group, back, forward };
+}
+
+/**
+ * Les flèches n'apparaissent que si l'onglet actif a un parcours ; celle qui ne mène nulle part
+ * est alors grisée.
+ */
+function showTrail(buttons: TrailButtons, column: Column) {
+  const tab = column.tabs.find((t) => t.id === column.activeTab);
+  const { back, forward } = tab === undefined ? { back: [], forward: [] } : trailOf(tab);
+  buttons.group.hidden = back.length + forward.length === 0;
+  buttons.back.disabled = back.length === 0;
+  buttons.forward.disabled = forward.length === 0;
 }
 
 /** Part de la largeur d'une colonne, de chaque côté, où lâcher un onglet ouvre une colonne. */
@@ -144,7 +195,8 @@ function columnElement(
   split.title = "Diviser la colonne";
   split.textContent = "◫";
   split.addEventListener("click", () => handlers.split());
-  header.append(tabs, split);
+  const trail = trailButtons(id, handlers);
+  header.append(trail.group, tabs, split);
   const backlinks = document.createElement("nav");
   backlinks.className = "backlinks";
   backlinks.setAttribute("aria-label", "Liens entrants");
@@ -152,6 +204,7 @@ function columnElement(
   element.append(header, backlinks);
   return {
     parts: { element, backlinks },
+    trail,
     tabs,
     split,
     divider: dividerElement(container, handlers),
@@ -213,6 +266,7 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
         entry.parts.element.style.flexGrow = String(column.width);
         entry.parts.element.classList.toggle("active", column.id === columns.active);
         entry.split.hidden = columns.list.length >= MAX_COLUMNS;
+        showTrail(entry.trail, column);
         renderTabs(entry.tabs, column, {
           activate: handlers.activateTab,
           close: handlers.closeTab,

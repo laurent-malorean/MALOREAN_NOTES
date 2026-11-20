@@ -115,7 +115,7 @@ const newPane = paneMaker({
   ...{ backend: bridge, shared, workspacePath: workspace.path },
   events: {
     openNote: (path) => actions.open(path),
-    openLink: (title) => run(workspace.followLink(title)),
+    openLink: (title, inNewTab) => run(workspace.followLink(title, inNewTab)),
     error: messages.error,
   },
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),

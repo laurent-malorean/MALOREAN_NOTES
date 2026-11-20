@@ -8,6 +8,8 @@ import {
   columnSplit,
   columnsResized,
   columnsStarted,
+  columnWalked,
+  noteFollowed,
   noteOpened,
   noteShown,
   shownNote,
@@ -18,6 +20,7 @@ import {
   titlesKnown,
 } from "../state/columns";
 import { noteSelected, type Screen, selectedNote } from "../state/screen";
+import { type NotePosition, type TrailStep, trailTarget } from "../state/trail";
 import type { CurrentScreen } from "./current-screen";
 
 export interface ColumnsDeps {
@@ -65,6 +68,13 @@ export interface OpenColumns {
   showNote(path: string | null): Promise<void>;
   /** Ouvre une note dans un nouvel onglet de la colonne active, ou retrouve le sien. */
   openNote(path: string): Promise<void>;
+  /** Suit un lien : l'onglet actif de la colonne active montre la note, la sienne entre dans son parcours. */
+  followNote(path: string): Promise<void>;
+  /**
+   * L'onglet actif de la colonne revient à la note précédente de son parcours (`-1`) ou repart
+   * vers la suivante (`1`), montrée à la position où on l'avait quittée, prête à la frappe.
+   */
+  walk(columnId: number, step: TrailStep): Promise<void>;
 }
 
 interface ColumnsState {
@@ -88,6 +98,24 @@ function moveOutline(state: ColumnsState, outline: HTMLElement) {
   state.outlineOwner?.editor.setOutline(null);
   active.editor.setOutline(outline);
   state.outlineOwner = active;
+}
+
+/** Où l'on en est dans la note que montre la colonne. */
+function positionIn(state: ColumnsState, columnId: number): NotePosition {
+  return (state.panes.get(columnId) as Pane).editor.position();
+}
+
+/** Le pas dans le parcours de l'onglet actif de la colonne : la note montrée à sa position. */
+async function walk(state: ColumnsState, open: OpenColumns, columnId: number, step: TrailStep) {
+  const column = state.columns.list.find((c) => c.id === columnId);
+  const tab = column?.tabs.find((t) => t.id === column.activeTab);
+  const target = tab === undefined ? null : trailTarget(tab, step);
+  if (target === null) return;
+  await open.change(columnWalked(state.columns, columnId, step, positionIn(state, columnId)));
+  const { editor } = state.panes.get(columnId) as Pane;
+  if (target.position !== null) editor.restore(target.position);
+  // Comme avant d'avoir quitté la note : on reprend la frappe là où était le curseur.
+  editor.focus();
 }
 
 /** Ce que l'écran des colonnes demande, traduit en changements d'état. */
@@ -115,6 +143,7 @@ function viewHandlers(state: ColumnsState, deps: ColumnsDeps, open: OpenColumns)
       deps.run(open.changeFlushed(() => tabDropped(state.columns, tabId, drop))),
     split: () => deps.run(open.split()),
     resize: (divider, delta) => update((now) => columnsResized(now, divider, delta)),
+    walk: (columnId, step) => deps.run(open.walk(columnId, step)),
   };
 }
 
@@ -161,8 +190,12 @@ export function createOpenColumns(deps: ColumnsDeps): OpenColumns {
         const note = pane.note();
         if (note !== null && gone(note)) pane.forget();
       }),
-    showNote: (path) => change(noteShown(state.columns, path)),
+    showNote: (path) =>
+      change(noteShown(state.columns, path, positionIn(state, state.columns.active))),
     openNote: (path) => change(noteOpened(state.columns, path)),
+    followNote: (path) =>
+      change(noteFollowed(state.columns, path, positionIn(state, state.columns.active))),
+    walk: (columnId, step) => walk(state, open, columnId, step),
   };
   const view = createColumnsView(deps.container, viewHandlers(state, deps, open));
   return open;

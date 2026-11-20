@@ -12,7 +12,8 @@ function mount(content: string) {
   document.body.replaceChildren(parent);
   const opened: string[] = [];
   const editor = createEditor(parent, () => {}, {
-    openLink: (title) => opened.push(`note:${title}`),
+    openLink: (title, inNewTab) =>
+      opened.push(`note:${title}${inNewTab ? " (nouvel onglet)" : ""}`),
     attachmentActions: {
       attach: () => Promise.resolve(null),
       open: (target) => opened.push(target),
@@ -237,7 +238,7 @@ describe("un simple clic sur un lien", () => {
   it("Cmd+clic ouvre toujours, dès que le bouton s'enfonce", () => {
     const { view, opened } = mount(NOTE);
     press(view, middleOf(view, 15, 23), { metaKey: true });
-    expect(opened).toEqual(["note:Courses"]);
+    expect(opened).toEqual(["note:Courses (nouvel onglet)"]);
   });
 
   it("sur une image, ne l'ouvre pas", () => {

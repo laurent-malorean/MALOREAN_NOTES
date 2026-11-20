@@ -53,14 +53,20 @@ export function noteLinkAt(text: string, pos: number): string | null {
   return noteLinksIn(text).find((link) => link.from <= pos && pos <= link.to)?.title ?? null;
 }
 
+/**
+ * Ouvre la note d'un lien `[[titre]]` : en la suivant dans l'onglet actif (simple clic, « Ouvrir
+ * le lien »), ou dans un nouvel onglet (`inNewTab`, Cmd+clic).
+ */
+export type OpenNoteLink = (title: string, inNewTab: boolean) => void;
+
 /** Les liens entre notes de la ligne de la position `pos` : le texte montré de chacun l'ouvre par `open`. */
-export function noteLinkFinder(open: (title: string) => void): LinkFinder {
+export function noteLinkFinder(open: OpenNoteLink): LinkFinder {
   return (state, pos) => {
     const line = state.doc.lineAt(pos);
     return noteLinksIn(line.text).map((link) => ({
       from: line.from + link.textFrom,
       to: line.from + link.textTo,
-      open: () => open(link.title),
+      open: () => open(link.title, false),
     }));
   };
 }
@@ -112,10 +118,10 @@ const linkStyle = ViewPlugin.fromClass(
 );
 
 /**
- * Les liens entre notes : mis en forme ; un clic sur le texte de l'un d'eux, ou un Cmd+clic
- * n'importe où sur lui, appelle `open` avec son titre.
+ * Les liens entre notes : mis en forme ; un clic sur le texte de l'un d'eux le suit, un Cmd+clic
+ * n'importe où sur lui l'ouvre dans un nouvel onglet.
  */
-export function noteLinks(open: (title: string) => void): Extension {
+export function noteLinks(open: OpenNoteLink): Extension {
   return [
     linkStyle,
     linkClicks(noteLinkFinder(open)),
@@ -128,7 +134,7 @@ export function noteLinks(open: (title: string) => void): Extension {
         const line = view.state.doc.lineAt(pos);
         const title = noteLinkAt(line.text, pos - line.from);
         if (title === null) return false;
-        open(title);
+        open(title, true);
         return true;
       },
     }),

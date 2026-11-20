@@ -817,6 +817,21 @@ button {
 .column-split[hidden] {
   display: none;
 }
+/* Flèches « ← » et « → » du parcours de l'onglet actif, devant les onglets. */
+.note-trail {
+  display: flex;
+  flex: none;
+  border-right: 1px solid var(--border);
+}
+.note-trail[hidden] {
+  display: none;
+}
+.trail-step:disabled {
+  opacity: var(--trail-disabled-opacity);
+}
+.trail-step:disabled:hover {
+  color: var(--muted);
+}
 .column-divider {
   flex: 0 0 var(--divider-width);
   background: var(--border);

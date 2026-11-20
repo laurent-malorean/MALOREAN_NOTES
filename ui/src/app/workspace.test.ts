@@ -225,12 +225,14 @@ describe("espace de travail ouvert", () => {
     const t = setup();
     const log: string[] = [];
     t.columns.panes.set(t.columns.columns().active, fakePane("b.md", log));
-    await t.workspace.followLink("A");
+    await t.workspace.followLink("A", false);
     expect(log).toEqual(["enregistrer b.md"]);
-    expect(t.columns.log).toEqual(["ouvrir a.md"]);
-    await t.workspace.followLink("Inconnu");
+    expect(t.columns.log).toEqual(["suivre a.md"]);
+    await t.workspace.followLink("A", true);
+    expect(t.columns.log).toEqual(["suivre a.md", "ouvrir a.md"]);
+    await t.workspace.followLink("Inconnu", false);
     expect(t.messages).toEqual(["Aucune note ne porte le titre « Inconnu »."]);
-    expect(t.columns.log).toEqual(["ouvrir a.md"]);
+    expect(t.columns.log).toEqual(["suivre a.md", "ouvrir a.md"]);
   });
 
   it("déplace une note : la liste est relue, ses onglets suivent son nouveau chemin", async () => {

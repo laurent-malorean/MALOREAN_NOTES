@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-17
 - **Statut** : acceptée
+- **Note (20/11/2026)** : un lien suivi montre désormais la note dans l'onglet actif, et chaque onglet a un parcours (« ← », « → ») : voir la fiche 0036.
 - **Note (18/11/2026)** : « bibliothèque » (`Library`) s'appelle désormais « espace de travail » (`Workspace`), voir `doc/ontology.md` ; cette fiche garde l'ancien mot.
 
 ## Contexte

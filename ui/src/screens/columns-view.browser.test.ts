@@ -33,6 +33,7 @@ function mount() {
     copyMarkdown: (path) => tabs.push(`copier en Markdown ${path}`),
     showHistory: (path) => tabs.push(`historique ${path}`),
     dropTab: (tab, drop) => drops.push({ tab, drop }),
+    walk: (id, step) => tabs.push(`parcours ${id} ${step}`),
   });
   return {
     container,
@@ -146,7 +147,10 @@ describe("colonnes à l'écran", () => {
     expect(column.getAttribute("aria-label")).toBe("Colonne");
     const header = column.querySelector(".column-header") as HTMLElement;
     expect(header.lastElementChild).toBe(splitButton(column));
-    const tablist = header.firstElementChild as HTMLElement;
+    const trail = header.firstElementChild as HTMLElement;
+    expect(trail.getAttribute("aria-label")).toBe("Parcours de l'onglet");
+    expect(trail.hidden).toBe(true);
+    const tablist = trail.nextElementSibling as HTMLElement;
     expect(tablist.getAttribute("role")).toBe("tablist");
     expect(tablist.getAttribute("aria-label")).toBe("Onglets");
     expect(tablist.className).toBe("tabs");

@@ -124,6 +124,8 @@
   --divider-width: 5px;
   --tab-max-width: 14rem;
   --tab-text-size: 12px;
+  /* Flèche du parcours d'un onglet qui ne mène nulle part. */
+  --trail-disabled-opacity: 0.35;
 }
 
 /* Réglages d'affichage */

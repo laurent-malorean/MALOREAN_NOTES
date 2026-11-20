@@ -37,6 +37,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
 - Mise en forme de la sélection (gras, italique, lien, titres de niveau 1 à 3, liste à puces ou numérotée) et insertion de la date du jour : raccourci, palette ou menu Format. Tapés dans un autre champ (message à Claude, recherche, nom), ces raccourcis ne touchent jamais la note derrière lui.
 - Ouvrir un lien de la note (vers une autre note, une pièce jointe, une adresse web, ouverte dans le navigateur) : un simple clic sur son texte, comme dans Obsidian (Cmd+clic aussi) ; un clic qui glisse sélectionne sans ouvrir ; pour modifier le texte du lien, clic juste à côté puis flèches. « Ouvrir le lien » (palette, menu Fichier) ouvre celui où se trouve le curseur.
+- Retour à la note précédente, comme un navigateur : un lien suivi, ou une note choisie dans une liste, remplace la note de l'onglet ; les flèches « ← » et « → » en haut à gauche de la colonne ramènent à la note d'avant, ou d'après, à la même position (défilement et curseur). Chaque onglet a son parcours ; les flèches n'apparaissent que s'il y en a un, celle qui ne mène nulle part grisée.
 - Recherche plein texte instantanée ; chaque résultat montre son dossier et, discret, son type de contenu.
 - Notes épinglées en tête de liste ; tri par date de modification.
 - Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur tout l'espace de travail ; liste des étiquettes avec leur nombre de notes.

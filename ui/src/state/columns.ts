@@ -2,6 +2,15 @@
 // (voir la fiche de décision 0017).
 
 import type { WorkspaceNoteItem } from "../bridge/generated/WorkspaceNoteItem";
+import {
+  type NotePosition,
+  noteVisited,
+  type Trail,
+  trailForgotten,
+  trailMoved,
+  type TrailStep,
+  trailWalked,
+} from "./trail";
 
 /** Nombre de colonnes au plus, côte à côte. */
 export const MAX_COLUMNS = 3;
@@ -9,11 +18,13 @@ export const MAX_COLUMNS = 3;
 /** Part de la zone d'édition qu'une colonne garde au moins quand on glisse un séparateur. */
 export const MIN_COLUMN_WIDTH = 0.15;
 
-/** Un onglet : son identifiant stable, sa note, et son titre une fois la note lue. */
+/** Un onglet : son identifiant stable, sa note, son titre une fois la note lue, et son parcours. */
 export interface Tab {
   readonly id: number;
   readonly note: string;
   readonly title: string | null;
+  /** Les notes montrées avant et après la sienne ; aucun tant qu'il n'a pas changé de note. */
+  readonly trail?: Trail;
 }
 
 /** Une colonne : son identifiant stable, ses onglets, son onglet actif (aucun sans onglet) et sa largeur. */
@@ -76,13 +87,30 @@ function tabsKept(column: Column, keep: (tab: Tab) => boolean): Column {
 /**
  * L'onglet actif de la colonne active montre une autre note ; s'il n'y a pas d'onglet, il s'en
  * ouvre un. Si la note est déjà dans un onglet de la colonne, cet onglet devient actif. Sans
- * note (dossier vide), rien ne change.
+ * note (dossier vide), rien ne change. La note quittée entre dans le parcours de l'onglet, avec
+ * `position`, où l'on y en était.
  */
-export function noteShown(columns: Columns, note: string | null): Columns {
+export function noteShown(
+  columns: Columns,
+  note: string | null,
+  position: NotePosition | null = null,
+): Columns {
   if (note === null) return columns;
+  const open = activeColumn(columns).tabs.find((tab) => tab.note === note);
+  return open ? tabActivated(columns, open.id) : noteFollowed(columns, note, position);
+}
+
+/**
+ * Suivre un lien : l'onglet actif de la colonne active montre la note, même si elle est ouverte
+ * dans un autre onglet ; la note quittée entre dans son parcours, avec `position`. Sans onglet,
+ * il s'en ouvre un ; sur la note déjà montrée, rien ne change.
+ */
+export function noteFollowed(
+  columns: Columns,
+  note: string,
+  position: NotePosition | null,
+): Columns {
   const column = activeColumn(columns);
-  const open = column.tabs.find((tab) => tab.note === note);
-  if (open) return tabActivated(columns, open.id);
   if (column.activeTab === null) {
     const tab: Tab = { id: columns.nextId, note, title: null };
     const next = changed(columns, (c) =>
@@ -95,9 +123,37 @@ export function noteShown(columns: Columns, note: string | null): Columns {
       ? c
       : {
           ...c,
-          tabs: c.tabs.map((tab) => (tab.id === c.activeTab ? { ...tab, note, title: null } : tab)),
+          tabs: c.tabs.map((tab) =>
+            tab.id === c.activeTab && tab.note !== note ? noteVisited(tab, note, position) : tab,
+          ),
         },
   );
+}
+
+/**
+ * L'onglet actif de la colonne `columnId` revient à la note précédente de son parcours (`-1`) ou
+ * repart vers la suivante (`1`), et devient actif ; la note quittée, avec `position`, passe de
+ * l'autre côté. Sans note de ce côté, ou sans onglet, rien ne change.
+ */
+export function columnWalked(
+  columns: Columns,
+  columnId: number,
+  step: TrailStep,
+  position: NotePosition | null,
+): Columns {
+  const column = columns.list.find((c) => c.id === columnId);
+  if (column === undefined || column.activeTab === null) return columns;
+  const next = changed(columns, (c) =>
+    c.id !== columnId
+      ? c
+      : {
+          ...c,
+          tabs: c.tabs.map((tab) =>
+            tab.id === c.activeTab ? trailWalked(tab, step, position) : tab,
+          ),
+        },
+  );
+  return tabActivated(next, column.activeTab);
 }
 
 /**
@@ -327,7 +383,7 @@ function tabsChanged(columns: Columns, change: (tab: Tab) => Tab): Columns {
 
 /** Les notes ont changé de chemin (renommage, déplacement d'une note ou d'un dossier) : leurs onglets suivent. */
 export function notesMoved(columns: Columns, moved: (path: string) => string): Columns {
-  return tabsChanged(columns, (tab) => ({ ...tab, note: moved(tab.note) }));
+  return tabsChanged(columns, (tab) => trailMoved({ ...tab, note: moved(tab.note) }, moved));
 }
 
 /** Les onglets de cette note prennent son titre, tel que Rust l'a lu ou enregistré. */
@@ -375,7 +431,8 @@ export function notesChangedOutside(
   }, renamed);
 }
 
-/** Des notes ont quitté l'espace de travail (corbeille) : leurs onglets se ferment. */
+/** Des notes ont quitté l'espace de travail (corbeille) : leurs onglets se ferment, les parcours les oublient. */
 export function notesRemoved(columns: Columns, removed: (path: string) => boolean): Columns {
-  return changed(columns, (column) => tabsKept(column, (tab) => !removed(tab.note)));
+  const kept = changed(columns, (column) => tabsKept(column, (tab) => !removed(tab.note)));
+  return tabsChanged(kept, (tab) => trailForgotten(tab, removed));
 }

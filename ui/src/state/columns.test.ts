@@ -120,12 +120,12 @@ describe("colonnes", () => {
 describe("onglets", () => {
   it("seul l'onglet actif change de note", () => {
     const next = noteShown(columnActivated(three, 0), "d.md");
-    expect(column(next, 0).tabs).toEqual([tab(1, "d.md"), tab(2, "c.md")]);
+    expect(column(next, 0).tabs).toMatchObject([tab(1, "d.md"), tab(2, "c.md")]);
   });
 
   it("l'onglet actif de la colonne active montre la note choisie à la place de la sienne, sans titre encore", () => {
     const next = noteShown(three, "d.md");
-    expect(column(next, 1).tabs).toEqual([tab(4, "d.md")]);
+    expect(column(next, 1).tabs).toMatchObject([tab(4, "d.md")]);
     expect(column(next, 0)).toBe(column(three, 0));
     expect(next.nextId).toBe(6);
   });

@@ -25,12 +25,13 @@ import { charactersPerPage, statusBar } from "./writing/status-bar";
 import { DEFAULT_SETTINGS } from "../state/settings";
 import type { FormatCommandId } from "../state/commands";
 import { outlinePanel } from "./outline/outline-panel";
-import { noteLinkAt, noteLinks } from "./links/note-links";
+import { noteLinkAt, noteLinks, type OpenNoteLink } from "./links/note-links";
 import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
 import { keptPosition } from "../state/external-change";
+import type { NotePosition } from "../state/trail";
 
 /**
  * Marque une transaction venue d'ailleurs que de la frappe dans cet éditeur — version du disque,
@@ -76,8 +77,12 @@ export interface Editor {
   format(command: FormatCommandId): void;
   /** Insère la date du jour à la place de la sélection, comme Cmd+Maj+D. */
   insertToday(): void;
-  /** Ouvre le lien où se trouve le curseur, comme un Cmd+clic dessus ; rien s'il n'y en a pas. */
+  /** Ouvre le lien où se trouve le curseur, comme un clic dessus ; rien s'il n'y en a pas. */
   openLinkAtCursor(): void;
+  /** Où l'on en est dans la note : la sélection et le défilement. */
+  position(): NotePosition;
+  /** Revient à une position prise plus tôt dans la même note ; bornée au texte s'il a raccourci. */
+  restore(position: NotePosition): void;
   /** Dessine le plan de la note dans `container` ; `null` arrête de le dessiner. */
   setOutline(container: HTMLElement | null): void;
   /** Retire l'éditeur de l'écran, quand sa colonne disparaît. */
@@ -95,7 +100,7 @@ export interface EditorOptions {
   /** Où dessiner le plan de la note, dès le départ. */
   readonly outline?: HTMLElement;
   /** Ouvre la note désignée par un lien `[[titre]]`. */
-  readonly openLink?: (title: string) => void;
+  readonly openLink?: OpenNoteLink;
 }
 
 /**
@@ -205,10 +210,37 @@ function linkOpener(view: EditorView, options: EditorOptions) {
     const pos = view.state.selection.main.head;
     const line = view.state.doc.lineAt(pos);
     const title = noteLinkAt(line.text, pos - line.from);
-    if (openLink && title !== null) return openLink(title);
+    if (openLink && title !== null) return openLink(title, false);
     const target = linkTargetAt(view.state, pos);
     if (attachmentActions && target !== null) attachmentActions.open(target);
   };
+}
+
+/** La sélection principale, et la première ligne visible avec le décalage du haut de l'écran sur elle. */
+function positionIn(view: EditorView): NotePosition {
+  const { anchor, head } = view.state.selection.main;
+  const visibleTop = view.scrollDOM.getBoundingClientRect().top;
+  const top = view.lineBlockAtHeight(visibleTop - view.documentTop).from;
+  // Stryker disable next-line OptionalChaining: la première ligne visible est toujours dessinée ; TypeScript exige le cas contraire.
+  const offset = visibleTop - (view.coordsAtPos(top, 1)?.top ?? visibleTop);
+  return { anchor, head, top, offset };
+}
+
+/** La sélection remise, et la même ligne en haut de l'écran, au même décalage. */
+function restoreIn(view: EditorView, position: NotePosition) {
+  const within = (pos: number) => Math.min(pos, view.state.doc.length);
+  view.dispatch({
+    selection: { anchor: within(position.anchor), head: within(position.head) },
+    effects: EditorView.scrollIntoView(within(position.top), {
+      y: "start",
+      yMargin: -position.offset,
+    }),
+  });
+}
+
+/** La position dans la note : la prendre, et y revenir. */
+function positionParts(view: EditorView): Pick<Editor, "position" | "restore"> {
+  return { position: () => positionIn(view), restore: (position) => restoreIn(view, position) };
 }
 
 export function createEditor(
@@ -271,6 +303,7 @@ export function createEditor(
     format: (command) => void formatCommand(command)(view),
     insertToday: () => void insertToday(today)(view),
     openLinkAtCursor: linkOpener(view, options),
+    ...positionParts(view),
     setOutline: (container) => view.dispatch({ effects: outlineArea.change(container) }),
     destroy: () => view.destroy(),
   };

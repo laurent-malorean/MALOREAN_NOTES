@@ -3,6 +3,7 @@ import type { AttachmentOrigin } from "../bridge";
 import type { AttachedFile } from "../bridge/generated/AttachedFile";
 import type { LinkingNoteItem } from "../bridge/generated/LinkingNoteItem";
 import { createEditor, type Editor } from "../editor/editor";
+import type { OpenNoteLink } from "../editor/links/note-links";
 import { renderBacklinks } from "./backlinks-view";
 import type { ColumnParts } from "./columns-view";
 import type { SharedNotes, Viewer } from "./shared-notes";
@@ -22,8 +23,8 @@ export interface PaneBackend {
 export interface PaneEvents {
   /** Ouvrir une note des liens entrants. */
   readonly openNote: (path: string) => void;
-  /** Ouvrir la note visée par un lien `[[titre]]`. */
-  readonly openLink: (title: string) => void;
+  /** Ouvrir la note visée par un lien `[[titre]]`, en la suivant ou dans un nouvel onglet. */
+  readonly openLink: OpenNoteLink;
   readonly error: (error: unknown) => void;
 }
 

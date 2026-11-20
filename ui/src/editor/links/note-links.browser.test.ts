@@ -9,7 +9,9 @@ function mount(content: string) {
   parent.className = "editor";
   document.body.replaceChildren(parent);
   const opened: string[] = [];
-  createEditor(parent, () => {}, { openLink: (title) => opened.push(title) }).show(content);
+  createEditor(parent, () => {}, {
+    openLink: (title, inNewTab) => opened.push(inNewTab ? `${title} (nouvel onglet)` : title),
+  }).show(content);
   const view = EditorView.findFromDOM(parent.querySelector(".cm-editor") as HTMLElement);
   if (!view) throw new Error("éditeur introuvable");
   return { parent, view, opened };
@@ -123,13 +125,13 @@ describe("liens entre notes dans l'éditeur", () => {
     expect(texts(parent, ".cm-note-link")).toEqual(["Agenda"]);
   });
 
-  it("Cmd+clic ouvre la note visée, sans déplacer le curseur", () => {
+  it("Cmd+clic ouvre la note visée dans un nouvel onglet, sans déplacer le curseur", () => {
     const text = "Voir [[Courses|la liste]] ici";
     const { view, opened } = mount(text);
     view.dispatch({ selection: { anchor: text.length } });
     const event = click(view, 17, true);
     expect(event.defaultPrevented).toBe(true);
-    expect(opened).toEqual(["Courses"]);
+    expect(opened).toEqual(["Courses (nouvel onglet)"]);
     expect(view.state.selection.main.head).toBe(text.length);
     expect(view.hasFocus).toBe(false);
   });
@@ -157,6 +159,6 @@ describe("liens entre notes dans l'éditeur", () => {
   it("Cmd+clic sur un lien d'une autre ligne vise le bon titre", () => {
     const { view, opened } = mount("première\nvoir [[Agenda]]");
     click(view, 18, true);
-    expect(opened).toEqual(["Agenda"]);
+    expect(opened).toEqual(["Agenda (nouvel onglet)"]);
   });
 });
