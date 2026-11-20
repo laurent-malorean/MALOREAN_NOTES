@@ -493,6 +493,26 @@ describe("pont vers Rust : colonne Claude Code", () => {
   });
 });
 
+describe("pont vers Rust : outils de l'application", () => {
+  it("transmet les notes à montrer et les demandes de ce que l'utilisateur regarde, puis y répond", async () => {
+    mockIPC(() => null, { shouldMockEvents: true });
+    const heard: string[] = [];
+    await bridge.onClaudeShowsNote((path) => heard.push(`montrer ${path}`));
+    await bridge.onClaudeAsksView((request) => heard.push(`demande ${request}`));
+    await emit("claude-shows-note", "Travail/a.md");
+    await emit("claude-asks-view", 4);
+    expect(heard).toEqual(["montrer Travail/a.md", "demande 4"]);
+    const calls = recordCalls(null);
+    await bridge.answerView(4, "Travail/a.md", "du pain");
+    expect(calls).toEqual([
+      {
+        command: "answer_view",
+        args: { request: 4, note: "Travail/a.md", selection: "du pain" },
+      },
+    ]);
+  });
+});
+
 describe("pont vers Rust : barre des menus", () => {
   it("fait construire la barre des menus, puis griser ou activer ses éléments", async () => {
     const calls = recordCalls(null);

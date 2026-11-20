@@ -25,7 +25,7 @@ use tauri::test::{
     INVOKE_KEY, MockRuntime, get_ipc_response, mock_builder, mock_context, noop_assets,
 };
 use tauri::webview::InvokeRequest;
-use tauri::{Listener, WebviewWindow, WebviewWindowBuilder};
+use tauri::{Listener, Manager, WebviewWindow, WebviewWindowBuilder};
 
 const BRIDGE_SOURCE: &str = include_str!("../../../ui/src/bridge/index.ts");
 
@@ -264,4 +264,112 @@ fn a_running_turn_stops_under_the_name_used_by_the_interface() {
             Err(json!({ "message": "la réponse de Claude a été arrêtée" }))
         );
     });
+}
+
+#[test]
+fn the_app_tools_reach_the_interface_by_events_and_its_answer_by_a_command() {
+    let claude = Arc::new(FakeClaudeCode::replaying(Vec::new()));
+    let window = opened_window(&claude);
+    let received = Arc::new(Mutex::new(Vec::new()));
+    for name in ["claude-shows-note", "claude-asks-view"] {
+        let kept = Arc::clone(&received);
+        window.listen_any(name, move |event| {
+            kept.lock()
+                .unwrap()
+                .push(format!("{name} {}", event.payload()));
+        });
+    }
+    let screen = api::commands::claude::TauriScreen(window.app_handle().clone());
+    api::AppScreen::show_note(&screen, "Travail/a.md");
+    api::AppScreen::ask_view(&screen, 3);
+    assert_eq!(
+        *received.lock().unwrap(),
+        ["claude-shows-note \"Travail/a.md\"", "claude-asks-view 3"]
+    );
+    let answer = call(
+        &window,
+        "answer_view",
+        json!({ "request": 3, "note": null, "selection": "" }),
+    );
+    assert_eq!(answer, Ok(Value::Null));
+    for name in [
+        "\"answer_view\"",
+        "\"claude-shows-note\"",
+        "\"claude-asks-view\"",
+    ] {
+        assert!(BRIDGE_SOURCE.contains(name), "{name} absent du pont");
+    }
+}
+
+/// Une fenêtre simulée sur un espace de travail ouvert (la note `a.md`), avec ce Claude Code ;
+/// la session touche à l'interface par ses événements.
+fn window_with_screen(claude: &Arc<FakeClaudeCode>) -> (WebviewWindow<MockRuntime>, Arc<Session>) {
+    let session = Session::new(
+        Arc::new(FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(&[
+            ("a.md", "# Alpha"),
+        ])))),
+        Arc::new(FakePreferences::default()),
+        Arc::new(FixedClock::default()),
+    )
+    .with_claude(Arc::clone(claude) as Arc<dyn application::ClaudeCode>);
+    session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+    let app = mock_builder()
+        .invoke_handler(invoke_handler())
+        .build(mock_context(noop_assets()))
+        .unwrap();
+    let screen = api::commands::claude::TauriScreen(app.handle().clone());
+    let session = Arc::new(session.with_screen(Arc::new(screen)));
+    app.manage(Arc::clone(&session));
+    let window = WebviewWindowBuilder::new(&app, "main", Default::default())
+        .build()
+        .unwrap();
+    (window, session)
+}
+
+#[test]
+fn the_answer_of_the_interface_reaches_the_tool_that_asked_what_the_user_is_looking_at() {
+    let claude = Arc::new(FakeClaudeCode::hanging(Vec::new()));
+    let (window, session) = window_with_screen(&claude);
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let kept = Arc::clone(&asked);
+    window.listen_any("claude-asks-view", move |event| {
+        kept.lock().unwrap().push(event.payload().to_owned());
+    });
+    let asking = &*session;
+    let viewed = std::thread::scope(|scope| {
+        let turn = scope.spawn(|| {
+            session.send_to_claude("Bonjour", None, TurnSettings::default(), None, |_| {})
+        });
+        while claude.tools_keys().is_empty() {
+            std::thread::yield_now();
+        }
+        let key = claude.tools_keys()[0]
+            .clone()
+            .map(|key| key.as_str().to_owned());
+        let request = json!({ "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                              "params": { "name": "viewed_note", "arguments": {} } })
+        .to_string();
+        let tool = scope.spawn(move || asking.answer_app_tools(&key.unwrap_or_default(), &request));
+        while asked.lock().unwrap().is_empty() {
+            std::thread::yield_now();
+        }
+        let answer = call(
+            &window,
+            "answer_view",
+            json!({ "request": 0, "note": "a.md", "selection": "Alpha" }),
+        );
+        let viewed = tool.join();
+        session.stop_claude();
+        let _ended = turn.join();
+        (answer, viewed)
+    });
+    assert_eq!(viewed.0, Ok(Value::Null));
+    let reply: Value = serde_json::from_str(&viewed.1.unwrap().unwrap()).unwrap();
+    let text: Value =
+        serde_json::from_str(reply["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        text,
+        json!({ "workspace": "Notes", "note": { "path": "a.md", "title": "Alpha" },
+                "selection": "Alpha" })
+    );
 }

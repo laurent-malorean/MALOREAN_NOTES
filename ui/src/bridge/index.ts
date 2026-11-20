@@ -282,6 +282,19 @@ const CLAUDE_SIGN_IN = "claude-sign-in";
 /** Prévient de l'adresse de la page de connexion pendant une connexion de Claude Code. */
 export const onClaudeSignIn = (handler: (address: string) => void) =>
   listen<string>(CLAUDE_SIGN_IN, (event) => handler(event.payload));
+/** Même nom côté Rust (`CLAUDE_SHOWS_NOTE`). */
+const CLAUDE_SHOWS_NOTE = "claude-shows-note";
+/** Claude montre une note à l'utilisateur (outil de l'application) : son chemin, à ouvrir. */
+export const onClaudeShowsNote = (handler: (path: string) => void) =>
+  listen<string>(CLAUDE_SHOWS_NOTE, (event) => handler(event.payload));
+/** Même nom côté Rust (`CLAUDE_ASKS_VIEW`). */
+const CLAUDE_ASKS_VIEW = "claude-asks-view";
+/** Claude demande ce que l'utilisateur regarde : le numéro de la demande, à rendre à `answerView`. */
+export const onClaudeAsksView = (handler: (request: number) => void) =>
+  listen<number>(CLAUDE_ASKS_VIEW, (event) => handler(event.payload));
+/** Ce que l'utilisateur regarde, en réponse à la demande `request` : la note de la colonne active et le texte sélectionné. */
+export const answerView = (request: number, note: string | null, selection: string) =>
+  invoke<null>("answer_view", { request, note, selection });
 /** Même nom côté Rust (`CLAUDE_EVENT`). */
 const CLAUDE_EVENT = "claude-event";
 /** Prévient de chaque événement de Claude du tour en cours, dès qu'il arrive. */

@@ -23,7 +23,8 @@ const KEY_REFUSED: i64 = -32001;
 const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de l'utilisateur, \
     pour l'espace de travail ouvert. Passez par eux pour chercher (avec l'index de l'application), \
     pour connaître les étiquettes, les liens entrants, les modèles de note et l'historique des \
-    versions. Pour changer le texte d'une note, utilisez vos propres outils de fichiers (remplacer \
+    versions, pour créer, renommer, ranger, étiqueter, épingler ou jeter une note selon ses règles, \
+    pour savoir quelle note l'utilisateur regarde et lui en montrer une. Pour changer le texte d'une note, utilisez vos propres outils de fichiers (remplacer \
     un passage par un autre). Les notes sont désignées par leur chemin depuis l'espace de travail \
     (`dossier/nom.md`).";
 

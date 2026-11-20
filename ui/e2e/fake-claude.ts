@@ -8,6 +8,9 @@
 // `claudeWeb=1` : Claude cherche sur le web et sa modification est retenue par le garde-fou du web
 // (`WEB_HELD_BACK`, sur le modèle du flux enregistré `web_held_back.jsonl`) ; un tour où
 // l'utilisateur autorise les modifications écrit `plan.md`.
+// `claudeTools=1` : Claude se sert des outils de l'application (`TOOLS_TURN`) : il demande ce que
+// l'utilisateur regarde (la réponse de l'interface est gardée dans `claudeViews`), cherche avec
+// l'index, puis montre la note `CLAUDE_SHOWN_NOTE`.
 // Chaque tour commence par annoncer sa conversation : celle reçue, sinon une neuve (`conversation-1`,
 // `conversation-2`…). Le tour rejoué annonce aussi la charge : le modèle `CLAUDE_MODEL`, la session utilisée à 16 %
 // (`claudeLimit=85` : à 85 %, `claudeLimit=100` : limite atteinte), remise à zéro dans 59 min, et
@@ -45,6 +48,10 @@ export interface FakeClaude {
   claudeAccountCalls: string[];
   /** La part utilisée de la session annoncée par le tour rejoué, en pourcentage. */
   claudeLimit: number;
+  /** Vrai si le tour rejoué se sert des outils de l'application. */
+  claudeTools: boolean;
+  /** Ce que l'interface a répondu à chaque demande de ce que l'utilisateur regarde. */
+  claudeViews: { request: number; note: string | null; selection: string }[];
 }
 
 /** Le compte (inventé) auquel le faux Claude Code est connecté, puis celui de la connexion. */
@@ -171,6 +178,47 @@ const WEB_ALLOWED_AFTER: ClaudeEventItem[] = [
   { kind: "summary", failure: null, durationMs: 2000, tokens: 500 },
 ];
 
+/** La note que Claude montre à l'utilisateur dans le tour des outils de l'application. */
+export const CLAUDE_SHOWN_NOTE = "b.md";
+
+/** Un tour qui se sert des outils de l'application, jusqu'à la demande de ce que l'utilisateur regarde. */
+const TOOLS_ASKING: ClaudeEventItem[] = [
+  {
+    kind: "actionStarted",
+    agent: null,
+    id: "v",
+    action: "appTool",
+    tool: "viewed_note",
+    target: null,
+  },
+];
+/** La suite : chercher avec l'index, puis montrer une note. */
+const TOOLS_SHOWING: ClaudeEventItem[] = [
+  { kind: "actionFinished", id: "v", succeeded: true },
+  {
+    kind: "actionStarted",
+    agent: null,
+    id: "s",
+    action: "appTool",
+    tool: "search_notes",
+    target: "pain",
+  },
+  { kind: "actionFinished", id: "s", succeeded: true },
+  {
+    kind: "actionStarted",
+    agent: null,
+    id: "m",
+    action: "appTool",
+    tool: "show_note",
+    target: CLAUDE_SHOWN_NOTE,
+  },
+];
+const TOOLS_ENDED: ClaudeEventItem[] = [
+  { kind: "actionFinished", id: "m", succeeded: true },
+  { kind: "message", agent: null, text: "Voici la note." },
+  { kind: "summary", failure: null, durationMs: 1000, tokens: 300 },
+];
+
 /** Le modèle qui répond au tour rejoué. */
 export const CLAUDE_MODEL = "claude-opus-5-5";
 
@@ -221,6 +269,8 @@ export function fakeClaudeState(params: URLSearchParams): FakeClaude {
     claudeWeb: params.get("claudeWeb") === "1",
     claudeChangesAllowed: [],
     claudeLimit: Number(params.get("claudeLimit") ?? 16),
+    claudeTools: params.get("claudeTools") === "1",
+    claudeViews: [],
   };
 }
 
@@ -243,6 +293,34 @@ function turnStarter(state: FakeClaude) {
 }
 
 /**
+ * Le tour des outils de l'application : il demande ce que l'utilisateur regarde, attend la réponse
+ * de l'interface (gardée), cherche avec l'index, puis montre une note.
+ */
+function toolsPlayer(state: FakeClaude) {
+  let viewAnswered: (() => void) | null = null;
+  return {
+    play: async () => {
+      await announce(TOOLS_ASKING);
+      const answered = new Promise<void>((resolve) => (viewAnswered = resolve));
+      await emit("claude-asks-view", 1);
+      await answered;
+      await announce(TOOLS_SHOWING);
+      await emit("claude-shows-note", CLAUDE_SHOWN_NOTE);
+      await announce(TOOLS_ENDED);
+    },
+    answerView: ({ request, note, selection }: Record<string, unknown>) => {
+      state.claudeViews.push({
+        request: Number(request),
+        note: (note as string | null) ?? null,
+        selection: String(selection),
+      });
+      viewAnswered?.();
+      return null;
+    },
+  };
+}
+
+/**
  * Les commandes de Claude Code ; `write` écrit une note comme Claude, hors de l'application (le vrai
  * Rust l'apprend par la surveillance de l'espace de travail).
  */
@@ -252,8 +330,10 @@ export function fakeClaude(
 ): Record<string, Handler> {
   let stop: (() => void) | null = null;
   const start = turnStarter(state);
+  const tools = toolsPlayer(state);
   const play = async (message: string, conversation: string | null, changesAllowed: boolean) => {
     await start(message, conversation, changesAllowed);
+    if (state.claudeTools) return tools.play().then(() => null);
     if (state.claudeWeb && !changesAllowed) return announce(WEB_HELD_BACK).then(() => null);
     if (state.claudeWeb) {
       await announce(WEB_ALLOWED_BEFORE);
@@ -280,6 +360,7 @@ export function fakeClaude(
     return null;
   };
   return {
+    answer_view: tools.answerView,
     claude_status: () => state.claude,
     send_to_claude: ({ message, conversation, settings, changesAllowed }) => (
       state.claudeSettings.push(settings as TurnSettingsItem),

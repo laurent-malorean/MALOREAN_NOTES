@@ -7,6 +7,10 @@ mod catalog;
 mod changing;
 mod mcp;
 mod reading;
+mod screen;
+
+pub use screen::AppScreen;
+pub(super) use screen::View;
 
 use std::hash::{BuildHasher, Hasher, RandomState};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -142,6 +146,8 @@ impl Session {
                 written(&self.list_backlinks(path).map_err(|e| e.message)?)
             }
             AppTool::ListTemplates => self.tool_list_templates(turn),
+            AppTool::ViewedNote => self.tool_viewed_note(turn),
+            AppTool::ShowNote => self.tool_show_note(arguments),
             AppTool::ListVersions => {
                 let path = required(arguments, "path")?;
                 written(&self.list_versions(path).map_err(|e| e.message)?)
@@ -163,3 +169,6 @@ mod tests;
 
 #[cfg(test)]
 mod changing_tests;
+
+#[cfg(test)]
+mod screen_tests;

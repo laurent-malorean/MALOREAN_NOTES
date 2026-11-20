@@ -61,8 +61,18 @@ Ils passent par les cas d'usage, comme l'interface, et rendent ce qu'elle reçoi
 | `add_tags`, `remove_tags` | Ajoute ou retire des étiquettes dans l'en-tête, sans toucher au reste : la clé `tags` réécrite à sa place (`tags: [a, b]`, quelle que soit sa forme d'avant), ajoutée après les autres clés, ou retirée avec l'en-tête s'il ne contient plus rien ; une étiquette déjà là (majuscules et accents ignorés) n'est pas doublée ; une étiquette qui changerait le sens de la liste (`,`, `[`, `:`, guillemets…) est refusée |
 | `pin_note`, `unpin_note` | Épingle ou désépingle une note |
 | `add_attachment` | Joint à une note une image ou un PDF déjà rangé dans l'espace de travail : copié dans son dossier de pièces jointes (nom des règles des pièces jointes glissées, suffixe si pris), son lien ajouté à la fin de la note ; le fichier d'origine reste où il est. Le stockage lit ce fichier (`NoteStore::read_file`) sans jamais suivre un lien symbolique qui sortirait de l'espace de travail |
+| `viewed_note` | Ce que l'utilisateur regarde : la note de la colonne active (chemin et titre, ou rien) et le texte qui y est sélectionné, avec le nom de l'espace de travail |
+| `show_note` | Montre une note à l'utilisateur : elle s'ouvre dans la colonne active (une note qui n'existe pas est refusée) |
 
 Leur liste, leurs noms et ce qu'ils visent sont dans le domaine (`domain::app_tools::AppTool`) ; ce que Claude en lit (description, schéma de l'entrée) dans `api` (`session/app_tools/catalog.rs`).
+
+### Ce que voit l'utilisateur
+
+Rust ne sait pas ce que montre l'interface : les deux outils qui y touchent passent par un port de `api`, `AppScreen`, que `commands` réalise par des événements Tauri (`TauriScreen`, branché dans `app`).
+
+- **Montrer une note** : `show_note` vérifie que la note existe, puis l'événement `claude-shows-note` (le chemin) l'ouvre dans la colonne active, comme un clic sur une note modifiée par Claude.
+- **Ce que l'utilisateur regarde** est demandé **au moment de l'appel**, jamais suivi en continu : l'événement `claude-asks-view` porte un numéro de demande ; l'interface (`ui/src/app/claude-app-tools.ts`) répond par la commande `answer_view` (numéro, note de la colonne active ou `null`, texte sélectionné dans son éditeur) ; Rust attend la réponse 2 secondes au plus (sinon l'outil échoue : « l'interface n'a pas répondu : réessayez »), puis lit le titre de la note. Une réponse en retard ou à une demande inconnue est ignorée. Rien n'est gardé : le texte sélectionné ne quitte l'interface que quand Claude le demande, pendant un tour.
+- Rien d'autre de l'écran : ni colonnes, ni onglets, ni curseur (todo.md, « Rien de visuel »).
 
 ### Garde-fou du web
 
@@ -70,7 +80,7 @@ Les outils qui créent, changent, rangent ou jettent une note (`AppTool::changes
 
 ### Dans la colonne
 
-Une action d'un outil de l'application (`mcp__malorean__…` dans le flux) devient `ActionKind::AppTool` ; l'interface la nomme en français : « Recherche dans l’index », « Étiquettes », « Liens entrants », « Modèles », « Historique », « Lecture d’une version », « Nouvelle note », « Note depuis un modèle », « Mise à la corbeille », « Renommage », « Déplacement », « Restauration d’une version », « Ajout d’étiquettes », « Retrait d’étiquettes », « Épinglage », « Désépinglage », « Pièce jointe » ; un outil inconnu, « Outil de l’application ». Sa cible est la recherche ou la note visée.
+Une action d'un outil de l'application (`mcp__malorean__…` dans le flux) devient `ActionKind::AppTool` ; l'interface la nomme en français : « Recherche dans l’index », « Étiquettes », « Liens entrants », « Modèles », « Historique », « Lecture d’une version », « Nouvelle note », « Note depuis un modèle », « Mise à la corbeille », « Renommage », « Déplacement », « Restauration d’une version », « Ajout d’étiquettes », « Retrait d’étiquettes », « Épinglage », « Désépinglage », « Pièce jointe », « Note regardée », « Note montrée » ; un outil inconnu, « Outil de l’application ». Sa cible est la recherche ou la note visée.
 
 ### Mesuré avec le vrai `claude` (20/11, 2.1.311, `--model haiku`, dossier jetable)
 
@@ -93,10 +103,12 @@ Outils qui changent une note et garde-fou du web (20/11, mêmes conditions ; le 
 | Lire `/etc/hosts`, lire par le lien `lien.txt`, lancer `Bash` | refusés, comme avant (fiche 0032) |
 | Lister les étiquettes, chercher sur le web, puis créer une note et ajouter une étiquette, puis chercher « pain » | lecture des étiquettes et recherche faites ; création et étiquette **retenues par le crochet** (« PreToolUse:mcp__malorean__create_note hook error: » et le texte du garde-fou) sans jamais arriver à l'application ; la recherche dans l'index, qui ne change rien, faite |
 | Réglages, crochet, serveur et `CLAUDE.md` du dossier | sans effet : aucun crochet ni autre serveur lancé, le mot repère jamais écrit |
+| « Quelle note et quel passage je regarde ? Montre-moi `Documents/liste-de-courses.md` » (interface remplacée par un faux qui répond `alpha-bis.md` et « du pain ») | `viewed_note` rend la note, son titre, le passage et le nom de l'espace de travail ; `show_note` demande à l'interface d'ouvrir la note ; Claude répond avec ce qu'il a appris |
 
 ### Tests
 
 - La prise et le relais (`infrastructure/tests/local_socket.rs`) : un échange complet par le relais ; prise Unix en `0600` dans un dossier en `0700` ; disparue à la fermeture ; et, pendant un échange, **aucune prise réseau ouverte par le programme** (`lsof -a -p <programme> -i` ne rend rien, alors que `-U` voit bien les prises Unix).
+- L'interface : ce que l'utilisateur regarde rendu à la demande, une note montrée ouverte (`claude-app-tools.test.ts`) ; parcours Playwright où Claude demande la note regardée et le passage sélectionné, cherche, puis montre une note qui s'ouvre (`claude-app-tools.spec.ts`).
 - Le protocole sur ses lignes (`mcp.rs`), chaque outil par son protocole sur des faux (`session/app_tools/tests.rs`), dont la clé (refusée hors d'un tour, d'un autre tour, ou après le tour ; un tour refusé pendant un autre ne la change pas) et l'espace de travail du tour.
 - Les options de Claude Code avec et sans outils de l'application (faux Claude Code) ; le contrat du port joue un tour qui porte une clé, sur le faux et sur l'adaptateur.
 

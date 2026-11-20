@@ -18,4 +18,4 @@ pub use dto::{
     WorkspaceNoteItem, WritingActionItem,
 };
 pub use error::ApiError;
-pub use session::Session;
+pub use session::{AppScreen, Session};

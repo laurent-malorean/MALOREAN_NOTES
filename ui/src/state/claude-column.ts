@@ -70,6 +70,8 @@ export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   pin_note: "Épinglage",
   unpin_note: "Désépinglage",
   add_attachment: "Pièce jointe",
+  viewed_note: "Note regardée",
+  show_note: "Note montrée",
 };
 
 /** Le nom d'une action : celui de l'outil de l'application, ou celui de sa sorte, ou l'outil inconnu. */

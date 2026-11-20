@@ -33,6 +33,8 @@ beforeEach(() => {
       logInToClaude: async () => null,
       onClaudeSignIn: async () => () => {},
       copyPlainText: async () => null,
+      ...{ onClaudeShowsNote: async () => () => {}, onClaudeAsksView: async () => () => {} },
+      answerView: async () => null,
     },
     layout,
     workspace: { path: () => workspacePath },

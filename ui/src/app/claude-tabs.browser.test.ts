@@ -14,6 +14,7 @@ let turns: { resolve: () => void; reject: (error: unknown) => void }[];
 let announce: (event: ClaudeEventItem) => void;
 let workspacePath: string;
 let sentTemplates: (string | null)[];
+let showNote: (path: string) => void;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval", "setTimeout"] });
@@ -43,6 +44,9 @@ beforeEach(() => {
       logInToClaude: async () => null,
       onClaudeSignIn: async () => () => {},
       copyPlainText: async () => null,
+      onClaudeShowsNote: async (handler) => ((showNote = handler), () => {}),
+      onClaudeAsksView: async () => () => {},
+      answerView: async () => null,
     },
     layout,
     workspace: { path: () => workspacePath },
@@ -59,7 +63,7 @@ beforeEach(() => {
       setItem: () => {},
       removeItem: () => {},
     },
-    openNote: () => {},
+    openNote: (path) => log.push(`ouvrir ${path}`),
     error: (error) => log.push(`erreur ${String(error)}`),
   });
 });
@@ -207,6 +211,11 @@ describe("onglets de conversation de la colonne Claude Code", () => {
     expect(titles()).toEqual(["Un", "Nouvelle conversation"]);
     expect(find('[data-tab="1"]').getAttribute("aria-selected")).toBe("false");
     expect(find('[data-tab="2"]').getAttribute("aria-selected")).toBe("true");
+  });
+
+  it("une note montrée par Claude, par un outil de l'application, s'ouvre", () => {
+    showNote("Travail/a.md");
+    expect(log).toEqual(["ouvrir Travail/a.md"]);
   });
 
   it("chaque tour emporte le dossier des modèles de son espace de travail, pour les outils de l'application", async () => {

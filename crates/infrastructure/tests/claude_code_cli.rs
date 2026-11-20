@@ -232,7 +232,8 @@ fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them()
         mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\
         mcp__malorean__rename_note,mcp__malorean__move_note,mcp__malorean__restore_version,\
         mcp__malorean__add_tags,mcp__malorean__remove_tags,mcp__malorean__pin_note,\
-        mcp__malorean__unpin_note,mcp__malorean__add_attachment";
+        mcp__malorean__unpin_note,mcp__malorean__add_attachment,mcp__malorean__viewed_note,\
+        mcp__malorean__show_note";
     let (start, end) = PERMISSIONS.split_once("--disable").unwrap();
     assert_eq!(
         format!("{before}{after}"),

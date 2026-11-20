@@ -229,6 +229,24 @@ fn add_attachment() -> Described {
     )
 }
 
+fn viewed_note() -> Described {
+    (
+        "Ce que l'utilisateur regarde dans MALOREAN Notes : la note ouverte dans la colonne \
+         active (chemin et titre, ou rien) et le texte qu'il y a sélectionné (vide s'il n'y en a \
+         pas), avec le nom de l'espace de travail. Utile quand il parle de « cette note » ou de \
+         « ce passage ».",
+        input(json!({}), &[]),
+    )
+}
+
+fn show_note() -> Described {
+    (
+        "Montre une note à l'utilisateur : MALOREAN Notes l'ouvre dans la colonne active (par \
+         exemple la note que vous venez de créer ou de trouver).",
+        input(json!({ "path": note_path() }), &["path"]),
+    )
+}
+
 /// Ce que fait l'outil, et l'entrée qu'il attend.
 fn described(tool: AppTool) -> Described {
     match tool {
@@ -249,6 +267,8 @@ fn described(tool: AppTool) -> Described {
         AppTool::PinNote => pin_note(),
         AppTool::UnpinNote => unpin_note(),
         AppTool::AddAttachment => add_attachment(),
+        AppTool::ViewedNote => viewed_note(),
+        AppTool::ShowNote => show_note(),
     }
 }
 
@@ -305,7 +325,7 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 17] = [
+        let expected: [(AppTool, &[&str]); 19] = [
             (AppTool::SearchNotes, &[]),
             (AppTool::ListTags, &[]),
             (AppTool::LinkingNotes, path),
@@ -323,6 +343,8 @@ mod tests {
             (AppTool::PinNote, path),
             (AppTool::UnpinNote, path),
             (AppTool::AddAttachment, &["path", "file"]),
+            (AppTool::ViewedNote, &[]),
+            (AppTool::ShowNote, path),
         ];
         for (tool, fields) in expected {
             assert_eq!(checked_schema(tool)["required"], json!(fields), "{tool:?}");

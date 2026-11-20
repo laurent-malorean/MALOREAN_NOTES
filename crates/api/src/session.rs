@@ -1,6 +1,8 @@
 //! L'espace de travail ouvert et les cas d'usage qu'on lui applique.
 
 mod app_tools;
+
+pub use app_tools::AppScreen;
 mod attachments;
 mod claude;
 mod export;
@@ -18,8 +20,9 @@ mod watching;
 mod workspace;
 mod writing;
 
-use std::collections::BTreeSet;
-use std::sync::{Arc, Mutex, PoisonError, RwLock};
+use std::collections::{BTreeSet, HashMap};
+use std::sync::atomic::AtomicU64;
+use std::sync::{Arc, Mutex, PoisonError, RwLock, mpsc};
 
 use application::use_cases::{
     CreateFolder, CreateNote, ListFolders, ListNotes, MoveFolder, MoveNote, OpenedWorkspace,
@@ -69,6 +72,13 @@ pub struct Session {
     claude: Option<Arc<dyn ClaudeCode>>,
     /// Les outils de l'application, ouverts pendant un tour de la colonne Claude Code.
     tools_turn: Mutex<Option<app_tools::ToolsTurn>>,
+    /// L'interface, pour les outils de l'application qui lui montrent une note ou lui demandent
+    /// ce que l'utilisateur regarde.
+    screen: Option<Arc<dyn app_tools::AppScreen>>,
+    /// Les demandes de ce que l'utilisateur regarde, en attente de la réponse de l'interface.
+    views: Mutex<HashMap<u64, mpsc::Sender<app_tools::View>>>,
+    /// Le numéro de la prochaine de ces demandes.
+    view_requests: AtomicU64,
 }
 
 /// L'espace de travail ouvert : où il est, ses notes, leur index et leur historique, qui suivent
@@ -109,6 +119,9 @@ impl Session {
             assistant: None,
             claude: None,
             tools_turn: Mutex::new(None),
+            screen: None,
+            views: Mutex::default(),
+            view_requests: AtomicU64::new(0),
         }
     }
 

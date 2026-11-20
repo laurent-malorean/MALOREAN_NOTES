@@ -153,6 +153,8 @@ describe("conversation de la colonne Claude Code", () => {
         "pin_note",
         "unpin_note",
         "add_attachment",
+        "viewed_note",
+        "show_note",
       ].map((name) => tool(name, name)),
       tool("x", "futur"),
       tool("n", null),
@@ -175,6 +177,8 @@ describe("conversation de la colonne Claude Code", () => {
       "Épinglage",
       "Désépinglage",
       "Pièce jointe",
+      "Note regardée",
+      "Note montrée",
       "Outil de l’application",
       "Outil de l’application",
     ]);

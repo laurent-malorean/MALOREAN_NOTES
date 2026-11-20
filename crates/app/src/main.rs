@@ -47,6 +47,19 @@ fn claude_code(home: Option<&Path>, place: Option<&SocketPlace>) -> ClaudeCodeCl
     }
 }
 
+/// Ouvre la prise locale des outils de l'application, qui répond par `session`, et la garde
+/// ouverte tant que l'application tourne.
+fn serve_app_tools(app: &tauri::App, place: SocketPlace, session: &Arc<Session>) {
+    let answering = Arc::clone(session);
+    let answer = move |key: &str, line: &str| answering.answer_app_tools(key, line);
+    match place.serve(Arc::new(answer)) {
+        Ok(socket) => {
+            app.manage(socket);
+        }
+        Err(error) => tracing::warn!(%error, "prise des outils non ouverte"),
+    }
+}
+
 fn main() {
     let arguments: Vec<OsString> = env::args_os().collect();
     if arguments
@@ -84,17 +97,14 @@ fn main() {
                 .ok();
             let home = app.path().home_dir().ok();
             let claude = claude_code(home.as_deref(), place.as_ref());
-            let session = Arc::new(session.with_claude(Arc::new(claude)));
+            let screen = commands::claude::TauriScreen(app.handle().clone());
+            let session = Arc::new(
+                session
+                    .with_claude(Arc::new(claude))
+                    .with_screen(Arc::new(screen)),
+            );
             if let Some(place) = place {
-                let answering = Arc::clone(&session);
-                match place.serve(Arc::new(move |key: &str, line: &str| {
-                    answering.answer_app_tools(key, line)
-                })) {
-                    Ok(socket) => {
-                        app.manage(socket);
-                    }
-                    Err(error) => tracing::warn!(%error, "prise des outils non ouverte"),
-                }
+                serve_app_tools(app, place, &session);
             }
             app.manage(session);
             Ok(())

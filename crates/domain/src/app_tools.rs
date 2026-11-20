@@ -46,11 +46,16 @@ pub enum AppTool {
     UnpinNote,
     /// Joindre à une note un fichier de l'espace de travail (image ou PDF).
     AddAttachment,
+    /// Ce que l'utilisateur regarde : la note ouverte dans la colonne active, le texte
+    /// sélectionné.
+    ViewedNote,
+    /// Montrer une note à l'utilisateur : l'ouvrir dans la colonne active.
+    ShowNote,
 }
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 17] = [
+    pub const ALL: [Self; 19] = [
         Self::SearchNotes,
         Self::ListTags,
         Self::LinkingNotes,
@@ -68,6 +73,8 @@ impl AppTool {
         Self::PinNote,
         Self::UnpinNote,
         Self::AddAttachment,
+        Self::ViewedNote,
+        Self::ShowNote,
     ];
 
     /// Son nom, tel que le serveur MCP le donne.
@@ -91,6 +98,8 @@ impl AppTool {
             Self::PinNote => "pin_note",
             Self::UnpinNote => "unpin_note",
             Self::AddAttachment => "add_attachment",
+            Self::ViewedNote => "viewed_note",
+            Self::ShowNote => "show_note",
         }
     }
 
@@ -126,7 +135,9 @@ impl AppTool {
             | Self::LinkingNotes
             | Self::ListTemplates
             | Self::ListVersions
-            | Self::ReadVersion => false,
+            | Self::ReadVersion
+            | Self::ViewedNote
+            | Self::ShowNote => false,
             Self::CreateNote
             | Self::CreateNoteFromTemplate
             | Self::TrashNote
@@ -159,8 +170,9 @@ impl AppTool {
             | Self::RemoveTags
             | Self::PinNote
             | Self::UnpinNote
-            | Self::AddAttachment => Some("path"),
-            Self::ListTags | Self::ListTemplates => None,
+            | Self::AddAttachment
+            | Self::ShowNote => Some("path"),
+            Self::ListTags | Self::ListTemplates | Self::ViewedNote => None,
         }
     }
 }
@@ -273,6 +285,8 @@ mod tests {
                 path,
                 path,
                 path,
+                path,
+                None,
                 path
             ]
         );

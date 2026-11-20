@@ -16,6 +16,56 @@ pub const CLAUDE_EVENT: &str = "claude-event";
 /// page de connexion, à montrer si le navigateur ne s'est pas ouvert.
 pub const CLAUDE_SIGN_IN: &str = "claude-sign-in";
 
+/// Événement envoyé à l'interface quand Claude montre une note à l'utilisateur (outil de
+/// l'application `show_note`, fiche 0040) : il porte le chemin de la note, à ouvrir dans la
+/// colonne active.
+pub const CLAUDE_SHOWS_NOTE: &str = "claude-shows-note";
+
+/// Événement envoyé à l'interface quand Claude demande ce que l'utilisateur regarde (outil de
+/// l'application `viewed_note`) : il porte le numéro de la demande, que l'interface rend avec sa
+/// réponse ([`answer_view`]).
+pub const CLAUDE_ASKS_VIEW: &str = "claude-asks-view";
+
+/// L'interface, vue par les outils de l'application : elle reçoit leurs demandes par des
+/// événements.
+#[derive(Debug)]
+pub struct TauriScreen<R: Runtime>(pub AppHandle<R>);
+
+impl<R: Runtime> crate::AppScreen for TauriScreen<R> {
+    fn show_note(&self, path: &str) {
+        if let Err(error) = self.0.emit(CLAUDE_SHOWS_NOTE, path) {
+            tracing::warn!(%error, "note à montrer non transmise à l'interface");
+        }
+    }
+
+    fn ask_view(&self, request: u64) {
+        if let Err(error) = self.0.emit(CLAUDE_ASKS_VIEW, request) {
+            tracing::warn!(%error, "demande de la note regardée non transmise à l'interface");
+        }
+    }
+}
+
+/// Ce que l'utilisateur regarde, en réponse à la demande `request` ([`CLAUDE_ASKS_VIEW`]) : la
+/// note de la colonne active (`null` si elle n'en montre pas) et le texte sélectionné.
+///
+/// # Errors
+///
+/// Seulement une erreur interne, si le fil d'arrière-plan s'arrête.
+#[tauri::command]
+pub async fn answer_view(
+    session: SharedSession<'_>,
+    request: u64,
+    note: Option<String>,
+    selection: String,
+) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || {
+        session.answer_view(request, note, selection);
+        Ok(())
+    })
+    .await
+}
+
 /// Si Claude Code peut répondre, sinon pourquoi et quoi faire ; le modèle n'est pas appelé.
 ///
 /// # Errors

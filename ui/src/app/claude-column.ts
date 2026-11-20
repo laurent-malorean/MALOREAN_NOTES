@@ -15,6 +15,7 @@ import {
 } from "../screens/claude-column-view";
 import type { Layout } from "../screens/layout";
 import { type Account, createAccount } from "./claude-account";
+import { type AppToolsDeps, connectAppTools } from "./claude-app-tools";
 import { createInputBar, type InputBar } from "./claude-input-bar";
 import { ALLOW_CHANGES_MESSAGE } from "../state/claude-column";
 import { messageWithNotes } from "../state/claude-input-bar";
@@ -32,7 +33,6 @@ import {
   tabTurnEnded,
   tabUpdated,
 } from "../state/claude-tabs";
-import type { Columns } from "../state/columns";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { loadTemplatesFolder } from "../state/templates-folder";
 
@@ -49,10 +49,16 @@ export interface ClaudeColumnDeps {
     | "logInToClaude"
     | "onClaudeSignIn"
     | "copyPlainText"
+    | "onClaudeShowsNote"
+    | "onClaudeAsksView"
+    | "answerView"
   >;
   readonly layout: Pick<Layout, "claudeColumn" | "claudeButton" | "picker">;
-  /** Les colonnes d'édition : la note de la colonne active est jointe au message. */
-  readonly columns: { current(): Columns };
+  /**
+   * Les colonnes d'édition : la note de la colonne active est jointe au message ; elle et le texte
+   * sélectionné dans son éditeur disent aux outils de l'application ce que l'utilisateur regarde.
+   */
+  readonly columns: AppToolsDeps["columns"];
   /** Là où les réglages du tour sont gardés d'un lancement à l'autre. */
   readonly storage: PreferenceStorage;
   /** Le dossier de l'espace de travail ouvert. */
@@ -226,6 +232,7 @@ export function createClaudeColumn(deps: ClaudeColumnDeps): ClaudeColumn {
   });
   show();
   view.showSettings(bar.settings());
+  connectAppTools(deps);
   const follow = workspaceFollower(deps.workspace, bar, show);
   follow();
   return { toggle, follow };
