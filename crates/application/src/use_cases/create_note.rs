@@ -2,7 +2,7 @@
 
 use domain::journal::{daily_note, daily_note_name};
 use domain::saving::{created_note_name, new_note_name};
-use domain::template::note_from_template;
+use domain::template::{note_from_template, titled_note_from_template};
 use domain::{Folder, NotePath};
 
 use crate::{AppError, Clock, NoteStore};
@@ -31,6 +31,19 @@ impl<'a> CreateNote<'a> {
         self.store.write(&note, "")?;
         Ok(note)
     }
+
+    /// Le chemin de la note créée dans `folder` avec le texte `content`, sous le nom tiré de son
+    /// titre (avec le premier suffixe libre si ce nom est pris).
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si le dossier ne peut pas être lu ou écrit.
+    pub fn with_content(&self, folder: &Folder, content: &str) -> Result<NotePath, AppError> {
+        let existing = self.store.names(folder)?;
+        let note = NotePath::new(folder.clone(), created_note_name(content, &existing));
+        self.store.write(&note, content)?;
+        Ok(note)
+    }
 }
 
 /// Une nouvelle note tirée d'un modèle : son texte, variables remplacées, sous le nom de son titre.
@@ -55,10 +68,24 @@ impl<'a> CreateNoteFromTemplate<'a> {
     /// [`AppError::StorageUnavailable`] si le dossier ne peut pas être lu ou écrit.
     pub fn execute(&self, template: &NotePath, folder: &Folder) -> Result<NotePath, AppError> {
         let content = note_from_template(&self.store.read(template)?.content, &self.clock.now());
-        let existing = self.store.names(folder)?;
-        let note = NotePath::new(folder.clone(), created_note_name(&content, &existing));
-        self.store.write(&note, &content)?;
-        Ok(note)
+        CreateNote::new(self.store).with_content(folder, &content)
+    }
+
+    /// Le chemin de la note titrée `title` créée dans `folder` depuis le modèle `template` :
+    /// `{{title}}` et son titre `#` prennent `title`.
+    ///
+    /// # Errors
+    ///
+    /// Les mêmes que [`Self::execute`].
+    pub fn titled(
+        &self,
+        template: &NotePath,
+        folder: &Folder,
+        title: &str,
+    ) -> Result<NotePath, AppError> {
+        let template = self.store.read(template)?.content;
+        let content = titled_note_from_template(&template, &self.clock.now(), title);
+        CreateNote::new(self.store).with_content(folder, &content)
     }
 }
 
@@ -119,6 +146,38 @@ impl<'a> CreateDailyNote<'a> {
 mod tests {
     use super::*;
     use crate::testing::{FixedClock, InMemoryNoteStore};
+
+    #[test]
+    fn a_note_with_content_is_named_after_its_title_without_taking_a_name() {
+        let store = InMemoryNoteStore::with_notes(&[("Travail/plan.md", "# Plan")]);
+        let folder = Folder::parse("Travail").unwrap();
+        let creating = CreateNote::new(&store);
+        let created = creating.with_content(&folder, "# Plan\ntexte").unwrap();
+        assert_eq!(created.to_path(), "Travail/plan-2.md");
+        assert_eq!(store.read(&created).unwrap().content, "# Plan\ntexte");
+        assert_eq!(
+            creating
+                .with_content(&Folder::root(), "")
+                .unwrap()
+                .to_path(),
+            "sans-titre.md"
+        );
+    }
+
+    #[test]
+    fn a_titled_note_from_a_template_takes_the_title_given() {
+        let store =
+            InMemoryNoteStore::with_notes(&[("Modèles/r.md", "# Réunion du {{date}}\n{{title}}")]);
+        let template = NotePath::parse("Modèles/r.md").unwrap();
+        let created = CreateNoteFromTemplate::new(&store, &FixedClock::default())
+            .titled(&template, &Folder::root(), "Point équipe")
+            .unwrap();
+        assert_eq!(created.to_path(), "point-equipe.md");
+        assert_eq!(
+            store.read(&created).unwrap().content,
+            "# Point équipe\nPoint équipe"
+        );
+    }
 
     #[test]
     fn new_note_is_an_empty_untitled_file() {

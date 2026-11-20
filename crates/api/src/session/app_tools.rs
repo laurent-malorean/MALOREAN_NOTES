@@ -4,6 +4,7 @@
 //! n'agissent que dans l'espace de travail du tour, désigné par son nom.
 
 mod catalog;
+mod changing;
 mod mcp;
 mod reading;
 
@@ -130,6 +131,9 @@ impl Session {
                 turn.workspace.as_str()
             ));
         }
+        if tool.changes_notes() {
+            return self.call_changing_tool(turn, tool, arguments);
+        }
         match tool {
             AppTool::SearchNotes => self.tool_search_notes(arguments),
             AppTool::ListTags => written(&self.list_tags().map_err(|e| e.message)?),
@@ -149,9 +153,13 @@ impl Session {
                 );
                 self.read_version(path, version).map_err(|e| e.message)
             }
+            _ => unreachable!("un outil qui change une note est joué à part"),
         }
     }
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod changing_tests;

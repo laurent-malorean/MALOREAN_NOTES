@@ -438,6 +438,18 @@ impl NoteStore for FsNoteStore {
         })
     }
 
+    fn read_file(&self, folder: &Folder, name: &AttachmentName) -> Result<Vec<u8>, StoreError> {
+        let missing = || StoreError::AttachmentNotFound(name.to_name());
+        let file = self.folder_path(folder).join(name.to_name());
+        // Un lien symbolique ne fait pas sortir de l'espace de travail.
+        let real = file.canonicalize().map_err(|_| missing())?;
+        let root = self.root.canonicalize().map_err(unavailable)?;
+        if !real.starts_with(root) || !real.is_file() {
+            return Err(missing());
+        }
+        fs::read(real).map_err(unavailable)
+    }
+
     /// Écrit un fichier temporaire, puis le lie sous son nom : le lien échoue si le nom est
     /// pris (casse comprise sur un disque qui l'ignore), donc rien n'est jamais écrasé.
     fn write_attachment(

@@ -1,6 +1,7 @@
 //! Joindre un fichier collé ou glissé à une note, et ouvrir la cible d'un lien Markdown.
 
-use domain::{AttachmentName, NotePath, WebAddress};
+use domain::attachments::with_link_appended;
+use domain::{AttachmentName, Folder, NotePath, RefusedAttachment, WebAddress};
 
 use crate::{AppError, AttachmentLocation, Clock, NoteStore};
 
@@ -69,6 +70,54 @@ impl<'a> AttachFile<'a> {
             .deduplicated(|candidate| existing.iter().any(|taken| taken.same_file_as(candidate)));
         self.store.write_attachment(note, &name, bytes)?;
         Ok(name.markdown_link(note.name()))
+    }
+}
+
+/// Joint à une note un fichier de l'espace de travail (image ou PDF) : copié dans son dossier de
+/// pièces jointes, son lien ajouté à la fin de la note ; le fichier d'origine reste où il est.
+#[derive(Debug)]
+pub struct AttachWorkspaceFile<'a> {
+    store: &'a dyn NoteStore,
+    clock: &'a dyn Clock,
+}
+
+impl<'a> AttachWorkspaceFile<'a> {
+    /// Le cas d'usage, branché sur l'espace de travail ouvert et l'horloge.
+    #[must_use]
+    pub fn new(store: &'a dyn NoteStore, clock: &'a dyn Clock) -> Self {
+        Self { store, clock }
+    }
+
+    /// Le lien ajouté à la note `note` vers sa nouvelle pièce jointe, copie du fichier
+    /// `file_name` du dossier `folder`.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::AttachmentRefused`] si ce n'est ni une image ni un PDF,
+    /// [`AppError::AttachmentNotFound`] si le fichier n'existe pas, et les erreurs de
+    /// [`AttachFile::execute`].
+    pub fn execute(
+        &self,
+        note: &NotePath,
+        folder: &Folder,
+        file_name: &str,
+    ) -> Result<String, AppError> {
+        let name = AttachmentName::existing(file_name).ok_or_else(|| {
+            let kind = file_name
+                .rsplit_once('.')
+                .map_or(file_name, |(_, kind)| kind);
+            AppError::AttachmentRefused(RefusedAttachment::UnsupportedType(kind.to_owned()))
+        })?;
+        let content = self.store.read(note)?.content;
+        let bytes = self.store.read_file(folder, &name)?;
+        let link = AttachFile::new(self.store, self.clock).execute(
+            note,
+            AttachmentSource::Dropped { file_name },
+            &bytes,
+        )?;
+        self.store
+            .write(note, &with_link_appended(&content, &link))?;
+        Ok(link)
     }
 }
 
@@ -266,5 +315,53 @@ mod tests {
             open.execute(&path("voyage.md"), "voyage.assets/absent.pdf"),
             Err(AppError::AttachmentNotFound("absent.pdf".into()))
         );
+    }
+
+    #[test]
+    fn a_file_of_the_workspace_is_copied_as_an_attachment_and_linked_at_the_end_of_the_note() {
+        let store = InMemoryNoteStore::with_notes(&[("a.md", "# A\ntexte")]).with_file(
+            "Documents",
+            "plan.pdf",
+            b"PDF",
+        );
+        let note = NotePath::parse("a.md").unwrap();
+        let documents = Folder::parse("Documents").unwrap();
+        let clock = FixedClock::default();
+        let attaching = AttachWorkspaceFile::new(&store, &clock);
+        let link = attaching.execute(&note, &documents, "plan.pdf").unwrap();
+        assert_eq!(link, "[plan.pdf](a.assets/plan.pdf)");
+        assert_eq!(
+            store.read(&note).unwrap().content,
+            "# A\ntexte\n\n[plan.pdf](a.assets/plan.pdf)\n"
+        );
+        let copied = AttachmentName::existing("plan.pdf").unwrap();
+        assert_eq!(store.read_attachment(&note, &copied).unwrap(), b"PDF");
+        assert_eq!(store.read_file(&documents, &copied).unwrap(), b"PDF");
+    }
+
+    #[test]
+    fn only_an_existing_image_or_pdf_is_attached_to_an_existing_note() {
+        let store =
+            InMemoryNoteStore::with_notes(&[("a.md", "# A")]).with_file("", "liste.txt", b"x");
+        let note = NotePath::parse("a.md").unwrap();
+        let clock = FixedClock::default();
+        let attaching = AttachWorkspaceFile::new(&store, &clock);
+        assert_eq!(
+            attaching.execute(&note, &Folder::root(), "liste.txt"),
+            Err(AppError::AttachmentRefused(
+                RefusedAttachment::UnsupportedType("txt".into())
+            ))
+        );
+        assert_eq!(
+            attaching.execute(&note, &Folder::root(), "absent.png"),
+            Err(AppError::AttachmentNotFound("absent.png".into()))
+        );
+        let other = NotePath::parse("b.md").unwrap();
+        assert!(
+            attaching
+                .execute(&other, &Folder::root(), "absent.png")
+                .is_err()
+        );
+        assert_eq!(store.read(&note).unwrap().content, "# A");
     }
 }

@@ -52,12 +52,25 @@ Ils passent par les cas d'usage, comme l'interface, et rendent ce qu'elle reçoi
 | `list_templates` | Les noms (titres) des modèles de note : les notes du dossier des modèles, que l'interface passe à chaque tour (il est gardé par l'interface, fiche 0019) |
 | `list_versions` | Les versions d'une note, la plus récente d'abord |
 | `read_version` | Le texte d'une version |
+| `create_note` | Crée une note : titre `#` en tête, nom du fichier tiré du titre (suffixe si pris), dans un dossier, avec un texte sous le titre |
+| `create_note_from_template` | Crée une note depuis un modèle nommé (titre du modèle ou nom de son fichier) : l'application applique le modèle (date, heure remplacées), `{{title}}` et le titre `#` prennent le titre donné ; Claude n'a pas à lire le modèle |
+| `trash_note` | Met une note à la corbeille (jamais effacée), avec ses pièces jointes et son historique |
+| `rename_note` | Change le titre d'une note : fichier et dossier de pièces jointes renommés, liens vers ses pièces jointes suivis ; rend aussi les notes dont un lien `[[ancien titre]]` la visait, que Claude reprend avec ses outils de fichiers s'il le faut (l'application ne réécrit pas ces liens, fiche 0016) |
+| `move_note` | Range une note dans un autre dossier (pièces jointes et historique suivent ; suffixe si le nom est pris) |
+| `restore_version` | Remet le texte d'une version, après avoir gardé le texte actuel comme version |
+| `add_tags`, `remove_tags` | Ajoute ou retire des étiquettes dans l'en-tête, sans toucher au reste : la clé `tags` réécrite à sa place (`tags: [a, b]`, quelle que soit sa forme d'avant), ajoutée après les autres clés, ou retirée avec l'en-tête s'il ne contient plus rien ; une étiquette déjà là (majuscules et accents ignorés) n'est pas doublée ; une étiquette qui changerait le sens de la liste (`,`, `[`, `:`, guillemets…) est refusée |
+| `pin_note`, `unpin_note` | Épingle ou désépingle une note |
+| `add_attachment` | Joint à une note une image ou un PDF déjà rangé dans l'espace de travail : copié dans son dossier de pièces jointes (nom des règles des pièces jointes glissées, suffixe si pris), son lien ajouté à la fin de la note ; le fichier d'origine reste où il est. Le stockage lit ce fichier (`NoteStore::read_file`) sans jamais suivre un lien symbolique qui sortirait de l'espace de travail |
 
 Leur liste, leurs noms et ce qu'ils visent sont dans le domaine (`domain::app_tools::AppTool`) ; ce que Claude en lit (description, schéma de l'entrée) dans `api` (`session/app_tools/catalog.rs`).
 
+### Garde-fou du web
+
+Les outils qui créent, changent, rangent ou jettent une note (`AppTool::changes_notes` : tous sauf les six qui lisent) sont retenus après une lecture du web, comme `Write` et `Edit` : le crochet qui refuse vise `Write|Edit|mcp__malorean__create_note|…` (fiche 0032, « Garde-fou du web ») ; l'action retenue est dite « retenue » dans la colonne, et « Autoriser ses modifications » les laisse passer pour un tour, comme les autres.
+
 ### Dans la colonne
 
-Une action d'un outil de l'application (`mcp__malorean__…` dans le flux) devient `ActionKind::AppTool` ; l'interface la nomme en français : « Recherche dans l’index », « Étiquettes », « Liens entrants », « Modèles », « Historique », « Lecture d’une version » ; un outil inconnu, « Outil de l’application ». Sa cible est la recherche ou la note visée.
+Une action d'un outil de l'application (`mcp__malorean__…` dans le flux) devient `ActionKind::AppTool` ; l'interface la nomme en français : « Recherche dans l’index », « Étiquettes », « Liens entrants », « Modèles », « Historique », « Lecture d’une version », « Nouvelle note », « Note depuis un modèle », « Mise à la corbeille », « Renommage », « Déplacement », « Restauration d’une version », « Ajout d’étiquettes », « Retrait d’étiquettes », « Épinglage », « Désépinglage », « Pièce jointe » ; un outil inconnu, « Outil de l’application ». Sa cible est la recherche ou la note visée.
 
 ### Mesuré avec le vrai `claude` (20/11, 2.1.311, `--model haiku`, dossier jetable)
 
@@ -70,6 +83,16 @@ Options exactes de la fiche 0032, serveur ajouté par `--mcp-config` :
 | Premières lignes reçues par le serveur | `server/discover` (sonde, avec un identifiant : il faut y répondre, une erreur suffit), `initialize` (version `2025-11-25`), `notifications/initialized`, `tools/list`, puis un `tools/call` par action |
 | Programme lancé | dans le dossier de l'espace de travail, avec quelques variables de Claude Code (`CLAUDECODE`, `CLAUDE_CODE_SESSION_ID`…) |
 | Tour complet par le relais (programme de l'application) et `Session::answer_app_tools` : chercher « pain », étiquettes, liens entrants, modèles, puis `list_versions` de `../../etc/passwd` et `search_notes` dans `../` | les quatre premiers rendent ce qu'attend l'interface ; les deux derniers refusés (« nom de note invalide », « dossier invalide ») ; les actions arrivent dans le flux sous leur nom `mcp__malorean__…` |
+
+Outils qui changent une note et garde-fou du web (20/11, mêmes conditions ; le dossier jetable contenait aussi, pour tenter d'élargir les droits, un `.claude/settings.json` et un `.claude/settings.local.json` qui autorisent tout avec un crochet `SessionStart`, un `.mcp.json` avec un autre serveur, un `CLAUDE.md` qui demande un mot repère, et des liens symboliques vers un fichier et un dossier du dehors) :
+
+| Tentative | Résultat |
+|---|---|
+| Créer « Liste de courses », créer « Point équipe » depuis le modèle « Réunion du {{date}} », étiqueter, épingler, renommer en « Alpha bis », ranger dans `Documents`, joindre `Documents/icone.png`, mettre à la corbeille, lister les versions | tout fait selon les règles : `liste-de-courses.md` puis `Documents/liste-de-courses.md`, `point-equipe.md` dans `.trash/`, en-tête `tags: [maison, été]` et `pinned: true`, `alpha-bis.md` et `alpha-bis.assets/icone.png`, lien ajouté à la fin |
+| Joindre `lien.png`, lien symbolique vers une image du dehors | refusé (« la pièce jointe « lien.png » est introuvable ») |
+| Lire `/etc/hosts`, lire par le lien `lien.txt`, lancer `Bash` | refusés, comme avant (fiche 0032) |
+| Lister les étiquettes, chercher sur le web, puis créer une note et ajouter une étiquette, puis chercher « pain » | lecture des étiquettes et recherche faites ; création et étiquette **retenues par le crochet** (« PreToolUse:mcp__malorean__create_note hook error: » et le texte du garde-fou) sans jamais arriver à l'application ; la recherche dans l'index, qui ne change rien, faite |
+| Réglages, crochet, serveur et `CLAUDE.md` du dossier | sans effet : aucun crochet ni autre serveur lancé, le mot repère jamais écrit |
 
 ### Tests
 

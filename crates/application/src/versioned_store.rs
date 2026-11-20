@@ -122,6 +122,10 @@ impl NoteStore for VersionedStore {
         self.store.read_attachment(note, name)
     }
 
+    fn read_file(&self, folder: &Folder, name: &AttachmentName) -> Result<Vec<u8>, StoreError> {
+        self.store.read_file(folder, name)
+    }
+
     fn write_attachment(
         &self,
         note: &NotePath,

@@ -4,6 +4,17 @@ use crate::FileName;
 
 const LINK_OPENINGS: [&str; 2] = ["](", "](<"];
 
+/// Le contenu avec le lien `link` ajouté à la fin, sur sa propre ligne, après une ligne vide.
+#[must_use]
+pub fn with_link_appended(content: &str, link: &str) -> String {
+    let kept = content.trim_end_matches(['\n', '\r', ' ', '\t']);
+    if kept.is_empty() {
+        format!("{link}\n")
+    } else {
+        format!("{kept}\n\n{link}\n")
+    }
+}
+
 /// Le contenu dont les liens vers les pièces jointes suivent la note renommée.
 #[must_use]
 pub fn relink(content: &str, old: &FileName, new: &FileName) -> String {
@@ -39,5 +50,21 @@ mod tests {
         let new = FileName::parse("b.md").unwrap();
         let content = "[x](aa.assets/x.png) [y](https://a.assets/y)";
         assert_eq!(relink(content, &old, &new), content);
+    }
+
+    #[test]
+    fn a_link_is_appended_on_its_own_line_after_a_blank_line() {
+        assert_eq!(
+            with_link_appended("# A\ntexte", "![x](a.assets/x.png)"),
+            "# A\ntexte\n\n![x](a.assets/x.png)\n"
+        );
+        assert_eq!(
+            with_link_appended("# A\n\n\n", "[d](a.assets/d.pdf)"),
+            "# A\n\n[d](a.assets/d.pdf)\n"
+        );
+        assert_eq!(
+            with_link_appended(" \n", "[d](a.assets/d.pdf)"),
+            "[d](a.assets/d.pdf)\n"
+        );
     }
 }

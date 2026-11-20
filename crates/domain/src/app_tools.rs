@@ -24,17 +24,50 @@ pub enum AppTool {
     ListVersions,
     /// Le texte d'une version d'une note.
     ReadVersion,
+    /// Créer une note selon les règles : titre, nom du fichier tiré du titre.
+    CreateNote,
+    /// Créer une note depuis un modèle de note, nommé, avec un titre.
+    CreateNoteFromTemplate,
+    /// Mettre une note à la corbeille.
+    TrashNote,
+    /// Changer le titre d'une note, et donc son nom de fichier.
+    RenameNote,
+    /// Ranger une note dans un autre dossier.
+    MoveNote,
+    /// Remettre dans une note le texte d'une de ses versions.
+    RestoreVersion,
+    /// Ajouter des étiquettes dans l'en-tête d'une note.
+    AddTags,
+    /// Retirer des étiquettes de l'en-tête d'une note.
+    RemoveTags,
+    /// Épingler une note.
+    PinNote,
+    /// Désépingler une note.
+    UnpinNote,
+    /// Joindre à une note un fichier de l'espace de travail (image ou PDF).
+    AddAttachment,
 }
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 17] = [
         Self::SearchNotes,
         Self::ListTags,
         Self::LinkingNotes,
         Self::ListTemplates,
         Self::ListVersions,
         Self::ReadVersion,
+        Self::CreateNote,
+        Self::CreateNoteFromTemplate,
+        Self::TrashNote,
+        Self::RenameNote,
+        Self::MoveNote,
+        Self::RestoreVersion,
+        Self::AddTags,
+        Self::RemoveTags,
+        Self::PinNote,
+        Self::UnpinNote,
+        Self::AddAttachment,
     ];
 
     /// Son nom, tel que le serveur MCP le donne.
@@ -47,6 +80,17 @@ impl AppTool {
             Self::ListTemplates => "list_templates",
             Self::ListVersions => "list_versions",
             Self::ReadVersion => "read_version",
+            Self::CreateNote => "create_note",
+            Self::CreateNoteFromTemplate => "create_note_from_template",
+            Self::TrashNote => "trash_note",
+            Self::RenameNote => "rename_note",
+            Self::MoveNote => "move_note",
+            Self::RestoreVersion => "restore_version",
+            Self::AddTags => "add_tags",
+            Self::RemoveTags => "remove_tags",
+            Self::PinNote => "pin_note",
+            Self::UnpinNote => "unpin_note",
+            Self::AddAttachment => "add_attachment",
         }
     }
 
@@ -83,6 +127,17 @@ impl AppTool {
             | Self::ListTemplates
             | Self::ListVersions
             | Self::ReadVersion => false,
+            Self::CreateNote
+            | Self::CreateNoteFromTemplate
+            | Self::TrashNote
+            | Self::RenameNote
+            | Self::MoveNote
+            | Self::RestoreVersion
+            | Self::AddTags
+            | Self::RemoveTags
+            | Self::PinNote
+            | Self::UnpinNote
+            | Self::AddAttachment => true,
         }
     }
 
@@ -92,7 +147,19 @@ impl AppTool {
     pub const fn target_field(self) -> Option<&'static str> {
         match self {
             Self::SearchNotes => Some("query"),
-            Self::LinkingNotes | Self::ListVersions | Self::ReadVersion => Some("path"),
+            Self::CreateNote | Self::CreateNoteFromTemplate => Some("title"),
+            Self::LinkingNotes
+            | Self::ListVersions
+            | Self::ReadVersion
+            | Self::TrashNote
+            | Self::RenameNote
+            | Self::MoveNote
+            | Self::RestoreVersion
+            | Self::AddTags
+            | Self::RemoveTags
+            | Self::PinNote
+            | Self::UnpinNote
+            | Self::AddAttachment => Some("path"),
             Self::ListTags | Self::ListTemplates => None,
         }
     }
@@ -159,22 +226,54 @@ mod tests {
     }
 
     #[test]
-    fn reading_tools_change_no_note() {
-        assert!(AppTool::ALL.iter().all(|tool| !tool.changes_notes()));
+    fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
+        let changing: Vec<_> = AppTool::ALL
+            .into_iter()
+            .filter(|tool| tool.changes_notes())
+            .map(AppTool::name)
+            .collect();
+        assert_eq!(
+            changing,
+            [
+                "create_note",
+                "create_note_from_template",
+                "trash_note",
+                "rename_note",
+                "move_note",
+                "restore_version",
+                "add_tags",
+                "remove_tags",
+                "pin_note",
+                "unpin_note",
+                "add_attachment"
+            ]
+        );
     }
 
     #[test]
     fn each_tool_says_what_it_targets() {
         let targets: Vec<_> = AppTool::ALL.map(AppTool::target_field).into();
+        let path = Some("path");
         assert_eq!(
             targets,
             [
                 Some("query"),
                 None,
-                Some("path"),
+                path,
                 None,
-                Some("path"),
-                Some("path")
+                path,
+                path,
+                Some("title"),
+                Some("title"),
+                path,
+                path,
+                path,
+                path,
+                path,
+                path,
+                path,
+                path,
+                path
             ]
         );
     }

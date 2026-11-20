@@ -20,7 +20,8 @@ mod workspace;
 mod writing;
 
 pub use attachments::{
-    AttachFile, AttachmentSource, LinkDestination, MAX_ATTACHMENT_MEGABYTES, OpenLinkTarget,
+    AttachFile, AttachWorkspaceFile, AttachmentSource, LinkDestination, MAX_ATTACHMENT_MEGABYTES,
+    OpenLinkTarget,
 };
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
 pub use export::ExportMarkdown;

@@ -59,6 +59,17 @@ export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   list_templates: "Modèles",
   list_versions: "Historique",
   read_version: "Lecture d’une version",
+  create_note: "Nouvelle note",
+  create_note_from_template: "Note depuis un modèle",
+  trash_note: "Mise à la corbeille",
+  rename_note: "Renommage",
+  move_note: "Déplacement",
+  restore_version: "Restauration d’une version",
+  add_tags: "Ajout d’étiquettes",
+  remove_tags: "Retrait d’étiquettes",
+  pin_note: "Épinglage",
+  unpin_note: "Désépinglage",
+  add_attachment: "Pièce jointe",
 };
 
 /** Le nom d'une action : celui de l'outil de l'application, ou celui de sa sorte, ou l'outil inconnu. */

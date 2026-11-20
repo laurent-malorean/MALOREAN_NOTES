@@ -30,6 +30,8 @@ struct State {
     trashed_folders: BTreeSet<Folder>,
     /// Les pièces jointes de chaque note, avec leur contenu.
     attachments: BTreeMap<NotePath, Vec<(AttachmentName, Vec<u8>)>>,
+    /// Les fichiers de l'espace de travail qui ne sont pas des notes, avec leur contenu.
+    files: BTreeMap<(Folder, String), Vec<u8>>,
     tick: u64,
 }
 
@@ -119,6 +121,16 @@ impl InMemoryNoteStore {
                 .unwrap_or_else(|e| unreachable!("{e:?}"));
         }
         store
+    }
+
+    /// Le même espace de travail, avec le fichier `name` (pas une note) dans `folder`.
+    #[must_use]
+    pub fn with_file(self, folder: &str, name: &str, bytes: &[u8]) -> Self {
+        let folder = Folder::parse(folder).unwrap_or_else(|e| unreachable!("{e}"));
+        self.state()
+            .files
+            .insert((folder, name.to_owned()), bytes.to_vec());
+        self
     }
 
     fn state(&self) -> MutexGuard<'_, State> {
@@ -376,6 +388,14 @@ impl NoteStore for InMemoryNoteStore {
             .get(note)
             .and_then(|attachments| attachments.iter().find(|(known, _)| known == name))
             .map(|(_, bytes)| bytes.clone())
+            .ok_or_else(|| StoreError::AttachmentNotFound(name.to_name()))
+    }
+
+    fn read_file(&self, folder: &Folder, name: &AttachmentName) -> Result<Vec<u8>, StoreError> {
+        self.state()
+            .files
+            .get(&(folder.clone(), name.to_name()))
+            .cloned()
             .ok_or_else(|| StoreError::AttachmentNotFound(name.to_name()))
     }
 

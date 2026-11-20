@@ -2,7 +2,7 @@
 
 use crate::Moment;
 use crate::front_matter::unpinned;
-use crate::title::displayed_title;
+use crate::title::{displayed_title, retitled};
 
 /// Le texte d'une note créée depuis `template` au moment `at`.
 ///
@@ -11,8 +11,21 @@ use crate::title::displayed_title;
 /// reste telle quelle.
 #[must_use]
 pub fn note_from_template(template: &str, at: &Moment) -> String {
+    filled(template, &displayed_title(template), at)
+}
+
+/// Le texte d'une note titrée `title`, créée depuis `template` au moment `at` : comme
+/// [`note_from_template`], mais `{{title}}` prend `title`, et le titre `#` de la note est `title`
+/// (celui du modèle remplacé, ou ajouté s'il n'en a pas).
+#[must_use]
+pub fn titled_note_from_template(template: &str, at: &Moment, title: &str) -> String {
+    retitled(&filled(template, title, at), title)
+}
+
+/// Le modèle sans épinglage, ses variables remplacées.
+fn filled(template: &str, title: &str, at: &Moment) -> String {
     unpinned(template)
-        .replace("{{title}}", &displayed_title(template))
+        .replace("{{title}}", title)
         .replace("{{date}}", &at.long_date())
         .replace("{{time}}", &at.time())
 }
@@ -112,6 +125,31 @@ mod tests {
         assert_eq!(
             note_from_template("{{auteur}} {date}", &moment(1, 1, 0, 0)),
             "{{auteur}} {date}"
+        );
+    }
+
+    #[test]
+    fn a_titled_note_takes_the_title_given_in_its_variable_and_its_heading() {
+        let at = moment(11, 18, 9, 5);
+        assert_eq!(
+            titled_note_from_template(
+                "---\npinned: true\n---\n# {{title}}\n{{date}}",
+                &at,
+                "Bilan"
+            ),
+            "# Bilan\n18 novembre 2026"
+        );
+        assert_eq!(
+            titled_note_from_template(
+                "# Réunion du {{date}}\n## Ordre du jour",
+                &at,
+                "Point équipe"
+            ),
+            "# Point équipe\n## Ordre du jour"
+        );
+        assert_eq!(
+            titled_note_from_template("- [ ] à faire à {{time}}", &at, "Liste"),
+            "# Liste\n- [ ] à faire à 09:05"
         );
     }
 }

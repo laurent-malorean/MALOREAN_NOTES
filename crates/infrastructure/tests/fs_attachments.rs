@@ -126,3 +126,50 @@ fn a_failed_write_leaves_no_temporary_file() {
     assert!(matches!(result, Err(StoreError::Unavailable(_))));
     assert_eq!(fs::read_dir(&folder).unwrap().count(), 0);
 }
+
+#[test]
+fn a_file_of_the_workspace_is_read_but_never_through_a_link_leading_outside() {
+    let (dir, store) = workspace_with_note();
+    fs::create_dir(dir.path().join("Documents")).unwrap();
+    fs::write(dir.path().join("Documents/plan.pdf"), b"PDF").unwrap();
+    let documents = domain::Folder::parse("Documents").unwrap();
+    assert_eq!(
+        store
+            .read_file(&documents, &attachment("plan.pdf"))
+            .unwrap(),
+        b"PDF"
+    );
+    let outside = TempDir::new().unwrap();
+    fs::write(outside.path().join("secret.png"), b"PNG").unwrap();
+    std::os::unix::fs::symlink(
+        outside.path().join("secret.png"),
+        dir.path().join("lien.png"),
+    )
+    .unwrap();
+    std::os::unix::fs::symlink(outside.path(), dir.path().join("Dehors")).unwrap();
+    assert_eq!(
+        store.read_file(&domain::Folder::root(), &attachment("lien.png")),
+        Err(StoreError::AttachmentNotFound("lien.png".to_owned()))
+    );
+    let through = domain::Folder::parse("Dehors").unwrap();
+    assert_eq!(
+        store.read_file(&through, &attachment("secret.png")),
+        Err(StoreError::AttachmentNotFound("secret.png".to_owned()))
+    );
+    fs::create_dir(dir.path().join("dossier.png")).unwrap();
+    assert_eq!(
+        store.read_file(&domain::Folder::root(), &attachment("dossier.png")),
+        Err(StoreError::AttachmentNotFound("dossier.png".to_owned()))
+    );
+}
+
+#[test]
+fn an_unreadable_file_of_the_workspace_says_the_storage_is_unavailable() {
+    let (dir, store) = workspace_with_note();
+    let file = dir.path().join("plan.pdf");
+    fs::write(&file, b"PDF").unwrap();
+    set_mode(&file, NO_PERMISSION);
+    let read = store.read_file(&domain::Folder::root(), &attachment("plan.pdf"));
+    set_mode(&file, 0o644);
+    assert!(matches!(read, Err(StoreError::Unavailable(_))), "{read:?}");
+}

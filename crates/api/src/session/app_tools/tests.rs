@@ -28,11 +28,11 @@ fn session_with(notes: &[(&str, &str)], claude: Option<Arc<FakeClaudeCode>>) -> 
     session
 }
 
-fn opened(notes: &[(&str, &str)]) -> Session {
+pub(super) fn opened(notes: &[(&str, &str)]) -> Session {
     session_with(notes, None)
 }
 
-fn notes_workspace() -> WorkspaceName {
+pub(super) fn notes_workspace() -> WorkspaceName {
     WorkspaceName::new("Notes").unwrap()
 }
 
@@ -57,14 +57,14 @@ fn called(session: &Session, key: &str, tool: &str, arguments: Value) -> (String
 }
 
 /// Ce que rend l'outil, réussi, lu en JSON.
-fn found(session: &Session, key: &str, tool: &str, arguments: Value) -> Value {
+pub(super) fn found(session: &Session, key: &str, tool: &str, arguments: Value) -> Value {
     let (text, failed) = called(session, key, tool, arguments);
     assert!(!failed, "{text}");
     serde_json::from_str(&text).unwrap()
 }
 
 /// L'outil échoue, et dit pourquoi.
-fn refused(session: &Session, key: &str, tool: &str, arguments: Value) -> String {
+pub(super) fn refused(session: &Session, key: &str, tool: &str, arguments: Value) -> String {
     let (text, failed) = called(session, key, tool, arguments);
     assert!(failed, "{text}");
     text

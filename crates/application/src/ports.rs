@@ -254,6 +254,15 @@ pub trait NoteStore: Send + Sync + Debug {
         name: &AttachmentName,
     ) -> Result<Vec<u8>, StoreError>;
 
+    /// Le contenu d'un fichier de l'espace de travail qui n'est pas une note (une image ou un
+    /// PDF rangé dans un dossier), pour en faire la pièce jointe d'une note.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::AttachmentNotFound`] si le fichier n'existe pas, ou si un lien symbolique le
+    /// fait sortir de l'espace de travail, [`StoreError::Unavailable`] s'il ne peut pas être lu.
+    fn read_file(&self, folder: &Folder, name: &AttachmentName) -> Result<Vec<u8>, StoreError>;
+
     /// Écrit une nouvelle pièce jointe dans le dossier de pièces jointes de la note, créé si
     /// besoin ; n'écrase jamais un fichier existant.
     ///

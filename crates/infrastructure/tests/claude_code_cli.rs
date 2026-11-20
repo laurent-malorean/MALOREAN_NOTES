@@ -173,6 +173,12 @@ impl FakeClaude {
     }
 }
 
+/// Les outils de l'application qui changent une note : le garde-fou du web les retient aussi.
+const CHANGING_APP_TOOLS: &str = "mcp__malorean__create_note|mcp__malorean__create_note_from_template|mcp__malorean__trash_n\
+    ote|mcp__malorean__rename_note|mcp__malorean__move_note|mcp__malorean__restore_version|mcp\
+    __malorean__add_tags|mcp__malorean__remove_tags|mcp__malorean__pin_note|mcp__malorean__unp\
+    in_note|mcp__malorean__add_attachment";
+
 /// Les outils que visent les crochets du garde-fou du web, dans l'ordre.
 fn guarded_tools(hooks: &serde_json::Value) -> Vec<&str> {
     hooks["hooks"]["PreToolUse"]
@@ -192,7 +198,13 @@ fn a_new_conversation_is_launched_with_the_stream_permission_and_web_guard_optio
         arguments,
         format!("-p\n--output-format\nstream-json\n--verbose\n{PERMISSIONS}")
     );
-    assert_eq!(guarded_tools(&hooks), ["WebSearch|WebFetch", "Write|Edit"]);
+    assert_eq!(
+        guarded_tools(&hooks),
+        [
+            "WebSearch|WebFetch",
+            &format!("Write|Edit|{CHANGING_APP_TOOLS}")
+        ]
+    );
 }
 
 /// Le relais des outils de l'application des tests : ni le programme ni la prise ne servent.
@@ -216,7 +228,11 @@ fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them()
     let (mcp, after) = mcp.split_once('\n').unwrap();
     let allowed = "WebSearch,WebFetch,mcp__malorean__search_notes,mcp__malorean__list_tags,\
         mcp__malorean__linking_notes,mcp__malorean__list_templates,mcp__malorean__list_versions,\
-        mcp__malorean__read_version";
+        mcp__malorean__read_version,mcp__malorean__create_note,\
+        mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\
+        mcp__malorean__rename_note,mcp__malorean__move_note,mcp__malorean__restore_version,\
+        mcp__malorean__add_tags,mcp__malorean__remove_tags,mcp__malorean__pin_note,\
+        mcp__malorean__unpin_note,mcp__malorean__add_attachment";
     let (start, end) = PERMISSIONS.split_once("--disable").unwrap();
     assert_eq!(
         format!("{before}{after}"),

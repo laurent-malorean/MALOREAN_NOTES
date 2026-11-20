@@ -38,6 +38,22 @@ pub fn attachment_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     a_missing_attachment_cannot_be_located(&empty_store());
     attachments_follow_a_renamed_or_moved_note(&empty_store());
     notes_of_the_same_name_in_two_folders_keep_their_own_attachments(&empty_store());
+    a_missing_file_of_the_workspace_is_not_found(&empty_store());
+}
+
+fn a_missing_file_of_the_workspace_is_not_found(store: &impl NoteStore) {
+    store.write(&note("a.md"), "# A").unwrap();
+    store
+        .write_attachment(&note("a.md"), &attachment("vue.png"), b"PNG")
+        .unwrap();
+    assert_eq!(
+        store.read_file(&Folder::root(), &attachment("plan.pdf")),
+        Err(StoreError::AttachmentNotFound("plan.pdf".to_owned()))
+    );
+    assert_eq!(
+        store.read_file(&Folder::root(), &attachment("vue.png")),
+        Err(StoreError::AttachmentNotFound("vue.png".to_owned()))
+    );
 }
 
 fn a_note_without_attachment_folder_has_no_attachment(store: &impl NoteStore) {

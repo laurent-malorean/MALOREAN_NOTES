@@ -14,8 +14,4 @@ exclude_globs = ["crates/application/src/testing/*contract.rs"]
 # Commandes qui ouvrent une fenêtre de choix du Mac (enregistrement, dossier) : le simulateur de
 # Tauri n'a pas ces fenêtres, aucun test automatique ne peut les ouvrir. Ce qu'elles font du
 # choix est testé à part (`Session::chosen_export`, `Session::chosen_folder`).
-#
-# `AppTool::changes_notes` (fiche 0040) : tant qu'aucun outil de l'application ne change de note,
-# elle rend toujours `false`, et la remplacer par `false` ne change rien (erreur équivalente). Retiré
-# dès qu'un outil change une note.
-exclude_re = ["choose_export_file", "choose_workspace_folder", "AppTool::changes_notes"]
+exclude_re = ["choose_export_file", "choose_workspace_folder"]

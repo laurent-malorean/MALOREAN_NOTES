@@ -151,6 +151,61 @@ pub fn unpinned(content: &str) -> String {
     }
 }
 
+/// La note dont la clé de l'en-tête que repère `key_lines` est remplacée par `line`, à sa place
+/// (toutes ses lignes retirées), ajoutée après les autres clés si l'en-tête ne l'a pas, ou retirée
+/// si `line` est vide ; un en-tête est créé pour une ligne ajoutée à une note qui n'en a pas, et
+/// retiré s'il ne contient plus rien une fois la clé retirée. Seule la première occurrence de la
+/// clé compte. `key_lines` dit combien des lignes données, à partir de la première, portent la
+/// clé (aucune si la première ne la porte pas).
+pub(crate) fn with_key_line(
+    content: &str,
+    key_lines: impl Fn(&[&str]) -> usize,
+    line: Option<&str>,
+) -> String {
+    let Some(header) = Header::of(content) else {
+        let Some(line) = line else {
+            return content.to_owned();
+        };
+        let newline = if content.contains("\r\n") {
+            "\r\n"
+        } else {
+            "\n"
+        };
+        return format!("{DELIMITER}{newline}{line}{newline}{DELIMITER}{newline}{content}");
+    };
+    let lines: Vec<&str> = header.lines().collect();
+    let found = (0..lines.len()).find_map(|at| {
+        let count = key_lines(&lines[at..]);
+        (count > 0).then_some((at, count))
+    });
+    let mut yaml: String = match found {
+        Some((at, _)) => lines[..at].concat(),
+        None => lines.concat(),
+    };
+    match (found, line) {
+        (Some((at, _)), Some(line)) => {
+            yaml.push_str(line);
+            yaml.push_str(line_ending(lines[at]));
+        }
+        (None, Some(line)) => {
+            yaml.push_str(line);
+            yaml.push_str(header.newline());
+        }
+        (None, None) => return content.to_owned(),
+        (Some(_), None) => {}
+    }
+    if let Some((at, count)) = found {
+        yaml.push_str(&lines[at + count..].concat());
+    }
+    let rest = &content[header.close_end..];
+    // Un en-tête vidé est retiré, sauf si le texte en dessous passerait alors pour un en-tête.
+    if line.is_none() && yaml.trim().is_empty() && Header::of(rest).is_none() {
+        rest.to_owned()
+    } else {
+        header.with_yaml(&yaml)
+    }
+}
+
 fn strip_delimiter_line(content: &str) -> Option<&str> {
     let rest = content.strip_prefix(DELIMITER)?;
     rest.strip_prefix("\r\n")

@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::is_combining_mark;
 
-use crate::front_matter::split;
+use crate::front_matter::{self, split};
 
 const TAGS_KEY: &str = "tags";
 const LIST_ITEM: char = '-';
@@ -40,6 +40,50 @@ pub fn tags(content: &str) -> Vec<String> {
         }
     }
     found
+}
+
+/// Les signes qu'une étiquette écrite par l'application ne peut pas contenir : ils changeraient
+/// le sens de la liste `tags: [a, b]` de l'en-tête.
+const UNWRITABLE: [char; 10] = [',', '[', ']', '{', '}', ':', '"', '\'', '\n', '\r'];
+
+/// L'étiquette telle que l'application l'écrit dans un en-tête : sans espaces autour ni `#` de
+/// tête ; rien si elle est vide ou contient un signe qui changerait le sens de la liste.
+#[must_use]
+pub fn writable_tag(tag: &str) -> Option<String> {
+    let tag = tag.trim().trim_start_matches(HASH).trim();
+    (!tag.is_empty() && !tag.contains(UNWRITABLE)).then(|| tag.to_owned())
+}
+
+/// Vrai si les deux étiquettes sont la même, majuscules et accents ignorés.
+#[must_use]
+pub fn same_tag(a: &str, b: &str) -> bool {
+    sort_key(a) == sort_key(b)
+}
+
+/// La note avec `new_tags` pour étiquettes, le reste du texte inchangé : la clé `tags` de son
+/// en-tête réécrite à sa place (`tags: [a, b]`, la liste YAML qui la suivait retirée), ajoutée
+/// après les autres clés, ou retirée si `new_tags` est vide (et l'en-tête avec elle s'il ne
+/// contient plus rien) ; un en-tête est créé s'il n'y en a pas.
+#[must_use]
+pub fn retagged(content: &str, new_tags: &[String]) -> String {
+    let line = (!new_tags.is_empty()).then(|| format!("{TAGS_KEY}: [{}]", new_tags.join(", ")));
+    front_matter::with_key_line(content, tags_lines, line.as_deref())
+}
+
+/// Combien de lignes, à partir de la première, portent la clé `tags` : sa ligne, et la liste
+/// YAML qui la suit si sa valeur est vide ; aucune si la première ligne ne la porte pas.
+fn tags_lines(lines: &[&str]) -> usize {
+    let Some(value) = lines.first().and_then(|line| tags_value(line)) else {
+        return 0;
+    };
+    if without_comment(value).trim().is_empty() {
+        1 + lines[1..]
+            .iter()
+            .take_while(|line| list_item(line).is_some())
+            .count()
+    } else {
+        1
+    }
 }
 
 /// La valeur de la clé `tags` si la ligne la porte (au premier niveau), telle qu'écrite.
@@ -168,6 +212,94 @@ mod tests {
                 ("loisirs".to_owned(), 1),
                 ("perso".to_owned(), 2),
             ]
+        );
+    }
+
+    #[test]
+    fn a_tag_is_written_only_without_signs_that_would_change_the_list() {
+        assert_eq!(writable_tag("  #maison "), Some("maison".to_owned()));
+        assert_eq!(
+            writable_tag("liste de courses"),
+            Some("liste de courses".to_owned())
+        );
+        for refused in [
+            "", " # ", "a,b", "[a", "a]", "{a", "a}", "a: b", "\"a", "'a", "a\nb", "a\rb",
+        ] {
+            assert_eq!(writable_tag(refused), None, "{refused:?}");
+        }
+    }
+
+    #[test]
+    fn two_tags_are_the_same_whatever_the_case_and_accents() {
+        assert!(same_tag("Été", "ete"));
+        assert!(!same_tag("été", "hiver"));
+    }
+
+    fn list(tags: &[&str]) -> Vec<String> {
+        tags.iter().map(|tag| (*tag).to_owned()).collect()
+    }
+
+    #[test]
+    fn retagging_rewrites_the_key_in_place_whatever_its_form() {
+        assert_eq!(
+            retagged(
+                "---\ntitle: x\ntags: [a]\npinned: true\n---\n# T",
+                &list(&["a", "b"])
+            ),
+            "---\ntitle: x\ntags: [a, b]\npinned: true\n---\n# T"
+        );
+        assert_eq!(
+            retagged(
+                "---\ntags:\n  - a\n  - b\npinned: true\n---\n# T",
+                &list(&["c"])
+            ),
+            "---\ntags: [c]\npinned: true\n---\n# T"
+        );
+        assert_eq!(
+            retagged("---\ntags: a, b # mes étiquettes\n---\n# T", &list(&["a"])),
+            "---\ntags: [a]\n---\n# T"
+        );
+        assert_eq!(
+            retagged("---\r\ntags: [a]\r\n---\r\n# T", &list(&["b"])),
+            "---\r\ntags: [b]\r\n---\r\n# T"
+        );
+        let retagged_twice = retagged("---\ntags: [a]\ntags: [z]\n---\n", &list(&["b"]));
+        assert_eq!(retagged_twice, "---\ntags: [b]\ntags: [z]\n---\n");
+    }
+
+    #[test]
+    fn retagging_adds_the_key_after_the_others_or_creates_the_header() {
+        assert_eq!(
+            retagged("---\npinned: true\n---\n# T", &list(&["a"])),
+            "---\npinned: true\ntags: [a]\n---\n# T"
+        );
+        assert_eq!(
+            retagged("# T\ntexte", &list(&["a"])),
+            "---\ntags: [a]\n---\n# T\ntexte"
+        );
+        assert_eq!(
+            retagged("# T\r\n", &list(&["a"])),
+            "---\r\ntags: [a]\r\n---\r\n# T\r\n"
+        );
+        assert_eq!(tags(&retagged("# T", &list(&["a b", "c"]))), ["a b", "c"]);
+    }
+
+    #[test]
+    fn retagging_without_tags_removes_the_key_and_an_emptied_header() {
+        assert_eq!(
+            retagged("---\ntags: [a]\npinned: true\n---\n# T", &[]),
+            "---\npinned: true\n---\n# T"
+        );
+        assert_eq!(retagged("---\ntags:\n- a\n---\n# T", &[]), "# T");
+        assert_eq!(
+            retagged("---\ntags: [a]\n---\n---\n# T\n---", &[]),
+            "---\n---\n---\n# T\n---"
+        );
+        assert_eq!(retagged("# T", &[]), "# T");
+        assert_eq!(retagged("---\n---\n# T", &[]), "---\n---\n# T");
+        assert_eq!(
+            retagged("---\npinned: true\n---\n# T", &[]),
+            "---\npinned: true\n---\n# T"
         );
     }
 }
