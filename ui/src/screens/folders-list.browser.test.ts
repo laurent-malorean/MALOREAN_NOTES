@@ -42,7 +42,7 @@ const drag = (target: HTMLElement, type: string) => {
   return event;
 };
 
-describe("colonne des dossiers", () => {
+describe("liste des dossiers", () => {
   it("affiche l'espace de travail puis l'arbre des dossiers, indenté", () => {
     const { container } = column();
     expect(names(container)).toEqual(["Notes", "Perso", "Travail", "Réunions"]);

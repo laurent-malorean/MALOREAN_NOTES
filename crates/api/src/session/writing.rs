@@ -1,4 +1,4 @@
-//! L'aide à l'écriture vue depuis la page : si l'assistant d'écriture peut répondre, et sa
+//! L'aide à l'écriture vue depuis l'interface : si l'assistant d'écriture peut répondre, et sa
 //! proposition pour une sélection.
 
 use std::sync::Arc;

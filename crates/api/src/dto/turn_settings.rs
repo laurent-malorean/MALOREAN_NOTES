@@ -1,4 +1,4 @@
-//! Réglages d'un tour de Claude Code reçus de la page : le modèle et le niveau d'effort choisis
+//! Réglages d'un tour de Claude Code reçus de l'interface : le modèle et le niveau d'effort choisis
 //! sur leur pastille (fiche 0032).
 
 use domain::claude::{ChangesAfterWeb, ClaudeModel, Effort, TurnSettings};
@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn each_model_is_read_under_the_name_used_by_the_page() {
+    fn each_model_is_read_under_the_name_used_by_the_interface() {
         for (name, model) in [
             ("haiku", ClaudeModel::Haiku),
             ("sonnet", ClaudeModel::Sonnet),
@@ -121,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn each_effort_is_read_under_the_name_used_by_the_page() {
+    fn each_effort_is_read_under_the_name_used_by_the_interface() {
         for (name, effort) in [
             ("low", Effort::Low),
             ("medium", Effort::Medium),

@@ -2,7 +2,7 @@
 import type { StandardItem } from "./StandardItem";
 
 /**
- * Un élément de menu : une commande de la page, un élément standard du Mac, ou un séparateur.
+ * Un élément de menu : une commande de l'interface, un élément standard du Mac, ou un séparateur.
  */
 export type MenuEntryItem = { "kind": "command", 
 /**

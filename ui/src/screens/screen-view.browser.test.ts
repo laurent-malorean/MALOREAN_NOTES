@@ -101,7 +101,7 @@ describe("affichage de l'écran", () => {
     expect(view.noteOrder.parentElement?.hidden).toBe(true);
   });
 
-  it("montre la colonne des dossiers et le nom du dossier affiché", () => {
+  it("montre la liste des dossiers et le nom du dossier affiché", () => {
     const view = layout();
     const opened = workspaceOpened(
       workspace,
@@ -158,7 +158,7 @@ describe("affichage de l'écran", () => {
       path: "b.md",
       title: "Bêta",
       folder: "",
-      contentType: "page",
+      contentType: "note",
       container: null,
       modified: 0,
       excerpt: [],

@@ -2,7 +2,7 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import { waitForTestFrame } from "./test-support/test-frame";
 
-// Port fixe : Tauri charge la page depuis cette adresse en développement.
+// Port fixe : Tauri charge l'interface depuis cette adresse en développement.
 export default defineConfig({
   clearScreen: false,
   server: { port: 5173, strictPort: true },

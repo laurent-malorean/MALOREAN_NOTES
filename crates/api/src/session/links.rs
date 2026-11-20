@@ -1,4 +1,4 @@
-//! Les liens entre notes de l'espace de travail ouvert, vus depuis la page.
+//! Les liens entre notes de l'espace de travail ouvert, vus depuis l'interface.
 
 use application::use_cases::NoteLinks;
 use domain::NotePath;
@@ -21,7 +21,7 @@ impl Session {
             .map(|path| path.to_path()))
     }
 
-    /// Les liens entrants de la note reçue de la page, la plus récente en premier.
+    /// Les liens entrants de la note reçue de l'interface, la plus récente en premier.
     ///
     /// # Errors
     ///

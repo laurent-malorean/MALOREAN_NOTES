@@ -24,7 +24,7 @@ use crate::web_guard::WebGuard;
 /// `WebFetch` le garde malgré `--restricted`.
 const TOOLS: &str = "Read,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch";
 
-/// Les outils permis d'office : sans cela, chercher sur le web et lire une page demanderaient
+/// Les outils permis d'office : sans cela, chercher sur le web et lire une page web demanderaient
 /// une autorisation, que personne ne donne (`--permission-prompts none`).
 const ALLOWED_TOOLS: &str = "WebSearch,WebFetch";
 

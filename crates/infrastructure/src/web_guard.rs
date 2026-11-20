@@ -1,6 +1,6 @@
 //! Garde-fou du web (fiche 0032) : une fois que Claude a lu le web pendant un tour, ses créations
-//! et modifications de fichiers sont retenues jusqu'à l'accord de l'utilisateur, car une page lue
-//! pourrait cacher des instructions. Deux crochets de Claude Code, passés pour ce seul tour par
+//! et modifications de fichiers sont retenues jusqu'à l'accord de l'utilisateur, car une page web
+//! lue pourrait cacher des instructions. Deux crochets de Claude Code, passés pour ce seul tour par
 //! `--settings` (qui s'applique malgré `--restricted`), le font : avant toute recherche ou lecture
 //! web, le premier pose une marque dans un dossier jetable du tour ; avant toute création ou
 //! modification, le second la cherche et, s'il la trouve, refuse l'action. Les sous-agents passent

@@ -1,4 +1,4 @@
-// Récentes à l'écran : l'entrée de la colonne des dossiers qui montre les notes récentes.
+// Récentes à l'écran : l'entrée de la liste des dossiers qui montre les notes récentes.
 
 /** Ce que l'utilisateur peut demander depuis l'entrée Récentes. */
 export interface RecentActions {

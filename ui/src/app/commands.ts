@@ -189,7 +189,7 @@ function openPalette(deps: CommandsDeps, actions: Readonly<Record<CommandId, () 
   });
 }
 
-/** Une fenêtre de la page (réglages, choix, question) est ouverte : elle garde le clavier et les menus. */
+/** Une fenêtre de l'interface (réglages, fenêtre de choix, confirmation, demande d'un nom) est ouverte : elle garde le clavier et les menus. */
 export function dialogOpen(): boolean {
   return document.querySelector("dialog[open]") !== null;
 }
@@ -209,7 +209,7 @@ function runShortcut(
 /**
  * Branche les raccourcis clavier ; rend ce que fait chaque commande, et la palette.
  * La touche est prise ici, avant la barre des menus : `preventDefault` empêche WebKit de la
- * passer au menu, qui ne la reçoit que si ni l'éditeur ni la page ne l'ont prise.
+ * passer au menu, qui ne la reçoit que si ni l'éditeur ni l'interface ne l'ont prise.
  */
 export function connectCommands(deps: CommandsDeps): Readonly<Record<MenuCommandId, () => void>> {
   const actions: Readonly<Record<MenuCommandId, () => void>> = {

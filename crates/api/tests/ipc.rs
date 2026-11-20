@@ -133,7 +133,7 @@ fn the_last_workspace_is_reopened_then_listed() {
 }
 
 #[test]
-fn a_note_is_read_with_the_argument_names_used_by_the_page() {
+fn a_note_is_read_with_the_argument_names_used_by_the_interface() {
     let window = window(&[("a.md", "# Alpha\ntexte")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let note: NoteContent = ok(call(&window, "read_note", json!({ "path": "a.md" })));
@@ -170,7 +170,7 @@ fn saving_over_a_version_changed_elsewhere_keeps_it_in_a_conflict_copy() {
 }
 
 #[test]
-fn changes_made_outside_the_app_reach_the_page_as_an_event() {
+fn changes_made_outside_the_app_reach_the_interface_as_an_event() {
     let watcher = Arc::new(FakeWatcher::default());
     let window = window_watched_by(&[], Arc::clone(&watcher));
     let (sender, received) = std::sync::mpsc::channel();
@@ -204,7 +204,7 @@ fn a_created_note_is_untitled() {
 }
 
 #[test]
-fn the_daily_note_is_asked_with_the_argument_names_used_by_the_page() {
+fn the_daily_note_is_asked_with_the_argument_names_used_by_the_interface() {
     let window = window(&[]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let args = json!({ "journal": "Journal", "template": null });
@@ -213,7 +213,7 @@ fn the_daily_note_is_asked_with_the_argument_names_used_by_the_page() {
 }
 
 #[test]
-fn a_dangerous_name_sent_by_the_page_is_refused() {
+fn a_dangerous_name_sent_by_the_interface_is_refused() {
     let window = window(&[]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let error = error_message(call(
@@ -232,7 +232,7 @@ fn a_missing_argument_is_refused() {
 }
 
 #[test]
-fn every_command_called_by_the_page_exists() {
+fn every_command_called_by_the_interface_exists() {
     let window = window(&[]);
     let called: Vec<&str> = BRIDGE_SOURCE
         .split("invoke<")
@@ -274,7 +274,7 @@ fn the_window_can_load_the_files_of_the_open_workspace_only() {
 }
 
 #[test]
-fn workspaces_are_handled_by_name_with_the_argument_names_used_by_the_page() {
+fn workspaces_are_handled_by_name_with_the_argument_names_used_by_the_interface() {
     let window = window(&[]);
     let scope = window.asset_protocol_scope();
     let added: WorkspaceInfo = ok(call(
@@ -299,7 +299,7 @@ fn workspaces_are_handled_by_name_with_the_argument_names_used_by_the_page() {
 }
 
 #[test]
-fn folders_are_handled_with_the_argument_names_used_by_the_page() {
+fn folders_are_handled_with_the_argument_names_used_by_the_interface() {
     let window = window(&[("Travail/a.md", "# A")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let created: String = ok(call(
@@ -331,7 +331,7 @@ fn folders_are_handled_with_the_argument_names_used_by_the_page() {
 }
 
 #[test]
-fn a_note_is_moved_into_a_folder_by_the_names_used_by_the_page() {
+fn a_note_is_moved_into_a_folder_by_the_names_used_by_the_interface() {
     let window = window(&[("a.md", "# Alpha"), ("Perso/b.md", "# Bêta")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let moved: SavedNote = ok(call(
@@ -366,7 +366,7 @@ fn moving_a_note_into_a_folder_with_a_bad_name_is_refused() {
 }
 
 #[test]
-fn the_page_searches_the_whole_workspace_by_its_query_argument() {
+fn the_interface_searches_the_whole_workspace_by_its_query_argument() {
     let window = window(&[("a.md", "# Alpha\nété"), ("Travail/b.md", "# Bêta\nhiver")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let results: Vec<SearchResultItem> = ok(call(
@@ -381,7 +381,7 @@ fn the_page_searches_the_whole_workspace_by_its_query_argument() {
 }
 
 #[test]
-fn the_page_chooses_the_order_of_the_list_by_its_order_argument() {
+fn the_interface_chooses_the_order_of_the_list_by_its_order_argument() {
     let window = window(&[("a.md", "# alpha\npain"), ("b.md", "# Bêta\npain")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let paths = |command: &str, args: serde_json::Value| -> Vec<String> {
@@ -401,7 +401,7 @@ fn the_page_chooses_the_order_of_the_list_by_its_order_argument() {
 }
 
 #[test]
-fn the_page_follows_links_between_notes_by_title_and_path() {
+fn the_interface_follows_links_between_notes_by_title_and_path() {
     let window = window(&[
         ("courses.md", "# Courses"),
         ("b.md", "# Lundi\n[[courses]]"),
@@ -426,7 +426,7 @@ fn the_page_follows_links_between_notes_by_title_and_path() {
 }
 
 #[test]
-fn the_page_lists_every_note_of_the_workspace_for_quick_open() {
+fn the_interface_lists_every_note_of_the_workspace_for_quick_open() {
     let window = window(&[("a.md", "# Alpha"), ("Travail/b.md", "# Bêta")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let notes: Vec<WorkspaceNoteItem> = ok(call(&window, "list_all_notes", json!({})));
@@ -437,7 +437,7 @@ fn the_page_lists_every_note_of_the_workspace_for_quick_open() {
 }
 
 #[test]
-fn the_page_pins_and_unpins_a_note_by_its_path() {
+fn the_interface_pins_and_unpins_a_note_by_its_path() {
     let window = window(&[("a.md", "# Alpha"), ("b.md", "# Bêta")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let pinned: NoteContent = ok(call(&window, "pin_note", json!({ "path": "a.md" })));
@@ -459,7 +459,7 @@ fn the_page_pins_and_unpins_a_note_by_its_path() {
 }
 
 #[test]
-fn a_note_goes_to_the_trash_and_comes_back_with_the_argument_names_used_by_the_page() {
+fn a_note_goes_to_the_trash_and_comes_back_with_the_argument_names_used_by_the_interface() {
     let window = window(&[("Travail/lundi.md", "# Lundi")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let at: String = ok(call(
@@ -496,7 +496,7 @@ fn a_folder_goes_to_the_trash_comes_back_and_the_trash_is_emptied() {
     assert!(trash.folders.is_empty() && trash.notes.is_empty());
 }
 
-/// Envoie un fichier comme la page : octets bruts, et en-têtes encodés comme une adresse.
+/// Envoie un fichier comme l'interface : octets bruts, et en-têtes encodés comme une adresse.
 fn attach(
     window: &WebviewWindow<MockRuntime>,
     body: InvokeBody,

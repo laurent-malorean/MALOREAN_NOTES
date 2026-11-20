@@ -1,4 +1,4 @@
-//! Les exports d'une note de l'espace de travail ouvert, vus depuis la page.
+//! Les exports d'une note de l'espace de travail ouvert, vus depuis l'interface.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -167,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn refusals_reach_the_page_as_messages() {
+    fn refusals_reach_the_interface_as_messages() {
         let without_exports = opened(&[("a.md", "# A")]);
         assert_eq!(
             without_exports

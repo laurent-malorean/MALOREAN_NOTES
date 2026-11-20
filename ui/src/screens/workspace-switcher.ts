@@ -1,4 +1,4 @@
-// Sélecteur d'espace de travail : en tête de la colonne des dossiers, le nom de l'espace ouvert ;
+// Sélecteur d'espace de travail : en tête de la liste des dossiers, le nom de l'espace ouvert ;
 // un clic ouvre, juste en dessous, le menu des espaces de travail.
 import { type MenuEntry, showContextMenu } from "./context-menu";
 

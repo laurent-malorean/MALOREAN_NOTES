@@ -58,7 +58,7 @@ test("Fermer l'onglet du menu ferme l'onglet, pas la fenêtre ; sans note, les c
   await expect.poll(() => greyed(page, "close-tab")).toBe(false);
 });
 
-test("un élément du menu lance sa commande, sauf quand une fenêtre de la page est ouverte", async ({
+test("un élément du menu lance sa commande, sauf quand une fenêtre de l'interface est ouverte", async ({
   page,
 }) => {
   await launch(page);

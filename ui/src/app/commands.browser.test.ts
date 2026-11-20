@@ -418,7 +418,7 @@ describe("raccourcis clavier", () => {
           ...modifiers,
         });
         field.dispatchEvent(event);
-        // Prise par la page, la touche ne passe pas non plus à la barre des menus.
+        // Prise par l'interface, la touche ne passe pas non plus à la barre des menus.
         expect(event.defaultPrevented).toBe(true);
       }
     }

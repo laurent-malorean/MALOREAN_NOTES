@@ -29,7 +29,7 @@ export function noteStyles(token: ThemeToken): NoteStyles {
     pre: `padding: 0.8em 1em; border-radius: 4px; background: ${token("--code-block-background")}; font-size: ${token("--code-block-text-size")}; white-space: pre-wrap`,
     "pre code": `font-family: ${token("--mono")}; ${syntax("plain")}`,
     table: `border-collapse: collapse; font-size: ${token("--table-text-size")}`,
-    th: `${cell}; background: ${token("--sidebar")}`,
+    th: `${cell}; background: ${token("--side-panel")}`,
     td: cell,
     hr: `border: none; border-top: ${border}`,
     img: "max-width: 100%",

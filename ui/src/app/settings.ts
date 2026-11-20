@@ -7,8 +7,8 @@ import { loadSettings, saveSettings, type Settings } from "../state/settings";
 import type { OpenColumns } from "./columns";
 
 export interface SettingsParts {
-  /** La page, qui porte les réglages d'affichage. */
-  readonly page: HTMLElement;
+  /** L'élément racine de l'interface (`html`), qui porte les réglages d'affichage. */
+  readonly documentElement: HTMLElement;
   readonly settings: HTMLDialogElement;
   readonly settingsButton: HTMLElement;
 }
@@ -38,7 +38,8 @@ export interface AppSettings {
 /** Relie le bouton des réglages, et applique les réglages gardés. */
 export function connectSettings(parts: SettingsParts, deps: SettingsDeps): AppSettings {
   let settings = loadSettings(deps.storage);
-  const showSettingsDisplay = () => showDisplay(parts.page, settings, deps.systemDark.matches);
+  const showSettingsDisplay = () =>
+    showDisplay(parts.documentElement, settings, deps.systemDark.matches);
   const apply = (next: Settings) => {
     settings = next;
     deps.columns

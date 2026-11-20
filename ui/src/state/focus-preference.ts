@@ -4,7 +4,7 @@ import type { FocusUnit } from "../editor/focus/focus-range";
 const KEY = "malorean.focus";
 const UNITS: readonly FocusUnit[] = ["sentence", "paragraph"];
 
-/** Là où le réglage est gardé : le stockage de la page, qui peut être refusé. */
+/** Là où le réglage est gardé : le stockage de l'interface, qui peut être refusé. */
 export interface PreferenceStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;

@@ -16,7 +16,7 @@ async function launch(page: Page) {
 }
 
 const folders = (page: Page) => page.locator(".folders");
-const notes = (page: Page) => page.locator(".sidebar");
+const notes = (page: Page) => page.locator(".notes-panel");
 const columns = (page: Page) => page.getByRole("region", { name: "Colonne" });
 const panelsButton = (page: Page) => page.getByRole("button", { name: "Panneaux" });
 const fullScreen = (page: Page) => page.evaluate(() => window.backend.fullScreen);

@@ -17,7 +17,7 @@ export interface Search {
  * Ce que montre la fenêtre : l'accueil, ou un espace de travail ouvert avec ses dossiers,
  * le dossier choisi (`""` pour la racine), ses notes, la note sélectionnée, la recherche
  * en cours et la corbeille affichée (`null` pour l'une et l'autre : la liste montre les notes
- * du dossier), les dossiers pliés de la colonne des dossiers, le filtre par étiquette (`null` :
+ * du dossier), les dossiers pliés de la liste des dossiers, le filtre par étiquette (`null` :
  * aucun ; sinon `notes` sont les notes de tout l'espace de travail qui portent cette étiquette), la
  * liste des étiquettes, le tri de la liste et Récentes (`recent` : la liste montre les notes
  * récentes à la place de celles du dossier).

@@ -1,4 +1,4 @@
-//! La charge annoncée par Claude Code, envoyée à la page : la limite d'utilisation de
+//! La charge annoncée par Claude Code, envoyée à l'interface : la limite d'utilisation de
 //! l'abonnement, par période (fiche 0032).
 
 use domain::claude::{LimitPeriod, UsageWindow};
@@ -48,7 +48,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_period_keeps_its_share_and_its_reset_for_the_page() {
+    fn a_period_keeps_its_share_and_its_reset_for_the_interface() {
         let window = UsageWindowItem::from(UsageWindow {
             period: LimitPeriod::Session,
             percent: 16,
@@ -61,7 +61,7 @@ mod tests {
     }
 
     #[test]
-    fn the_week_is_named_for_the_page() {
+    fn the_week_is_named_for_the_interface() {
         let window = UsageWindowItem::from(UsageWindow {
             period: LimitPeriod::Week,
             percent: 43,

@@ -69,7 +69,7 @@ describe("rendu HTML d'une note", () => {
     expect(await html("[*a*] x [[b] y [c]] z")).toBe("<p><em>a</em> x [b y c] z</p>");
   });
 
-  it("montre les images à l'adresse où la page les trouve", async () => {
+  it("montre les images à l'adresse où l'interface les trouve", async () => {
     expect(await html('![Vue "mer"](v.assets/a%20b.png) ![seule][x]')).toBe(
       '<p><img src="asset://notes/v.assets/a%20b.png" alt="Vue &quot;mer&quot;"> seule</p>',
     );

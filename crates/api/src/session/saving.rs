@@ -9,7 +9,7 @@ use crate::{ApiError, SaveResult};
 
 impl Session {
     /// Enregistre une note ; rend son chemin, dont le nom a peut-être changé avec le titre.
-    /// `fingerprint` est l'empreinte de la note telle que la page l'a lue ou enregistrée :
+    /// `fingerprint` est l'empreinte de la note telle que l'interface l'a lue ou enregistrée :
     /// si le fichier a changé ailleurs depuis, sa version est gardée dans une copie de conflit.
     ///
     /// # Errors
@@ -104,7 +104,7 @@ mod tests {
     }
 
     #[test]
-    fn an_invalid_fingerprint_from_the_page_is_refused() {
+    fn an_invalid_fingerprint_from_the_interface_is_refused() {
         let session = opened(&[("a.md", "# Alpha")]);
         let error = session
             .save_note("a.md", "# Alpha", "pas-une-empreinte")

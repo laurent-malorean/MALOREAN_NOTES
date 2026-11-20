@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions de la fenêtre principale : le strict nécessaire. Aucun accès disque ni shell depuis la page ; la page peut seulement passer la fenêtre en plein écran.",
+  "description": "Permissions de la fenêtre principale : le strict nécessaire. Aucun accès disque ni shell depuis l'interface ; l'interface peut seulement passer la fenêtre en plein écran.",
   "windows": ["main"],
   "permissions": ["core:default", "core:window:allow-set-fullscreen"]
 }

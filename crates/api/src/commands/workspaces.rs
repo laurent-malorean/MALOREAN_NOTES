@@ -1,4 +1,4 @@
-//! Commandes des espaces de travail : la page désigne chacun par son nom.
+//! Commandes des espaces de travail : l'interface désigne chacun par son nom.
 
 use std::sync::Arc;
 
@@ -9,7 +9,7 @@ use super::{SharedSession, WORKSPACE_CHANGED_EVENT, in_background};
 use crate::{ApiError, ChosenFolder, Session, WorkspaceInfo, WorkspaceItem};
 
 /// Un espace de travail vient d'être ouvert : la fenêtre peut charger ses fichiers (images des
-/// notes), rien d'autre, et la page apprend ce qui y change hors de l'application.
+/// notes), rien d'autre, et l'interface apprend ce qui y change hors de l'application.
 /// Un espace de travail ouvert auparavant reste lisible jusqu'à la fermeture de l'application.
 /// Une surveillance impossible n'empêche pas d'ouvrir l'espace de travail : elle est journalisée.
 fn follow_workspace<R: Runtime>(
@@ -20,10 +20,10 @@ fn follow_workspace<R: Runtime>(
     app.asset_protocol_scope()
         .allow_directory(&workspace.path, true)
         .map_err(|e| ApiError::internal(&e))?;
-    let page = app.clone();
+    let interface = app.clone();
     let watched = session.watch_workspace(move |change| {
-        if let Err(error) = page.emit(WORKSPACE_CHANGED_EVENT, change) {
-            tracing::warn!(%error, "changement de l'espace de travail non transmis à la page");
+        if let Err(error) = interface.emit(WORKSPACE_CHANGED_EVENT, change) {
+            tracing::warn!(%error, "changement de l'espace de travail non transmis à l'interface");
         }
     });
     if let Err(error) = watched {

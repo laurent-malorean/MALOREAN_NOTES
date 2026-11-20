@@ -28,7 +28,7 @@ async function launch(page: Page) {
 }
 
 const folders = (page: Page) => page.locator(".folders");
-const notes = (page: Page) => page.locator(".sidebar");
+const notes = (page: Page) => page.locator(".notes-panel");
 const edge = (page: Page, name: string) => page.getByRole("separator", { name });
 const foldersEdge = (page: Page) => edge(page, "Largeur des dossiers");
 const notesEdge = (page: Page) => edge(page, "Largeur de la liste des notes");

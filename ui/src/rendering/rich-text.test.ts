@@ -20,7 +20,7 @@ describe("styles en ligne de la copie mise en forme", () => {
       pre: "padding: 0.8em 1em; border-radius: 4px; background: [--code-block-background]; font-size: [--code-block-text-size]; white-space: pre-wrap",
       "pre code": "font-family: [--mono]; color: [--syntax-plain]",
       table: "border-collapse: collapse; font-size: [--table-text-size]",
-      th: `${cell}; background: [--sidebar]`,
+      th: `${cell}; background: [--side-panel]`,
       td: cell,
       hr: "border: none; border-top: 1px solid [--border]",
       img: "max-width: 100%",

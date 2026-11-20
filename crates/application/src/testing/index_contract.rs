@@ -58,7 +58,7 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     search_takes_symbols_as_written(&empty_index());
     search_gives_back_the_content(&empty_index());
     a_kept_note_gives_back_its_last_text(&empty_index());
-    every_note_is_a_page_without_container(&empty_index());
+    every_note_is_of_the_note_type_without_container(&empty_index());
     search_keeps_to_the_types_asked(&empty_index());
 }
 
@@ -267,20 +267,20 @@ fn a_kept_note_gives_back_its_last_text(index: &impl NoteIndex) {
     assert_eq!(index.content(&path("a.md")).unwrap(), None);
 }
 
-/// Tant qu'un seul type existe, une note est une page, que son en-tête nomme un type ou non :
-/// aucune ne disparaît de la liste ni de la recherche (fiche 0034).
-fn every_note_is_a_page_without_container(index: &impl NoteIndex) {
+/// Tant qu'un seul type existe, toute note est du type note, que son en-tête nomme un type ou
+/// non : aucune ne disparaît de la liste ni de la recherche (fiches 0034 et 0037).
+fn every_note_is_of_the_note_type_without_container(index: &impl NoteIndex) {
     index
         .put(&[
             note("a.md", "---\ntags: [crm]\n---\n# A\npain", 1),
-            note("b.md", "---\ntype: page\ntags: [crm]\n---\n# B\npain", 2),
+            note("b.md", "---\ntype: note\ntags: [crm]\n---\n# B\npain", 2),
             note("c.md", "---\ntype: kanban\ntags: [crm]\n---\n# C\npain", 3),
         ])
         .unwrap();
-    let pages = |notes: &[NoteSummary]| {
+    let of_note_type = |notes: &[NoteSummary]| {
         notes
             .iter()
-            .all(|n| n.content_type() == ContentType::Page && n.container().is_none())
+            .all(|n| n.content_type() == ContentType::Note && n.container().is_none())
     };
     let query = SearchQuery::parse("pain").unwrap();
     let found: Vec<NoteSummary> = index
@@ -296,13 +296,13 @@ fn every_note_is_a_page_without_container(index: &impl NoteIndex) {
         found,
     ] {
         assert_eq!(notes.len(), 3);
-        assert!(pages(&notes));
+        assert!(of_note_type(&notes));
     }
 }
 
 fn search_keeps_to_the_types_asked(index: &impl NoteIndex) {
     index.put(&[note("a.md", "# A\npain", 1)]).unwrap();
     let query = SearchQuery::parse("pain").unwrap();
-    assert_eq!(index.search(&query, &[ContentType::Page]).unwrap().len(), 1);
+    assert_eq!(index.search(&query, &[ContentType::Note]).unwrap().len(), 1);
     assert!(index.search(&query, &[]).unwrap().is_empty());
 }

@@ -9,7 +9,7 @@ import { highlightCode, tagHighlighter, tags } from "@lezer/highlight";
 import { withoutFrontMatter } from "../editor/front-matter";
 
 export interface RenderOptions {
-  /** L'adresse où la page trouve une image écrite dans la note (chemin relatif à la note). */
+  /** L'adresse où l'interface trouve une image écrite dans la note (chemin relatif à la note). */
   readonly resolveImage: (src: string) => string;
 }
 

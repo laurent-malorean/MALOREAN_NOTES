@@ -66,9 +66,9 @@ pub async fn export_markdown(
     in_background(move || session.export_markdown(&path, &destination)).await
 }
 
-/// Imprime la page dans le fichier PDF `destination` : seule sa feuille d'impression, où la
-/// page a posé le rendu HTML de la note, paraît sur le papier. WebKit écrit le fichier peu
-/// après la réponse.
+/// Imprime l'interface dans le fichier PDF `destination` : seule sa feuille d'impression, où
+/// l'interface a posé le rendu HTML de la note, paraît sur le papier. WebKit écrit le fichier
+/// peu après la réponse.
 ///
 /// # Errors
 ///
@@ -86,8 +86,8 @@ pub async fn export_pdf<R: Runtime>(
     .map_err(|reason| ApiError::pdf_failed(&reason))
 }
 
-/// Ouvre la fenêtre d'impression du Mac sur la page : seule sa feuille d'impression, où la page a
-/// posé le rendu HTML de la note, paraît sur le papier, comme pour l'export PDF. La réponse vient
+/// Ouvre la fenêtre d'impression du Mac sur l'interface : seule sa feuille d'impression, où
+/// l'interface a posé le rendu HTML de la note, paraît sur le papier, comme pour l'export PDF. La réponse vient
 /// dès la fenêtre ouverte ; l'utilisateur imprime, ou garde un PDF, depuis elle.
 ///
 /// # Errors

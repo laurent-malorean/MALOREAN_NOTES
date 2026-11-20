@@ -49,7 +49,7 @@ button {
   /* La dernière piste tient la colonne Claude Code : vide, elle ne prend aucune place. */
   grid-template-columns:
     clamp(var(--side-panel-min-width), var(--folders-width), var(--side-panel-max-width))
-    clamp(var(--side-panel-min-width), var(--sidebar-width), var(--side-panel-max-width))
+    clamp(var(--side-panel-min-width), var(--notes-panel-width), var(--side-panel-max-width))
     minmax(0, 1fr) auto;
 }
 .main-area > aside {
@@ -91,7 +91,7 @@ button {
 }
 
 .folders {
-  background: var(--sidebar);
+  background: var(--side-panel);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -165,14 +165,14 @@ button {
   background: var(--bg);
   color: var(--text);
 }
-.sidebar {
-  background: var(--sidebar);
+.notes-panel {
+  background: var(--side-panel);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
-.sidebar-header {
+.side-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -469,7 +469,7 @@ button {
   background: var(--selected);
   color: var(--text);
 }
-.sidebar-footer {
+.side-panel-footer {
   padding: 0.7rem 1rem;
   border-top: 1px solid var(--border);
 }
@@ -608,7 +608,7 @@ button {
   text-align: left;
 }
 .editor .cm-lp-table th {
-  background: var(--sidebar);
+  background: var(--side-panel);
   font-weight: 600;
 }
 .editor .cm-lp-table code {
@@ -700,7 +700,7 @@ button {
 
 /* Rechercher et remplacer dans la note */
 .editor .cm-panels {
-  background: var(--sidebar);
+  background: var(--side-panel);
   color: var(--text);
   font-family: var(--sans);
 }
@@ -895,7 +895,7 @@ button {
 }
 
 /* Écran de réglages */
-.sidebar-footer .trash-item + .trash-item {
+.side-panel-footer .trash-item + .trash-item {
   margin-top: 0.2rem;
 }
 .settings {
@@ -925,7 +925,7 @@ button {
 .setting input {
   font: inherit;
   color: var(--text);
-  background: var(--sidebar);
+  background: var(--side-panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.3rem 0.5rem;
@@ -965,7 +965,7 @@ button {
 .setting select {
   font: inherit;
   color: var(--text);
-  background: var(--sidebar);
+  background: var(--side-panel);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.3rem 0.5rem;
@@ -1335,7 +1335,7 @@ button {
     text-align: left;
   }
   .print-sheet th {
-    background: var(--sidebar);
+    background: var(--side-panel);
     print-color-adjust: exact;
   }
   .print-sheet hr {
@@ -1380,7 +1380,7 @@ button {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--sidebar);
+  background: var(--side-panel);
   border-left: 1px solid var(--border);
   font-family: var(--sans);
   font-size: var(--claude-text-size);

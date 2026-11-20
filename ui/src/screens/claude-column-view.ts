@@ -54,7 +54,7 @@ export const PERMISSIONS =
 
 /** Ce que dit la colonne quand le garde-fou du web a retenu des modifications (fiche 0032). */
 export const WEB_HELD_BACK =
-  "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page lui aurait glissé des instructions. Autoriser ses modifications ?";
+  "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page web lui aurait glissé des instructions. Autoriser ses modifications ?";
 
 const TEMPLATE = `
   <header class="claude-header">

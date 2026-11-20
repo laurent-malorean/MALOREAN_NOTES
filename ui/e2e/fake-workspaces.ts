@@ -1,5 +1,5 @@
 // Espaces de travail simulés pour les parcours. La liste gardée par « Rust » survit au relancement
-// (`page.reload()`) dans le stockage de la page ; les notes de chaque dossier autre que le premier
+// (`page.reload()`) dans le stockage de l'interface ; les notes de chaque dossier autre que le premier
 // viennent du paramètre `spaces` (`{ dossier: { note: … } }`). Les vraies règles sont testées côté Rust.
 
 interface FakeNote {

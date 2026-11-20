@@ -1,12 +1,12 @@
-//! La barre des menus du Mac : décrite par la page, construite ici ; le choix d'un élément
-//! repart vers la page, qui lance la commande du même identifiant que la palette.
+//! La barre des menus du Mac : décrite par l'interface, construite ici ; le choix d'un élément
+//! repart vers l'interface, qui lance la commande du même identifiant que la palette.
 
 use tauri::menu::{Menu, MenuEvent, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::{ApiError, AppMenu, MenuEntryItem, MenuRoleItem, StandardItem};
 
-/// Événement envoyé à la page quand on choisit un élément de menu qui lance une commande ;
+/// Événement envoyé à l'interface quand on choisit un élément de menu qui lance une commande ;
 /// il porte l'identifiant de la commande.
 pub const MENU_COMMAND_EVENT: &str = "menu-command";
 
@@ -135,10 +135,10 @@ pub fn enable_menu_items<R: Runtime>(
     Ok(())
 }
 
-/// Un élément de menu choisi : son identifiant part vers la page, qui lance la commande.
+/// Un élément de menu choisi : son identifiant part vers l'interface, qui lance la commande.
 /// Les éléments standard ne passent pas par ici : le Mac les fait lui-même.
 pub fn chosen<R: Runtime>(app: &AppHandle<R>, event: &MenuEvent) {
     if let Err(error) = app.emit(MENU_COMMAND_EVENT, event.id().as_ref()) {
-        tracing::error!(%error, "la commande de menu n'a pas pu être envoyée à la page");
+        tracing::error!(%error, "la commande de menu n'a pas pu être envoyée à l'interface");
     }
 }

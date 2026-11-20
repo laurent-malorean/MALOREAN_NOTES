@@ -8,11 +8,11 @@ use super::{SharedSession, in_background};
 use crate::dto::turn_settings;
 use crate::{ApiError, ClaudeStatusItem, TurnSettingsItem};
 
-/// Événement envoyé à la page pour chaque événement de Claude d'un tour ; il porte un
+/// Événement envoyé à l'interface pour chaque événement de Claude d'un tour ; il porte un
 /// [`crate::ClaudeEventItem`].
 pub const CLAUDE_EVENT: &str = "claude-event";
 
-/// Événement envoyé à la page pendant une connexion de Claude Code : il porte l'adresse de la
+/// Événement envoyé à l'interface pendant une connexion de Claude Code : il porte l'adresse de la
 /// page de connexion, à montrer si le navigateur ne s'est pas ouvert.
 pub const CLAUDE_SIGN_IN: &str = "claude-sign-in";
 
@@ -30,7 +30,7 @@ pub async fn claude_status(session: SharedSession<'_>) -> Result<ClaudeStatusIte
 /// Envoie un message à Claude dans l'espace de travail ouvert, avec le modèle et le niveau
 /// d'effort choisis (`settings`) ; ses créations et modifications après une lecture du web sont
 /// retenues, sauf si `changes_allowed` (l'utilisateur les autorise pour ce tour). Chaque événement
-/// du tour est envoyé à la page dès qu'il arrive ([`CLAUDE_EVENT`]). Rend la main à la fin du tour.
+/// du tour est envoyé à l'interface dès qu'il arrive ([`CLAUDE_EVENT`]). Rend la main à la fin du tour.
 ///
 /// # Errors
 ///
@@ -50,7 +50,7 @@ pub async fn send_to_claude<R: Runtime>(
             turn_settings(settings, changes_allowed),
             |event| {
                 if let Err(error) = app.emit(CLAUDE_EVENT, event) {
-                    tracing::warn!(%error, "événement de Claude non transmis à la page");
+                    tracing::warn!(%error, "événement de Claude non transmis à l'interface");
                 }
             },
         )
@@ -70,7 +70,7 @@ pub async fn log_out_of_claude(session: SharedSession<'_>) -> Result<(), ApiErro
 }
 
 /// Connecte Claude Code à un compte Claude, pour tout le Mac : le navigateur s'ouvre sur la page
-/// de connexion, dont l'adresse est envoyée à la page ([`CLAUDE_SIGN_IN`]). Rend la main une fois
+/// de connexion, dont l'adresse est envoyée à l'interface ([`CLAUDE_SIGN_IN`]). Rend la main une fois
 /// la connexion terminée ; `stop_claude` l'annule.
 ///
 /// # Errors
@@ -85,7 +85,7 @@ pub async fn log_in_to_claude<R: Runtime>(
     in_background(move || {
         session.log_in_to_claude(|address| {
             if let Err(error) = app.emit(CLAUDE_SIGN_IN, address) {
-                tracing::warn!(%error, "adresse de connexion non transmise à la page");
+                tracing::warn!(%error, "adresse de connexion non transmise à l'interface");
             }
         })
     })

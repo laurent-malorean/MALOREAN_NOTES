@@ -35,7 +35,7 @@ Application Tauri 2 : un workspace Cargo (une crate par couche) et une interface
 - **Ports dans les mots de l'application** : un port de sortie parle de notes, de dossiers, d'étiquettes — jamais de chemins, d'octets ou de JSON. C'est l'adaptateur qui traduit. *Vérifié par : revue ; un type de `std::fs`, `std::path` ou `serde_json` dans la signature d'un port est un défaut.*
 - **Cœur pur, coque mince** : un cas d'usage suit toujours le même ordre : **lire** (ports), **décider** (une fonction pure du domaine), **écrire** (ports). La décision ne mêle aucun effet ; elle se teste sans aucun faux. *Vérifié par : revue ; un appel de port au milieu d'une décision est un défaut.*
 - **Un invariant, un gardien** : une règle toujours vraie (un titre n'est pas vide, un nom de fichier suit le titre) est garantie par le type qui la porte, à sa construction, et nulle part ailleurs. Les champs de ce type sont privés ; on ne l'obtient que par un constructeur qui rend un `Result`. *Vérifié par : le compilateur (champs privés).*
-- **Une erreur d'adaptateur ne traverse pas** : l'infrastructure traduit `std::io::Error` ou une erreur de bibliothèque en erreur du port. Aucune couche au-dessus ne voit un type d'erreur technique.
+- **Une erreur d'adaptateur ne traverse pas** : l'infrastructure traduit `std::io::Error` ou l'erreur d'une dépendance en erreur du port. Aucune couche au-dessus ne voit un type d'erreur technique.
 
 ## 3. Découpage par intention des données gardées
 
@@ -43,7 +43,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 
 ## 4. Code propre
 
-- **Nommer avec l'ontologie** : les mots de `doc/ontology.md`, partout. Pas de synonyme, pas de mot pour deux choses.
+- **Un seul mot par notion, partout (écrans, documents, code, tests) ; pas de synonymes ; le mot vient de `doc/ontology.md`.** Pas de mot pour deux choses non plus. Un mot remplacé reste noté « Autrefois … » dans l'ontologie, et ne s'emploie plus ailleurs (les fiches de décision, datées, gardent les mots de leur époque). *Vérifié par : contrôle « Vocabulaire » de `scripts/ci.sh`, qui refuse les anciens mots qu'il liste dans tout fichier du dépôt hors `doc/decisions/` ; revue pour le reste.*
 - **Fonctions courtes** : 60 lignes au plus ; complexité 10 au plus ; 6 paramètres au plus (sans `self`). Au-delà : regrouper les paramètres dans un type, ou découper. *Vérifié par : Clippy (`too_many_lines`, `cognitive_complexity`, `too_many_arguments`, seuils dans `clippy.toml`).*
 - **Fichiers** : 400 lignes visées, 600 au plus ; au-delà, découper en modules par sujet. *Vérifié par : `scripts/ci.sh`.*
 - **Immutabilité** : les types du domaine n'exposent pas de méthode `&mut self` ; on fabrique une nouvelle valeur.
@@ -58,7 +58,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Pas de duplication de règle** : la même règle écrite deux fois sera un jour écrite différemment. Mais on factorise une **règle**, pas une **ressemblance** : deux codes semblables qui répondent à deux besoins différents restent séparés. Une abstraction qui demande un nouveau paramètre ou un nouveau cas à chaque usage est mauvaise : on la défait (on recopie le code chez chaque appelant) puis on cherche la bonne.
 - **Conventions Rust** : celles des *Rust API Guidelines*. Noms de conversion `as_` (gratuite), `to_` (coûteuse), `into_` (consomme) ; conversions par `From` / `TryFrom` plutôt que par des fonctions maison ; tout type public implémente `Debug`, et `Clone`, `PartialEq`, `Eq`, `Hash`, `Default` quand ils ont un sens. *Vérifié par : Clippy (`wrong_self_convention`) et lint `missing_debug_implementations`.*
 - **Exception à un lint** : `#[expect(lint, reason = "…")]`, jamais `#[allow]` sans raison. *Vérifié par : Clippy (`allow_attributes`, `allow_attributes_without_reason`).*
-- **Code `unsafe`** : interdit. Seule exception : une frontière FFI avec macOS, isolée dans `infrastructure`, avec `// SAFETY:` qui justifie chaque bloc ; ou, quand elle agit sur la fenêtre que tient Tauri (impression de la page, en PDF ou dans la fenêtre d'impression, fiches 0025 et 0026), dans un seul module d'`api` (`pdf.rs`), aux mêmes conditions. *Vérifié par : lint `unsafe_code` en erreur, levé localement avec raison.*
+- **Code `unsafe`** : interdit. Seule exception : une frontière FFI avec macOS, isolée dans `infrastructure`, avec `// SAFETY:` qui justifie chaque bloc ; ou, quand elle agit sur la fenêtre que tient Tauri (impression de l'interface, en PDF ou dans la fenêtre d'impression, fiches 0025 et 0026), dans un seul module d'`api` (`pdf.rs`), aux mêmes conditions. *Vérifié par : lint `unsafe_code` en erreur, levé localement avec raison.*
 
 ## 5. Erreurs
 
@@ -80,7 +80,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Un test par comportement**, nommé par ce qu'il garantit, dans le vocabulaire de l'ontologie.
 - **Tester ce qui se voit, pas comment c'est fait** : un test passe par l'interface publique d'une couche (cas d'usage, type du domaine, port). Il ne teste pas une fonction privée et ne vérifie pas l'ordre des appels internes. Un remaniement qui ne change pas le comportement ne casse aucun test ; s'il en casse, le test est trop lié au code.
 - **Préférer le résultat à l'interaction** : on vérifie d'abord la valeur rendue (domaine), puis l'état obtenu (le faux en mémoire contient la note). On ne vérifie un appel (« le port a été appelé ») que pour un effet vers l'extérieur qu'on ne peut pas observer autrement : un événement publié, un message envoyé.
-- **Vocabulaire des doublures** : un **faux** (*fake*) est une implémentation simple et réelle d'un port (stockage en mémoire) ; un **bouchon** (*stub*) rend une réponse fixée ; un **espion** (*spy*) enregistre les appels. On utilise des faux par défaut ; pas de bibliothèque de *mocks*.
+- **Vocabulaire des doublures** : un **faux** (*fake*) est une implémentation simple et réelle d'un port (stockage en mémoire) ; un **bouchon** (*stub*) rend une réponse fixée ; un **espion** (*spy*) enregistre les appels. On utilise des faux par défaut ; pas d'outil de *mocks*.
 - **Forme d'un test** : trois blocs, préparer, agir, vérifier, une seule action. Aucune logique dans un test (`if`, boucle, calcul du résultat attendu) : le résultat attendu est écrit en clair.
 - **Répartition** : beaucoup de tests du domaine (rapides, sans doublure), des tests de cas d'usage sur les faux, des tests de contrat sur les vrais adaptateurs, très peu de tests de bout en bout.
 - **Couche par couche** : domaine sans rien ; application avec les faux en mémoire (`application/src/testing/` ou crate `test-support`, et l'index en mémoire `MemoryIndex`) ; infrastructure avec de vrais fichiers dans un dossier temporaire (base SQLite comprise) ; interface sur sa logique hors écran.
@@ -89,7 +89,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Logique de l'interface hors de l'écran** : l'état d'un écran et ses transitions sont du code testable sans fenêtre.
 - **Pas de test qui dépend de l'heure, de l'ordre ou du réseau.**
 - **Un test doit pouvoir échouer** : s'il passerait même avec le défaut, il est réécrit. Un défaut trouvé se corrige en écrivant d'abord le test qui le montre.
-- **Exceptions à « aucune logique dans un test »** : les tests de propriétés (une condition sur des données générées) et les tests de cohérence entre deux fichiers (toutes les commandes appelées par la page existent).
+- **Exceptions à « aucune logique dans un test »** : les tests de propriétés (une condition sur des données générées) et les tests de cohérence entre deux fichiers (toutes les commandes appelées par l'interface existent).
 
 | Niveau | Où | Outil |
 |---|---|---|
@@ -100,7 +100,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 | Contrat de l'assistant d'écriture sur le vrai modèle d'Apple, seulement si ce Mac l'a (sinon la raison est écrite, jamais passée sous silence) ; l'échange avec l'assistant Swift, joué avec des scripts | `application::testing::writing_contract`, `crates/infrastructure/tests/apple_writing.rs` | `cargo test` |
 | Contrat de Claude Code, joué sur le faux et sur l'adaptateur lancé avec un faux Claude Code (script qui note ses arguments, son dossier, son entrée et la clé d'API qu'il voit, puis rejoue un flux) ; traduction des flux enregistrés avec le vrai `claude` (chemins remplacés, rien de personnel) | `application::testing::claude_contract`, `crates/infrastructure/tests/claude_code_cli.rs`, `crates/infrastructure/src/claude_stream_tests.rs`, `crates/infrastructure/tests/claude_streams/` | `cargo test` |
 | Disque réel : erreurs, droits, fichiers illisibles | `crates/infrastructure/tests` (dossiers temporaires) | `tempfile` |
-| Commandes appelées comme par la page (noms, arguments JSON, origine) | `crates/api/tests/ipc.rs` | simulateur Tauri |
+| Commandes appelées comme par l'interface (noms, arguments JSON, origine) | `crates/api/tests/ipc.rs` | simulateur Tauri |
 | Logique de l'interface, sans écran | `ui/src/**/*.test.ts` | Vitest |
 | Écran et éditeur dans WebKit (le moteur de la fenêtre) | `ui/src/**/*.browser.test.ts` | Vitest, mode navigateur |
 | Parcours utilisateur complets, partie Rust remplacée par un faux | `ui/e2e/` | Playwright, WebKit |
@@ -117,7 +117,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 
 ## 8. Interface (ui/, TypeScript + CodeMirror 6)
 
-- **Ne jamais bloquer l'écran** : les commandes Tauri sont asynchrones ; tout travail long (disque, index, recherche) tourne côté Rust en arrière-plan. Aucun calcul lourd dans la page.
+- **Ne jamais bloquer l'écran** : les commandes Tauri sont asynchrones ; tout travail long (disque, index, recherche) tourne côté Rust en arrière-plan. Aucun calcul lourd dans l'interface.
 - **Un seul point de passage vers Rust** : seul `ui/src/bridge/` appelle `invoke` et écoute les événements. Les écrans n'appellent que ce module.
 - **Types partagés générés** : les types échangés sont générés depuis Rust (`ts-rs`), jamais réécrits à la main. *Vérifié par : la mini CI régénère et refuse toute différence.*
 - **TypeScript strict** : `strict`, `noUncheckedIndexedAccess` ; pas de `any` ; un `@ts-expect-error` ou un `eslint-disable` porte sa raison. *Vérifié par : `tsc --noEmit` et ESLint.*
@@ -129,7 +129,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - **Un module = un écran ou un sujet.** Éditeur : une extension CodeMirror par fonctionnalité (mise en forme en direct, mode focus, collage d'images) dans `ui/src/editor/`.
 - **Logique hors du navigateur** : état d'écran, transitions et calculs dans des modules sans DOM, testés avec Vitest.
 - **Aucune règle métier** dans l'interface : elle appelle les commandes.
-- **Apparence dans le thème** : couleurs (thème clair et sombre), polices et tailles de lecture ne s'écrivent que dans `ui/src/theme.css`, sous forme de variables CSS. Feuilles de style et extensions CodeMirror n'emploient que ces variables (`var(--accent)`), y compris les couleurs de la coloration du code par langage. Les réglages d'affichage ne posent que des attributs sur la page (`data-font`, `data-text-size`, `data-text-width`, `data-appearance`) ; le thème les traduit en valeurs. *Vérifié par : `scripts/ci.sh` (aucune couleur ni police écrite ailleurs).*
+- **Apparence dans le thème** : couleurs (thème clair et sombre), polices et tailles de lecture ne s'écrivent que dans `ui/src/theme.css`, sous forme de variables CSS. Feuilles de style et extensions CodeMirror n'emploient que ces variables (`var(--accent)`), y compris les couleurs de la coloration du code par langage. Les réglages d'affichage ne posent que des attributs sur l'interface (`data-font`, `data-text-size`, `data-text-width`, `data-appearance`) ; le thème les traduit en valeurs. *Vérifié par : `scripts/ci.sh` (aucune couleur ni police écrite ailleurs).*
 - **Mise en forme** : Prettier. *Vérifié par : `prettier --check`.*
 
 ## 9. Changer le code
@@ -141,7 +141,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 
 ## 10. Documentation vivante
 
-- **Ontologie d'abord** (`doc/ontology.md`), puis le test, puis le code.
+- **Ontologie d'abord** (`doc/ontology.md`), puis le test, puis le code. Un seul mot par notion, partout (écrans, documents, code, tests) ; pas de synonymes ; le mot vient de `doc/ontology.md`.
 - Spécification technique et fonctionnelle à jour dans le même commit que l'évolution.
 - `doc/migration.md` à chaque changement de format des données gardées : l'application doit relire les données des versions précédentes.
 - Un rapport d'audit est daté ; quand le code change, on le refait au lieu de le croire.
@@ -158,7 +158,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 ## 12. Sécurité
 
 - Tout ce qui vient du dehors est validé à la frontière : chaque commande Tauri vérifie ce que l'interface envoie (chemin, nom de fichier, taille), comme une requête venue d'Internet.
-- **Tauri au plus juste** : permissions (capabilities) limitées aux commandes de l'application ; aucun accès direct au disque ni au shell depuis la page ; politique de contenu (CSP) stricte, aucun script distant.
+- **Tauri au plus juste** : permissions (capabilities) limitées aux commandes de l'application ; aucun accès direct au disque ni au shell depuis l'interface ; politique de contenu (CSP) stricte, aucun script distant.
 - Aucun secret dans le code ni dans l'historique ; les secrets de développement vivent dans `_SECRET/`. Les secrets de l'utilisateur de l'application sont rangés dans le trousseau macOS, via un adaptateur d'`infrastructure`.
 - Dépendances surveillées : licences acceptées et failles connues. *Vérifié par : `cargo deny check` avant de livrer.*
 
@@ -224,7 +224,7 @@ disallowed-methods = [
 
 | Quand | Quoi |
 |---|---|
-| Avant chaque commit : `scripts/ci.sh` | fichiers privés exclus ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 95 %, dépendances ; interface : couleurs et polices seulement dans le thème, types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec les seuils de couverture, parcours complets, puis rejoués avec la lecture des notes ralentie ; test de mutation du code modifié, Rust (pas encore commité) et interface (changé depuis le dernier passage de Stryker), score 100 % ; refus d'un passage Rust où aucune erreur introduite n'a pu être testée |
+| Avant chaque commit : `scripts/ci.sh` | fichiers privés exclus ; anciens mots de l'ontologie absents ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 95 %, dépendances ; interface : couleurs et polices seulement dans le thème, types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec les seuils de couverture, parcours complets, puis rejoués avec la lecture des notes ralentie ; test de mutation du code modifié, Rust (pas encore commité) et interface (changé depuis le dernier passage de Stryker), score 100 % ; refus d'un passage Rust où aucune erreur introduite n'a pu être testée |
 | Avant de livrer : `scripts/ci.sh --complet` | tout ce qui précède, avec le test de mutation de tout le code, Rust et interface ; benchmarks si la lecture a changé ; build `release` signé et notarisé |
 
 Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov cargo-deny cargo-mutants --locked`, `jq` (livré avec macOS), puis dans `ui/` : `npm install` et `npx playwright install webkit`.

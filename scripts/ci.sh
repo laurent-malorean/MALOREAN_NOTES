@@ -81,6 +81,21 @@ check_private_files() {
   done
 }
 
+# Un seul mot par notion (doc/ontology.md) : les mots remplacés ne reviennent nulle part. Seules
+# les fiches de décision, datées, gardent les mots de leur époque ; l'ontologie les note
+# « Autrefois … ». Ce script, qui les liste, n'est pas relu.
+readonly RETIRED_WORDS='biblioth[eè]que|colonne des dossiers|sidebar|ContentType::Page|ContentTypeItem::Page'
+check_vocabulary() {
+  step "Vocabulaire : aucun ancien mot de l'ontologie"
+  local found
+  found=$(git ls-files -z --cached --others --exclude-standard -- . \
+      ':(exclude)doc/decisions' ':(exclude)data_fake' ':(exclude)scripts/ci.sh' \
+    | xargs -0 grep -n -I -i -E "$RETIRED_WORDS" -- 2>/dev/null \
+    | grep -v 'Autrefois' || true)
+  [ -z "$found" ] || fail "anciens mots, à remplacer par ceux de doc/ontology.md :
+$found"
+}
+
 check_file_length() {
   step "Longueur des fichiers (${MAX_FILE_LINES} lignes au plus)"
   local too_long
@@ -208,6 +223,7 @@ check_uncommitted_mutations() {
 }
 
 check_private_files
+check_vocabulary
 check_file_length
 if [ -f Cargo.toml ]; then check_rust; else printf '\n(pas de projet Rust : contrôles Rust sautés)\n'; fi
 if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : contrôles interface sautés)\n'; fi

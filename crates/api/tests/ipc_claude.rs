@@ -96,7 +96,7 @@ fn summary() -> ClaudeEvent {
 }
 
 #[test]
-fn each_event_of_a_turn_reaches_the_page_under_the_names_it_uses() {
+fn each_event_of_a_turn_reaches_the_interface_under_the_names_it_uses() {
     let claude = Arc::new(FakeClaudeCode::replaying(vec![
         ClaudeEvent::ConversationStarted(ConversationId::new("c1").unwrap()),
         ClaudeEvent::Message {
@@ -133,7 +133,7 @@ fn each_event_of_a_turn_reaches_the_page_under_the_names_it_uses() {
 }
 
 #[test]
-fn a_new_conversation_is_asked_under_the_name_used_by_the_page() {
+fn a_new_conversation_is_asked_under_the_name_used_by_the_interface() {
     let claude = Arc::new(FakeClaudeCode::replaying(vec![
         ClaudeEvent::ConversationStarted(ConversationId::new("c1").unwrap()),
     ]));
@@ -190,7 +190,7 @@ fn a_turn_without_a_workspace_answers_why_and_stopping_changes_nothing() {
 }
 
 #[test]
-fn a_connected_claude_code_is_ready_under_the_name_used_by_the_page() {
+fn a_connected_claude_code_is_ready_under_the_name_used_by_the_interface() {
     let window = window(Some(FakeClaudeCode::default()));
     assert_eq!(
         status(&window),
@@ -234,7 +234,7 @@ fn a_session_without_claude_code_tells_how_to_install_it() {
 }
 
 #[test]
-fn a_running_turn_stops_under_the_name_used_by_the_page() {
+fn a_running_turn_stops_under_the_name_used_by_the_interface() {
     let claude = Arc::new(FakeClaudeCode::hanging(vec![summary()]));
     let window = opened_window(&claude);
     std::thread::scope(|scope| {

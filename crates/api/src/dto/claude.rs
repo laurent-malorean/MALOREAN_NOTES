@@ -89,7 +89,7 @@ impl From<AgentState> for AgentStateItem {
     }
 }
 
-/// Ce que Claude Code annonce pendant un tour, envoyé à la page au fil de l'eau. `agent` est
+/// Ce que Claude Code annonce pendant un tour, envoyé à l'interface au fil de l'eau. `agent` est
 /// l'action qui a lancé le sous-agent auteur ; rien pour Claude lui-même.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", rename_all = "camelCase")]
@@ -215,7 +215,7 @@ impl ClaudeEventItem {
         }
     }
 
-    /// L'événement tel que la page le reçoit ; rien pour le début de la conversation, que la
+    /// L'événement tel que l'interface le reçoit ; rien pour le début de la conversation, que la
     /// session garde pour elle.
     #[must_use]
     pub fn from_event(event: ClaudeEvent) -> Option<Self> {
@@ -351,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn each_kind_of_action_is_named_for_the_page() {
+    fn each_kind_of_action_is_named_for_the_interface() {
         assert_eq!(started(ActionKind::Read), (ActionKindItem::Read, None));
         assert_eq!(started(ActionKind::Search), (ActionKindItem::Search, None));
         assert_eq!(started(ActionKind::Write), (ActionKindItem::Write, None));
@@ -426,7 +426,7 @@ mod tests {
     }
 
     #[test]
-    fn each_state_of_a_sub_agent_is_named_for_the_page() {
+    fn each_state_of_a_sub_agent_is_named_for_the_interface() {
         let state = |state| match finished_sub_agent(state) {
             ClaudeEventItem::SubAgentFinished { state, .. } => state,
             other => panic!("pas un sous-agent terminé : {other:?}"),
@@ -454,7 +454,7 @@ mod tests {
     }
 
     #[test]
-    fn the_model_the_limits_and_the_context_fill_reach_the_page() {
+    fn the_model_the_limits_and_the_context_fill_reach_the_interface() {
         assert_eq!(
             serde_json::to_value(item(ClaudeEvent::ModelUsed("claude-opus-5-5".to_owned())))
                 .unwrap(),

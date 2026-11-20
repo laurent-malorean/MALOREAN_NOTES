@@ -1,4 +1,4 @@
-//! Le journal de l'espace de travail ouvert, vu depuis la page : la note du jour.
+//! Le journal de l'espace de travail ouvert, vu depuis l'interface : la note du jour.
 
 use application::use_cases::CreateDailyNote;
 use domain::{Folder, NotePath};

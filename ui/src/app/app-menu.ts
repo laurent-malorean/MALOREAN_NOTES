@@ -1,4 +1,4 @@
-// Barre des menus du Mac : la page la décrit et la fait construire par Rust, grise les commandes
+// Barre des menus du Mac : l'interface la décrit et la fait construire par Rust, grise les commandes
 // d'une note tant qu'aucune n'est montrée, celles de l'aide à l'écriture tant que l'assistant
 // d'écriture ne peut pas répondre, et lance la commande de chaque élément choisi.
 import type * as Bridge from "../bridge";

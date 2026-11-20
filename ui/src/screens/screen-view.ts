@@ -56,7 +56,7 @@ function renderList(
   }
 }
 
-/** La colonne des dossiers : le dossier en évidence (aucun hors de ses notes), Récentes, les étiquettes. */
+/** La liste des dossiers : le dossier en évidence (aucun hors de ses notes), Récentes, les étiquettes. */
 function renderNavigation(
   layout: Layout,
   screen: WorkspaceScreen,

@@ -1,4 +1,4 @@
-// Demandes de l'écran : ce que la colonne des dossiers, la liste des notes, les étiquettes,
+// Demandes de l'écran : ce que la liste des dossiers, la liste des notes, les étiquettes,
 // Récentes et la corbeille demandent, confié au module de chaque domaine.
 import type * as Bridge from "../bridge";
 import type { ScreenActions } from "../screens/screen-view";

@@ -1,4 +1,4 @@
-//! Les étiquettes de l'espace de travail ouvert, vues depuis la page.
+//! Les étiquettes de l'espace de travail ouvert, vues depuis l'interface.
 
 use application::use_cases::{ListTaggedNotes, ListTags};
 

@@ -19,7 +19,7 @@ pub struct SearchResult {
     pub title: String,
     /// Son type de contenu.
     pub content_type: ContentType,
-    /// L'élément auquel elle appartient ; aucun pour une page.
+    /// L'élément auquel elle appartient ; aucun pour une note.
     pub container: Option<NotePath>,
     /// La date de dernière modification.
     pub modified: Modified,
@@ -165,7 +165,7 @@ mod tests {
         let found = SearchNotes::new(&indexed(&store))
             .execute(&SearchQuery::parse("pain").unwrap(), NoteOrder::Modified)
             .unwrap();
-        assert_eq!(found[0].content_type, ContentType::Page);
+        assert_eq!(found[0].content_type, ContentType::Note);
         assert_eq!(found[0].container, None);
     }
 
@@ -181,7 +181,7 @@ mod tests {
                 .unwrap()
                 .len()
         };
-        assert_eq!(among(&[ContentType::Page]), 1);
+        assert_eq!(among(&[ContentType::Note]), 1);
         assert_eq!(among(&[]), 0);
     }
 

@@ -1,6 +1,6 @@
 // Copier en texte mis en forme : la note, ou la sélection, dans le presse-papiers du Mac, à la fois
 // en HTML aux styles en ligne et en texte brut, prête à coller dans un mail ou un document
-// (fiche 0027). Rust pose les deux formats ; la page n'a besoin d'aucun geste de l'utilisateur.
+// (fiche 0027). Rust pose les deux formats ; l'interface n'a besoin d'aucun geste de l'utilisateur.
 import type * as Bridge from "../bridge";
 import { noteHtml } from "../rendering/note-html";
 import { plainText } from "../rendering/note-text";

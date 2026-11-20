@@ -9,7 +9,7 @@ const results: SearchResultItem[] = [
     path: "Travail/Réunions/lundi.md",
     title: "Lundi",
     folder: "Travail/Réunions",
-    contentType: "page",
+    contentType: "note",
     container: null,
     modified: 2,
     excerpt: [
@@ -22,7 +22,7 @@ const results: SearchResultItem[] = [
     path: "courses.md",
     title: "Courses",
     folder: "",
-    contentType: "page",
+    contentType: "note",
     container: null,
     modified: 1,
     excerpt: [{ text: "Pain", matched: true }],
@@ -50,7 +50,7 @@ describe("résultats de recherche", () => {
   it("montre discrètement le type de contenu de chaque note, à côté de son dossier", () => {
     const container = list();
     renderSearchResults(container, "Notes", results, null, ignore);
-    expect(texts(container, ".search-place .search-type")).toEqual(["Page", "Page"]);
+    expect(texts(container, ".search-place .search-type")).toEqual(["Note", "Note"]);
     expect(texts(container, ".search-place .search-folder")).toEqual([
       "Travail / Réunions",
       "Notes",

@@ -236,9 +236,9 @@ export const chooseExportFile = (title: string, format: ExportFormatItem, folder
 /** Écrit la note en Markdown au fichier `destination`, ses pièces jointes copiées à côté. */
 export const exportMarkdown = (path: string, destination: string) =>
   invoke<null>("export_markdown", { path, destination });
-/** Imprime la feuille d'impression de la page dans le fichier PDF `destination`. */
+/** Imprime la feuille d'impression de l'interface dans le fichier PDF `destination`. */
 export const exportPdf = (destination: string) => invoke<null>("export_pdf", { destination });
-/** Ouvre la fenêtre d'impression du Mac sur la feuille d'impression de la page. */
+/** Ouvre la fenêtre d'impression du Mac sur la feuille d'impression de l'interface. */
 export const printPage = () => invoke<null>("print_page");
 /** Pose dans le presse-papiers du Mac le texte mis en forme `html` et le texte brut `text`. */
 export const copyRichText = (html: string, text: string) =>

@@ -1,4 +1,4 @@
-// Réglages d'affichage : posés sur la page, que le thème traduit en polices, tailles et couleurs.
+// Réglages d'affichage : posés sur l'interface, que le thème traduit en polices, tailles et couleurs.
 import type { Appearance, Settings } from "../state/settings";
 
 /** Claire ou sombre : en automatique, comme le Mac. */

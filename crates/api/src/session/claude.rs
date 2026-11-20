@@ -1,4 +1,4 @@
-//! La colonne Claude Code vue depuis la page : si Claude Code peut répondre, un tour joué dans
+//! La colonne Claude Code vue depuis l'interface : si Claude Code peut répondre, un tour joué dans
 //! l'espace de travail ouvert, la conversation continuée (fiche 0032).
 
 use std::collections::HashMap;
@@ -46,7 +46,7 @@ impl Session {
     }
 
     /// Joue un tour : envoie `message` à Claude dans l'espace de travail ouvert, en continuant la
-    /// conversation en cours avec le modèle et le niveau d'effort de `settings`, et donne à `on_event` chaque événement prêt pour la page dès qu'il
+    /// conversation en cours avec le modèle et le niveau d'effort de `settings`, et donne à `on_event` chaque événement prêt pour l'interface dès qu'il
     /// arrive, avec chaque note modifiée par Claude. Rend la main à la fin du tour.
     ///
     /// # Errors
@@ -261,7 +261,7 @@ mod tests {
         (end, items)
     }
 
-    /// Les notes que la page apprend modifiées pendant un tour qui annonce `events`.
+    /// Les notes que l'interface apprend modifiées pendant un tour qui annonce `events`.
     fn changed_notes(events: Vec<ClaudeEvent>) -> Vec<String> {
         let claude = Arc::new(FakeClaudeCode::replaying(events));
         let (_, items) = turn(&opened(&claude), "Range mes notes");
@@ -283,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn a_turn_is_played_in_the_open_workspace_and_relayed_to_the_page() {
+    fn a_turn_is_played_in_the_open_workspace_and_relayed_to_the_interface() {
         let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
         let (end, items) = turn(&opened(&claude), "Bonjour");
         assert_eq!(end, Ok(()));

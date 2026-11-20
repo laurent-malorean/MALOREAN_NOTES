@@ -62,7 +62,7 @@ fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Resu
 }
 
 #[test]
-fn versions_are_kept_listed_compared_and_restored_with_the_argument_names_used_by_the_page() {
+fn versions_are_kept_listed_compared_and_restored_with_the_argument_names_used_by_the_interface() {
     let window = window(&[("a.md", "# A\nancien")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     call(&window, "keep_version", json!({ "path": "a.md" })).unwrap();
@@ -94,7 +94,7 @@ fn versions_are_kept_listed_compared_and_restored_with_the_argument_names_used_b
 }
 
 #[test]
-fn a_bad_version_from_the_page_is_refused() {
+fn a_bad_version_from_the_interface_is_refused() {
     let window = window(&[("a.md", "# A")]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     let refused = call(

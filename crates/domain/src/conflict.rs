@@ -34,7 +34,7 @@ impl Fingerprint {
         Self(format!("{hash:016x}"))
     }
 
-    /// Une empreinte reçue de la page.
+    /// Une empreinte reçue de l'interface.
     ///
     /// # Errors
     ///
@@ -98,7 +98,7 @@ mod tests {
     }
 
     #[test]
-    fn a_fingerprint_received_from_the_page_is_checked() {
+    fn a_fingerprint_received_from_the_interface_is_checked() {
         assert_eq!(
             Fingerprint::parse("af63dc4c8601ec8c"),
             Ok(Fingerprint::of("a"))

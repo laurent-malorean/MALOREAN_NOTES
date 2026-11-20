@@ -209,6 +209,37 @@ fn an_index_of_the_first_format_starts_again_and_keeps_types() {
     index.put(&[note("a.md", "# A\npain")]).unwrap();
     let query = SearchQuery::parse("pain").unwrap();
     let found = index.search(&query, &ContentType::ALL).unwrap();
-    assert_eq!(found[0].0.content_type(), ContentType::Page);
+    assert_eq!(found[0].0.content_type(), ContentType::Note);
     assert_eq!(found[0].0.container(), None);
+}
+
+/// Le deuxième format nommait « page » le type des notes (fiche 0034), devenu « note »
+/// (fiche 0037) : une telle base repart de zéro, aussitôt remplie à l'ouverture.
+const SECOND_FORMAT: &str = "
+CREATE TABLE notes (id INTEGER PRIMARY KEY, path TEXT NOT NULL UNIQUE, folder TEXT NOT NULL,
+    title TEXT NOT NULL, modified INTEGER NOT NULL, size INTEGER NOT NULL,
+    pinned INTEGER NOT NULL, tags TEXT NOT NULL, type TEXT NOT NULL, container TEXT,
+    content TEXT NOT NULL);
+CREATE TABLE note_tags (note INTEGER NOT NULL REFERENCES notes (id) ON DELETE CASCADE,
+    tag TEXT NOT NULL);
+CREATE VIRTUAL TABLE notes_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
+INSERT INTO notes VALUES (1, 'a.md', '', 'A', 7, 12, 0, '', 'page', NULL, '# A');
+INSERT INTO notes_text (rowid, folded) VALUES (1, '# a');
+PRAGMA user_version = 2;
+";
+
+#[test]
+fn an_index_of_the_second_format_starts_again_with_the_note_type() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("index.sqlite");
+    let connection = rusqlite::Connection::open(&file).unwrap();
+    connection.execute_batch(SECOND_FORMAT).unwrap();
+    drop(connection);
+    let index = SqliteIndex::open(&file).unwrap();
+    assert!(index.stamps().unwrap().is_empty());
+    index.put(&[note("a.md", "# A")]).unwrap();
+    assert_eq!(
+        index.all_notes().unwrap()[0].content_type(),
+        ContentType::Note
+    );
 }

@@ -65,7 +65,7 @@ fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Resu
 }
 
 #[test]
-fn a_note_is_exported_in_markdown_with_the_argument_names_used_by_the_page() {
+fn a_note_is_exported_in_markdown_with_the_argument_names_used_by_the_interface() {
     let exports = Arc::new(InMemoryExportStore::default());
     let window = window(&[("a.md", "# Alpha\ntexte")], Arc::clone(&exports));
     call(&window, "reopen_last_workspace", json!({})).unwrap();
@@ -93,7 +93,7 @@ fn a_pdf_is_refused_outside_a_complete_path() {
 #[test]
 fn printing_asks_the_window_for_its_print_panel() {
     let window = window(&[], Arc::new(InMemoryExportStore::default()));
-    // Le simulateur de Tauri n'a pas de WebKit : la page n'est jamais imprimée, et le dit.
+    // Le simulateur de Tauri n'a pas de WebKit : l'interface n'est jamais imprimée, et le dit.
     let refused = call(&window, "print_page", json!({}));
     assert!(
         refused.unwrap_err()["message"]

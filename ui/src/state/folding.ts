@@ -1,4 +1,4 @@
-// Dossiers pliés de la colonne des dossiers : ceux dont les sous-dossiers sont cachés,
+// Dossiers pliés de la liste des dossiers : ceux dont les sous-dossiers sont cachés,
 // gardés pour chaque espace de travail d'un lancement à l'autre.
 import { movedPath } from "./folders";
 import type { PreferenceStorage } from "./focus-preference";

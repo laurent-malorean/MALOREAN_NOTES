@@ -15,7 +15,7 @@ const PREFERENCES_FILE: &str = "preferences.json";
 fn main() {
     tracing_subscriber::fmt::init();
     let started = tauri::Builder::default()
-        // La barre des menus est celle de la page (`install_menu`) : pas celle de Tauri, dont
+        // La barre des menus est celle de l'interface (`install_menu`) : pas celle de Tauri, dont
         // Cmd+W fermerait la fenêtre au lieu de l'onglet.
         .enable_macos_default_menu(false)
         .on_menu_event(|app, event| commands::menu::chosen(app, &event))

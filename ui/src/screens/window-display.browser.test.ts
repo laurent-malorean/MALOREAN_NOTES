@@ -37,7 +37,7 @@ function fakeWindow(options: { failSet?: boolean; failAsk?: boolean; failListen?
 
 function setup(window = fakeWindow(), storage = memoryStorage()) {
   const mainArea = document.createElement("section");
-  mainArea.innerHTML = `<aside class="folders"></aside><aside class="sidebar"></aside><section class="claude-column"></section>`;
+  mainArea.innerHTML = `<aside class="folders"></aside><aside class="notes-panel"></aside><section class="claude-column"></section>`;
   const fullScreenButton = document.createElement("button");
   const sidePanelsButton = document.createElement("button");
   const error = vi.fn();
@@ -151,6 +151,6 @@ describe("largeur des panneaux latéraux", () => {
       memoryStorage({ "malorean.panel-width.notes": "250" }),
     );
     expect(mainArea.querySelectorAll(".panel-edge")).toHaveLength(3);
-    expect(mainArea.style.getPropertyValue("--sidebar-width")).toBe("250px");
+    expect(mainArea.style.getPropertyValue("--notes-panel-width")).toBe("250px");
   });
 });

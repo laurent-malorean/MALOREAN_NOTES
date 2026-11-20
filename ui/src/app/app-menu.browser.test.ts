@@ -112,7 +112,7 @@ describe("barre des menus", () => {
     expect(log).toEqual(["construire", "lancer close-tab", "lancer command-palette"]);
   });
 
-  it("ne lance rien tant qu'une fenêtre de la page est ouverte", async () => {
+  it("ne lance rien tant qu'une fenêtre de l'interface est ouverte", async () => {
     const { log, choose } = setup();
     await settle();
     const dialog = document.createElement("dialog");

@@ -207,7 +207,7 @@ pub enum Effort {
 /// pendant le tour (garde-fou du web).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum ChangesAfterWeb {
-    /// Retenues jusqu'à l'accord de l'utilisateur : une page lue pourrait cacher des instructions.
+    /// Retenues jusqu'à l'accord de l'utilisateur : une page web lue pourrait cacher des instructions.
     #[default]
     HeldBack,
     /// Permises pour ce tour : l'utilisateur les a autorisées.

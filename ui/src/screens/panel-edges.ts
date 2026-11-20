@@ -27,8 +27,8 @@ const PANELS: readonly {
   },
   {
     panel: "notes",
-    selector: ".sidebar",
-    variable: "--sidebar-width",
+    selector: ".notes-panel",
+    variable: "--notes-panel-width",
     label: "Largeur de la liste des notes",
     side: 1,
   },

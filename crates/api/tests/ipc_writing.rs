@@ -59,7 +59,7 @@ fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Resu
 }
 
 #[test]
-fn a_proposal_comes_back_with_its_word_differences_and_the_argument_names_used_by_the_page() {
+fn a_proposal_comes_back_with_its_word_differences_and_the_argument_names_used_by_the_interface() {
     let window = window(Some(FakeWritingAssistant::default()));
     let args = json!({ "action": "correct", "selection": "Une fote." });
     let proposal = call(&window, "propose_rewriting", args).unwrap();
@@ -86,7 +86,7 @@ fn an_available_assistant_says_so() {
 }
 
 #[test]
-fn an_unavailable_assistant_says_why_in_words_for_the_page() {
+fn an_unavailable_assistant_says_why_in_words_for_the_interface() {
     let window = window(Some(FakeWritingAssistant::unavailable(
         Unavailability::AppleIntelligenceDisabled,
     )));
@@ -131,7 +131,7 @@ fn a_refusal_of_the_model_is_reported() {
 }
 
 #[test]
-fn an_unknown_action_from_the_page_is_refused() {
+fn an_unknown_action_from_the_interface_is_refused() {
     let window = window(Some(FakeWritingAssistant::default()));
     let refused = call(
         &window,

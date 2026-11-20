@@ -1,10 +1,10 @@
-//! Impression de la page par WebKit : en PDF sans fenêtre d'impression, ou dans la fenêtre
+//! Impression de l'interface par WebKit : en PDF sans fenêtre d'impression, ou dans la fenêtre
 //! d'impression du Mac. Seule frontière avec macOS hors d'`infrastructure` : elle agit sur la
 //! fenêtre que tient Tauri (fiches 0025 et 0026).
 
 #![expect(
     unsafe_code,
-    reason = "appel de WebKit et d'AppKit (Objective-C) : l'impression de la page, fiches 0025 et 0026"
+    reason = "appel de WebKit et d'AppKit (Objective-C) : l'impression de l'interface, fiches 0025 et 0026"
 )]
 
 use std::ffi::c_void;
@@ -18,7 +18,7 @@ use objc2_web_kit::WKWebView;
 /// Marge de chaque côté de la page, en points (2 cm).
 const PAGE_MARGIN: f64 = 56.7;
 
-/// Lance l'impression de la page affichée par `webview` (dans `window`) dans le fichier PDF
+/// Lance l'impression de l'interface affichée par `webview` (dans `window`) dans le fichier PDF
 /// `location`, au format de papier du Mac. WebKit applique la feuille de style d'impression
 /// et écrit le fichier peu après, sans rien montrer. À appeler sur le fil principal.
 pub(crate) fn print_to_pdf(
@@ -39,7 +39,7 @@ pub(crate) fn print_to_pdf(
     run(webview, window, &info, false)
 }
 
-/// Ouvre la fenêtre d'impression du Mac, attachée à `window`, sur la page affichée par
+/// Ouvre la fenêtre d'impression du Mac, attachée à `window`, sur l'interface affichée par
 /// `webview`, avec les marges de l'export PDF. Rend la main dès la fenêtre ouverte ; on y
 /// imprime, ou on y garde un PDF. À appeler sur le fil principal.
 pub(crate) fn print_with_panel(webview: *mut c_void, window: *mut c_void) -> Result<(), String> {
@@ -56,7 +56,7 @@ fn page_setup() -> Retained<NSPrintInfo> {
     info
 }
 
-/// Imprime la page selon `info`, la fenêtre d'impression et la barre de progression montrées
+/// Imprime l'interface selon `info`, la fenêtre d'impression et la barre de progression montrées
 /// ou non selon `panels`.
 fn run(
     webview: *mut c_void,
@@ -76,7 +76,7 @@ fn run(
     operation.setShowsPrintPanel(panels);
     operation.setShowsProgressPanel(panels);
     // SAFETY: ni délégué ni sélecteur, contexte nul : AppKit ne rappelle rien. WebKit dessine
-    // la page dans un autre processus : seule l'impression modale (asynchrone) l'attend, une
+    // l'interface dans un autre processus : seule l'impression modale (asynchrone) l'attend, une
     // impression synchrone (`runOperation`) donnerait des pages blanches.
     unsafe {
         operation.runOperationModalForWindow_delegate_didRunSelector_contextInfo(

@@ -1,5 +1,5 @@
 //! Commandes de l'aide à l'écriture : demander au modèle d'IA du Mac de corriger, reformuler ou
-//! résumer une sélection. Rien n'est écrit dans la note : la page attend l'accord.
+//! résumer une sélection. Rien n'est écrit dans la note : l'interface attend l'accord.
 
 use std::sync::Arc;
 

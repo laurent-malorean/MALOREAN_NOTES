@@ -15,6 +15,7 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 ## Méthode
 
 - **Ontologie d'abord** : un nouveau mot s'ajoute à `doc/ontology.md` avant d'apparaître dans le code.
+- **Vocabulaire unique** : un seul mot par notion, partout (écrans, documents, code, tests) ; pas de synonymes ; le mot vient de `doc/ontology.md`.
 - **TDD** : écrire le test qui échoue, puis le code minimal qui le fait passer, puis nettoyer. Pas de code de production sans test qui l'exige.
 - Documentation à jour dans le même commit que l'évolution.
 

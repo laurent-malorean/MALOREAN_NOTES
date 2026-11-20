@@ -49,7 +49,7 @@ fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Resu
     get_ipc_response(window, request).map(|body| body.deserialize::<Value>().unwrap())
 }
 
-/// Chaque élément standard du Mac, nommé comme l'écrit la page.
+/// Chaque élément standard du Mac, nommé comme l'écrit l'interface.
 const STANDARD: [&str; 15] = [
     "about",
     "services",
@@ -68,7 +68,7 @@ const STANDARD: [&str; 15] = [
     "bringAllToFront",
 ];
 
-/// Des menus comme les écrit la page : éléments standard, commandes, séparateur, rôles.
+/// Des menus comme les écrit l'interface : éléments standard, commandes, séparateur, rôles.
 fn menus() -> Value {
     json!([
         { "title": "MALOREAN Notes", "role": null, "entries": [
@@ -118,7 +118,7 @@ fn roles() -> (Option<String>, Option<String>) {
     (title(app.windowsMenu()), title(app.helpMenu()))
 }
 
-fn the_menus_written_by_the_page_become_the_menu_bar() {
+fn the_menus_written_by_the_interface_become_the_menu_bar() {
     let window = window();
     call(&window, "install_menu", json!({ "menus": menus() })).unwrap();
     let bar = installed(&window);
@@ -172,7 +172,7 @@ fn greying_items_before_the_menu_bar_is_installed_does_nothing() {
     assert_eq!(call(&window, "enable_menu_items", args), Ok(Value::Null));
 }
 
-fn a_chosen_menu_item_reaches_the_page_as_its_command_id() {
+fn a_chosen_menu_item_reaches_the_interface_as_its_command_id() {
     let window = window();
     let received = Arc::new(Mutex::new(Vec::new()));
     let sink = Arc::clone(&received);
@@ -188,8 +188,8 @@ fn a_chosen_menu_item_reaches_the_page_as_its_command_id() {
 }
 
 fn main() {
-    the_menus_written_by_the_page_become_the_menu_bar();
+    the_menus_written_by_the_interface_become_the_menu_bar();
     menu_items_are_greyed_and_enabled_by_their_command_id();
     greying_items_before_the_menu_bar_is_installed_does_nothing();
-    a_chosen_menu_item_reaches_the_page_as_its_command_id();
+    a_chosen_menu_item_reaches_the_interface_as_its_command_id();
 }

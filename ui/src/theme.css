@@ -1,16 +1,16 @@
 /*
  * Thème : seul endroit où s'écrivent les couleurs, les polices et les tailles de lecture.
  * Le reste de l'interface n'emploie que ces variables. Les réglages d'affichage sont posés
- * sur la page (data-font, data-text-size, data-text-width, data-appearance) et traduits ici.
+ * sur l'interface (data-font, data-text-size, data-text-width, data-appearance) et traduits ici.
  */
-/* Couleurs claires : celles de la page, et toujours celles de la feuille d'impression. */
+/* Couleurs claires : celles de l'interface, et toujours celles de la feuille d'impression. */
 :root,
 .print-sheet {
   color-scheme: light;
 
   /* Couleurs */
   --bg: #fbfaf7;
-  --sidebar: #f2f0eb;
+  --side-panel: #f2f0eb;
   --text: #1f1f1f;
   --muted: #6b6b6b;
   --marker: #b3b0a8;
@@ -117,7 +117,7 @@
   --note-order-text-size: 12px;
   /* Type de contenu montré sur chaque résultat de recherche, discret */
   --content-type-text-size: 11px;
-  --sidebar-width: 280px;
+  --notes-panel-width: 280px;
   /* Largeur d'un panneau latéral réglée à la souris : bornes, et bord qu'on tire */
   --side-panel-min-width: 9rem;
   --side-panel-max-width: min(28rem, 30vw);
@@ -156,7 +156,7 @@
 :root[data-appearance="dark"] {
   color-scheme: dark;
   --bg: #1c1c1e;
-  --sidebar: #242426;
+  --side-panel: #242426;
   --text: #e8e6e1;
   --muted: #9a9890;
   --marker: #5f5d58;

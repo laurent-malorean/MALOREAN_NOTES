@@ -59,8 +59,8 @@ pub struct NoteSummary {
 
 impl NoteSummary {
     /// Le résumé d'une note : son titre affiché, son épinglage et ses étiquettes sont tirés
-    /// de son contenu. Toute note est une page, sans conteneur, tant qu'aucun autre type de
-    /// contenu n'existe (fiche 0034) : la propriété `type:` de l'en-tête n'est pas encore lue.
+    /// de son contenu. Toute note est du type note, sans conteneur, tant qu'aucun autre type
+    /// de contenu n'existe (fiche 0034) : la propriété `type:` de l'en-tête n'est pas encore lue.
     #[must_use]
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
         Self {
@@ -69,7 +69,7 @@ impl NoteSummary {
             modified,
             pinned: is_pinned(content),
             tags: tags(content),
-            content_type: ContentType::Page,
+            content_type: ContentType::Note,
             container: None,
         }
     }
@@ -90,14 +90,14 @@ impl NoteSummary {
             modified,
             pinned,
             tags,
-            content_type: ContentType::Page,
+            content_type: ContentType::Note,
             container: None,
         }
     }
 
     /// Le même résumé, avec le type de contenu et le conteneur que l'index a gardés.
     ///
-    /// Écrit par affectations plutôt que `Self { content_type, ..self }` : tant que la page est
+    /// Écrit par affectations plutôt que `Self { content_type, ..self }` : tant que la note est
     /// le seul type (fiche 0034), retirer ce champ d'une telle expression garderait la même
     /// valeur, une erreur introduite équivalente que `exclude_re` de cargo-mutants ne sait pas
     /// écarter.
@@ -114,7 +114,7 @@ impl NoteSummary {
         self.content_type
     }
 
-    /// L'élément auquel il appartient ; aucun pour une page.
+    /// L'élément auquel il appartient ; aucun pour une note.
     #[must_use]
     pub fn container(&self) -> Option<&NotePath> {
         self.container.as_ref()
@@ -199,14 +199,14 @@ mod tests {
     }
 
     #[test]
-    fn every_note_is_a_page_without_container_whatever_its_type_property() {
+    fn every_note_is_of_the_note_type_without_container_whatever_its_type_property() {
         for content in [
             "# Titre",
-            "---\ntype: page\n---\n# T",
+            "---\ntype: note\n---\n# T",
             "---\ntype: kanban\n---\n# T",
         ] {
             let read = note("x.md", content, 0);
-            assert_eq!(read.content_type(), ContentType::Page);
+            assert_eq!(read.content_type(), ContentType::Note);
             assert_eq!(read.container(), None);
         }
     }
@@ -215,7 +215,7 @@ mod tests {
     fn an_indexed_summary_keeps_the_type_and_container_given() {
         let board = NotePath::parse("CRM/tableau.md").unwrap();
         let card =
-            note("CRM/carte.md", "# Carte", 0).of_type(ContentType::Page, Some(board.clone()));
+            note("CRM/carte.md", "# Carte", 0).of_type(ContentType::Note, Some(board.clone()));
         assert_eq!(card.container(), Some(&board));
         assert_eq!(card.title(), "Carte");
         assert_ne!(card, note("CRM/carte.md", "# Carte", 0));

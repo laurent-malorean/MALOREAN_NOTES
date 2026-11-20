@@ -23,7 +23,7 @@ impl ApiError {
         }
     }
 
-    /// La page a envoyé une pièce jointe sans son contenu ou sans dire à quelle note elle va.
+    /// L'interface a envoyé une pièce jointe sans son contenu ou sans dire à quelle note elle va.
     pub(crate) fn incomplete_attachment() -> Self {
         Self {
             message: "le fichier à joindre n'a pas été reçu en entier".to_owned(),
@@ -44,7 +44,7 @@ impl ApiError {
         }
     }
 
-    /// WebKit n'a pas pu imprimer la page en PDF.
+    /// WebKit n'a pas pu imprimer l'interface en PDF.
     pub(crate) fn pdf_failed(reason: &str) -> Self {
         Self {
             message: format!("le PDF n'a pas pu être écrit : {reason}"),
@@ -142,7 +142,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn use_case_errors_reach_the_page_as_their_message() {
+    fn use_case_errors_reach_the_interface_as_their_message() {
         assert_eq!(
             ApiError::from(AppError::NoWorkspaceOpen).message,
             "aucun espace de travail n'est ouvert"

@@ -56,20 +56,20 @@ const TEMPLATE = `
     </section>
     <section class="main-area" hidden>
       <aside class="folders">
-        <header class="sidebar-header">
+        <header class="side-panel-header">
           <button class="workspace-switcher" aria-haspopup="menu" title="Changer d'espace de travail (Cmd+Maj+E)"></button>
           <button class="icon" data-new-folder title="Nouveau dossier">＋</button>
         </header>
         <nav class="folders-list"></nav>
         <button class="recent-item" data-recent title="Les notes ouvertes le plus récemment">Récentes</button>
         <nav class="tags-list" aria-label="Étiquettes" hidden></nav>
-        <footer class="sidebar-footer">
+        <footer class="side-panel-footer">
           <button class="trash-item" data-trash>Corbeille</button>
           <button class="trash-item" data-settings title="Réglages (Cmd+,)">Réglages</button>
         </footer>
       </aside>
-      <aside class="sidebar">
-        <header class="sidebar-header">
+      <aside class="notes-panel">
+        <header class="side-panel-header">
           <span class="list-heading"></span>
           <button class="icon" data-new title="Nouvelle note">＋</button>
         </header>
@@ -77,7 +77,7 @@ const TEMPLATE = `
         <div class="tag-filter" hidden></div>
         <label class="note-order">Trier par <select aria-label="Trier la liste"></select></label>
         <nav class="notes-list"></nav>
-        <footer class="sidebar-footer"><button class="link" data-switch>Changer d'espace de travail</button></footer>
+        <footer class="side-panel-footer"><button class="link" data-switch>Changer d'espace de travail</button></footer>
       </aside>
       <main class="editor">
         <div class="editor-tools">

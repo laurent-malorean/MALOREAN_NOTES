@@ -111,7 +111,7 @@ impl Session {
         }
     }
 
-    /// Les notes du dossier reçu de la page (`""` pour la racine), la plus récente en premier.
+    /// Les notes du dossier reçu de l'interface (`""` pour la racine), la plus récente en premier.
     ///
     /// # Errors
     ///
@@ -147,7 +147,7 @@ impl Session {
         Ok(found.into_iter().map(search_result_item).collect())
     }
 
-    /// Le contenu d'une note, désignée par le chemin reçu de la page.
+    /// Le contenu d'une note, désignée par le chemin reçu de l'interface.
     ///
     /// # Errors
     ///
@@ -200,7 +200,7 @@ impl Session {
         ))
     }
 
-    /// Crée une note vide, sans titre, dans le dossier reçu de la page.
+    /// Crée une note vide, sans titre, dans le dossier reçu de l'interface.
     ///
     /// # Errors
     ///
@@ -479,7 +479,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_folder_names_from_the_page_are_refused() {
+    fn invalid_folder_names_from_the_interface_are_refused() {
         let session = opened(&[]);
         assert_eq!(
             session.create_folder("", ".cache").unwrap_err().message,
@@ -504,7 +504,7 @@ mod tests {
                 path: "a.md".into(),
                 title: "Alpha".into(),
                 folder: String::new(),
-                content_type: ContentTypeItem::Page,
+                content_type: ContentTypeItem::Note,
                 container: None,
                 modified: results[0].modified,
                 excerpt: vec![
@@ -538,7 +538,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_names_from_the_page_are_refused() {
+    fn invalid_names_from_the_interface_are_refused() {
         let session = opened(&[]);
         let error = session.read_note("../../etc/passwd").unwrap_err();
         assert_eq!(error.message, "nom de note invalide : « ../../etc/passwd »");

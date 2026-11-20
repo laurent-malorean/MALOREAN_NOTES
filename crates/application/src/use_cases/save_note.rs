@@ -24,8 +24,8 @@ pub struct SaveOutcome {
 
 /// Enregistre une note ; si son titre a changé, le fichier (et ses pièces jointes) est renommé.
 ///
-/// Si le fichier a changé hors de l'application depuis que la page l'a lu (son empreinte
-/// n'est plus celle que la page connaît), cette version est d'abord gardée dans une copie
+/// Si le fichier a changé hors de l'application depuis que l'interface l'a lu (son empreinte
+/// n'est plus celle que l'interface connaît), cette version est d'abord gardée dans une copie
 /// de conflit, à côté : le texte de l'utilisateur est enregistré, et rien n'est perdu.
 /// Une note supprimée hors de l'application est recréée.
 #[derive(Debug)]
@@ -41,7 +41,7 @@ impl<'a> SaveNote<'a> {
         Self { store, clock }
     }
 
-    /// Enregistre `content` dans la note `current`, que la page a lue ou écrite avec
+    /// Enregistre `content` dans la note `current`, que l'interface a lue ou écrite avec
     /// l'empreinte `known` ; la note reste dans son dossier.
     ///
     /// # Errors
@@ -116,7 +116,7 @@ mod tests {
         NotePath::parse(text).unwrap()
     }
 
-    /// Enregistre `content` dans `path`, comme une page qui a lu la note telle qu'elle est.
+    /// Enregistre `content` dans `path`, comme l'interface quand elle a lu la note telle qu'elle est.
     fn save(store: &InMemoryNoteStore, path: &str, content: &str) -> NotePath {
         let known = Fingerprint::of(&store.read(&name(path)).unwrap().content);
         save_knowing(store, path, content, &known).path

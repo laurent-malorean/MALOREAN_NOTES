@@ -122,7 +122,7 @@ function freeName(folder: string, wanted: string, current?: string): string {
   return path;
 }
 
-/** Empreinte d'un contenu : la page la renvoie telle quelle, sa forme ne compte pas. */
+/** Empreinte d'un contenu : l'interface la renvoie telle quelle, sa forme ne compte pas. */
 const fingerprintOf = (content: string) =>
   [...content].reduce((hash, c) => (hash * 31 + c.charCodeAt(0)) >>> 0, 7).toString(16);
 
@@ -265,7 +265,7 @@ function searchNotes(query: string, order?: string) {
         path,
         title: titleOf(note.content) ?? "Sans titre",
         folder: folderOf(path),
-        contentType: "page" as const,
+        contentType: "note" as const,
         container: null,
         modified: note.modified,
         excerpt: parts.map((text) => ({ text, matched: words.includes(folded(text)) })),

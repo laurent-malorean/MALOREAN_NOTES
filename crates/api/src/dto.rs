@@ -88,13 +88,13 @@ impl From<NoteOrderItem> for domain::NoteOrder {
 #[ts(export)]
 pub enum ContentTypeItem {
     /// Une note : le seul type pour l'instant.
-    Page,
+    Note,
 }
 
 impl From<domain::ContentType> for ContentTypeItem {
     fn from(content_type: domain::ContentType) -> Self {
         match content_type {
-            domain::ContentType::Page => Self::Page,
+            domain::ContentType::Note => Self::Note,
         }
     }
 }
@@ -155,7 +155,7 @@ pub struct SearchResultItem {
     pub folder: String,
     /// Son type de contenu.
     pub content_type: ContentTypeItem,
-    /// Le chemin de l'élément auquel elle appartient ; `null` pour une page.
+    /// Le chemin de l'élément auquel elle appartient ; `null` pour une note.
     pub container: Option<String>,
     /// Millisecondes depuis le 1er janvier 1970.
     #[ts(type = "number")]
@@ -209,7 +209,7 @@ pub struct SaveResult {
     pub tags_changed: bool,
 }
 
-/// Changement fait dans l'espace de travail hors de l'application, annoncé à la page.
+/// Changement fait dans l'espace de travail hors de l'application, annoncé à l'interface.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
@@ -309,12 +309,12 @@ pub enum MenuRoleItem {
     Help,
 }
 
-/// Un élément de menu : une commande de la page, un élément standard du Mac, ou un séparateur.
+/// Un élément de menu : une commande de l'interface, un élément standard du Mac, ou un séparateur.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 #[ts(export)]
 pub enum MenuEntryItem {
-    /// Une commande de la page, renvoyée à la page quand on la choisit.
+    /// Une commande de l'interface, renvoyée à l'interface quand on la choisit.
     Command {
         /// L'identifiant de la commande, le même que dans la palette.
         id: String,

@@ -211,7 +211,7 @@ function memoryStorage(refused = false) {
   return { storage, items };
 }
 
-describe("disposition gardée dans le stockage de la page", () => {
+describe("disposition gardée dans le stockage de l'interface", () => {
   it("chaque espace de travail a la sienne", () => {
     const { storage } = memoryStorage();
     saveLayout(storage, "/notes", two);

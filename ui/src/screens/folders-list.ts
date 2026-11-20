@@ -1,4 +1,4 @@
-// Colonne des dossiers : la racine (nom de l'espace de travail) puis l'arbre des dossiers, chacun
+// Liste des dossiers : la racine (nom de l'espace de travail) puis l'arbre des dossiers, chacun
 // avec son icône, et une flèche de dépliage devant ceux qui ont des sous-dossiers (la racine
 // comprise, dès que l'espace de travail a un dossier).
 // Créer, renommer (double-clic) et déplacer (glisser-déposer) passent par un champ ou un geste ;
@@ -9,7 +9,7 @@ import { showContextMenu } from "./context-menu";
 import { type Dragged, dragged, startDragging, stopDragging } from "./dragging";
 import { showFullNameWhenTruncated } from "./truncated-name";
 
-/** Ce que l'utilisateur peut demander depuis la colonne des dossiers. */
+/** Ce que l'utilisateur peut demander depuis la liste des dossiers. */
 export interface FolderActions {
   readonly select: (path: string) => void;
   readonly create: (parent: string, name: string) => void;

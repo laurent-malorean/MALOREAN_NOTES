@@ -92,7 +92,7 @@ fn conversing() -> FakeClaudeCode {
 }
 
 #[test]
-fn the_account_claude_code_is_logged_in_with_reaches_the_page() {
+fn the_account_claude_code_is_logged_in_with_reaches_the_interface() {
     let claude = Arc::new(FakeClaudeCode::default().with_status(ClaudeStatus::Ready(
         ClaudeAccount {
             email: Some("moi@example.com".to_owned()),

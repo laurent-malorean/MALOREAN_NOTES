@@ -3,4 +3,4 @@
 /**
  * Le type de contenu d'un élément de l'index.
  */
-export type ContentTypeItem = "page";
+export type ContentTypeItem = "note";

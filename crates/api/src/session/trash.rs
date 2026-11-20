@@ -1,4 +1,4 @@
-//! La corbeille de l'espace de travail ouvert, vue depuis la page.
+//! La corbeille de l'espace de travail ouvert, vue depuis l'interface.
 
 use application::use_cases::Trash;
 use domain::{Folder, NotePath};
@@ -158,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_paths_from_the_page_are_refused() {
+    fn invalid_paths_from_the_interface_are_refused() {
         let session = opened(&[]);
         assert!(session.trash_note("../secret.md").is_err());
         assert!(session.restore_note("../secret.md").is_err());

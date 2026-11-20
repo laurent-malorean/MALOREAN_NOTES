@@ -80,7 +80,7 @@ describe("colonnes et onglets de l'application", () => {
     const found = {
       ...listed("b.md", "Note B"),
       folder: "",
-      contentType: "page" as const,
+      contentType: "note" as const,
       container: null,
       excerpt: [],
     };

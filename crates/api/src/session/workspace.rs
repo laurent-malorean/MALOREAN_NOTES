@@ -1,5 +1,5 @@
 //! Les espaces de travail : en ajouter, en ouvrir un par son nom, rouvrir le dernier au lancement,
-//! en renommer, en retirer. La page désigne un espace par son nom ; seul l'ajout reçoit un dossier.
+//! en renommer, en retirer. L'interface désigne un espace par son nom ; seul l'ajout reçoit un dossier.
 
 use std::path::Path;
 
@@ -110,7 +110,7 @@ impl Session {
     }
 }
 
-/// Ce que la page apprend de l'espace de travail ouvert : son nom, et son dossier pour les images.
+/// Ce que l'interface apprend de l'espace de travail ouvert : son nom, et son dossier pour les images.
 pub(super) fn workspace_info(opened: &OpenedWorkspace) -> WorkspaceInfo {
     WorkspaceInfo {
         name: opened.workspace.name.as_str().to_owned(),
@@ -244,7 +244,7 @@ mod tests {
     }
 
     #[test]
-    fn bad_names_and_folders_from_the_page_are_refused() {
+    fn bad_names_and_folders_from_the_interface_are_refused() {
         let session = two();
         assert_eq!(
             session

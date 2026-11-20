@@ -20,7 +20,7 @@ impl Session {
     /// Surveille l'espace de travail ouvert, à la place du précédent : à chaque changement fait
     /// hors de l'application, le texte que l'application connaissait des notes changées est
     /// gardé en version, l'index relit ces notes, puis `announce` reçoit le changement, prêt à
-    /// envoyer à la page.
+    /// envoyer à l'interface.
     /// Rien n'est surveillé si la session n'a pas de surveillance.
     ///
     /// # Errors
@@ -50,7 +50,7 @@ impl Session {
                             "le texte d'avant le changement n'a pas pu être gardé"
                         );
                     }
-                    // L'index suit les fichiers avant que la page ne relise la liste.
+                    // L'index suit les fichiers avant que l'interface ne relise la liste.
                     if let Err(error) = RefreshIndex::new(&*store, &*index).execute() {
                         tracing::warn!(?error, "l'index n'a pas pu suivre le changement");
                     }

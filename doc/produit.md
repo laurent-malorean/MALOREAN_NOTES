@@ -21,9 +21,9 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 
 ## Principe : types de contenus
 
-- L'index gère des **types de contenu** : chaque élément indexé porte le sien, et ce à quoi il appartient (plus tard, le tableau d'une fiche de CRM, la carte mentale d'un nœud). Un fichier dira son type par la propriété `type:` de son en-tête ; sans elle, c'est une page.
-- **Pour l'instant, un seul type : la page**, celui de toutes les notes. Une note dont l'en-tête nomme un type qui n'existe pas encore reste une page : rien ne disparaît de la liste ni de la recherche.
-- Chaque résultat de recherche montre discrètement son type (« Page »).
+- L'index gère des **types de contenu** : chaque élément indexé porte le sien, et ce à quoi il appartient (plus tard, le kanban d'une carte de kanban, la carte mentale d'un nœud). Un fichier dira son type par la propriété `type:` de son en-tête ; sans elle, c'est une note.
+- **Pour l'instant, un seul type : la note**, celui de toutes les notes. Une note dont l'en-tête nomme un type qui n'existe pas encore reste du type note : rien ne disparaît de la liste ni de la recherche. Les types à venir : carte de kanban, carte mentale…
+- Chaque résultat de recherche montre discrètement son type (« Note »).
 
 ## Principe : tout se fait sans raccourci clavier
 

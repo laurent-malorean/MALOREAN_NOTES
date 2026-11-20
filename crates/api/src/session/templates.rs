@@ -1,4 +1,4 @@
-//! Les modèles de note de l'espace de travail ouvert, vus depuis la page.
+//! Les modèles de note de l'espace de travail ouvert, vus depuis l'interface.
 
 use application::use_cases::CreateNoteFromTemplate;
 use domain::{Folder, NotePath};

@@ -382,7 +382,7 @@ describe("pont vers Rust : pièces jointes", () => {
     ]);
   });
 
-  it("ouvre la fenêtre d'impression sur la page", async () => {
+  it("ouvre la fenêtre d'impression sur l'interface", async () => {
     const calls = recordCalls(null);
     await bridge.printPage();
     expect(calls).toEqual([{ command: "print_page", args: {} }]);

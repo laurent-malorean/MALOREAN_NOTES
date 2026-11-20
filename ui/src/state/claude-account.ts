@@ -1,6 +1,6 @@
 // Compte Claude de la colonne Claude Code : avec quel compte Claude Code est connecté, et où en est
 // une connexion ou une déconnexion lancée depuis la colonne (fiche 0032). Le compte n'est gardé
-// qu'à l'écran : jamais écrit dans le stockage de la page.
+// qu'à l'écran : jamais écrit dans le stockage de l'interface.
 import type { ClaudeStatusItem } from "../bridge";
 
 /** Ce que fait le compte Claude : rien (avec le message de la dernière fin), se déconnecter, se connecter. */

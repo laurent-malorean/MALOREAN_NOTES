@@ -81,7 +81,7 @@ const shared = createSharedNotes({
 });
 const writing = connectWritingModes(layout, { columns, storage: localStorage });
 const settings = connectSettings(
-  { page: document.documentElement, ...layout },
+  { documentElement: document.documentElement, ...layout },
   {
     columns,
     storage: localStorage,

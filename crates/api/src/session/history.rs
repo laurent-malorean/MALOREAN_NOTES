@@ -244,7 +244,7 @@ mod tests {
     }
 
     #[test]
-    fn a_bad_version_or_note_from_the_page_is_refused() {
+    fn a_bad_version_or_note_from_the_interface_is_refused() {
         let Opened { session, .. } = opened(&[("a.md", "# A")]);
         assert_eq!(
             session.compare_version("a.md", "../x").unwrap_err().message,

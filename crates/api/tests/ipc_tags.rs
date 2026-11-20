@@ -91,7 +91,7 @@ const NOTES: &[(&str, &str)] = &[
 ];
 
 #[test]
-fn tags_and_tagged_notes_are_listed_with_the_argument_names_used_by_the_page() {
+fn tags_and_tagged_notes_are_listed_with_the_argument_names_used_by_the_interface() {
     let window = window(NOTES);
     let tags = call(&window, "list_tags", json!({}));
     assert_eq!(tags, json!([{ "name": "perso", "count": 1 }]));
@@ -101,7 +101,7 @@ fn tags_and_tagged_notes_are_listed_with_the_argument_names_used_by_the_page() {
 }
 
 #[test]
-fn recent_notes_are_listed_with_the_argument_names_used_by_the_page() {
+fn recent_notes_are_listed_with_the_argument_names_used_by_the_interface() {
     let window = window(NOTES);
     let args = json!({ "paths": ["b.md", "a.md"] });
     assert_eq!(
@@ -112,7 +112,7 @@ fn recent_notes_are_listed_with_the_argument_names_used_by_the_page() {
 }
 
 #[test]
-fn the_index_is_rebuilt_on_request_of_the_page() {
+fn the_index_is_rebuilt_on_request_of_the_interface() {
     let closed = unopened(NOTES);
     let refused = try_call(&closed, "rebuild_index", json!({})).unwrap_err();
     assert!(

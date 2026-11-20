@@ -81,7 +81,7 @@ describe("colonne Claude Code : le garde-fou du web", () => {
     expect(notice.getAttribute("role")).toBe("alert");
     expect(notice.querySelector(".claude-held-back-text")?.textContent).toBe(WEB_HELD_BACK);
     expect(WEB_HELD_BACK).toBe(
-      "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page lui aurait glissé des instructions. Autoriser ses modifications ?",
+      "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page web lui aurait glissé des instructions. Autoriser ses modifications ?",
     );
     const allow = notice.querySelector<HTMLButtonElement>(".claude-allow-changes");
     expect(allow?.textContent).toBe("Autoriser ses modifications");

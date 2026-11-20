@@ -16,7 +16,7 @@ function setup(
   const root = document.createElement("div");
   const layout = createLayout(root);
   document.body.replaceChildren(root);
-  const page = document.createElement("div");
+  const documentElement = document.createElement("div");
   const columns = fakeColumns();
   const pane = fakePane();
   columns.panes.set(0, pane);
@@ -27,30 +27,30 @@ function setup(
       void (type === "change" && listeners.push(listener)),
   };
   const settings = connectSettings(
-    { page, settings: layout.settings, settingsButton: layout.settingsButton },
+    { documentElement, settings: layout.settings, settingsButton: layout.settingsButton },
     { columns: columns.open, storage, systemDark, groups },
   );
-  return { layout, page, pane, items, systemDark, listeners, settings };
+  return { layout, documentElement, pane, items, systemDark, listeners, settings };
 }
 
 describe("réglages", () => {
-  it("les réglages gardés s'appliquent à la page et aux colonnes", () => {
+  it("les réglages gardés s'appliquent à l'interface et aux colonnes", () => {
     const t = setup({
       "malorean.settings": JSON.stringify({ charactersPerPage: 900, font: "mono" }),
     });
-    expect(t.page.dataset.font).toBe("mono");
+    expect(t.documentElement.dataset.font).toBe("mono");
     expect(t.pane.editor.setCharactersPerPage).toHaveBeenCalledWith(900);
     const added = fakePane();
     t.settings.configure(added.editor);
     expect(added.editor.setCharactersPerPage).toHaveBeenCalledWith(900);
   });
 
-  it("en apparence automatique, la page suit le Mac", () => {
+  it("en apparence automatique, l'interface suit le Mac", () => {
     const t = setup();
-    expect(t.page.dataset.appearance).toBe("light");
+    expect(t.documentElement.dataset.appearance).toBe("light");
     t.systemDark.matches = true;
     t.listeners.forEach((listener) => listener());
-    expect(t.page.dataset.appearance).toBe("dark");
+    expect(t.documentElement.dataset.appearance).toBe("dark");
   });
 
   it("le bouton ouvre la fenêtre des réglages ; un changement s'applique et se garde", () => {

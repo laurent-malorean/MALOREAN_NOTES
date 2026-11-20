@@ -23,7 +23,7 @@ folder: string,
  */
 contentType: ContentTypeItem, 
 /**
- * Le chemin de l'élément auquel elle appartient ; `null` pour une page.
+ * Le chemin de l'élément auquel elle appartient ; `null` pour une note.
  */
 container: string | null, 
 /**

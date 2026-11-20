@@ -1,4 +1,4 @@
-//! Les pièces jointes des notes de l'espace de travail ouvert, vues depuis la page.
+//! Les pièces jointes des notes de l'espace de travail ouvert, vues depuis l'interface.
 
 use application::use_cases::{AttachFile, AttachmentSource, LinkDestination, OpenLinkTarget};
 use domain::NotePath;
@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn refusals_reach_the_page_as_messages() {
+    fn refusals_reach_the_interface_as_messages() {
         let session = opened(&[("voyage.md", "# Voyage")]);
         let dropped = AttachmentSource::Dropped { file_name: "a.txt" };
         let refused = session.attach_file("voyage.md", dropped, b"x").unwrap_err();

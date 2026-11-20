@@ -1,4 +1,4 @@
-//! Commandes Tauri : chacune passe le travail à un fil d'arrière-plan, pour ne jamais figer la page.
+//! Commandes Tauri : chacune passe le travail à un fil d'arrière-plan, pour ne jamais figer l'interface.
 
 use std::sync::Arc;
 
@@ -13,7 +13,7 @@ use crate::{
     SavedNote, SearchResultItem, Session, TagItem, TrashInfo, WorkspaceNoteItem,
 };
 
-/// Événement envoyé à la page quand l'espace de travail change hors de l'application ;
+/// Événement envoyé à l'interface quand l'espace de travail change hors de l'application ;
 /// il porte un [`crate::WorkspaceChanged`].
 pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
@@ -387,7 +387,7 @@ pub async fn empty_trash(session: SharedSession<'_>) -> Result<(), ApiError> {
     in_background(move || session.empty_trash()).await
 }
 
-/// En-têtes d'une pièce jointe envoyée par la page, encodés comme une adresse (`%XX`).
+/// En-têtes d'une pièce jointe envoyée par l'interface, encodés comme une adresse (`%XX`).
 /// Le chemin de la note qui la reçoit :
 pub const NOTE_HEADER: &str = "x-note";
 /// Le nom d'un fichier glissé :

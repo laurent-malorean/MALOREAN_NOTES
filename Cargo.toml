@@ -17,7 +17,7 @@ api = { path = "crates/api" }
 # Surveillance du dossier de l'espace de travail (changements faits hors de l'application).
 notify-debouncer-mini = "0.6"
 jiff = "1"
-# Imprimer la page en PDF par WebKit (fiche 0025), copier dans le presse-papiers (fiche 0027) ;
+# Imprimer l'interface en PDF par WebKit (fiche 0025), copier dans le presse-papiers (fiche 0027) ;
 # déjà tirés par Tauri (wry), sur macOS.
 objc2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSObject", "NSString", "NSURL", "NSDictionary"] }
@@ -34,7 +34,7 @@ tauri-build = "2"
 tauri-plugin-dialog = "2"
 # Ouvrir une pièce jointe (PDF) avec l'application du Mac.
 tauri-plugin-opener = "2"
-# Décoder les en-têtes d'une pièce jointe envoyée par la page.
+# Décoder les en-têtes d'une pièce jointe envoyée par l'interface.
 percent-encoding = "2"
 tempfile = "3"
 thiserror = "2"

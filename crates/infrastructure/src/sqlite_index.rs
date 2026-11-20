@@ -12,8 +12,9 @@ use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, ToSql, params, params_from_iter};
 
 /// Le format de la base : à changer à chaque changement du schéma ; un index d'un autre format
-/// est reconstruit. 2 : le type de contenu et le conteneur de chaque note (fiche 0034).
-pub const FORMAT_VERSION: i32 = 2;
+/// est reconstruit. 2 : le type de contenu et le conteneur de chaque note (fiche 0034). 3 : le
+/// type des notes se nomme « note », et non plus « page » (fiche 0037).
+pub const FORMAT_VERSION: i32 = 3;
 const FILE_PREFIX: &str = "index-";
 const FILE_SUFFIX: &str = ".sqlite";
 /// Séparateur des étiquettes d'une note dans sa colonne : une étiquette tient sur une ligne.
@@ -28,7 +29,7 @@ const SETTINGS: &str = "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; 
 
 /// Le texte de chaque note est gardé sans majuscule ni accent (`folded`), tel que la recherche
 /// le compare ; la table plein texte le découpe en trigrammes, sans rien y changer. Le type de
-/// contenu est gardé par son nom ; le conteneur, par son chemin, vide pour une page.
+/// contenu est gardé par son nom ; le conteneur, par son chemin, vide pour une note.
 const SCHEMA: &str = "
 CREATE TABLE notes (
     id INTEGER PRIMARY KEY,
@@ -85,7 +86,7 @@ impl IndexOpener for SqliteIndexes {
     }
 }
 
-/// L'empreinte FNV-1a sur 64 bits : stable, contrairement au hachage de la bibliothèque standard.
+/// L'empreinte FNV-1a sur 64 bits : stable, contrairement au hachage fourni par `std`.
 fn stable_hash(text: &str) -> u64 {
     const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     const PRIME: u64 = 0x0100_0000_01b3;
@@ -474,7 +475,7 @@ mod tests {
                 connection.execute(
                     "INSERT INTO notes (path, folder, title, modified, size, pinned, tags, type, \
                      container, content) VALUES ('CRM/carte.md', 'CRM', 'Carte', 1, 1, 0, '', \
-                     'page', 'CRM/tableau.md', '# Carte')",
+                     'note', 'CRM/tableau.md', '# Carte')",
                     [],
                 )
             })
@@ -484,14 +485,14 @@ mod tests {
             all[0].container(),
             Some(&NotePath::parse("CRM/tableau.md").unwrap())
         );
-        assert_eq!(all[0].content_type(), ContentType::Page);
+        assert_eq!(all[0].content_type(), ContentType::Note);
     }
 
     #[test]
     fn an_unknown_type_or_container_cannot_be_read() {
         let dir = TempDir::new().unwrap();
         let index = SqliteIndex::open(&dir.path().join("index.sqlite")).unwrap();
-        for (kind, container) in [("kanban", "NULL"), ("page", "'../hors.md'")] {
+        for (kind, container) in [("page", "NULL"), ("note", "'../hors.md'")] {
             index
                 .run(|connection| {
                     connection.execute("DELETE FROM notes", [])?;

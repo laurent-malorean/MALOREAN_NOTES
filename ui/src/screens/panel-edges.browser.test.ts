@@ -28,7 +28,7 @@ function mount(storage = memoryStorage()) {
 }
 
 const folders = () => layout.mainArea.querySelector(".folders") as HTMLElement;
-const notes = () => layout.mainArea.querySelector(".sidebar") as HTMLElement;
+const notes = () => layout.mainArea.querySelector(".notes-panel") as HTMLElement;
 const edgeOf = (panel: HTMLElement) => panel.querySelector(".panel-edge") as HTMLElement;
 const box = (element: HTMLElement) => element.getBoundingClientRect();
 const width = (element: HTMLElement) => Math.round(box(element).width);
@@ -114,7 +114,7 @@ describe("bord des panneaux latéraux", () => {
     expect(width(notes())).toBe(360);
     expect(storage.items.get("malorean.panel-width.notes")).toBe("360");
     // La largeur posée est celle prise : la fenêtre élargie, le panneau ne bondit pas.
-    expect(layout.mainArea.style.getPropertyValue("--sidebar-width")).toBe("360px");
+    expect(layout.mainArea.style.getPropertyValue("--notes-panel-width")).toBe("360px");
     drag(notes(), box(notes()).right - 10);
     expect(width(notes())).toBe(350);
   });
