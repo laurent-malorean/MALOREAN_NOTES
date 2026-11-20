@@ -22,3 +22,7 @@ On veut relier les notes entre elles, comme dans Obsidian, et voir depuis une no
 - Changer le titre d'une note ne met pas à jour les liens qui la visent : ils ne mènent plus nulle part, et l'application le signale au Cmd+clic. Mettre les liens à jour au renommage pourra venir ensuite.
 - Le temps de calcul grandit avec la bibliothèque, comme la recherche ; un index commun pourra remplacer la relecture (noté dans `todo.md`).
 - L'interface reprend la lecture des liens pour les colorer ; ses tests suivent les mêmes cas que ceux du domaine.
+
+## Révision du 20/11 — marques cachées dans l'aperçu en direct
+
+Les crochets `[[ ]]` restaient visibles, en gris, et l'aperçu en direct en cachait une partie seulement (il lisait `[titre]` comme un lien Markdown) : on voyait « [tomy » puis « ] », parfois coupés en fin de ligne. Désormais les marques d'un lien entre notes (`[[`, `]]` et `titre|` devant le texte montré) sont cachées tant que le curseur ne touche pas le lien ; elles réapparaissent, en discret, dès que le curseur y entre ou s'arrête juste avant ou juste après (après un clic juste à côté du lien, par exemple), et seulement pour ce lien. Sans le focus, elles sont toujours cachées, comme les autres marques. Un test d'écran vérifie dans WebKit qu'un lien en fin de ligne n'est jamais coupé, marques visibles ou non.

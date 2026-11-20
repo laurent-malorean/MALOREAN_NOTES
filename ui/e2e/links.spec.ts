@@ -54,3 +54,28 @@ test("un clic qui glisse sur un lien sélectionne du texte sans l'ouvrir", async
   expect(selected.length).toBeGreaterThan(0);
   await expect(page.locator(".cm-line").first()).toHaveText("Lundi");
 });
+
+test("les crochets d'un lien entre notes se cachent, et reviennent quand le curseur y entre", async ({
+  page,
+}) => {
+  await launch(page, {
+    "courses.md": { content: "# Courses\npain", modified: 1 },
+    "lundi.md": { content: "# Lundi\nPenser aux [[courses]] demain", modified: 2 },
+  });
+  const line = page.locator(".cm-line").nth(1);
+  await expect(line).toHaveText("Penser aux courses demain");
+  // Un clic juste après le lien place le curseur contre lui : ses crochets reviennent.
+  const link = await page.locator(".cm-note-link").boundingBox();
+  if (!link) throw new Error("lien absent de l'écran");
+  await page.mouse.click(link.x + link.width + 1, link.y + link.height / 2);
+  await expect(line).toHaveText("Penser aux [[courses]] demain");
+  await waitForNote(page, "Lundi");
+  // Plus loin sur la ligne, ils se cachent de nouveau.
+  await page.keyboard.press("End");
+  await expect(line).toHaveText("Penser aux courses demain");
+  // Revenu dans le lien avec les flèches, on modifie son texte.
+  for (let i = 0; i < " demain".length + 3; i++) await page.keyboard.press("ArrowLeft");
+  await expect(line).toHaveText("Penser aux [[courses]] demain");
+  await page.keyboard.type("x");
+  await expect(line).toHaveText("Penser aux [[coursexs]] demain");
+});

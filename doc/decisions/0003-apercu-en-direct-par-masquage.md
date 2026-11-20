@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-16
 - **Statut** : acceptée
+- **Note (20/11/2026)** : les marques d'un lien entre notes sont cachées tant que le curseur ne touche pas le lien : voir la révision du 20/11 de la fiche 0016.
 
 ## Contexte
 

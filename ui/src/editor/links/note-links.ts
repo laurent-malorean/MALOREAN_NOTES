@@ -66,8 +66,20 @@ export function noteLinkFinder(open: (title: string) => void): LinkFinder {
 }
 
 const linkMark = Decoration.mark({ class: "cm-note-link-mark" });
+const hiddenMark = Decoration.replace({});
 const linkText = Decoration.mark({ class: "cm-note-link" });
 
+/**
+ * Le curseur, ou la sélection, touche-t-il le lien de `from` à `to` (juste avant ou juste après
+ * compris) ? Jamais sans le focus : comme l'aperçu en direct, rien n'est alors en cours d'écriture.
+ */
+function touched(view: EditorView, from: number, to: number): boolean {
+  // L'éditeur n'a qu'une sélection : les sélections multiples ne sont pas permises.
+  const { main } = view.state.selection;
+  return view.hasFocus && main.from <= to && main.to >= from;
+}
+
+/** Le texte montré de chaque lien ; ses marques, en discret si le curseur le touche, cachées sinon. */
 function decorations(view: EditorView): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
   for (const { from, to } of view.visibleRanges) {
@@ -75,9 +87,10 @@ function decorations(view: EditorView): DecorationSet {
     const start = line.from;
     const text = view.state.sliceDoc(start, view.state.doc.lineAt(to).to);
     for (const link of noteLinksIn(text)) {
-      builder.add(start + link.from, start + link.textFrom, linkMark);
+      const mark = touched(view, start + link.from, start + link.to) ? linkMark : hiddenMark;
+      builder.add(start + link.from, start + link.textFrom, mark);
       builder.add(start + link.textFrom, start + link.textTo, linkText);
-      builder.add(start + link.textTo, start + link.to, linkMark);
+      builder.add(start + link.textTo, start + link.to, mark);
     }
   }
   return builder.finish();
@@ -90,8 +103,9 @@ const linkStyle = ViewPlugin.fromClass(
       this.decorations = decorations(view);
     }
     update(update: ViewUpdate) {
-      // Stryker disable next-line ConditionalExpression: optimisation — tout redécorer à chaque mise à jour donnerait le même affichage.
-      if (update.docChanged || update.viewportChanged) this.decorations = decorations(update.view);
+      // Stryker disable next-line ConditionalExpression,LogicalOperator: optimisation — tout redécorer à chaque mise à jour donnerait le même affichage.
+      if (update.docChanged || update.viewportChanged || update.selectionSet || update.focusChanged)
+        this.decorations = decorations(update.view);
     }
   },
   { decorations: (plugin) => plugin.decorations },
