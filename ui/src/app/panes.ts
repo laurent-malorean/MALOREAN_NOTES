@@ -2,7 +2,13 @@
 import type { Editor } from "../editor/editor";
 import { imageAddress } from "../editor/image-address";
 import type { ColumnParts } from "../screens/columns-view";
-import { createPane, type Pane, type PaneBackend, type PaneEvents } from "../screens/note-pane";
+import {
+  createPane,
+  type NotebookActions,
+  type Pane,
+  type PaneBackend,
+  type PaneEvents,
+} from "../screens/note-pane";
 import type { SharedNotes } from "../screens/shared-notes";
 import { folderOf } from "../state/folders";
 
@@ -10,6 +16,8 @@ export interface PanesDeps {
   readonly backend: PaneBackend & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
+  /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
+  readonly notebook: NotebookActions;
   /** Le dossier de l'espace de travail ouvert. */
   workspacePath(): string;
   /** Règle l'éditeur d'une nouvelle colonne comme ceux des autres : mode focus, caractères par page. */
@@ -34,6 +42,7 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       backend: deps.backend,
       shared: deps.shared,
       events: deps.events,
+      notebook: deps.notebook,
       resolveImage: (src, note) =>
         imageIn(deps.workspacePath(), note, src, deps.backend.fileAddress),
     });

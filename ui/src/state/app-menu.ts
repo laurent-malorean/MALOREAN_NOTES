@@ -43,6 +43,8 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "new-note" },
       { command: "new-note-from-template", label: "Nouvelle note depuis un modèle…" },
       { command: "daily-note" },
+      { command: "new-research-notebook", label: "Nouveau cahier de recherche…" },
+      { command: "add-entry", label: "Ajouter au cahier…" },
       { command: "new-folder" },
       "separator",
       { command: "quick-open", label: "Ouverture rapide…" },

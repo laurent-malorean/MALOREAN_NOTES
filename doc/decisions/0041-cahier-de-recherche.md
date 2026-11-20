@@ -50,6 +50,12 @@ type: cahier-de-recherche
 
 ### L'interface
 
+- **Lecture seule** (`editor/research-notebook.ts`) : l'éditeur reconnaît un cahier à son en-tête, comme Rust ; `EditorState.readOnly`, et un filtre qui refuse toute modification (frappe, collage, pièce jointe déposée, mise en forme, aide à l'écriture, remplacement) sauf celles venues d'ailleurs (version relue sur le disque, frappe d'une autre colonne). Sélectionner, copier, chercher, suivre un lien restent possibles. Le titre ne se tape donc plus : il est demandé à la création.
+- **Le « + »** : une barre en haut du cahier (« Cahier de recherche : on n'y fait qu'ajouter », bouton « + », « Ajouter une entrée » au survol) ouvre la fenêtre de saisie pour ce cahier.
+- **Fenêtre de saisie** (`screens/entry-window.ts`) : le cahier (une liste, s'il y en a plusieurs et qu'on ne vient pas d'un « + » ; celui de la colonne active choisi d'abord), « Corrige » (« Aucune : nouvelle entrée », puis les entrées du cahier, la plus récente d'abord, par leur moment et le début de leur texte), le texte sur plusieurs lignes (Entrée passe à la ligne), « Annuler », « Ajouter ». L'heure est celle du clic sur « Ajouter », prise par Rust.
+- **Après l'ajout** : la liste est relue, chaque colonne qui montre le cahier relit sa version, la colonne active montre l'entrée ajoutée en haut de l'écran, et un message dit « Entrée ajoutée à « Levures » ».
+- **Commandes** : « Nouveau cahier de recherche » (titre demandé, cahier créé dans le dossier affiché, ouvert) et « Ajouter au cahier » (sans cahier dans l'espace de travail, un message dit comment en créer un), dans la palette et le menu Fichier : tout se fait à la souris. Aucun raccourci.
+- **Lien vers une entrée** : un clic sur `[…](#2026-11-20-09h42)` dans un cahier demande ses entrées à Rust et montre en haut de l'écran celle de cette ancre (« Aucune entrée « … » dans ce cahier » sinon) ; ce lien ne part jamais vers Rust comme une pièce jointe.
 - **Recherche** : chaque résultat montre son type, suivi du titre de son conteneur : « Cahier de recherche », « Entrée · Levures ». Un clic sur une entrée ouvre son cahier.
 
 ### Claude
@@ -60,12 +66,13 @@ type: cahier-de-recherche
 ## Conséquences
 
 - Le premier lancement de cette version relit tout l'espace de travail une fois (format 4).
-- Un outil hors de l'application (ou les outils de fichiers de Claude, malgré la consigne) peut encore modifier le fichier : le fichier reste la seule vérité.
+- Le titre d'un cahier ne se change plus dans l'éditeur ; Claude peut le renommer (`rename_note`). Un outil hors de l'application (ou les outils de fichiers de Claude, malgré la consigne) peut encore modifier le fichier : la lecture seule est celle de l'éditeur, le fichier reste la seule vérité.
 - Les entrées d'un cahier prennent la date de modification du cahier : dans la recherche triée par date, elles suivent leur cahier, dans l'ordre du fichier.
+- Raccourci proposé (non choisi) : Cmd+Maj+A pour « Ajouter au cahier ».
 
 ## Tests
 
 - Domaine : format d'un nouveau cahier, titres créés au besoin (jour, mois, année, `1er`), entrées du même jour à la suite, plusieurs lignes et lignes vides, fins de ligne `\r\n`, texte vide et note ordinaire refusés, lecture des entrées (ancres, rangs, moments, numéros de ligne, jour incomplet, lignes mal formées), correction et ancre absente, entrées indexées.
 - Application : création, ajout à l'heure de l'horloge, correction, refus sans rien écrire, cahiers par titre et entrées. Contrat de l'index (faux et SQLite) : type cahier, entrées absentes des listes, cherchées seules avec leur conteneur, suivies quand le cahier est gardé de nouveau, retiré ou effacé ; base des formats 3 et 4 incomplète reconstruite.
 - Pont : les commandes par leurs arguments ; une entrée trouvée par la recherche avec son type et son cahier. Outils de Claude : contrat de `add_entry` par son protocole (ajout, correction, refus, champs exigés), recherche par `cahier-de-recherche`, garde-fou du web et `--allowed-tools`.
-- Interface : le type et le cahier d'une entrée sur les résultats de recherche ; « Ajout au cahier » dans la colonne Claude Code.
+- Interface : lecture seule et « + » de l'éditeur, fenêtre de saisie, module des cahiers, lien vers une entrée, résultats de recherche ; parcours Playwright à la souris (créer par le menu, lecture seule, « + », ajout rapide avec choix du cahier, correction, recherche d'une entrée).

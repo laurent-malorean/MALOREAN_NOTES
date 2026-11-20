@@ -1,9 +1,10 @@
 // Une colonne à l'écran : son éditeur, la note qu'il montre, partagée avec les autres colonnes.
-import type { AttachmentOrigin } from "../bridge";
+import type { AttachmentOrigin, EntryItem } from "../bridge";
 import type { AttachedFile } from "../bridge/generated/AttachedFile";
 import type { LinkingNoteItem } from "../bridge/generated/LinkingNoteItem";
 import { createEditor, type Editor } from "../editor/editor";
 import type { OpenNoteLink } from "../editor/links/note-links";
+import { lineStart } from "../state/research-notebook";
 import { renderBacklinks } from "./backlinks-view";
 import type { ColumnParts } from "./columns-view";
 import type { SharedNotes, Viewer } from "./shared-notes";
@@ -28,6 +29,14 @@ export interface PaneEvents {
   readonly error: (error: unknown) => void;
 }
 
+/** Ce qu'une colonne fait d'un cahier de recherche qu'elle montre (fiche 0041). */
+export interface NotebookActions {
+  /** Ajouter une entrée au cahier : son « + ». */
+  add(path: string): void;
+  /** Ses entrées, pour montrer celle que vise un lien `#ancre`. */
+  entries(path: string): Promise<EntryItem[]>;
+}
+
 export interface PaneOptions {
   readonly backend: PaneBackend;
   readonly events: PaneEvents;
@@ -35,6 +44,8 @@ export interface PaneOptions {
   readonly shared: SharedNotes;
   /** L'adresse chargeable d'une image écrite dans la note `note`. */
   readonly resolveImage: (src: string, note: string | null) => string;
+  /** Sans elles, un cahier de recherche reste en lecture seule, sans « + » ni lien vers une entrée. */
+  readonly notebook?: NotebookActions;
 }
 
 export interface Pane {
@@ -58,6 +69,9 @@ export interface Pane {
   destroy(): void;
 }
 
+/** Ce qui commence la cible d'un lien vers une entrée du cahier montré : `#2026-11-20-09h42`. */
+const ANCHOR_MARK = "#";
+
 /** Une colonne : son éditeur et la note qu'il montre ; le texte et l'enregistrement sont partagés. */
 class NotePane implements Pane, Viewer {
   readonly editor: Editor;
@@ -67,7 +81,7 @@ class NotePane implements Pane, Viewer {
     private readonly parts: ColumnParts,
     private readonly options: PaneOptions,
   ) {
-    const { backend, events, shared } = options;
+    const { backend, events, shared, notebook } = options;
     this.editor = createEditor(
       parts.element,
       (content, changes) => shared.typed(this, changes, content),
@@ -77,11 +91,17 @@ class NotePane implements Pane, Viewer {
         attachmentActions: {
           attach: (file, origin) => this.attach(file, origin),
           open: (target) => {
-            if (this.shown !== null)
-              void backend.openLinkTarget(this.shown, target).catch(events.error);
+            if (this.shown === null) return;
+            const opening =
+              notebook && target.startsWith(ANCHOR_MARK)
+                ? this.showEntry(notebook, this.shown, target.slice(ANCHOR_MARK.length))
+                : backend.openLinkTarget(this.shown, target);
+            void opening.catch(events.error);
           },
         },
         openLink: events.openLink,
+        // Le « + » n'apparaît que sur un cahier montré : il y a toujours une note.
+        addEntry: notebook && (() => notebook.add(this.shown as string)),
       },
     );
   }
@@ -127,6 +147,15 @@ class NotePane implements Pane, Viewer {
   destroy(): void {
     void this.options.shared.leave(this).catch(this.options.events.error);
     this.editor.destroy();
+  }
+
+  /** Montre en haut de l'écran l'entrée du cahier `path` que désigne l'ancre `anchor`. */
+  private async showEntry(notebook: NotebookActions, path: string, anchor: string): Promise<void> {
+    const entry = (await notebook.entries(path)).find((e) => e.anchor === anchor);
+    if (entry === undefined) throw { message: `Aucune entrée « ${anchor} » dans ce cahier.` };
+    if (this.shown !== path) return;
+    const at = lineStart(this.editor.content(), entry.line);
+    this.editor.restore({ anchor: at, head: at, top: at, offset: 0 });
   }
 
   /** Joint un fichier : ce qui est tapé est enregistré d'abord, pour viser le vrai nom de la note. */

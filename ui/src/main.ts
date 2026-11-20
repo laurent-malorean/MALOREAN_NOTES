@@ -20,6 +20,7 @@ import { createWorkspaces } from "./app/workspaces";
 import { createMessages } from "./app/messages";
 import { paneMaker } from "./app/panes";
 import { createRecentNotes } from "./app/recent-notes";
+import { createResearchNotebooks } from "./app/research-notebook";
 import { savingEvents } from "./app/saving";
 import { screenActions } from "./app/screen-actions";
 import { createSearch } from "./app/search";
@@ -85,9 +86,7 @@ const writing = connectWritingModes(layout, { columns, storage: localStorage });
 const settings = connectSettings(
   { documentElement: document.documentElement, ...layout },
   {
-    columns,
-    storage: localStorage,
-    systemDark: window.matchMedia("(prefers-color-scheme: dark)"),
+    ...{ columns, storage: localStorage, systemDark: matchMedia("(prefers-color-scheme: dark)") },
     groups: () => [...templates.settingsGroups(), ...journal.settingsGroups()],
   },
 );
@@ -97,6 +96,9 @@ const templates = createTemplates({
 });
 const journal = createJournal({
   ...{ backend: bridge, storage: localStorage, screen, columns, workspace },
+});
+const notebooks = createResearchNotebooks({
+  ...{ ...messages, backend: bridge, screen, columns, workspace, dialog: layout.confirmation },
 });
 const exporting = createExport({
   ...{ backend: bridge, columns, workspacePath: workspace.path, picker: layout.picker },
@@ -116,26 +118,24 @@ const workspaces = createWorkspaces({
 const newPane = paneMaker({
   ...{ backend: bridge, shared, workspacePath: workspace.path },
   events: {
-    openNote: (path) => actions.open(path),
+    ...{ openNote: (path) => actions.open(path), error: messages.error },
     openLink: (title, inNewTab) => run(workspace.followLink(title, inNewTab)),
-    error: messages.error,
   },
+  notebook: { add: (path) => run(notebooks.add(path)), entries: bridge.listEntries },
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),
 });
 const actions: ScreenActions = screenActions({
-  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, exporting },
-  ...{ history, run },
+  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, exporting, history, run },
 });
-
 connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders });
 const windowDisplay = connectWindowDisplay(layout, {
-  ...{ window: bridge, storage: localStorage, error: messages.error },
+  ...{ ...messages, window: bridge, storage: localStorage },
 });
 const commands = connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField, exporting, assistant },
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent, history },
-  claude,
+  ...{ claude, notebooks },
 });
 const formatBar = connectFormatBar(layout.formatBar, commands);
 const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...messages });

@@ -11,6 +11,7 @@ describe("éditeur d'une colonne", () => {
       events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
     });
     const configure = vi.fn();
+    const notebook = { add: vi.fn(), entries: vi.fn() };
     const addresses: string[] = [];
     const make = paneMaker({
       backend: {
@@ -19,6 +20,7 @@ describe("éditeur d'une colonne", () => {
       },
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
+      notebook,
       workspacePath: () => "/lib",
       configure,
     });
@@ -30,6 +32,33 @@ describe("éditeur d'une colonne", () => {
     expect(configure).toHaveBeenCalledWith(pane.editor);
     await pane.load("voyages/rome.md");
     await expect.poll(() => addresses).toContain("/lib/voyages/vue.png");
+    pane.destroy();
+  });
+
+  it("reçoit ce qu'une colonne fait d'un cahier de recherche : son « + » vise le cahier montré", async () => {
+    const notebookText = "---\ntype: cahier-de-recherche\n---\n# Levures\n";
+    const fake = fakeBackend({ "levures.md": notebookText });
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
+    });
+    const notebook = { add: vi.fn(), entries: vi.fn() };
+    const make = paneMaker({
+      backend: { ...fake.backend, fileAddress: (path) => path },
+      shared,
+      events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
+      notebook,
+      workspacePath: () => "/lib",
+      configure: vi.fn(),
+    });
+    const element = document.createElement("section");
+    const backlinks = document.createElement("nav");
+    element.append(backlinks);
+    document.body.replaceChildren(element);
+    const pane = make({ element, backlinks });
+    await pane.load("levures.md");
+    element.querySelector<HTMLButtonElement>(".notebook-add")?.click();
+    expect(notebook.add).toHaveBeenCalledWith("levures.md");
     pane.destroy();
   });
 });
