@@ -33,7 +33,17 @@ const summary = (tokens: number, failure: string | null = null) =>
 
 const asked = messageSent(NEW_CONVERSATION, "Range mes notes");
 
+const LOAD_EVENTS: ClaudeEventItem[] = [
+  { kind: "modelUsed", model: "claude-opus-5-5" },
+  { kind: "usageLimits", reached: false, windows: [] },
+  { kind: "contextFilled", used: 1, size: 2 },
+];
+
 describe("conversation de la colonne Claude Code", () => {
+  it("la charge annoncée ne s'écrit pas dans la conversation", () => {
+    for (const event of LOAD_EVENTS) expect(play(asked, event)).toEqual(asked);
+  });
+
   it("le message de l'utilisateur commence un tour", () => {
     expect(asked).toEqual({
       entries: [{ kind: "user", text: "Range mes notes", notes: [] }],

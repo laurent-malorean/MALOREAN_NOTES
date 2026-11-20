@@ -522,7 +522,7 @@ describe("colonne Claude Code : la barre de saisie", () => {
 
   it("la pastille des sous-agents en cours déplie la carte des agents", () => {
     const agentsChip = chip(".claude-agents-chip");
-    expect(agentsChip.hidden).toBe(true);
+    expect(agentsChip.textContent).toBe("● 0 agent");
     send("Compte");
     announce({
       kind: "actionStarted",
@@ -532,7 +532,6 @@ describe("colonne Claude Code : la barre de saisie", () => {
       tool: null,
       target: "Compter",
     });
-    expect(agentsChip.hidden).toBe(false);
     expect(agentsChip.textContent).toBe("● 1 agent");
     agentsChip.click();
     expect(find<HTMLDetailsElement>(".claude-agents").open).toBe(true);
@@ -544,7 +543,7 @@ describe("colonne Claude Code : la barre de saisie", () => {
       tokens: 1,
       actions: 0,
     });
-    expect(agentsChip.hidden).toBe(true);
+    expect(agentsChip.textContent).toBe("● 0 agent");
   });
 });
 

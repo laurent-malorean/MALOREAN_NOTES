@@ -111,5 +111,61 @@ test("la pastille des sous-agents en cours déplie la carte des agents", async (
   await agents.click();
   await expect(column(page).locator(".claude-agent-tree").first()).toBeVisible();
   await column(page).getByRole("button", { name: "Arrêter" }).click();
-  await expect(agents).toBeHidden();
+  await expect(agents).toHaveText("● 0 agent");
+});
+
+test("sans sous-agent, la pastille « ● 0 agent » reste et déplie une carte qui le dit", async ({
+  page,
+}) => {
+  await launch(page);
+  await openColumn(page);
+  const agents = column(page).locator(".claude-agents-chip");
+  await expect(agents).toHaveText("● 0 agent");
+  await agents.click();
+  await expect(column(page).locator(".claude-agents-empty")).toHaveText(
+    "Aucun sous-agent lancé dans cette conversation.",
+  );
+  await column(page).locator(".claude-agents-summary").click();
+  await expect(column(page).locator(".claude-agents")).toBeHidden();
+});
+
+test("après une réponse : version du modèle, limite d'utilisation et contexte, détaillés au survol", async ({
+  page,
+}) => {
+  await launch(page);
+  await openColumn(page);
+  const limit = column(page).locator(".claude-limit");
+  const context = column(page).locator(".claude-context");
+  await expect(limit).toBeHidden();
+  await expect(context).toBeHidden();
+  await input(page).fill("Écris un plan");
+  await column(page).getByRole("button", { name: "Envoyer" }).click();
+  await expect(column(page).locator(".claude-summary")).toBeVisible();
+  await expect(settings(page)).toHaveText("Opus 5.5");
+  await expect(limit).toHaveText("Session 16 % · 59 min");
+  await expect(limit).toHaveAttribute("data-level", "normal");
+  await expect(limit).toHaveAttribute("title", /Semaine \(7 jours\) : 12 % utilisés/);
+  await expect(context).toHaveText("Contexte 42 %");
+  await column(page).getByRole("button", { name: "Nouvelle conversation" }).click();
+  await expect(context).toBeHidden();
+  await expect(settings(page)).toHaveText("Modèle par défaut");
+  await expect(limit).toHaveText("Session 16 % · 59 min");
+});
+
+test("près de la limite d'utilisation, sa pastille prend la couleur d'alerte ; atteinte, elle le dit", async ({
+  page,
+}) => {
+  await launch(page, { claudeLimit: "85" });
+  await openColumn(page);
+  await input(page).fill("Écris un plan");
+  await column(page).getByRole("button", { name: "Envoyer" }).click();
+  const limit = column(page).locator(".claude-limit");
+  await expect(limit).toHaveText("Session 85 % · 59 min");
+  await expect(limit).toHaveAttribute("data-level", "close");
+  await launch(page, { claudeLimit: "100" });
+  await openColumn(page);
+  await input(page).fill("Écris un plan");
+  await column(page).getByRole("button", { name: "Envoyer" }).click();
+  await expect(limit).toHaveText("Limite atteinte · 59 min");
+  await expect(limit).toHaveAttribute("data-level", "reached");
 });

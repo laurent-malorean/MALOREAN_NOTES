@@ -9,6 +9,7 @@ import {
   WEB_HELD_BACK,
   WORKING,
 } from "./claude-column-view";
+import { NO_SUB_AGENT } from "./agent-map-view";
 
 const log: string[] = [];
 let container: HTMLElement;
@@ -326,7 +327,7 @@ describe("colonne Claude Code : la barre de saisie", () => {
     expect(bar.lastElementChild).toBe(button("send"));
   });
 
-  it("au départ : réglages par défaut, ni sous-agent ni durée, « + » pour joindre", () => {
+  it("au départ : réglages par défaut, aucun sous-agent, ni durée ni charge, « + » pour joindre", () => {
     expect(chip().textContent).toBe("");
     expect(chip().type).toBe("button");
     expect(chip().title).toBe("Choisir le modèle de Claude et le niveau d'effort");
@@ -342,9 +343,11 @@ describe("colonne Claude Code : la barre de saisie", () => {
     expect(group.querySelector(".claude-settings-heading")?.textContent).toBe("Modèle");
     expect(group.querySelectorAll(".claude-settings-choice")).toHaveLength(5);
     const agents = find<HTMLButtonElement>(".claude-agents-chip");
-    expect(agents.hidden).toBe(true);
-    expect(agents.textContent).toBe("");
+    expect(agents.hidden).toBe(false);
+    expect(agents.textContent).toBe("● 0 agent");
     expect(agents.title).toBe("Montrer la carte des agents");
+    expect(find(".claude-limit").hidden).toBe(true);
+    expect(find(".claude-context").hidden).toBe(true);
     expect(find(".claude-elapsed").hidden).toBe(true);
     expect(find(".claude-elapsed").title).toBe("Durée de la réponse");
     expect(find(".claude-attach").textContent).toBe("+");
@@ -352,7 +355,7 @@ describe("colonne Claude Code : la barre de saisie", () => {
     expect(find(".claude-attachments")).not.toBeNull();
   });
 
-  it("la pastille des sous-agents se vide quand plus aucun ne travaille, et déplie la carte", () => {
+  it("la pastille des sous-agents revient à zéro quand plus aucun ne travaille, et déplie la carte", () => {
     const running = {
       id: "A",
       parent: null,
@@ -368,8 +371,23 @@ describe("colonne Claude Code : la barre de saisie", () => {
     agents.click();
     expect(find<HTMLDetailsElement>(".claude-agents").open).toBe(true);
     view.showAgents({ agents: [{ ...running, state: "done" }] });
-    expect(agents.hidden).toBe(true);
-    expect(agents.textContent).toBe("");
+    expect(agents.hidden).toBe(false);
+    expect(agents.textContent).toBe("● 0 agent");
+  });
+
+  it("sans sous-agent, la pastille déplie la carte, qui le dit, puis se cache une fois repliée", async () => {
+    const map = find<HTMLDetailsElement>(".claude-agents");
+    view.showAgents({ agents: [] });
+    find<HTMLButtonElement>(".claude-agents-chip").click();
+    expect(map.hidden).toBe(false);
+    expect(map.open).toBe(true);
+    expect(map.querySelector(".claude-agents-empty")?.textContent).toBe(NO_SUB_AGENT);
+    expect(NO_SUB_AGENT).toBe("Aucun sous-agent lancé dans cette conversation.");
+    view.showAgents({ agents: [] });
+    expect(map.hidden).toBe(false);
+    map.open = false;
+    await new Promise((resolve) => map.addEventListener("toggle", resolve, { once: true }));
+    expect(map.hidden).toBe(true);
   });
 
   it("la pastille des réglages ouvre leur choix, l'actuel coché, du plus bas au plus haut", () => {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { type AgentMap, NO_AGENTS, type SubAgent } from "../state/agent-map";
-import { AGENT_MAP_TITLE, createAgentMapView } from "./agent-map-view";
+import { AGENT_MAP_TITLE, createAgentMapView, NO_SUB_AGENT } from "./agent-map-view";
 
 let details: HTMLDetailsElement;
 let show: (map: AgentMap) => void;
@@ -37,6 +37,36 @@ describe("carte des agents : la vue", () => {
     show(MAP);
     expect(details.hidden).toBe(false);
     show(NO_AGENTS);
+    expect(details.hidden).toBe(true);
+  });
+
+  it("dépliée sans sous-agent, elle le dit ; repliée, elle ne se cache que vide", async () => {
+    const folded = () =>
+      new Promise((resolve) => details.addEventListener("toggle", resolve, { once: true }));
+    details.open = true;
+    show(NO_AGENTS);
+    expect(details.hidden).toBe(false);
+    expect(find(".claude-agents-empty").textContent).toBe(NO_SUB_AGENT);
+    expect(find(".claude-agent-tree")).toBeNull();
+    await folded();
+    show(MAP);
+    expect(find(".claude-agents-empty")).toBeNull();
+    details.open = false;
+    await folded();
+    expect(details.hidden).toBe(false);
+    show(NO_AGENTS);
+    details.open = true;
+    await folded();
+    details.open = false;
+    await folded();
+    expect(details.hidden).toBe(true);
+  });
+
+  it("dépliée puis vidée par une nouvelle conversation, elle se replie et se cache", () => {
+    show(MAP);
+    details.open = true;
+    show(NO_AGENTS);
+    expect(details.open).toBe(false);
     expect(details.hidden).toBe(true);
   });
 

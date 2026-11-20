@@ -1662,8 +1662,29 @@ button.claude-chip:hover {
 .claude-agents-chip {
   color: var(--accent);
 }
-.claude-elapsed {
+.claude-elapsed,
+.claude-limit,
+.claude-context {
   font-variant-numeric: tabular-nums;
+}
+.claude-limit,
+.claude-context {
+  cursor: help;
+}
+.claude-limit[data-level="close"],
+.claude-context[data-level="close"] {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+.claude-limit[data-level="reached"] {
+  color: var(--on-danger);
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.claude-agents-empty {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: var(--claude-detail-text-size);
 }
 .claude-attached-title {
   max-width: var(--claude-attached-title-max-width);

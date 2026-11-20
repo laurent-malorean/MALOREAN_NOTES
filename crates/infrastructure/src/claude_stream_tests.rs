@@ -12,8 +12,34 @@ const WEB_HELD_BACK: &str = include_str!("../tests/claude_streams/web_held_back.
 const UNKNOWN_CONVERSATION: &str =
     include_str!("../tests/claude_streams/unknown_conversation.jsonl");
 
+/// Tous les événements d'un flux.
+fn all_events(lines: &str) -> Vec<ClaudeEvent> {
+    let mut reader = StreamReader::default();
+    lines
+        .lines()
+        .flat_map(|line| reader.events_of(line))
+        .collect()
+}
+
+/// Les événements d'une ligne seule.
+fn events_of(line: &str) -> Vec<ClaudeEvent> {
+    StreamReader::default().events_of(line)
+}
+
+/// La charge annoncée : version du modèle, limite d'utilisation, remplissage du contexte.
+fn is_load(event: &ClaudeEvent) -> bool {
+    matches!(
+        event,
+        ClaudeEvent::ModelUsed(_) | ClaudeEvent::UsageLimits(_) | ClaudeEvent::ContextFilled(_)
+    )
+}
+
+/// Les événements du tour, sans la charge.
 fn stream(lines: &str) -> Vec<ClaudeEvent> {
-    lines.lines().flat_map(events_of).collect()
+    all_events(lines)
+        .into_iter()
+        .filter(|event| !is_load(event))
+        .collect()
 }
 
 fn id(text: &str) -> ActionId {
@@ -456,5 +482,5 @@ fn illegible_unknown_or_incomplete_lines_are_ignored() {
         r#"{"type":"user","message":{"content":[{"type":"text","text":"x"},{"type":"tool_result"},{"tool_use_id":"t1"}]}}"#,
         r#"{"type":"user","message":{"content":"Bonjour"}}"#,
     ];
-    assert_eq!(stream(&lines.join("\n")), Vec::new());
+    assert_eq!(all_events(&lines.join("\n")), Vec::new());
 }

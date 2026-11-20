@@ -10,6 +10,8 @@ import type { ChosenFolder } from "./generated/ChosenFolder";
 import type { ActionKindItem } from "./generated/ActionKindItem";
 import type { AgentStateItem } from "./generated/AgentStateItem";
 import type { ClaudeEventItem } from "./generated/ClaudeEventItem";
+import type { LimitPeriodItem } from "./generated/LimitPeriodItem";
+import type { UsageWindowItem } from "./generated/UsageWindowItem";
 import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
 import type { EffortItem } from "./generated/EffortItem";
@@ -47,6 +49,8 @@ export type {
   ChosenFolder,
   ClaudeEventItem,
   ClaudeStatusItem,
+  LimitPeriodItem,
+  UsageWindowItem,
   ClaudeModelItem,
   EffortItem,
   TurnSettingsItem,

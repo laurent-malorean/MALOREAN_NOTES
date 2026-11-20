@@ -16,7 +16,7 @@ use domain::claude::{
     ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings,
 };
 
-use crate::claude_stream::events_of;
+use crate::claude_stream::StreamReader;
 use crate::web_guard::WebGuard;
 
 /// Les seuls outils offerts à Claude : lire, chercher, créer et modifier des fichiers, lancer
@@ -391,8 +391,9 @@ impl ClaudeCode for ClaudeCodeCli {
         // Le garde-fou vit jusqu'à la fin du tour : son dossier est effacé avec lui.
         let (stdout, _guard) = self.start(workspace, conversation, settings, message)?;
         let mut summarized = false;
+        let mut reader = StreamReader::default();
         for line in BufReader::new(stdout).lines().map_while(Result::ok) {
-            for event in events_of(&line) {
+            for event in reader.events_of(&line) {
                 summarized |= matches!(event, ClaudeEvent::Summary(_));
                 on_event(event);
             }

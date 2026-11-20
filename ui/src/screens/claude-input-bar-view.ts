@@ -1,14 +1,17 @@
 // Barre de saisie de la colonne Claude Code : sous la zone du message, des pastilles cliquables,
 // comme Claude Code dans VS Code — modèle de Claude et niveau d'effort (un clic ouvre leur choix),
-// sous-agents en cours (un clic déplie la carte des agents), durée de la réponse, notes jointes
-// (une croix pour retirer, « + » pour en joindre) (fiche 0032).
+// sous-agents en cours (un clic déplie la carte des agents), durée de la réponse, limite
+// d'utilisation et remplissage du contexte (bulle d'aide au survol), notes jointes (une croix pour
+// retirer, « + » pour en joindre) (fiche 0032).
 import type { TurnSettingsItem } from "../bridge";
-import type { AgentMap } from "../state/agent-map";
+import { type AgentMap, NO_AGENTS } from "../state/agent-map";
+import { type ClaudeLoad, contextChip, type LoadChip, limitChip } from "../state/claude-load";
 import {
   type AttachedNote,
   EFFORTS,
   elapsedText,
   MODELS,
+  NO_SETTINGS,
   runningAgentsText,
   type SettingChoice,
   settingsText,
@@ -27,8 +30,14 @@ export interface InputBarHandlers {
 
 export interface InputBarView {
   showSettings(settings: TurnSettingsItem): void;
-  /** Le nombre de sous-agents en cours ; la pastille se cache quand aucun ne travaille. */
+  /** Le nombre de sous-agents en cours, zéro compris. */
   showAgents(map: AgentMap): void;
+  /**
+   * La charge annoncée par Claude Code, à l'instant `nowMs` : la version du modèle sur la pastille
+   * des réglages, la limite d'utilisation et le remplissage du contexte ; chaque pastille se cache
+   * tant que ce qu'elle montre n'est pas connu.
+   */
+  showLoad(load: ClaudeLoad, nowMs: number): void;
   /** La durée de la réponse en cours ; rien hors d'un tour. */
   showElapsed(elapsedMs: number | null): void;
   showAttachments(notes: readonly AttachedNote[]): void;
@@ -78,8 +87,8 @@ function group<T>(
 function settingsPicker(
   chips: HTMLElement,
   choose: InputBarHandlers["chooseSettings"],
-): (settings: TurnSettingsItem) => void {
-  let settings: TurnSettingsItem = { model: null, effort: null };
+): (settings: TurnSettingsItem, model: string | null) => void {
+  let settings: TurnSettingsItem = NO_SETTINGS;
   const chip = button("claude-chip claude-settings-chip", "", SETTINGS_TITLE);
   chip.setAttribute("aria-haspopup", "menu");
   chip.setAttribute("aria-expanded", "false");
@@ -109,9 +118,9 @@ function settingsPicker(
     chip.focus();
   });
   fillMenu();
-  return (next) => {
+  return (next, model) => {
     settings = next;
-    chip.textContent = settingsText(next);
+    chip.textContent = settingsText(next, model);
     fillMenu();
   };
 }
@@ -131,11 +140,32 @@ function attachedChip({ path, title }: AttachedNote, detach: (path: string) => v
   return chip;
 }
 
+/** Une pastille de la charge, cachée tant que ce qu'elle montre n'est pas connu. */
+function loadChip(className: string): HTMLElement {
+  const chip = document.createElement("span");
+  chip.className = `claude-chip ${className}`;
+  chip.hidden = true;
+  return chip;
+}
+
+/** Montre `shown` dans la pastille `chip`, avec son niveau (couleur d'alerte), ou la cache. */
+function showLoadChip(chip: HTMLElement, shown: LoadChip | null) {
+  chip.hidden = shown === null;
+  chip.textContent = shown?.text ?? "";
+  chip.title = shown?.title ?? "";
+  chip.dataset["level"] = shown?.level ?? "normal";
+}
+
 /** Remplit `chips` (la rangée de pastilles de la barre de saisie) et branche ses clics. */
 export function createInputBarView(chips: HTMLElement, handlers: InputBarHandlers): InputBarView {
-  const showSettings = settingsPicker(chips, (settings) => handlers.chooseSettings(settings));
-  const agentsChip = button("claude-chip claude-agents-chip", "", "Montrer la carte des agents");
-  agentsChip.hidden = true;
+  const showSettingsAndModel = settingsPicker(chips, (chosen) => handlers.chooseSettings(chosen));
+  let settings: TurnSettingsItem = NO_SETTINGS;
+  let model: string | null = null;
+  const agentsChip = button(
+    "claude-chip claude-agents-chip",
+    runningAgentsText(NO_AGENTS),
+    "Montrer la carte des agents",
+  );
   const elapsed = document.createElement("span");
   elapsed.className = "claude-chip claude-elapsed";
   elapsed.title = "Durée de la réponse";
@@ -144,15 +174,22 @@ export function createInputBarView(chips: HTMLElement, handlers: InputBarHandler
   attached.className = "claude-attachments";
   const attach = button("claude-chip claude-attach", "+", "Joindre une note");
   attach.setAttribute("aria-label", "Joindre une note");
-  chips.append(agentsChip, elapsed, attached, attach);
+  const limit = loadChip("claude-limit");
+  const context = loadChip("claude-context");
+  chips.append(agentsChip, elapsed, limit, context, attached, attach);
   agentsChip.addEventListener("click", () => handlers.showAgentMap());
   attach.addEventListener("click", () => handlers.attach());
   return {
-    showSettings,
-    showAgents: (map) => {
-      const text = runningAgentsText(map);
-      agentsChip.hidden = text === null;
-      agentsChip.textContent = text ?? "";
+    showSettings: (next) => {
+      settings = next;
+      showSettingsAndModel(settings, model);
+    },
+    showAgents: (map) => (agentsChip.textContent = runningAgentsText(map)),
+    showLoad: (load, nowMs) => {
+      model = load.model;
+      showSettingsAndModel(settings, model);
+      showLoadChip(limit, limitChip(load.limits, nowMs));
+      showLoadChip(context, contextChip(load.context));
     },
     showElapsed: (elapsedMs) => {
       elapsed.hidden = elapsedMs === null;

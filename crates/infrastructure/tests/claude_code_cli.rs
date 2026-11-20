@@ -15,8 +15,8 @@ use std::time::Duration;
 use application::testing::claude_contract::{ClaudeCodes, claude_code_contract};
 use application::{ClaudeCode, ClaudeError, WorkspaceLocation};
 use domain::claude::{
-    ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnOutcome, TurnSettings,
-    TurnSummary,
+    ChangesAfterWeb, ClaudeEvent, ClaudeModel, ContextFill, ConversationId, Effort, TurnOutcome,
+    TurnSettings, TurnSummary,
 };
 use infrastructure::ClaudeCodeCli;
 use tempfile::TempDir;
@@ -124,10 +124,15 @@ fn the_claude_code_program_honours_the_claude_code_contract() {
             ClaudeEvent::ConversationStarted(
                 ConversationId::new("aae7955b-a3d2-411a-8134-172857db16ad").unwrap(),
             ),
+            ClaudeEvent::ModelUsed("claude-haiku-5-5".to_owned()),
             ClaudeEvent::Message {
                 agent: None,
                 text: "Lait.".to_owned(),
             },
+            ClaudeEvent::ContextFilled(ContextFill {
+                used: 10150,
+                size: 1_000_000,
+            }),
             summary(TurnOutcome::Succeeded, 901, 10150),
         ],
         hanging: &hanging.claude,

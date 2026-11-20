@@ -1,12 +1,13 @@
 //! Le flux de Claude Code (`--output-format stream-json`) traduit en événements de Claude : une
 //! ligne JSON donne zéro, un ou plusieurs événements. Une ligne illisible, d'un type inconnu ou
-//! sans ce qu'il faut est ignorée : Claude Code évolue vite (fiche 0032).
+//! sans ce qu'il faut est ignorée : Claude Code évolue vite (fiche 0032). Le lecteur retient le
+//! modèle annoncé au début de la réponse, pour trouver la taille de son contexte dans le bilan.
 
 use std::time::Duration;
 
 use domain::claude::{
-    ActionId, ActionKind, ActionOutcome, AgentState, ClaudeAction, ClaudeEvent, ConversationId,
-    TurnOutcome, TurnSummary,
+    ActionId, ActionKind, ActionOutcome, AgentState, ClaudeAction, ClaudeEvent, ContextFill,
+    ConversationId, LimitPeriod, TurnOutcome, TurnSummary, UsageLimits, UsageWindow,
 };
 use serde_json::Value;
 
@@ -27,23 +28,53 @@ const LEFT_OUT_MARKS: [&str; 2] = [
     "denied by the current permission settings",
 ];
 
-/// Les événements de Claude annoncés par une ligne du flux.
-pub(crate) fn events_of(line: &str) -> Vec<ClaudeEvent> {
-    let Ok(value) = serde_json::from_str::<Value>(line) else {
-        return Vec::new();
-    };
-    match (text(&value["type"]), text(&value["subtype"])) {
-        (Some("system"), Some("init")) => conversation_started(&value).into_iter().collect(),
-        (Some("system"), Some("permission_denied")) => action_refused(&value).into_iter().collect(),
-        (Some("system"), Some("task_notification")) => {
-            sub_agent_finished(&value).into_iter().collect()
+/// Les périodes de la limite d'utilisation, sous leur nom dans le flux.
+const PERIODS: [(&str, LimitPeriod); 2] = [
+    ("five_hour", LimitPeriod::Session),
+    ("seven_day", LimitPeriod::Week),
+];
+
+/// Le lecteur du flux d'un tour.
+#[derive(Debug, Default)]
+pub(crate) struct StreamReader {
+    /// Le modèle annoncé au début de la réponse.
+    model: Option<String>,
+}
+
+impl StreamReader {
+    /// Les événements de Claude annoncés par une ligne du flux.
+    pub(crate) fn events_of(&mut self, line: &str) -> Vec<ClaudeEvent> {
+        let Ok(value) = serde_json::from_str::<Value>(line) else {
+            return Vec::new();
+        };
+        match (text(&value["type"]), text(&value["subtype"])) {
+            (Some("system"), Some("init")) => self.started(&value),
+            (Some("system"), Some("permission_denied")) => {
+                action_refused(&value).into_iter().collect()
+            }
+            (Some("system"), Some("task_notification")) => {
+                sub_agent_finished(&value).into_iter().collect()
+            }
+            (Some("assistant"), _) => blocks(&value)
+                .filter_map(|block| assistant_said(block, agent(&value)))
+                .collect(),
+            (Some("user"), _) => blocks(&value).flat_map(action_finished).collect(),
+            (Some("rate_limit_event"), _) => usage_limits(&value).into_iter().collect(),
+            (Some("result"), _) => context_filled(&value, self.model.as_deref())
+                .into_iter()
+                .chain([ClaudeEvent::Summary(summary(&value))])
+                .collect(),
+            _ => Vec::new(),
         }
-        (Some("assistant"), _) => blocks(&value)
-            .filter_map(|block| assistant_said(block, agent(&value)))
-            .collect(),
-        (Some("user"), _) => blocks(&value).flat_map(action_finished).collect(),
-        (Some("result"), _) => vec![ClaudeEvent::Summary(summary(&value))],
-        _ => Vec::new(),
+    }
+
+    /// Le début de la réponse : la conversation, et le modèle qui répond, retenu.
+    fn started(&mut self, value: &Value) -> Vec<ClaudeEvent> {
+        self.model = text(&value["model"]).map(str::to_owned);
+        conversation_started(value)
+            .into_iter()
+            .chain(self.model.clone().map(ClaudeEvent::ModelUsed))
+            .collect()
     }
 }
 
@@ -218,6 +249,58 @@ fn failure(value: &Value) -> String {
     }
 }
 
+/// La limite d'utilisation : chaque période annoncée en entier, et si elle est atteinte.
+fn usage_limits(value: &Value) -> Option<ClaudeEvent> {
+    let info = &value["rate_limit_info"];
+    let windows: Vec<UsageWindow> = PERIODS
+        .into_iter()
+        .filter_map(|(name, period)| {
+            let window = &info["unifiedWindows"][name];
+            Some(UsageWindow {
+                period,
+                percent: percent(window["utilization"].as_f64()?),
+                resets_at: window["resetsAt"].as_u64()?,
+            })
+        })
+        .collect();
+    let reached = text(&info["status"]) == Some("rejected");
+    (reached || !windows.is_empty())
+        .then_some(ClaudeEvent::UsageLimits(UsageLimits { reached, windows }))
+}
+
+/// Une part (de 0 à 1) en pourcentage arrondi.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "la conversion d'un flottant en entier sature : une part négative donne 0"
+)]
+fn percent(share: f64) -> u32 {
+    (share * 100.0).round() as u32
+}
+
+/// Le remplissage du contexte : les jetons de la dernière requête de la réponse (lus, dont le
+/// cache, et écrits), sur la taille du contexte du modèle qui a répondu (le seul annoncé, à
+/// défaut).
+fn context_filled(value: &Value, model: Option<&str>) -> Option<ClaudeEvent> {
+    let last = value["usage"]["iterations"].as_array()?.last()?;
+    let models = value["modelUsage"].as_object()?;
+    let usage = match model.and_then(|model| models.get(model)) {
+        Some(usage) => usage,
+        None if models.len() == 1 => models.values().next()?,
+        None => return None,
+    };
+    let size = usage["contextWindow"].as_u64().filter(|size| *size > 0)?;
+    let used = TOKEN_COUNTERS
+        .iter()
+        .map(|counter| number(&last[counter]))
+        .sum();
+    Some(ClaudeEvent::ContextFilled(ContextFill { used, size }))
+}
+
 #[cfg(test)]
 #[path = "claude_stream_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "claude_stream_load_tests.rs"]
+mod load_tests;

@@ -3,6 +3,7 @@
 // Claude (fiche 0032).
 import type { AgentStateItem, ClaudeEventItem } from "../bridge";
 import { durationText, tokensText } from "./claude-column";
+import { isLoadEvent } from "./claude-load";
 
 /** Un sous-agent, désigné par l'action qui l'a lancé. */
 export interface SubAgent {
@@ -70,14 +71,20 @@ function withAction(map: AgentMap, event: Extract<ClaudeEventItem, { kind: "acti
 const withLaunchFailed = (map: AgentMap, id: string) =>
   changed(map, id, (agent) => (agent.state === "running" ? { ...agent, state: "failed" } : agent));
 
+/** Une action finie : un lancement réussi dit seulement que le sous-agent travaille en arrière-plan. */
+const withActionFinished = (
+  map: AgentMap,
+  event: Extract<ClaudeEventItem, { kind: "actionFinished" }>,
+) => (event.succeeded ? map : withLaunchFailed(map, event.id));
+
 /** Un événement de Claude est arrivé. */
 export function agentEventReceived(map: AgentMap, event: ClaudeEventItem): AgentMap {
+  if (isLoadEvent(event)) return map;
   switch (event.kind) {
     case "actionStarted":
       return withAction(map, event);
     case "actionFinished":
-      // Un lancement réussi dit seulement que le sous-agent travaille en arrière-plan.
-      return event.succeeded ? map : withLaunchFailed(map, event.id);
+      return withActionFinished(map, event);
     case "subAgentFinished": {
       const { state, durationMs, tokens, actions } = event;
       return changed(map, event.id, (agent) => ({ ...agent, state, durationMs, tokens, actions }));

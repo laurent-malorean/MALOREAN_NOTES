@@ -36,8 +36,8 @@ export interface ClaudeColumnView extends Omit<InputBarView, "showAgents"> {
   /** Met le curseur dans la zone du message. */
   focus(): void;
   /**
-   * Montre la carte des agents, cachée tant qu'aucun sous-agent n'a été lancé, et le nombre de
-   * sous-agents en cours dans la barre de saisie.
+   * Montre la carte des agents, cachée tant qu'aucun sous-agent n'a été lancé (sauf dépliée par la
+   * pastille), et le nombre de sous-agents en cours dans la barre de saisie.
    */
   showAgents(map: AgentMap): void;
 }
@@ -204,7 +204,10 @@ function agentsAndBar(find: (selector: string) => HTMLElement, handlers: ClaudeC
   const showMap = createAgentMapView(agentMap);
   const bar = createInputBarView(find(".claude-chips"), {
     ...handlers,
-    showAgentMap: () => (agentMap.open = true),
+    showAgentMap: () => {
+      agentMap.hidden = false;
+      agentMap.open = true;
+    },
   });
   return { ...bar, showAgents: (map: AgentMap) => (showMap(map), bar.showAgents(map)) };
 }

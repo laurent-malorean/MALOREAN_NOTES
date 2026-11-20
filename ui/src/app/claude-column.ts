@@ -1,8 +1,9 @@
 // Colonne Claude Code : affichée ou masquée par sa commande ; à l'ouverture, demande si Claude Code
 // peut répondre. Envoie les messages, avec les réglages du tour et les notes jointes, suit les
 // événements du tour en cours et sa durée, l'arrête, commence une nouvelle conversation, autorise
-// les modifications retenues par le garde-fou du web ; une note modifiée par Claude s'ouvre d'un clic. La carte des agents suit les mêmes événements ; le compte
-// Claude se montre et se change en haut de la colonne (fiche 0032).
+// les modifications retenues par le garde-fou du web ; une note modifiée par Claude s'ouvre d'un clic. La carte des agents et la charge (version du modèle,
+// limite d'utilisation, contexte) suivent les mêmes événements ; le compte Claude se montre et se
+// change en haut de la colonne (fiche 0032).
 import type * as Bridge from "../bridge";
 import { noteHtml } from "../rendering/note-html";
 import {
@@ -12,7 +13,7 @@ import {
 } from "../screens/claude-column-view";
 import type { Layout } from "../screens/layout";
 import { type Account, createAccount } from "./claude-account";
-import { createInputBar } from "./claude-input-bar";
+import { createInputBar, type InputBar } from "./claude-input-bar";
 import { type AgentMap, agentEventReceived, agentTurnEnded, NO_AGENTS } from "../state/agent-map";
 import { messageWithNotes } from "../state/claude-input-bar";
 import type { Columns } from "../state/columns";
@@ -108,18 +109,44 @@ function accountOf(deps: ClaudeColumnDeps, view: ClaudeColumnView, changed: () =
   return account;
 }
 
+/**
+ * Suit l'espace de travail ouvert (un autre commence une conversation neuve, par `forget`) et la
+ * note de la colonne active, jointe au message.
+ */
+function workspaceFollower(
+  workspace: ClaudeColumnDeps["workspace"],
+  bar: InputBar,
+  forget: () => void,
+) {
+  let current = workspace.path();
+  return () => {
+    const changed = workspace.path() !== current;
+    bar.follow(changed);
+    if (!changed) return;
+    current = workspace.path();
+    forget();
+  };
+}
+
 export function createClaudeColumn(deps: ClaudeColumnDeps): ClaudeColumn {
   const { backend, layout } = deps;
   let conversation: Conversation = NEW_CONVERSATION;
   let agents: AgentMap = NO_AGENTS;
-  let workspacePath = deps.workspace.path();
   const bar = createInputBar({ ...deps, picker: layout.picker }, () => view);
   const update = (next: Conversation, nextAgents: AgentMap = agents) => {
     conversation = next;
     agents = nextAgents;
-    view.render(conversation, workspacePath);
+    view.render(conversation, deps.workspace.path());
     view.showAgents(agents);
     account.turnRunning(conversation.turn !== "idle");
+  };
+  /**
+   * Une conversation neuve, le tour en cours gardé (« Nouvelle conversation » et le changement de
+   * compte ne sont possibles qu'hors d'un tour) : ni sous-agent, ni modèle, ni contexte.
+   */
+  const forget = () => {
+    bar.forget();
+    update({ ...NEW_CONVERSATION, turn: conversation.turn }, NO_AGENTS);
   };
   const ended = (error: string | null) => {
     bar.timeReply(false);
@@ -149,24 +176,18 @@ export function createClaudeColumn(deps: ClaudeColumnDeps): ClaudeColumn {
       update(stopAsked(conversation));
       backend.stopClaude().catch(deps.error);
     },
-    newConversation: () =>
-      void backend.newConversation().then(() => update(NEW_CONVERSATION, NO_AGENTS), deps.error),
+    newConversation: () => void backend.newConversation().then(() => forget(), deps.error),
   });
-  const account = accountOf(deps, view, () => update(NEW_CONVERSATION, NO_AGENTS));
+  const account = accountOf(deps, view, () => forget());
   const toggle = toggler(layout, () => void checkStatus(view, backend, account));
   layout.claudeButton.addEventListener("click", toggle);
-  void backend.onClaudeEvent((event) =>
-    update(eventReceived(conversation, event), agentEventReceived(agents, event)),
-  );
+  void backend.onClaudeEvent((event) => {
+    bar.heard(event);
+    update(eventReceived(conversation, event), agentEventReceived(agents, event));
+  });
   update(conversation);
   view.showSettings(bar.settings());
-  const follow = () => {
-    const changed = deps.workspace.path() !== workspacePath;
-    bar.follow(changed);
-    if (!changed) return;
-    workspacePath = deps.workspace.path();
-    update({ ...NEW_CONVERSATION, turn: conversation.turn }, NO_AGENTS);
-  };
+  const follow = workspaceFollower(deps.workspace, bar, () => forget());
   follow();
   return { toggle, follow };
 }

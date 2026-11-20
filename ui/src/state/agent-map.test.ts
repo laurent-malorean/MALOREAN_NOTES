@@ -39,6 +39,12 @@ const finished = (id: string, state: SubAgent["state"] = "done"): ClaudeEventIte
 const play = (events: readonly ClaudeEventItem[], map: AgentMap = NO_AGENTS) =>
   events.reduce(agentEventReceived, map);
 
+const LOAD_EVENTS: ClaudeEventItem[] = [
+  { kind: "modelUsed", model: "claude-opus-5-5" },
+  { kind: "usageLimits", reached: false, windows: [] },
+  { kind: "contextFilled", used: 1, size: 2 },
+];
+
 const running = (id: string, parent: string | null, description: string): SubAgent => ({
   id,
   parent,
@@ -50,6 +56,11 @@ const running = (id: string, parent: string | null, description: string): SubAge
 });
 
 describe("carte des agents : construite à partir des événements de Claude", () => {
+  it("la charge annoncée ne change pas la carte", () => {
+    const map = play([launched("A", null, "Compter")]);
+    for (const event of LOAD_EVENTS) expect(play([event], map)).toBe(map);
+  });
+
   it("vide au départ ; ni message, ni action de Claude lui-même n'y ajoutent rien", () => {
     expect(NO_AGENTS).toEqual({ agents: [] });
     const events: ClaudeEventItem[] = [

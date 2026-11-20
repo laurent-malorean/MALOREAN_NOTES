@@ -135,6 +135,45 @@ pub struct TurnSummary {
     pub tokens: u64,
 }
 
+/// Une période de la limite d'utilisation de l'abonnement Claude.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LimitPeriod {
+    /// La période de 5 heures (« session » chez Anthropic).
+    Session,
+    /// La période de 7 jours.
+    Week,
+}
+
+/// La part utilisée d'une période de la limite d'utilisation, et sa remise à zéro.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct UsageWindow {
+    /// La période.
+    pub period: LimitPeriod,
+    /// La part utilisée, en pourcentage arrondi.
+    pub percent: u32,
+    /// Sa remise à zéro, en secondes depuis le 1ᵉʳ janvier 1970 (UTC).
+    pub resets_at: u64,
+}
+
+/// La limite d'utilisation de l'abonnement Claude, telle que Claude Code l'annonce à chaque
+/// réponse.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct UsageLimits {
+    /// Vrai si Claude Code ne répond plus avant une remise à zéro.
+    pub reached: bool,
+    /// Les périodes annoncées.
+    pub windows: Vec<UsageWindow>,
+}
+
+/// Le remplissage du contexte de la conversation à la fin d'une réponse.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ContextFill {
+    /// Les jetons occupés.
+    pub used: u64,
+    /// La taille maximale du contexte de ce modèle, en jetons.
+    pub size: u64,
+}
+
 /// Le modèle qui répond, du plus léger au plus capable ; chacun désigne le dernier modèle de sa
 /// famille.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -239,6 +278,12 @@ pub enum ClaudeEvent {
         /// Son nombre d'actions.
         actions: u32,
     },
+    /// Le modèle qui répond, tel que Claude Code le nomme (`claude-opus-5-5`).
+    ModelUsed(String),
+    /// La limite d'utilisation de l'abonnement.
+    UsageLimits(UsageLimits),
+    /// Le remplissage du contexte de la conversation.
+    ContextFilled(ContextFill),
     /// Le bilan de la réponse.
     Summary(TurnSummary),
 }

@@ -36,9 +36,32 @@ export const DEFAULT_MODEL = "Modèle par défaut";
 const labelOf = <T>(choices: readonly SettingChoice<T>[], value: T | null) =>
   choices.find((choice) => choice.value === value)?.label;
 
-/** Ce que dit la pastille des réglages : « Opus · Medium », « Opus », « Modèle par défaut · High ». */
-export function settingsText({ model, effort }: TurnSettingsItem): string {
-  const modelText = labelOf(MODELS, model) ?? DEFAULT_MODEL;
+/** La version d'un modèle lue dans son nom complet (`claude-opus-5-5`) : « Opus 5.5 » ; rien pour une famille inconnue. */
+export function modelVersion(id: string): { family: ClaudeModelItem; label: string } | null {
+  const parts = id.split(/[-[]/);
+  const family = MODELS.find(({ value }) => parts.includes(value));
+  if (family === undefined) return null;
+  const version = parts.filter((part) => /^\d{1,2}$/.test(part)).join(".");
+  return {
+    family: family.value,
+    label: version === "" ? family.label : `${family.label} ${version}`,
+  };
+}
+
+/**
+ * Ce que dit la pastille des réglages : « Opus · Medium », « Opus », « Modèle par défaut · High » ;
+ * après une réponse, la version du modèle `used` qui a répondu (« Opus 5.5 · Medium »), sauf si
+ * une autre famille a été choisie depuis.
+ */
+export function settingsText(
+  { model, effort }: TurnSettingsItem,
+  used: string | null = null,
+): string {
+  const version = used === null ? null : modelVersion(used);
+  const modelText =
+    version !== null && (model === null || version.family === model)
+      ? version.label
+      : (labelOf(MODELS, model) ?? DEFAULT_MODEL);
   const effortText = labelOf(EFFORTS, effort);
   return effortText === undefined ? modelText : `${modelText} · ${effortText}`;
 }
@@ -71,10 +94,10 @@ export function saveTurnSettings(storage: PreferenceStorage, settings: TurnSetti
   }
 }
 
-/** Ce que dit la pastille des sous-agents : « ● 2 agents » ; rien quand aucun ne travaille. */
-export function runningAgentsText(map: AgentMap): string | null {
+/** Ce que dit la pastille des sous-agents en cours : « ● 0 agent », « ● 2 agents ». */
+export function runningAgentsText(map: AgentMap): string {
   const running = map.agents.filter((agent) => agent.state === "running").length;
-  return running === 0 ? null : `● ${running} ${running > 1 ? "agents" : "agent"}`;
+  return `● ${running} ${running > 1 ? "agents" : "agent"}`;
 }
 
 /** La durée de la réponse en cours, à la seconde : « 7 s », « 2 min 05 s ». */

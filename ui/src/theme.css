@@ -23,6 +23,7 @@
   --selected: #e4e1d9;
   --border: #e2dfd7;
   --danger: #c0392b;
+  --warning: #b35c00;
   --highlight: #fbe38a;
   --highlight-current: #f5b83d;
   --on-danger: #ffffff;
@@ -168,6 +169,7 @@
   --selected: #34343a;
   --border: #333336;
   --danger: #c0392b;
+  --warning: #f6b26b;
   --highlight: #6b5a1e;
   --highlight-current: #a6781c;
   --on-danger: #ffffff;

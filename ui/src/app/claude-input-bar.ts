@@ -1,6 +1,7 @@
 // Barre de saisie de la colonne Claude Code : les réglages du tour (gardés d'un lancement à
-// l'autre), les notes jointes (la note de la colonne active, celles choisies par « + ») et la durée
-// de la réponse en cours (fiche 0032).
+// l'autre), les notes jointes (la note de la colonne active, celles choisies par « + »), la durée
+// de la réponse en cours et la charge annoncée par Claude Code (version du modèle, limite
+// d'utilisation, remplissage du contexte) (fiche 0032).
 import type * as Bridge from "../bridge";
 import type { InputBarView } from "../screens/claude-input-bar-view";
 import { openPicker } from "../screens/picker";
@@ -17,6 +18,12 @@ import {
   saveTurnSettings,
   titleFromPath,
 } from "../state/claude-input-bar";
+import {
+  type ClaudeLoad,
+  conversationForgotten,
+  loadEventReceived,
+  NO_LOAD,
+} from "../state/claude-load";
 import { activeColumn, type Columns } from "../state/columns";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { matchingNotes } from "../state/quick-open";
@@ -47,10 +54,16 @@ export interface InputBar {
   follow(workspaceChanged: boolean): void;
   /** Montre la durée de la réponse tant que le tour court, puis la cache. */
   timeReply(running: boolean): void;
+  /** Un événement de Claude est arrivé : il annonce peut-être la charge. */
+  heard(event: Bridge.ClaudeEventItem): void;
+  /** Une conversation neuve : ni modèle ni contexte ; la limite de l'abonnement reste. */
+  forget(): void;
 }
 
 /** Le temps entre deux mises à jour de la durée de la réponse. */
 const SECOND = 1000;
+/** Le temps entre deux mises à jour du temps avant la remise à zéro de la limite d'utilisation. */
+const MINUTE = 60 * SECOND;
 
 /** La note de la colonne active, avec le titre de son onglet (le nom de son fichier à défaut). */
 function openNote(columns: Columns): AttachedNote | null {
@@ -64,6 +77,12 @@ export function createInputBar(deps: InputBarDeps, view: () => InputBarShown): I
   let settings = loadTurnSettings(deps.storage);
   let attachments: Attachments = NO_ATTACHMENTS;
   let clock: ReturnType<typeof setInterval> | undefined;
+  let load: ClaudeLoad = NO_LOAD;
+  const showLoad = (next: ClaudeLoad) => {
+    load = next;
+    view().showLoad(load, Date.now());
+  };
+  setInterval(() => showLoad(load), MINUTE);
   const attach = (next: Attachments) => {
     attachments = next;
     view().showAttachments(attachedNotes(next));
@@ -109,5 +128,7 @@ export function createInputBar(deps: InputBarDeps, view: () => InputBarShown): I
       view().showElapsed(running ? 0 : null);
       if (running) clock = setInterval(() => view().showElapsed(Date.now() - started), SECOND);
     },
+    heard: (event) => showLoad(loadEventReceived(load, event)),
+    forget: () => showLoad(conversationForgotten(load)),
   };
 }

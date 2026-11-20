@@ -8,6 +8,7 @@ import {
   loadTurnSettings,
   MODELS,
   messageWithNotes,
+  modelVersion,
   NO_ATTACHMENTS,
   NO_SETTINGS,
   noteAttached,
@@ -69,6 +70,37 @@ describe("réglages du tour", () => {
     expect(settingsText(NO_SETTINGS)).toBe("Modèle par défaut");
   });
 
+  it("après une réponse, la pastille dit la version du modèle qui a répondu", () => {
+    const opus = "claude-opus-5-5";
+    expect(settingsText({ model: "opus", effort: "medium" }, opus)).toBe("Opus 5.5 · Medium");
+    expect(settingsText(NO_SETTINGS, opus)).toBe("Opus 5.5");
+    expect(settingsText({ model: null, effort: "high" }, "claude-haiku-5-5")).toBe(
+      "Haiku 5.5 · High",
+    );
+    // Une autre famille choisie depuis : son nom, la version n'est pas encore connue.
+    expect(settingsText({ model: "sonnet", effort: null }, opus)).toBe("Sonnet");
+    expect(settingsText({ model: "opus", effort: null }, "modèle-inconnu")).toBe("Opus");
+    expect(settingsText(NO_SETTINGS, "modèle-inconnu")).toBe("Modèle par défaut");
+  });
+
+  it("la version se lit dans le nom complet du modèle", () => {
+    expect(modelVersion("claude-opus-5-5")).toEqual({ family: "opus", label: "Opus 5.5" });
+    expect(modelVersion("claude-sonnet-4-5-20250929")).toEqual({
+      family: "sonnet",
+      label: "Sonnet 4.5",
+    });
+    expect(modelVersion("claude-fable-5[1m]")).toEqual({ family: "fable", label: "Fable 5" });
+    expect(modelVersion("claude-3-5-haiku-20241022")).toEqual({
+      family: "haiku",
+      label: "Haiku 3.5",
+    });
+    expect(modelVersion("claude-opus-10-1")).toEqual({ family: "opus", label: "Opus 10.1" });
+    expect(modelVersion("claude-haiku-5-5[2]")).toEqual({ family: "haiku", label: "Haiku 5.5" });
+    expect(modelVersion("claude-opus")).toEqual({ family: "opus", label: "Opus" });
+    expect(modelVersion("claude-3-5")).toBeNull();
+    expect(modelVersion("")).toBeNull();
+  });
+
   it("les réglages sont gardés d'un lancement à l'autre", () => {
     const storage = memoryStorage();
     saveTurnSettings(storage, { model: "fable", effort: "max" });
@@ -111,9 +143,9 @@ const agent = (id: string, state: SubAgent["state"]): SubAgent => ({
 });
 
 describe("pastilles de la réponse en cours", () => {
-  it("la pastille des sous-agents compte ceux qui travaillent, et se cache sans eux", () => {
-    expect(runningAgentsText(NO_AGENTS)).toBeNull();
-    expect(runningAgentsText({ agents: [agent("A", "done")] })).toBeNull();
+  it("la pastille des sous-agents compte ceux qui travaillent, zéro compris", () => {
+    expect(runningAgentsText(NO_AGENTS)).toBe("● 0 agent");
+    expect(runningAgentsText({ agents: [agent("A", "done")] })).toBe("● 0 agent");
     expect(runningAgentsText({ agents: [agent("A", "running"), agent("B", "done")] })).toBe(
       "● 1 agent",
     );

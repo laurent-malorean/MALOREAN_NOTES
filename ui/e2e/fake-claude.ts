@@ -8,6 +8,9 @@
 // `claudeWeb=1` : Claude cherche sur le web et sa modification est retenue par le garde-fou du web
 // (`WEB_HELD_BACK`, sur le modèle du flux enregistré `web_held_back.jsonl`) ; un tour où
 // l'utilisateur autorise les modifications écrit `plan.md`.
+// Le tour rejoué annonce aussi la charge : le modèle `CLAUDE_MODEL`, la session utilisée à 16 %
+// (`claudeLimit=85` : à 85 %, `claudeLimit=100` : limite atteinte), remise à zéro dans 59 min, et
+// le contexte rempli à 42 %.
 // Connecté au compte `CLAUDE_ACCOUNT` ; se déconnecter le laisse déconnecté ; se connecter donne
 // l'adresse `CLAUDE_SIGN_IN_ADDRESS`, puis le connecte à `CLAUDE_OTHER_ACCOUNT`. `claudeLogin=hanging` :
 // la connexion attend le navigateur jusqu'à être annulée ; `claudeLogin=failed` : elle n'aboutit pas.
@@ -37,6 +40,8 @@ export interface FakeClaude {
   claudeLogin: "done" | "hanging" | "failed";
   /** Les connexions et déconnexions demandées, dans l'ordre. */
   claudeAccountCalls: string[];
+  /** La part utilisée de la session annoncée par le tour rejoué, en pourcentage. */
+  claudeLimit: number;
 }
 
 /** Le compte (inventé) auquel le faux Claude Code est connecté, puis celui de la connexion. */
@@ -163,6 +168,28 @@ const WEB_ALLOWED_AFTER: ClaudeEventItem[] = [
   { kind: "summary", failure: null, durationMs: 2000, tokens: 500 },
 ];
 
+/** Le modèle qui répond au tour rejoué. */
+export const CLAUDE_MODEL = "claude-opus-5-5";
+
+/**
+ * La charge annoncée à la fin du tour rejoué : la session utilisée à `percent`, remise à zéro dans
+ * un peu moins de 59 minutes, la semaine à 12 %, le contexte à 42 %.
+ */
+function loadAnnounced(percent: number): ClaudeEventItem[] {
+  const now = Math.floor(Date.now() / 1000);
+  return [
+    {
+      kind: "usageLimits",
+      reached: percent >= 100,
+      windows: [
+        { period: "session", percent, resetsAt: now + 59 * 60 - 30 },
+        { period: "week", percent: 12, resetsAt: now + 3 * 24 * 3600 },
+      ],
+    },
+    { kind: "contextFilled", used: 420_000, size: 1_000_000 },
+  ];
+}
+
 /** Le temps entre deux événements : la réponse arrive au fil de l'eau. */
 const STEP = 20;
 const pause = () => new Promise((resolve) => setTimeout(resolve, STEP));
@@ -189,6 +216,7 @@ export function fakeClaudeState(params: URLSearchParams): FakeClaude {
     claudeSettings: [],
     claudeWeb: params.get("claudeWeb") === "1",
     claudeChangesAllowed: [],
+    claudeLimit: Number(params.get("claudeLimit") ?? 16),
   };
 }
 
@@ -220,13 +248,14 @@ export function fakeClaude(
       await announce(AGENTS_ENDED);
       return null;
     }
+    await announce([{ kind: "modelUsed", model: CLAUDE_MODEL }]);
     if (state.claudeTurn === "hanging") {
       await announce(BEFORE_WRITING.slice(0, 1));
       await hang();
     }
     await announce(BEFORE_WRITING);
     await write(CLAUDE_NOTE.path, CLAUDE_NOTE.content);
-    await announce(AFTER_WRITING);
+    await announce([...loadAnnounced(state.claudeLimit), ...AFTER_WRITING]);
     return null;
   };
   return {

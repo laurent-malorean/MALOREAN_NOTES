@@ -1,8 +1,12 @@
 //! Données de la colonne Claude Code échangées avec l'interface (fiche 0032).
 
-use domain::claude::{ActionKind, ActionOutcome, AgentState, ClaudeEvent, TurnOutcome};
+use domain::claude::{
+    ActionId, ActionKind, ActionOutcome, AgentState, ClaudeAction, ClaudeEvent, TurnOutcome,
+};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+
+use super::claude_load::UsageWindowItem;
 
 /// Si Claude Code peut répondre, et avec quel compte Claude, sinon pourquoi et quoi faire. Sa
 /// forme de débogage tait le compte : il n'est jamais écrit dans le journal.
@@ -150,6 +154,27 @@ pub enum ClaudeEventItem {
         /// Son chemin depuis l'espace de travail : `dossier/nom.md`.
         path: String,
     },
+    /// Le modèle qui répond, tel que Claude Code le nomme (`claude-opus-5-5`).
+    ModelUsed {
+        /// Son nom complet.
+        model: String,
+    },
+    /// La limite d'utilisation de l'abonnement Claude.
+    UsageLimits {
+        /// Vrai si Claude Code ne répond plus avant une remise à zéro.
+        reached: bool,
+        /// Les périodes annoncées.
+        windows: Vec<UsageWindowItem>,
+    },
+    /// Le remplissage du contexte de la conversation à la fin de la réponse.
+    ContextFilled {
+        /// Les jetons occupés.
+        #[ts(type = "number")]
+        used: u64,
+        /// La taille maximale du contexte de ce modèle, en jetons.
+        #[ts(type = "number")]
+        size: u64,
+    },
     /// Le bilan de la réponse.
     Summary {
         /// Pourquoi Claude n'a pas pu répondre ; rien s'il a répondu.
@@ -169,6 +194,27 @@ fn millis(duration: std::time::Duration) -> u64 {
 }
 
 impl ClaudeEventItem {
+    /// Une action lancée : ce qu'elle fait, et le nom de l'outil s'il est inconnu.
+    fn action_started(agent: Option<ActionId>, action: ClaudeAction) -> Self {
+        let (kind, tool) = match action.kind {
+            ActionKind::Read => (ActionKindItem::Read, None),
+            ActionKind::Search => (ActionKindItem::Search, None),
+            ActionKind::Write => (ActionKindItem::Write, None),
+            ActionKind::Edit => (ActionKindItem::Edit, None),
+            ActionKind::SubAgent => (ActionKindItem::SubAgent, None),
+            ActionKind::WebSearch => (ActionKindItem::WebSearch, None),
+            ActionKind::WebPage => (ActionKindItem::WebPage, None),
+            ActionKind::Other(name) => (ActionKindItem::Other, Some(name)),
+        };
+        Self::ActionStarted {
+            agent: agent.map(|id| id.as_str().to_owned()),
+            id: action.id.as_str().to_owned(),
+            action: kind,
+            tool,
+            target: action.target,
+        }
+    }
+
     /// L'événement tel que la page le reçoit ; rien pour le début de la conversation, que la
     /// session garde pour elle.
     #[must_use]
@@ -179,25 +225,7 @@ impl ClaudeEventItem {
                 agent: agent.map(|id| id.as_str().to_owned()),
                 text,
             },
-            ClaudeEvent::ActionStarted { agent, action } => {
-                let (kind, tool) = match action.kind {
-                    ActionKind::Read => (ActionKindItem::Read, None),
-                    ActionKind::Search => (ActionKindItem::Search, None),
-                    ActionKind::Write => (ActionKindItem::Write, None),
-                    ActionKind::Edit => (ActionKindItem::Edit, None),
-                    ActionKind::SubAgent => (ActionKindItem::SubAgent, None),
-                    ActionKind::WebSearch => (ActionKindItem::WebSearch, None),
-                    ActionKind::WebPage => (ActionKindItem::WebPage, None),
-                    ActionKind::Other(name) => (ActionKindItem::Other, Some(name)),
-                };
-                Self::ActionStarted {
-                    agent: agent.map(|id| id.as_str().to_owned()),
-                    id: action.id.as_str().to_owned(),
-                    action: kind,
-                    tool,
-                    target: action.target,
-                }
-            }
+            ClaudeEvent::ActionStarted { agent, action } => Self::action_started(agent, action),
             ClaudeEvent::ActionFinished { id, outcome } => Self::ActionFinished {
                 id: id.as_str().to_owned(),
                 succeeded: outcome == ActionOutcome::Succeeded,
@@ -221,6 +249,15 @@ impl ClaudeEventItem {
                 tokens,
                 actions,
             },
+            ClaudeEvent::ModelUsed(model) => Self::ModelUsed { model },
+            ClaudeEvent::UsageLimits(limits) => Self::UsageLimits {
+                reached: limits.reached,
+                windows: limits.windows.into_iter().map(Into::into).collect(),
+            },
+            ClaudeEvent::ContextFilled(fill) => Self::ContextFilled {
+                used: fill.used,
+                size: fill.size,
+            },
             ClaudeEvent::Summary(summary) => Self::Summary {
                 failure: match summary.outcome {
                     TurnOutcome::Succeeded => None,
@@ -238,7 +275,9 @@ impl ClaudeEventItem {
 mod tests {
     use std::time::Duration;
 
-    use domain::claude::{ActionId, ClaudeAction, ConversationId, TurnSummary};
+    use domain::claude::{
+        ContextFill, ConversationId, LimitPeriod, TurnSummary, UsageLimits, UsageWindow,
+    };
 
     use super::*;
 
@@ -411,6 +450,38 @@ mod tests {
                 "kind": "summary", "failure": "conversation inconnue",
                 "durationMs": 40, "tokens": 0,
             })
+        );
+    }
+
+    #[test]
+    fn the_model_the_limits_and_the_context_fill_reach_the_page() {
+        assert_eq!(
+            serde_json::to_value(item(ClaudeEvent::ModelUsed("claude-opus-5-5".to_owned())))
+                .unwrap(),
+            serde_json::json!({ "kind": "modelUsed", "model": "claude-opus-5-5" })
+        );
+        let limits = item(ClaudeEvent::UsageLimits(UsageLimits {
+            reached: true,
+            windows: vec![UsageWindow {
+                period: LimitPeriod::Week,
+                percent: 100,
+                resets_at: 9,
+            }],
+        }));
+        assert_eq!(
+            serde_json::to_value(limits).unwrap(),
+            serde_json::json!({
+                "kind": "usageLimits", "reached": true,
+                "windows": [{ "period": "week", "percent": 100, "resetsAt": 9 }],
+            })
+        );
+        let fill = item(ClaudeEvent::ContextFilled(ContextFill {
+            used: 420,
+            size: 1000,
+        }));
+        assert_eq!(
+            serde_json::to_value(fill).unwrap(),
+            serde_json::json!({ "kind": "contextFilled", "used": 420, "size": 1000 })
         );
     }
 
