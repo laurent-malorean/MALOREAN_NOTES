@@ -24,7 +24,7 @@ export const APP_MENU: readonly MenuDef[] = [
   {
     title: APP_NAME,
     items: [
-      { standard: "about", label: `À propos de ${APP_NAME}` },
+      { command: "about" },
       "separator",
       { command: "open-settings", label: "Réglages…" },
       "separator",

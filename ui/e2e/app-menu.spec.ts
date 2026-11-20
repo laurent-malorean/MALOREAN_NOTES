@@ -72,3 +72,20 @@ test("un élément du menu lance sa commande, sauf quand une fenêtre de l'inter
   await choose(page, "find-and-replace");
   await expect(page.locator(".cm-search input[name=replace]")).toBeFocused();
 });
+
+test("« À propos de MALOREAN Notes » montre la version et ouvre le site dans le navigateur", async ({
+  page,
+}) => {
+  await launch(page);
+  await choose(page, "about");
+  const about = page.getByRole("dialog", { name: "À propos de MALOREAN Notes" });
+  await expect(about).toContainText("MALOREAN Notes");
+  await expect(about).toContainText(/Version \d+\.\d+\.\d+/);
+  await expect(about).toContainText("Réalisée par Laurent Deséchalliers");
+  await about.getByRole("link", { name: "Malorean.net" }).click();
+  await expect
+    .poll(() => page.evaluate(() => window.backend.opened))
+    .toEqual(["https://malorean.net"]);
+  await about.getByRole("button", { name: "OK" }).click();
+  await expect(about).toBeHidden();
+});

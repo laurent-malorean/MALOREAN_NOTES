@@ -523,6 +523,7 @@ function attachFile(bytes: Uint8Array) {
 }
 
 commands.open_link_target = ({ target = "" }) => void backend.opened.push(target);
+commands.open_web_address = ({ address = "" }) => void backend.opened.push(address);
 
 mockWindows("main");
 mockIPC(

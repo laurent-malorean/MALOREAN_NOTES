@@ -191,7 +191,6 @@ describe("barre des menus", () => {
       item !== "separator" && "standard" in item ? [item.standard] : [],
     );
     expect(standards).toEqual([
-      "about",
       "services",
       "hide",
       "hideOthers",
@@ -218,8 +217,14 @@ describe("barre des menus", () => {
 
   it("met les éléments standard et les traits tels quels", () => {
     const [app] = menuBar(true);
-    expect(app?.entries.slice(0, 3)).toEqual([
-      { kind: "standard", item: "about", label: "À propos de MALOREAN Notes" },
+    expect(app?.entries.slice(0, 5)).toEqual([
+      {
+        kind: "command",
+        id: "about",
+        label: "À propos de MALOREAN Notes",
+        accelerator: null,
+        enabled: true,
+      },
       { kind: "separator" },
       {
         kind: "command",
@@ -228,6 +233,8 @@ describe("barre des menus", () => {
         accelerator: "Cmd+,",
         enabled: true,
       },
+      { kind: "separator" },
+      { kind: "standard", item: "services", label: "Services" },
     ]);
   });
 

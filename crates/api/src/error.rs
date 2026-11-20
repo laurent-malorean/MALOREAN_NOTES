@@ -65,6 +65,13 @@ impl ApiError {
         }
     }
 
+    /// L'interface a demandé d'ouvrir dans le navigateur ce qui n'est pas une adresse web.
+    pub(crate) fn not_a_web_address(text: &str) -> Self {
+        Self {
+            message: format!("« {text} » n'est pas une adresse web"),
+        }
+    }
+
     pub(crate) fn internal(reason: &impl std::fmt::Display) -> Self {
         tracing::error!(%reason, "erreur interne");
         Self {

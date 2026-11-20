@@ -79,6 +79,9 @@
   --picker-max-height: 50vh;
   --confirmation-width: 26rem;
   --confirmation-text-size: 14px;
+  --about-width: 20rem;
+  --about-icon-size: 64px;
+  --about-name-size: 17px;
   --history-width: 56rem;
   --history-height: 70vh;
   --history-versions-width: 15rem;

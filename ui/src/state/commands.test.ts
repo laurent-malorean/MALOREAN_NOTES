@@ -46,6 +46,7 @@ describe("palette de commandes", () => {
       ["sort-notes", "Trier la liste", null],
       ["show-trash", "Corbeille", null],
       ["open-settings", "Réglages", "Cmd+,"],
+      ["about", "À propos de MALOREAN Notes", null],
       ["switch-workspace", "Changer d'espace de travail", "Cmd+Maj+E"],
       ["add-workspace", "Ajouter un espace de travail", null],
       ["rename-workspace", "Renommer l'espace de travail", null],
@@ -74,6 +75,7 @@ describe("palette de commandes", () => {
       "Rechercher dans toutes les notes",
       "Rechercher dans la note",
       "Plan de la note",
+      "À propos de MALOREAN Notes",
     ]);
     expect(labels("")).toHaveLength(COMMANDS.length);
   });

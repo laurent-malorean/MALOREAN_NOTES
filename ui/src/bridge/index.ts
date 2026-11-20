@@ -284,6 +284,8 @@ const CLAUDE_EVENT = "claude-event";
 /** Prévient de chaque événement de Claude du tour en cours, dès qu'il arrive. */
 export const onClaudeEvent = (handler: (event: ClaudeEventItem) => void) =>
   listen<ClaudeEventItem>(CLAUDE_EVENT, (event) => handler(event.payload));
+/** Ouvre l'adresse web `address` dans le navigateur du Mac ; rien d'autre ne s'ouvre ainsi. */
+export const openWebAddress = (address: string) => invoke<null>("open_web_address", { address });
 /** Ouvre ce que vise la cible d'un lien Markdown de la note : adresse web dans le navigateur, pièce jointe avec l'application du Mac. */
 export const openLinkTarget = (path: string, target: string) =>
   invoke<null>("open_link_target", { path, target });

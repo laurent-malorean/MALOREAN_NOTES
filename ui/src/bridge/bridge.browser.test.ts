@@ -370,6 +370,14 @@ describe("pont vers Rust : pièces jointes", () => {
     ]);
   });
 
+  it("demande d'ouvrir une adresse web dans le navigateur", async () => {
+    const calls = recordCalls(null);
+    await bridge.openWebAddress("https://malorean.net");
+    expect(calls).toEqual([
+      { command: "open_web_address", args: { address: "https://malorean.net" } },
+    ]);
+  });
+
   it("exporte une note : fichier choisi, puis Markdown ou PDF", async () => {
     const calls = recordCalls(null);
     await bridge.chooseExportFile("Lundi", "pdf", null);

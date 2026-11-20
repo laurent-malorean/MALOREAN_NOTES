@@ -341,8 +341,6 @@ pub enum MenuEntryItem {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub enum StandardItem {
-    /// À propos de l'application.
-    About,
     /// Services.
     Services,
     /// Masquer l'application (Cmd+H).

@@ -35,6 +35,7 @@ export type CommandId =
   | "sort-notes"
   | "show-trash"
   | "open-settings"
+  | "about"
   | "switch-workspace"
   | "add-workspace"
   | "rename-workspace"
@@ -101,6 +102,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "sort-notes", label: "Trier la liste" },
   { id: "show-trash", label: "Corbeille" },
   { id: "open-settings", label: "Réglages", shortcut: "Cmd+," },
+  { id: "about", label: "À propos de MALOREAN Notes" },
   { id: "switch-workspace", label: "Changer d'espace de travail", shortcut: "Cmd+Maj+E" },
   { id: "add-workspace", label: "Ajouter un espace de travail" },
   { id: "rename-workspace", label: "Renommer l'espace de travail" },

@@ -28,6 +28,7 @@ const deps: CommandsDeps = {
       { path: "rome.md", title: "Rome", folder: "voyages" },
       { path: "lyon.md", title: "Lyon", folder: "" },
     ],
+    openWebAddress: async (address) => (log.push(`navigateur ${address}`), null),
   },
   screen,
   columns: {
@@ -164,6 +165,15 @@ describe("commandes de la palette", () => {
       "retirer un espace de travail",
       "reconstruire l'index",
     ]);
+  });
+
+  it("« À propos » s'ouvre dans la fenêtre de choix ; son site s'ouvre dans le navigateur", async () => {
+    commandActions(deps).about();
+    expect(picker().open).toBe(true);
+    expect(picker().className).toBe("about");
+    picker().querySelector<HTMLAnchorElement>(".about-site")?.click();
+    await settle();
+    expect(log).toEqual(["navigateur https://malorean.net"]);
   });
 
   it("chercher met le curseur dans la recherche, ou dans la note", () => {

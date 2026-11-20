@@ -1,6 +1,7 @@
 // Commandes : ce que fait chaque commande de la palette et chaque raccourci clavier, l'ouverture
 // rapide d'une note par son titre et le choix du tri de la liste.
 import type * as Bridge from "../bridge";
+import { openAbout } from "../screens/about-view";
 import { openPicker } from "../screens/picker";
 import { type Shortcut, shortcutFor } from "../screens/shortcuts";
 import type { WindowDisplay } from "../screens/window-display";
@@ -24,7 +25,7 @@ import type { WritingModes } from "./writing-modes";
 import type { Workspaces } from "./workspaces";
 
 export interface CommandsDeps {
-  readonly backend: Pick<typeof Bridge, "listAllNotes">;
+  readonly backend: Pick<typeof Bridge, "listAllNotes" | "openWebAddress">;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "update" | "split" | "openNote" | "activePane">;
   readonly writing: Pick<WritingModes, "toggleFocus" | "toggleTypewriter" | "toggleOutline">;
@@ -168,6 +169,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "sort-notes": () => chooseOrder(deps),
     "show-trash": () => run(deps.trash.show()),
     "open-settings": () => deps.settings.open(),
+    about: () => openAbout(deps.picker, (address) => run(deps.backend.openWebAddress(address))),
     "switch-workspace": () => run(deps.workspaces.choose()),
     "add-workspace": () => run(deps.workspaces.add()),
     "rename-workspace": () => run(deps.workspaces.rename()),

@@ -50,8 +50,7 @@ fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Resu
 }
 
 /// Chaque élément standard du Mac, nommé comme l'écrit l'interface.
-const STANDARD: [&str; 15] = [
-    "about",
+const STANDARD: [&str; 14] = [
     "services",
     "hide",
     "hideOthers",
@@ -187,9 +186,25 @@ fn a_chosen_menu_item_reaches_the_interface_as_its_command_id() {
     assert!(BRIDGE_SOURCE.contains("MENU_COMMAND_EVENT = \"menu-command\""));
 }
 
+/// « Malorean.net », dans la fenêtre « À propos », s'ouvre dans le navigateur ; rien d'autre.
+fn only_a_web_address_opens_in_the_browser() {
+    let window = window();
+    let refused = call(
+        &window,
+        "open_web_address",
+        json!({ "address": "file:///etc/passwd" }),
+    );
+    assert_eq!(
+        refused.unwrap_err()["message"],
+        "« file:///etc/passwd » n'est pas une adresse web"
+    );
+    assert!(BRIDGE_SOURCE.contains("\"open_web_address\", { address }"));
+}
+
 fn main() {
     the_menus_written_by_the_interface_become_the_menu_bar();
     menu_items_are_greyed_and_enabled_by_their_command_id();
     greying_items_before_the_menu_bar_is_installed_does_nothing();
     a_chosen_menu_item_reaches_the_interface_as_its_command_id();
+    only_a_web_address_opens_in_the_browser();
 }

@@ -3,4 +3,4 @@
 /**
  * Les éléments standard du Mac, chacun avec son raccourci habituel.
  */
-export type StandardItem = "about" | "services" | "hide" | "hideOthers" | "showAll" | "quit" | "undo" | "redo" | "cut" | "copy" | "paste" | "selectAll" | "minimize" | "zoom" | "bringAllToFront";
+export type StandardItem = "services" | "hide" | "hideOthers" | "showAll" | "quit" | "undo" | "redo" | "cut" | "copy" | "paste" | "selectAll" | "minimize" | "zoom" | "bringAllToFront";

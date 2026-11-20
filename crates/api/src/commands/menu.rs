@@ -74,7 +74,6 @@ fn standard<R: Runtime>(
 ) -> tauri::Result<PredefinedMenuItem<R>> {
     let text = Some(label);
     match item {
-        StandardItem::About => PredefinedMenuItem::about(app, text, None),
         StandardItem::Services => PredefinedMenuItem::services(app, text),
         StandardItem::Hide => PredefinedMenuItem::hide(app, text),
         StandardItem::HideOthers => PredefinedMenuItem::hide_others(app, text),

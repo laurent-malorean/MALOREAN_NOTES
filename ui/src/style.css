@@ -1091,6 +1091,46 @@ button {
   gap: 0.8rem;
 }
 
+/* À propos : l'icône, le nom, la version, l'auteur et le site, centrés */
+.about {
+  width: min(var(--about-width), 90vw);
+  padding: 1.2rem 1.1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 10px 30px var(--shadow);
+  font-family: var(--sans);
+  font-size: var(--confirmation-text-size);
+  text-align: center;
+}
+.about::backdrop {
+  background: var(--shadow);
+}
+.about-icon {
+  width: var(--about-icon-size);
+  height: var(--about-icon-size);
+}
+.about-name {
+  margin: 0.4rem 0 0.2rem;
+  font-size: var(--about-name-size);
+  font-weight: 600;
+}
+.about-version,
+.about-author {
+  margin: 0.2rem 0;
+  color: var(--muted);
+}
+.about-site {
+  display: inline-block;
+  margin: 0.3rem 0 1rem;
+  color: var(--accent);
+}
+.about-buttons {
+  display: flex;
+  justify-content: center;
+}
+
 /* Historique d'une note : la liste datée à gauche, la version choisie et ses différences à droite */
 .history {
   width: min(var(--history-width), 92vw);

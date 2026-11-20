@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use application::use_cases::{AttachmentSource, LinkDestination};
+use domain::WebAddress;
 use percent_encoding::percent_decode_str;
 use tauri::ipc::{Invoke, InvokeBody, Request};
 use tauri::{AppHandle, Runtime, State};
@@ -459,6 +460,21 @@ pub async fn open_link_target<R: Runtime>(
     opened.map_err(|e| ApiError::internal(&e))
 }
 
+/// Ouvre l'adresse web `address` dans le navigateur du Mac, comme le lien Markdown d'une note.
+///
+/// # Errors
+///
+/// `address` n'est pas une adresse web (`http`, `https`, `mailto`), ou le Mac n'a pas pu
+/// l'ouvrir.
+#[tauri::command]
+pub fn open_web_address<R: Runtime>(app: AppHandle<R>, address: &str) -> Result<(), ApiError> {
+    let address =
+        WebAddress::in_link(address).ok_or_else(|| ApiError::not_a_web_address(address))?;
+    app.opener()
+        .open_url(address.as_str(), None::<&str>)
+        .map_err(|e| ApiError::internal(&e))
+}
+
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
@@ -498,6 +514,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         empty_trash,
         attach_file,
         open_link_target,
+        open_web_address,
         history::list_versions,
         history::compare_version,
         history::keep_version,
