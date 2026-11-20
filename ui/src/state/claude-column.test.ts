@@ -78,6 +78,7 @@ describe("conversation de la colonne Claude Code", () => {
       subAgent: "Sous-agent",
       webSearch: "Recherche sur le web",
       webPage: "Page web",
+      appTool: "Outil de l’application",
       other: "Outil",
     });
     expect(play(asked, started("w", "write")).entries.at(-1)).toMatchObject({ state: "running" });
@@ -120,6 +121,40 @@ describe("conversation de la colonne Claude Code", () => {
         state: "refused",
       },
     ]);
+  });
+
+  it("un outil de l'application est nommé en français, un outil de l'application inconnu par sa sorte", () => {
+    const tool = (id: string, name: string | null) =>
+      ({
+        kind: "actionStarted",
+        agent: null,
+        id,
+        action: "appTool",
+        tool: name,
+        target: "pain",
+      }) as const;
+    const now = play(
+      asked,
+      tool("s", "search_notes"),
+      tool("t", "list_tags"),
+      tool("l", "linking_notes"),
+      tool("m", "list_templates"),
+      tool("h", "list_versions"),
+      tool("v", "read_version"),
+      tool("x", "futur"),
+      tool("n", null),
+    );
+    expect(now.entries.slice(1).map((entry) => entry.kind === "action" && entry.label)).toEqual([
+      "Recherche dans l’index",
+      "Étiquettes",
+      "Liens entrants",
+      "Modèles",
+      "Historique",
+      "Lecture d’une version",
+      "Outil de l’application",
+      "Outil de l’application",
+    ]);
+    expect(now.entries.at(1)).toMatchObject({ target: "pain", state: "running" });
   });
 
   it("une modification retenue par le garde-fou du web le reste", () => {

@@ -1,5 +1,6 @@
 //! L'espace de travail ouvert et les cas d'usage qu'on lui applique.
 
+mod app_tools;
 mod attachments;
 mod claude;
 mod export;
@@ -66,6 +67,8 @@ pub struct Session {
     clipboard: Option<Arc<dyn Clipboard>>,
     assistant: Option<Arc<dyn WritingAssistant>>,
     claude: Option<Arc<dyn ClaudeCode>>,
+    /// Les outils de l'application, ouverts pendant un tour de la colonne Claude Code.
+    tools_turn: Mutex<Option<app_tools::ToolsTurn>>,
 }
 
 /// L'espace de travail ouvert : où il est, ses notes, leur index et leur historique, qui suivent
@@ -105,6 +108,7 @@ impl Session {
             clipboard: None,
             assistant: None,
             claude: None,
+            tools_turn: Mutex::new(None),
         }
     }
 

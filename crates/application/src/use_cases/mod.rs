@@ -26,7 +26,8 @@ pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
 pub use export::ExportMarkdown;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use history::{
-    CompareVersion, KeepVersion, KeepVersionsBeforeChange, ListVersions, RestoreVersion,
+    CompareVersion, KeepVersion, KeepVersionsBeforeChange, ListVersions, ReadVersion,
+    RestoreVersion,
 };
 pub use index::{RebuildIndex, RefreshIndex};
 pub use list_notes::{ListAllNotes, ListNotes};

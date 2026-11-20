@@ -257,14 +257,17 @@ export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
  * de l'onglet de conversation, annoncée par `conversationStarted` ; `null` en commence une neuve),
  * avec le modèle et le niveau d'effort choisis ; se termine avec le tour. Après une lecture du web,
  * ses créations et modifications de notes sont retenues, sauf si `changesAllowed` (l'utilisateur
- * les autorise pour ce tour). Les événements du tour arrivent par `onClaudeEvent`.
+ * les autorise pour ce tour). Claude a aussi les outils de l'application, avec `templates` (le
+ * dossier des modèles de l'espace de travail, ou `null`) pour les modèles de note. Les événements
+ * du tour arrivent par `onClaudeEvent`.
  */
 export const sendToClaude = (
   message: string,
   conversation: string | null,
   settings: TurnSettingsItem,
   changesAllowed: boolean,
-) => invoke<null>("send_to_claude", { message, conversation, settings, changesAllowed });
+  templates: string | null,
+) => invoke<null>("send_to_claude", { message, conversation, settings, changesAllowed, templates });
 /** Arrête le tour en cours (ce que Claude a déjà écrit reste écrit), ou annule la connexion en cours. */
 export const stopClaude = () => invoke<null>("stop_claude");
 /** Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris). */

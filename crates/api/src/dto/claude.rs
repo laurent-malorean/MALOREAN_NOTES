@@ -59,6 +59,8 @@ pub enum ActionKindItem {
     WebSearch,
     /// Lire une page web.
     WebPage,
+    /// Un outil de l'application (fiche 0040) ; son nom suit.
+    AppTool,
     /// Un outil que l'application ne connaît pas encore.
     Other,
 }
@@ -116,7 +118,8 @@ pub enum ClaudeEventItem {
         id: String,
         /// Ce qu'elle fait.
         action: ActionKindItem,
-        /// Le nom de l'outil, seulement s'il est inconnu de l'application.
+        /// Le nom de l'outil, seulement s'il est un outil de l'application (`search_notes`) ou
+        /// inconnu de l'application.
         tool: Option<String>,
         /// Ce qu'elle vise, tel que Claude l'a écrit.
         target: Option<String>,
@@ -200,7 +203,7 @@ fn millis(duration: std::time::Duration) -> u64 {
 }
 
 impl ClaudeEventItem {
-    /// Une action lancée : ce qu'elle fait, et le nom de l'outil s'il est inconnu.
+    /// Une action lancée : ce qu'elle fait, et le nom de l'outil s'il est de l'application ou inconnu.
     fn action_started(agent: Option<ActionId>, action: ClaudeAction) -> Self {
         let (kind, tool) = match action.kind {
             ActionKind::Read => (ActionKindItem::Read, None),
@@ -210,6 +213,7 @@ impl ClaudeEventItem {
             ActionKind::SubAgent => (ActionKindItem::SubAgent, None),
             ActionKind::WebSearch => (ActionKindItem::WebSearch, None),
             ActionKind::WebPage => (ActionKindItem::WebPage, None),
+            ActionKind::AppTool(tool) => (ActionKindItem::AppTool, Some(tool.name().to_owned())),
             ActionKind::Other(name) => (ActionKindItem::Other, Some(name)),
         };
         Self::ActionStarted {
@@ -281,6 +285,7 @@ impl ClaudeEventItem {
 mod tests {
     use std::time::Duration;
 
+    use domain::app_tools::AppTool;
     use domain::claude::{
         ContextFill, ConversationId, LimitPeriod, TurnSummary, UsageLimits, UsageWindow,
     };
@@ -378,6 +383,10 @@ mod tests {
         assert_eq!(
             started(ActionKind::WebPage),
             (ActionKindItem::WebPage, None)
+        );
+        assert_eq!(
+            started(ActionKind::AppTool(AppTool::SearchNotes)),
+            (ActionKindItem::AppTool, Some("search_notes".to_owned()))
         );
         assert_eq!(
             started(ActionKind::Other("NotebookEdit".to_owned())),

@@ -11,7 +11,9 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 
 use application::testing::claude_contract::{ClaudeAccounts, claude_account_contract};
-use application::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use application::{
+    ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn, WorkspaceLocation,
+};
 use infrastructure::ClaudeCodeCli;
 use tempfile::TempDir;
 
@@ -173,9 +175,12 @@ fn after_a_login_a_turn_can_start() {
     fake.claude.log_in(&mut |_| {}).unwrap();
     // Le faux ne connaît pas les tours : il sort sans bilan, mais il a bien été lancé.
     let end = fake.claude.send(
-        &fake.workspace(),
-        None,
-        domain::claude::TurnSettings::default(),
+        ClaudeTurn {
+            workspace: &fake.workspace(),
+            conversation: None,
+            settings: domain::claude::TurnSettings::default(),
+            tools: None,
+        },
         "Bonjour",
         &mut |_| {},
     );

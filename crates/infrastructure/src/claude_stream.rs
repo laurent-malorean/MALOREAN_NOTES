@@ -5,6 +5,7 @@
 
 use std::time::Duration;
 
+use domain::app_tools::AppTool;
 use domain::claude::{
     ActionId, ActionKind, ActionOutcome, AgentState, ClaudeAction, ClaudeEvent, ContextFill,
     ConversationId, LimitPeriod, TurnOutcome, TurnSummary, UsageLimits, UsageWindow,
@@ -134,6 +135,7 @@ fn action(block: &Value) -> Option<ClaudeAction> {
         ActionKind::SubAgent => "description",
         ActionKind::WebSearch => "query",
         ActionKind::WebPage => "url",
+        ActionKind::AppTool(tool) => tool.target_field().unwrap_or_default(),
         ActionKind::Other(_) => "",
     };
     let target = text(&block["input"][field]).map(str::to_owned);
@@ -150,7 +152,8 @@ fn kind(tool: &str) -> ActionKind {
         "Agent" | "Task" => ActionKind::SubAgent,
         "WebSearch" => ActionKind::WebSearch,
         "WebFetch" => ActionKind::WebPage,
-        other => ActionKind::Other(other.to_owned()),
+        other => AppTool::of_full_name(other)
+            .map_or_else(|| ActionKind::Other(other.to_owned()), ActionKind::AppTool),
     }
 }
 

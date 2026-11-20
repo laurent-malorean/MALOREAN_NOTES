@@ -11,6 +11,8 @@ Autorisations validées par l'utilisateur le 19/11 : Claude lit, crée et modifi
 
 **Révision du 19/11 au soir** : l'utilisateur veut que Claude ait accès au web (chercher sur le web, lire des pages web) ; Claude répondait qu'il n'y avait pas accès. Le reste ne change pas : rien hors du dossier, aucune commande système, aucun serveur MCP, réglages de l'utilisateur et du projet ignorés. Règle de sécurité décidée par l'utilisateur contre les instructions cachées dans une page : quand Claude a lu le web pendant une réponse, il ne crée ni ne modifie de note dans cette réponse sans l'accord de l'utilisateur (voir « Garde-fou du web »).
 
+**Révision du 20/11** : Claude reçoit aussi les outils de l'application (chercher avec l'index, modèles, historique…), par un seul serveur MCP local, celui de l'application, joint sans aucun port réseau (fiche 0040). Rien d'autre ne change : aucun autre serveur MCP, chaque outil de l'application permis par son nom.
+
 Trois façons de faire ont été pesées :
 
 - **Un terminal intégré** qui lance `claude` en mode interactif : rien à comprendre du dialogue, mais ce n'est pas une discussion de l'application — pas de notes modifiées cliquables, pas de carte des agents, un émulateur de terminal à embarquer. Écarté.
@@ -32,7 +34,8 @@ claude -p --output-format stream-json --verbose
        --tools Read,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch
        --allowed-tools WebSearch,WebFetch
        --permission-mode acceptEdits --permission-prompts none
-       --restricted --strict-mcp-config --disable-slash-commands
+       --restricted --strict-mcp-config [--mcp-config <serveur de l'application>]
+       --disable-slash-commands
        --forward-subagent-text
        [--settings <crochets du garde-fou du web>]
 ```
@@ -56,7 +59,7 @@ Vérifiées dans `claude --help` (2.1.311), sans appeler le modèle :
 | Sans rien demander | `--permission-mode acceptEdits` : les créations et modifications de fichiers sont acceptées d'office |
 | Ce qui demanderait une autorisation est refusé | `--permission-prompts none` : personne ne répond, la demande est refusée d'office |
 | Rien hors du dossier de l'espace de travail | `--restricted` : les outils de fichiers sont confinés aux dossiers de travail ; il retire aussi les outils qui lancent du code (et `WebFetch` quand `--tools` ne le nomme pas), ignore les réglages de l'utilisateur et du projet (qui pourraient autoriser davantage) et refuse le contournement des autorisations |
-| Pas de serveurs MCP (qui pourraient toucher au web ou au système) | `--strict-mcp-config`, sans `--mcp-config` |
+| Pas d'autre serveur MCP que celui de l'application (fiche 0040), qui ne répond que sur ce Mac | `--strict-mcp-config`, et `--mcp-config` avec ce seul serveur ; chacun de ses outils permis par son nom dans `--allowed-tools` |
 | Pas de commandes ni de compétences lancées par un message qui commence par `/` | `--disable-slash-commands` |
 | Après une lecture du web, aucune création ni modification sans l'accord de l'utilisateur | `--settings` avec les deux crochets du garde-fou du web, à chaque tour sauf celui que l'utilisateur autorise |
 

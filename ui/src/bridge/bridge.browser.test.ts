@@ -440,8 +440,9 @@ describe("pont vers Rust : colonne Claude Code", () => {
       "c1",
       { model: "opus", effort: "extraHigh" },
       true,
+      "Modèles",
     );
-    await bridge.sendToClaude("Bonjour", null, { model: null, effort: null }, false);
+    await bridge.sendToClaude("Bonjour", null, { model: null, effort: null }, false, null);
     await bridge.stopClaude();
     expect(calls).toEqual([
       {
@@ -451,6 +452,7 @@ describe("pont vers Rust : colonne Claude Code", () => {
           conversation: "c1",
           settings: { model: "opus", effort: "extraHigh" },
           changesAllowed: true,
+          templates: "Modèles",
         },
       },
       {
@@ -460,6 +462,7 @@ describe("pont vers Rust : colonne Claude Code", () => {
           conversation: null,
           settings: { model: null, effort: null },
           changesAllowed: false,
+          templates: null,
         },
       },
       { command: "stop_claude", args: {} },

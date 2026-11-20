@@ -30,7 +30,9 @@ pub async fn claude_status(session: SharedSession<'_>) -> Result<ClaudeStatusIte
 /// Envoie un message à Claude dans l'espace de travail ouvert, en continuant `conversation` (celle
 /// de l'onglet de conversation, gardée de son début ; rien en commence une neuve), avec le modèle
 /// et le niveau d'effort choisis (`settings`) ; ses créations et modifications après une lecture du web sont
-/// retenues, sauf si `changes_allowed` (l'utilisateur les autorise pour ce tour). Chaque événement
+/// retenues, sauf si `changes_allowed` (l'utilisateur les autorise pour ce tour). Claude a aussi les
+/// outils de l'application, avec `templates` (le dossier des modèles de l'espace de travail, s'il
+/// y en a un) pour lister les modèles de note et en tirer une note (fiche 0040). Chaque événement
 /// du tour est envoyé à l'interface dès qu'il arrive ([`CLAUDE_EVENT`]). Rend la main à la fin du tour.
 ///
 /// # Errors
@@ -38,6 +40,10 @@ pub async fn claude_status(session: SharedSession<'_>) -> Result<ClaudeStatusIte
 /// Le message de l'erreur, prêt à afficher : voir [`crate::Session::send_to_claude`] ; une
 /// conversation dont l'identifiant ne ressemble pas à ceux de Claude Code est dite inconnue.
 #[tauri::command]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "deux des paramètres sont donnés par Tauri (l'application, la session), pas par l'interface"
+)]
 pub async fn send_to_claude<R: Runtime>(
     app: AppHandle<R>,
     session: SharedSession<'_>,
@@ -45,6 +51,7 @@ pub async fn send_to_claude<R: Runtime>(
     conversation: Option<String>,
     settings: TurnSettingsItem,
     changes_allowed: bool,
+    templates: Option<String>,
 ) -> Result<(), ApiError> {
     let session = Arc::clone(&session);
     let conversation = continued_conversation(conversation)?;
@@ -53,6 +60,7 @@ pub async fn send_to_claude<R: Runtime>(
             &message,
             conversation.as_ref(),
             turn_settings(settings, changes_allowed),
+            templates.as_deref(),
             |event| {
                 if let Err(error) = app.emit(CLAUDE_EVENT, event) {
                     tracing::warn!(%error, "événement de Claude non transmis à l'interface");

@@ -9,6 +9,8 @@ publish.workspace = true
 domain.workspace = true
 application.workspace = true
 serde.workspace = true
+# Le protocole MCP des outils de l'application (JSON-RPC, fiche 0040).
+serde_json.workspace = true
 tauri.workspace = true
 tauri-plugin-dialog.workspace = true
 tauri-plugin-opener.workspace = true
@@ -24,7 +26,6 @@ objc2-web-kit.workspace = true
 
 [dev-dependencies]
 application = { workspace = true, features = ["testing"] }
-serde_json.workspace = true
 tauri = { workspace = true, features = ["test"] }
 
 [lints]

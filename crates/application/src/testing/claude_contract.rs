@@ -10,11 +10,12 @@
 use std::sync::mpsc;
 use std::thread;
 
+use domain::app_tools::AppToolsKey;
 use domain::claude::{
     ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings,
 };
 
-use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn, WorkspaceLocation};
 
 /// Deux Claude Code préparés pour le contrat, dans l'espace de travail `workspace`.
 #[derive(Debug)]
@@ -35,6 +36,7 @@ pub fn claude_code_contract(codes: &ClaudeCodes<'_>) {
     a_turn_gives_every_event_in_order(codes);
     a_continued_conversation_gives_every_event_in_order(codes);
     a_conversation_continued_with_other_settings_gives_every_event_in_order(codes);
+    a_turn_offering_the_app_tools_gives_every_event_in_order(codes);
     stopping_without_a_turn_changes_nothing(codes);
     a_running_turn_is_alone_and_stops_on_request(codes);
 }
@@ -55,10 +57,31 @@ fn turn_with(
     conversation: Option<&ConversationId>,
     settings: TurnSettings,
 ) -> (Result<(), ClaudeError>, Vec<ClaudeEvent>) {
+    turn_offering(claude, workspace, conversation, settings, None)
+}
+
+/// Les événements d'un tour de `claude` joué avec `settings` et la clé des outils de
+/// l'application `tools`, et comment il s'est terminé.
+fn turn_offering(
+    claude: &dyn ClaudeCode,
+    workspace: &WorkspaceLocation,
+    conversation: Option<&ConversationId>,
+    settings: TurnSettings,
+    tools: Option<&AppToolsKey>,
+) -> (Result<(), ClaudeError>, Vec<ClaudeEvent>) {
     let mut events = Vec::new();
-    let end = claude.send(workspace, conversation, settings, "Bonjour", &mut |event| {
-        events.push(event);
-    });
+    let end = claude.send(
+        ClaudeTurn {
+            workspace,
+            conversation,
+            settings,
+            tools,
+        },
+        "Bonjour",
+        &mut |event| {
+            events.push(event);
+        },
+    );
     (end, events)
 }
 
@@ -98,6 +121,20 @@ fn a_conversation_continued_with_other_settings_gives_every_event_in_order(
     assert_eq!(events, codes.replayed);
 }
 
+fn a_turn_offering_the_app_tools_gives_every_event_in_order(codes: &ClaudeCodes<'_>) {
+    let key = AppToolsKey::new("clé-du-tour").unwrap();
+    let settings = TurnSettings::default();
+    let (end, events) = turn_offering(
+        codes.replaying,
+        &codes.workspace,
+        None,
+        settings,
+        Some(&key),
+    );
+    assert_eq!(end, Ok(()));
+    assert_eq!(events, codes.replayed);
+}
+
 fn stopping_without_a_turn_changes_nothing(codes: &ClaudeCodes<'_>) {
     codes.replaying.stop();
     let (end, events) = turn(codes.replaying, &codes.workspace, None);
@@ -110,9 +147,12 @@ fn a_running_turn_is_alone_and_stops_on_request(codes: &ClaudeCodes<'_>) {
     thread::scope(|scope| {
         let running = scope.spawn(|| {
             codes.hanging.send(
-                &codes.workspace,
-                None,
-                TurnSettings::default(),
+                ClaudeTurn {
+                    workspace: &codes.workspace,
+                    conversation: None,
+                    settings: TurnSettings::default(),
+                    tools: None,
+                },
                 "Bonjour",
                 &mut |event| {
                     sender.send(event).unwrap();

@@ -4,6 +4,8 @@
 
 use std::time::Duration;
 
+use crate::app_tools::AppTool;
+
 /// Identifiant refusé parce qu'il est vide.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EmptyIdentifier;
@@ -77,6 +79,8 @@ pub enum ActionKind {
     WebSearch,
     /// Lire une page web.
     WebPage,
+    /// Un outil de l'application (fiche 0040).
+    AppTool(AppTool),
     /// Un outil que l'application ne connaît pas encore, par son nom.
     Other(String),
 }

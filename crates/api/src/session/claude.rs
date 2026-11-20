@@ -5,11 +5,11 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use application::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
-use domain::NotePath;
+use application::{ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn, WorkspaceLocation};
 use domain::claude::{
     ActionId, ActionKind, ActionOutcome, ClaudeEvent, ConversationId, TurnSettings,
 };
+use domain::{Folder, NotePath};
 
 use super::Session;
 use crate::{ApiError, ClaudeEventItem, ClaudeStatusItem};
@@ -46,29 +46,47 @@ impl Session {
     /// `conversation` (celle de l'onglet de conversation ; rien en commence une neuve) avec le
     /// modèle et le niveau d'effort de `settings`, et donne à `on_event` chaque événement prêt pour
     /// l'interface dès qu'il arrive, dont le début de la conversation, avec chaque note modifiée
-    /// par Claude. Rend la main à la fin du tour.
+    /// par Claude. Pendant le tour, Claude a aussi les outils de l'application (fiche 0040), dans
+    /// cet espace de travail, avec `templates` pour dossier des modèles. Rend la main à la fin du
+    /// tour.
     ///
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a empêché le tour : aucun espace de travail
-    /// ouvert, Claude Code introuvable, déjà occupé, arrêté ou parti sans bilan.
+    /// ouvert, dossier des modèles invalide, Claude Code introuvable, déjà occupé, arrêté ou
+    /// parti sans bilan.
     pub fn send_to_claude(
         &self,
         message: &str,
         conversation: Option<&ConversationId>,
         settings: TurnSettings,
+        templates: Option<&str>,
         mut on_event: impl FnMut(ClaudeEventItem),
     ) -> Result<(), ApiError> {
-        let location = self.opened()?.location;
+        let opened = self.opened()?;
+        let location = opened.location;
         let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
+        let templates = templates.map(Folder::parse).transpose()?;
+        // Les outils de l'application restent ouverts jusqu'à la fin du tour.
+        let tools = self.open_tools(opened.name, templates);
+        let key = tools.as_ref().map(|tools| tools.key());
         let mut notes = ChangedNotes::new(&location);
-        claude.send(&location, conversation, settings, message, &mut |event| {
-            let changed = notes.follow(&event);
-            on_event(ClaudeEventItem::from_event(event));
-            if let Some(path) = changed {
-                on_event(ClaudeEventItem::ChangedNote { path });
-            }
-        })?;
+        claude.send(
+            ClaudeTurn {
+                workspace: &location,
+                conversation,
+                settings,
+                tools: key,
+            },
+            message,
+            &mut |event| {
+                let changed = notes.follow(&event);
+                on_event(ClaudeEventItem::from_event(event));
+                if let Some(path) = changed {
+                    on_event(ClaudeEventItem::ChangedNote { path });
+                }
+            },
+        )?;
         Ok(())
     }
 
@@ -225,7 +243,7 @@ mod tests {
 
     fn turn(session: &Session, message: &str) -> (Result<(), ApiError>, Vec<ClaudeEventItem>) {
         let mut items = Vec::new();
-        let end = session.send_to_claude(message, None, TurnSettings::default(), |item| {
+        let end = session.send_to_claude(message, None, TurnSettings::default(), None, |item| {
             items.push(item);
         });
         (end, items)
@@ -303,7 +321,7 @@ mod tests {
         let c7 = ConversationId::new("c7").unwrap();
         let settings = TurnSettings::default();
         session
-            .send_to_claude("Un", Some(&c7), settings, |_| {})
+            .send_to_claude("Un", Some(&c7), settings, None, |_| {})
             .unwrap();
         turn(&session, "Deux").0.unwrap();
         assert_eq!(conversations(&claude), [Some("c7".to_owned()), None]);
@@ -321,7 +339,7 @@ mod tests {
         let c1 = ConversationId::new("c1").unwrap();
         turn(&session, "Un").0.unwrap();
         session
-            .send_to_claude("Deux", Some(&c1), opus, |_| {})
+            .send_to_claude("Deux", Some(&c1), opus, None, |_| {})
             .unwrap();
         let requests = claude.requests();
         assert_eq!(requests[0].2, TurnSettings::default());
@@ -341,7 +359,7 @@ mod tests {
         let (sender, received) = mpsc::channel();
         thread::scope(|scope| {
             let running = scope.spawn(|| {
-                session.send_to_claude("Bonjour", None, TurnSettings::default(), |item| {
+                session.send_to_claude("Bonjour", None, TurnSettings::default(), None, |item| {
                     sender.send(item).unwrap();
                 })
             });

@@ -4,7 +4,9 @@
 use std::sync::{Arc, PoisonError};
 
 use application::HistoryOpener;
-use application::use_cases::{CompareVersion, KeepVersion, ListVersions, RestoreVersion};
+use application::use_cases::{
+    CompareVersion, KeepVersion, ListVersions, ReadVersion, RestoreVersion,
+};
 use domain::NotePath;
 use domain::diff::Difference;
 use domain::history::Version;
@@ -36,6 +38,18 @@ impl Session {
                 label: version.label(),
             })
             .collect())
+    }
+
+    /// Le texte de la version `version` de la note.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin ou version invalide,
+    /// version absente, aucun espace de travail ouvert.
+    pub fn read_version(&self, path: &str, version: &str) -> Result<String, ApiError> {
+        let opened = self.opened()?;
+        Ok(ReadVersion::new(&*opened.history)
+            .execute(&NotePath::parse(path)?, &Version::parse(version)?)?)
     }
 
     /// Les lignes de la note actuelle et de la version `version`, chacune marquée selon qu'elle
@@ -217,6 +231,12 @@ mod tests {
                 difference(DifferenceKind::Added, "ancien"),
             ]
         );
+        assert_eq!(
+            session.read_version("a.md", "2026-11-16 18h30").unwrap(),
+            "# A\nancien"
+        );
+        assert!(session.read_version("a.md", "pas une version").is_err());
+        assert!(session.read_version("../a.md", "2026-11-16 18h30").is_err());
     }
 
     #[test]

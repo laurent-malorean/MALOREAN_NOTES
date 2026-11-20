@@ -467,6 +467,25 @@ fn each_tool_of_claude_code_gives_its_kind_of_action_and_its_target() {
 }
 
 #[test]
+fn a_tool_of_the_application_gives_its_action_and_its_target() {
+    assert_eq!(
+        action_of("mcp__malorean__search_notes", r#"{"query":"pain"}"#),
+        action(ActionKind::AppTool(AppTool::SearchNotes), Some("pain"))
+    );
+    assert_eq!(
+        action_of("mcp__malorean__list_tags", r#"{"query":"x"}"#),
+        action(ActionKind::AppTool(AppTool::ListTags), None)
+    );
+    assert_eq!(
+        action_of("mcp__autre__search_notes", r#"{"query":"pain"}"#),
+        action(
+            ActionKind::Other("mcp__autre__search_notes".to_owned()),
+            None
+        )
+    );
+}
+
+#[test]
 fn illegible_unknown_or_incomplete_lines_are_ignored() {
     let lines = [
         "pas du JSON",

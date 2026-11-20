@@ -1,18 +1,60 @@
 //! Assemblage : seul endroit qui connaît toutes les couches.
 
 use std::env;
+use std::ffi::OsString;
+use std::path::Path;
 use std::sync::Arc;
 
 use api::{Session, commands};
 use infrastructure::{
-    AppleWritingAssistant, ClaudeCodeCli, FsExportStore, FsHistories, FsWorkspaceOpener,
-    FsWorkspaceWatcher, JsonPreferences, MacClipboard, SqliteIndexes, SystemClock, claude_folders,
+    AppToolsRelay, AppleWritingAssistant, ClaudeCodeCli, FsExportStore, FsHistories,
+    FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, MacClipboard, RELAY_OPTION,
+    SocketPlace, SqliteIndexes, SystemClock, claude_folders, relay,
 };
 use tauri::{Manager, RunEvent};
 
 const PREFERENCES_FILE: &str = "preferences.json";
 
+/// Lancée par Claude Code avec `--relais-mcp <prise> <clé>`, l'application n'est que le relais des
+/// outils de l'application (fiche 0040) : rien d'autre ne démarre, et rien d'autre n'est écrit sur
+/// sa sortie, qui appartient au protocole MCP.
+fn run_relay(arguments: &[OsString]) -> ! {
+    let (Some(socket), Some(key)) = (
+        arguments.get(2),
+        arguments.get(3).and_then(|key| key.to_str()),
+    ) else {
+        std::process::exit(2)
+    };
+    let relayed = relay(
+        Path::new(socket),
+        key,
+        std::io::stdin().lock(),
+        std::io::stdout(),
+    );
+    std::process::exit(i32::from(relayed.is_err()))
+}
+
+/// Claude Code, qui offre les outils de l'application par le relais (le programme de
+/// l'application) et la prise `place`, s'ils ont pu être préparés.
+fn claude_code(home: Option<&Path>, place: Option<&SocketPlace>) -> ClaudeCodeCli {
+    let claude = ClaudeCodeCli::searching(claude_folders(home, env::var_os("PATH").as_deref()));
+    match (place, env::current_exe()) {
+        (Some(place), Ok(program)) => claude.with_app_tools(AppToolsRelay {
+            program,
+            socket: place.socket(),
+        }),
+        _ => claude,
+    }
+}
+
 fn main() {
+    let arguments: Vec<OsString> = env::args_os().collect();
+    if arguments
+        .get(1)
+        .is_some_and(|option| option == RELAY_OPTION)
+    {
+        run_relay(&arguments);
+    }
     tracing_subscriber::fmt::init();
     let started = tauri::Builder::default()
         // La barre des menus est celle de l'interface (`install_menu`) : pas celle de Tauri, dont
@@ -34,12 +76,27 @@ fn main() {
             .with_watcher(Arc::new(FsWorkspaceWatcher))
             .with_exports(Arc::new(FsExportStore))
             .with_clipboard(Arc::new(MacClipboard::default()))
-            .with_writing_assistant(Arc::new(AppleWritingAssistant::installed()))
-            .with_claude(Arc::new(ClaudeCodeCli::searching(claude_folders(
-                app.path().home_dir().ok().as_deref(),
-                env::var_os("PATH").as_deref(),
-            ))));
-            app.manage(Arc::new(session));
+            .with_writing_assistant(Arc::new(AppleWritingAssistant::installed()));
+            // La prise locale des outils de l'application : réservée au compte de l'utilisateur,
+            // aucun port réseau (fiche 0040). Sans elle, Claude n'a que ses propres outils.
+            let place = SocketPlace::new()
+                .inspect_err(|error| tracing::warn!(%error, "prise des outils non préparée"))
+                .ok();
+            let home = app.path().home_dir().ok();
+            let claude = claude_code(home.as_deref(), place.as_ref());
+            let session = Arc::new(session.with_claude(Arc::new(claude)));
+            if let Some(place) = place {
+                let answering = Arc::clone(&session);
+                match place.serve(Arc::new(move |key: &str, line: &str| {
+                    answering.answer_app_tools(key, line)
+                })) {
+                    Ok(socket) => {
+                        app.manage(socket);
+                    }
+                    Err(error) => tracing::warn!(%error, "prise des outils non ouverte"),
+                }
+            }
+            app.manage(session);
             Ok(())
         })
         .invoke_handler(commands::invoke_handler())

@@ -3,6 +3,7 @@
 
 use std::fmt::Debug;
 
+use domain::app_tools::AppToolsKey;
 use domain::claude::{ClaudeEvent, ConversationId, TurnSettings};
 
 use crate::WorkspaceLocation;
@@ -74,6 +75,20 @@ pub enum ClaudeStatus {
     Failed,
 }
 
+/// Un tour à jouer : où, dans quelle conversation, avec quels réglages, et avec quelle clé des
+/// outils de l'application.
+#[derive(Debug, Clone, Copy)]
+pub struct ClaudeTurn<'a> {
+    /// L'espace de travail, dossier courant de Claude Code.
+    pub workspace: &'a WorkspaceLocation,
+    /// La conversation à continuer ; aucune en commence une neuve.
+    pub conversation: Option<&'a ConversationId>,
+    /// Le modèle, le niveau d'effort, et les modifications après le web.
+    pub settings: TurnSettings,
+    /// La clé du tour, si les outils de l'application sont offerts (fiche 0040).
+    pub tools: Option<&'a AppToolsKey>,
+}
+
 /// Claude Code, lancé pour chaque tour dans le dossier de l'espace de travail.
 pub trait ClaudeCode: Send + Sync + Debug {
     /// Si Claude Code peut répondre, et avec quel compte, sinon pourquoi ; le modèle n'est pas
@@ -102,10 +117,10 @@ pub trait ClaudeCode: Send + Sync + Debug {
     /// [`ClaudeError::LoginFailed`] si elle n'a pas abouti.
     fn log_in(&self, on_address: &mut dyn FnMut(&str)) -> Result<(), ClaudeError>;
 
-    /// Joue un tour : envoie `message` à Claude dans l'espace de travail `workspace`, en
-    /// continuant la conversation `conversation` s'il y en a une, avec le modèle et le niveau
-    /// d'effort de `settings`, et donne à `on_event` chaque événement de Claude dès qu'il arrive.
-    /// Rend la main à la fin du tour.
+    /// Joue le tour `turn` : envoie `message` à Claude dans son espace de travail, en continuant
+    /// sa conversation s'il y en a une, avec ses réglages, et donne à `on_event` chaque événement
+    /// de Claude dès qu'il arrive. Avec la clé du tour, Claude reçoit aussi les outils de
+    /// l'application, si Claude Code sait les joindre (fiche 0040). Rend la main à la fin du tour.
     ///
     /// # Errors
     ///
@@ -114,9 +129,7 @@ pub trait ClaudeCode: Send + Sync + Debug {
     /// [`ClaudeError::Failed`] si Claude Code s'est arrêté sans bilan.
     fn send(
         &self,
-        workspace: &WorkspaceLocation,
-        conversation: Option<&ConversationId>,
-        settings: TurnSettings,
+        turn: ClaudeTurn<'_>,
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
     ) -> Result<(), ClaudeError>;

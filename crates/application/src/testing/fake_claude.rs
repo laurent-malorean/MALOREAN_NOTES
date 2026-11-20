@@ -2,9 +2,10 @@
 
 use std::sync::{Condvar, Mutex, MutexGuard, PoisonError};
 
+use domain::app_tools::AppToolsKey;
 use domain::claude::{ClaudeEvent, ConversationId, TurnSettings};
 
-use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn, WorkspaceLocation};
 
 /// Un tour demandé : l'espace de travail, la conversation continuée, les réglages, le message.
 pub type ClaudeRequest = (
@@ -35,6 +36,7 @@ pub struct FakeClaudeCode {
     turn: Mutex<Turn>,
     stopped: Condvar,
     requests: Mutex<Vec<ClaudeRequest>>,
+    tools_keys: Mutex<Vec<Option<AppToolsKey>>>,
 }
 
 impl FakeClaudeCode {
@@ -91,6 +93,14 @@ impl FakeClaudeCode {
     /// Les tours demandés, dans l'ordre.
     pub fn requests(&self) -> Vec<ClaudeRequest> {
         self.requests
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// La clé des outils de l'application reçue à chaque tour demandé, dans l'ordre.
+    pub fn tools_keys(&self) -> Vec<Option<AppToolsKey>> {
+        self.tools_keys
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .clone()
@@ -168,13 +178,20 @@ impl ClaudeCode for FakeClaudeCode {
 
     fn send(
         &self,
-        workspace: &WorkspaceLocation,
-        conversation: Option<&ConversationId>,
-        settings: TurnSettings,
+        ClaudeTurn {
+            workspace,
+            conversation,
+            settings,
+            tools,
+        }: ClaudeTurn<'_>,
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
     ) -> Result<(), ClaudeError> {
         self.begin()?;
+        self.tools_keys
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(tools.cloned());
         self.requests
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -298,18 +315,32 @@ mod tests {
             effort: Some(Effort::High),
             changes_after_web: ChangesAfterWeb::Allowed,
         };
+        let key = AppToolsKey::new("clé").unwrap();
         claude
             .send(
-                &workspace(),
-                None,
-                TurnSettings::default(),
+                ClaudeTurn {
+                    workspace: &workspace(),
+                    conversation: None,
+                    settings: TurnSettings::default(),
+                    tools: Some(&key),
+                },
                 "Un",
                 &mut |_| {},
             )
             .unwrap();
         claude
-            .send(&workspace(), Some(&conversation), opus, "Deux", &mut |_| {})
+            .send(
+                ClaudeTurn {
+                    workspace: &workspace(),
+                    conversation: Some(&conversation),
+                    settings: opus,
+                    tools: None,
+                },
+                "Deux",
+                &mut |_| {},
+            )
             .unwrap();
+        assert_eq!(claude.tools_keys(), vec![Some(key), None]);
         assert_eq!(
             claude.requests(),
             vec![

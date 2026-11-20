@@ -10,20 +10,24 @@ mod fs_history;
 mod fs_note_store;
 mod fs_watcher;
 mod json_preferences;
+mod local_socket;
 #[cfg(target_os = "macos")]
 mod mac_clipboard;
+mod mcp_relay;
 mod sqlite_index;
 mod system_clock;
 mod web_guard;
 
 pub use apple_writing::{AppleWritingAssistant, WRITING_HELPER};
-pub use claude_code_cli::{ClaudeCodeCli, claude_folders};
+pub use claude_code_cli::{AppToolsRelay, ClaudeCodeCli, claude_folders};
 pub use fs_export_store::FsExportStore;
 pub use fs_history::{FsHistories, FsHistory};
 pub use fs_note_store::{FsNoteStore, FsWorkspaceOpener};
 pub use fs_watcher::FsWorkspaceWatcher;
 pub use json_preferences::JsonPreferences;
+pub use local_socket::{LineAnswer, LocalSocket, SocketPlace};
 #[cfg(target_os = "macos")]
 pub use mac_clipboard::MacClipboard;
+pub use mcp_relay::{RELAY_OPTION, relay};
 pub use sqlite_index::{FORMAT_VERSION, SqliteIndex, SqliteIndexes};
 pub use system_clock::SystemClock;

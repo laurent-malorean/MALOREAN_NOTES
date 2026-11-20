@@ -33,7 +33,8 @@ id: string,
  */
 action: ActionKindItem, 
 /**
- * Le nom de l'outil, seulement s'il est inconnu de l'application.
+ * Le nom de l'outil, seulement s'il est un outil de l'application (`search_notes`) ou
+ * inconnu de l'application.
  */
 tool: string | null, 
 /**

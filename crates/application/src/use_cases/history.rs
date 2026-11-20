@@ -93,6 +93,30 @@ impl<'a> ListVersions<'a> {
     }
 }
 
+/// Le texte d'une version d'une note.
+#[derive(Debug)]
+pub struct ReadVersion<'a> {
+    history: &'a dyn History,
+}
+
+impl<'a> ReadVersion<'a> {
+    /// Le cas d'usage, branché sur l'historique de l'espace de travail ouvert.
+    #[must_use]
+    pub fn new(history: &'a dyn History) -> Self {
+        Self { history }
+    }
+
+    /// Le texte de la version `version` de la note.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::VersionNotFound`] si la note n'a pas cette version,
+    /// [`AppError::StorageUnavailable`] si l'historique ne peut pas être lu.
+    pub fn execute(&self, note: &NotePath, version: &Version) -> Result<String, AppError> {
+        Ok(self.history.read_version(note, version)?)
+    }
+}
+
 /// Ce qui distingue une version de la note telle qu'elle est maintenant.
 #[derive(Debug)]
 pub struct CompareVersion<'a> {
@@ -309,6 +333,24 @@ mod tests {
             .execute(&path("a.md"))
             .unwrap_err();
         assert_eq!(error, AppError::NoteNotFound(path("a.md")));
+    }
+
+    #[test]
+    fn the_text_of_a_version_is_read() {
+        let workspace = workspace(&[("a.md", "# A\nancien")]);
+        workspace.keep_at(&at(18, 14, 0), "a.md");
+        let reading = ReadVersion::new(&workspace.history);
+        assert_eq!(
+            reading
+                .execute(&path("a.md"), &version("2026-11-18 14h00"))
+                .unwrap(),
+            "# A\nancien"
+        );
+        assert!(
+            reading
+                .execute(&path("a.md"), &version("2026-11-18 15h00"))
+                .is_err()
+        );
     }
 
     #[test]

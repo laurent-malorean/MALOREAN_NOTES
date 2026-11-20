@@ -47,8 +47,25 @@ export const ACTION_LABELS: Readonly<Record<ActionKindItem, string>> = {
   subAgent: "Sous-agent",
   webSearch: "Recherche sur le web",
   webPage: "Page web",
+  appTool: "Outil de l’application",
   other: "Outil",
 };
+
+/** Ce que fait chaque outil de l'application (fiche 0040), comme la colonne l'écrit. */
+export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
+  search_notes: "Recherche dans l’index",
+  list_tags: "Étiquettes",
+  linking_notes: "Liens entrants",
+  list_templates: "Modèles",
+  list_versions: "Historique",
+  read_version: "Lecture d’une version",
+};
+
+/** Le nom d'une action : celui de l'outil de l'application, ou celui de sa sorte, ou l'outil inconnu. */
+function actionLabel({ action, tool }: Extract<ClaudeEventItem, { kind: "actionStarted" }>) {
+  if (action === "appTool") return APP_TOOL_LABELS[String(tool)] ?? ACTION_LABELS.appTool;
+  return tool ?? ACTION_LABELS[action];
+}
 
 /** Le mot qui suit une action selon son état ; rien tant qu'elle tourne ou si elle a réussi. */
 export const ACTION_STATES: Readonly<Record<ActionState, string | null>> = {
@@ -130,7 +147,7 @@ function withActionEvent(
 const startedAction = (event: Extract<ClaudeEventItem, { kind: "actionStarted" }>): ChatEntry => ({
   kind: "action",
   id: event.id,
-  label: event.tool ?? ACTION_LABELS[event.action],
+  label: actionLabel(event),
   target: event.target,
   subAgent: event.agent !== null,
   state: "running",

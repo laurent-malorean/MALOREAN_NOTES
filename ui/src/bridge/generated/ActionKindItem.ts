@@ -3,4 +3,4 @@
 /**
  * Ce que fait une action de Claude.
  */
-export type ActionKindItem = "read" | "search" | "write" | "edit" | "subAgent" | "webSearch" | "webPage" | "other";
+export type ActionKindItem = "read" | "search" | "write" | "edit" | "subAgent" | "webSearch" | "webPage" | "appTool" | "other";

@@ -13,12 +13,13 @@ use std::process::Command;
 use std::time::Duration;
 
 use application::testing::claude_contract::{ClaudeCodes, claude_code_contract};
-use application::{ClaudeCode, ClaudeError, WorkspaceLocation};
+use application::{ClaudeCode, ClaudeError, ClaudeTurn, WorkspaceLocation};
+use domain::app_tools::AppToolsKey;
 use domain::claude::{
     ChangesAfterWeb, ClaudeEvent, ClaudeModel, ContextFill, ConversationId, Effort, TurnOutcome,
     TurnSettings, TurnSummary,
 };
-use infrastructure::ClaudeCodeCli;
+use infrastructure::{AppToolsRelay, ClaudeCodeCli};
 use tempfile::TempDir;
 
 /// Un flux enregistré avec le vrai `claude` : une conversation continuée.
@@ -86,11 +87,25 @@ impl FakeClaude {
         settings: TurnSettings,
         message: &str,
     ) -> (Result<(), ClaudeError>, Vec<ClaudeEvent>) {
+        self.turn_offering(conversation, settings, None, message)
+    }
+
+    /// Le tour joué avec `message`, `settings` et la clé des outils de l'application `tools`.
+    fn turn_offering(
+        &self,
+        conversation: Option<&ConversationId>,
+        settings: TurnSettings,
+        tools: Option<&AppToolsKey>,
+        message: &str,
+    ) -> (Result<(), ClaudeError>, Vec<ClaudeEvent>) {
         let mut events = Vec::new();
         let end = self.claude.send(
-            &self.workspace(),
-            conversation,
-            settings,
+            ClaudeTurn {
+                workspace: &self.workspace(),
+                conversation,
+                settings,
+                tools,
+            },
             message,
             &mut |event| {
                 events.push(event);
@@ -178,6 +193,66 @@ fn a_new_conversation_is_launched_with_the_stream_permission_and_web_guard_optio
         format!("-p\n--output-format\nstream-json\n--verbose\n{PERMISSIONS}")
     );
     assert_eq!(guarded_tools(&hooks), ["WebSearch|WebFetch", "Write|Edit"]);
+}
+
+/// Le relais des outils de l'application des tests : ni le programme ni la prise ne servent.
+fn relay() -> AppToolsRelay {
+    AppToolsRelay {
+        program: "/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes".into(),
+        socket: "/tmp/malorean-outils-x/outils.sock".into(),
+    }
+}
+
+#[test]
+fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them() {
+    let mut fake = FakeClaude::new(SUMMARY, "");
+    fake.claude = fake.claude.with_app_tools(relay());
+    let key = AppToolsKey::new("clé-1").unwrap();
+    fake.turn_offering(None, TurnSettings::default(), Some(&key), "Bonjour")
+        .0
+        .unwrap();
+    let arguments = fake.arguments_and_guard().0;
+    let (before, mcp) = arguments.split_once("--mcp-config\n").unwrap();
+    let (mcp, after) = mcp.split_once('\n').unwrap();
+    let allowed = "WebSearch,WebFetch,mcp__malorean__search_notes,mcp__malorean__list_tags,\
+        mcp__malorean__linking_notes,mcp__malorean__list_templates,mcp__malorean__list_versions,\
+        mcp__malorean__read_version";
+    let (start, end) = PERMISSIONS.split_once("--disable").unwrap();
+    assert_eq!(
+        format!("{before}{after}"),
+        format!(
+            "-p\n--output-format\nstream-json\n--verbose\n{}--disable{end}",
+            start.replace(
+                "--allowed-tools\nWebSearch,WebFetch",
+                &format!("--allowed-tools\n{allowed}")
+            )
+        )
+    );
+    let mcp: serde_json::Value = serde_json::from_str(mcp).unwrap();
+    assert_eq!(
+        mcp,
+        serde_json::json!({ "mcpServers": { "malorean": {
+            "command": "/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes",
+            "args": ["--relais-mcp", "/tmp/malorean-outils-x/outils.sock", "clé-1"],
+        }}})
+    );
+}
+
+#[test]
+fn without_a_key_or_without_a_relay_no_app_tool_is_offered() {
+    let mut fake = FakeClaude::new(SUMMARY, "");
+    let key = AppToolsKey::new("clé-1").unwrap();
+    let settings = TurnSettings::default();
+    fake.turn_offering(None, settings, Some(&key), "Bonjour")
+        .0
+        .unwrap();
+    let expected = format!("-p\n--output-format\nstream-json\n--verbose\n{PERMISSIONS}");
+    assert_eq!(fake.arguments_and_guard().0, expected);
+    fake.claude = fake.claude.with_app_tools(relay());
+    fake.turn_offering(None, settings, None, "Bonjour")
+        .0
+        .unwrap();
+    assert_eq!(fake.arguments_and_guard().0, expected);
 }
 
 #[test]
@@ -384,9 +459,12 @@ fn a_missing_program_means_claude_code_is_missing() {
     let fake = FakeClaude::new(SUMMARY, "");
     let claude = ClaudeCodeCli::new(fake.folder.path().join("introuvable"));
     let end = claude.send(
-        &fake.workspace(),
-        None,
-        TurnSettings::default(),
+        ClaudeTurn {
+            workspace: &fake.workspace(),
+            conversation: None,
+            settings: TurnSettings::default(),
+            tools: None,
+        },
         "Bonjour",
         &mut |_| {},
     );
@@ -398,9 +476,12 @@ fn a_missing_workspace_fails_the_turn_without_launching_claude_code() {
     let fake = FakeClaude::new(SUMMARY, "");
     let gone = fake.folder.path().join("Disparu").display().to_string();
     let end = fake.claude.send(
-        &WorkspaceLocation::new(gone.clone()).unwrap(),
-        None,
-        TurnSettings::default(),
+        ClaudeTurn {
+            workspace: &WorkspaceLocation::new(gone.clone()).unwrap(),
+            conversation: None,
+            settings: TurnSettings::default(),
+            tools: None,
+        },
         "Bonjour",
         &mut |_| {},
     );

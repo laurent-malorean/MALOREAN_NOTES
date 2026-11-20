@@ -4,11 +4,12 @@
 //! `--settings` (qui s'applique malgré `--restricted`), le font : avant toute recherche ou lecture
 //! web, le premier pose une marque dans un dossier jetable du tour ; avant toute création ou
 //! modification, le second la cherche et, s'il la trouve, refuse l'action. Les sous-agents passent
-//! par les mêmes crochets.
+//! par les mêmes crochets, et les outils de l'application qui changent une note aussi.
 
 use std::io;
 use std::path::{Path, PathBuf};
 
+use domain::app_tools::AppTool;
 use serde_json::json;
 use tempfile::TempDir;
 
@@ -22,8 +23,19 @@ pub(crate) const HELD_BACK: &str = "MALOREAN Notes a retenu cette modification :
 /// Les outils qui lisent le web.
 const WEB_TOOLS: &str = "WebSearch|WebFetch";
 
-/// Les outils qui créent ou modifient un fichier.
-const CHANGE_TOOLS: &str = "Write|Edit";
+/// Les outils de Claude Code qui créent ou modifient un fichier.
+const FILE_CHANGE_TOOLS: &str = "Write|Edit";
+
+/// Les outils qui créent ou modifient une note : ceux de Claude Code pour les fichiers, et ceux
+/// de l'application qui créent, changent, déplacent ou jettent une note (fiche 0040).
+fn change_tools() -> String {
+    AppTool::ALL
+        .iter()
+        .filter(|tool| tool.changes_notes())
+        .fold(FILE_CHANGE_TOOLS.to_owned(), |tools, tool| {
+            format!("{tools}|{}", tool.full_name())
+        })
+}
 
 /// Le garde-fou d'un tour : son dossier jetable, effacé avec lui à la fin du tour.
 #[derive(Debug)]
@@ -74,7 +86,7 @@ impl WebGuard {
                         "hooks": [{ "type": "command", "command": format!("touch {mark}") }],
                     },
                     {
-                        "matcher": CHANGE_TOOLS,
+                        "matcher": change_tools(),
                         "hooks": [{
                             "type": "command",
                             "command": format!("if [ -e {mark} ]; then printf '%s' {refuse}; fi"),

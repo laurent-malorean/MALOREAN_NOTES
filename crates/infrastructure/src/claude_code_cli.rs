@@ -11,12 +11,14 @@ use std::sync::mpsc;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::thread;
 
-use application::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
+use application::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn};
+use domain::app_tools::{APP_TOOLS_SERVER, AppTool, AppToolsKey};
 use domain::claude::{
     ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings,
 };
 
 use crate::claude_stream::StreamReader;
+use crate::mcp_relay::RELAY_OPTION;
 use crate::web_guard::WebGuard;
 
 /// Les seuls outils offerts à Claude : lire, chercher, créer et modifier des fichiers, lancer
@@ -61,6 +63,43 @@ const SHARED_FOLDERS: [&str; 2] = ["/opt/homebrew/bin", "/usr/local/bin"];
 
 /// Les dossiers où l'installation de Claude Code range `claude`, dans le dossier personnel.
 const HOME_FOLDERS: [&str; 2] = [".local/bin", ".claude/local"];
+
+/// Le relais des outils de l'application (fiche 0040) : le programme que Claude Code lance pour
+/// les joindre, et la prise locale de l'application qu'il relie.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppToolsRelay {
+    /// Le programme du relais : celui de l'application, lancé avec [`RELAY_OPTION`].
+    pub program: PathBuf,
+    /// La prise locale de l'application.
+    pub socket: PathBuf,
+}
+
+impl AppToolsRelay {
+    /// Les réglages de Claude Code qui lui donnent le seul serveur MCP de l'application, joint
+    /// par le relais avec la clé du tour, pour `--mcp-config`.
+    fn mcp_config(&self, key: &AppToolsKey) -> String {
+        serde_json::json!({
+            "mcpServers": {
+                APP_TOOLS_SERVER: {
+                    "command": self.program,
+                    "args": [RELAY_OPTION, self.socket, key.as_str()],
+                }
+            }
+        })
+        .to_string()
+    }
+}
+
+/// Les outils permis d'office quand les outils de l'application sont offerts : ceux du web et,
+/// nommés un par un, tous ceux de l'application ; rien de plus.
+fn allowed_tools_with_app_tools() -> String {
+    AppTool::ALL
+        .iter()
+        .map(|tool| tool.full_name())
+        .fold(ALLOWED_TOOLS.to_owned(), |allowed, tool| {
+            format!("{allowed},{tool}")
+        })
+}
 
 /// Ce que dit `claude auth status --json` : connecté ou non, et le compte. Jamais écrit dans le
 /// journal (pas de forme de débogage).
@@ -111,6 +150,8 @@ pub fn claude_folders(home: Option<&Path>, path: Option<&OsStr>) -> Vec<PathBuf>
 pub struct ClaudeCodeCli {
     /// Les programmes possibles, dans l'ordre : le premier qui peut être lancé sert.
     candidates: Vec<PathBuf>,
+    /// Le relais des outils de l'application, s'ils peuvent être offerts.
+    relay: Option<AppToolsRelay>,
     turn: Mutex<Turn>,
 }
 
@@ -120,8 +161,17 @@ impl ClaudeCodeCli {
     pub fn new(program: impl Into<PathBuf>) -> Self {
         Self {
             candidates: vec![program.into()],
+            relay: None,
             turn: Mutex::default(),
         }
+    }
+
+    /// Le même Claude Code, qui offre les outils de l'application aux tours qui portent une clé,
+    /// par le relais `relay`.
+    #[must_use]
+    pub fn with_app_tools(mut self, relay: AppToolsRelay) -> Self {
+        self.relay = Some(relay);
+        self
     }
 
     /// Claude Code lancé par le premier programme `claude` trouvé dans `folders`, cherché à
@@ -133,6 +183,7 @@ impl ClaudeCodeCli {
                 .into_iter()
                 .map(|folder| folder.join(PROGRAM))
                 .collect(),
+            relay: None,
             turn: Mutex::default(),
         }
     }
@@ -158,9 +209,12 @@ impl ClaudeCodeCli {
     /// modifications pour ce tour).
     fn start(
         &self,
-        workspace: &WorkspaceLocation,
-        conversation: Option<&ConversationId>,
-        settings: TurnSettings,
+        ClaudeTurn {
+            workspace,
+            conversation,
+            settings,
+            tools,
+        }: ClaudeTurn<'_>,
         message: &str,
     ) -> Result<(ChildStdout, Option<WebGuard>), ClaudeError> {
         if !Path::new(workspace.as_str()).is_dir() {
@@ -176,9 +230,19 @@ impl ClaudeCodeCli {
             ChangesAfterWeb::Allowed => None,
         };
         let hooks = guard.as_ref().map(WebGuard::settings);
+        let mcp = self
+            .relay
+            .as_ref()
+            .zip(tools)
+            .map(|(relay, key)| relay.mcp_config(key));
         let (mut stdin, stdout) = self.launch(|command| {
             command
-                .args(arguments(conversation, settings, hooks.as_deref()))
+                .args(arguments(
+                    conversation,
+                    settings,
+                    mcp.as_deref(),
+                    hooks.as_deref(),
+                ))
                 .current_dir(workspace.as_str())
                 .stderr(Stdio::null());
         })?;
@@ -270,12 +334,14 @@ const fn effort_level(effort: Effort) -> &'static str {
 }
 
 /// Les arguments d'un tour : flux JSON, conversation continuée, modèle et niveau d'effort choisis,
-/// autorisations de Claude, et les crochets du garde-fou du web (`hooks`) s'il y en a un.
-fn arguments<'a>(
-    conversation: Option<&'a ConversationId>,
+/// autorisations de Claude, le seul serveur MCP de l'application (`mcp`) s'il est offert, et les
+/// crochets du garde-fou du web (`hooks`) s'il y en a un.
+fn arguments(
+    conversation: Option<&ConversationId>,
     settings: TurnSettings,
-    hooks: Option<&'a str>,
-) -> Vec<&'a str> {
+    mcp: Option<&str>,
+    hooks: Option<&str>,
+) -> Vec<String> {
     let mut arguments = vec!["-p", "--output-format", "stream-json", "--verbose"];
     if let Some(conversation) = conversation {
         arguments.extend(["--resume", conversation.as_str()]);
@@ -286,24 +352,27 @@ fn arguments<'a>(
     if let Some(effort) = settings.effort {
         arguments.extend(["--effort", effort_level(effort)]);
     }
+    let allowed = mcp.map(|_| allowed_tools_with_app_tools());
     arguments.extend([
         "--tools",
         TOOLS,
         "--allowed-tools",
-        ALLOWED_TOOLS,
+        allowed.as_deref().unwrap_or(ALLOWED_TOOLS),
         "--permission-mode",
         "acceptEdits",
         "--permission-prompts",
         "none",
         "--restricted",
         "--strict-mcp-config",
-        "--disable-slash-commands",
-        "--forward-subagent-text",
     ]);
+    if let Some(mcp) = mcp {
+        arguments.extend(["--mcp-config", mcp]);
+    }
+    arguments.extend(["--disable-slash-commands", "--forward-subagent-text"]);
     if let Some(hooks) = hooks {
         arguments.extend(["--settings", hooks]);
     }
-    arguments
+    arguments.into_iter().map(str::to_owned).collect()
 }
 
 impl ClaudeCode for ClaudeCodeCli {
@@ -382,14 +451,12 @@ impl ClaudeCode for ClaudeCodeCli {
 
     fn send(
         &self,
-        workspace: &WorkspaceLocation,
-        conversation: Option<&ConversationId>,
-        settings: TurnSettings,
+        turn: ClaudeTurn<'_>,
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
     ) -> Result<(), ClaudeError> {
         // Le garde-fou vit jusqu'à la fin du tour : son dossier est effacé avec lui.
-        let (stdout, _guard) = self.start(workspace, conversation, settings, message)?;
+        let (stdout, _guard) = self.start(turn, message)?;
         let mut summarized = false;
         let mut reader = StreamReader::default();
         for line in BufReader::new(stdout).lines().map_while(Result::ok) {
@@ -434,11 +501,8 @@ mod tests {
             effort,
             ..TurnSettings::default()
         };
-        let arguments = arguments(None, settings, None);
-        arguments[4..arguments.len() - 12]
-            .iter()
-            .map(ToString::to_string)
-            .collect()
+        let arguments = arguments(None, settings, None, None);
+        arguments[4..arguments.len() - 12].to_vec()
     }
 
     #[test]
