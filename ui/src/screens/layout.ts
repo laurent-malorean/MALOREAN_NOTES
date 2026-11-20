@@ -20,6 +20,8 @@ export interface Layout {
   readonly searchField: HTMLInputElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
+  /** La barre de mise en forme, au centre de la bande du haut, à gauche des boutons Focus, Plan… */
+  readonly formatBar: HTMLElement;
   readonly focusButton: HTMLButtonElement;
   readonly typewriterButton: HTMLButtonElement;
   readonly outlineButton: HTMLButtonElement;
@@ -81,12 +83,15 @@ const TEMPLATE = `
       </aside>
       <main class="editor">
         <div class="editor-tools">
-          <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
-          <button class="tool" data-outline title="Plan de la note (Cmd+Maj+O)" aria-pressed="false">Plan</button>
-          <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
-          <button class="tool" data-side-panels title="Panneaux latéraux : dossiers et notes (Cmd+0)" aria-pressed="true">Panneaux</button>
-          <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
-          <button class="tool" data-claude title="Colonne Claude Code (Ctrl+Cmd+L)" aria-pressed="false">Claude</button>
+          <div class="format-bar"></div>
+          <div class="display-tools">
+            <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
+            <button class="tool" data-outline title="Plan de la note (Cmd+Maj+O)" aria-pressed="false">Plan</button>
+            <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
+            <button class="tool" data-side-panels title="Panneaux latéraux : dossiers et notes (Cmd+0)" aria-pressed="true">Panneaux</button>
+            <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
+            <button class="tool" data-claude title="Colonne Claude Code (Ctrl+Cmd+L)" aria-pressed="false">Claude</button>
+          </div>
         </div>
         <div class="columns"></div>
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
@@ -117,6 +122,7 @@ export function createLayout(root: HTMLElement): Layout {
     searchField: find(".search-field"),
     notesList: find(".notes-list"),
     editor: find(".editor"),
+    formatBar: find(".format-bar"),
     focusButton: find("[data-focus]"),
     typewriterButton: find("[data-typewriter]"),
     outlineButton: find("[data-outline]"),

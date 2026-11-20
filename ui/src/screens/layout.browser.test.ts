@@ -56,4 +56,15 @@ describe("mise en page", () => {
     expect(layout.claudeColumn.getAttribute("aria-label")).toBe("Claude Code");
     expect(layout.claudeButton.getAttribute("aria-pressed")).toBe("false");
   });
+
+  it("pose la barre de mise en forme dans la bande du haut, à gauche des boutons Focus, Plan…", () => {
+    const root = document.createElement("div");
+    document.body.replaceChildren(root);
+    const layout = createLayout(root);
+    expect(layout.formatBar.className).toBe("format-bar");
+    expect(layout.formatBar.parentElement?.className).toBe("editor-tools");
+    const displayTools = layout.formatBar.nextElementSibling as HTMLElement;
+    expect(displayTools.className).toBe("display-tools");
+    expect(displayTools.firstElementChild).toBe(layout.focusButton);
+  });
 });

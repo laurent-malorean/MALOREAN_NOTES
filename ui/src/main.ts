@@ -6,6 +6,7 @@ import { createOpenColumns } from "./app/columns";
 import { connectAppMenu } from "./app/app-menu";
 import { connectButtons } from "./app/buttons";
 import { connectCommands } from "./app/commands";
+import { connectFormatBar } from "./app/format-bar";
 import { createCurrentScreen } from "./app/current-screen";
 import { createExport } from "./app/export";
 import { connectExternalChanges } from "./app/external-changes";
@@ -53,6 +54,7 @@ const columns = createOpenColumns({
     layoutMemory.save(now),
     recent.visited(now),
     menu.follow(now),
+    formatBar.follow(now),
     claude.follow()
   ),
   ...{ printNote: (path) => exporting.printNote(path), copyNote: (p) => exporting.copyNote(p) },
@@ -120,14 +122,12 @@ const newPane = paneMaker({
   },
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),
 });
-
 const actions: ScreenActions = screenActions({
   ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, exporting },
   ...{ history, run },
 });
 
 connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders });
-
 const windowDisplay = connectWindowDisplay(layout, {
   ...{ window: bridge, storage: localStorage, error: messages.error },
 });
@@ -137,6 +137,7 @@ const commands = connectCommands({
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent, history },
   claude,
 });
+const formatBar = connectFormatBar(layout.formatBar, commands);
 const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...messages });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
 
