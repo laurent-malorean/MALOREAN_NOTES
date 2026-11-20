@@ -8,7 +8,8 @@
 // `claudeWeb=1` : Claude cherche sur le web et sa modification est retenue par le garde-fou du web
 // (`WEB_HELD_BACK`, sur le modèle du flux enregistré `web_held_back.jsonl`) ; un tour où
 // l'utilisateur autorise les modifications écrit `plan.md`.
-// Le tour rejoué annonce aussi la charge : le modèle `CLAUDE_MODEL`, la session utilisée à 16 %
+// Chaque tour commence par annoncer sa conversation : celle reçue, sinon une neuve (`conversation-1`,
+// `conversation-2`…). Le tour rejoué annonce aussi la charge : le modèle `CLAUDE_MODEL`, la session utilisée à 16 %
 // (`claudeLimit=85` : à 85 %, `claudeLimit=100` : limite atteinte), remise à zéro dans 59 min, et
 // le contexte rempli à 42 %.
 // Connecté au compte `CLAUDE_ACCOUNT` ; se déconnecter le laisse déconnecté ; se connecter donne
@@ -30,6 +31,8 @@ export interface FakeClaude {
   claudeAgents: boolean;
   /** Les messages reçus, dans l'ordre. */
   claudeMessages: string[];
+  /** La conversation à continuer reçue avec chaque message, dans l'ordre (`null` : une neuve). */
+  claudeConversations: (string | null)[];
   /** Les réglages reçus avec chaque message, dans l'ordre. */
   claudeSettings: TurnSettingsItem[];
   /** Vrai si le tour rejoué lit le web avant de modifier une note. */
@@ -213,10 +216,29 @@ export function fakeClaudeState(params: URLSearchParams): FakeClaude {
     claudeTurn: turn === "hanging" || turn === "busy" ? turn : "replayed",
     claudeAgents: params.get("claudeAgents") === "1",
     claudeMessages: [],
+    claudeConversations: [],
     claudeSettings: [],
     claudeWeb: params.get("claudeWeb") === "1",
     claudeChangesAllowed: [],
     claudeLimit: Number(params.get("claudeLimit") ?? 16),
+  };
+}
+
+/**
+ * Le début de chaque tour : le message, sa conversation et l'autorisation sont gardés ; Claude
+ * refuse s'il répond déjà, sinon annonce la conversation, celle reçue ou une neuve, numérotée.
+ */
+function turnStarter(state: FakeClaude) {
+  let started = 0;
+  return async (message: string, conversation: string | null, changesAllowed: boolean) => {
+    state.claudeMessages.push(message);
+    state.claudeConversations.push(conversation);
+    state.claudeChangesAllowed.push(changesAllowed);
+    if (state.claudeTurn === "busy") throw { message: CLAUDE_BUSY };
+    started += conversation === null ? 1 : 0;
+    await announce([
+      { kind: "conversationStarted", conversation: conversation ?? `conversation-${started}` },
+    ]);
   };
 }
 
@@ -229,10 +251,9 @@ export function fakeClaude(
   write: (path: string, content: string) => Promise<void>,
 ): Record<string, Handler> {
   let stop: (() => void) | null = null;
-  const play = async (message: string, changesAllowed: boolean) => {
-    state.claudeMessages.push(message);
-    state.claudeChangesAllowed.push(changesAllowed);
-    if (state.claudeTurn === "busy") throw { message: CLAUDE_BUSY };
+  const start = turnStarter(state);
+  const play = async (message: string, conversation: string | null, changesAllowed: boolean) => {
+    await start(message, conversation, changesAllowed);
     if (state.claudeWeb && !changesAllowed) return announce(WEB_HELD_BACK).then(() => null);
     if (state.claudeWeb) {
       await announce(WEB_ALLOWED_BEFORE);
@@ -260,12 +281,11 @@ export function fakeClaude(
   };
   return {
     claude_status: () => state.claude,
-    send_to_claude: ({ message, settings, changesAllowed }) => (
+    send_to_claude: ({ message, conversation, settings, changesAllowed }) => (
       state.claudeSettings.push(settings as TurnSettingsItem),
-      play(String(message), changesAllowed === true)
+      play(String(message), (conversation as string | null) ?? null, changesAllowed === true)
     ),
     stop_claude: () => (stop?.(), (stop = null), null),
-    new_conversation: () => null,
     log_out_of_claude: () => {
       state.claudeAccountCalls.push("logout");
       state.claude = { kind: "unavailable", reason: CLAUDE_UNAVAILABLE.loggedOut ?? "" };

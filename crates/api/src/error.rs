@@ -30,6 +30,15 @@ impl ApiError {
         }
     }
 
+    /// L'interface demande de continuer une conversation dont l'identifiant ne ressemble pas à
+    /// ceux de Claude Code.
+    pub(crate) fn unknown_conversation() -> Self {
+        Self {
+            message: "la conversation à continuer est inconnue : commencez-en une nouvelle"
+                .to_owned(),
+        }
+    }
+
     /// La session n'a pas de quoi écrire les exports.
     pub(crate) fn exports_unavailable() -> Self {
         Self {

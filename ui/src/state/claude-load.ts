@@ -53,12 +53,6 @@ export function loadEventReceived(load: ClaudeLoad, event: ClaudeEventItem): Cla
   return load;
 }
 
-/** Une conversation neuve : ni modèle ni contexte ; la limite de l'abonnement reste. */
-export const conversationForgotten = (load: ClaudeLoad): ClaudeLoad => ({
-  ...NO_LOAD,
-  limits: load.limits,
-});
-
 /** Normal, proche de la limite (couleur d'alerte), ou limite atteinte. */
 export type LoadLevel = "normal" | "close" | "reached";
 

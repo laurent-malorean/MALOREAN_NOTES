@@ -1476,6 +1476,57 @@ button {
   flex: 1;
   font-weight: 600;
 }
+/* Onglets de conversation, sous l'en-tête, comme dans le module de VS Code. */
+.claude-tabs {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+}
+.claude-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  max-width: var(--tab-max-width);
+  padding: 0.3rem 0.3rem 0.3rem 0.7rem;
+  border-right: 1px solid var(--border);
+  font-size: var(--tab-text-size);
+  color: var(--muted);
+  cursor: default;
+}
+.claude-tab[aria-selected="true"] {
+  color: var(--text);
+  background: var(--selected);
+}
+.claude-tab-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* Le témoin de l'onglet qui répond. */
+.claude-tab-running {
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.claude-tab-close {
+  border: 0;
+  background: none;
+  padding: 0 0.2rem;
+  color: var(--muted);
+  font: inherit;
+  visibility: hidden;
+}
+.claude-tab:hover .claude-tab-close,
+.claude-tab[aria-selected="true"] .claude-tab-close {
+  visibility: visible;
+}
+.claude-tab-close:hover {
+  color: var(--text);
+}
 .claude-account {
   margin: 0 0.8rem 0.6rem;
   font-size: var(--claude-detail-text-size);
@@ -1593,6 +1644,7 @@ button {
 }
 .claude-empty,
 .claude-working,
+.claude-other-tab,
 .claude-permissions,
 .claude-summary {
   color: var(--muted);

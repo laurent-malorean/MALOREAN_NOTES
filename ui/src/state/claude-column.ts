@@ -1,7 +1,7 @@
 // Colonne Claude Code : la conversation telle que la colonne la montre (messages, actions de
 // Claude, notes modifiées, bilans), construite à partir des événements de Claude (fiche 0032).
 import type { ActionKindItem, ClaudeEventItem } from "../bridge";
-import { isLoadEvent } from "./claude-load";
+import { isLoadEvent, type LoadEvent } from "./claude-load";
 
 /** Où en est une action de Claude. */
 export type ActionState = "running" | "succeeded" | "failed" | "refused" | "heldBack";
@@ -136,9 +136,19 @@ const startedAction = (event: Extract<ClaudeEventItem, { kind: "actionStarted" }
   state: "running",
 });
 
+/**
+ * Les événements qui ne s'écrivent pas dans la conversation : la charge (montrée dans la barre de
+ * saisie), le début de la conversation (gardé par l'onglet de conversation) et la fin d'un
+ * sous-agent (montrée par la carte des agents).
+ */
+type SilentEvent =
+  LoadEvent | Extract<ClaudeEventItem, { kind: "conversationStarted" | "subAgentFinished" }>;
+
+const isSilentEvent = (event: ClaudeEventItem): event is SilentEvent =>
+  isLoadEvent(event) || event.kind === "conversationStarted" || event.kind === "subAgentFinished";
+
 function withEvent(entries: readonly ChatEntry[], event: ClaudeEventItem): readonly ChatEntry[] {
-  // La charge se montre dans la barre de saisie, pas dans la conversation.
-  if (isLoadEvent(event)) return entries;
+  if (isSilentEvent(event)) return entries;
   switch (event.kind) {
     case "message":
       return [...entries, { kind: "claude", text: event.text, subAgent: event.agent !== null }];
@@ -152,8 +162,6 @@ function withEvent(entries: readonly ChatEntry[], event: ClaudeEventItem): reado
       return withChangedNote(entries, event.path);
     case "summary":
       return withSummary(entries, event);
-    case "subAgentFinished":
-      return entries;
   }
 }
 

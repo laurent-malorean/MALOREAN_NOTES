@@ -433,22 +433,36 @@ describe("pont vers Rust : colonne Claude Code", () => {
     expect(calls).toEqual([{ command: "claude_status", args: {} }]);
   });
 
-  it("envoie un message, arrête le tour, commence une nouvelle conversation", async () => {
+  it("envoie un message dans la conversation de l'onglet, puis arrête le tour", async () => {
     const calls = recordCalls(null);
-    await bridge.sendToClaude("Range mes notes", { model: "opus", effort: "extraHigh" }, true);
+    await bridge.sendToClaude(
+      "Range mes notes",
+      "c1",
+      { model: "opus", effort: "extraHigh" },
+      true,
+    );
+    await bridge.sendToClaude("Bonjour", null, { model: null, effort: null }, false);
     await bridge.stopClaude();
-    await bridge.newConversation();
     expect(calls).toEqual([
       {
         command: "send_to_claude",
         args: {
           message: "Range mes notes",
+          conversation: "c1",
           settings: { model: "opus", effort: "extraHigh" },
           changesAllowed: true,
         },
       },
+      {
+        command: "send_to_claude",
+        args: {
+          message: "Bonjour",
+          conversation: null,
+          settings: { model: null, effort: null },
+          changesAllowed: false,
+        },
+      },
       { command: "stop_claude", args: {} },
-      { command: "new_conversation", args: {} },
     ]);
   });
 

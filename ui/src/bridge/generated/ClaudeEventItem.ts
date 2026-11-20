@@ -7,7 +7,11 @@ import type { UsageWindowItem } from "./UsageWindowItem";
  * Ce que Claude Code annonce pendant un tour, envoyé à l'interface au fil de l'eau. `agent` est
  * l'action qui a lancé le sous-agent auteur ; rien pour Claude lui-même.
  */
-export type ClaudeEventItem = { "kind": "message", 
+export type ClaudeEventItem = { "kind": "conversationStarted", 
+/**
+ * L'identifiant donné par Claude Code (`session_id`).
+ */
+conversation: string, } | { "kind": "message", 
 /**
  * Le sous-agent qui l'écrit, par l'action qui l'a lancé.
  */

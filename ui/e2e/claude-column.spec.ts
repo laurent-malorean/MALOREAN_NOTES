@@ -89,7 +89,7 @@ test("Arrêter interrompt la réponse de Claude ; la conversation peut continuer
   await expect(input(page)).toBeEnabled();
 });
 
-test("Nouvelle conversation vide la colonne et fait oublier la conversation à Claude Code", async ({
+test("Nouvelle conversation ouvre un onglet vide ; la conversation d'avant reste dans le sien", async ({
   page,
 }) => {
   await launch(page);
@@ -99,7 +99,13 @@ test("Nouvelle conversation vide la colonne et fait oublier la conversation à C
   await column(page).getByRole("button", { name: "Nouvelle conversation" }).click();
   await expect(conversation(page).locator(".claude-empty")).toBeVisible();
   await expect(conversation(page).locator(".claude-user")).toHaveCount(0);
-  expect(await page.evaluate(() => window.backend.calls)).toContain("new_conversation");
+  await expect(column(page).getByRole("tab")).toHaveText([
+    "Écris un plan×",
+    "Nouvelle conversation×",
+  ]);
+  await send(page, "Autre chose");
+  await expect(conversation(page).locator(".claude-summary")).toBeVisible();
+  expect(await page.evaluate(() => window.backend.claudeConversations)).toEqual([null, null]);
 });
 
 test("Claude qui répond déjà : l'erreur est dite en clair", async ({ page }) => {

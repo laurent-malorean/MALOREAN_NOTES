@@ -95,6 +95,12 @@ impl From<AgentState> for AgentStateItem {
 #[serde(tag = "kind", rename_all = "camelCase")]
 #[ts(export)]
 pub enum ClaudeEventItem {
+    /// Le début de la conversation, avec son identifiant : l'interface le garde dans l'onglet de
+    /// conversation et le rend au message suivant de cet onglet pour la continuer.
+    ConversationStarted {
+        /// L'identifiant donné par Claude Code (`session_id`).
+        conversation: String,
+    },
     /// Un message de Claude, en Markdown.
     Message {
         /// Le sous-agent qui l'écrit, par l'action qui l'a lancé.
@@ -215,12 +221,13 @@ impl ClaudeEventItem {
         }
     }
 
-    /// L'événement tel que l'interface le reçoit ; rien pour le début de la conversation, que la
-    /// session garde pour elle.
+    /// L'événement tel que l'interface le reçoit.
     #[must_use]
-    pub fn from_event(event: ClaudeEvent) -> Option<Self> {
-        let item = match event {
-            ClaudeEvent::ConversationStarted(_) => return None,
+    pub fn from_event(event: ClaudeEvent) -> Self {
+        match event {
+            ClaudeEvent::ConversationStarted(id) => Self::ConversationStarted {
+                conversation: id.as_str().to_owned(),
+            },
             ClaudeEvent::Message { agent, text } => Self::Message {
                 agent: agent.map(|id| id.as_str().to_owned()),
                 text,
@@ -266,8 +273,7 @@ impl ClaudeEventItem {
                 duration_ms: millis(summary.duration),
                 tokens: summary.tokens,
             },
-        };
-        Some(item)
+        }
     }
 }
 
@@ -286,7 +292,7 @@ mod tests {
     }
 
     fn item(event: ClaudeEvent) -> ClaudeEventItem {
-        ClaudeEventItem::from_event(event).unwrap()
+        ClaudeEventItem::from_event(event)
     }
 
     fn started(kind: ActionKind) -> (ActionKindItem, Option<String>) {
@@ -314,9 +320,14 @@ mod tests {
     }
 
     #[test]
-    fn the_start_of_the_conversation_stays_in_rust() {
+    fn the_start_of_the_conversation_gives_its_id_to_the_interface() {
         let started = ClaudeEvent::ConversationStarted(ConversationId::new("c1").unwrap());
-        assert_eq!(ClaudeEventItem::from_event(started), None);
+        assert_eq!(
+            item(started),
+            ClaudeEventItem::ConversationStarted {
+                conversation: "c1".to_owned()
+            }
+        );
     }
 
     #[test]

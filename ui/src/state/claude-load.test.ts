@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ClaudeEventItem } from "../bridge";
 import {
-  type ClaudeLoad,
   contextChip,
-  conversationForgotten,
   LIMIT_CLOSE,
   LIMIT_EXPLAINED,
   LIMIT_REACHED,
@@ -47,19 +45,6 @@ describe("charge annoncée par Claude Code", () => {
   it("un autre événement ne change pas la charge", () => {
     const event: ClaudeEventItem = { kind: "message", agent: null, text: "ok" };
     expect(loadEventReceived(NO_LOAD, event)).toBe(NO_LOAD);
-  });
-
-  it("une conversation neuve oublie le modèle et le contexte, pas la limite de l'abonnement", () => {
-    const load: ClaudeLoad = {
-      model: "claude-opus-5-5",
-      context: { used: 1, size: 2 },
-      limits: { reached: true, windows: [] },
-    };
-    expect(conversationForgotten(load)).toEqual({
-      model: null,
-      context: null,
-      limits: { reached: true, windows: [] },
-    });
   });
 });
 

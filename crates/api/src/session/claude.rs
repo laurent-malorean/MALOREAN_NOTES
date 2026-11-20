@@ -1,9 +1,9 @@
 //! La colonne Claude Code vue depuis l'interface : si Claude Code peut répondre, un tour joué dans
-//! l'espace de travail ouvert, la conversation continuée (fiche 0032).
+//! l'espace de travail ouvert, dans la conversation que l'interface désigne (fiche 0032).
 
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, PoisonError};
+use std::sync::Arc;
 
 use application::{ClaudeCode, ClaudeError, ClaudeStatus, WorkspaceLocation};
 use domain::NotePath;
@@ -13,9 +13,6 @@ use domain::claude::{
 
 use super::Session;
 use crate::{ApiError, ClaudeEventItem, ClaudeStatusItem};
-
-/// La conversation en cours et l'espace de travail où elle a commencé.
-pub(super) type CurrentConversation = Option<(WorkspaceLocation, ConversationId)>;
 
 impl Session {
     /// La même session, dont la colonne Claude Code passe par `claude`. Sans lui, Claude Code se
@@ -45,9 +42,11 @@ impl Session {
         }
     }
 
-    /// Joue un tour : envoie `message` à Claude dans l'espace de travail ouvert, en continuant la
-    /// conversation en cours avec le modèle et le niveau d'effort de `settings`, et donne à `on_event` chaque événement prêt pour l'interface dès qu'il
-    /// arrive, avec chaque note modifiée par Claude. Rend la main à la fin du tour.
+    /// Joue un tour : envoie `message` à Claude dans l'espace de travail ouvert, en continuant
+    /// `conversation` (celle de l'onglet de conversation ; rien en commence une neuve) avec le
+    /// modèle et le niveau d'effort de `settings`, et donne à `on_event` chaque événement prêt pour
+    /// l'interface dès qu'il arrive, dont le début de la conversation, avec chaque note modifiée
+    /// par Claude. Rend la main à la fin du tour.
     ///
     /// # Errors
     ///
@@ -56,34 +55,24 @@ impl Session {
     pub fn send_to_claude(
         &self,
         message: &str,
+        conversation: Option<&ConversationId>,
         settings: TurnSettings,
         mut on_event: impl FnMut(ClaudeEventItem),
     ) -> Result<(), ApiError> {
         let location = self.opened()?.location;
         let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
-        let conversation = self.conversation_in(&location);
         let mut notes = ChangedNotes::new(&location);
-        claude.send(
-            &location,
-            conversation.as_ref(),
-            settings,
-            message,
-            &mut |event| {
-                if let ClaudeEvent::ConversationStarted(id) = &event {
-                    *self.current_conversation() = Some((location.clone(), id.clone()));
-                }
-                let changed = notes.follow(&event);
-                ClaudeEventItem::from_event(event)
-                    .into_iter()
-                    .chain(changed.map(|path| ClaudeEventItem::ChangedNote { path }))
-                    .for_each(&mut on_event);
-            },
-        )?;
+        claude.send(&location, conversation, settings, message, &mut |event| {
+            let changed = notes.follow(&event);
+            on_event(ClaudeEventItem::from_event(event));
+            if let Some(path) = changed {
+                on_event(ClaudeEventItem::ChangedNote { path });
+            }
+        })?;
         Ok(())
     }
 
-    /// Déconnecte Claude Code de son compte Claude, pour tout le Mac ; la conversation en cours
-    /// est oubliée.
+    /// Déconnecte Claude Code de son compte Claude, pour tout le Mac.
     ///
     /// # Errors
     ///
@@ -92,13 +81,12 @@ impl Session {
     pub fn log_out_of_claude(&self) -> Result<(), ApiError> {
         let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
         claude.log_out()?;
-        self.new_conversation();
         Ok(())
     }
 
     /// Connecte Claude Code à un compte Claude, pour tout le Mac : le navigateur s'ouvre sur la
     /// page de connexion, dont `on_address` reçoit l'adresse. Rend la main une fois la connexion
-    /// terminée ; la conversation en cours est alors oubliée. [`Self::stop_claude`] l'annule.
+    /// terminée. [`Self::stop_claude`] l'annule.
     ///
     /// # Errors
     ///
@@ -107,7 +95,6 @@ impl Session {
     pub fn log_in_to_claude(&self, mut on_address: impl FnMut(String)) -> Result<(), ApiError> {
         let claude = self.claude.as_ref().ok_or(ClaudeError::Missing)?;
         claude.log_in(&mut |address| on_address(address.to_owned()))?;
-        self.new_conversation();
         Ok(())
     }
 
@@ -117,25 +104,6 @@ impl Session {
         if let Some(claude) = &self.claude {
             claude.stop();
         }
-    }
-
-    /// Oublie la conversation en cours : le message suivant en commence une neuve.
-    pub fn new_conversation(&self) {
-        *self.current_conversation() = None;
-    }
-
-    /// La conversation à continuer, si elle a commencé dans l'espace de travail `location`.
-    fn conversation_in(&self, location: &WorkspaceLocation) -> Option<ConversationId> {
-        self.current_conversation()
-            .as_ref()
-            .filter(|(started_in, _)| started_in == location)
-            .map(|(_, id)| id.clone())
-    }
-
-    fn current_conversation(&self) -> std::sync::MutexGuard<'_, CurrentConversation> {
-        self.conversation
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
     }
 }
 
@@ -257,7 +225,9 @@ mod tests {
 
     fn turn(session: &Session, message: &str) -> (Result<(), ApiError>, Vec<ClaudeEventItem>) {
         let mut items = Vec::new();
-        let end = session.send_to_claude(message, TurnSettings::default(), |item| items.push(item));
+        let end = session.send_to_claude(message, None, TurnSettings::default(), |item| {
+            items.push(item);
+        });
         (end, items)
     }
 
@@ -289,14 +259,20 @@ mod tests {
         assert_eq!(end, Ok(()));
         assert_eq!(
             items,
-            vec![ClaudeEventItem::Summary {
-                failure: None,
-                duration_ms: 1200,
-                tokens: 34,
-            }]
+            vec![
+                ClaudeEventItem::ConversationStarted {
+                    conversation: "c1".to_owned()
+                },
+                ClaudeEventItem::Summary {
+                    failure: None,
+                    duration_ms: 1200,
+                    tokens: 34,
+                }
+            ]
         );
-        let (workspace, _, _, message) = claude.requests().remove(0);
+        let (workspace, conversation, _, message) = claude.requests().remove(0);
         assert_eq!(workspace.as_str(), NOTES);
+        assert_eq!(conversation, None);
         assert_eq!(message, "Bonjour");
     }
 
@@ -321,14 +297,16 @@ mod tests {
     }
 
     #[test]
-    fn the_next_message_continues_the_conversation_until_a_new_one() {
+    fn the_conversation_named_by_the_interface_is_continued() {
         let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
         let session = opened(&claude);
-        turn(&session, "Un").0.unwrap();
+        let c7 = ConversationId::new("c7").unwrap();
+        let settings = TurnSettings::default();
+        session
+            .send_to_claude("Un", Some(&c7), settings, |_| {})
+            .unwrap();
         turn(&session, "Deux").0.unwrap();
-        session.new_conversation();
-        turn(&session, "Trois").0.unwrap();
-        assert_eq!(conversations(&claude), [None, Some("c1".to_owned()), None]);
+        assert_eq!(conversations(&claude), [Some("c7".to_owned()), None]);
     }
 
     #[test]
@@ -340,8 +318,11 @@ mod tests {
             effort: Some(Effort::Low),
             changes_after_web: ChangesAfterWeb::Allowed,
         };
+        let c1 = ConversationId::new("c1").unwrap();
         turn(&session, "Un").0.unwrap();
-        session.send_to_claude("Deux", opus, |_| {}).unwrap();
+        session
+            .send_to_claude("Deux", Some(&c1), opus, |_| {})
+            .unwrap();
         let requests = claude.requests();
         assert_eq!(requests[0].2, TurnSettings::default());
         assert_eq!(
@@ -354,28 +335,13 @@ mod tests {
     }
 
     #[test]
-    fn another_workspace_starts_a_new_conversation() {
-        let claude = Arc::new(FakeClaudeCode::replaying(vec![started("c1"), summary()]));
-        let session = opened(&claude);
-        turn(&session, "Un").0.unwrap();
-        session
-            .add_workspace("Travail", "/Users/moi/Travail")
-            .unwrap();
-        turn(&session, "Deux").0.unwrap();
-        session.open_workspace("Notes").unwrap();
-        session.open_workspace("Travail").unwrap();
-        turn(&session, "Trois").0.unwrap();
-        assert_eq!(conversations(&claude), [None, None, None]);
-    }
-
-    #[test]
     fn a_running_turn_stops_on_request() {
         let claude = Arc::new(FakeClaudeCode::hanging(vec![started("c1")]));
         let session = opened(&claude);
         let (sender, received) = mpsc::channel();
         thread::scope(|scope| {
             let running = scope.spawn(|| {
-                session.send_to_claude("Bonjour", TurnSettings::default(), |item| {
+                session.send_to_claude("Bonjour", None, TurnSettings::default(), |item| {
                     sender.send(item).unwrap();
                 })
             });
@@ -393,7 +359,11 @@ mod tests {
             );
         });
         drop(sender);
-        assert!(received.try_recv().is_err());
+        let conversation = "c1".to_owned();
+        assert_eq!(
+            received.try_iter().collect::<Vec<_>>(),
+            [ClaudeEventItem::ConversationStarted { conversation }]
+        );
     }
 
     #[test]

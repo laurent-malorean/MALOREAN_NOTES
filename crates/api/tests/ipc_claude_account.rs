@@ -14,7 +14,6 @@ use application::testing::{
     FakeClaudeCode, FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore,
 };
 use application::{ClaudeAccount, ClaudeCode, ClaudeStatus};
-use domain::claude::{ClaudeEvent, ConversationId};
 use serde_json::{Value, json};
 use tauri::ipc::{CallbackFn, InvokeBody};
 use tauri::test::{
@@ -48,33 +47,16 @@ fn window(claude: Option<&Arc<FakeClaudeCode>>) -> WebviewWindow<MockRuntime> {
 }
 
 fn call(window: &WebviewWindow<MockRuntime>, command: &str) -> Result<Value, Value> {
-    call_with(window, command, json!({}))
-}
-
-fn call_with(
-    window: &WebviewWindow<MockRuntime>,
-    command: &str,
-    args: Value,
-) -> Result<Value, Value> {
     let request = InvokeRequest {
         cmd: command.into(),
         callback: CallbackFn(0),
         error: CallbackFn(1),
         url: "tauri://localhost".parse().unwrap(),
-        body: InvokeBody::Json(args),
+        body: InvokeBody::Json(json!({})),
         headers: Default::default(),
         invoke_key: INVOKE_KEY.to_string(),
     };
     get_ipc_response(window, request).map(|body| body.deserialize::<Value>().unwrap())
-}
-
-fn send(window: &WebviewWindow<MockRuntime>) {
-    call_with(
-        window,
-        "send_to_claude",
-        json!({ "message": "Salut", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
-    )
-    .unwrap();
 }
 
 fn other_account() -> ClaudeAccount {
@@ -82,13 +64,6 @@ fn other_account() -> ClaudeAccount {
         email: Some("autre@example.com".to_owned()),
         organization: Some("Autre".to_owned()),
     }
-}
-
-/// Un faux Claude Code connecté, dont chaque tour commence la conversation `c1`.
-fn conversing() -> FakeClaudeCode {
-    FakeClaudeCode::replaying(vec![ClaudeEvent::ConversationStarted(
-        ConversationId::new("c1").unwrap(),
-    )])
 }
 
 #[test]
@@ -122,10 +97,9 @@ fn the_account_never_shows_in_the_debug_output_of_the_status() {
 }
 
 #[test]
-fn logging_in_gives_the_sign_in_address_then_the_new_account_and_a_new_conversation() {
-    let claude = Arc::new(conversing().signing_in_as(other_account()));
+fn logging_in_gives_the_sign_in_address_then_the_new_account() {
+    let claude = Arc::new(FakeClaudeCode::default().signing_in_as(other_account()));
     let window = window(Some(&claude));
-    send(&window);
     let addresses = Arc::new(Mutex::new(Vec::new()));
     let kept = Arc::clone(&addresses);
     window.listen_any("claude-sign-in", move |event| {
@@ -142,25 +116,20 @@ fn logging_in_gives_the_sign_in_address_then_the_new_account_and_a_new_conversat
         call(&window, "claude_status"),
         Ok(json!({ "kind": "ready", "email": "autre@example.com", "organization": "Autre" }))
     );
-    send(&window);
-    assert_eq!(claude.requests()[1].1, None);
     for name in ["\"log_in_to_claude\"", "\"claude-sign-in\""] {
         assert!(BRIDGE_SOURCE.contains(name), "{name} absent du pont");
     }
 }
 
 #[test]
-fn logging_out_leaves_claude_code_logged_out_and_forgets_the_conversation() {
-    let claude = Arc::new(conversing());
+fn logging_out_leaves_claude_code_logged_out() {
+    let claude = Arc::new(FakeClaudeCode::default());
     let window = window(Some(&claude));
-    send(&window);
     assert_eq!(call(&window, "log_out_of_claude"), Ok(Value::Null));
     assert_eq!(
         call(&window, "claude_status").unwrap()["kind"],
         json!("unavailable")
     );
-    send(&window);
-    assert_eq!(claude.requests()[1].1, None);
     assert!(BRIDGE_SOURCE.contains("\"log_out_of_claude\""));
 }
 
@@ -197,9 +166,8 @@ fn without_claude_code_one_can_neither_log_in_nor_out() {
 
 #[test]
 fn a_login_waiting_for_the_browser_is_cancelled_by_stop() {
-    let claude = Arc::new(conversing().waiting_for_the_browser());
+    let claude = Arc::new(FakeClaudeCode::default().waiting_for_the_browser());
     let window = window(Some(&claude));
-    send(&window);
     let (sender, received) = std::sync::mpsc::channel();
     window.listen_any("claude-sign-in", move |_| sender.send(()).unwrap());
     std::thread::scope(|scope| {
@@ -208,10 +176,9 @@ fn a_login_waiting_for_the_browser_is_cancelled_by_stop() {
         assert_eq!(call(&window, "stop_claude"), Ok(Value::Null));
         assert!(running.join().unwrap().is_err());
     });
-    // Annulée, la connexion n'a rien changé : la conversation continue.
-    send(&window);
+    // Annulée, la connexion n'a rien changé : Claude Code reste connecté.
     assert_eq!(
-        claude.requests()[1].1,
-        Some(ConversationId::new("c1").unwrap())
+        call(&window, "claude_status").unwrap()["kind"],
+        json!("ready")
     );
 }

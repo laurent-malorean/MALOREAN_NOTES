@@ -1,9 +1,11 @@
 // Colonne Claude Code : affichée ou masquée par sa commande ; à l'ouverture, demande si Claude Code
-// peut répondre. Envoie les messages, avec les réglages du tour et les notes jointes, suit les
-// événements du tour en cours et sa durée, l'arrête, commence une nouvelle conversation, autorise
-// les modifications retenues par le garde-fou du web ; une note modifiée par Claude s'ouvre d'un clic. La carte des agents et la charge (version du modèle,
-// limite d'utilisation, contexte) suivent les mêmes événements ; le compte Claude se montre et se
-// change en haut de la colonne (fiche 0032).
+// peut répondre. Tient les onglets de conversation de chaque espace de travail (« Nouvelle
+// conversation » en ouvre un) ; envoie les messages de l'onglet montré, avec les réglages du tour
+// et les notes jointes, dans sa conversation ; suit les événements du tour en cours (un seul à la
+// fois, tous onglets confondus) dans l'onglet qui l'a lancé, et sa durée ; l'arrête ; autorise les
+// modifications retenues par le garde-fou du web ; une note modifiée par Claude s'ouvre d'un clic.
+// La carte des agents et la charge (version du modèle, limite d'utilisation, contexte) suivent les
+// mêmes événements ; le compte Claude se montre et se change en haut de la colonne (fiche 0032).
 import type * as Bridge from "../bridge";
 import { noteHtml } from "../rendering/note-html";
 import {
@@ -14,19 +16,24 @@ import {
 import type { Layout } from "../screens/layout";
 import { type Account, createAccount } from "./claude-account";
 import { createInputBar, type InputBar } from "./claude-input-bar";
-import { type AgentMap, agentEventReceived, agentTurnEnded, NO_AGENTS } from "../state/agent-map";
+import { ALLOW_CHANGES_MESSAGE } from "../state/claude-column";
 import { messageWithNotes } from "../state/claude-input-bar";
+import { type ConversationTabsKeeper, createConversationTabsKeeper } from "./claude-tabs";
+import {
+  activeConversationTab,
+  type ConversationTabs,
+  tabClosed,
+  tabEventReceived,
+  tabMessageSent,
+  tabOpened,
+  tabShown,
+  tabStopAsked,
+  tabTitle,
+  tabTurnEnded,
+  tabUpdated,
+} from "../state/claude-tabs";
 import type { Columns } from "../state/columns";
 import type { PreferenceStorage } from "../state/focus-preference";
-import {
-  ALLOW_CHANGES_MESSAGE,
-  type Conversation,
-  eventReceived,
-  messageSent,
-  NEW_CONVERSATION,
-  stopAsked,
-  turnEnded,
-} from "../state/claude-column";
 
 export interface ClaudeColumnDeps {
   readonly backend: Pick<
@@ -34,7 +41,6 @@ export interface ClaudeColumnDeps {
     | "claudeStatus"
     | "sendToClaude"
     | "stopClaude"
-    | "newConversation"
     | "onClaudeEvent"
     | "errorMessage"
     | "listAllNotes"
@@ -59,7 +65,7 @@ export interface ClaudeColumn {
   /** Affiche la colonne, ou la masque. */
   toggle(): void;
   /**
-   * Suit l'espace de travail ouvert (un autre commence une conversation neuve) et la note de la
+   * Suit l'espace de travail ouvert (un autre montre ses onglets de conversation) et la note de la
    * colonne active, jointe au message.
    */
   follow(): void;
@@ -98,7 +104,7 @@ function toggler(layout: ClaudeColumnDeps["layout"], shown: () => void) {
   };
 }
 
-/** Le compte Claude en haut de la colonne ; `changed` oublie la conversation. */
+/** Le compte Claude en haut de la colonne ; `changed` oublie les conversations. */
 function accountOf(deps: ClaudeColumnDeps, view: ClaudeColumnView, changed: () => void): Account {
   const container = deps.layout.claudeColumn.querySelector(".claude-account");
   const account: Account = createAccount(container as HTMLDetailsElement, {
@@ -110,13 +116,13 @@ function accountOf(deps: ClaudeColumnDeps, view: ClaudeColumnView, changed: () =
 }
 
 /**
- * Suit l'espace de travail ouvert (un autre commence une conversation neuve, par `forget`) et la
+ * Suit l'espace de travail ouvert (un autre montre ses onglets de conversation, par `show`) et la
  * note de la colonne active, jointe au message.
  */
 function workspaceFollower(
   workspace: ClaudeColumnDeps["workspace"],
   bar: InputBar,
-  forget: () => void,
+  show: () => void,
 ) {
   let current = workspace.path();
   return () => {
@@ -124,70 +130,100 @@ function workspaceFollower(
     bar.follow(changed);
     if (!changed) return;
     current = workspace.path();
-    forget();
+    show();
+  };
+}
+
+/** Ce que la barre des onglets montre de chaque onglet de conversation. */
+const shownTabs = ({ tabs, active }: ConversationTabs) =>
+  tabs.map((tab) => ({
+    id: tab.id,
+    title: tabTitle(tab),
+    running: tab.conversation.turn !== "idle",
+    active: tab.id === active,
+  }));
+
+/**
+ * Commence un tour dans l'onglet montré : `text` dans sa conversation, `message` envoyé à Claude
+ * dans la conversation de l'onglet ; ses événements et sa fin vont à cet onglet.
+ */
+function player(
+  backend: ClaudeColumnDeps["backend"],
+  tabs: ConversationTabsKeeper,
+  bar: InputBar,
+  here: () => string,
+) {
+  return (text: string, notes: readonly string[], message: string, allowed: boolean) => {
+    const tab = activeConversationTab(tabs.shown());
+    const at = { workspace: here(), tab: tab.id };
+    const ended = (error: string | null) => {
+      tabs.started(null);
+      tabs.changeTab(at, (shown) => tabTurnEnded(shown, error));
+    };
+    tabs.started({ ...at, since: Date.now() });
+    tabs.changeTab(at, (shown) => tabMessageSent(shown, text, notes));
+    backend.sendToClaude(message, tab.conversationId, bar.settings(), allowed).then(
+      () => ended(null),
+      (error: unknown) => ended(backend.errorMessage(error)),
+    );
   };
 }
 
 export function createClaudeColumn(deps: ClaudeColumnDeps): ClaudeColumn {
   const { backend, layout } = deps;
-  let conversation: Conversation = NEW_CONVERSATION;
-  let agents: AgentMap = NO_AGENTS;
-  const bar = createInputBar({ ...deps, picker: layout.picker }, () => view);
-  const update = (next: Conversation, nextAgents: AgentMap = agents) => {
-    conversation = next;
-    agents = nextAgents;
-    view.render(conversation, deps.workspace.path());
-    view.showAgents(agents);
-    account.turnRunning(conversation.turn !== "idle");
+  const here = () => deps.workspace.path();
+  const tabs = createConversationTabsKeeper(here, () => show());
+  /** L'onglet montré est celui dont le tour court. */
+  const replyingSince = () => tabs.runningSince(tabs.shown().active);
+  const replying = () => replyingSince() !== null;
+  const bar = createInputBar({ ...deps, picker: layout.picker, replyingSince }, () => view);
+  const show = () => {
+    const tab = activeConversationTab(tabs.shown());
+    view.showTabs(shownTabs(tabs.shown()));
+    view.render(tab.conversation, here(), tabs.turn() !== null && !replying());
+    view.showAgents(tab.agents);
+    bar.showConversation(tab.load);
+    account.turnRunning(tabs.turn() !== null);
   };
-  /**
-   * Une conversation neuve, le tour en cours gardé (« Nouvelle conversation » et le changement de
-   * compte ne sont possibles qu'hors d'un tour) : ni sous-agent, ni modèle, ni contexte.
-   */
-  const forget = () => {
-    bar.forget();
-    update({ ...NEW_CONVERSATION, turn: conversation.turn }, NO_AGENTS);
-  };
-  const ended = (error: string | null) => {
-    bar.timeReply(false);
-    update(turnEnded(conversation, error), agentTurnEnded(agents, error !== null));
-  };
-  /** Commence un tour : `shown` dans la conversation, `message` envoyé à Claude. */
-  const play = (shown: Conversation, message: string, changesAllowed: boolean) => {
-    update(shown);
-    bar.timeReply(true);
-    backend.sendToClaude(message, bar.settings(), changesAllowed).then(
-      () => ended(null),
-      (error: unknown) => ended(backend.errorMessage(error)),
-    );
-  };
+  const play = player(backend, tabs, bar, here);
   const send = (text: string) => {
     const notes = bar.sent();
-    const titles = notes.map((note) => note.title);
-    play(messageSent(conversation, text, titles), messageWithNotes(text, notes), false);
+    play(
+      text,
+      notes.map((note) => note.title),
+      messageWithNotes(text, notes),
+      false,
+    );
   };
-  // Les modifications retenues par le garde-fou du web, autorisées pour ce seul tour.
-  const allowChanges = () =>
-    play(messageSent(conversation, ALLOW_CHANGES_MESSAGE), ALLOW_CHANGES_MESSAGE, true);
   const view: ClaudeColumnView = createClaudeColumnView(layout.claudeColumn, {
-    ...{ send, allowChanges, openNote: deps.openNote, markdown, close: () => toggle() },
+    ...{ send, openNote: deps.openNote, markdown, close: () => toggle() },
     ...{ chooseSettings: bar.chooseSettings, attach: bar.attach, detach: bar.detach },
+    // Les modifications retenues par le garde-fou du web, autorisées pour ce seul tour.
+    allowChanges: () => play(ALLOW_CHANGES_MESSAGE, [], ALLOW_CHANGES_MESSAGE, true),
     stop: () => {
-      update(stopAsked(conversation));
+      tabs.changeShown((shown) => tabUpdated(shown, shown.active, tabStopAsked));
       backend.stopClaude().catch(deps.error);
     },
-    newConversation: () => void backend.newConversation().then(() => forget(), deps.error),
+    newConversation: () => (tabs.changeShown(tabOpened), view.focus()),
+    showTab: (id) => tabs.changeShown((shown) => tabShown(shown, id)),
+    // Fermer l'onglet dont le tour court arrête d'abord ce tour.
+    closeTab: (id) => {
+      if (tabs.runningSince(id) !== null) backend.stopClaude().catch(deps.error);
+      tabs.changeShown((shown) => tabClosed(shown, id));
+    },
   });
-  const account = accountOf(deps, view, () => forget());
+  // Un autre compte ne peut pas continuer ces conversations (le compte ne change que hors d'un tour).
+  const account = accountOf(deps, view, () => tabs.forget());
   const toggle = toggler(layout, () => void checkStatus(view, backend, account));
   layout.claudeButton.addEventListener("click", toggle);
   void backend.onClaudeEvent((event) => {
     bar.heard(event);
-    update(eventReceived(conversation, event), agentEventReceived(agents, event));
+    const turn = tabs.turn();
+    if (turn !== null) tabs.changeTab(turn, (tab) => tabEventReceived(tab, event));
   });
-  update(conversation);
+  show();
   view.showSettings(bar.settings());
-  const follow = workspaceFollower(deps.workspace, bar, () => forget());
+  const follow = workspaceFollower(deps.workspace, bar, show);
   follow();
   return { toggle, follow };
 }

@@ -1,5 +1,6 @@
-// Colonne Claude Code : l'en-tête, la conversation (messages, actions de Claude, notes modifiées,
-// bilans), et la zone où l'on écrit son message (Entrée envoie, Maj+Entrée va à la ligne).
+// Colonne Claude Code : l'en-tête, les onglets de conversation, la conversation de l'onglet montré
+// (messages, actions de Claude, notes modifiées, bilans), et la zone où l'on écrit son message
+// (Entrée envoie, Maj+Entrée va à la ligne).
 import {
   ACTION_STATES,
   changesHeldBack,
@@ -11,12 +12,18 @@ import {
 import type { AgentMap } from "../state/agent-map";
 import { createAgentMapView } from "./agent-map-view";
 import {
+  type ConversationTabsHandlers,
+  createConversationTabsView,
+  type ShownConversationTab,
+} from "./claude-tabs-view";
+import {
   createInputBarView,
   type InputBarHandlers,
   type InputBarView,
 } from "./claude-input-bar-view";
 
-export interface ClaudeColumnHandlers extends Omit<InputBarHandlers, "showAgentMap"> {
+export interface ClaudeColumnHandlers
+  extends Omit<InputBarHandlers, "showAgentMap">, ConversationTabsHandlers {
   send(text: string): void;
   stop(): void;
   newConversation(): void;
@@ -29,8 +36,13 @@ export interface ClaudeColumnHandlers extends Omit<InputBarHandlers, "showAgentM
 }
 
 export interface ClaudeColumnView extends Omit<InputBarView, "showAgents"> {
-  /** Montre la conversation ; les cibles dans l'espace de travail `workspacePath` s'écrivent depuis lui. */
-  render(conversation: Conversation, workspacePath: string): void;
+  /**
+   * Montre la conversation ; les cibles dans l'espace de travail `workspacePath` s'écrivent depuis
+   * lui. `otherTabRunning` : un autre onglet de conversation répond, on ne peut pas envoyer ici.
+   */
+  render(conversation: Conversation, workspacePath: string, otherTabRunning?: boolean): void;
+  /** Montre les onglets de conversation. */
+  showTabs(tabs: readonly ShownConversationTab[]): void;
   /** Montre pourquoi Claude Code ne peut pas répondre, ou rien ; l'écriture n'est possible que sans raison. */
   showUnavailable(reason: string | null): void;
   /** Met le curseur dans la zone du message. */
@@ -45,6 +57,9 @@ export interface ClaudeColumnView extends Omit<InputBarView, "showAgents"> {
 export const CHECKING_CLAUDE = "Vérification de Claude Code…";
 export const WORKING = "Claude travaille…";
 export const STOPPED = "Réponse arrêtée";
+/** Pourquoi on ne peut pas envoyer : un seul tour à la fois (fiche 0032). */
+export const OTHER_TAB_RUNNING =
+  "Claude répond dans un autre onglet de conversation : attendez la fin de sa réponse, ou arrêtez-la depuis cet onglet, pour envoyer un message ici.";
 export const EMPTY =
   "Demandez à Claude de lire, créer ou modifier les notes de cet espace de travail.";
 
@@ -59,9 +74,10 @@ export const WEB_HELD_BACK =
 const TEMPLATE = `
   <header class="claude-header">
     <span class="claude-title">Claude Code</span>
-    <button class="tool" data-new-conversation title="Oublier la conversation et en commencer une neuve">Nouvelle conversation</button>
+    <button class="tool" data-new-conversation title="Ouvrir un onglet de conversation vide ; les autres conversations restent dans leurs onglets">Nouvelle conversation</button>
     <button class="icon" data-close title="Masquer la colonne Claude Code (Ctrl+Cmd+L)" aria-label="Masquer la colonne Claude Code">×</button>
   </header>
+  <div class="claude-tabs" role="tablist" aria-label="Onglets de conversation"></div>
   <details class="claude-account"></details>
   <p class="claude-unavailable" role="alert" hidden></p>
   <details class="claude-agents" hidden></details>
@@ -162,8 +178,8 @@ function entryView(entry: ChatEntry, context: Context) {
   }
 }
 
-/** L'explication des modifications retenues, et le bouton qui les autorise. */
-function heldBack(handlers: ClaudeColumnHandlers) {
+/** L'explication des modifications retenues, et le bouton qui les autorise, sauf `blocked`. */
+function heldBack(handlers: ClaudeColumnHandlers, blocked: boolean) {
   const shown = element("div", "claude-held-back");
   shown.setAttribute("role", "alert");
   const allow = element(
@@ -172,6 +188,7 @@ function heldBack(handlers: ClaudeColumnHandlers) {
     "Autoriser ses modifications",
   ) as HTMLButtonElement;
   allow.title = "Claude refait les modifications retenues, pour cette réponse seulement";
+  allow.disabled = blocked;
   allow.addEventListener("click", () => handlers.allowChanges());
   shown.append(element("p", "claude-held-back-text", WEB_HELD_BACK), allow);
   return shown;
@@ -227,37 +244,46 @@ export function createClaudeColumnView(
   const stop = find<HTMLButtonElement>("[data-stop]");
   const fresh = find<HTMLButtonElement>("[data-new-conversation]");
   let running = false;
+  let otherRunning = false;
+  let unavailableShown = false;
   const rendered: RenderedMessages = new Map();
+  const showSend = () => {
+    send.disabled = unavailableShown || otherRunning;
+  };
   connectForm(
     form,
     input,
     (text) => handlers.send(text),
-    () => running,
+    () => running || otherRunning,
   );
   stop.addEventListener("click", () => handlers.stop());
   fresh.addEventListener("click", () => handlers.newConversation());
   find<HTMLButtonElement>("[data-close]").addEventListener("click", () => handlers.close());
   return {
     ...agentsAndBar(find, handlers),
-    render: (conversation, workspacePath) => {
+    showTabs: createConversationTabsView(find(".claude-tabs"), handlers),
+    render: (conversation, workspacePath, otherTabRunning = false) => {
       running = conversation.turn !== "idle";
+      otherRunning = otherTabRunning;
       const context = { workspacePath, handlers, rendered };
       const entries = conversation.entries.map((entry) => entryView(entry, context));
       if (entries.length === 0) entries.push(element("p", "claude-empty", EMPTY));
       if (running) entries.push(element("div", "claude-working", WORKING));
-      if (changesHeldBack(conversation)) entries.push(heldBack(handlers));
+      if (changesHeldBack(conversation)) entries.push(heldBack(handlers, otherRunning));
+      if (otherRunning) entries.push(element("p", "claude-other-tab", OTHER_TAB_RUNNING));
       log.replaceChildren(...entries);
       log.scrollTop = log.scrollHeight;
       stop.hidden = !running;
       stop.disabled = conversation.turn === "stopping";
       send.hidden = running;
-      fresh.disabled = running;
+      showSend();
     },
     showUnavailable: (reason) => {
       unavailable.hidden = reason === null;
       unavailable.textContent = reason ?? "";
       input.disabled = reason !== null;
-      send.disabled = reason !== null;
+      unavailableShown = reason !== null;
+      showSend();
     },
     focus: () => input.focus(),
   };

@@ -116,12 +116,13 @@ fn each_event_of_a_turn_reaches_the_interface_under_the_names_it_uses() {
     let answer = call(
         &window,
         "send_to_claude",
-        json!({ "message": "Salut", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
+        json!({ "message": "Salut", "conversation": null, "settings": { "model": null, "effort": null }, "changesAllowed": false }),
     );
     assert_eq!(answer, Ok(Value::Null));
     assert_eq!(
         *received.lock().unwrap(),
         [
+            json!({ "kind": "conversationStarted", "conversation": "c1" }),
             json!({ "kind": "message", "agent": null, "text": "Bonjour !" }),
             json!({ "kind": "summary", "failure": null, "durationMs": 1500, "tokens": 20 }),
         ]
@@ -133,41 +134,50 @@ fn each_event_of_a_turn_reaches_the_interface_under_the_names_it_uses() {
 }
 
 #[test]
-fn a_new_conversation_is_asked_under_the_name_used_by_the_interface() {
-    let claude = Arc::new(FakeClaudeCode::replaying(vec![
-        ClaudeEvent::ConversationStarted(ConversationId::new("c1").unwrap()),
-    ]));
+fn the_conversation_of_the_tab_is_continued_with_the_settings_of_the_turn() {
+    let claude = Arc::new(FakeClaudeCode::replaying(vec![summary()]));
     let window = opened_window(&claude);
-    call(
-        &window,
-        "send_to_claude",
-        json!({ "message": "Un", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
-    )
-    .unwrap();
-    assert_eq!(
-        call(&window, "new_conversation", json!({})),
-        Ok(Value::Null)
-    );
     call(
         &window,
         "send_to_claude",
         json!({
             "message": "Deux",
+            "conversation": "c1",
             "settings": { "model": "opus", "effort": "max" },
             "changesAllowed": true,
         }),
     )
     .unwrap();
-    assert_eq!(claude.requests()[1].1, None);
     assert_eq!(
-        claude.requests()[1].2,
+        claude.requests()[0].1,
+        Some(ConversationId::new("c1").unwrap())
+    );
+    assert_eq!(
+        claude.requests()[0].2,
         TurnSettings {
             model: Some(ClaudeModel::Opus),
             effort: Some(Effort::Max),
             changes_after_web: ChangesAfterWeb::Allowed,
         }
     );
-    assert!(BRIDGE_SOURCE.contains("\"new_conversation\""));
+}
+
+#[test]
+fn a_conversation_unlike_those_of_claude_code_is_refused_before_any_turn() {
+    let claude = Arc::new(FakeClaudeCode::replaying(vec![summary()]));
+    let window = opened_window(&claude);
+    let refused = call(
+        &window,
+        "send_to_claude",
+        json!({ "message": "Un", "conversation": "--help", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
+    );
+    assert_eq!(
+        refused,
+        Err(
+            json!({ "message": "la conversation à continuer est inconnue : commencez-en une nouvelle" })
+        )
+    );
+    assert!(claude.requests().is_empty());
 }
 
 #[test]
@@ -180,7 +190,7 @@ fn a_turn_without_a_workspace_answers_why_and_stopping_changes_nothing() {
     let refused = call(
         &without,
         "send_to_claude",
-        json!({ "message": "Salut", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
+        json!({ "message": "Salut", "conversation": null, "settings": { "model": null, "effort": null }, "changesAllowed": false }),
     )
     .unwrap_err();
     assert_eq!(
@@ -242,7 +252,7 @@ fn a_running_turn_stops_under_the_name_used_by_the_interface() {
             call(
                 &window,
                 "send_to_claude",
-                json!({ "message": "Un", "settings": { "model": null, "effort": null }, "changesAllowed": false }),
+                json!({ "message": "Un", "conversation": null, "settings": { "model": null, "effort": null }, "changesAllowed": false }),
             )
         });
         while claude.requests().is_empty() {

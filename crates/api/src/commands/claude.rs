@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Runtime};
 
 use super::{SharedSession, in_background};
-use crate::dto::turn_settings;
+use crate::dto::{continued_conversation, turn_settings};
 use crate::{ApiError, ClaudeStatusItem, TurnSettingsItem};
 
 /// Événement envoyé à l'interface pour chaque événement de Claude d'un tour ; il porte un
@@ -27,26 +27,31 @@ pub async fn claude_status(session: SharedSession<'_>) -> Result<ClaudeStatusIte
     in_background(move || Ok(session.claude_status())).await
 }
 
-/// Envoie un message à Claude dans l'espace de travail ouvert, avec le modèle et le niveau
-/// d'effort choisis (`settings`) ; ses créations et modifications après une lecture du web sont
+/// Envoie un message à Claude dans l'espace de travail ouvert, en continuant `conversation` (celle
+/// de l'onglet de conversation, gardée de son début ; rien en commence une neuve), avec le modèle
+/// et le niveau d'effort choisis (`settings`) ; ses créations et modifications après une lecture du web sont
 /// retenues, sauf si `changes_allowed` (l'utilisateur les autorise pour ce tour). Chaque événement
 /// du tour est envoyé à l'interface dès qu'il arrive ([`CLAUDE_EVENT`]). Rend la main à la fin du tour.
 ///
 /// # Errors
 ///
-/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::send_to_claude`].
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::send_to_claude`] ; une
+/// conversation dont l'identifiant ne ressemble pas à ceux de Claude Code est dite inconnue.
 #[tauri::command]
 pub async fn send_to_claude<R: Runtime>(
     app: AppHandle<R>,
     session: SharedSession<'_>,
     message: String,
+    conversation: Option<String>,
     settings: TurnSettingsItem,
     changes_allowed: bool,
 ) -> Result<(), ApiError> {
     let session = Arc::clone(&session);
+    let conversation = continued_conversation(conversation)?;
     in_background(move || {
         session.send_to_claude(
             &message,
+            conversation.as_ref(),
             turn_settings(settings, changes_allowed),
             |event| {
                 if let Err(error) = app.emit(CLAUDE_EVENT, event) {
@@ -103,21 +108,6 @@ pub async fn stop_claude(session: SharedSession<'_>) -> Result<(), ApiError> {
     let session = Arc::clone(&session);
     in_background(move || {
         session.stop_claude();
-        Ok(())
-    })
-    .await
-}
-
-/// Oublie la conversation en cours : le message suivant en commence une neuve.
-///
-/// # Errors
-///
-/// Seulement une erreur interne, si le fil d'arrière-plan s'arrête.
-#[tauri::command]
-pub async fn new_conversation(session: SharedSession<'_>) -> Result<(), ApiError> {
-    let session = Arc::clone(&session);
-    in_background(move || {
-        session.new_conversation();
         Ok(())
     })
     .await

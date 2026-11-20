@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClaudeEventItem, ClaudeStatusItem, TurnSettingsItem } from "../bridge";
 import type { Columns } from "../state/columns";
 import { createLayout, type Layout } from "../screens/layout";
-import { CHECKING_CLAUDE, EMPTY } from "../screens/claude-column-view";
+import { CHECKING_CLAUDE, EMPTY, OTHER_TAB_RUNNING } from "../screens/claude-column-view";
 import { ALLOW_CHANGES_MESSAGE } from "../state/claude-column";
 import { NO_SETTINGS } from "../state/claude-input-bar";
 import { type ClaudeColumn, createClaudeColumn } from "./claude-column";
@@ -46,7 +46,7 @@ function createColumn() {
   return createClaudeColumn({
     backend: {
       claudeStatus: () => (log.push("vérifier"), status),
-      sendToClaude: (message, settings, allowed) =>
+      sendToClaude: (message, _conversation, settings, allowed) =>
         new Promise((resolve, reject) => {
           log.push(`envoyer ${message}`);
           sentSettings.push(settings);
@@ -54,7 +54,6 @@ function createColumn() {
           turn = { resolve: () => resolve(null), reject };
         }),
       stopClaude: async () => (log.push("arrêter"), null),
-      newConversation: async () => (log.push("oublier"), null),
       onClaudeEvent: async (handler) => ((announce = handler), () => {}),
       errorMessage: (error) => String((error as { message: string }).message),
       listAllNotes: async () => [
@@ -261,7 +260,6 @@ describe("colonne Claude Code : un tour", () => {
         copyPlainText: async () => null,
         sendToClaude: () => new Promise(() => {}),
         stopClaude: () => Promise.reject(new Error("fil arrêté")),
-        newConversation: () => Promise.reject(new Error("fil perdu")),
         onClaudeEvent: async () => () => {},
         errorMessage: String,
         listAllNotes: () => Promise.reject(new Error("liste perdue")),
@@ -273,54 +271,53 @@ describe("colonne Claude Code : un tour", () => {
       openNote: () => {},
       error: (error) => log.push(`erreur ${String(error)}`),
     });
-    find<HTMLButtonElement>("[data-new-conversation]").click();
     send("Bonjour");
     find<HTMLButtonElement>("[data-stop]").click();
     await settle();
     find<HTMLButtonElement>(".claude-attach").click();
     await settle();
-    expect(log).toEqual([
-      "erreur Error: fil perdu",
-      "erreur Error: fil arrêté",
-      "erreur Error: liste perdue",
-    ]);
+    expect(log).toEqual(["erreur Error: fil arrêté", "erreur Error: liste perdue"]);
   });
 
-  it("Nouvelle conversation oublie la conversation et vide la colonne", async () => {
+  it("Nouvelle conversation ouvre un onglet vide, et y met le curseur", async () => {
+    column.toggle();
+    await settle();
+    log.length = 0;
     send("Bonjour");
     turn.resolve();
     await settle();
     find<HTMLButtonElement>("[data-new-conversation]").click();
-    await settle();
-    expect(log).toEqual(["envoyer Bonjour", "oublier"]);
+    expect(log).toEqual(["envoyer Bonjour"]);
     expect(find(".claude-empty")).not.toBeNull();
+    expect(document.activeElement).toBe(find(".claude-input"));
   });
 
-  it("un autre espace de travail vide la colonne ; le même la garde", async () => {
+  it("un autre espace de travail montre ses onglets ; revenir retrouve les siens", async () => {
     send("Bonjour");
     turn.resolve();
     await settle();
+    const message = find(".claude-user");
     column.follow();
-    expect(shown()).toEqual(["Bonjour"]);
+    // Le même espace de travail : la conversation n'est pas redessinée (ni ramenée en bas).
+    expect(find(".claude-user")).toBe(message);
     workspacePath = "/Users/moi/Travail";
     column.follow();
     expect(find(".claude-empty")).not.toBeNull();
-    announce({
-      kind: "actionStarted",
-      agent: null,
-      id: "r",
-      action: "read",
-      tool: null,
-      target: "/Users/moi/Travail/a.md",
-    });
-    expect(shown()).toEqual(["Lecturea.md"]);
+    workspacePath = "/Users/moi/Notes";
+    column.follow();
+    expect(shown()).toEqual(["Bonjour"]);
   });
 
-  it("un tour en cours le reste quand l'espace de travail change", () => {
+  it("un tour en cours le reste quand l'espace de travail change, et suit son onglet", () => {
     send("Bonjour");
     workspacePath = "/Users/moi/Travail";
     column.follow();
-    expect(shown()).toEqual([EMPTY, "Claude travaille…"]);
+    expect(shown()).toEqual([EMPTY, OTHER_TAB_RUNNING]);
+    announce({ kind: "message", agent: null, text: "Fait" });
+    expect(shown()).toEqual([EMPTY, OTHER_TAB_RUNNING]);
+    workspacePath = "/Users/moi/Notes";
+    column.follow();
+    expect(shown()).toEqual(["Bonjour", "Fait", "Claude travaille…"]);
   });
 });
 
@@ -506,6 +503,7 @@ describe("colonne Claude Code : la barre de saisie", () => {
 
   it("la durée de la réponse avance chaque seconde pendant le tour, puis se cache", async () => {
     vi.useFakeTimers();
+    column = createColumn();
     const elapsed = chip(".claude-elapsed");
     expect(elapsed.hidden).toBe(true);
     send("Bonjour");

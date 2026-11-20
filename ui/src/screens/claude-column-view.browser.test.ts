@@ -4,6 +4,7 @@ import {
   type ClaudeColumnView,
   createClaudeColumnView,
   EMPTY,
+  OTHER_TAB_RUNNING,
   PERMISSIONS,
   STOPPED,
   WEB_HELD_BACK,
@@ -46,6 +47,8 @@ beforeEach(() => {
     attach: () => log.push("joindre"),
     detach: (path) => log.push(`retirer ${path}`),
     allowChanges: () => log.push("autoriser"),
+    showTab: (id) => log.push(`montrer ${id}`),
+    closeTab: (id) => log.push(`fermer ${id}`),
   });
 });
 
@@ -95,6 +98,51 @@ describe("colonne Claude Code : le garde-fou du web", () => {
   it("rien à autoriser sans modification retenue", () => {
     view.render(idle(user, { ...held, state: "refused" }), "/Notes");
     expect(find(".claude-held-back")).toBeNull();
+  });
+
+  it("pendant le tour d'un autre onglet de conversation, l'autorisation attend", () => {
+    view.render(idle(user, held), "/Notes", true);
+    expect(find<HTMLButtonElement>(".claude-allow-changes").disabled).toBe(true);
+    view.render(idle(user, held), "/Notes");
+    expect(find<HTMLButtonElement>(".claude-allow-changes").disabled).toBe(false);
+  });
+});
+
+describe("colonne Claude Code : les onglets de conversation", () => {
+  it("leur barre est sous l'en-tête ; un clic montre un onglet, sa croix le ferme", () => {
+    const bar = find(".claude-tabs");
+    expect(bar.previousElementSibling?.className).toBe("claude-header");
+    expect(bar.getAttribute("role")).toBe("tablist");
+    expect(bar.getAttribute("aria-label")).toBe("Onglets de conversation");
+    view.showTabs([
+      { id: 1, title: "Un", running: false, active: true },
+      { id: 2, title: "Deux", running: true, active: false },
+    ]);
+    find<HTMLElement>('[data-tab="2"]').click();
+    find<HTMLElement>('[data-tab="1"] .claude-tab-close').click();
+    expect(log).toEqual(["montrer 2", "fermer 1"]);
+  });
+
+  it("pendant le tour d'un autre onglet, rien ne part d'ici et la colonne dit pourquoi", () => {
+    view.render(NEW_CONVERSATION, "/Notes", true);
+    expect(shown()).toEqual([EMPTY, OTHER_TAB_RUNNING]);
+    expect(find(".claude-other-tab").textContent).toBe(OTHER_TAB_RUNNING);
+    expect(OTHER_TAB_RUNNING).toBe(
+      "Claude répond dans un autre onglet de conversation : attendez la fin de sa réponse, ou arrêtez-la depuis cet onglet, pour envoyer un message ici.",
+    );
+    expect(button("send").hidden).toBe(false);
+    expect(button("send").disabled).toBe(true);
+    expect(input().disabled).toBe(false);
+    input().value = "Plus tard";
+    press("Enter");
+    button("send").click();
+    expect(log).toEqual([]);
+    expect(input().value).toBe("Plus tard");
+    view.showUnavailable(null);
+    expect(button("send").disabled).toBe(true);
+    view.render(NEW_CONVERSATION, "/Notes");
+    expect(button("send").disabled).toBe(false);
+    expect(find(".claude-other-tab")).toBeNull();
   });
 });
 
@@ -260,14 +308,17 @@ describe("colonne Claude Code : écrire et piloter le tour", () => {
     expect(log).toEqual(["envoyer Bonjour"]);
   });
 
-  it("pendant un tour : Arrêter à la place d'Envoyer, rien ne part, pas de nouvelle conversation", () => {
+  it("pendant un tour : Arrêter à la place d'Envoyer, rien ne part, Nouvelle conversation possible", () => {
     view.render({ entries: [{ kind: "user", text: "Un", notes: [] }], turn: "running" }, "/Notes");
     expect(shown()).toEqual(["Un", WORKING]);
     expect(find(".claude-working").textContent).toBe(WORKING);
     expect(button("send").hidden).toBe(true);
     expect(button("stop").hidden).toBe(false);
     expect(button("stop").disabled).toBe(false);
-    expect(button("new-conversation").disabled).toBe(true);
+    expect(button("new-conversation").disabled).toBe(false);
+    expect(button("new-conversation").title).toBe(
+      "Ouvrir un onglet de conversation vide ; les autres conversations restent dans leurs onglets",
+    );
     input().value = "Deux";
     press("Enter");
     expect(log).toEqual([]);

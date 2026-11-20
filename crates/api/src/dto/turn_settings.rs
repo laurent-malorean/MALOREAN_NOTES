@@ -1,9 +1,11 @@
 //! Réglages d'un tour de Claude Code reçus de l'interface : le modèle et le niveau d'effort choisis
-//! sur leur pastille (fiche 0032).
+//! sur leur pastille, et la conversation de l'onglet de conversation à continuer (fiche 0032).
 
-use domain::claude::{ChangesAfterWeb, ClaudeModel, Effort, TurnSettings};
+use domain::claude::{ChangesAfterWeb, ClaudeModel, ConversationId, Effort, TurnSettings};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+
+use crate::ApiError;
 
 /// Le modèle qui répond, du plus léger au plus capable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -95,6 +97,29 @@ pub(crate) fn turn_settings(settings: TurnSettingsItem, changes_allowed: bool) -
     }
 }
 
+/// La conversation à continuer, telle que l'interface l'a gardée de son début ; rien en commence
+/// une neuve. Seul un identifiant comme ceux de Claude Code (lettres, chiffres, `-`, `_`, sans `-`
+/// au début) est rendu à `--resume` : rien d'autre ne peut devenir une option.
+///
+/// # Errors
+///
+/// Un [`ApiError`] qui dit la conversation inconnue, pour tout autre texte.
+pub(crate) fn continued_conversation(
+    conversation: Option<String>,
+) -> Result<Option<ConversationId>, ApiError> {
+    conversation
+        .map(|id| {
+            let legible = id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+            ConversationId::new(id)
+                .ok()
+                .filter(|id| legible && !id.as_str().starts_with('-'))
+                .ok_or_else(ApiError::unknown_conversation)
+        })
+        .transpose()
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
@@ -152,6 +177,32 @@ mod tests {
         let allowed = turn_settings(chosen, true);
         assert_eq!(allowed.changes_after_web, ChangesAfterWeb::Allowed);
         assert_eq!(allowed.model, Some(ClaudeModel::Opus));
+    }
+
+    #[test]
+    fn the_conversation_kept_by_the_interface_is_continued() {
+        let id = "aae7c2f1-0b3e-4f2a-9c1d-5e6f7a8b9c0d";
+        let continued = continued_conversation(Some(id.to_owned())).unwrap();
+        assert_eq!(continued.unwrap().as_str(), id);
+        assert_eq!(
+            continued_conversation(Some("a_b".to_owned()))
+                .unwrap()
+                .unwrap()
+                .as_str(),
+            "a_b"
+        );
+        assert_eq!(continued_conversation(None), Ok(None));
+    }
+
+    #[test]
+    fn a_conversation_id_unlike_those_of_claude_code_is_refused() {
+        for id in ["", "--help", "-x", "c1 --model", "c1/..", "é"] {
+            assert_eq!(
+                continued_conversation(Some(id.to_owned())),
+                Err(ApiError::unknown_conversation()),
+                "{id}"
+            );
+        }
     }
 
     #[test]

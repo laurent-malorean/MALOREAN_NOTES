@@ -253,16 +253,18 @@ export const proposeRewriting = (action: WritingActionItem, selection: string) =
 /** Si Claude Code est installé et connecté, sinon pourquoi et quoi faire ; le modèle n'est pas appelé. */
 export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
 /**
- * Envoie un message à Claude dans l'espace de travail ouvert, en continuant la conversation en
- * cours, avec le modèle et le niveau d'effort choisis ; se termine avec le tour. Après une lecture
- * du web, ses créations et modifications de notes sont retenues, sauf si `changesAllowed`
- * (l'utilisateur les autorise pour ce tour). Les événements du tour arrivent par `onClaudeEvent`.
+ * Envoie un message à Claude dans l'espace de travail ouvert, en continuant `conversation` (celle
+ * de l'onglet de conversation, annoncée par `conversationStarted` ; `null` en commence une neuve),
+ * avec le modèle et le niveau d'effort choisis ; se termine avec le tour. Après une lecture du web,
+ * ses créations et modifications de notes sont retenues, sauf si `changesAllowed` (l'utilisateur
+ * les autorise pour ce tour). Les événements du tour arrivent par `onClaudeEvent`.
  */
 export const sendToClaude = (
   message: string,
+  conversation: string | null,
   settings: TurnSettingsItem,
   changesAllowed: boolean,
-) => invoke<null>("send_to_claude", { message, settings, changesAllowed });
+) => invoke<null>("send_to_claude", { message, conversation, settings, changesAllowed });
 /** Arrête le tour en cours (ce que Claude a déjà écrit reste écrit), ou annule la connexion en cours. */
 export const stopClaude = () => invoke<null>("stop_claude");
 /** Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris). */
@@ -277,8 +279,6 @@ const CLAUDE_SIGN_IN = "claude-sign-in";
 /** Prévient de l'adresse de la page de connexion pendant une connexion de Claude Code. */
 export const onClaudeSignIn = (handler: (address: string) => void) =>
   listen<string>(CLAUDE_SIGN_IN, (event) => handler(event.payload));
-/** Oublie la conversation en cours : le message suivant en commence une neuve. */
-export const newConversation = () => invoke<null>("new_conversation");
 /** Même nom côté Rust (`CLAUDE_EVENT`). */
 const CLAUDE_EVENT = "claude-event";
 /** Prévient de chaque événement de Claude du tour en cours, dès qu'il arrive. */

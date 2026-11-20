@@ -24,9 +24,8 @@ beforeEach(() => {
   column = createClaudeColumn({
     backend: {
       claudeStatus: async () => ({ kind: "ready", email: null, organization: null }),
-      sendToClaude: async () => null,
+      sendToClaude: () => new Promise(() => {}),
       stopClaude: async () => null,
-      newConversation: async () => null,
       onClaudeEvent: async (handler) => ((announce = handler), () => {}),
       errorMessage: String,
       listAllNotes: async () => [],
@@ -52,7 +51,10 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers());
 
+/** Un message part, et Claude Code annonce la charge pendant le tour. */
 function answered() {
+  (find("textarea") as HTMLTextAreaElement).value = "Bonjour";
+  find("[data-send]").click();
   announce({ kind: "modelUsed", model: "claude-opus-5-5" });
   announce({
     kind: "usageLimits",
@@ -77,13 +79,16 @@ describe("colonne Claude Code : la charge annoncée", () => {
     expect(find(".claude-limit").textContent).toBe("Session 16 % · 2 min");
   });
 
-  it("une conversation neuve oublie le modèle et le contexte, garde la limite", async () => {
+  it("un nouvel onglet de conversation part sans modèle ni contexte, avec la limite", async () => {
     answered();
     find("[data-new-conversation]").click();
     await settle();
     expect(find(".claude-context").hidden).toBe(true);
     expect(find(".claude-settings-chip").textContent).toBe("Modèle par défaut");
     expect(find(".claude-limit").textContent).toBe("Session 16 % · 3 min");
+    find('[data-tab="1"]').click();
+    expect(find(".claude-context").textContent).toBe("Contexte 42 %");
+    expect(find(".claude-settings-chip").textContent).toBe("Opus 5.5");
   });
 
   it("un autre espace de travail fait de même", () => {

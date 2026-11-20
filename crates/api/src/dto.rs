@@ -8,8 +8,8 @@ mod claude_load;
 mod turn_settings;
 
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
-pub(crate) use turn_settings::turn_settings;
 pub use turn_settings::{ClaudeModelItem, EffortItem, TurnSettingsItem};
+pub(crate) use turn_settings::{continued_conversation, turn_settings};
 
 /// L'espace de travail ouvert.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

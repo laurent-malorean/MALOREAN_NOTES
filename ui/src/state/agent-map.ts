@@ -3,7 +3,6 @@
 // Claude (fiche 0032).
 import type { AgentStateItem, ClaudeEventItem } from "../bridge";
 import { durationText, tokensText } from "./claude-column";
-import { isLoadEvent } from "./claude-load";
 
 /** Un sous-agent, désigné par l'action qui l'a lancé. */
 export interface SubAgent {
@@ -77,9 +76,28 @@ const withActionFinished = (
   event: Extract<ClaudeEventItem, { kind: "actionFinished" }>,
 ) => (event.succeeded ? map : withLaunchFailed(map, event.id));
 
+/** Les événements qui disent quelque chose des sous-agents. */
+type AgentEvent = Extract<
+  ClaudeEventItem,
+  { kind: "actionStarted" | "actionFinished" | "subAgentFinished" }
+>;
+
+const AGENT_KINDS: ReadonlySet<ClaudeEventItem["kind"]> = new Set([
+  "actionStarted",
+  "actionFinished",
+  "subAgentFinished",
+]);
+
+/**
+ * L'événement dit quelque chose des sous-agents. Un refus est toujours suivi de l'issue en erreur
+ * de l'action, qui suffit ; le début de la conversation, les messages, les notes modifiées, la
+ * charge et les bilans n'en disent rien.
+ */
+const isAgentEvent = (event: ClaudeEventItem): event is AgentEvent => AGENT_KINDS.has(event.kind);
+
 /** Un événement de Claude est arrivé. */
 export function agentEventReceived(map: AgentMap, event: ClaudeEventItem): AgentMap {
-  if (isLoadEvent(event)) return map;
+  if (!isAgentEvent(event)) return map;
   switch (event.kind) {
     case "actionStarted":
       return withAction(map, event);
@@ -89,13 +107,6 @@ export function agentEventReceived(map: AgentMap, event: ClaudeEventItem): Agent
       const { state, durationMs, tokens, actions } = event;
       return changed(map, event.id, (agent) => ({ ...agent, state, durationMs, tokens, actions }));
     }
-    // Un refus est toujours suivi de l'issue en erreur de l'action, qui suffit.
-    case "actionRefused":
-    case "changeHeldBack":
-    case "message":
-    case "changedNote":
-    case "summary":
-      return map;
   }
 }
 

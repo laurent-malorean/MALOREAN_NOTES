@@ -1,7 +1,7 @@
 // Barre de saisie de la colonne Claude Code : les réglages du tour (gardés d'un lancement à
 // l'autre), les notes jointes (la note de la colonne active, celles choisies par « + »), la durée
-// de la réponse en cours et la charge annoncée par Claude Code (version du modèle, limite
-// d'utilisation, remplissage du contexte) (fiche 0032).
+// de la réponse en cours et la charge annoncée par Claude Code (version du modèle et remplissage du
+// contexte de l'onglet de conversation montré, limite d'utilisation commune) (fiche 0032).
 import type * as Bridge from "../bridge";
 import type { InputBarView } from "../screens/claude-input-bar-view";
 import { openPicker } from "../screens/picker";
@@ -20,9 +20,9 @@ import {
 } from "../state/claude-input-bar";
 import {
   type ClaudeLoad,
-  conversationForgotten,
   loadEventReceived,
   NO_LOAD,
+  type UsageLimits,
 } from "../state/claude-load";
 import { activeColumn, type Columns } from "../state/columns";
 import type { PreferenceStorage } from "../state/focus-preference";
@@ -35,6 +35,8 @@ export interface InputBarDeps {
   readonly columns: { current(): Columns };
   /** Là où les réglages du tour sont gardés d'un lancement à l'autre. */
   readonly storage: PreferenceStorage;
+  /** Quand a commencé le tour de l'onglet de conversation montré ; rien s'il ne répond pas. */
+  replyingSince(): number | null;
   error(error: unknown): void;
 }
 
@@ -52,12 +54,16 @@ export interface InputBar {
   sent(): readonly AttachedNote[];
   /** Suit la note de la colonne active ; un autre espace de travail oublie les notes jointes. */
   follow(workspaceChanged: boolean): void;
-  /** Montre la durée de la réponse tant que le tour court, puis la cache. */
-  timeReply(running: boolean): void;
-  /** Un événement de Claude est arrivé : il annonce peut-être la charge. */
+  /**
+   * Un événement de Claude est arrivé : il annonce peut-être la limite de l'abonnement, montrée au
+   * prochain `showConversation` (la colonne le fait à chaque événement d'un tour).
+   */
   heard(event: Bridge.ClaudeEventItem): void;
-  /** Une conversation neuve : ni modèle ni contexte ; la limite de l'abonnement reste. */
-  forget(): void;
+  /**
+   * Montre le modèle et le contexte de l'onglet de conversation montré (`load`), avec la limite
+   * commune, et la durée de la réponse si c'est lui qui répond.
+   */
+  showConversation(load: ClaudeLoad): void;
 }
 
 /** Le temps entre deux mises à jour de la durée de la réponse. */
@@ -72,17 +78,22 @@ function openNote(columns: Columns): AttachedNote | null {
   return tab === undefined ? null : { path: tab.note, title: tab.title ?? titleFromPath(tab.note) };
 }
 
+/** La durée de la réponse, montrée seulement sur l'onglet de conversation qui répond (`since`). */
+const elapsedShower = (view: () => InputBarShown, since: () => number | null) => () => {
+  const started = since();
+  view().showElapsed(started === null ? null : Date.now() - started);
+};
+
 /** La barre de saisie, montrée par `view` (créée après elle, d'où la fonction). */
 export function createInputBar(deps: InputBarDeps, view: () => InputBarShown): InputBar {
   let settings = loadTurnSettings(deps.storage);
   let attachments: Attachments = NO_ATTACHMENTS;
-  let clock: ReturnType<typeof setInterval> | undefined;
-  let load: ClaudeLoad = NO_LOAD;
-  const showLoad = (next: ClaudeLoad) => {
-    load = next;
-    view().showLoad(load, Date.now());
-  };
-  setInterval(() => showLoad(load), MINUTE);
+  let limits: UsageLimits | null = null;
+  let shown: ClaudeLoad = NO_LOAD;
+  const showLoad = () => view().showLoad({ ...shown, limits }, Date.now());
+  const showElapsed = elapsedShower(view, deps.replyingSince);
+  setInterval(showLoad, MINUTE);
+  setInterval(showElapsed, SECOND);
   const attach = (next: Attachments) => {
     attachments = next;
     view().showAttachments(attachedNotes(next));
@@ -122,13 +133,13 @@ export function createInputBar(deps: InputBarDeps, view: () => InputBarShown): I
           openNote(deps.columns.current()),
         ),
       ),
-    timeReply: (running) => {
-      clearInterval(clock);
-      const started = Date.now();
-      view().showElapsed(running ? 0 : null);
-      if (running) clock = setInterval(() => view().showElapsed(Date.now() - started), SECOND);
+    heard: (event) => {
+      limits = loadEventReceived({ ...NO_LOAD, limits }, event).limits;
     },
-    heard: (event) => showLoad(loadEventReceived(load, event)),
-    forget: () => showLoad(conversationForgotten(load)),
+    showConversation: (load) => {
+      shown = load;
+      showLoad();
+      showElapsed();
+    },
   };
 }
