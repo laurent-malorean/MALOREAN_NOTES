@@ -236,7 +236,7 @@ run_in_snapshot() {
   rsync -a --delete \
     --exclude=/target --exclude=/ui/.stryker-tmp --exclude=/ui/.vitest \
     --exclude=/ui/test-results --exclude=/ui/playwright-report --exclude=/ui/coverage \
-    --exclude=/_DIST --exclude=/tmp ./ "$SNAPSHOT_DIR/"
+    --exclude=/_DIST --exclude=/tmp --exclude=/_SECRET --exclude=/CLAUDE.local.md ./ "$SNAPSHOT_DIR/"
   (cd "$SNAPSHOT_DIR" && CI_IN_SNAPSHOT=1 ./scripts/ci.sh "$@") || status=$?
   if [ "$status" -eq 0 ]; then
     if [ -f "$SNAPSHOT_DIR/ui/reports/stryker-incremental.json" ]; then
