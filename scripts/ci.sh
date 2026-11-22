@@ -10,6 +10,14 @@
 #   scripts/ci.sh --sans-mutation  tous les contrôles sauf les tests de mutation (les plus longs) : pour
 #                            avancer problème après problème ; ce n'est PAS un passage de commit, il faut
 #                            ensuite un `scripts/ci.sh` complet sur tout le lot avant de commiter
+#   scripts/ci.sh --copie    (avec ou sans --complet / --sans-mutation) joue la CI sur une copie figée du
+#                            code, rangée hors du dépôt : on peut continuer à modifier le code pendant
+#                            qu'elle tourne ; ce qu'elle valide est l'état du code à son lancement
+#   scripts/ci.sh --verifier dit si le code est exactement celui de la dernière CI complète réussie
+#                            (à lancer avant de commiter, surtout après --copie)
+# Un passage complet qui voit le code changer pendant qu'il tourne (sans --copie) échoue : son verdict
+# ne vaudrait pas pour ce qui serait commité. Rust et interface se contrôlent en parallèle ; les types
+# partagés sont régénérés dans un dossier à part puis comparés aux types du dépôt.
 # Seuil du test de mutation : 100 %, des deux côtés.
 # Rust : les copies mutées se construisent lints coupés (.cargo/mutants.toml), sinon une erreur
 # introduite qui laisse du code inutilisé ne compile pas et n'est jamais testée. Un passage où
@@ -25,6 +33,12 @@ readonly MAX_UI_ASSEMBLY_LINES=150
 readonly RUST_MIN_LINE_COVERAGE=95
 readonly PRIVATE_PATHS=(_SECRET CLAUDE.local.md)
 readonly GENERATED_TYPES=ui/src/bridge/generated
+# Où les tests Rust écrivent les types partagés pendant la CI : on les compare ensuite à ceux du dépôt.
+GENERATED_EXPORT=$(mktemp -d)
+readonly GENERATED_EXPORT
+trap 'rm -rf "$GENERATED_EXPORT"' EXIT
+readonly VALIDATED_TREE_FILE=.git/ci-validated-tree
+readonly SNAPSHOT_DIR=${CI_SNAPSHOT_DIR:-${HOME}/Library/Caches/malorean-notes-ci}
 readonly THEME_FILE=ui/src/theme.css
 # Assemblage : couvert par les tests des commandes et les parcours complets, pas par des tests unitaires.
 readonly COVERAGE_IGNORED='crates/app/src/main\.rs'
@@ -144,7 +158,8 @@ check_rust() {
   cargo clippy --workspace --all-targets --all-features -- -D warnings
 
   step "Rust : tous les tests, couverture ≥ ${RUST_MIN_LINE_COVERAGE} % des lignes"
-  cargo llvm-cov --workspace --all-features --ignore-filename-regex "$COVERAGE_IGNORED" \
+  TS_RS_EXPORT_DIR="$GENERATED_EXPORT" cargo llvm-cov --workspace --all-features \
+    --ignore-filename-regex "$COVERAGE_IGNORED" \
     --fail-under-lines "$RUST_MIN_LINE_COVERAGE" --summary-only
   cargo test --workspace --all-features --doc
 
@@ -154,8 +169,6 @@ check_rust() {
 
 check_ui() {
   check_theme
-  step "Interface : types partagés à jour (générés par les tests Rust)"
-  git diff --exit-code -- "$GENERATED_TYPES" || fail "types générés modifiés : les commiter"
 
   step "Interface : mise en forme, types, lints"
   (cd ui && npx --no-install prettier --check . && npx --no-install tsc --noEmit && npx --no-install eslint .)
@@ -168,8 +181,78 @@ check_ui() {
 
   # Lecture des notes ralentie dans le faux : un parcours qui clique ou tape avant que la note soit
   # montrée échoue à coup sûr au lieu d'échouer une fois sur cent (doc/code.md, « Parcours »).
-  step "Interface : parcours utilisateur, lecture des notes ralentie à 100 ms"
-  (cd ui && VITE_READ_DELAY=100 npx --no-install playwright test)
+  # Sautée quand rien n'a changé dans ui/ depuis le dernier commit (les parcours n'utilisent que le faux).
+  if [ "$MODE" = --complet ] || [ -n "$(git status --porcelain -- ui/ | head -1)" ]; then
+    step "Interface : parcours utilisateur, lecture des notes ralentie à 100 ms"
+    (cd ui && VITE_READ_DELAY=100 npx --no-install playwright test)
+  else
+    printf '\n(parcours à lecture ralentie sautés : rien n a changé dans ui/ depuis le dernier commit)\n'
+  fi
+}
+
+# Les types partagés, régénérés par les tests Rust dans un dossier à part, sont ceux du dépôt.
+check_generated_types() {
+  [ -f Cargo.toml ] || return 0
+  step "Interface : types partagés à jour (générés par les tests Rust)"
+  diff -r "$GENERATED_EXPORT" "$GENERATED_TYPES" >/dev/null \
+    || fail "types générés pas à jour : lancer \`cargo test --workspace\` pour les régénérer, puis les commiter"
+}
+
+# Joue deux fonctions en même temps ; leur sortie s'affiche à la fin de chacune, l'une après l'autre.
+run_both() {
+  local first_log second_log first_pid second_pid first_status=0 second_status=0
+  first_log=$(mktemp)
+  second_log=$(mktemp)
+  ("$1") >"$first_log" 2>&1 &
+  first_pid=$!
+  ("$2") >"$second_log" 2>&1 &
+  second_pid=$!
+  wait "$first_pid" || first_status=$?
+  wait "$second_pid" || second_status=$?
+  cat "$first_log" "$second_log"
+  rm -f "$first_log" "$second_log"
+  [ "$first_status" -eq 0 ] && [ "$second_status" -eq 0 ] \
+    || fail "contrôles en échec (${1#check_} : ${first_status}, ${2#check_} : ${second_status})"
+}
+
+# Une empreinte de tout le code qui serait commité (suivi ou nouveau, hors fichiers ignorés).
+tree_hash() {
+  local index hash
+  index=$(mktemp -u)
+  GIT_INDEX_FILE=$index git add -A -- . >/dev/null 2>&1
+  hash=$(GIT_INDEX_FILE=$index git write-tree)
+  rm -f "$index"
+  printf '%s' "$hash"
+}
+
+# Joue la CI sur une copie figée du code, rangée hors du dépôt (node_modules compris : un lien vers le
+# dépôt serait refusé par le navigateur de test) ; garde le résultat incrémental de Stryker.
+run_in_snapshot() {
+  local validated status=0
+  validated=$(tree_hash)
+  step "Copie figée du code dans ${SNAPSHOT_DIR}"
+  mkdir -p "$SNAPSHOT_DIR"
+  [ ! -L "$SNAPSHOT_DIR/ui/node_modules" ] || rm "$SNAPSHOT_DIR/ui/node_modules"
+  rsync -a --delete \
+    --exclude=/target --exclude=/ui/.stryker-tmp --exclude=/ui/.vitest \
+    --exclude=/ui/test-results --exclude=/ui/playwright-report --exclude=/ui/coverage \
+    --exclude=/_DIST --exclude=/tmp ./ "$SNAPSHOT_DIR/"
+  (cd "$SNAPSHOT_DIR" && CI_IN_SNAPSHOT=1 ./scripts/ci.sh "$@") || status=$?
+  if [ "$status" -eq 0 ]; then
+    if [ -f "$SNAPSHOT_DIR/ui/reports/stryker-incremental.json" ]; then
+      mkdir -p ui/reports
+      cp "$SNAPSHOT_DIR/ui/reports/stryker-incremental.json" ui/reports/
+    fi
+    case " $* " in *" --sans-mutation "*) ;; *) printf '%s' "$validated" > "$VALIDATED_TREE_FILE" ;; esac
+  fi
+  exit "$status"
+}
+
+verify_validated_tree() {
+  [ -f "$VALIDATED_TREE_FILE" ] || fail "aucune CI complète réussie n'est enregistrée"
+  [ "$(tree_hash)" = "$(cat "$VALIDATED_TREE_FILE")" ] \
+    || fail "le code a changé depuis la dernière CI complète réussie : la relancer avant de commiter"
+  printf '✓ le code est celui de la dernière CI complète réussie\n'
 }
 
 # Test de mutation de l'interface (scripts/ui-mutations.sh), en mode incrémental : Stryker ne reteste
@@ -225,19 +308,45 @@ check_uncommitted_mutations() {
   rm -f "$diff"
 }
 
+MODE=""
+SNAPSHOT=0
+FORWARDED=()
+for argument in "$@"; do
+  case "$argument" in
+    --complet | --sans-mutation) MODE=$argument; FORWARDED+=("$argument") ;;
+    --copie) SNAPSHOT=1 ;;
+    --verifier) verify_validated_tree; exit 0 ;;
+    *) fail "option inconnue : $argument" ;;
+  esac
+done
+if [ "$SNAPSHOT" -eq 1 ] && [ -z "${CI_IN_SNAPSHOT:-}" ]; then run_in_snapshot ${FORWARDED[@]+"${FORWARDED[@]}"}; fi
+
+STARTED_TREE=""
+if [ -z "${CI_IN_SNAPSHOT:-}" ]; then STARTED_TREE=$(tree_hash); fi
+
 check_private_files
 check_vocabulary
 check_file_length
-if [ -f Cargo.toml ]; then check_rust; else printf '\n(pas de projet Rust : contrôles Rust sautés)\n'; fi
-if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : contrôles interface sautés)\n'; fi
-case "${1:-}" in
+if [ -f Cargo.toml ] && [ -f ui/package.json ]; then
+  step "Rust et interface, en parallèle"
+  run_both check_rust check_ui
+  check_generated_types
+else
+  if [ -f Cargo.toml ]; then check_rust; else printf '\n(pas de projet Rust : contrôles Rust sautés)\n'; fi
+  if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : contrôles interface sautés)\n'; fi
+fi
+case "$MODE" in
   --complet) check_mutations; check_ui_mutations complet ;;
-  "") check_uncommitted_mutations; check_ui_mutations ;;
   --sans-mutation)
     printf '\n(tests de mutation sautés : lancer scripts/ci.sh sans option avant de commiter)\n'
     printf '\n✓ Contrôles réussis, sans mutation : pas encore un passage de commit\n'
     exit 0 ;;
-  *) fail "option inconnue : $1" ;;
+  *) check_uncommitted_mutations; check_ui_mutations ;;
 esac
 
+if [ -n "$STARTED_TREE" ]; then
+  [ "$(tree_hash)" = "$STARTED_TREE" ] \
+    || fail "le code a changé pendant la CI : ce passage ne vaut pas pour ce qui serait commité (relancer, ou utiliser --copie)"
+  printf '%s' "$STARTED_TREE" > "$VALIDATED_TREE_FILE"
+fi
 printf '\n✓ Mini CI réussie\n'

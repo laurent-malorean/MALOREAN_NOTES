@@ -226,6 +226,8 @@ disallowed-methods = [
 |---|---|
 | Avant chaque commit : `scripts/ci.sh` | fichiers privés exclus ; anciens mots de l'ontologie absents ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 95 %, dépendances ; interface : couleurs et polices seulement dans le thème, types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec les seuils de couverture, parcours complets, puis rejoués avec la lecture des notes ralentie ; test de mutation du code modifié, Rust (pas encore commité) et interface (changé depuis le dernier passage de Stryker), score 100 % ; refus d'un passage Rust où aucune erreur introduite n'a pu être testée |
 | Pendant le développement : `scripts/ci.sh --sans-mutation` | les mêmes contrôles, sans les tests de mutation (les plus longs) ; après chaque problème traité ; ne suffit pas pour commiter *Vérifié par : lui-même.* |
+| Sur une copie figée : `scripts/ci.sh --copie [--complet \| --sans-mutation]` | les mêmes contrôles sur une copie du code rangée hors du dépôt (`~/Library/Caches/malorean-notes-ci`) : on peut continuer à modifier le code pendant qu'elle tourne ; elle valide l'état du code à son lancement *Vérifié par : lui-même.* |
+| Avant de commiter : `scripts/ci.sh --verifier` | dit si le code est exactement celui de la dernière CI complète réussie (empreinte gardée dans `.git/ci-validated-tree`) ; à lancer après `--copie` *Vérifié par : lui-même.* |
 | Avant de livrer : `scripts/ci.sh --complet` | tout ce qui précède, avec le test de mutation de tout le code, Rust et interface ; benchmarks si la lecture a changé ; build `release` signé et notarisé |
 
 Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov cargo-deny cargo-mutants --locked`, `jq` (livré avec macOS), puis dans `ui/` : `npm install` et `npx playwright install webkit`.
@@ -237,7 +239,7 @@ On ne commite que si la mini CI réussit ; l'envoi ne relance rien, puisque ce q
 Constats (session du 22/11/2026, Mac Apple Silicon ; durées approximatives) :
 
 - **Le test de mutation de l'interface (Stryker) est l'essentiel du temps** : environ 30 minutes au premier passage (Stryker prévient que 22 % des mutants « statiques » en prennent 90 %), puis environ 12 minutes pour toute la CI quand il est incrémental. Les autres contrôles prennent 6 à 8 minutes ; les parcours WebKit sont joués deux fois (normal, puis lecture des notes ralentie).
-- **Ce qui a fait échouer la CI, souvent tard, et obligé à la relancer** : une faille connue d'une dépendance (`cargo deny`, réglée par `cargo update -p <crate>`) ; `ui/src/main.ts` à 151 lignes (150 au plus : une ligne de plus suffit) ; les types générés (`ui/src/bridge/generated`) changés par les tests Rust, qu'il faut ajouter à l'index git (`git add ui/src/bridge/generated`) pour que le contrôle passe ; un fichier de test de plus de 600 lignes ; un message de l'interface posé en haut à droite qui recouvrait des boutons et bloquait les clics d'un parcours WebKit ; des mutants survivants dans du code neuf (un paramètre ou une valeur littérale qu'aucun test n'affirme).
+- **Ce qui a fait échouer la CI, souvent tard, et obligé à la relancer** : une faille connue d'une dépendance (`cargo deny`, réglée par `cargo update -p <crate>`) ; `ui/src/main.ts` à 151 lignes (150 au plus : une ligne de plus suffit) ; les types générés (`ui/src/bridge/generated`) que les tests Rust ne régénèrent plus à l'identique (la CI les régénère dans un dossier à part et les compare à ceux du dépôt ; les refaire avec `cargo test --workspace`, puis les commiter) ; un fichier de test de plus de 600 lignes ; un message de l'interface posé en haut à droite qui recouvrait des boutons et bloquait les clics d'un parcours WebKit ; des mutants survivants dans du code neuf (un paramètre ou une valeur littérale qu'aucun test n'affirme).
 - **Un script de CI ne se modifie pas pendant qu'il tourne**, et le code non plus : le verdict ne vaudrait plus pour ce qu'on commite. Pour changer `scripts/ci.sh` pendant un passage, le remplacer d'un coup (écrire un fichier voisin, puis `mv`).
 - **Le dossier de compilation de Cargo se range hors d'iCloud** (`CARGO_TARGET_DIR=~/Library/Caches/malorean-notes-target`) : il pèse plusieurs Go et iCloud tenterait de le synchroniser. Les tests de navigateur demandent `npx playwright install webkit` une fois.
 
@@ -248,12 +250,15 @@ Façon de travailler (en vigueur) :
 3. **Écrire les tests qui tuent les mutants en même temps que le code** : chaque valeur littérale passée (un type de message, une option de ligne de commande, une classe CSS), chaque borne et chaque cas limite a un test qui l'affirme. Éviter le code qui laisse des mutants équivalents (un `?.` ou un `?? []` sur une valeur jamais nulle, un `filter(Boolean)` après un `split`) : préférer une forme sans cette branche (`matchAll`, `slice`). Un mutant survivant se lit dans le bilan de Stryker (`[Survived]`, fichier, ligne et variante).
 4. **`scripts/ci.sh --sans-mutation` ne vaut pas un passage de commit** : il le dit à son dernier affichage.
 
-Pistes pour réduire le temps (pas encore faites, voir `todo.md`) :
+Ce qui réduit le temps (en vigueur) :
 
-- **Lancer la CI sur une copie figée du code** (une copie de l'index git dans un dossier temporaire) : on continue à développer pendant qu'elle valide le lot précédent. C'est le plus gros gain pratique.
-- **Faire tourner le Rust et l'interface en parallèle** (contrôles indépendants) : 3 à 5 minutes par passage.
-- **Ne jouer le parcours « lecture ralentie » que si le code de lecture des notes a changé.**
-- **Vérifier les options de `scripts/ci.sh` au début**, pas à la fin : une option inconnue lance aujourd'hui tous les contrôles avant d'être refusée.
+- **Rust et interface se contrôlent en même temps** (leur sortie s'affiche à la fin de chaque côté) ; les types partagés sont régénérés dans un dossier à part (`TS_RS_EXPORT_DIR`), pour que les tests Rust ne réécrivent pas des fichiers que l'interface lit. Mesuré : `--sans-mutation` passe d'environ 7 minutes à environ 2 minutes 30 (caches chauds).
+- **Les parcours « lecture ralentie » ne tournent que si `ui/` a changé** depuis le dernier commit (ou avec `--complet`) : ils n'utilisent que le faux, pas le code Rust.
+- **Les options de `scripts/ci.sh` se vérifient d'abord** : une option inconnue échoue tout de suite.
+- **`--copie`** : la CI tourne sur une copie figée (`rsync` du dossier, sans `target/` ni les caches ; `node_modules/` est copié la première fois puis seulement mis à jour, un lien vers le dépôt étant refusé par le navigateur de test). Le résultat incrémental de Stryker (`ui/reports/stryker-incremental.json`) est repris dans le dépôt après un succès. Un seul passage `--copie` à la fois.
+- **Un passage complet sans `--copie` échoue si le code change pendant qu'il tourne**, et enregistre sinon l'empreinte du code validé ; `--verifier` la compare au code présent. Après un passage `--copie`, commiter exactement ce qui a été validé (rien de plus) : `--verifier` le confirme.
+
+Pas fait : réduire le test de mutation lui-même (il reste l'essentiel du temps d'un passage complet).
 
 ## 16. Sources
 
