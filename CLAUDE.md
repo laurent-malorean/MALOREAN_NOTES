@@ -30,6 +30,7 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 ## Mini CI avant chaque commit
 
 - Avant chaque commit, lancer `./scripts/ci.sh` : secrets exclus, longueur des fichiers, mise en forme, lints sans avertissement, **tous les tests** (Rust et interface), dépendances, test de mutation du code modifié.
+- Constats sur le temps de la CI, pièges connus (types générés à ajouter à l'index, `main.ts` à 150 lignes, mutants équivalents) et pistes : `doc/code.md`, section « Temps de la CI ».
 - **Plusieurs corrections, une seule CI complète** : pendant le développement, après chaque problème traité, lancer `./scripts/ci.sh --sans-mutation` (tout sauf les tests de mutation, quelques minutes) ; une fois le lot fini, lancer `./scripts/ci.sh` complet une seule fois (mutation comprise), puis commiter. Seul un passage complet autorise un commit ; ne pas relancer la CI complète après chaque correction.
 - **Test de mutation limité au code modifié**, côté Rust comme côté interface, avec un seuil de 100 % sur ce code ; le test complet (`./scripts/ci.sh --complet`) se lance avant une livraison. Ne jamais retester tout le code à chaque commit.
 - Si un contrôle échoue : ne pas commiter, corriger, relancer. Jamais de contournement (`--no-verify`, test désactivé, lint levé sans raison).

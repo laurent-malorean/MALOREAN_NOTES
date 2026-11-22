@@ -232,6 +232,29 @@ Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo
 
 On ne commite que si la mini CI réussit ; l'envoi ne relance rien, puisque ce qui part a déjà passé les contrôles. Jamais de contournement (`--no-verify`). Un nouveau dépassement qui passerait les contrôles est un défaut des contrôles : on les complète.
 
+### Temps de la CI : constats et façon de travailler
+
+Constats (session du 22/11/2026, Mac Apple Silicon ; durées approximatives) :
+
+- **Le test de mutation de l'interface (Stryker) est l'essentiel du temps** : environ 30 minutes au premier passage (Stryker prévient que 22 % des mutants « statiques » en prennent 90 %), puis environ 12 minutes pour toute la CI quand il est incrémental. Les autres contrôles prennent 6 à 8 minutes ; les parcours WebKit sont joués deux fois (normal, puis lecture des notes ralentie).
+- **Ce qui a fait échouer la CI, souvent tard, et obligé à la relancer** : une faille connue d'une dépendance (`cargo deny`, réglée par `cargo update -p <crate>`) ; `ui/src/main.ts` à 151 lignes (150 au plus : une ligne de plus suffit) ; les types générés (`ui/src/bridge/generated`) changés par les tests Rust, qu'il faut ajouter à l'index git (`git add ui/src/bridge/generated`) pour que le contrôle passe ; un fichier de test de plus de 600 lignes ; un message de l'interface posé en haut à droite qui recouvrait des boutons et bloquait les clics d'un parcours WebKit ; des mutants survivants dans du code neuf (un paramètre ou une valeur littérale qu'aucun test n'affirme).
+- **Un script de CI ne se modifie pas pendant qu'il tourne**, et le code non plus : le verdict ne vaudrait plus pour ce qu'on commite. Pour changer `scripts/ci.sh` pendant un passage, le remplacer d'un coup (écrire un fichier voisin, puis `mv`).
+- **Le dossier de compilation de Cargo se range hors d'iCloud** (`CARGO_TARGET_DIR=~/Library/Caches/malorean-notes-target`) : il pèse plusieurs Go et iCloud tenterait de le synchroniser. Les tests de navigateur demandent `npx playwright install webkit` une fois.
+
+Façon de travailler (en vigueur) :
+
+1. **Pendant le développement**, après chaque problème traité : les tests ciblés (`cargo test -p <crate>`, `npx vitest run <fichier>`), puis au plus `scripts/ci.sh --sans-mutation` (tout sauf la mutation : quelques minutes).
+2. **Une seule CI complète par lot de corrections**, juste avant de commiter (`scripts/ci.sh`, mutation du code modifié comprise), lancée en arrière-plan ; rien ne se modifie tant qu'elle tourne ; échec : on corrige, on relance, on ne commite pas.
+3. **Écrire les tests qui tuent les mutants en même temps que le code** : chaque valeur littérale passée (un type de message, une option de ligne de commande, une classe CSS), chaque borne et chaque cas limite a un test qui l'affirme. Éviter le code qui laisse des mutants équivalents (un `?.` ou un `?? []` sur une valeur jamais nulle, un `filter(Boolean)` après un `split`) : préférer une forme sans cette branche (`matchAll`, `slice`). Un mutant survivant se lit dans le bilan de Stryker (`[Survived]`, fichier, ligne et variante).
+4. **`scripts/ci.sh --sans-mutation` ne vaut pas un passage de commit** : il le dit à son dernier affichage.
+
+Pistes pour réduire le temps (pas encore faites, voir `todo.md`) :
+
+- **Lancer la CI sur une copie figée du code** (une copie de l'index git dans un dossier temporaire) : on continue à développer pendant qu'elle valide le lot précédent. C'est le plus gros gain pratique.
+- **Faire tourner le Rust et l'interface en parallèle** (contrôles indépendants) : 3 à 5 minutes par passage.
+- **Ne jouer le parcours « lecture ralentie » que si le code de lecture des notes a changé.**
+- **Vérifier les options de `scripts/ci.sh` au début**, pas à la fin : une option inconnue lance aujourd'hui tous les contrôles avant d'être refusée.
+
 ## 16. Sources
 
 Les règles ci-dessus viennent de ces ouvrages. On s'y reporte en cas de doute ; une règle nouvelle cite sa source.
