@@ -26,7 +26,7 @@ describe("réglages du journal", () => {
   it("a sa partie, avec le dossier du journal et la case de la note du jour au lancement", () => {
     const { dialog, folder, atLaunch } = open({ folder: "Carnet", atLaunch: false });
     const legends = [...dialog.querySelectorAll("legend")].map((l) => l.textContent);
-    expect(legends).toEqual(["Écriture", "Affichage", "Journal"]);
+    expect(legends).toEqual(["Écriture", "Affichage", "Claude", "Journal"]);
     expect(labelOf(dialog, "Dossier du journal")?.control).toBe(folder);
     expect(labelOf(dialog, "Créer la note du jour au lancement")?.control).toBe(atLaunch);
     expect([folder.type, folder.value, atLaunch.type, atLaunch.checked]).toEqual([

@@ -2,6 +2,7 @@
 // corriger, reformuler ou résumer la sélection, montre sa proposition, et ne change la note
 // qu'avec l'accord de l'utilisateur. Le clic droit sur une sélection ouvre le menu de la
 // sélection ; Alt+clic droit, ou sans sélection, laisse le menu du Mac (fiche 0031).
+import type { MessageKind } from "./messages";
 import type * as Bridge from "../bridge";
 import type { AssistantStatus, WritingActionItem } from "../bridge";
 import { showContextMenu } from "../screens/context-menu";
@@ -24,7 +25,7 @@ export interface WritingAssistantDeps {
   /** Les colonnes, où l'on fait un clic droit, et la fenêtre de la proposition. */
   readonly layout: Pick<Layout, "columns" | "confirmation">;
   /** Montre un message quelques secondes. */
-  show(message: string): void;
+  show(message: string, kind?: MessageKind): void;
   error(error: unknown): void;
 }
 
@@ -49,11 +50,11 @@ function unchanged(pane: Pane, note: string | null, from: number, to: number, te
 function proposeIn(deps: WritingAssistantDeps, pane: Pane, action: WritingActionDef) {
   const { editor } = pane;
   const text = editor.selectedText();
-  if (text.trim() === "") return deps.show(noSelection(action));
+  if (text.trim() === "") return deps.show(noSelection(action), "info");
   const { from, to } = editor.selectedRange();
   const note = pane.note();
   const accepted = (change: (proposal: string) => void) => (proposal: string) => {
-    if (!unchanged(pane, note, from, to, text)) return deps.show(SELECTION_CHANGED);
+    if (!unchanged(pane, note, from, to, text)) return deps.show(SELECTION_CHANGED, "warning");
     change(proposal);
     editor.focus();
   };
@@ -83,7 +84,7 @@ export function createWritingAssistant(deps: WritingAssistantDeps): WritingAssis
   const run = (pane: Pane, action: WritingActionDef) => {
     const reason = refusal();
     if (reason === null) proposeIn(deps, pane, action);
-    else deps.show(reason);
+    else deps.show(reason, "error");
   };
   deps.layout.columns.addEventListener("contextmenu", (event) => {
     if (event.altKey) return;

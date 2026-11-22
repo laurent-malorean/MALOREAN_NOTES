@@ -34,6 +34,7 @@ function noteSaved(deps: SavingDeps, from: string, saved: SaveResult) {
   if (saved.conflictCopy !== null) {
     deps.messages.show(
       `Cette note a aussi changé hors de l'application : l'autre version est gardée dans « ${saved.conflictCopy} ».`,
+      "warning",
     );
     run(deps.workspace.refreshFolders());
   } else if (saved.tagsChanged) {
@@ -51,6 +52,7 @@ export function savingEvents(deps: SavingDeps): SharedNotesEvents {
     deleted: () =>
       deps.messages.show(
         "Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
+        "warning",
       ),
     error: (error) => deps.messages.error(error),
   };

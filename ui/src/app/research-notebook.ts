@@ -66,7 +66,7 @@ async function add(deps: ResearchNotebooksDeps, path: string | undefined) {
   if (deps.screen.get().kind !== "workspace") return;
   const notebooks = await deps.backend.listResearchNotebooks();
   const offer = choices(notebooks, path, activeNote(deps.columns.current()));
-  if (offer === null) return deps.show(NO_NOTEBOOK);
+  if (offer === null) return deps.show(NO_NOTEBOOK, "info");
   const input = await askEntry(deps.dialog, {
     notebooks: offer.offered,
     chosen: offer.chosen,

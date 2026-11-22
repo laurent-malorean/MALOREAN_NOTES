@@ -28,15 +28,53 @@ fn fake_claude(folder: &Path, answer: &str, exit: u8) -> PathBuf {
     let dir = folder.display();
     fs::write(
         &script,
-        format!("#!/bin/sh\nprintf '%s\\n' \"$@\" > '{dir}/args'\necho '{answer}'\nexit {exit}\n"),
+        format!(
+            "#!/bin/sh\n[ \"$1\" = --help ] && exec cat '{dir}/help'\n\
+             printf '%s\\n' \"$@\" > '{dir}/args'\necho '{answer}'\nexit {exit}\n"
+        ),
     )
     .unwrap();
     fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
     script
 }
 
+/// Ce que dit `claude --help` : chaque option dont l'application a besoin.
+const FULL_HELP: &str = "--output-format --verbose --resume --model --effort --tools \
+    --allowed-tools --permission-mode --strict-mcp-config --mcp-config --disable-slash-commands \
+    --setting-sources --settings";
+
+fn status_with_help(help: &str, answer: &str) -> ClaudeStatus {
+    let folder = TempDir::new().unwrap();
+    fs::write(folder.path().join("help"), help).unwrap();
+    ClaudeCodeCli::new(fake_claude(folder.path(), answer, 0)).status()
+}
+
+#[test]
+fn a_claude_code_that_lacks_an_option_the_application_needs_is_too_old() {
+    let without = FULL_HELP.replace("--setting-sources", "");
+    assert_eq!(
+        status_with_help(&without, LOGGED_IN),
+        ClaudeStatus::Incompatible("--setting-sources".to_owned())
+    );
+    let without_two = FULL_HELP.replace("--tools", "").replace("--effort", "");
+    assert_eq!(
+        status_with_help(&without_two, LOGGED_IN),
+        ClaudeStatus::Incompatible("--effort, --tools".to_owned())
+    );
+    assert!(matches!(
+        status_with_help(FULL_HELP, LOGGED_IN),
+        ClaudeStatus::Ready(_)
+    ));
+}
+
+#[test]
+fn being_logged_out_is_said_before_being_too_old() {
+    assert_eq!(status_with_help("", LOGGED_OUT), ClaudeStatus::LoggedOut);
+}
+
 fn status_of(answer: &str, exit: u8) -> (ClaudeStatus, TempDir) {
     let folder = TempDir::new().unwrap();
+    fs::write(folder.path().join("help"), FULL_HELP).unwrap();
     let claude = ClaudeCodeCli::new(fake_claude(folder.path(), answer, exit));
     (claude.status(), folder)
 }

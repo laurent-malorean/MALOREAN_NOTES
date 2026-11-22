@@ -13,6 +13,7 @@ import {
   SEARCH_MIN_LENGTH,
   searchable,
   searchAnswered,
+  searchedQuery,
   searchTyped,
   selectedNote,
   trashShown,
@@ -193,6 +194,14 @@ describe("recherche", () => {
   const opened = () => workspaceOpened(workspace, [], [note("a.md", 1)]);
   const searchOf = (screen: ReturnType<typeof opened>) =>
     screen.kind === "workspace" ? screen.search : undefined;
+
+  it("donne les mots cherchés seulement s'ils sont assez longs pour une recherche", () => {
+    expect(searchedQuery(welcome)).toBeNull();
+    expect(searchedQuery(opened())).toBeNull();
+    expect(searchedQuery(searchTyped(opened(), "be"))).toBeNull();
+    expect(searchedQuery(searchTyped(opened(), "beagle"))).toBe("beagle");
+    expect(searchedQuery(searchTyped(opened(), "123"))).toBe("123");
+  });
 
   it("commence une recherche dès qu'on tape, sans résultat encore", () => {
     expect(searchOf(searchTyped(opened(), "pain"))).toEqual({ query: "pain", results: null });

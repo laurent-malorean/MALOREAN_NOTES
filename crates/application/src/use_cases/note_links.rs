@@ -2,7 +2,7 @@
 //! notes qui pointent vers une note.
 
 use domain::links::{links_to, same_title};
-use domain::title::displayed_title;
+use domain::title::displayed_title_of_note;
 use domain::{Folder, Modified, NotePath};
 
 use crate::{AppError, NoteStore, StoredNote};
@@ -54,7 +54,12 @@ impl<'a> NoteLinks<'a> {
         Ok(self
             .all_notes()?
             .into_iter()
-            .find(|note| same_title(&displayed_title(&note.content), title))
+            .find(|note| {
+                same_title(
+                    &displayed_title_of_note(&note.content, note.path.name()),
+                    title,
+                )
+            })
             .map(|note| note.path))
     }
 
@@ -66,13 +71,13 @@ impl<'a> NoteLinks<'a> {
     /// [`AppError::NoteNotFound`] si la note n'existe pas, [`AppError::StorageUnavailable`]
     /// si l'espace de travail ne peut pas être lue.
     pub fn backlinks(&self, path: &NotePath) -> Result<Vec<LinkingNote>, AppError> {
-        let title = displayed_title(&self.store.read(path)?.content);
+        let title = displayed_title_of_note(&self.store.read(path)?.content, path.name());
         Ok(self
             .all_notes()?
             .into_iter()
             .filter(|note| note.path != *path && links_to(&note.content, &title))
             .map(|note| LinkingNote {
-                title: displayed_title(&note.content),
+                title: displayed_title_of_note(&note.content, note.path.name()),
                 path: note.path,
                 modified: note.modified,
             })

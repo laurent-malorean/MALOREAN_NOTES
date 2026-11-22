@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::mpsc;
 use std::sync::{Mutex, MutexGuard, PoisonError};
-use std::thread;
+use std::thread::{self, JoinHandle};
 
 use application::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn};
 use domain::app_tools::{APP_TOOLS_SERVER, AppTool, AppToolsKey};
@@ -22,13 +22,56 @@ use crate::mcp_relay::RELAY_OPTION;
 use crate::web_guard::WebGuard;
 
 /// Les seuls outils offerts à Claude : lire, chercher, créer et modifier des fichiers, lancer
-/// des sous-agents, chercher sur le web et lire des pages web ; aucune commande système. Nommer
-/// `WebFetch` le garde malgré `--restricted`.
+/// des sous-agents, chercher sur le web et lire des pages web ; aucune commande système.
 const TOOLS: &str = "Read,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch";
 
 /// Les outils permis d'office : sans cela, chercher sur le web et lire une page web demanderaient
-/// une autorisation, que personne ne donne (`--permission-prompts none`).
+/// une autorisation, que personne ne donne : sans personne pour répondre, `claude -p` refuse
+/// d'office ce qui n'est pas permis (fichiers hors de l'espace de travail compris).
 const ALLOWED_TOOLS: &str = "WebSearch,WebFetch";
+
+/// Les options de `claude` dont l'application a besoin : si l'une manque à `claude --help`, ce
+/// Claude Code est trop ancien et l'application le dit au lieu de le lancer pour rien.
+const REQUIRED_OPTIONS: [&str; 13] = [
+    "--output-format",
+    "--verbose",
+    "--resume",
+    "--model",
+    "--effort",
+    "--tools",
+    "--allowed-tools",
+    "--permission-mode",
+    "--strict-mcp-config",
+    "--mcp-config",
+    "--disable-slash-commands",
+    "--setting-sources",
+    "--settings",
+];
+
+/// Option facultative, passée seulement si Claude Code la connaît : suivre les textes des
+/// sous-agents.
+const FORWARD_SUBAGENT_TEXT: &str = "--forward-subagent-text";
+
+/// Ce que dit `claude --help` ; rien si le programme ne répond pas ou ne liste aucune option (on
+/// ne peut alors rien en conclure).
+fn help_of(program: &Path) -> Option<String> {
+    let output = claude_command(program)
+        .arg("--help")
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    let help = String::from_utf8_lossy(&output.stdout).into_owned();
+    help.contains("--").then_some(help)
+}
+
+/// Les options nécessaires que ce `claude --help` ne connaît pas, dans l'ordre de la liste.
+fn missing_options(help: &str) -> Vec<&'static str> {
+    REQUIRED_OPTIONS
+        .into_iter()
+        .filter(|option| !help.contains(option))
+        .collect()
+}
 
 /// Les seules variables d'environnement transmises à `claude` : son dossier personnel, sa
 /// connexion, ses programmes, la langue, les fichiers temporaires et le proxy du réseau. Toute
@@ -122,6 +165,24 @@ fn sign_in_address(line: &str) -> Option<&str> {
 struct Turn {
     child: Option<Child>,
     stopped: bool,
+    /// Ce que le programme du tour dit sur sa sortie d'erreur, lu à part jusqu'à sa fin.
+    reason: Option<JoinHandle<String>>,
+}
+
+/// Le nombre de dernières lignes de la sortie d'erreur gardées pour dire pourquoi un tour a échoué.
+const REASON_LINES: usize = 3;
+
+/// Lit `output` sur un fil à part ; rend ses dernières lignes, sur une seule ligne.
+fn read_reason(output: impl Read + Send + 'static) -> JoinHandle<String> {
+    thread::spawn(move || {
+        let lines: Vec<String> = BufReader::new(output)
+            .lines()
+            .map_while(Result::ok)
+            .map(|line| line.trim().to_owned())
+            .filter(|line| !line.is_empty())
+            .collect();
+        lines[lines.len().saturating_sub(REASON_LINES)..].join(" ")
+    })
 }
 
 /// `claude`, lancé avec les seules variables d'environnement gardées de l'application.
@@ -223,6 +284,18 @@ impl ClaudeCodeCli {
                 workspace.as_str()
             )));
         }
+        // Ce que ce Claude Code connaît : trop ancien, il le dit ; sinon les textes des sous-agents
+        // ne sont suivis que s'il sait le faire.
+        let help = self.program().and_then(help_of);
+        if let Some(help) = &help
+            && let missing @ [_, ..] = missing_options(help).as_slice()
+        {
+            return Err(ClaudeError::Failed(format!(
+                "Claude Code ne connaît pas {} : mettez-le à jour (« claude update » dans le Terminal)",
+                missing.join(", ")
+            )));
+        }
+        let forward_subagent_text = help.is_some_and(|help| help.contains(FORWARD_SUBAGENT_TEXT));
         let guard = match settings.changes_after_web {
             ChangesAfterWeb::HeldBack => Some(WebGuard::new().map_err(|_| {
                 ClaudeError::Failed("le garde-fou du web n'a pas pu être posé".to_owned())
@@ -242,10 +315,17 @@ impl ClaudeCodeCli {
                     settings,
                     mcp.as_deref(),
                     hooks.as_deref(),
+                    forward_subagent_text,
                 ))
                 .current_dir(workspace.as_str())
-                .stderr(Stdio::null());
+                .stderr(Stdio::piped());
         })?;
+        let errors = self
+            .turn()
+            .child
+            .as_mut()
+            .and_then(|child| child.stderr.take());
+        self.turn().reason = errors.map(read_reason);
         // Un programme qui s'arrête sans tout lire ne garde pas le message : sa fin, lue sur sa
         // sortie, dit ce qu'il en est.
         stdin.write_all(message.as_bytes()).ok();
@@ -273,6 +353,7 @@ impl ClaudeCodeCli {
         *turn = Turn {
             child: Some(child),
             stopped: false,
+            reason: None,
         };
         Ok((stdin, stdout))
     }
@@ -293,10 +374,19 @@ impl ClaudeCodeCli {
 
     /// Attend la fin du programme du tour et dit comment le tour s'est terminé.
     fn finish(&self, summarized: bool) -> Result<(), ClaudeError> {
-        if self.wait()? || summarized {
+        let succeeded = self.wait()?;
+        let reason = self
+            .turn()
+            .reason
+            .take()
+            .and_then(|reading| reading.join().ok())
+            .filter(|reason| !reason.is_empty());
+        if succeeded || summarized {
             Ok(())
         } else {
-            Err(ClaudeError::Failed("aucun bilan".to_owned()))
+            Err(ClaudeError::Failed(
+                reason.unwrap_or_else(|| "aucun bilan".to_owned()),
+            ))
         }
     }
 }
@@ -341,6 +431,7 @@ fn arguments(
     settings: TurnSettings,
     mcp: Option<&str>,
     hooks: Option<&str>,
+    forward_subagent_text: bool,
 ) -> Vec<String> {
     let mut arguments = vec!["-p", "--output-format", "stream-json", "--verbose"];
     if let Some(conversation) = conversation {
@@ -360,15 +451,17 @@ fn arguments(
         allowed.as_deref().unwrap_or(ALLOWED_TOOLS),
         "--permission-mode",
         "acceptEdits",
-        "--permission-prompts",
-        "none",
-        "--restricted",
         "--strict-mcp-config",
     ]);
     if let Some(mcp) = mcp {
         arguments.extend(["--mcp-config", mcp]);
     }
-    arguments.extend(["--disable-slash-commands", "--forward-subagent-text"]);
+    // Aucun réglage du dossier ni de l'utilisateur : un `.claude/settings.json` posé parmi les
+    // notes (crochets, permissions plus larges) ne doit rien changer ; `--settings` s'applique.
+    arguments.extend(["--disable-slash-commands", "--setting-sources", ""]);
+    if forward_subagent_text {
+        arguments.push(FORWARD_SUBAGENT_TEXT);
+    }
     if let Some(hooks) = hooks {
         arguments.extend(["--settings", hooks]);
     }
@@ -394,10 +487,15 @@ impl ClaudeCode for ClaudeCodeCli {
                 logged_in: true,
                 email,
                 org_name,
-            }) => ClaudeStatus::Ready(ClaudeAccount {
-                email,
-                organization: org_name,
-            }),
+            }) => match help_of(program).map(|help| missing_options(&help)) {
+                Some(missing) if !missing.is_empty() => {
+                    ClaudeStatus::Incompatible(missing.join(", "))
+                }
+                _ => ClaudeStatus::Ready(ClaudeAccount {
+                    email,
+                    organization: org_name,
+                }),
+            },
             Ok(_) => ClaudeStatus::LoggedOut,
             Err(_) => ClaudeStatus::Failed,
         }
@@ -479,59 +577,5 @@ impl ClaudeCode for ClaudeCodeCli {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_sign_in_address_is_read_from_the_line_that_holds_it() {
-        assert_eq!(
-            sign_in_address("If the browser didn't open, visit: https://claude.ai/oauth?a=1 "),
-            Some("https://claude.ai/oauth?a=1")
-        );
-        assert_eq!(
-            sign_in_address("Sign in at: https://claude.ai/x"),
-            Some("https://claude.ai/x")
-        );
-        assert_eq!(sign_in_address("Opening browser to sign in…"), None);
-    }
-
-    fn chosen(model: Option<ClaudeModel>, effort: Option<Effort>) -> Vec<String> {
-        let settings = TurnSettings {
-            model,
-            effort,
-            ..TurnSettings::default()
-        };
-        let arguments = arguments(None, settings, None, None);
-        arguments[4..arguments.len() - 12].to_vec()
-    }
-
-    #[test]
-    fn nothing_chosen_passes_neither_model_nor_effort() {
-        assert!(chosen(None, None).is_empty());
-    }
-
-    #[test]
-    fn each_model_is_passed_by_its_claude_code_alias() {
-        for (model, alias) in [
-            (ClaudeModel::Haiku, "haiku"),
-            (ClaudeModel::Sonnet, "sonnet"),
-            (ClaudeModel::Opus, "opus"),
-            (ClaudeModel::Fable, "fable"),
-        ] {
-            assert_eq!(chosen(Some(model), None), ["--model", alias]);
-        }
-    }
-
-    #[test]
-    fn each_effort_is_passed_by_its_claude_code_level() {
-        for (effort, level) in [
-            (Effort::Low, "low"),
-            (Effort::Medium, "medium"),
-            (Effort::High, "high"),
-            (Effort::ExtraHigh, "xhigh"),
-            (Effort::Max, "max"),
-        ] {
-            assert_eq!(chosen(None, Some(effort)), ["--effort", level]);
-        }
-    }
-}
+#[path = "claude_code_cli_tests.rs"]
+mod tests;

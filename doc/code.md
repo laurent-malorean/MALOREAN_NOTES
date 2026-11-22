@@ -225,6 +225,7 @@ disallowed-methods = [
 | Quand | Quoi |
 |---|---|
 | Avant chaque commit : `scripts/ci.sh` | fichiers privés exclus ; anciens mots de l'ontologie absents ; longueur des fichiers ; Rust : mise en forme, Clippy sans avertissement, tous les tests avec couverture ≥ 95 %, dépendances ; interface : couleurs et polices seulement dans le thème, types générés à jour, mise en forme, types, lints, tests de logique et d'écran avec les seuils de couverture, parcours complets, puis rejoués avec la lecture des notes ralentie ; test de mutation du code modifié, Rust (pas encore commité) et interface (changé depuis le dernier passage de Stryker), score 100 % ; refus d'un passage Rust où aucune erreur introduite n'a pu être testée |
+| Pendant le développement : `scripts/ci.sh --sans-mutation` | les mêmes contrôles, sans les tests de mutation (les plus longs) ; après chaque problème traité ; ne suffit pas pour commiter *Vérifié par : lui-même.* |
 | Avant de livrer : `scripts/ci.sh --complet` | tout ce qui précède, avec le test de mutation de tout le code, Rust et interface ; benchmarks si la lecture a changé ; build `release` signé et notarisé |
 
 Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo install cargo-llvm-cov cargo-deny cargo-mutants --locked`, `jq` (livré avec macOS), puis dans `ui/` : `npm install` et `npx playwright install webkit`.

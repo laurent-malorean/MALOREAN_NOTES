@@ -165,6 +165,7 @@ describe("colonne Claude Code : un tour", () => {
     await settle();
     send("Range mes notes");
     expect(log).toContain("envoyer Range mes notes");
+    expect(changesAllowed).toEqual([true]); // par défaut, rien à demander même après le web
     expect(shown()).toEqual(["Range mes notes", "Claude travaille…"]);
     announce({
       kind: "actionStarted",
@@ -190,6 +191,7 @@ describe("colonne Claude Code : un tour", () => {
   });
 
   it("des modifications retenues après une lecture du web s'autorisent d'un clic, pour un tour", async () => {
+    stored.set("malorean.settings", JSON.stringify({ claudeChangesAfterWeb: "ask" }));
     columns = showing("Projets/plan.md", "Plan");
     column.follow();
     send("Cherche et note");

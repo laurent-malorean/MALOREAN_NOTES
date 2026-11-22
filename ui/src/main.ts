@@ -125,7 +125,8 @@ const newPane = paneMaker({
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),
 });
 const actions: ScreenActions = screenActions({
-  ...{ backend: bridge, columns, folders, workspace, trash, tags, recent, exporting, history, run },
+  ...{ backend: bridge, screen, columns, folders, workspace, trash, tags, recent },
+  ...{ exporting, history, run },
 });
 connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders });
 const windowDisplay = connectWindowDisplay(layout, {
@@ -140,7 +141,6 @@ const commands = connectCommands({
 const formatBar = connectFormatBar(layout.formatBar, commands);
 const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...messages });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
-
 screen.show(welcome);
 void columns.change(columns.current());
 bridge

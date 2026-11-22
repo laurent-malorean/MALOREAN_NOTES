@@ -44,11 +44,13 @@ impl FakeClaude {
         // Chaque ligne se termine, comme celles de Claude Code : la dernière est lue sans
         // attendre la fin du programme.
         fs::write(folder.path().join("stream.jsonl"), format!("{stream}\n")).unwrap();
+        fs::write(folder.path().join("help"), FULL_HELP).unwrap();
         let script = folder.path().join("claude");
         fs::write(
             &script,
             format!(
-                "#!/bin/sh\n[ \"$1\" = auth ] && env > '{dir}/auth_env' && \
+                "#!/bin/sh\n[ \"$1\" = --help ] && exec cat '{dir}/help'\n\
+                 [ \"$1\" = auth ] && env > '{dir}/auth_env' && \
                  exec echo '{{\"loggedIn\":true}}'\n\
                  printf '%s\\n' \"$@\" > '{dir}/args'\npwd -P > '{dir}/cwd'\n\
                  env > '{dir}/env'\n\
@@ -154,12 +156,16 @@ fn the_claude_code_program_honours_the_claude_code_contract() {
     });
 }
 
+/// Ce que dit `claude --help` : chaque option dont l'application a besoin.
+const FULL_HELP: &str = "--output-format --verbose --resume --model --effort --tools \\
+    --allowed-tools --permission-mode --strict-mcp-config --mcp-config --disable-slash-commands \\
+    --setting-sources --settings";
+
 /// Les arguments attendus après le flux JSON, la conversation éventuelle, le modèle et le niveau
 /// d'effort.
 const PERMISSIONS: &str = "--tools\nRead,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch\n\
     --allowed-tools\nWebSearch,WebFetch\n\
-    --permission-mode\nacceptEdits\n--permission-prompts\nnone\n--restricted\n\
-    --strict-mcp-config\n--disable-slash-commands\n--forward-subagent-text\n";
+    --permission-mode\nacceptEdits\n--strict-mcp-config\n--disable-slash-commands\n--setting-sources\n\n";
 
 impl FakeClaude {
     /// Les arguments reçus, sans les crochets du garde-fou du web passés en dernier par
@@ -174,7 +180,7 @@ impl FakeClaude {
 }
 
 /// Les outils de l'application qui changent une note : le garde-fou du web les retient aussi.
-const CHANGING_APP_TOOLS: &str = "mcp__malorean__create_note|mcp__malorean__create_note_from_template|mcp__malorean__trash_n\
+const CHANGING_APP_TOOLS: &str = "mcp__malorean__create_note|mcp__malorean__create_folder|mcp__malorean__create_note_from_template|mcp__malorean__trash_n\
     ote|mcp__malorean__rename_note|mcp__malorean__move_note|mcp__malorean__restore_version|mcp\
     __malorean__add_tags|mcp__malorean__remove_tags|mcp__malorean__pin_note|mcp__malorean__unp\
     in_note|mcp__malorean__add_attachment|mcp__malorean__add_entry";
@@ -229,7 +235,7 @@ fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them()
     let allowed = "WebSearch,WebFetch,mcp__malorean__search_notes,mcp__malorean__list_tags,\
         mcp__malorean__linking_notes,mcp__malorean__list_templates,mcp__malorean__list_versions,\
         mcp__malorean__read_version,mcp__malorean__create_note,\
-        mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\
+        mcp__malorean__create_folder,mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\
         mcp__malorean__rename_note,mcp__malorean__move_note,mcp__malorean__restore_version,\
         mcp__malorean__add_tags,mcp__malorean__remove_tags,mcp__malorean__pin_note,\
         mcp__malorean__unpin_note,mcp__malorean__add_attachment,mcp__malorean__add_entry,\
@@ -466,6 +472,29 @@ fn claude_code_exiting_in_error_without_summary_fails_the_turn() {
 }
 
 #[test]
+fn claude_code_exiting_in_error_with_a_reason_gives_the_reason_instead_of_no_summary() {
+    let fake = FakeClaude::new("", "echo \"error: unknown option '--x'\" >&2; exit 1");
+    assert_eq!(
+        fake.turn(None, "Bonjour").0,
+        Err(ClaudeError::Failed(
+            "error: unknown option '--x'".to_owned()
+        ))
+    );
+}
+
+#[test]
+fn the_reason_keeps_only_the_last_lines_of_what_claude_code_says() {
+    let fake = FakeClaude::new(
+        "",
+        "for n in 1 2 3 4 5; do echo \"ligne $n\" >&2; done; exit 1",
+    );
+    assert_eq!(
+        fake.turn(None, "Bonjour").0,
+        Err(ClaudeError::Failed("ligne 3 ligne 4 ligne 5".to_owned()))
+    );
+}
+
+#[test]
 fn claude_code_exiting_well_without_summary_ends_the_turn_well() {
     let fake = FakeClaude::new(INIT, "exit 0");
     assert_eq!(fake.turn(None, "Bonjour").0, Ok(()));
@@ -517,4 +546,35 @@ fn after_a_finished_turn_another_one_can_start() {
     fake.turn(None, "Un").0.unwrap();
     assert_eq!(fake.turn(None, "Deux").0, Ok(()));
     assert_eq!(fake.received("input"), "Deux");
+}
+
+#[test]
+fn the_texts_of_sub_agents_are_followed_only_when_claude_code_knows_how() {
+    let fake = FakeClaude::new(SUMMARY, "");
+    fs::write(
+        fake.folder.path().join("help"),
+        format!("{FULL_HELP} --forward-subagent-text"),
+    )
+    .unwrap();
+    fake.turn(None, "Bonjour").0.unwrap();
+    assert!(
+        fake.arguments_and_guard()
+            .0
+            .ends_with("--setting-sources\n\n--forward-subagent-text\n")
+    );
+}
+
+#[test]
+fn a_turn_with_a_claude_code_that_lacks_an_option_says_so_and_does_not_launch_it() {
+    let fake = FakeClaude::new(SUMMARY, "");
+    fs::write(
+        fake.folder.path().join("help"),
+        FULL_HELP.replace("--setting-sources", ""),
+    )
+    .unwrap();
+    let Err(ClaudeError::Failed(reason)) = fake.turn(None, "Bonjour").0 else {
+        panic!("le tour devait échouer");
+    };
+    assert!(reason.starts_with("Claude Code ne connaît pas --setting-sources"));
+    assert!(!fake.folder.path().join("args").exists());
 }

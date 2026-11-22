@@ -1,4 +1,5 @@
 // Modèles de note : le dossier des modèles de l'espace de travail, et la note créée depuis un modèle.
+import type { MessageKind } from "./messages";
 import type * as Bridge from "../bridge";
 import { openPicker } from "../screens/picker";
 import { templatesFolderGroup } from "../screens/templates-setting";
@@ -21,7 +22,7 @@ export interface TemplatesDeps {
   /** La fenêtre de choix au clavier. */
   readonly picker: HTMLDialogElement;
   /** Montre un message quelques secondes. */
-  show(message: string): void;
+  show(message: string, kind?: MessageKind): void;
   run(action: Promise<unknown>): void;
 }
 
@@ -50,10 +51,10 @@ async function newNote(deps: TemplatesDeps) {
   if (deps.screen.get().kind !== "workspace") return;
   const folder = loadTemplatesFolder(deps.storage, deps.workspace.path());
   if (folder === null)
-    return deps.show("Aucun dossier des modèles : choisissez-en un dans les réglages.");
+    return deps.show("Aucun dossier des modèles : choisissez-en un dans les réglages.", "info");
   const templates = templatesIn(await deps.backend.listAllNotes(), folder);
   if (templates.length === 0)
-    return deps.show(`Le dossier des modèles « ${folder} » ne contient aucune note.`);
+    return deps.show(`Le dossier des modèles « ${folder} » ne contient aucune note.`, "info");
   openPicker(deps.picker, {
     label: "Nouvelle note depuis un modèle",
     placeholder: "Titre du modèle",

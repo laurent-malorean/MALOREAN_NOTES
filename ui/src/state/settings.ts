@@ -5,6 +5,8 @@ export type Font = "serif" | "sans" | "mono";
 export type TextSize = "small" | "medium" | "large" | "larger";
 export type TextWidth = "narrow" | "medium" | "wide";
 export type Appearance = "auto" | "light" | "dark";
+/** Ce que Claude fait de ses créations et modifications après avoir lu le web (fiche 0032). */
+export type ClaudeChanges = "allow" | "ask";
 
 export interface Settings {
   /** Nombre de caractères d'une page, pour le bandeau. */
@@ -13,6 +15,7 @@ export interface Settings {
   readonly textSize: TextSize;
   readonly textWidth: TextWidth;
   readonly appearance: Appearance;
+  readonly claudeChangesAfterWeb: ClaudeChanges;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -21,6 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
   textSize: "medium",
   textWidth: "medium",
   appearance: "auto",
+  claudeChangesAfterWeb: "allow",
 };
 
 /** Ce que tout réglage montre sur l'écran de réglages. */
@@ -28,7 +32,7 @@ interface FieldText {
   readonly label: string;
   readonly help: string;
   /** La partie de l'écran où il se trouve. */
-  readonly group: "Écriture" | "Affichage";
+  readonly group: "Écriture" | "Affichage" | "Claude";
 }
 
 /** Un réglage nombre : un entier entre deux bornes. */
@@ -47,7 +51,7 @@ export interface Choice {
 /** Un réglage à choix : une valeur parmi une liste. */
 export interface ChoiceField extends FieldText {
   readonly kind: "choice";
-  readonly key: "font" | "textSize" | "textWidth" | "appearance";
+  readonly key: "font" | "textSize" | "textWidth" | "appearance" | "claudeChangesAfterWeb";
   readonly choices: readonly Choice[];
 }
 
@@ -111,6 +115,17 @@ export const SETTING_FIELDS: readonly SettingField[] = [
       { value: "auto", label: "Automatique" },
       { value: "light", label: "Claire" },
       { value: "dark", label: "Sombre" },
+    ],
+  },
+  {
+    kind: "choice",
+    key: "claudeChangesAfterWeb",
+    group: "Claude",
+    label: "Modifications après une lecture du web",
+    help: "Laisser : Claude crée et modifie les notes de l'espace de travail sans rien demander, même après avoir lu le web. Demander mon accord : ses modifications attendent votre accord dès qu'il a lu le web.",
+    choices: [
+      { value: "allow", label: "Laisser Claude modifier" },
+      { value: "ask", label: "Demander mon accord" },
     ],
   },
 ];

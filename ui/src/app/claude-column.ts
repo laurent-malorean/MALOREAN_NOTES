@@ -34,6 +34,7 @@ import {
   tabUpdated,
 } from "../state/claude-tabs";
 import type { PreferenceStorage } from "../state/focus-preference";
+import { loadSettings } from "../state/settings";
 import { loadTemplatesFolder } from "../state/templates-folder";
 
 export interface ClaudeColumnDeps {
@@ -201,7 +202,7 @@ export function createClaudeColumn(deps: ClaudeColumnDeps): ClaudeColumn {
       text,
       notes.map((note) => note.title),
       messageWithNotes(text, notes),
-      false,
+      loadSettings(deps.storage).claudeChangesAfterWeb === "allow",
     );
   };
   const view: ClaudeColumnView = createClaudeColumnView(layout.claudeColumn, {

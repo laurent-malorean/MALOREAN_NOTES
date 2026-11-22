@@ -3,7 +3,9 @@
 import type * as Bridge from "../bridge";
 import type { ScreenActions } from "../screens/screen-view";
 import { noteClosed, notePlaced } from "../state/columns";
+import { searchedQuery } from "../state/screen";
 import type { OpenColumns } from "./columns";
+import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { Folders } from "./folders";
 import type { NoteHistory } from "./history";
@@ -14,7 +16,8 @@ import type { Trash } from "./trash";
 
 export interface ScreenActionsDeps {
   readonly backend: Pick<typeof Bridge, "pinNote" | "unpinNote">;
-  readonly columns: Pick<OpenColumns, "openNote" | "update">;
+  readonly screen: Pick<CurrentScreen, "get">;
+  readonly columns: Pick<OpenColumns, "openNote" | "update" | "activePane">;
   readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
   readonly workspace: Pick<Workspace, "moveNote" | "changePin" | "sortBy">;
   readonly trash: Pick<
@@ -32,10 +35,27 @@ export interface ScreenActionsDeps {
 }
 
 export function screenActions(deps: ScreenActionsDeps): ScreenActions {
-  const { backend, columns, folders, workspace, trash, tags, recent, exporting, history, run } =
-    deps;
+  const {
+    backend,
+    screen,
+    columns,
+    folders,
+    workspace,
+    trash,
+    tags,
+    recent,
+    exporting,
+    history,
+    run,
+  } = deps;
+  /** Ouvre la note ; trouvée par une recherche, elle s'ouvre sur le terme cherché. */
+  const openAtSearch = async (path: string) => {
+    await columns.openNote(path);
+    const query = searchedQuery(screen.get());
+    if (query !== null) columns.activePane().editor.reveal(query);
+  };
   return {
-    open: (path) => run(columns.openNote(path)),
+    open: (path) => run(openAtSearch(path)),
     select: (folder) => run(folders.select(folder)),
     create: (parent, name) => run(folders.create(parent, name)),
     rename: (path, name) => run(folders.rename(path, name)),

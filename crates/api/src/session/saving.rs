@@ -1,7 +1,7 @@
 //! Enregistrer une note de l'espace de travail ouvert, sans jamais écraser une version écrite ailleurs.
 
 use application::use_cases::SaveNote;
-use domain::title::displayed_title;
+use domain::title::displayed_title_of_note;
 use domain::{Fingerprint, NotePath};
 
 use super::Session;
@@ -32,7 +32,7 @@ impl Session {
         self.saved_since_version(&note, &saved.path)?;
         Ok(SaveResult {
             path: saved.path.to_path(),
-            title: displayed_title(content),
+            title: displayed_title_of_note(content, saved.path.name()),
             fingerprint: saved.fingerprint.as_str().to_owned(),
             conflict_copy: saved.conflict_copy.as_ref().map(NotePath::to_path),
             tags_changed: saved.tags_changed,
@@ -79,14 +79,15 @@ mod tests {
     }
 
     #[test]
-    fn a_note_without_heading_is_untitled() {
+    fn a_note_without_heading_shows_and_keeps_its_file_name() {
         let session = opened(&[("a.md", "texte")]);
-        assert_eq!(session.read_note("a.md").unwrap().title, "Sans titre");
+        assert_eq!(session.read_note("a.md").unwrap().title, "a");
         let read = session.read_note("a.md").unwrap();
         let saved = session
             .save_note("a.md", "encore", &read.fingerprint)
             .unwrap();
-        assert_eq!(saved.title, "Sans titre");
+        assert_eq!(saved.title, "a");
+        assert_eq!(saved.path, "a.md");
     }
 
     #[test]

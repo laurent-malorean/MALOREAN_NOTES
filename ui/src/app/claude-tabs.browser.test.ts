@@ -59,7 +59,12 @@ beforeEach(() => {
     },
     // Seul l'espace de travail « Autre » a un dossier des modèles.
     storage: {
-      getItem: (key) => (key === "malorean.templates:/Users/moi/Autre" ? "Modèles" : null),
+      getItem: (key) =>
+        key === "malorean.templates:/Users/moi/Autre"
+          ? "Modèles"
+          : key === "malorean.settings"
+            ? JSON.stringify({ claudeChangesAfterWeb: "ask" })
+            : null,
       setItem: () => {},
       removeItem: () => {},
     },

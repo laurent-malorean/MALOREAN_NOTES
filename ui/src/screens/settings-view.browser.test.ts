@@ -41,10 +41,10 @@ describe("écran de réglages", () => {
       .split(" ")
       .map((id) => document.getElementById(id)?.className);
     expect(described).toEqual(["setting-help", "setting-error"]);
-    expect(dialog.querySelectorAll(".setting")).toHaveLength(5);
+    expect(dialog.querySelectorAll(".setting")).toHaveLength(6);
   });
 
-  it("range les réglages par partie : écriture, puis affichage", () => {
+  it("range les réglages par partie : écriture, affichage, puis Claude", () => {
     const { dialog } = open();
     const parts = [...dialog.querySelectorAll("fieldset")].map((f) => [
       f.querySelector("legend")?.textContent,
@@ -53,6 +53,7 @@ describe("écran de réglages", () => {
     expect(parts).toEqual([
       ["Écriture", ["Caractères par page"]],
       ["Affichage", ["Police", "Taille du texte", "Largeur du texte", "Apparence"]],
+      ["Claude", ["Modifications après une lecture du web"]],
     ]);
   });
 

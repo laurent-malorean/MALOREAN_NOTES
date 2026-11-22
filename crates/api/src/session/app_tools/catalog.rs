@@ -109,7 +109,7 @@ fn create_note() -> Described {
     (
         "Crée une note selon les règles de MALOREAN Notes : titre `# title` en tête, nom du \
          fichier tiré du titre (sans écraser une autre note), dans `folder` (la racine par \
-         défaut), avec `text` sous le titre. Rend son chemin.",
+         défaut ; créé avec ses parents s'il n'existe pas), avec `text` sous le titre. Rend son chemin.",
         input(
             json!({
                 "title": text("Le titre de la note."),
@@ -117,6 +117,23 @@ fn create_note() -> Described {
                 "text": text("Le texte de la note, en Markdown, sous son titre."),
             }),
             &["title"],
+        ),
+    )
+}
+
+fn create_folder() -> Described {
+    (
+        "Crée un dossier dans l'espace de travail, avec chacun des dossiers qui manquent sur son \
+         chemin ; un dossier qui existe déjà est laissé tel quel. À appeler avant `create_note` \
+         pour un dossier neuf. Rend son chemin.",
+        input(
+            json!({
+                "path": text(
+                    "Le chemin du dossier depuis la racine de l'espace de travail, séparé par `/` \
+                     (`Animaux/Chiens`).",
+                ),
+            }),
+            &["path"],
         ),
     )
 }
@@ -277,6 +294,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::ListVersions => list_versions(),
         AppTool::ReadVersion => read_version(),
         AppTool::CreateNote => create_note(),
+        AppTool::CreateFolder => create_folder(),
         AppTool::CreateNoteFromTemplate => create_note_from_template(),
         AppTool::TrashNote => trash_note(),
         AppTool::RenameNote => rename_note(),
@@ -346,7 +364,7 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 20] = [
+        let expected: [(AppTool, &[&str]); 21] = [
             (AppTool::SearchNotes, &[]),
             (AppTool::ListTags, &[]),
             (AppTool::LinkingNotes, path),
@@ -354,6 +372,7 @@ mod tests {
             (AppTool::ListVersions, path),
             (AppTool::ReadVersion, &["path", "version"]),
             (AppTool::CreateNote, &["title"]),
+            (AppTool::CreateFolder, path),
             (AppTool::CreateNoteFromTemplate, &["template", "title"]),
             (AppTool::TrashNote, path),
             (AppTool::RenameNote, &["path", "title"]),

@@ -59,7 +59,7 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
     layout: { restore: async (path) => (calls.push(`disposition de ${path}`), state.restored) },
     folds: { load: (path) => (path === "/notes" ? ["projets"] : []) },
     storage,
-    show: (message) => messages.push(message),
+    show: (message, kind) => messages.push(kind ? `[${kind}] ${message}` : message),
     search: async (query) => void calls.push(`chercher ${query}`),
     recent: {
       list: async () => (calls.push("notes récentes"), [listed("r.md")]),
@@ -231,7 +231,7 @@ describe("espace de travail ouvert", () => {
     await t.workspace.followLink("A", true);
     expect(t.columns.log).toEqual(["suivre a.md", "ouvrir a.md"]);
     await t.workspace.followLink("Inconnu", false);
-    expect(t.messages).toEqual(["Aucune note ne porte le titre « Inconnu »."]);
+    expect(t.messages).toEqual(["[info] Aucune note ne porte le titre « Inconnu »."]);
     expect(t.columns.log).toEqual(["suivre a.md", "ouvrir a.md"]);
   });
 

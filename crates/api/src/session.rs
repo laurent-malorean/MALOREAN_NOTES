@@ -37,7 +37,7 @@ use application::{
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
-use domain::title::displayed_title;
+use domain::title::displayed_title_of_note;
 use domain::{Fingerprint, Folder, FolderName, NotePath, NoteSummary};
 
 use crate::{
@@ -368,7 +368,7 @@ fn note_content(note: StoredNote) -> NoteContent {
     NoteContent {
         path: note.path.to_path(),
         fingerprint: Fingerprint::of(&note.content).as_str().to_owned(),
-        title: displayed_title(&note.content),
+        title: displayed_title_of_note(&note.content, note.path.name()),
         content: note.content,
     }
 }

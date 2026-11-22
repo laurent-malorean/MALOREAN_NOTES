@@ -33,10 +33,9 @@ claude -p --output-format stream-json --verbose
        [--model haiku|sonnet|opus|fable] [--effort low|medium|high|xhigh|max]
        --tools Read,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch
        --allowed-tools WebSearch,WebFetch
-       --permission-mode acceptEdits --permission-prompts none
-       --restricted --strict-mcp-config [--mcp-config <serveur de l'application>]
-       --disable-slash-commands
-       --forward-subagent-text
+       --permission-mode acceptEdits --strict-mcp-config
+       [--mcp-config <serveur de l'application>]
+       --disable-slash-commands --setting-sources ""
        [--settings <crochets du garde-fou du web>]
 ```
 
@@ -57,8 +56,9 @@ Vérifiées dans `claude --help` (2.1.311), sans appeler le modèle :
 | Seulement lire, chercher, créer, modifier des fichiers, lancer des sous-agents, chercher sur le web et lire des pages web | `--tools Read,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch` : les seuls outils offerts au modèle ; ni `Bash` ni aucun outil qui lance du code. Nommer `WebFetch` le garde malgré `--restricted` |
 | Le web sans rien demander | `--allowed-tools WebSearch,WebFetch` : sans cette règle, chaque recherche et chaque lecture de page demande une autorisation, refusée d'office (mesuré) |
 | Sans rien demander | `--permission-mode acceptEdits` : les créations et modifications de fichiers sont acceptées d'office |
-| Ce qui demanderait une autorisation est refusé | `--permission-prompts none` : personne ne répond, la demande est refusée d'office |
-| Rien hors du dossier de l'espace de travail | `--restricted` : les outils de fichiers sont confinés aux dossiers de travail ; il retire aussi les outils qui lancent du code (et `WebFetch` quand `--tools` ne le nomme pas), ignore les réglages de l'utilisateur et du projet (qui pourraient autoriser davantage) et refuse le contournement des autorisations |
+| Ce qui demanderait une autorisation est refusé | rien à passer : sans personne pour répondre (`-p`), `claude` refuse d'office ce qui n'est pas permis (mesuré, voir « Mise à jour du 22/11/2026 ») |
+| Rien hors du dossier de l'espace de travail | les outils de fichiers ne touchent que le dossier de travail : lire ou écrire plus loin demande une autorisation, refusée d'office ; `--tools` ne nomme aucun outil qui lance du code |
+| Ni les réglages de l'utilisateur ni ceux du dossier (qui pourraient autoriser davantage ou lancer un crochet) | `--setting-sources ""` : aucune source de réglages chargée ; `--settings` (garde-fou du web) s'applique quand même |
 | Pas d'autre serveur MCP que celui de l'application (fiche 0040), qui ne répond que sur ce Mac | `--strict-mcp-config`, et `--mcp-config` avec ce seul serveur ; chacun de ses outils permis par son nom dans `--allowed-tools` |
 | Pas de commandes ni de compétences lancées par un message qui commence par `/` | `--disable-slash-commands` |
 | Après une lecture du web, aucune création ni modification sans l'accord de l'utilisateur | `--settings` avec les deux crochets du garde-fou du web, à chaque tour sauf celui que l'utilisateur autorise |
@@ -102,7 +102,7 @@ Dix petits tours (`--model haiku`, environnement réduit, options exactes ci-des
 | Écrire `.claude/settings.json` dans le dossier | refusé (personne pour l'accepter) |
 | Réglages, crochets, serveur MCP et `CLAUDE.md` posés dans le dossier, avec `--settings` passé | sans effet : aucune trace de crochet ni de serveur, `mcp_servers` vide, le mot repère jamais écrit |
 
-Le confinement tient donc avec `--restricted` gardé : rien d'autre ne change que les deux outils du web et la règle qui les permet.
+Le confinement tient donc : rien d'autre ne change que les deux outils du web et la règle qui les permet.
 
 ### Garde-fou du web
 
@@ -133,7 +133,7 @@ Verrous : les arguments exacts (avec et sans modèle et niveau d'effort, convers
 - `rate_limit_event` : la limite d'utilisation de l'abonnement (voir « Charge annoncée par Claude Code ») ;
 - `assistant` : un message (blocs `text`) ou une action lancée (blocs `tool_use` : outil, entrée, identifiant) ;
 - `user` : l'issue d'une action (blocs `tool_result`, rattachés par `tool_use_id`) ;
-- `parent_tool_use_id` non vide : le message ou l'action appartient au sous-agent lancé par cette action (`--forward-subagent-text` fait suivre les textes des sous-agents) ; une action `Agent` (description, consigne) ouvre un sous-agent, son issue le clôt ;
+- `parent_tool_use_id` non vide : le message ou l'action appartient au sous-agent lancé par cette action  ; une action `Agent` (description, consigne) ouvre un sous-agent, son issue le clôt ;
 - `result` : le bilan (réussi ou en erreur, durée, jetons, nombre de tours), avec les jetons de la dernière requête (`usage.iterations`) et, par modèle, la taille de son contexte (`modelUsage.<modèle>.contextWindow`).
 - `system` / `permission_denied` (`tool_use_id`) : une action refusée par les autorisations ; son issue (`tool_result` en erreur) suit ;
 - `system` / `task_notification` (`tool_use_id`, `status`, `usage` : `total_tokens`, `tool_uses`, `duration_ms`) : la fin d'un sous-agent.
@@ -242,3 +242,27 @@ Demandé par l'utilisateur le 20/11 : plusieurs conversations ouvertes à la foi
 - Avec le web, Claude peut lire ce qu'une page dit ; ce qu'il en rapporte reste dans la conversation, et le garde-fou du web empêche qu'une page fasse modifier des notes sans l'accord de l'utilisateur. Un crochet qui ne pourrait pas tourner (shell absent) laisserait passer la modification : l'historique des versions garde alors la version d'avant.
 - `--restricted` ignore les réglages de l'utilisateur pour Claude Code (ses autorisations, ses crochets) : dans l'application, Claude se comporte toujours de la même façon, quel que soit le réglage du Terminal.
 - Le mode non interactif saute la question de confiance du dossier : c'est l'utilisateur qui a choisi l'espace de travail.
+
+
+## Mise à jour du 22/11/2026 : options inconnues des versions récentes de Claude Code
+
+`claude` 2.1.177 refuse `--permission-prompts`, `--restricted` et `--forward-subagent-text` (« unknown option ») et sort aussitôt, sans flux JSON : la colonne affichait « aucun bilan » à chaque message. Ces trois options ne sont plus passées. Mesuré sur 2.1.177, dans un dossier où `.claude/settings.json` pose un crochet et une permission de lire `/etc` :
+
+| Tentative | Sans `--setting-sources ""` | Avec |
+|---|---|---|
+| Lire `/etc/hosts`, écrire hors du dossier | refusé (personne pour accepter) | refusé |
+| Crochet `UserPromptSubmit` du dossier | **exécuté** | pas exécuté |
+| Permission du dossier de lire `/etc/**` | **appliquée** : lecture faite | sans effet |
+| Crochets passés par `--settings` (garde-fou du web) | exécutés | exécutés |
+
+`--setting-sources ""` remplace donc ce que `--restricted` faisait pour les réglages. Les textes des sous-agents ne sont plus suivis à part (`--forward-subagent-text` perdu) : à revérifier si l'interface en a besoin.
+
+Deux garde-fous contre la même panne : un test lance `claude --help` quand il est installé et vérifie que chaque option passée y figure ; et un tour qui s'arrête sans bilan donne les dernières lignes de la sortie d'erreur de `claude` (au lieu de « aucun bilan »).
+
+## Mise à jour du 22/11/2026 : le garde-fou du web devient un réglage
+
+Après une recherche sur le web, chaque création ou modification attendait l'accord de l'utilisateur : insupportable pour « cherche, puis crée la note ». Le réglage « Modifications après une lecture du web » (partie « Claude » des réglages) choisit : « Laisser Claude modifier » (**par défaut**, le garde-fou n'est pas posé) ou « Demander mon accord » (le comportement ci-dessus, avec le bouton « Autoriser ses modifications »). Le confinement à l'espace de travail et `--setting-sources ""` ne dépendent pas de ce réglage. Reste à faire : l'outil de l'application qui crée un dossier.
+
+## Mise à jour du 22/11/2026 : l'application lit ce que `claude` connaît
+
+À chaque ouverture de la colonne et à chaque tour, `claude --help` (0,2 s) est lu. Une option nécessaire qui manque (`REQUIRED_OPTIONS` dans `claude_code_cli.rs`) donne l'état « Claude Code ne connaît pas … : mettez-le à jour » (`ClaudeStatus::Incompatible`), et le tour n'est pas lancé : plus de « aucun bilan » muet. `--forward-subagent-text` est facultative : passée seulement si `claude --help` la liste (sans elle, mesuré sur 2.1.177, les actions des sous-agents arrivent toujours avec leur `parent_tool_use_id`, mais pas leurs textes). Une aide illisible ou sans option ne conclut à rien. Les outils de l'application comptent un outil de plus, `create_folder` (dossier et dossiers manquants de son chemin) ; `create_note` crée aussi le dossier qui manque.

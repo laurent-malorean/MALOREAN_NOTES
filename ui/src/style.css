@@ -591,21 +591,76 @@ button {
   background: color-mix(in srgb, var(--accent) 25%, transparent) !important;
 }
 
+/* Messages : des cartes empilées en haut à droite, le plus récent en haut. */
 .status {
   position: fixed;
-  bottom: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--danger);
-  color: var(--on-danger);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  opacity: 0;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  width: min(26rem, calc(100vw - 2rem));
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
   pointer-events: none;
-  transition: opacity 0.2s;
 }
-.status.visible {
-  opacity: 1;
+.toast {
+  --toast-color: var(--success);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--toast-color);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px var(--shadow);
+  /* Les clics passent à travers : un message ne cache jamais un bouton, sauf sa croix. */
+  pointer-events: none;
+}
+.toast-info {
+  --toast-color: var(--info);
+}
+.toast-warning {
+  --toast-color: var(--warning);
+}
+.toast-error {
+  --toast-color: var(--danger);
+}
+.toast::before {
+  content: "✓";
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--toast-color) 18%, transparent);
+  color: var(--toast-color);
+  font-weight: 700;
+}
+.toast-info::before {
+  content: "i";
+}
+.toast-warning::before {
+  content: "!";
+}
+.toast-error::before {
+  content: "✕";
+}
+.toast-text {
+  overflow-wrap: anywhere;
+}
+.toast-close {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  pointer-events: auto;
+}
+.toast-close::before {
+  content: "✕";
 }
 
 /* Aperçu en direct */

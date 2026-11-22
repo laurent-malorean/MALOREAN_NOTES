@@ -33,10 +33,10 @@ impl SavePlan {
 /// le premier suffixe `-2`, `-3`… libre. La note elle-même ne compte pas comme une autre.
 #[must_use]
 pub fn plan_save(current: &FileName, content: &str, existing: &[FileName]) -> SavePlan {
-    let wanted = if keeps_date_name(current, content) {
-        current.clone()
-    } else {
-        FileName::from_title(Title::of(content).as_ref())
+    // Sans titre `#`, le fichier garde son nom : une note importée n'est pas renommée.
+    let wanted = match Title::of(content) {
+        Some(title) if !keeps_date_name(current, content) => FileName::from_title(Some(&title)),
+        _ => current.clone(),
     };
     let file_name =
         wanted.deduplicated(|candidate| candidate != current && existing.contains(candidate));
@@ -130,9 +130,11 @@ mod tests {
     }
 
     #[test]
-    fn removing_the_title_makes_the_note_untitled() {
+    fn a_note_without_title_keeps_its_name() {
         let plan = plan_save(&name("courses.md"), "plus de titre", &[name("courses.md")]);
-        assert_eq!(plan.file_name(), &name("sans-titre.md"));
+        assert_eq!(plan.file_name(), &name("courses.md"));
+        let imported = plan_save(&name("Habitus (de classe).md"), "## Idée", &[]);
+        assert_eq!(imported.file_name(), &name("Habitus (de classe).md"));
     }
 
     fn path(text: &str) -> NotePath {

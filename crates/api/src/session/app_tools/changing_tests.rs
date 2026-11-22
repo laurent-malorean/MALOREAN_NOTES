@@ -406,3 +406,60 @@ fn an_entry_is_only_ever_added_at_the_end_of_a_research_notebook() {
         "il manque « text »"
     );
 }
+
+#[test]
+fn a_folder_is_created_with_every_missing_level_and_one_that_exists_is_left_alone() {
+    let session = opened(&[("Travail/plan.md", "# Plan")]);
+    let created = done(
+        &session,
+        "create_folder",
+        json!({ "path": "Animaux/Chiens/Beagles" }),
+    );
+    assert_eq!(created, json!({ "path": "Animaux/Chiens/Beagles" }));
+    let folders = session.list_folders().unwrap();
+    for folder in ["Animaux", "Animaux/Chiens", "Animaux/Chiens/Beagles"] {
+        assert!(folders.contains(&folder.to_owned()), "{folder}");
+    }
+    let again = done(&session, "create_folder", json!({ "path": "Travail" }));
+    assert_eq!(again, json!({ "path": "Travail" }));
+    let note = done(
+        &session,
+        "create_note",
+        json!({ "title": "Beagle", "folder": "Animaux/Chiens/Beagles" }),
+    );
+    assert_eq!(note, json!({ "path": "Animaux/Chiens/Beagles/beagle.md" }));
+}
+
+#[test]
+fn a_note_created_in_a_folder_that_does_not_exist_creates_the_folder_first() {
+    let session = opened(&[]);
+    let note = done(
+        &session,
+        "create_note",
+        json!({ "title": "Beagle", "folder": "Animaux/Chiens", "text": "Un chien." }),
+    );
+    assert_eq!(note, json!({ "path": "Animaux/Chiens/beagle.md" }));
+    assert!(
+        session
+            .list_folders()
+            .unwrap()
+            .contains(&"Animaux/Chiens".to_owned())
+    );
+    assert_eq!(
+        text(&session, "Animaux/Chiens/beagle.md"),
+        "# Beagle\nUn chien."
+    );
+}
+
+#[test]
+fn a_folder_with_an_invalid_name_is_refused() {
+    let session = opened(&[]);
+    assert_eq!(
+        failed(&session, "create_folder", json!({})),
+        "il manque « path »"
+    );
+    assert_eq!(
+        failed(&session, "create_folder", json!({ "path": "../x" })),
+        "nom de dossier invalide : « .. »"
+    );
+}

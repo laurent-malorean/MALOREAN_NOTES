@@ -32,6 +32,7 @@ import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
 import { researchNotebook } from "./research-notebook";
 import { keptPosition } from "../state/external-change";
+import { firstMatch } from "../state/search-match";
 import type { NotePosition } from "../state/trail";
 
 /**
@@ -84,6 +85,8 @@ export interface Editor {
   position(): NotePosition;
   /** Revient à une position prise plus tôt dans la même note ; bornée au texte s'il a raccourci. */
   restore(position: NotePosition): void;
+  /** Va au premier passage où paraît un mot de la recherche : sélectionné et montré ; faux s'il n'y est pas. */
+  reveal(query: string): boolean;
   /** Dessine le plan de la note dans `container` ; `null` arrête de le dessiner. */
   setOutline(container: HTMLElement | null): void;
   /** Retire l'éditeur de l'écran, quand sa colonne disparaît. */
@@ -242,8 +245,23 @@ function restoreIn(view: EditorView, position: NotePosition) {
 }
 
 /** La position dans la note : la prendre, et y revenir. */
-function positionParts(view: EditorView): Pick<Editor, "position" | "restore"> {
-  return { position: () => positionIn(view), restore: (position) => restoreIn(view, position) };
+function positionParts(view: EditorView): Pick<Editor, "position" | "restore" | "reveal"> {
+  return {
+    position: () => positionIn(view),
+    restore: (position) => restoreIn(view, position),
+    reveal: (query) => revealIn(view, query),
+  };
+}
+
+/** La sélection sur le premier passage de la recherche, montré au milieu de l'écran. */
+function revealIn(view: EditorView, query: string): boolean {
+  const span = firstMatch(view.state.doc.toString(), query);
+  if (span === null) return false;
+  view.dispatch({
+    selection: { anchor: span.from, head: span.to },
+    effects: EditorView.scrollIntoView(span.from, { y: "center" }),
+  });
+  return true;
 }
 
 export function createEditor(

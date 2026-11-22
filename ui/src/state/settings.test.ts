@@ -39,6 +39,7 @@ describe("réglages", () => {
       textSize: "medium",
       textWidth: "medium",
       appearance: "auto",
+      claudeChangesAfterWeb: "allow",
     });
     expect(loadSettings(memoryStorage())).toEqual(DEFAULT_SETTINGS);
   });
@@ -51,6 +52,7 @@ describe("réglages", () => {
       textSize: "larger",
       textWidth: "wide",
       appearance: "dark",
+      claudeChangesAfterWeb: "ask",
     } as const;
     saveSettings(storage, chosen);
     expect([...storage.items.keys()]).toEqual(["malorean.settings"]);
@@ -86,13 +88,14 @@ function fieldOf(key: string) {
 }
 
 describe("écran de réglages, tel que décrit", () => {
-  it("range l'écriture puis l'affichage, avec les choix de chaque réglage", () => {
+  it("range l'écriture, l'affichage puis Claude, avec les choix de chaque réglage", () => {
     expect(SETTING_FIELDS.map((f) => [f.group, f.label])).toEqual([
       ["Écriture", "Caractères par page"],
       ["Affichage", "Police"],
       ["Affichage", "Taille du texte"],
       ["Affichage", "Largeur du texte"],
       ["Affichage", "Apparence"],
+      ["Claude", "Modifications après une lecture du web"],
     ]);
     const choices = (key: string) => {
       const field = fieldOf(key);
@@ -111,6 +114,10 @@ describe("écran de réglages, tel que décrit", () => {
     ]);
     expect(choices("textWidth")).toEqual(["narrow Étroite", "medium Moyenne", "wide Large"]);
     expect(choices("appearance")).toEqual(["auto Automatique", "light Claire", "dark Sombre"]);
+    expect(choices("claudeChangesAfterWeb")).toEqual([
+      "allow Laisser Claude modifier",
+      "ask Demander mon accord",
+    ]);
   });
 
   it("explique chaque réglage", () => {
@@ -120,6 +127,7 @@ describe("écran de réglages, tel que décrit", () => {
       "Pour le texte des notes.",
       "Largeur de la colonne de texte dans la fenêtre.",
       "Automatique : claire ou sombre, comme le Mac.",
+      "Laisser : Claude crée et modifie les notes de l'espace de travail sans rien demander, même après avoir lu le web. Demander mon accord : ses modifications attendent votre accord dès qu'il a lu le web.",
     ]);
   });
 

@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { fakeColumns } from "../../test-support/app-fixture";
 import type { NoteContent } from "../bridge";
 import { columnsStarted, noteOpened } from "../state/columns";
+import type { Pane } from "../screens/note-pane";
+import type { CurrentScreen } from "./current-screen";
 import { screenActions } from "./screen-actions";
 
 const content = (path: string): NoteContent => ({ path, content: "", title: "", fingerprint: "" });
 
-function setup() {
+function setup(searching: string | null = null) {
   const calls: string[] = [];
   const ran: unknown[] = [];
   const done = (call: string) => async () => void calls.push(call);
@@ -15,8 +17,15 @@ function setup() {
     pinNote: async (path: string) => content(path),
     unpinNote: async (path: string) => content(path),
   };
+  columns.panes.set(0, {
+    editor: { reveal: (query: string) => void calls.push(`montrer ${query}`) },
+  } as unknown as Pane);
+  const screen = {
+    get: () => ({ kind: "workspace", search: searching && { query: searching, results: null } }),
+  } as unknown as CurrentScreen;
   const actions = screenActions({
     backend,
+    screen,
     columns: columns.open,
     folders: {
       select: (folder) => done(`choisir ${folder}`)(),
@@ -116,5 +125,20 @@ describe("demandes de l'écran", () => {
     await Promise.all(t.ran);
     expect(t.columns.log).toEqual(["ouvrir b.md", "colonnes", "colonnes"]);
     expect(t.columns.columns().list[0]?.tabs.map((tab) => tab.note)).toEqual(["b.md", "c.md"]);
+  });
+
+  it("ouvre une note trouvée par une recherche sur le terme cherché, et sans recherche, au début", async () => {
+    const searched = setup("beagle");
+    searched.actions.open("b.md");
+    await Promise.all(searched.ran);
+    expect(searched.calls).toEqual(["montrer beagle"]);
+    const shortSearch = setup("be");
+    shortSearch.actions.open("b.md");
+    await Promise.all(shortSearch.ran);
+    expect(shortSearch.calls).toEqual([]);
+    const plain = setup();
+    plain.actions.open("b.md");
+    await Promise.all(plain.ran);
+    expect(plain.calls).toEqual([]);
   });
 });

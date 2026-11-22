@@ -68,6 +68,12 @@ pub enum ClaudeStatus {
         "Claude Code n'est pas connecté à votre abonnement Claude : cliquez sur « Se connecter », ou tapez « claude auth login » dans le Terminal puis rouvrez la colonne Claude Code"
     )]
     LoggedOut,
+    /// Claude Code est installé et connecté, mais ne connaît pas une option dont l'application a
+    /// besoin : il est trop ancien (ou trop différent).
+    #[error(
+        "Claude Code ne connaît pas {0} : mettez-le à jour (tapez « claude update » dans le Terminal), puis rouvrez la colonne Claude Code"
+    )]
+    Incompatible(String),
     /// Claude Code n'a pas pu dire s'il est connecté.
     #[error(
         "Claude Code n'a pas pu dire s'il est connecté : tapez « claude auth status » dans le Terminal pour voir ce qui ne va pas"

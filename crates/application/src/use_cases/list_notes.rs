@@ -71,7 +71,7 @@ mod tests {
             .execute(&Folder::root(), NoteOrder::Modified)
             .unwrap();
         let titles: Vec<_> = notes.iter().map(|n| n.title()).collect();
-        assert_eq!(titles, ["Sans titre", "Alpha"]);
+        assert_eq!(titles, ["b", "Alpha"]);
     }
 
     #[test]

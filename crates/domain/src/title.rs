@@ -1,5 +1,6 @@
 //! Titre d'une note : son premier titre `#`.
 
+use crate::FileName;
 use crate::front_matter;
 
 /// Titre affiché quand une note n'a pas de titre `#`.
@@ -89,9 +90,49 @@ pub fn displayed_title(content: &str) -> String {
     Title::of(content).map_or_else(|| UNTITLED.to_owned(), |t| t.0)
 }
 
+/// Le titre d'une note tel qu'il s'affiche : son titre `#` ; à défaut, le nom de son fichier sans
+/// `.md` (une note importée n'a pas forcément de titre `#`) ; « Sans titre » si ce nom est celui
+/// d'une note neuve (`sans-titre`, `sans-titre-2`…).
+#[must_use]
+pub fn displayed_title_of_note(content: &str, name: &FileName) -> String {
+    match Title::of(content) {
+        Some(title) => title.0,
+        None if name.is_untitled() => UNTITLED.to_owned(),
+        None => name.stem().to_owned(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn displayed(content: &str, name: &str) -> String {
+        displayed_title_of_note(content, &FileName::parse(name).unwrap())
+    }
+
+    #[test]
+    fn a_note_without_title_shows_its_file_name_without_the_extension() {
+        assert_eq!(
+            displayed("## Idée centrale", "Habitus (de classe).md"),
+            "Habitus (de classe)"
+        );
+        assert_eq!(
+            displayed("", "2403232023 -Le style de vie.md"),
+            "2403232023 -Le style de vie"
+        );
+        assert_eq!(displayed("texte", "a.b.md"), "a.b");
+    }
+
+    #[test]
+    fn a_title_comes_before_the_file_name() {
+        assert_eq!(displayed("# Mon titre", "autre.md"), "Mon titre");
+    }
+
+    #[test]
+    fn a_new_note_without_title_is_untitled() {
+        assert_eq!(displayed("", "sans-titre.md"), "Sans titre");
+        assert_eq!(displayed("", "sans-titre-3.md"), "Sans titre");
+    }
 
     #[test]
     fn title_is_the_first_level_one_heading() {

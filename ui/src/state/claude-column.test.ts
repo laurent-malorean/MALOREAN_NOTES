@@ -143,6 +143,7 @@ describe("conversation de la colonne Claude Code", () => {
       tool("v", "read_version"),
       ...[
         "create_note",
+        "create_folder",
         "create_note_from_template",
         "trash_note",
         "rename_note",
@@ -168,6 +169,7 @@ describe("conversation de la colonne Claude Code", () => {
       "Historique",
       "Lecture d’une version",
       "Nouvelle note",
+      "Nouveau dossier",
       "Note depuis un modèle",
       "Mise à la corbeille",
       "Renommage",

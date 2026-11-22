@@ -1,5 +1,6 @@
 // L'espace de travail ouvert : ses dossiers et la liste de ses notes (et son tri), les notes
 // qu'on y crée, déplace ou épingle, les liens qui mènent d'une note à l'autre, et son index.
+import type { MessageKind } from "./messages";
 import type * as Bridge from "../bridge";
 import type { WorkspaceInfo, NoteContent } from "../bridge";
 import { notesMoved, noteShown, notesRemoved } from "../state/columns";
@@ -45,7 +46,7 @@ export interface WorkspaceDeps {
   /** Là où le tri de la liste de chaque espace de travail est gardé. */
   readonly storage: PreferenceStorage;
   /** Montre un message quelques secondes. */
-  show(message: string): void;
+  show(message: string, kind?: MessageKind): void;
   /** Relance la recherche en cours sur les notes telles qu'elles sont maintenant. */
   search(query: string): Promise<void>;
   /** Les notes récentes, que Récentes montre et qui suivent une note déplacée. */
@@ -143,7 +144,7 @@ async function createNote(deps: WorkspaceDeps) {
 async function followLink(deps: WorkspaceDeps, title: string, inNewTab: boolean) {
   await deps.columns.activePane().flush();
   const path = await deps.backend.resolveLink(title);
-  if (path === null) return deps.show(`Aucune note ne porte le titre « ${title} ».`);
+  if (path === null) return deps.show(`Aucune note ne porte le titre « ${title} ».`, "info");
   await (inNewTab ? deps.columns.openNote(path) : deps.columns.followNote(path));
 }
 

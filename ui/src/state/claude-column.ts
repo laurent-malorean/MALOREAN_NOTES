@@ -60,6 +60,7 @@ export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   list_versions: "Historique",
   read_version: "Lecture d’une version",
   create_note: "Nouvelle note",
+  create_folder: "Nouveau dossier",
   create_note_from_template: "Note depuis un modèle",
   trash_note: "Mise à la corbeille",
   rename_note: "Renommage",

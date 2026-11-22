@@ -143,6 +143,12 @@ export function searchable(query: string): boolean {
   return text.length >= SEARCH_MIN_LENGTH || /^\d+$/.test(text);
 }
 
+/** Les mots cherchés, s'ils sont assez longs pour une recherche ; rien sinon. */
+export function searchedQuery(screen: Screen): string | null {
+  const search = screen.kind === "workspace" ? screen.search : null;
+  return search !== null && searchable(search.query) ? search.query : null;
+}
+
 /**
  * La recherche tapée : elle commence, continue avec les résultats précédents, ou s'arrête si vide.
  * Sous le seuil de recherche, le texte est gardé sans résultat : la liste montre le dossier.

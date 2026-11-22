@@ -26,6 +26,8 @@ pub enum AppTool {
     ReadVersion,
     /// Créer une note selon les règles : titre, nom du fichier tiré du titre.
     CreateNote,
+    /// Créer un dossier, avec ceux qui manquent sur son chemin.
+    CreateFolder,
     /// Créer une note depuis un modèle de note, nommé, avec un titre.
     CreateNoteFromTemplate,
     /// Mettre une note à la corbeille.
@@ -58,7 +60,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::SearchNotes,
         Self::ListTags,
         Self::LinkingNotes,
@@ -66,6 +68,7 @@ impl AppTool {
         Self::ListVersions,
         Self::ReadVersion,
         Self::CreateNote,
+        Self::CreateFolder,
         Self::CreateNoteFromTemplate,
         Self::TrashNote,
         Self::RenameNote,
@@ -92,6 +95,7 @@ impl AppTool {
             Self::ListVersions => "list_versions",
             Self::ReadVersion => "read_version",
             Self::CreateNote => "create_note",
+            Self::CreateFolder => "create_folder",
             Self::CreateNoteFromTemplate => "create_note_from_template",
             Self::TrashNote => "trash_note",
             Self::RenameNote => "rename_note",
@@ -144,6 +148,7 @@ impl AppTool {
             | Self::ViewedNote
             | Self::ShowNote => false,
             Self::CreateNote
+            | Self::CreateFolder
             | Self::CreateNoteFromTemplate
             | Self::TrashNote
             | Self::RenameNote
@@ -165,7 +170,8 @@ impl AppTool {
         match self {
             Self::SearchNotes => Some("query"),
             Self::CreateNote | Self::CreateNoteFromTemplate => Some("title"),
-            Self::LinkingNotes
+            Self::CreateFolder
+            | Self::LinkingNotes
             | Self::ListVersions
             | Self::ReadVersion
             | Self::TrashNote
@@ -255,6 +261,7 @@ mod tests {
             changing,
             [
                 "create_note",
+                "create_folder",
                 "create_note_from_template",
                 "trash_note",
                 "rename_note",
@@ -284,6 +291,7 @@ mod tests {
                 path,
                 path,
                 Some("title"),
+                path,
                 Some("title"),
                 path,
                 path,

@@ -9,7 +9,7 @@ function setup() {
   const events = savingEvents({
     columns: columns.open,
     messages: {
-      show: (message) => log.push(`message ${message}`),
+      show: (message, kind) => log.push(`message${kind ? ` [${kind}]` : ""} ${message}`),
       error: (error) => log.push(`erreur ${(error as Error).message}`),
       run: (action) => void action.then(() => log.push("fait")),
     },
@@ -48,7 +48,7 @@ describe("enregistrement : ce que les notes partagées annoncent", () => {
       tagsChanged: false,
     });
     expect(log).toEqual([
-      "message Cette note a aussi changé hors de l'application : l'autre version est gardée dans « b (conflit).md ».",
+      "message [warning] Cette note a aussi changé hors de l'application : l'autre version est gardée dans « b (conflit).md ».",
       "dossiers",
       "liste",
     ]);
@@ -91,7 +91,7 @@ describe("enregistrement : ce que les notes partagées annoncent", () => {
     events.deleted();
     events.error(new Error("disque plein"));
     expect(log).toEqual([
-      "message Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
+      "message [warning] Cette note a été supprimée hors de l'application : son texte reste ici, et elle sera recréée à la prochaine modification.",
       "erreur disque plein",
     ]);
   });

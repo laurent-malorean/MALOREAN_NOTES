@@ -13,7 +13,7 @@ path: string,
  */
 content: string, 
 /**
- * Le titre affiché : le titre `#`, ou « Sans titre ».
+ * Le titre affiché : le titre `#`, ou le nom du fichier sans `.md`, ou « Sans titre » pour une note neuve.
  */
 title: string, 
 /**

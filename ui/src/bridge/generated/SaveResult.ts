@@ -9,7 +9,7 @@ export type SaveResult = {
  */
 path: string, 
 /**
- * Le titre affiché de ce qui vient d'être écrit : le titre `#`, ou « Sans titre ».
+ * Le titre affiché de ce qui vient d'être écrit : le titre `#`, ou le nom du fichier sans `.md`, ou « Sans titre » pour une note neuve.
  */
 title: string, 
 /**

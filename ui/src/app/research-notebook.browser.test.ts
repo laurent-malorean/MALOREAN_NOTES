@@ -44,7 +44,7 @@ function setup(notebooks: WorkspaceNoteItem[], open = "a.md") {
     columns: columns.open,
     workspace: { refreshList: async () => void log.push("liste") },
     dialog,
-    show: (message) => shown.push(message),
+    show: (message, kind) => shown.push(kind ? `[${kind}] ${message}` : message),
     error: (error) => shown.push(`erreur ${String(error)}`),
   });
   return { notebooks: notebooks$, log, screen, columns, pane, other, dialog, shown };
@@ -64,7 +64,7 @@ describe("cahiers de recherche", () => {
   it("sans cahier dans l'espace de travail, dit comment en créer un", async () => {
     const s = setup([]);
     await s.notebooks.add();
-    expect(s.shown).toEqual([NO_NOTEBOOK]);
+    expect(s.shown).toEqual([`[info] ${NO_NOTEBOOK}`]);
     expect(NO_NOTEBOOK).toContain("« Nouveau cahier de recherche » en crée un");
     expect(s.dialog.open).toBe(false);
   });

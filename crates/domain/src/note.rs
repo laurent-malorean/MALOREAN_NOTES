@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 use crate::front_matter::is_pinned;
 use crate::tag::{sort_key, tags};
-use crate::title::displayed_title;
+use crate::title::displayed_title_of_note;
 use crate::{ContentType, NotePath};
 
 /// Date de dernière modification, en millisecondes depuis le 1er janvier 1970.
@@ -63,9 +63,10 @@ impl NoteSummary {
     /// note n'a pas de conteneur.
     #[must_use]
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
+        let title = displayed_title_of_note(content, path.name());
         Self {
             path,
-            title: displayed_title(content),
+            title,
             modified,
             pinned: is_pinned(content),
             tags: tags(content),
@@ -177,7 +178,12 @@ mod tests {
 
     #[test]
     fn summary_shows_the_displayed_title() {
-        assert_eq!(note("x.md", "sans titre ici", 0).title(), "Sans titre");
+        assert_eq!(note("x.md", "sans titre ici", 0).title(), "x");
+        assert_eq!(note("sans-titre.md", "", 0).title(), "Sans titre");
+        assert_eq!(
+            note("A/Idée importée.md", "## Plan", 0).title(),
+            "Idée importée"
+        );
     }
 
     #[test]

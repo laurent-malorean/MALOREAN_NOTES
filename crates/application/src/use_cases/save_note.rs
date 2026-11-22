@@ -182,10 +182,10 @@ mod tests {
     }
 
     #[test]
-    fn removing_the_title_makes_the_note_untitled() {
+    fn removing_the_title_keeps_the_file_name() {
         let store = InMemoryNoteStore::with_notes(&[("courses.md", "# Courses")]);
         let saved = save(&store, "courses.md", "plus de titre");
-        assert_eq!(saved, name("sans-titre.md"));
+        assert_eq!(saved, name("courses.md"));
     }
 
     #[test]

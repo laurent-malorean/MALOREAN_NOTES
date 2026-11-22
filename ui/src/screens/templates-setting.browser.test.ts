@@ -22,7 +22,7 @@ describe("réglage du dossier des modèles", () => {
   it("a sa partie, après les autres réglages, avant le bouton pour fermer", () => {
     const { dialog, select } = open(null);
     const legends = [...dialog.querySelectorAll("legend")].map((l) => l.textContent);
-    expect(legends).toEqual(["Écriture", "Affichage", "Modèles"]);
+    expect(legends).toEqual(["Écriture", "Affichage", "Claude", "Modèles"]);
     expect(dialog.querySelector("form")?.lastElementChild?.tagName).toBe("FOOTER");
     const label = [...dialog.querySelectorAll("label")].find(
       (l) => l.textContent === "Dossier des modèles",

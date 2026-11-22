@@ -80,6 +80,17 @@ impl FileName {
         format!("{}{ATTACHMENT_SUFFIX}", self.stem())
     }
 
+    /// Le nom d'une note neuve ou sans titre : `sans-titre`, ou son premier suffixe `-2`, `-3`…
+    #[must_use]
+    pub fn is_untitled(&self) -> bool {
+        self.stem().strip_prefix(UNTITLED_STEM).is_some_and(|rest| {
+            rest.is_empty()
+                || rest
+                    .strip_prefix('-')
+                    .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+        })
+    }
+
     /// Le nom sans l'extension `.md`.
     #[must_use]
     pub fn stem(&self) -> &str {
@@ -117,6 +128,19 @@ mod tests {
         FileName::from_title(Title::of(content).as_ref())
             .as_str()
             .to_owned()
+    }
+
+    #[test]
+    fn only_the_name_of_a_new_note_is_untitled() {
+        let untitled = |name: &str| FileName::parse(name).unwrap().is_untitled();
+        assert!(untitled("sans-titre.md"));
+        assert!(untitled("sans-titre-2.md"));
+        assert!(untitled("sans-titre-12.md"));
+        assert!(!untitled("sans-titre-final.md"));
+        assert!(!untitled("sans-titre-.md"));
+        assert!(!untitled("sans-titres.md"));
+        assert!(!untitled("Sans titre.md"));
+        assert!(!untitled("idee.md"));
     }
 
     #[test]

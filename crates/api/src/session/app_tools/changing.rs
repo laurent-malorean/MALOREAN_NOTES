@@ -51,6 +51,7 @@ impl Session {
     ) -> Result<String, String> {
         match tool {
             AppTool::CreateNote => self.tool_create_note(arguments),
+            AppTool::CreateFolder => self.tool_create_folder(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(turn, arguments),
             AppTool::TrashNote => {
                 let trashed = self.trash_note(required(arguments, "path")?);
@@ -96,11 +97,38 @@ impl Session {
         }
     }
 
+    /// Le dossier `path`, avec chaque dossier qui manque sur son chemin ; un dossier qui existe
+    /// déjà est laissé tel quel.
+    pub(super) fn tool_create_folder(&self, arguments: &Value) -> Result<String, String> {
+        let path = self.ensure_folder(required(arguments, "path")?)?;
+        written(&Placed { path })
+    }
+
+    /// Le dossier `path` existe, avec chaque dossier qui manquait sur son chemin ; rend son chemin.
+    fn ensure_folder(&self, path: &str) -> Result<String, String> {
+        let existing = self.list_folders().map_err(|error| error.message)?;
+        let mut parent = String::new();
+        for name in path.split('/').filter(|name| !name.is_empty()) {
+            let folder = if parent.is_empty() {
+                name.to_owned()
+            } else {
+                format!("{parent}/{name}")
+            };
+            if !existing.contains(&folder) {
+                self.create_folder(&parent, name).map_err(said)?;
+            }
+            parent = folder;
+        }
+        Ok(parent)
+    }
+
     /// Une note neuve, titrée `title`, dans `folder` : son texte `text` sous ce titre.
     pub(super) fn tool_create_note(&self, arguments: &Value) -> Result<String, String> {
         let title = required(arguments, "title")?;
         let folder =
             Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
+        // Un dossier neuf se crée avec la note : Claude n'a pas à l'appeler avant.
+        self.ensure_folder(&folder.to_path())?;
         let content = retitled(
             optional(arguments, "text").unwrap_or_default(),
             title.trim(),

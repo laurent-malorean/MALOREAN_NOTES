@@ -7,6 +7,9 @@
 #                            si l'interface a des survivantes, elles seules sont retestées une fois, pour
 #                            compter un test ajouté qui les tue (scripts/ui-mutations.sh)
 #   scripts/ci.sh --complet  tous les contrôles, test de mutation de tout le code, Rust et interface (avant de livrer)
+#   scripts/ci.sh --sans-mutation  tous les contrôles sauf les tests de mutation (les plus longs) : pour
+#                            avancer problème après problème ; ce n'est PAS un passage de commit, il faut
+#                            ensuite un `scripts/ci.sh` complet sur tout le lot avant de commiter
 # Seuil du test de mutation : 100 %, des deux côtés.
 # Rust : les copies mutées se construisent lints coupés (.cargo/mutants.toml), sinon une erreur
 # introduite qui laisse du code inutilisé ne compile pas et n'est jamais testée. Un passage où
@@ -230,6 +233,10 @@ if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : cont
 case "${1:-}" in
   --complet) check_mutations; check_ui_mutations complet ;;
   "") check_uncommitted_mutations; check_ui_mutations ;;
+  --sans-mutation)
+    printf '\n(tests de mutation sautés : lancer scripts/ci.sh sans option avant de commiter)\n'
+    printf '\n✓ Contrôles réussis, sans mutation : pas encore un passage de commit\n'
+    exit 0 ;;
   *) fail "option inconnue : $1" ;;
 esac
 

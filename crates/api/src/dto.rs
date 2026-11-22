@@ -220,7 +220,7 @@ pub struct NoteContent {
     pub path: String,
     /// Le contenu Markdown complet.
     pub content: String,
-    /// Le titre affiché : le titre `#`, ou « Sans titre ».
+    /// Le titre affiché : le titre `#`, ou le nom du fichier sans `.md`, ou « Sans titre » pour une note neuve.
     pub title: String,
     /// L'empreinte de ce contenu, à renvoyer à l'enregistrement : si le fichier a changé
     /// ailleurs entre-temps, sa version est gardée dans une copie de conflit.
@@ -234,7 +234,7 @@ pub struct NoteContent {
 pub struct SaveResult {
     /// Le chemin de la note, dont le nom a peut-être changé avec le titre.
     pub path: String,
-    /// Le titre affiché de ce qui vient d'être écrit : le titre `#`, ou « Sans titre ».
+    /// Le titre affiché de ce qui vient d'être écrit : le titre `#`, ou le nom du fichier sans `.md`, ou « Sans titre » pour une note neuve.
     pub title: String,
     /// L'empreinte de ce qui vient d'être écrit, à renvoyer au prochain enregistrement.
     pub fingerprint: String,

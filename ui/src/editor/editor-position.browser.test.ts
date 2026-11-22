@@ -72,4 +72,22 @@ describe("position dans une note", () => {
     expect(view.state.selection.main.head).toBe(5);
     expect(view.state.selection.main.anchor).toBe(5);
   });
+
+  it("peut aller au terme cherché : il est sélectionné et montré au milieu de l'écran", async () => {
+    const lines = LONG.split("\n");
+    lines[150] = "le beagle est un chien";
+    const { editor, view } = mount(lines.join("\n"));
+    expect(editor.reveal("BEAGLE")).toBe(true);
+    await settled();
+    const { from, to } = view.state.selection.main;
+    expect(view.state.sliceDoc(from, to)).toBe("beagle");
+    const area = view.scrollDOM.getBoundingClientRect();
+    const middle = ((view.coordsAtPos(from)?.top ?? 0) - area.top) / area.height;
+    expect(middle).toBeGreaterThan(0.25);
+    expect(middle).toBeLessThan(0.75);
+    expect(editor.reveal("zèbre")).toBe(false);
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe(
+      "beagle",
+    );
+  });
 });

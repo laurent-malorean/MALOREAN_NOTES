@@ -1,8 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 import { waitForNote } from "./journey";
 
-// Colonne Claude Code : après une lecture du web, les modifications de Claude sont retenues, et
-// l'utilisateur les autorise d'un clic, pour un seul tour (fiche 0032). Tout à la souris.
+// Colonne Claude Code : avec le réglage « Demander mon accord », les modifications de Claude après
+// une lecture du web sont retenues, et l'utilisateur les autorise d'un clic, pour un seul tour
+// (fiche 0032). Par défaut, elles ne sont pas retenues. Tout à la souris.
 
 const WORKSPACE = { "a.md": { content: "# Alpha\nPremière note.", modified: 20 } };
 
@@ -15,6 +16,9 @@ async function launch(page: Page) {
   });
   await page.goto(`/e2e/app.html?${params.toString()}`);
   await waitForNote(page, "Alpha");
+  await page.evaluate(() =>
+    localStorage.setItem("malorean.settings", JSON.stringify({ claudeChangesAfterWeb: "ask" })),
+  );
 }
 
 const column = (page: Page) => page.getByRole("region", { name: "Claude Code" });

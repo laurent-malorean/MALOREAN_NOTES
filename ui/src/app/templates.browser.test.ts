@@ -52,7 +52,7 @@ function setup(stored: Record<string, string> = {}) {
       refreshTags: async () => void log.push("étiquettes"),
     },
     picker: layout.picker,
-    show: (message) => shown.push(message),
+    show: (message, kind) => shown.push(kind ? `[${kind}] ${message}` : message),
     run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
   });
   return { templates, items, log, shown, screen, columns, pane };
@@ -70,14 +70,16 @@ describe("modèles de note", () => {
   it("sans dossier des modèles, l'action le dit", async () => {
     const t = setup();
     await t.templates.newNote();
-    expect(t.shown).toEqual(["Aucun dossier des modèles : choisissez-en un dans les réglages."]);
+    expect(t.shown).toEqual([
+      "[info] Aucun dossier des modèles : choisissez-en un dans les réglages.",
+    ]);
     expect(layout.picker.open).toBe(false);
   });
 
   it("un dossier sans note le dit aussi", async () => {
     const t = setup({ "malorean.templates:/lib": "Travail" });
     await t.templates.newNote();
-    expect(t.shown).toEqual(["Le dossier des modèles « Travail » ne contient aucune note."]);
+    expect(t.shown).toEqual(["[info] Le dossier des modèles « Travail » ne contient aucune note."]);
     expect(layout.picker.open).toBe(false);
   });
 

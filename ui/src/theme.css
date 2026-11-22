@@ -24,6 +24,8 @@
   --border: #e2dfd7;
   --danger: #c0392b;
   --warning: #b35c00;
+  --success: #2e7d32;
+  --info: #1565c0;
   --highlight: #fbe38a;
   --highlight-current: #f5b83d;
   --on-danger: #ffffff;
@@ -176,6 +178,8 @@
   --border: #333336;
   --danger: #c0392b;
   --warning: #f6b26b;
+  --success: #66bb6a;
+  --info: #64b5f6;
   --highlight: #6b5a1e;
   --highlight-current: #a6781c;
   --on-danger: #ffffff;

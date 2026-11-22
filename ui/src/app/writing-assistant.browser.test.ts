@@ -49,7 +49,7 @@ function setup({ status = { kind: "available" } }: Options = {}) {
     },
     columns: { activePane: () => pane, panes: () => new Map([[0, pane]]) },
     layout: { columns, confirmation: dialog },
-    show: (message) => heard.push(`message ${message}`),
+    show: (message, kind) => heard.push(`message${kind ? ` [${kind}]` : ""} ${message}`),
     error: (error) => heard.push(`erreur ${(error as Error).message}`),
   });
   const select = (from: number, to: number) =>
@@ -138,7 +138,7 @@ describe("aide à l'écriture", () => {
     t.answer();
     await settle();
     t.button("Remplacer").click();
-    await expect.poll(() => t.heard).toContain(`message ${SELECTION_CHANGED}`);
+    await expect.poll(() => t.heard).toContain(`message [warning] ${SELECTION_CHANGED}`);
     expect(t.editor.content()).toBe("# Note\nCette fote ici.\nFin.");
   });
 
@@ -150,7 +150,7 @@ describe("aide à l'écriture", () => {
     t.answer();
     await settle();
     t.button("Insérer dessous").click();
-    await expect.poll(() => t.heard).toContain(`message ${SELECTION_CHANGED}`);
+    await expect.poll(() => t.heard).toContain(`message [warning] ${SELECTION_CHANGED}`);
     expect(t.editor.content()).toBe(TEXT);
   });
 
@@ -170,7 +170,7 @@ describe("aide à l'écriture", () => {
     const t = setup();
     t.select(3, 3);
     t.assistant.propose("rephrase");
-    expect(t.heard).toEqual(["message Sélectionnez d'abord le texte à reformuler"]);
+    expect(t.heard).toEqual(["message [info] Sélectionnez d'abord le texte à reformuler"]);
     expect(t.dialog.open).toBe(false);
   });
 
@@ -179,7 +179,7 @@ describe("aide à l'écriture", () => {
     t.editor.replaceRange(0, 0, "   ");
     t.select(0, 3);
     t.assistant.propose("correct");
-    expect(t.heard).toEqual(["message Sélectionnez d'abord le texte à corriger"]);
+    expect(t.heard).toEqual(["message [info] Sélectionnez d'abord le texte à corriger"]);
   });
 
   it("sans note montrée, ne fait rien", () => {
@@ -200,7 +200,7 @@ describe("aide à l'écriture", () => {
     });
     t.select(7, 20);
     t.assistant.propose("correct");
-    expect(t.heard).toEqual(["message Apple Intelligence n'est pas activé"]);
+    expect(t.heard).toEqual(["message [error] Apple Intelligence n'est pas activé"]);
   });
 
   it("un assistant qui ne répond pas compte comme indisponible, l'erreur signalée", async () => {
@@ -211,7 +211,7 @@ describe("aide à l'écriture", () => {
     });
     t.select(7, 20);
     t.assistant.propose("correct");
-    expect(t.heard).toEqual(["erreur fil arrêté", `message ${NOT_ANSWERING}`]);
+    expect(t.heard).toEqual(["erreur fil arrêté", `message [error] ${NOT_ANSWERING}`]);
   });
 });
 
