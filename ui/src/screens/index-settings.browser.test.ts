@@ -14,7 +14,13 @@ describe("réglages de l'index de mots", () => {
       "12 notes indexées",
       "Dernière reconstruction : aucune",
     ]);
+    expect(frame.className).toBe("index-settings");
+    expect([...frame.querySelectorAll("p")].map((p) => p.className)).toEqual([
+      "setting-help",
+      "setting-help",
+    ]);
     const button = frame.querySelector("button");
+    expect(button?.className).toBe("tool");
     expect([button?.textContent, button?.type]).toEqual(["Reconstruire l'index", "button"]);
     button?.click();
     expect(rebuild).toHaveBeenCalledOnce();

@@ -39,6 +39,15 @@ describe("onglets des réglages", () => {
     ]);
   });
 
+  it("regroupent chaque onglet avec ses parties, dans l'ordre", () => {
+    expect(SETTINGS_TABS.map((tab) => tab.groups)).toEqual([
+      ["Affichage"],
+      ["Écriture", "Modèles", "Journal"],
+      ["Claude"],
+      ["Index", "Recherche par le sens"],
+    ]);
+  });
+
   it("rangent chaque partie dans son onglet, dans l'ordre reçu", () => {
     const groups = [
       "Écriture",

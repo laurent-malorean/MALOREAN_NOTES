@@ -105,7 +105,7 @@ function group(name: string, editing: Editing): HTMLElement {
 }
 
 /** Le titre d'une partie de l'écran, qui dit dans quel onglet elle va. */
-const groupName = (element: HTMLElement) => element.querySelector("legend")?.textContent ?? "";
+const groupName = (element: HTMLElement) => element.querySelector("legend")?.textContent as string;
 
 /** Les onglets, et le panneau de chacun : un seul est montré, celui de `selected`. */
 function tabs(panels: readonly HTMLElement[][], storage: PreferenceStorage): HTMLElement {

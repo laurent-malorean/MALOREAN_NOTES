@@ -87,6 +87,51 @@ describe("écran de réglages", () => {
     expect(tabs.map((t) => t.tabIndex)).toEqual([0, -1, -1, -1]);
   });
 
+  it("donne leurs classes à la rangée d'onglets, aux panneaux et aux boutons", () => {
+    const { dialog } = open();
+    expect(dialog.querySelector("[role=tablist]")?.className).toBe("settings-tabs");
+    expect(dialog.querySelector(".settings-panels")?.querySelectorAll("section")).toHaveLength(4);
+    const panels = dialog.querySelectorAll("[role=tabpanel]");
+    expect([...panels].map((p) => p.className)).toEqual(Array(4).fill("settings-panel"));
+    const types = [...dialog.querySelectorAll<HTMLButtonElement>("[role=tab]")].map((t) => t.type);
+    expect(types).toEqual(Array(4).fill("button"));
+  });
+
+  it("ne prend pas le focus à l'ouverture ni au clic sur un onglet", () => {
+    const { dialog } = open(DEFAULT_SETTINGS, memoryStorage({ "malorean.settings-tab": "Claude" }));
+    const tabs = [...dialog.querySelectorAll<HTMLElement>("[role=tab]")];
+    expect(tabs[2]?.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).not.toBe(tabs[2]);
+    tabs[1]?.click();
+    expect(document.activeElement).not.toBe(tabs[1]);
+  });
+
+  it("garde le défilement d'une flèche pour l'onglet, et ne retient pas les autres touches", () => {
+    const { dialog } = open();
+    const first = dialog.querySelector<HTMLElement>("[role=tab]");
+    const arrow = new KeyboardEvent("keydown", {
+      key: "ArrowRight",
+      bubbles: true,
+      cancelable: true,
+    });
+    first?.dispatchEvent(arrow);
+    expect(arrow.defaultPrevented).toBe(true);
+  });
+
+  it("met dans le premier onglet une partie sans titre", () => {
+    const dialog = document.createElement("dialog");
+    document.body.replaceChildren(dialog);
+    openSettings(
+      dialog,
+      DEFAULT_SETTINGS,
+      () => {},
+      [document.createElement("fieldset")],
+      memoryStorage(),
+    );
+    const first = dialog.querySelector("[role=tabpanel]");
+    expect(first?.querySelectorAll("fieldset")).toHaveLength(2);
+  });
+
   it("change de panneau au clic sur un onglet, et se souvient du dernier onglet ouvert", () => {
     const storage = memoryStorage();
     const first = open(DEFAULT_SETTINGS, storage);

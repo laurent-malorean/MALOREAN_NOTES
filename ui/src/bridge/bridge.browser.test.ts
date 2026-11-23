@@ -64,6 +64,12 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     expect(calls).toEqual([{ command: "rebuild_index", args: {} }]);
   });
 
+  it("lit l'état de l'index de mots", async () => {
+    const calls = recordCalls({ notes: 2, rebuilt: null });
+    expect(await bridge.indexOverview()).toEqual({ notes: 2, rebuilt: null });
+    expect(calls).toEqual([{ command: "index_overview", args: {} }]);
+  });
+
   it("liste les notes récentes par leurs chemins", async () => {
     const calls = recordCalls([]);
     expect(await bridge.listRecentNotes(["b.md", "a.md"])).toEqual([]);
