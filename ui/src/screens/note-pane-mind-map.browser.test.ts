@@ -100,6 +100,20 @@ describe("colonne : une carte mentale", () => {
     expect(m.read).toEqual(["projet.md", "projet.md"]);
   });
 
+  it("révéler un nœud choisit ce nœud de la carte", async () => {
+    const m = mount();
+    await m.pane.load("projet.md");
+    await vi.waitFor(() =>
+      expect(m.element.querySelectorAll(".mind-map-node[data-path]")).toHaveLength(2),
+    );
+    m.pane.revealNode("1");
+    await vi.waitFor(() =>
+      expect(m.element.querySelector(".mind-map-node.selected")?.getAttribute("data-path")).toBe(
+        "1",
+      ),
+    );
+  });
+
   it("détruire la colonne retire la carte", async () => {
     const m = mount();
     await m.pane.load("projet.md");

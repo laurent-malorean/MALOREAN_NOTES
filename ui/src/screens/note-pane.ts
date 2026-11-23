@@ -74,6 +74,8 @@ export interface Pane {
   flush(): Promise<void>;
   /** La note a quitté l'espace de travail : ce qu'on tape n'est plus enregistré. */
   forget(): void;
+  /** Une carte mentale montrée : choisit son nœud de ce chemin (`1.0.2`), ses ancêtres dépliés, la vue centrée sur lui. */
+  revealNode(node: string): void;
   /** Montre les liens entrants de la note ; une réponse arrivée pour une autre note est ignorée. */
   showBacklinks(): Promise<void>;
   /** Montre les notes proches de la note, ou cache la liste si elle n'est pas demandée. */
@@ -166,6 +168,10 @@ class NotePane implements Pane, Viewer {
 
   forget(): void {
     this.options.shared.forget(this);
+  }
+
+  revealNode(node: string): void {
+    this.map?.reveal(node);
   }
 
   async showBacklinks(): Promise<void> {

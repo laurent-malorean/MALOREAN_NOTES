@@ -12,6 +12,7 @@ const results: SearchResultItem[] = [
     contentType: "note",
     container: null,
     containerTitle: null,
+    node: null,
     modified: 2,
     excerpt: [
       { text: "…acheter du ", matched: false },
@@ -26,6 +27,7 @@ const results: SearchResultItem[] = [
     contentType: "note",
     container: null,
     containerTitle: null,
+    node: null,
     modified: 1,
     excerpt: [{ text: "Pain", matched: true }],
   },
@@ -68,12 +70,37 @@ describe("résultats de recherche", () => {
       contentType: "entry",
       container: "Labo/levures.md",
       containerTitle: "Levures",
+      node: null,
       modified: 3,
       excerpt: [{ text: "pain", matched: true }],
     };
     renderSearchResults(container, "Notes", [entry], null, ignore);
     expect(texts(container, ".note-title")).toEqual(["20 novembre 2026 à 09:42"]);
     expect(texts(container, ".search-place .search-type")).toEqual(["Entrée · Levures"]);
+  });
+
+  it("montre un nœud avec sa carte, et un clic ouvre la carte sur ce nœud", () => {
+    const container = list();
+    const opened: string[] = [];
+    const node: SearchResultItem = {
+      path: "Idées/carte.md",
+      title: "Plombiers",
+      folder: "Idées",
+      contentType: "node",
+      container: "Idées/carte.md",
+      containerTitle: "Lancement",
+      node: "0.0.1",
+      modified: 3,
+      excerpt: [{ text: "Plombiers", matched: true }],
+    };
+    renderSearchResults(container, "Notes", [node], null, {
+      open: (path, at) => opened.push(`ouvrir ${path} ${at}`),
+      place: () => {},
+      closeNote: () => {},
+    });
+    expect(texts(container, ".search-place .search-type")).toEqual(["Nœud · Lancement"]);
+    (container.querySelector(".search-result") as HTMLElement).click();
+    expect(opened).toEqual(["ouvrir Idées/carte.md 0.0.1"]);
   });
 
   it("met en évidence les mots trouvés, et seulement eux", () => {

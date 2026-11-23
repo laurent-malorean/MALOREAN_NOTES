@@ -102,6 +102,8 @@ pub enum ContentTypeItem {
     MindMap,
     /// Une entrée d'un cahier de recherche.
     Entry,
+    /// Un nœud d'une carte mentale.
+    Node,
 }
 
 impl From<domain::ContentType> for ContentTypeItem {
@@ -111,6 +113,7 @@ impl From<domain::ContentType> for ContentTypeItem {
             domain::ContentType::ResearchNotebook => Self::ResearchNotebook,
             domain::ContentType::MindMap => Self::MindMap,
             domain::ContentType::Entry => Self::Entry,
+            domain::ContentType::Node => Self::Node,
         }
     }
 }
@@ -203,6 +206,8 @@ pub struct SearchResultItem {
     pub container: Option<String>,
     /// Le titre affiché de son conteneur ; `null` sans conteneur.
     pub container_title: Option<String>,
+    /// Le chemin du nœud d'une carte mentale qu'elle désigne (`1.0.2`) ; `null` sinon.
+    pub node: Option<String>,
     /// Millisecondes depuis le 1er janvier 1970.
     #[ts(type = "number")]
     pub modified: u64,

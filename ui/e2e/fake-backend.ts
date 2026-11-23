@@ -7,7 +7,7 @@ import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning";
-import { fakeContentType, fakeMindMaps } from "./fake-mind-map";
+import { fakeContentType, fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
 import { fakeEntryResults, fakeNotebook } from "./fake-notebook";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 import { type FakeWriting, fakeWriting, fakeWritingState } from "./fake-writing";
@@ -274,7 +274,13 @@ function searchNotes(query: string, order?: string) {
     .filter(([, note]) => has(note.content))
     .sort((a, b) => sort(listItem(a), listItem(b)))
     .flatMap(([path, note]) => {
-      const found = { path, folder: folderOf(path), modified: note.modified, container: null };
+      const found = {
+        path,
+        folder: folderOf(path),
+        modified: note.modified,
+        container: null,
+        node: null,
+      };
       return [
         {
           ...found,
@@ -290,6 +296,10 @@ function searchNotes(query: string, order?: string) {
           container: path,
           containerTitle: entry.containerTitle,
           excerpt: excerpt(entry.text),
+        })),
+        ...fakeNodeResults(path, note.content, has).map((node) => ({
+          ...{ ...found, ...node, contentType: "node" as const, container: path },
+          excerpt: excerpt(node.text),
         })),
       ];
     });

@@ -1,4 +1,5 @@
 use super::*;
+use crate::{ContentType, Modified, NotePath, NoteSummary};
 
 const EXAMPLE: &str = "---
 type: carte-mentale
@@ -168,4 +169,38 @@ fn nodes_are_indexed_with_their_path() {
         "Premiers essais en janvier.\n\n- appeler **Martin**\n- envoyer la plaquette"
     );
     assert_eq!(nodes[7].path.to_string(), "1.1");
+}
+
+#[test]
+fn nodes_are_indexed_as_results_of_their_own_with_the_map_as_container() {
+    let path = NotePath::parse("Idées/lancement.md").unwrap();
+    let map = NoteSummary::new(path.clone(), EXAMPLE, Modified(5));
+    assert_eq!(map.content_type(), ContentType::MindMap);
+    let nodes = indexed_node_entries(&map, EXAMPLE);
+    assert_eq!(nodes.len(), 8);
+    let (artisans, text) = &nodes[1];
+    assert_eq!(artisans.title(), "Artisans");
+    assert_eq!(artisans.content_type(), ContentType::Node);
+    assert_eq!(artisans.container(), Some(&path));
+    assert_eq!(artisans.node(), Some("0.0"));
+    assert_eq!(artisans.modified(), Modified(5));
+    assert!(text.starts_with("Artisans\nPremiers essais en janvier."));
+    let note = NoteSummary::new(path, "# Note", Modified(5));
+    assert!(indexed_node_entries(&note, EXAMPLE).is_empty());
+}
+
+#[test]
+fn a_map_is_searched_by_its_title_and_tags_only() {
+    let map = NoteSummary::new(NotePath::parse("a.md").unwrap(), EXAMPLE, Modified(0));
+    assert_eq!(searchable_text(&map), "Lancement du produit\nprojet\n2027");
+}
+
+#[test]
+fn each_node_gives_one_segment_under_the_title_of_the_map() {
+    let all = segments("Lancement", EXAMPLE);
+    assert_eq!(all.len(), 8);
+    assert_eq!(all[1].heading(), "Lancement > Artisans");
+    assert!(all[1].text().starts_with("Premiers essais"));
+    assert_eq!(all[1].node(), Some("0.0"));
+    assert_eq!(all[0].text(), "");
 }

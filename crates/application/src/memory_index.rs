@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
+use domain::mind_map::{indexed_node_entries, searchable_text};
 use domain::research_notebook::indexed_entries;
 use domain::search::{SearchQuery, search};
 use domain::{ContentType, Folder, NotePath, NoteSummary};
@@ -17,6 +18,9 @@ struct Known {
     stamp: NoteStamp,
     summary: NoteSummary,
     content: String,
+    /// Ce que la recherche par les mots lit de la note : son texte, sauf pour une carte mentale,
+    /// dont seuls le titre et les étiquettes comptent.
+    searchable: String,
     entries: Vec<(NoteSummary, String)>,
 }
 
@@ -50,11 +54,18 @@ impl NoteIndex for MemoryIndex {
         for note in notes {
             let stamp = note.stamp.clone();
             let summary = NoteSummary::new(stamp.path.clone(), &note.content, stamp.modified);
-            let entries = indexed_entries(&summary, &note.content);
+            let mut entries = indexed_entries(&summary, &note.content);
+            entries.extend(indexed_node_entries(&summary, &note.content));
+            let searchable = if summary.content_type() == ContentType::MindMap {
+                searchable_text(&summary)
+            } else {
+                note.content.clone()
+            };
             let kept = Known {
                 stamp,
                 summary,
                 content: note.content.clone(),
+                searchable,
                 entries,
             };
             known.insert(note.stamp.path.clone(), kept);
@@ -98,7 +109,7 @@ impl NoteIndex for MemoryIndex {
     ) -> Result<Vec<(NoteSummary, String)>, StoreError> {
         let notes = self.notes();
         let items = notes.values().flat_map(|known| {
-            std::iter::once((&known.summary, &known.content))
+            std::iter::once((&known.summary, &known.searchable))
                 .chain(known.entries.iter().map(|(summary, text)| (summary, text)))
         });
         Ok(items

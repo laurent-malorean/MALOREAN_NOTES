@@ -164,6 +164,7 @@ describe("affichage de l'écran", () => {
       contentType: "note",
       container: null,
       containerTitle: null,
+      node: null,
       modified: 0,
       excerpt: [],
     };

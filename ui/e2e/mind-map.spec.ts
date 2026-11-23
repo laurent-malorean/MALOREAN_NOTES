@@ -160,3 +160,19 @@ test("le clic droit sur un dossier ou sur la racine crée une carte mentale deda
     "---\ntype: carte-mentale\n---\n# Dans le dossier\n",
   );
 });
+
+test("la recherche trouve chaque nœud à part, et un clic ouvre la carte sur lui", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 760 });
+  await launch(page, NOTES);
+  await page.getByRole("searchbox", { name: "Rechercher" }).fill("plombiers");
+  const result = page.locator(".search-result", { hasText: "Nœud · Lancement du produit" });
+  await expect(result).toHaveCount(1);
+  await expect(result.locator(".note-title")).toHaveText("Plombiers");
+  await shot(page, "recherche");
+  await result.click();
+  await expect(node(page, "Plombiers")).toHaveClass(/selected/);
+  await expect(node(page, "Clients")).not.toHaveClass(/selected/);
+  await shot(page, "noeud-trouve");
+});

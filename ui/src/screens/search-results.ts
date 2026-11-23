@@ -86,7 +86,7 @@ export function renderSearchResults(
       const folder =
         result.folder === "" ? workspaceName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
       item.append(line("note-title", result.title), place(folder, result), excerpt(result));
-      openOnClick(item, result.path, actions);
+      openOnClick(item, result.path, actions, result.node);
       item.addEventListener("contextmenu", (event) => {
         event.preventDefault();
         const entries = noteMenu({

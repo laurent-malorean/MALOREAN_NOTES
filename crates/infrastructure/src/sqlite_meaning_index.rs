@@ -173,14 +173,15 @@ impl MeaningIndex for SqliteMeaningIndex {
                 }
                 added += 1;
                 transaction.execute(
-                    "INSERT INTO segments (note, position, heading, text, key) \
-                     VALUES (?1, ?2, ?3, ?4, ?5)",
+                    "INSERT INTO segments (note, position, heading, text, key, node) \
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                     params![
                         path,
                         position,
                         segment.heading(),
                         segment.text(),
-                        key_to_sql(segment.key())
+                        key_to_sql(segment.key()),
+                        segment.node()
                     ],
                 )?;
             }
@@ -220,7 +221,7 @@ impl MeaningIndex for SqliteMeaningIndex {
     ) -> Result<Vec<PendingSegment>, MeaningIndexError> {
         self.run(|connection| {
             let mut statement = connection.prepare(
-                "SELECT s.id, s.heading, s.text FROM segments AS s WHERE NOT EXISTS \
+                "SELECT s.id, s.heading, s.text, s.node FROM segments AS s WHERE NOT EXISTS \
                  (SELECT 1 FROM segment_vectors AS v WHERE v.segment = s.id AND v.model = ?1) \
                  ORDER BY s.id LIMIT ?2",
             )?;
@@ -230,6 +231,7 @@ impl MeaningIndex for SqliteMeaningIndex {
                     segment: Segment::from_stored(
                         &row.get::<_, String>(1)?,
                         &row.get::<_, String>(2)?,
+                        row.get::<_, Option<String>>(3)?.as_deref(),
                     ),
                 })
             })?;
@@ -400,17 +402,17 @@ fn vectors_of(
 
 /// Le segment du candidat, avec sa note, son titre complet et son texte.
 fn found(connection: &Connection, candidate: &Candidate) -> rusqlite::Result<FoundSegment> {
-    let (heading, text): (String, String) = connection
+    let (heading, text, node): (String, String, Option<String>) = connection
         .query_row(
-            "SELECT heading, text FROM segments WHERE id = ?1",
+            "SELECT heading, text, node FROM segments WHERE id = ?1",
             [candidate.id],
-            |row| Ok((row.get(0)?, row.get(1)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
         )
         .optional()?
         .ok_or(rusqlite::Error::QueryReturnedNoRows)?;
     Ok(FoundSegment {
         note: parse_note(&candidate.note)?,
-        segment: Segment::from_stored(&heading, &text),
+        segment: Segment::from_stored(&heading, &text, node.as_deref()),
         score: candidate.score,
     })
 }

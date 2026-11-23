@@ -5,6 +5,7 @@
 
 use std::sync::Arc;
 
+use domain::mind_map::{is_mind_map, segments as node_segments};
 use domain::segments::{Segment, segments};
 use domain::title::displayed_title_of_note;
 use domain::{ContentType, Folder, NotePath, NoteSummary};
@@ -13,10 +14,14 @@ use crate::{IndexedNote, MeaningIndex, MeaningIndexError, NoteIndex, NoteStamp, 
 use domain::search::SearchQuery;
 
 /// Les segments de la note `note` de contenu `content` : son titre affiché sert de titre de
-/// note. Un cahier de recherche est segmenté comme une note (ses entrées n'ont pas de segments).
+/// note. Un cahier de recherche est segmenté comme une note (ses entrées n'ont pas de segments) ; une carte mentale donne un segment par nœud (fiche 0050).
 #[must_use]
 pub fn note_segments(note: &NotePath, content: &str) -> Vec<Segment> {
-    segments(&displayed_title_of_note(content, note.name()), content)
+    let title = displayed_title_of_note(content, note.name());
+    if is_mind_map(content) {
+        return node_segments(&title, content);
+    }
+    segments(&title, content)
 }
 
 fn unavailable(error: &MeaningIndexError) -> StoreError {

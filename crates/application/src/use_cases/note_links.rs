@@ -111,6 +111,28 @@ mod tests {
     }
 
     #[test]
+    fn a_link_in_a_node_links_the_map_and_a_link_to_a_map_resolves_to_it() {
+        let store = InMemoryNoteStore::with_notes(&[
+            (
+                "Idees/carte.md",
+                "---\ntype: carte-mentale\n---\n# Ma carte\n\n- Idée\n  > voir [[Courses]]\n- [[Autre]]\n",
+            ),
+            ("courses.md", "# Courses"),
+            ("autre.md", "# Autre\nrenvoie à [[Ma carte]]"),
+        ]);
+        assert_eq!(
+            backlinks(&store, "courses.md"),
+            ["Idees/carte.md | Ma carte"]
+        );
+        assert_eq!(backlinks(&store, "autre.md"), ["Idees/carte.md | Ma carte"]);
+        assert_eq!(backlinks(&store, "Idees/carte.md"), ["autre.md | Autre"]);
+        assert_eq!(
+            resolved(&store, "ma carte").as_deref(),
+            Some("Idees/carte.md")
+        );
+    }
+
+    #[test]
     fn a_link_leads_to_the_note_with_that_title_in_any_folder() {
         let store = InMemoryNoteStore::with_notes(&[
             ("a.md", "# Agenda"),

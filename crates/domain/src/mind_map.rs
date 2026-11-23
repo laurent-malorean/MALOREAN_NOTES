@@ -21,6 +21,8 @@
 use std::fmt;
 
 use crate::front_matter::{split, with_key_line};
+use crate::segments::Segment;
+use crate::{ContentType, Modified, NotePath, NoteSummary};
 
 /// Le nom de la clé de l'en-tête qui donne la place des nœuds racines.
 const PLACES_KEY: &str = "racines";
@@ -201,6 +203,62 @@ impl MindMap {
         }
         nodes
     }
+}
+
+/// Le résumé d'un nœud tel que l'index le garde : son titre, le chemin et la date de sa carte, le
+/// type nœud, la carte pour conteneur et son chemin de nœud.
+#[must_use]
+pub fn node_summary(
+    map: &NotePath,
+    title: &str,
+    modified: Modified,
+    node: &NodePath,
+) -> NoteSummary {
+    NoteSummary::indexed(map.clone(), title.to_owned(), modified, false, Vec::new())
+        .of_type(ContentType::Node, Some(map.clone()))
+        .of_node(node.to_string())
+}
+
+/// Les nœuds de la carte `map` de texte `content`, tels que l'index les garde : chacun avec son
+/// résumé ([`node_summary`]) et son texte pour la recherche (son titre puis son détail). Aucun si
+/// la note n'est pas une carte mentale.
+#[must_use]
+pub fn indexed_node_entries(map: &NoteSummary, content: &str) -> Vec<(NoteSummary, String)> {
+    if map.content_type() != ContentType::MindMap {
+        return Vec::new();
+    }
+    MindMap::parse(content)
+        .indexed_nodes()
+        .into_iter()
+        .map(|node| {
+            let summary = node_summary(map.path(), &node.title, map.modified(), &node.path);
+            let text = format!("{}\n{}", node.title, node.detail);
+            (summary, text)
+        })
+        .collect()
+}
+
+/// Ce que la recherche par les mots lit d'une carte mentale elle-même : son titre et ses
+/// étiquettes (ses nœuds sont trouvés à part).
+#[must_use]
+pub fn searchable_text(map: &NoteSummary) -> String {
+    let mut text = map.title().to_owned();
+    for tag in map.tags() {
+        text.push('\n');
+        text.push_str(tag);
+    }
+    text
+}
+
+/// Les segments de la carte titrée `map_title` de texte `content` : un par nœud, son titre puis
+/// son détail, sous le titre de la carte.
+#[must_use]
+pub fn segments(map_title: &str, content: &str) -> Vec<Segment> {
+    MindMap::parse(content)
+        .indexed_nodes()
+        .into_iter()
+        .map(|node| Segment::of_node(map_title, &node.title, &node.detail, node.path.to_string()))
+        .collect()
 }
 
 fn collect(node: &MindNode, path: &mut Vec<usize>, out: &mut Vec<IndexedNode>) {

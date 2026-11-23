@@ -188,6 +188,7 @@ describe("recherche", () => {
     contentType: "note",
     container: null,
     containerTitle: null,
+    node: null,
     modified: 1,
     excerpt: [{ text: "pain", matched: true }],
   });

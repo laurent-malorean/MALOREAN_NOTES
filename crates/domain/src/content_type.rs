@@ -17,15 +17,19 @@ pub enum ContentType {
     /// Une entrée d'un cahier de recherche : elle n'a pas de fichier à elle, son cahier est son
     /// conteneur. Aucun en-tête ne la déclare.
     Entry,
+    /// Un nœud d'une carte mentale : il n'a pas de fichier à lui, sa carte est son conteneur
+    /// (fiche 0050).
+    Node,
 }
 
 impl ContentType {
     /// Tous les types de contenu : ce sur quoi porte une recherche par défaut.
-    pub const ALL: [Self; 4] = [
+    pub const ALL: [Self; 5] = [
         Self::Note,
         Self::ResearchNotebook,
         Self::MindMap,
         Self::Entry,
+        Self::Node,
     ];
 
     /// Les types qu'une note (un fichier) peut avoir.
@@ -40,6 +44,7 @@ impl ContentType {
             Self::ResearchNotebook => "cahier-de-recherche",
             Self::MindMap => "carte-mentale",
             Self::Entry => "entree",
+            Self::Node => "noeud",
         }
     }
 
@@ -69,7 +74,13 @@ mod tests {
         let names: Vec<_> = ContentType::ALL.map(ContentType::name).into();
         assert_eq!(
             names,
-            ["note", "cahier-de-recherche", "carte-mentale", "entree"]
+            [
+                "note",
+                "cahier-de-recherche",
+                "carte-mentale",
+                "entree",
+                "noeud"
+            ]
         );
     }
 
@@ -109,5 +120,6 @@ mod tests {
         assert_eq!(of("---\ntype: note\n---\n# N"), ContentType::Note);
         assert_eq!(of("---\ntype: kanban\n---\n# K"), ContentType::Note);
         assert_eq!(of("---\ntype: entree\n---\n# E"), ContentType::Note);
+        assert_eq!(of("---\ntype: noeud\n---\n# N"), ContentType::Note);
     }
 }

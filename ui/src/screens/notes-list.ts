@@ -8,7 +8,8 @@ import { showFullNameWhenTruncated } from "./truncated-name";
 
 /** Ce que l'utilisateur peut demander depuis la liste des notes. */
 export interface NoteActions {
-  readonly open: (path: string) => void;
+  /** Ouvre la note ; `node`, pour une carte mentale trouvée par un de ses nœuds, est le nœud à y choisir. */
+  readonly open: (path: string, node?: string | null) => void;
   readonly pin: (path: string) => void;
   readonly unpin: (path: string) => void;
   readonly trash: (path: string) => void;

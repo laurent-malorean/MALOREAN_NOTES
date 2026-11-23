@@ -131,3 +131,28 @@ export function fakeMindMaps(state: FakeNotes, helpers: MindMapHelpers): Record<
     },
   };
 }
+
+/** Les nœuds d'une carte qui ont tous les mots cherchés, comme résultats de recherche. */
+export function fakeNodeResults(
+  path: string,
+  content: string,
+  has: (text: string) => boolean,
+): { title: string; text: string; containerTitle: string; node: string }[] {
+  if (!isMindMapContent(content)) return [];
+  const mapTitle = /^# (.+)$/m.exec(content)?.[1]?.trim() ?? "Sans titre";
+  const found: { title: string; text: string; containerTitle: string; node: string }[] = [];
+  const visit = (nodes: MindNodeItem[], above: number[]) =>
+    nodes.forEach((node, rank) => {
+      const text = `${node.title}\n${node.detail.join("\n")}`;
+      if (has(text))
+        found.push({
+          title: node.title,
+          text,
+          containerTitle: mapTitle,
+          node: [...above, rank].join("."),
+        });
+      visit(node.children, [...above, rank]);
+    });
+  visit(parse(content).roots, []);
+  return found;
+}

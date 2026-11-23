@@ -25,6 +25,8 @@ export interface MindMapPaneOptions {
 export interface MindMapPane {
   /** Montre la carte si la note `path`, de texte `content`, en est une ; l'éditeur sinon. */
   sync(path: string | null, content: string): Promise<void>;
+  /** Choisit le nœud de ce chemin (`1.0.2`) de la carte affichée. */
+  reveal(node: string): void;
   /** La carte est affichée. */
   shown(): boolean;
   destroy(): void;
@@ -60,6 +62,10 @@ class ColumnMindMap implements MindMapPane {
     private readonly column: HTMLElement,
     private readonly options: MindMapPaneOptions,
   ) {}
+
+  reveal(node: string): void {
+    this.view?.reveal(node.split(".").map(Number));
+  }
 
   shown(): boolean {
     return this.view !== null;
