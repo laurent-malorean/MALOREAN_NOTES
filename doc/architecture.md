@@ -25,8 +25,8 @@ ui/                   interface TypeScript (Vite)
   src/rendering/      rendu HTML d'une note (export PDF, impression, copie mise en forme), styles en ligne, texte brut
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
-scripts/ci.sh         CI locale à trois niveaux : barrière de commit, `--complet` avant livraison, `--verdict` (fiche 0047)
-scripts/mutation-diff.sh   test de mutation du diff d'un commit, en arrière-plan (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; scripts/ci-debt.sh : dette de mutation ; ci-doc-only.sh : documentation seule ; scripts/ci-menage.sh : ménage du dossier de compilation (seulement le périmé, au-delà de 20 Go) ; scénarios : test-ci-gate.sh, test-ci-doc-only.sh, test-ci-menage.sh
+scripts/ci.sh         CI locale : barrière de commit, `--fonction`, `--livraison`, `--echantillon` (fiches 0047 et 0049)
+scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-doc-only.sh
 scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
 ```
 
@@ -110,7 +110,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0003-apercu-en-direct-par-masquage.md` | Aperçu en direct : syntaxe masquée hors de la ligne en cours |
 | `0004-strategie-de-tests.md` | Niveaux de tests, seuils, mutation, garde-fou avant envoi |
 | `0005-aide-ecriture-modele-apple.md` | Aide à l'écriture par le modèle d'IA du Mac, sans compte ni clé |
-| `0006-seuils-et-mutation-a-chaque-envoi.md` | Seuils qui ne baissent jamais, test de mutation à chaque envoi |
+| `0006-seuils-et-mutation-a-chaque-envoi.md` | Seuils qui ne baissent jamais, test de mutation à chaque envoi (mutation remplacée en partie par la 0049) |
 | `0007-images-par-le-protocole-asset.md` | Images des notes : chargées par le protocole `asset` de Tauri |
 | `0008-sous-dossiers.md` | Sous-dossiers : une note est désignée par son chemin depuis l'espace de travail |
 | `0009-recherche-plein-texte.md` | Recherche plein texte : relire les notes à chaque recherche, en Rust |
@@ -120,7 +120,8 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0013-pieces-jointes-collees.md` | Pièces jointes collées ou glissées : octets envoyés à Rust, nom décidé par le domaine |
 | `0014-modifications-externes.md` | Modifications faites hors de l'application : recharger, ou garder les deux versions |
 | `0015-ci-avant-chaque-commit.md` | La mini CI avant chaque commit, plus rien à l'envoi (remplacée en partie par la 0047) |
-| `0047-ci-a-trois-niveaux.md` | Barrière de commit rapide, mutation du diff en arrière-plan avec dette, CI complète à la livraison ; durées avant/après |
+| `0047-ci-a-trois-niveaux.md` | Barrière de commit rapide, mutation du diff en arrière-plan, CI complète à la livraison ; durées avant/après (la dette bloquante est remplacée par la 0049) |
+| `0049-politique-de-ci-mutation-ciblee.md` | La mutation n'est plus exigée à chaque commit : domaine seul, non bloquante ; échantillon par fonction ailleurs ; fin de fonction sans mutation ; tag `ci-verte` ; livraison |
 | `0016-liens-entre-notes.md` | Liens entre notes : `[[titre]]`, résolus par le titre à la demande |
 | `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
 | `0018-plein-ecran-et-panneaux-lateraux.md` | Plein écran et panneaux latéraux : deux réglages indépendants |
