@@ -20,9 +20,10 @@ Ajouter une observation à un cahier de recherche simplement, sans fenêtre ni c
 
 - La fenêtre de saisie « Ajouter au cahier », sa liste déroulante de choix du cahier et son bouton « Ajouter ».
 - Le « + » en haut du cahier.
+- La commande « Ajouter au cahier » (palette et barre des menus) : elle n'existe plus.
 - Les brouillons, les colonnes de brouillon et les boutons « Corriger » (pensés dans la version précédente de cette spécification).
 
-## 4. Points à confirmer avec l'utilisateur avant de coder
+## 4. Décidé par l'utilisateur (23/11)
 
-- La commande « Ajouter au cahier » (palette, barre des menus) : proposition, elle ouvre le cahier (le choisit s'il y en a plusieurs) et place le curseur dans la zone de saisie.
-- L'outil de l'application pour Claude (« ajouter une entrée au cahier ») : proposition, il ne change pas ; seule sa partie « correction » disparaît avec la correction de l'interface.
+- **Il n'y a pas de commande « Ajouter au cahier »** (ni dans la palette ni dans la barre des menus) : on ajoute une entrée seulement depuis la page du cahier de recherche, par la zone de saisie en bas. Hors d'un cahier, rien n'apparaît.
+- L'outil de l'application pour Claude (« ajouter une entrée au cahier ») ne change pas ; seule sa partie « correction » disparaît avec la correction de l'interface.
