@@ -2,7 +2,8 @@
 // confirmation. Aucune règle : tout vient de la disposition calculée par `state/mind-map-layout.ts`.
 import { descendantsCount, pathKey } from "../state/mind-map";
 import type { Box, Layout } from "../state/mind-map-layout";
-import type { NodeRenderer } from "./mind-map-nodes";
+import type { NodePath } from "../state/mind-map";
+import { type NodeRenderer, WIKI_ADDRESS } from "./mind-map-nodes";
 
 const SVG = "http://www.w3.org/2000/svg";
 
@@ -94,4 +95,27 @@ export function confirmDeletion(host: HTMLElement, count: number): Promise<boole
     host.append(dialog);
     yes.focus();
   });
+}
+
+/** Le chemin du nœud qui contient `target`, s'il y en a un. */
+export function pathOfTarget(target: EventTarget | null): NodePath | null {
+  const key = (target as HTMLElement | null)?.closest<HTMLElement>(".mind-map-node")?.dataset.path;
+  return key === undefined || key === "" ? null : key.split(".").map(Number);
+}
+
+/** Un clic sur un lien d'un nœud : une note (`[[titre]]`) ou une adresse. */
+export function followLink(
+  event: MouseEvent,
+  deps: {
+    openWikiLink: (title: string, inNewTab: boolean) => void;
+    openLink: (target: string) => void;
+  },
+): void {
+  const link = (event.target as HTMLElement).closest<HTMLAnchorElement>("a[href]");
+  if (link === null) return;
+  event.preventDefault();
+  const address = link.getAttribute("href") ?? "";
+  if (address.startsWith(WIKI_ADDRESS))
+    deps.openWikiLink(decodeURIComponent(address.slice(WIKI_ADDRESS.length)), event.metaKey);
+  else deps.openLink(address);
 }

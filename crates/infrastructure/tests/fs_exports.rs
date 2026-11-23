@@ -27,6 +27,10 @@ impl ExportStore for DiskFolder {
     ) -> Result<(), StoreError> {
         FsExportStore.write_markdown(destination, text, attachments)
     }
+
+    fn write_image(&self, destination: &ExportDestination, bytes: &[u8]) -> Result<(), StoreError> {
+        FsExportStore.write_image(destination, bytes)
+    }
 }
 
 impl ExportFolder for DiskFolder {
@@ -68,6 +72,17 @@ fn attachments_that_cannot_be_copied_are_reported() {
     };
     let destination = ExportDestination::parse(&format!("{root}/Note.md")).unwrap();
     let written = FsExportStore.write_markdown(&destination, "# N", &[attachment]);
+    assert!(
+        matches!(written, Err(StoreError::Unavailable(_))),
+        "{written:?}"
+    );
+}
+
+#[test]
+fn an_image_into_a_missing_folder_says_why_it_failed() {
+    let dir = TempDir::new().unwrap();
+    let location = format!("{}/absent/Carte.png", dir.path().to_str().unwrap());
+    let written = FsExportStore.write_image(&ExportDestination::parse(&location).unwrap(), b"PNG");
     assert!(
         matches!(written, Err(StoreError::Unavailable(_))),
         "{written:?}"

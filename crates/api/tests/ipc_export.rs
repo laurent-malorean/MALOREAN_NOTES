@@ -52,13 +52,30 @@ fn window(notes: &[(&str, &str)], exports: Arc<InMemoryExportStore>) -> WebviewW
 }
 
 fn call(window: &WebviewWindow<MockRuntime>, command: &str, args: Value) -> Result<Value, Value> {
+    send(window, command, InvokeBody::Json(args), &[])
+}
+
+/// Envoie une commande comme l'interface : un corps, et des en-têtes encodés comme une adresse.
+fn send(
+    window: &WebviewWindow<MockRuntime>,
+    command: &str,
+    body: InvokeBody,
+    headers: &[(&str, &str)],
+) -> Result<Value, Value> {
+    let mut map = tauri::http::HeaderMap::new();
+    for (name, value) in headers {
+        map.insert(
+            tauri::http::HeaderName::from_bytes(name.as_bytes()).unwrap(),
+            value.parse().unwrap(),
+        );
+    }
     let request = InvokeRequest {
         cmd: command.into(),
         callback: CallbackFn(0),
         error: CallbackFn(1),
         url: "tauri://localhost".parse().unwrap(),
-        body: InvokeBody::Json(args),
-        headers: Default::default(),
+        body,
+        headers: map,
         invoke_key: INVOKE_KEY.to_string(),
     };
     get_ipc_response(window, request).map(|body| body.deserialize::<Value>().unwrap())
@@ -154,4 +171,48 @@ fn copying_without_a_clipboard_says_so() {
         refused.unwrap_err()["message"],
         "le presse-papiers n'est pas disponible"
     );
+}
+
+#[test]
+fn an_image_is_written_as_sent_to_the_destination_of_its_header() {
+    let exports = Arc::new(InMemoryExportStore::default());
+    let window = window(&[], Arc::clone(&exports));
+    call(&window, "reopen_last_workspace", json!({})).unwrap();
+    send(
+        &window,
+        "export_image",
+        InvokeBody::Raw(b"\x89PNG".to_vec()),
+        &[(
+            "x-destination",
+            "%2FUsers%2Fmoi%2FDocuments%2FCarte%20%C3%A9t%C3%A9.png",
+        )],
+    )
+    .unwrap();
+    assert_eq!(
+        exports.file("/Users/moi/Documents/Carte été.png"),
+        Some(b"\x89PNG".to_vec())
+    );
+    assert!(BRIDGE_SOURCE.contains("\"x-destination\": encodeURIComponent(destination)"));
+}
+
+#[test]
+fn an_image_without_its_content_or_its_destination_is_refused_with_a_message() {
+    let window = window(&[], Arc::new(InMemoryExportStore::default()));
+    let message = "l'image à enregistrer n'a pas été reçue en entier";
+    let no_content = send(
+        &window,
+        "export_image",
+        InvokeBody::Json(json!({})),
+        &[("x-destination", "%2FCarte.png")],
+    )
+    .unwrap_err();
+    assert_eq!(no_content["message"], message);
+    let no_destination = send(
+        &window,
+        "export_image",
+        InvokeBody::Raw(b"PNG".to_vec()),
+        &[],
+    )
+    .unwrap_err();
+    assert_eq!(no_destination["message"], message);
 }

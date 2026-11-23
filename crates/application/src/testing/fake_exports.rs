@@ -44,4 +44,12 @@ impl ExportStore for InMemoryExportStore {
         }
         Ok(())
     }
+
+    fn write_image(&self, destination: &ExportDestination, bytes: &[u8]) -> Result<(), StoreError> {
+        self.files
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(destination.location().to_owned(), bytes.to_vec());
+        Ok(())
+    }
 }

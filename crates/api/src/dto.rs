@@ -154,6 +154,8 @@ pub enum ExportFormatItem {
     Pdf,
     /// Le fichier de la note tel quel.
     Markdown,
+    /// L'image d'une carte mentale entière.
+    Png,
 }
 
 impl From<ExportFormatItem> for domain::export::ExportFormat {
@@ -161,6 +163,7 @@ impl From<ExportFormatItem> for domain::export::ExportFormat {
         match format {
             ExportFormatItem::Pdf => Self::Pdf,
             ExportFormatItem::Markdown => Self::Markdown,
+            ExportFormatItem::Png => Self::Png,
         }
     }
 }

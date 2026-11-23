@@ -1,7 +1,10 @@
 // Carte mentale d'une colonne (fiche 0050) : quand la note montrée est une carte mentale, la carte
 // prend la place de l'éditeur de texte, sur toute la surface de la colonne. Rust lit et écrit le
 // fichier ; l'éditeur garde le texte de la note, caché, pour l'enregistrement et l'historique.
-import type { MindMapItem } from "../bridge";
+import type { ExportFile, ExportFormatItem, MindMapItem } from "../bridge";
+import type { PreferenceStorage } from "../state/focus-preference";
+import { loadExportFolder, saveExportFolder } from "../state/export";
+import { mapTitle } from "../state/mind-map-image";
 import { isMindMapContent } from "../state/mind-map";
 import { createMindMapView, type MindMapView } from "./mind-map-view";
 
@@ -10,6 +13,12 @@ export interface MindMapBackend {
   readonly readMindMap: (path: string) => Promise<MindMapItem>;
   readonly saveMindMap: (path: string, map: MindMapItem) => Promise<unknown>;
   readonly openLinkTarget: (path: string, target: string) => Promise<unknown>;
+  readonly chooseExportFile: (
+    title: string,
+    format: ExportFormatItem,
+    folder: string | null,
+  ) => Promise<ExportFile | null>;
+  readonly exportImage: (destination: string, png: Uint8Array) => Promise<unknown>;
 }
 
 export interface MindMapPaneOptions {
@@ -20,6 +29,8 @@ export interface MindMapPaneOptions {
   readonly notice: (message: string) => void;
   /** L'adresse chargeable d'une image écrite dans la note `note`. */
   readonly resolveImage: (src: string, note: string | null) => string;
+  /** Où le dossier du dernier export est gardé. */
+  readonly storage: PreferenceStorage;
 }
 
 export interface MindMapPane {
@@ -57,6 +68,7 @@ function foldedMemory(path: string) {
 class ColumnMindMap implements MindMapPane {
   private view: MindMapView | null = null;
   private path: string | null = null;
+  private title = "";
 
   constructor(
     private readonly column: HTMLElement,
@@ -74,6 +86,7 @@ class ColumnMindMap implements MindMapPane {
   async sync(path: string | null, content: string): Promise<void> {
     if (path === null || !isMindMapContent(content)) return this.close();
     if (this.path !== path) this.open(path);
+    this.title = mapTitle(content, path);
     const map = await this.options.backend.readMindMap(path);
     // La colonne a pu montrer une autre note pendant la lecture.
     if (this.path !== path) return;
@@ -98,9 +111,20 @@ class ColumnMindMap implements MindMapPane {
       error,
       resolveImage: (src) => resolveImage(src, path),
       folded: foldedMemory(path),
+      exportImage: (png) => this.saveImage(png),
     });
     this.column.append(this.view.element);
     this.column.classList.add("mind-map-shown");
+  }
+
+  /** Fait choisir le fichier dans la fenêtre d'enregistrement du Mac, puis y écrit l'image. */
+  private async saveImage(png: Uint8Array): Promise<void> {
+    const { backend, storage, notice } = this.options;
+    const file = await backend.chooseExportFile(this.title, "png", loadExportFolder(storage));
+    if (file === null) return;
+    saveExportFolder(storage, file.folder);
+    await backend.exportImage(file.path, png);
+    notice(`« ${this.title} » exportée dans ${file.path}`);
   }
 
   private close(): void {

@@ -30,6 +30,13 @@ impl ApiError {
         }
     }
 
+    /// L'interface a envoyé l'image d'une carte sans son contenu ou sans dire où l'écrire.
+    pub(crate) fn incomplete_export_image() -> Self {
+        Self {
+            message: "l'image à enregistrer n'a pas été reçue en entier".to_owned(),
+        }
+    }
+
     /// L'interface demande de continuer une conversation dont l'identifiant ne ressemble pas à
     /// ceux de Claude Code.
     pub(crate) fn unknown_conversation() -> Self {

@@ -30,6 +30,15 @@ pub fn export_contract<F: ExportFolder>(fresh: impl Fn() -> F) {
     the_text_is_written_at_the_destination(&fresh());
     an_existing_file_is_replaced(&fresh());
     attachments_go_in_the_attachment_folder_of_the_export(&fresh());
+    an_image_is_written_as_is_and_replaces_an_existing_one(&fresh());
+}
+
+fn an_image_is_written_as_is_and_replaces_an_existing_one(folder: &impl ExportFolder) {
+    let location = format!("{}/Carte.png", folder.location());
+    let destination = ExportDestination::parse(&location).unwrap();
+    folder.write_image(&destination, b"\x89PNG-1").unwrap();
+    folder.write_image(&destination, b"\x89PNG-2").unwrap();
+    assert_eq!(folder.read(&location), Some(b"\x89PNG-2".to_vec()));
 }
 
 fn the_text_is_written_at_the_destination(folder: &impl ExportFolder) {
