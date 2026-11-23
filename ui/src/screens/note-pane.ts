@@ -32,8 +32,8 @@ export interface PaneEvents {
 
 /** Ce qu'une colonne fait d'un cahier de recherche qu'elle montre (fiche 0041). */
 export interface NotebookActions {
-  /** Ajouter une entrée au cahier : son « + ». */
-  add(path: string): void;
+  /** Ajouter l'entrée saisie au cahier ; dit si c'est fait. */
+  add(path: string, text: string): Promise<boolean>;
   /** Ses entrées, pour montrer celle que vise un lien `#ancre`. */
   entries(path: string): Promise<EntryItem[]>;
 }
@@ -52,7 +52,7 @@ export interface PaneOptions {
   readonly shared: SharedNotes;
   /** L'adresse chargeable d'une image écrite dans la note `note`. */
   readonly resolveImage: (src: string, note: string | null) => string;
-  /** Sans elles, un cahier de recherche reste en lecture seule, sans « + » ni lien vers une entrée. */
+  /** Sans elles, un cahier de recherche reste en lecture seule, sans zone de saisie ni lien vers une entrée. */
   readonly notebook?: NotebookActions;
   /** Sans elles, aucune liste de notes proches n'est montrée. */
   readonly related?: RelatedNotes;
@@ -112,8 +112,8 @@ class NotePane implements Pane, Viewer {
           },
         },
         openLink: events.openLink,
-        // Le « + » n'apparaît que sur un cahier montré : il y a toujours une note.
-        addEntry: notebook && (() => notebook.add(this.shown as string)),
+        // La zone de saisie n'apparaît que sur un cahier montré : il y a toujours une note.
+        addEntry: notebook && ((text) => notebook.add(this.shown as string, text)),
       },
     );
   }

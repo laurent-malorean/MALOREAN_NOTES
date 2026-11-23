@@ -47,7 +47,7 @@ describe("colonne : un cahier de recherche", () => {
   it("un lien vers une entrée du cahier la montre", async () => {
     const asked: string[] = [];
     const m = mount({
-      add: () => {},
+      add: async () => true,
       entries: async (path) => (asked.push(path), [SECOND, FIRST]),
     });
     await m.pane.load("levures.md");
@@ -58,7 +58,7 @@ describe("colonne : un cahier de recherche", () => {
   });
 
   it("dit qu'une entrée visée n'est pas dans le cahier", async () => {
-    const m = mount({ add: () => {}, entries: async () => [] });
+    const m = mount({ add: async () => true, entries: async () => [] });
     await m.pane.load("levures.md");
     m.followLink();
     await expect
@@ -69,7 +69,7 @@ describe("colonne : un cahier de recherche", () => {
   it("ne bouge pas si une autre note est montrée entre-temps", async () => {
     let answer: (entries: EntryItem[]) => void = () => {};
     const m = mount({
-      add: () => {},
+      add: async () => true,
       entries: () => new Promise((resolve) => (answer = resolve)),
     });
     await m.pane.load("levures.md");
@@ -80,19 +80,25 @@ describe("colonne : un cahier de recherche", () => {
     expect(m.view()?.state.selection.main.head).toBe(0);
   });
 
-  it("son « + » vise le cahier montré", async () => {
+  it("sa zone de saisie ajoute l'entrée au cahier montré", async () => {
     const added: string[] = [];
-    const m = mount({ add: (path) => added.push(path), entries: async () => [] });
+    const m = mount({
+      add: async (path, text) => (added.push(`${path} : ${text}`), true),
+      entries: async () => [],
+    });
     await m.pane.load("levures.md");
-    m.element.querySelector<HTMLButtonElement>(".notebook-add")?.click();
-    expect(added).toEqual(["levures.md"]);
+    const text = m.element.querySelector("textarea") as HTMLTextAreaElement;
+    text.value = "trois";
+    m.element.querySelector<HTMLButtonElement>(".notebook-entry button")?.click();
+    expect(added).toEqual(["levures.md : trois"]);
+    await expect.poll(() => text.value).toBe("");
   });
 
   it("sans action sur les cahiers, le lien est confié à Rust comme les autres", async () => {
     const m = mount();
     await m.pane.load("levures.md");
     m.followLink();
-    expect(m.element.querySelector(".notebook-add")).toBeNull();
+    expect(m.element.querySelector(".notebook-entry")).toBeNull();
     expect(m.fake.calls).toContain("ouvrir levures.md #2026-11-16-09h00");
   });
 });

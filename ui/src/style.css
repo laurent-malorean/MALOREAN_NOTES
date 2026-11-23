@@ -1259,50 +1259,34 @@ button {
   color: var(--text);
   font: inherit;
 }
-/* Fenêtre de saisie d'une entrée de cahier de recherche : chaque champ sous son nom */
-.entry-field {
-  display: block;
-  margin-bottom: 0.8rem;
+/* Zone de saisie en bas de la page d'un cahier de recherche : message, texte, bouton */
+.editor .notebook-entry {
+  padding: 0.6rem 1.2rem 0.8rem;
 }
-.entry-field select,
-.entry-field textarea {
+.editor .notebook-entry-message {
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+}
+.editor .notebook-entry-text {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  margin-top: 0.35rem;
-  padding: 0.35rem 0.5rem;
+  padding: 0.5rem 0.7rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--bg);
   color: var(--text);
   font: inherit;
+  resize: none;
+  overflow-y: auto;
 }
-.entry-field textarea {
-  resize: vertical;
-}
-
-/* Barre en haut d'un cahier de recherche : ce qu'il est, et le « + » qui ajoute une entrée */
-.editor .notebook-bar {
+.editor .notebook-entry-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
-  padding: 0.3rem 1rem;
-}
-.editor .notebook-bar-label {
+  margin-top: 0.5rem;
   color: var(--muted);
-}
-.editor .notebook-add {
-  padding: 0 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-}
-.editor .notebook-add:hover {
-  border-color: var(--accent);
 }
 
 .confirmation-buttons {

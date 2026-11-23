@@ -6,16 +6,14 @@ import {
   settle,
   workspaceScreen,
 } from "../../test-support/app-fixture";
-import type { EntryItem, WorkspaceNoteItem } from "../bridge";
+import type { EntryItem } from "../bridge";
 import { columnsStarted, noteOpened } from "../state/columns";
 import { welcome } from "../state/screen";
-import { createResearchNotebooks, NO_NOTEBOOK } from "./research-notebook";
+import { createResearchNotebooks } from "./research-notebook";
 
-const LEVURES: WorkspaceNoteItem = { path: "Labo/levures.md", title: "Levures", folder: "Labo" };
-const BIERES: WorkspaceNoteItem = { path: "bieres.md", title: "Bières", folder: "" };
 const ADDED: EntryItem = { anchor: "2026-11-16-18h30", label: "", text: "un", line: 2 };
 
-function setup(notebooks: WorkspaceNoteItem[], open = "a.md") {
+function setup(open = "a.md") {
   const log: string[] = [];
   const { screen } = recordedScreen(workspaceScreen());
   const columns = fakeColumns([open].reduce(noteOpened, columnsStarted));
@@ -29,10 +27,9 @@ function setup(notebooks: WorkspaceNoteItem[], open = "a.md") {
   const shown: string[] = [];
   const notebooks$ = createResearchNotebooks({
     backend: {
-      listResearchNotebooks: async () => notebooks,
-      listEntries: async (path) => (log.push(`entrées de ${path}`), []),
-      addEntry: async (path, text, corrected) => {
-        log.push(`ajouter à ${path} : ${text} (${String(corrected)})`);
+      addEntry: async (path, text) => {
+        log.push(`ajouter à ${path} : ${text}`);
+        if (text === "refusé") throw new Error("l'entrée est vide");
         return ADDED;
       },
       createResearchNotebook: async (folder, title) => {
@@ -55,35 +52,11 @@ const button = (dialog: HTMLDialogElement, label: string) =>
     (b) => b.textContent === label,
   ) as HTMLButtonElement;
 
-function type(dialog: HTMLDialogElement, text: string) {
-  const field = dialog.querySelector<HTMLTextAreaElement>(".entry-text") as HTMLTextAreaElement;
-  field.value = text;
-}
-
 describe("cahiers de recherche", () => {
-  it("sans cahier dans l'espace de travail, dit comment en créer un", async () => {
-    const s = setup([]);
-    await s.notebooks.add();
-    expect(s.shown).toEqual([`[info] ${NO_NOTEBOOK}`]);
-    expect(NO_NOTEBOOK).toContain("« Nouveau cahier de recherche » en crée un");
-    expect(s.dialog.open).toBe(false);
-  });
-
-  it("propose les cahiers, celui de la colonne active d'abord, puis ajoute l'entrée et la montre", async () => {
-    const s = setup([BIERES, LEVURES], "Labo/levures.md");
-    const adding = s.notebooks.add();
-    await settle();
-    expect(s.dialog.open).toBe(true);
-    const select = s.dialog.querySelector<HTMLSelectElement>(".entry-notebook");
-    expect(select?.value).toBe("Labo/levures.md");
-    type(s.dialog, "un");
-    button(s.dialog, "Ajouter").click();
-    await adding;
-    expect(s.log).toEqual([
-      "entrées de Labo/levures.md",
-      "ajouter à Labo/levures.md : un (null)",
-      "liste",
-    ]);
+  it("ajoute l'entrée au cahier de la colonne, relit chaque colonne qui le montre et montre l'entrée", async () => {
+    const s = setup("Labo/levures.md");
+    expect(await s.notebooks.add("Labo/levures.md", "un")).toBe(true);
+    expect(s.log).toEqual(["ajouter à Labo/levures.md : un", "liste"]);
     expect(s.pane.followDisk).toHaveBeenCalled();
     expect(s.other.followDisk).toHaveBeenCalled();
     const at = "# Levures\n\n".length;
@@ -93,51 +66,28 @@ describe("cahiers de recherche", () => {
       top: at,
       offset: 0,
     });
-    expect(s.shown).toEqual(["Entrée ajoutée à « Levures »"]);
+    expect(s.shown).toEqual(["Entrée ajoutée au cahier"]);
   });
 
-  it("sans cahier dans la colonne active, propose le premier ; une colonne d'une autre note ne relit rien", async () => {
-    const s = setup([BIERES, LEVURES]);
-    const adding = s.notebooks.add();
-    await settle();
-    expect(s.dialog.querySelector<HTMLSelectElement>(".entry-notebook")?.value).toBe("bieres.md");
-    type(s.dialog, "deux");
-    button(s.dialog, "Ajouter").click();
-    await adding;
-    expect(s.log).toContain("ajouter à bieres.md : deux (null)");
+  it("une colonne d'une autre note ne relit rien et ne bouge pas", async () => {
+    const s = setup();
+    expect(await s.notebooks.add("bieres.md", "deux")).toBe(true);
+    expect(s.log).toContain("ajouter à bieres.md : deux");
     expect(s.pane.followDisk).not.toHaveBeenCalled();
     expect(s.other.followDisk).not.toHaveBeenCalled();
     expect(s.pane.editor.restore).not.toHaveBeenCalled();
-    expect(s.shown).toEqual(["Entrée ajoutée à « Bières »"]);
+    expect(s.shown).toEqual(["Entrée ajoutée au cahier"]);
   });
 
-  it("le « + » d'un cahier ne propose que lui, même s'il n'est pas encore dans l'index", async () => {
-    const s = setup([BIERES, LEVURES]);
-    const adding = s.notebooks.add("neuf.md");
-    await settle();
-    expect(s.dialog.querySelector(".entry-notebook")).toBeNull();
-    type(s.dialog, "trois");
-    button(s.dialog, "Ajouter").click();
-    await adding;
-    expect(s.log).toContain("ajouter à neuf.md : trois (null)");
-    expect(s.shown).toEqual(["Entrée ajoutée à « neuf.md »"]);
-    const fromLevures = s.notebooks.add(LEVURES.path);
-    await settle();
-    expect(s.dialog.querySelector(".entry-notebook")).toBeNull();
-    type(s.dialog, "quatre");
-    button(s.dialog, "Ajouter").click();
-    await fromLevures;
-    expect(s.log).toContain("ajouter à Labo/levures.md : quatre (null)");
-    expect(s.shown.at(-1)).toBe("Entrée ajoutée à « Levures »");
-    const cancelled = s.notebooks.add(LEVURES.path);
-    await settle();
-    button(s.dialog, "Annuler").click();
-    await cancelled;
-    expect(s.log.filter((line) => line.startsWith("ajouter"))).toHaveLength(2);
+  it("un refus est affiché et rend faux : le texte saisi est gardé", async () => {
+    const s = setup();
+    expect(await s.notebooks.add("bieres.md", "refusé")).toBe(false);
+    expect(s.shown).toEqual(["erreur Error: l'entrée est vide"]);
+    expect(s.log).toEqual(["ajouter à bieres.md : refusé"]);
   });
 
   it("un nouveau cahier est titré d'abord, créé dans le dossier affiché, puis ouvert", async () => {
-    const s = setup([]);
+    const s = setup();
     const creating = s.notebooks.create();
     await settle();
     const field = s.dialog.querySelector<HTMLInputElement>("input") as HTMLInputElement;
@@ -156,9 +106,9 @@ describe("cahiers de recherche", () => {
   });
 
   it("rien sans espace de travail ouvert", async () => {
-    const s = setup([LEVURES]);
+    const s = setup();
     s.screen.show(welcome);
-    await s.notebooks.add();
+    expect(await s.notebooks.add("a.md", "un")).toBe(false);
     await s.notebooks.create();
     expect(s.dialog.open).toBe(false);
     expect(s.shown).toEqual([]);

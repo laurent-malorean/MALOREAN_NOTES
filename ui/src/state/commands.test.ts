@@ -12,7 +12,6 @@ describe("palette de commandes", () => {
       ["new-note-from-template", "Nouvelle note depuis un modèle", "Cmd+Maj+N"],
       ["daily-note", "Note du jour", "Cmd+Maj+J"],
       ["new-research-notebook", "Nouveau cahier de recherche", null],
-      ["add-entry", "Ajouter au cahier", null],
       ["new-folder", "Nouveau dossier", null],
       ["search-workspace", "Rechercher dans toutes les notes", null],
       ["search-by-meaning", "Rechercher par le sens", null],
