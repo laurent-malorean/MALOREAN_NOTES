@@ -1,6 +1,7 @@
 // Carte mentale (fiche 0050, spécification § 7.2) : glisser un nœud et sa branche. Le geste
 // commence après 4 points de mouvement ; avant, c'est un clic.
 import { type Drop, inBranch, type NodePath, pathKey } from "../state/mind-map";
+import { contains, dropPlace } from "../state/mind-map-viewport";
 import type { Box } from "../state/mind-map-layout";
 import type { Point } from "../state/mind-map-viewport";
 
@@ -109,4 +110,19 @@ export function startPan(
   };
   document.addEventListener("pointermove", move);
   document.addEventListener("pointerup", up);
+}
+
+/** Où le nœud glissé serait déposé en `at` : sur un nœud, `refused` dans sa propre branche, ou sur le fond. */
+export function dropTarget(
+  boxes: readonly Box[],
+  at: Point,
+  dragged: NodePath,
+): { kind: "child" | "before" | "after"; target: Box } | "refused" | null {
+  for (const box of boxes) {
+    const rect = { x: box.x, y: box.y, w: box.width, h: box.height };
+    if (!contains(rect, at)) continue;
+    if (inBranch(dragged, box.path)) return "refused";
+    return { kind: dropPlace(rect, at.y), target: box };
+  }
+  return null;
 }

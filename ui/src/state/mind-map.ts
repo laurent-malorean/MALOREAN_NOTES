@@ -116,7 +116,8 @@ export function addSibling(
   return insertAt(map, path.slice(0, -1), lastRank(path) + 1, node, place);
 }
 
-function insertAt(
+/** Le nœud inséré au rang `rank` des enfants de `above` (les nœuds racines si vide). */
+export function insertAt(
   map: MindMapItem,
   above: NodePath,
   rank: number,

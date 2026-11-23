@@ -8,7 +8,6 @@ import {
   addSibling,
   ancestorsOf,
   descendantsCount,
-  inBranch,
   moveBranch,
   newNode,
   type NodePath,
@@ -21,12 +20,11 @@ import {
   typedOf,
   updateNode,
 } from "../state/mind-map";
+import { type Op, typedOp } from "../state/mind-map-ops";
 import { changed, EMPTY_HISTORY, type MapHistory, redone, undone } from "../state/mind-map-history";
 import { type Box, bounds, layoutMap } from "../state/mind-map-layout";
 import {
   centredOn,
-  contains,
-  dropPlace,
   fitted,
   type Point,
   panned,
@@ -39,15 +37,20 @@ import {
 } from "../state/mind-map-viewport";
 import { showContextMenu } from "./context-menu";
 import { nodeMenu } from "./mind-map-menu";
+import { MapSaver } from "./mind-map-saver";
 import { nodeKey, type KeyHost } from "./mind-map-keys";
 import { createNodeRenderer, WIKI_ADDRESS } from "./mind-map-nodes";
 import { button, confirmDeletion, drawLinks, nodeElement } from "./mind-map-paint";
-import { startDrag, startPan } from "./mind-map-drag";
+import { dropTarget, startDrag, startPan } from "./mind-map-drag";
 import "./mind-map.css";
 
 export interface MindMapDeps {
   /** Enregistre la carte ; une erreur est montrée par `error`, et l'enregistrement suivant reprend tout. */
   readonly save: (map: MindMapItem) => Promise<void>;
+  /** La carte telle que le fichier la dit maintenant. */
+  readonly read: () => Promise<MindMapItem>;
+  /** Un message d'information. */
+  readonly notice: (message: string) => void;
   /** Suit un lien `[[titre]]`. */
   readonly openWikiLink: (title: string, inNewTab: boolean) => void;
   /** Suit un autre lien. */
@@ -95,6 +98,7 @@ class MindMapScreen implements MindMapView {
   private readonly empty = document.createElement("p");
   private readonly renderer = createNodeRenderer((src) => this.deps.resolveImage(src));
   private current: MindMapItem = { roots: [], places: [] };
+  private readonly saver: MapSaver;
   private history: MapHistory = EMPTY_HISTORY;
   private chosen: NodePath | null = null;
   private readonly folded: Set<string>;
@@ -102,14 +106,22 @@ class MindMapScreen implements MindMapView {
   private boxes: readonly Box[] = [];
   private editing: Editing | null = null;
   private deferred: MindMapItem | null = null;
-  private saving = false;
-  private dirty = false;
   private needsFit = true;
   private visible = false;
   private drawing = 0;
 
   constructor(private readonly deps: MindMapDeps) {
     this.folded = new Set(deps.folded.load());
+    this.saver = new MapSaver(deps, {
+      current: () => this.current,
+      merged: (map) => {
+        this.current = map;
+        this.draw();
+      },
+      reloaded: (disk) => this.reload(disk),
+      refreshed: (disk) => this.setMap(disk),
+    });
+
     this.element.className = "mind-map";
     this.element.tabIndex = 0;
     this.element.hidden = true;
@@ -158,8 +170,9 @@ class MindMapScreen implements MindMapView {
       this.deferred = map;
       return;
     }
-    // Ce qui vient d'être enregistré, ou va l'être, est déjà montré.
-    if (this.saving || this.dirty) return;
+    // Ce qui va être enregistré est déjà montré ; l'enregistrement relit le fichier.
+    if (this.saver.busy()) return;
+    this.saver.reset(map);
     if (JSON.stringify(map) === JSON.stringify(this.current) && !this.needsFit) return;
     this.current = map;
     this.history = EMPTY_HISTORY;
@@ -276,28 +289,22 @@ class MindMapScreen implements MindMapView {
 
   // --- Changements ----------------------------------------------------------------------
 
-  private commit(next: MindMapItem, choose: NodePath | null): void {
+  private commit(next: MindMapItem, choose: NodePath | null, op: Op): void {
     this.history = changed(this.history, this.current);
     this.current = next;
+    this.saver.record(op);
     this.choose(choose);
-    void this.persist();
+    void this.saver.persist();
   }
 
-  private async persist(): Promise<void> {
-    if (this.saving) {
-      this.dirty = true;
-      return;
-    }
-    this.saving = true;
-    do {
-      this.dirty = false;
-      try {
-        await this.deps.save(this.current);
-      } catch (error) {
-        this.deps.error(error);
-      }
-    } while (this.dirty);
-    this.saving = false;
+  /** Un changement n'a pas pu être refait : la carte du fichier remplace la nôtre. */
+  private reload(disk: MindMapItem): void {
+    this.current = disk;
+    this.saver.reset(disk);
+    this.history = EMPTY_HISTORY;
+    if (this.chosen !== null && nodeAt(disk, this.chosen) === null) this.chosen = null;
+    this.draw();
+    this.deps.notice("La carte est rechargée.");
   }
 
   private undo(redo: boolean): void {
@@ -305,9 +312,10 @@ class MindMapScreen implements MindMapView {
     if (result === null) return;
     this.current = result.map;
     this.history = result.history;
+    this.saver.record({ kind: "replace" });
     if (this.chosen !== null && nodeAt(this.current, this.chosen) === null) this.chosen = null;
     this.draw();
-    void this.persist();
+    void this.saver.persist();
   }
 
   private async remove(path: NodePath): Promise<void> {
@@ -320,11 +328,15 @@ class MindMapScreen implements MindMapView {
       siblingOf(this.current, path, 1) !== null
         ? path
         : (siblingOf(this.current, path, -1) ?? parentOf(path));
-    this.commit(removeAt(this.current, path), after);
+    this.commit(removeAt(this.current, path), after, { kind: "remove", path });
   }
 
   private setColor(path: NodePath, color: string | null): void {
-    this.commit(updateNode(this.current, path, { color }), path);
+    this.commit(updateNode(this.current, path, { color }), path, {
+      kind: "update",
+      path,
+      patch: { color },
+    });
   }
 
   // --- Saisie ---------------------------------------------------------------------------
@@ -419,7 +431,7 @@ class MindMapScreen implements MindMapView {
     const unchanged = JSON.stringify(next) === JSON.stringify(editing.before);
     this.current = editing.before;
     if (unchanged) this.choose(editing.path);
-    else this.commit(next, editing.path);
+    else this.commit(next, editing.path, typedOp(next, editing.path, editing.isNew, typed));
     this.afterEdit(keepFocus);
     return true;
   }
@@ -513,24 +525,10 @@ class MindMapScreen implements MindMapView {
       onClick: () => this.choose(path),
       onDrop: (drop) => {
         const moved = moveBranch(this.current, path, drop);
-        if (moved !== null) this.commit(moved.map, moved.path);
+        if (moved !== null) this.commit(moved.map, moved.path, { kind: "move", from: path, drop });
       },
-      dropAt: (at, dragged) => this.dropTarget(at, dragged),
+      dropAt: (at, dragged) => dropTarget(this.boxes, at, dragged),
     });
-  }
-
-  /** Où le nœud glissé serait déposé en `at` : sur un nœud, ou sur le fond. */
-  private dropTarget(
-    at: Point,
-    dragged: NodePath,
-  ): { kind: "child" | "before" | "after"; target: Box } | "refused" | null {
-    for (const box of this.boxes) {
-      if (!contains(this.rect(box), at)) continue;
-      if (inBranch(dragged, box.path)) return "refused";
-      const place = dropPlace(this.rect(box), at.y);
-      return { kind: place, target: box };
-    }
-    return null;
   }
 
   private doubleClick(event: MouseEvent): void {

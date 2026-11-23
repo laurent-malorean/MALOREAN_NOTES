@@ -29,6 +29,8 @@ export interface PaneEvents {
   /** Ouvrir la note visée par un lien `[[titre]]`, en la suivant ou dans un nouvel onglet. */
   readonly openLink: OpenNoteLink;
   readonly error: (error: unknown) => void;
+  /** Montre un message ; sans cela, les messages d'information d'une carte mentale ne sont pas dits. */
+  readonly show?: (message: string, kind?: "info" | "success" | "warning" | "error") => void;
 }
 
 /** Ce qu'une colonne fait d'un cahier de recherche qu'elle montre (fiche 0041). */
@@ -103,6 +105,7 @@ class NotePane implements Pane, Viewer {
             backend: { readMindMap, saveMindMap, openLinkTarget: backend.openLinkTarget },
             openLink: events.openLink,
             error: events.error,
+            notice: (message) => events.show?.(message, "info"),
             resolveImage: options.resolveImage,
           })
         : null;
