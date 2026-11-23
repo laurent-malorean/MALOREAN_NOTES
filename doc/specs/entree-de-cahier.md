@@ -1,21 +1,28 @@
 # Écrire une entrée de cahier de recherche
 
-Spécification fonctionnelle, issue de la discussion de conception du 23/11. Elle complète la fonction « Cahier de recherche » (entrées ajoutées, jamais modifiées).
+Spécification fonctionnelle, refaite le 23/11 (version simple, remplace la précédente). Elle complète la fonction « Cahier de recherche » (entrées ajoutées, jamais modifiées). Ce document se lit seul.
+
+![Maquette dans l'écran de l'application](entree-de-cahier.png)
 
 ## 1. Besoin
 
-Rédiger une observation de plusieurs paragraphes, avec des listes, des images et des liens, en relisant les entrées précédentes à côté. La fenêtre de saisie actuelle (petite, bloquante) ne le permet pas.
+Ajouter une observation à un cahier de recherche simplement, sans fenêtre ni colonne en plus, en voyant le cahier au-dessus.
 
 ## 2. Comportement
 
-- Le « + » du cahier et la commande « Ajouter au cahier » ouvrent un **brouillon d'entrée** dans une colonne voisine du cahier.
-- Le brouillon s'écrit dans l'éditeur habituel : mise en forme, collage d'images, liens, aide à l'écriture.
-- Le cahier reste en lecture seule, visible à côté.
-- On peut avoir plusieurs brouillons.
-- Un brouillon est un fichier temporaire à nom unique, hors de la liste des notes et de la recherche. Il est supprimé quand on le valide ou qu'on l'abandonne. Raison : l'éditeur travaille sur des fichiers, une image collée s'écrit sur le disque, et fermer une colonne par erreur ne doit pas faire perdre une observation.
-- **Valider** le brouillon ajoute l'entrée au cahier, datée du moment de la validation.
-- Corriger une entrée : un bouton sur chaque entrée ouvre un brouillon qui cite l'entrée corrigée. La liste déroulante de la fenêtre actuelle disparaît.
+- Le cahier est une note comme les autres, ouverte dans sa colonne. **Son texte n'est pas modifiable** : on ne peut rien y changer, ni dans les entrées ni dans les titres.
+- **On ne saisit qu'en bas de la page** : une zone de saisie fait partie de la page du cahier, sous son texte. Elle montre **8 lignes** à la fois (au-delà, elle défile) et accepte un texte libre sur plusieurs lignes.
+- Un seul bouton, **« Ajouter l'entrée »**, sous la zone de saisie. Un message au-dessus dit où l'entrée sera rangée (« elle sera datée au moment de l'ajout et rangée sous « Lundi 23 novembre » »).
+- À l'ajout, l'entrée est **datée du moment de l'ajout** et rangée au bon niveau de titre du cahier : `## année`, `### mois`, `#### jour`, puis `- 09:42 - texte`. Un titre d'année, de mois ou de jour qui n'existe pas encore est créé. Les entrées restent classées de la plus ancienne (en haut) à la plus récente (en bas), comme un cahier papier. La zone de saisie se vide ensuite.
+- **Pas de correction** : aucune entrée ne se modifie, et il n'y a aucun bouton « Corriger ». Une erreur se rectifie par une nouvelle entrée.
 
-## 3. Remplace
+## 3. Ce qui disparaît
 
-La fenêtre « Ajouter au cahier » actuelle.
+- La fenêtre de saisie « Ajouter au cahier », sa liste déroulante de choix du cahier et son bouton « Ajouter ».
+- Le « + » en haut du cahier.
+- Les brouillons, les colonnes de brouillon et les boutons « Corriger » (pensés dans la version précédente de cette spécification).
+
+## 4. Points à confirmer avec l'utilisateur avant de coder
+
+- La commande « Ajouter au cahier » (palette, barre des menus) : proposition, elle ouvre le cahier (le choisit s'il y en a plusieurs) et place le curseur dans la zone de saisie.
+- L'outil de l'application pour Claude (« ajouter une entrée au cahier ») : proposition, il ne change pas ; seule sa partie « correction » disparaît avec la correction de l'interface.
