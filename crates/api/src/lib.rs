@@ -13,10 +13,10 @@ pub use dto::{
     ClaudeEventItem, ClaudeModelItem, ClaudeStatusItem, ContentTypeItem, DifferenceItem,
     DifferenceKind, EffortItem, EntryItem, ExcerptPartItem, ExportFile, ExportFormatItem,
     IndexOverviewItem, LinkingNoteItem, MeaningOverviewItem, MeaningProgressItem,
-    MeaningSearchItem, MeaningUseItem, MenuEntryItem, MenuRoleItem, ModelDownloadItem,
-    ModelOverviewItem, NoteContent, NoteListItem, NoteOrderItem, ProposalItem, SaveResult,
-    SavedNote, SearchResultItem, StandardItem, TagItem, TrashInfo, TrashedNoteItem,
-    TurnSettingsItem, VersionItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
+    MeaningSearchItem, MeaningUseItem, MenuEntryItem, MenuRoleItem, MindMapItem, MindNodeItem,
+    ModelDownloadItem, ModelOverviewItem, NoteContent, NoteListItem, NoteOrderItem, PlaceItem,
+    ProposalItem, SaveResult, SavedNote, SearchResultItem, StandardItem, TagItem, TrashInfo,
+    TrashedNoteItem, TurnSettingsItem, VersionItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
     WorkspaceNoteItem, WritingActionItem,
 };
 pub use error::ApiError;

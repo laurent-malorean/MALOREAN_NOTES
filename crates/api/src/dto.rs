@@ -6,6 +6,7 @@ use ts_rs::TS;
 mod claude;
 mod claude_load;
 mod meaning;
+mod mind_map;
 mod turn_settings;
 
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
@@ -13,6 +14,7 @@ pub use meaning::{
     MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,
     ModelOverviewItem,
 };
+pub use mind_map::{MindMapItem, MindNodeItem, PlaceItem};
 pub use turn_settings::{ClaudeModelItem, EffortItem, TurnSettingsItem};
 pub(crate) use turn_settings::{continued_conversation, turn_settings};
 
@@ -96,6 +98,8 @@ pub enum ContentTypeItem {
     Note,
     /// Un cahier de recherche.
     ResearchNotebook,
+    /// Une carte mentale.
+    MindMap,
     /// Une entrée d'un cahier de recherche.
     Entry,
 }
@@ -105,6 +109,7 @@ impl From<domain::ContentType> for ContentTypeItem {
         match content_type {
             domain::ContentType::Note => Self::Note,
             domain::ContentType::ResearchNotebook => Self::ResearchNotebook,
+            domain::ContentType::MindMap => Self::MindMap,
             domain::ContentType::Entry => Self::Entry,
         }
     }

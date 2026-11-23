@@ -24,6 +24,7 @@ pub mod export;
 pub mod history;
 pub mod meaning;
 pub mod menu;
+pub mod mind_map;
 pub mod research_notebook;
 pub mod workspaces;
 pub mod writing;
@@ -538,6 +539,9 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         history::compare_version,
         history::keep_version,
         history::restore_version,
+        mind_map::create_mind_map,
+        mind_map::read_mind_map,
+        mind_map::save_mind_map,
         research_notebook::create_research_notebook,
         research_notebook::add_entry,
         research_notebook::list_entries,
