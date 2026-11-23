@@ -1,0 +1,46 @@
+# Test de mutation de la seule crate `domain`, chaque nuit (doc/decisions/0050, doc/code.md « Temps de la CI »).
+# Même réglage que scripts/mutation-diff.sh : coupure des erreurs qui bouclent à 30 s, tests du seul domaine.
+# Un survivant fait échouer le travail : GitHub envoie alors un e-mail.
+name: mutation-domaine
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ci-mutation-github]
+    paths: ['.github/workflows/mutation-domaine.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - name: Installer Rust stable
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: actions/cache@v4.2.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/cargo-mutants
+            target
+          key: mutation-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}-cargo-mutants-27.1.0
+          restore-keys: mutation-${{ runner.os }}-
+      - name: Installer cargo-mutants
+        run: command -v cargo-mutants || cargo install --locked --version 27.1.0 cargo-mutants
+      - name: Mutation du domaine
+        run: cargo mutants --package domain --all-features --jobs 4 --timeout 30 --test-workspace=false -o out
+      - name: Joindre le bilan
+        if: always()
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: mutants-out
+          path: out/mutants.out
+          if-no-files-found: warn
