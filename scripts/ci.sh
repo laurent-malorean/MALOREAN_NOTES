@@ -20,6 +20,10 @@
 #                            qu'elle tourne ; ce qu'elle valide est l'état du code à son lancement
 #   scripts/ci.sh --verifier dit si le code est exactement celui de la dernière CI réussie (barrière ou complet)
 #   scripts/ci.sh --verdict  affiche le dernier verdict du test de mutation du diff (OK, survivantes, en cours)
+#   scripts/ci.sh --menage [--a-blanc]  ménage du dossier de compilation (scripts/ci-menage.sh) : retire le périmé
+#                            (plus d'un jour sans usage) au-delà de 20 Go ; --a-blanc liste sans rien effacer.
+#                            Lancé aussi à la fin de la barrière et de --complet, réussies ou non ; son échec
+#                            ne fait jamais échouer la CI (CI_SANS_MENAGE=1 : pas de ménage, pour les tests)
 # Un passage qui voit le code changer pendant qu'il tourne (sans --copie) échoue : son verdict ne vaudrait pas
 # pour ce qui serait commité. Rust et interface se contrôlent en parallèle ; les types partagés sont régénérés
 # dans un dossier à part puis comparés aux types du dépôt.
@@ -378,8 +382,9 @@ run_barrier() {
   local changed crates
   changed=$(changed_files)
   if printf '%s\n' "$changed" | grep -q '^scripts/'; then
-    step "Scripts de CI changés : scénarios de la barrière et de la voie documentation"
+    step "Scripts de CI changés : scénarios de la barrière, de la voie documentation et du ménage"
     scripts/test-ci-gate.sh
+    scripts/test-ci-menage.sh
   fi
   step "Dette de mutation : le dernier commit n'a-t-il rien laissé passer ?"
   printf '%s\n' "$changed" | scripts/ci-debt.sh check
@@ -404,19 +409,36 @@ docs_only_change() {
   { git diff HEAD --name-only; git ls-files --others --exclude-standard; } | scripts/ci-doc-only.sh
 }
 
+# Ménage du dossier de compilation à la sortie, réussie ou non (scripts/ci-menage.sh : seulement le périmé,
+# au-delà du seuil, jamais pendant qu'un autre travail tourne). Son échec ne change jamais le verdict.
+run_cleanup() {
+  [ -z "${CI_SANS_MENAGE:-}" ] || return 0
+  scripts/ci-menage.sh --discret || true
+}
+arm_cleanup() {
+  trap 'status=$?; rm -rf "$GENERATED_EXPORT"; run_cleanup; exit "$status"' EXIT
+}
+
 MODE=""
+MENAGE=0
+BLANC=0
 SNAPSHOT=0
 FORWARDED=()
 for argument in "$@"; do
   case "$argument" in
     --complet | --sans-mutation) MODE=$argument; FORWARDED+=("$argument") ;;
     --copie) SNAPSHOT=1 ;;
+    --menage) MENAGE=1 ;;
+    --a-blanc) BLANC=1 ;;
     --verifier) verify_validated_tree; exit 0 ;;
     --verdict) if [ -f tmp/mutation/encours ]; then printf '(test de mutation en cours sur %s)\n' "$(cat tmp/mutation/encours)"; fi
       scripts/ci-debt.sh verdict; exit 0 ;;
     *) fail "option inconnue : $argument" ;;
   esac
 done
+[ "$BLANC" -eq 0 ] || [ "$MENAGE" -eq 1 ] || fail "--a-blanc ne va qu'avec --menage"
+if [ "$MENAGE" -eq 1 ] && [ "$BLANC" -eq 1 ]; then exec scripts/ci-menage.sh --a-blanc; fi
+if [ "$MENAGE" -eq 1 ]; then exec scripts/ci-menage.sh; fi
 # Livraison : aucune dette de mutation ouverte (vérifié ici, hors copie, tmp/ n'y étant pas copié).
 if [ "$MODE" = --complet ] && [ -z "${CI_IN_SNAPSHOT:-}" ]; then scripts/ci-debt.sh check-strict; fi
 if [ "$SNAPSHOT" -eq 1 ] && [ -z "${CI_IN_SNAPSHOT:-}" ]; then run_in_snapshot ${FORWARDED[@]+"${FORWARDED[@]}"}; fi
@@ -436,6 +458,7 @@ if [ "$MODE" = "" ]; then
     printf '\n✓ Barrière de commit réussie (documentation seule)\n'
     exit 0
   fi
+  arm_cleanup
   run_barrier
   if [ -n "$STARTED_TREE" ]; then
     [ "$(tree_hash)" = "$STARTED_TREE" ] \
@@ -446,6 +469,7 @@ if [ "$MODE" = "" ]; then
   exit 0
 fi
 
+arm_cleanup
 if [ -f Cargo.toml ] && [ -f ui/package.json ]; then
   step "Rust et interface, en parallèle"
   run_both check_rust check_ui

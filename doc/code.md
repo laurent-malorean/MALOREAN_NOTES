@@ -229,6 +229,7 @@ disallowed-methods = [
 | Après chaque commit : crochet `post-commit` (`scripts/install-hooks.sh`, une fois) | test de mutation du diff du commit, en arrière-plan, sur une copie figée (Rust `cargo mutants --in-diff`, interface Stryker incrémental), score 100 % ; un seul travail à la fois ; verdict : `scripts/ci.sh --verdict` (`tmp/mutation/dernier`) *Vérifié par : `scripts/test-ci-gate.sh`.* |
 | Au besoin : `scripts/ci.sh --sans-mutation` | tous les contrôles du niveau 3 (couverture globale, parcours complets et ralentis) sans les tests de mutation *Vérifié par : lui-même.* |
 | Sur une copie figée : `scripts/ci.sh --copie [--complet \| --sans-mutation]` | les mêmes contrôles sur une copie du code rangée hors du dépôt (`~/Library/Caches/malorean-notes-ci`) : on peut continuer à modifier le code pendant qu'elle tourne ; elle valide l'état du code à son lancement *Vérifié par : lui-même.* |
+| Fin de chaque barrière et de `--complet` (réussie ou non) ; à part : `scripts/ci.sh --menage [--a-blanc]` | ménage du dossier de compilation de Cargo (`scripts/ci-menage.sh`, fiche 0048) : seulement au-delà de 20 Go, seulement le périmé, jamais pendant qu'un autre passage, une mutation ou un `cargo` tourne ; résumé d'une ligne (taille avant, après) ; son échec ne fait jamais échouer la CI ; `--a-blanc` liste sans rien effacer *Vérifié par : `scripts/test-ci-menage.sh`.* |
 | `scripts/ci.sh --verifier` | dit si le code est exactement celui de la dernière CI réussie (barrière ou complète ; empreinte gardée dans `.git/ci-validated-tree`) ; à lancer après `--copie` *Vérifié par : lui-même.* |
 | Avant de livrer : `scripts/ci.sh --complet` (niveau 3) | tout : couverture globale, parcours complets, test de mutation de tout le code, Rust et interface ; refusé si une dette de mutation est ouverte ; benchmarks si la lecture a changé ; build `release` signé et notarisé |
 
@@ -262,6 +263,15 @@ Ce qui réduit le temps (en vigueur) :
 - **Rust et interface se contrôlent en même temps**, types partagés régénérés dans un dossier à part (`TS_RS_EXPORT_DIR`), comparés fichier par fichier à ceux du dépôt pour les tests joués.
 - **Parcours « lecture ralentie »** seulement si `ui/` a changé (niveau 3).
 - **`--copie`**, **`--verifier`** : inchangés ; `--verifier` garde l'empreinte de la dernière CI réussie (barrière ou complète).
+
+Ménage du dossier de compilation (fiche 0048, 23/11) : le dossier de compilation pesait 40 Go (27 Go de `debug/build`, une centaine de variantes de chaque programme de test, 6,6 Go de `llvm-cov-target`, 4,1 Go de `debug/incremental`), le disque était plein à 98 %. La CI fait le ménage elle-même, sans jamais effacer tout (recompiler candle prend plusieurs minutes) :
+
+- **Périmé** : une variante de compilation (`build/<crate>/<empreinte>`, `deps`, compilation incrémentale, même chose sous `llvm-cov-target`, fichiers `.profraw`) dont aucun fichier n'a été lu ni modifié depuis plus d'un jour. Date d'accès **ou** de modification : Cargo lit les fichiers d'empreinte de ce qu'il réutilise (mesuré : date d'accès de la variante réutilisée à jour sur ce Mac, APFS), la date de modification seule ferait jeter chaque jour ce qui sert encore. Jamais retiré : la variante la plus récemment utilisée de chaque crate (ce que le dernier passage a utilisé).
+- **Seuil** : seulement au-delà de 20 Go (constante `SEUIL_GO` de `scripts/ci-menage.sh`). Dessous, rien, pas même un message dans la CI.
+- **Jamais en même temps qu'un autre travail** : un passage de la CI, la mutation du diff, un `cargo` ou un autre ménage en cours (contrôle des processus et verrou) fait sauter le ménage, avec une ligne qui dit pourquoi.
+- **Quand** : à la fin de la barrière de commit (hors documentation seule) et de `--complet`, réussies ou non ; silencieux hors le résumé d'une ligne ; son échec ne change jamais le verdict. À part : `scripts/ci.sh --menage`, et `--menage --a-blanc` qui liste ce qui serait retiré sans rien effacer.
+- **Garde-fous** : `CARGO_TARGET_DIR` respecté ; le dossier doit porter la marque de Cargo (`CACHEDIR.TAG`), ne pas être un lien, ni `/`, ni le dossier personnel, ni le dépôt ; tout effacement est vérifié sous ce dossier. Même règle d'âge pour les copies temporaires `$TMPDIR/cargo-mutants-*.tmp` et la copie figée de `--copie`.
+- **Mesure du 23/11** (dossier réel, à blanc, après le nettoyage à la main du matin) : 19,3 Go (`target`), 11,0 Go (`~/Library/Caches/malorean-notes-target`) et 7,2 Go (copie figée), toutes les variantes ayant moins d'un jour : le ménage ne retirerait rien aujourd'hui, et le seuil de 20 Go n'est pas atteint. Durée d'une passe de contrôle (1272 variantes) : 2,5 s.
 
 Ce qui n'a pas marché ou n'a pas été gardé :
 

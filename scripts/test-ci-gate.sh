@@ -4,7 +4,9 @@
 #   1. documentation seule : voie légère ; un fichier de plus qui n'est pas de la documentation : barrière normale ;
 #   2. dette ouverte : le commit est refusé, sauf s'il change un fichier cité ou un test de la même crate ;
 #      un commit de documentation seule passe ; la livraison (--complet) est refusée sans exception ;
-#   3. dette payée (verdict OK) : plus de refus ; --verdict relit le verdict.
+#   3. dette payée (verdict OK) : plus de refus ; --verdict relit le verdict ;
+#   4. ménage du dossier de compilation à la fin de la barrière, réussie ou refusée (faux dossier de compilation) ;
+#      sans cela (CI_SANS_MENAGE), la barrière ne touche jamais au dossier de compilation.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 readonly ROOT=$PWD
@@ -14,6 +16,7 @@ trap 'rm -rf -- "$work" "$log"' EXIT
 cp -R scripts "$work/scripts"
 printf '_SECRET\nCLAUDE.local.md\ntmp/\n' > "$work/.gitignore"
 cd "$work"
+export CI_SANS_MENAGE=1
 git init -q . && git add -A && git -c user.name=t -c user.email=t@t commit -qm init
 fail() { printf '✗ %s\n' "$1" >&2; exit 1; }
 gate() { scripts/ci.sh "$@" >"$log" 2>&1; }
@@ -52,4 +55,27 @@ printf 'RESULT: OK\nCOMMIT: def\n' > tmp/mutation/dernier
 echo "x" > autre.txt
 expect_pass "dette payée"
 scripts/ci.sh --verdict | grep -q 'RESULT: OK' || fail "--verdict doit afficher le verdict OK"
+
+# 4. ménage à la fin de la barrière
+T="$work/faux-target"
+mkdir -p "$T/debug/build/a/vieille/out" "$T/debug/build/a/neuve/out"
+printf 'Signature: 8a477f597d28d172789f06886806bc55\n' > "$T/CACHEDIR.TAG"
+echo x > "$T/debug/build/a/vieille/out/f"; echo x > "$T/debug/build/a/neuve/out/f"
+old=$(date -v-3d +%Y%m%d%H%M 2>/dev/null || date -d '3 days ago' +%Y%m%d%H%M)
+find "$T/debug/build/a/vieille" -exec touch -t "$old" {} +
+export CARGO_TARGET_DIR="$T" MENAGE_SEUIL_KO=1 MENAGE_NOMS_PROCESSUS="" MENAGE_MOTIF_PROCESSUS='motif-qui-ne-matche-rien-9z'
+echo "x" > autre.txt
+expect_pass "ménage désactivé : la barrière passe"
+[ -d "$T/debug/build/a/vieille" ] || fail "CI_SANS_MENAGE : le dossier de compilation ne doit pas être touché"
+unset CI_SANS_MENAGE
+expect_pass "barrière réussie avec ménage"
+[ ! -d "$T/debug/build/a/vieille" ] || fail "la barrière réussie doit faire le ménage"
+[ -d "$T/debug/build/a/neuve" ] || fail "le ménage ne doit pas retirer le récent"
+grep -q '^ménage : dossier de compilation' "$log" || { cat "$log"; fail "le résumé du ménage manque"; }
+mkdir -p "$T/debug/build/b/vieille/out" "$T/debug/build/b/neuve/out"
+echo x > "$T/debug/build/b/vieille/out/f"; echo x > "$T/debug/build/b/neuve/out/f"
+find "$T/debug/build/b/vieille" -exec touch -t "$old" {} +
+printf 'RESULT: SURVIVORS\nCOMMIT: abc\nCITED: crates/a/src/x.rs\n' > tmp/mutation/dernier
+expect_fail "barrière refusée avec ménage"
+[ ! -d "$T/debug/build/b/vieille" ] || fail "la barrière refusée doit aussi faire le ménage"
 printf '✓ ci-gate : tous les scénarios passent\n'

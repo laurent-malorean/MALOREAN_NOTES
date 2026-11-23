@@ -26,7 +26,7 @@ ui/                   interface TypeScript (Vite)
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
 scripts/ci.sh         CI locale à trois niveaux : barrière de commit, `--complet` avant livraison, `--verdict` (fiche 0047)
-scripts/mutation-diff.sh   test de mutation du diff d'un commit, en arrière-plan (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; scripts/ci-debt.sh : dette de mutation ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-doc-only.sh
+scripts/mutation-diff.sh   test de mutation du diff d'un commit, en arrière-plan (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; scripts/ci-debt.sh : dette de mutation ; ci-doc-only.sh : documentation seule ; scripts/ci-menage.sh : ménage du dossier de compilation (seulement le périmé, au-delà de 20 Go) ; scénarios : test-ci-gate.sh, test-ci-doc-only.sh, test-ci-menage.sh
 scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
 ```
 
