@@ -16,6 +16,8 @@ export interface MindMapPaneOptions {
   readonly backend: MindMapBackend;
   readonly openLink: (title: string, inNewTab: boolean) => void;
   readonly error: (error: unknown) => void;
+  /** Un message d'information. */
+  readonly notice: (message: string) => void;
   /** L'adresse chargeable d'une image écrite dans la note `note`. */
   readonly resolveImage: (src: string, note: string | null) => string;
 }
@@ -23,6 +25,8 @@ export interface MindMapPaneOptions {
 export interface MindMapPane {
   /** Montre la carte si la note `path`, de texte `content`, en est une ; l'éditeur sinon. */
   sync(path: string | null, content: string): Promise<void>;
+  /** Choisit le nœud de ce chemin (`1.0.2`) de la carte affichée. */
+  reveal(node: string): void;
   /** La carte est affichée. */
   shown(): boolean;
   destroy(): void;
@@ -59,6 +63,10 @@ class ColumnMindMap implements MindMapPane {
     private readonly options: MindMapPaneOptions,
   ) {}
 
+  reveal(node: string): void {
+    this.view?.reveal(node.split(".").map(Number));
+  }
+
   shown(): boolean {
     return this.view !== null;
   }
@@ -79,10 +87,12 @@ class ColumnMindMap implements MindMapPane {
 
   private open(path: string): void {
     this.close();
-    const { backend, openLink, error, resolveImage } = this.options;
+    const { backend, openLink, error, notice, resolveImage } = this.options;
     this.path = path;
     this.view = createMindMapView({
       save: (map) => backend.saveMindMap(path, map).then(() => undefined),
+      read: () => backend.readMindMap(path),
+      notice,
       openWikiLink: openLink,
       openLink: (target) => void backend.openLinkTarget(path, target).catch(error),
       error,

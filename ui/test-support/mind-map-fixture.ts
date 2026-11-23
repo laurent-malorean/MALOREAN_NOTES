@@ -29,6 +29,9 @@ export interface Mounted {
   wiki: [string, boolean][];
   links: string[];
   stored: string[][];
+  /** Le fichier : la carte que la lecture rend et que l'enregistrement remplace. */
+  disk: { map: MindMapItem };
+  notices: string[];
 }
 
 export const nodes = () => [...document.querySelectorAll<HTMLElement>(".mind-map-node[data-path]")];
@@ -66,8 +69,15 @@ export async function mount(map: MindMapItem = sample(), folded: string[] = []) 
   const wiki: [string, boolean][] = [];
   const links: string[] = [];
   const stored: string[][] = [];
+  const notices: string[] = [];
+  const disk = { map: structuredClone(map) };
   const view = createMindMapView({
-    save: async (m) => void saved.push(m),
+    save: async (m) => {
+      saved.push(m);
+      disk.map = structuredClone(m);
+    },
+    read: async () => structuredClone(disk.map),
+    notice: (message) => void notices.push(message),
     openWikiLink: (title, inNewTab) => wiki.push([title, inNewTab]),
     openLink: (target) => links.push(target),
     error: (e) => errors.push(e),
@@ -79,5 +89,5 @@ export async function mount(map: MindMapItem = sample(), folded: string[] = []) 
   view.setMap(map);
   view.show();
   if (map.roots.length > 0) await settle();
-  return { view, saved, errors, wiki, links, stored };
+  return { view, saved, errors, wiki, links, stored, disk, notices };
 }

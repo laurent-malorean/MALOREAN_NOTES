@@ -109,7 +109,7 @@ function resultOf(
   const result: SearchResultItem = {
     ...{ path, title: /^# (.+)$/m.exec(note.content)?.[1]?.trim() ?? "Sans titre" },
     ...{ folder: helpers.folderOf(path), contentType: "note", container: null },
-    ...{ containerTitle: null, modified: note.modified },
+    ...{ containerTitle: null, node: null, modified: note.modified },
     excerpt: [{ text: segment, matched: false }],
   };
   return result;

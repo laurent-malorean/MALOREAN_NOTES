@@ -26,6 +26,8 @@ pub struct SearchResult {
     pub container: Option<NotePath>,
     /// Le titre affiché de son conteneur, s'il en a un.
     pub container_title: Option<String>,
+    /// Le chemin du nœud d'une carte mentale qu'elle désigne (`1.0.2`) ; aucun pour le reste.
+    pub node: Option<String>,
     /// La date de dernière modification.
     pub modified: Modified,
     /// Le passage autour du premier mot trouvé.
@@ -46,6 +48,7 @@ impl SearchResult {
             content_type: note.content_type(),
             container_title,
             container: note.container().cloned(),
+            node: note.node().map(str::to_owned),
             modified: note.modified(),
         }
     }

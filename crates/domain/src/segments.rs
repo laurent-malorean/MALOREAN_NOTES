@@ -12,6 +12,8 @@ pub struct Segment {
     note_title: String,
     section: Option<String>,
     text: String,
+    /// Le chemin du nœud d'une carte mentale que ce segment dit (`1.0.2`) ; aucun pour une note.
+    node: Option<String>,
 }
 
 impl Segment {
@@ -23,6 +25,24 @@ impl Segment {
             Some(section) => format!("{} > {section}", self.note_title),
             None => self.note_title.clone(),
         }
+    }
+
+    /// Le segment du nœud `node` (de titre `title`) de la carte mentale titrée `map_title` : son
+    /// titre complet est celui de la carte puis celui du nœud, son texte est le détail du nœud.
+    #[must_use]
+    pub fn of_node(map_title: &str, title: &str, detail: &str, node: String) -> Self {
+        Self {
+            note_title: map_title.to_owned(),
+            section: Some(title.to_owned()),
+            text: detail.trim().to_owned(),
+            node: Some(node),
+        }
+    }
+
+    /// Le chemin du nœud de carte mentale que ce segment dit, s'il en dit un.
+    #[must_use]
+    pub fn node(&self) -> Option<&str> {
+        self.node.as_deref()
     }
 
     /// Le texte du segment, sans espaces autour.
@@ -50,6 +70,7 @@ pub fn segments(note_title: &str, content: &str) -> Vec<Segment> {
                 note_title: note_title.to_owned(),
                 section: section.clone(),
                 text,
+                node: None,
             })
         })
         .collect()
@@ -199,20 +220,26 @@ impl Segment {
         let bytes = heading
             .bytes()
             .chain([KEY_SEPARATOR])
-            .chain(self.text.bytes());
+            .chain(self.text.bytes())
+            .chain(
+                self.node
+                    .iter()
+                    .flat_map(|node| std::iter::once(KEY_SEPARATOR).chain(node.bytes())),
+            );
         SegmentKey(bytes.fold(FNV_OFFSET, |hash, byte| {
             (hash ^ u64::from(byte)).wrapping_mul(FNV_PRIME)
         }))
     }
 
-    /// Le segment lu dans l'index : son titre complet et son texte, tels qu'ils y ont été gardés.
+    /// Le segment lu dans l'index : son titre complet, son texte et son nœud, tels qu'ils y ont été gardés.
     /// Il se comporte comme l'original (même titre complet, même texte, même clé).
     #[must_use]
-    pub fn from_stored(heading: &str, text: &str) -> Self {
+    pub fn from_stored(heading: &str, text: &str, node: Option<&str>) -> Self {
         Self {
             note_title: heading.to_owned(),
             section: None,
             text: text.to_owned(),
+            node: node.map(str::to_owned),
         }
     }
 }
@@ -472,7 +499,7 @@ mod tests {
             "Ma note > Dessert\n\nTarte aux pommes"
         );
         assert_eq!(
-            Segment::from_stored("Ma note > Dessert", "Tarte").embedding_text(),
+            Segment::from_stored("Ma note > Dessert", "Tarte", None).embedding_text(),
             "Ma note > Dessert\n\nTarte"
         );
     }
@@ -480,20 +507,20 @@ mod tests {
     #[test]
     fn the_separator_keeps_the_heading_and_the_text_apart() {
         assert_eq!(
-            Segment::from_stored("", "").key().value(),
+            Segment::from_stored("", "", None).key().value(),
             0xaf63_bd4c_8601_b7df
         );
         assert_eq!(
-            Segment::from_stored("a", "").key().value(),
+            Segment::from_stored("a", "", None).key().value(),
             0x089b_e207_b544_f1e4
         );
         assert_eq!(
-            Segment::from_stored("", "a").key().value(),
+            Segment::from_stored("", "a", None).key().value(),
             0x0832_6707_b4eb_37da
         );
         assert_ne!(
-            Segment::from_stored("a", "b").key(),
-            Segment::from_stored("", "ab").key()
+            Segment::from_stored("a", "b", None).key(),
+            Segment::from_stored("", "ab", None).key()
         );
     }
 
@@ -509,7 +536,7 @@ mod tests {
     #[test]
     fn a_stored_segment_behaves_like_the_original() {
         for segment in segments("Ma note", "intro\n\n## Suite > et fin\n\ntexte") {
-            let stored = Segment::from_stored(&segment.heading(), segment.text());
+            let stored = Segment::from_stored(&segment.heading(), segment.text(), segment.node());
             assert_eq!(stored.heading(), segment.heading());
             assert_eq!(stored.text(), segment.text());
             assert_eq!(stored.key(), segment.key());

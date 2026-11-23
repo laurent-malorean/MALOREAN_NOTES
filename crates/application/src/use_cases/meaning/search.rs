@@ -95,7 +95,10 @@ impl<'a> SearchByMeaning<'a> {
                     .container()
                     .and_then(|c| notes.get(c))
                     .map(|c| c.title().to_owned());
-                Some(SearchResult::of(note, excerpt, container_title))
+                let mut result = SearchResult::of(note, excerpt, container_title);
+                // Une carte mentale est trouvée par un de ses nœuds : c'est lui qu'on ouvrira.
+                result.node = segment.node().map(str::to_owned);
+                Some(result)
             })
             .take(limit)
             .collect())
@@ -175,6 +178,26 @@ mod tests {
             found[0].excerpt.parts(),
             [ExcerptPart::Text("Deux — tarte tarte".to_owned())]
         );
+    }
+
+    #[test]
+    fn a_mind_map_is_found_by_its_best_node_which_is_the_one_to_open() {
+        let fixture = Fixture::computed(&[
+            (
+                "carte.md",
+                "---\ntype: carte-mentale\n---\n# Carte\n\n- Pain\n  - Levain\n    > tarte tarte\n- Eau\n",
+            ),
+            ("b.md", "# B\n\nlait"),
+        ]);
+        let found = search(&fixture).execute("tarte", 10).unwrap();
+        assert_eq!(found[0].title, "Carte");
+        assert_eq!(found[0].content_type, ContentType::MindMap);
+        assert_eq!(found[0].node.as_deref(), Some("0.0"));
+        assert_eq!(
+            found[0].excerpt.parts(),
+            [ExcerptPart::Text("Levain — tarte tarte".to_owned())]
+        );
+        assert_eq!(search(&fixture).execute("lait", 10).unwrap()[0].node, None);
     }
 
     #[test]

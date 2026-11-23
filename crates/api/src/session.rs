@@ -395,6 +395,7 @@ fn search_result_item(result: SearchResult) -> SearchResultItem {
         content_type: result.content_type.into(),
         container: result.container.as_ref().map(NotePath::to_path),
         container_title: result.container_title,
+        node: result.node,
         modified: result.modified.0,
         excerpt,
     }
@@ -558,6 +559,7 @@ mod tests {
                 content_type: ContentTypeItem::Note,
                 container: None,
                 container_title: None,
+                node: None,
                 modified: results[0].modified,
                 excerpt: vec![
                     ExcerptPartItem {

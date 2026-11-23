@@ -19,6 +19,7 @@ function setup(searching: string | null = null) {
   };
   columns.panes.set(0, {
     editor: { reveal: (query: string) => void calls.push(`montrer ${query}`) },
+    revealNode: (node: string) => void calls.push(`nœud ${node}`),
   } as unknown as Pane);
   const screen = {
     get: () => ({ kind: "workspace", search: searching && { query: searching, results: null } }),
@@ -70,6 +71,14 @@ function setup(searching: string | null = null) {
 }
 
 describe("demandes de l'écran", () => {
+  it("une carte mentale trouvée par un nœud s'ouvre sur lui, sans chercher le terme dans le texte", async () => {
+    const t = setup("pain");
+    t.actions.open("carte.md", "0.1");
+    await Promise.all(t.ran);
+    expect(t.calls).toContain("nœud 0.1");
+    expect(t.calls).not.toContain("montrer pain");
+  });
+
   it("chaque demande des dossiers, des notes, de Récentes et de la corbeille va au module de son domaine", async () => {
     const t = setup();
     t.actions.select("projets");

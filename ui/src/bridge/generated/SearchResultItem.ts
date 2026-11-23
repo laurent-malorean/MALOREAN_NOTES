@@ -32,6 +32,10 @@ container: string | null,
  */
 containerTitle: string | null, 
 /**
+ * Le chemin du nœud d'une carte mentale qu'elle désigne (`1.0.2`) ; `null` sinon.
+ */
+node: string | null, 
+/**
  * Millisecondes depuis le 1er janvier 1970.
  */
 modified: number, 

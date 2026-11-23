@@ -53,13 +53,14 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     run,
   } = deps;
   /** Ouvre la note ; trouvée par une recherche, elle s'ouvre sur le terme cherché. */
-  const openAtSearch = async (path: string) => {
+  const openAtSearch = async (path: string, node: string | null = null) => {
     await columns.openNote(path);
+    if (node !== null) return columns.activePane().revealNode(node);
     const query = searchedQuery(screen.get());
     if (query !== null) columns.activePane().editor.reveal(query);
   };
   return {
-    open: (path) => run(openAtSearch(path)),
+    open: (path, node) => run(openAtSearch(path, node)),
     select: (folder) => run(folders.select(folder)),
     create: (parent, name) => run(folders.create(parent, name)),
     rename: (path, name) => run(folders.rename(path, name)),

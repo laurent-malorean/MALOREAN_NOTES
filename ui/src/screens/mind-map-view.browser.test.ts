@@ -192,7 +192,7 @@ describe("carte mentale : modifier", () => {
     expect(m.saved).toHaveLength(0);
     input().value = "Bêta";
     key(input(), "Enter");
-    expect(m.saved).toHaveLength(1);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
     expect(m.saved[0]?.roots[1]?.children[0]?.title).toBe("Bêta");
     expect(m.view.selected()).toEqual([1, 0]);
     await vi.waitFor(() => expect(titles()).toContain("Bêta"));
@@ -208,6 +208,7 @@ describe("carte mentale : modifier", () => {
     key(input(), "Enter", { shiftKey: true });
     expect(m.saved).toHaveLength(0);
     key(input(), "Enter");
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
     expect(m.saved[0]?.roots[1]).toMatchObject({ title: "Agenda", detail: ["un", "", "deux"] });
   });
 
@@ -282,7 +283,9 @@ describe("carte mentale : modifier", () => {
     await vi.waitFor(() => expect(input()).not.toBeNull());
     input().value = "Idée";
     key(input(), "Enter");
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
     expect(m.saved[0]?.roots[0]?.title).toBe("Idée");
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
     expect(m.saved[0]?.places[0]).toEqual({ x: 100 - 450, y: 80 - 300 });
     await vi.waitFor(() => expect(titles()).toEqual(["Idée"]));
     find("Idée").dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
@@ -294,14 +297,14 @@ describe("carte mentale : modifier", () => {
     const m = await mount();
     click(find("Grands comptes"));
     key(m.view.element, "Delete");
-    expect(m.saved).toHaveLength(1);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
     expect(m.view.selected()).toEqual([0, 0]);
     click(find("Artisans"));
     key(m.view.element, "Backspace");
     await vi.waitFor(() => expect(document.querySelector(".mind-map-confirm")).not.toBeNull());
     expect(document.querySelector(".mind-map-confirm")?.textContent).toContain("son descendant");
     (document.querySelector(".mind-map-confirm button[aria-label=Annuler]") as HTMLElement).click();
-    expect(m.saved).toHaveLength(1);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
     key(m.view.element, "Delete");
     await vi.waitFor(() => expect(document.querySelector(".mind-map-confirm")).not.toBeNull());
     (
@@ -340,6 +343,8 @@ describe("carte mentale : modifier", () => {
         if (failing) throw new Error("disque plein");
         saved.push(m);
       },
+      read: async () => sample(),
+      notice: () => {},
       openWikiLink: () => {},
       openLink: () => {},
       error: (e) => errors.push(e),
@@ -465,5 +470,86 @@ describe("carte mentale : branches pliées", () => {
     await vi.waitFor(() => expect(titles()).toHaveLength(5));
     expect(m.view.selected()).toEqual([0, 0, 0]);
     expect(m.stored.at(-1)).toEqual([]);
+  });
+});
+
+describe("carte mentale : le fichier a changé ailleurs pendant un changement", () => {
+  const changeElsewhere = (m: Awaited<ReturnType<typeof mount>>) => {
+    const other = structuredClone(m.disk.map);
+    other.roots.push(node("Ajouté ailleurs"));
+    other.places.push({ x: 0, y: 600 });
+    m.disk.map = other;
+  };
+
+  it("refait le changement sur la nouvelle version, sans rien perdre", async () => {
+    const m = await mount();
+    changeElsewhere(m);
+    click(find("Grands comptes"));
+    key(m.view.element, "Delete");
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    expect(m.saved[0]?.roots.map((r) => r.title)).toEqual([
+      "Clients",
+      "Calendrier",
+      "Ajouté ailleurs",
+    ]);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    expect(m.saved[0]?.roots[0]?.children.map((c) => c.title)).toEqual(["Artisans"]);
+    expect(m.notices).toEqual([]);
+    await vi.waitFor(() => expect(titles()).toContain("Ajouté ailleurs"));
+  });
+
+  it("abandonne le changement dont le nœud a disparu, recharge la carte et le dit", async () => {
+    const m = await mount();
+    const other = structuredClone(m.disk.map);
+    other.roots.pop();
+    other.places.pop();
+    m.disk.map = other;
+    click(find("Calendrier"));
+    key(m.view.element, "F2");
+    await vi.waitFor(() => expect(input()).not.toBeNull());
+    input().value = "Agenda";
+    key(input(), "Enter");
+    await vi.waitFor(() => expect(m.notices).toEqual(["La carte est rechargée."]));
+    expect(m.saved).toHaveLength(0);
+    await vi.waitFor(() => expect(titles()).not.toContain("Agenda"));
+    expect(titles()).not.toContain("Calendrier");
+  });
+
+  it("un ajout dont le parent a disparu devient un nœud racine", async () => {
+    const m = await mount();
+    const other = structuredClone(m.disk.map);
+    other.roots[0] = node("Clients");
+    m.disk.map = other;
+    click(find("Artisans"));
+    key(m.view.element, "Tab");
+    await vi.waitFor(() => expect(input()).not.toBeNull());
+    input().value = "Neuf";
+    key(input(), "Enter");
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    expect(m.saved[0]?.roots.map((r) => r.title)).toEqual(["Clients", "Calendrier", "Neuf"]);
+  });
+
+  it("annuler après un changement venu d'ailleurs n'est pas refait : la carte est rechargée", async () => {
+    const m = await mount();
+    click(find("Grands comptes"));
+    key(m.view.element, "Delete");
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    changeElsewhere(m);
+    key(m.view.element, "z", { metaKey: true });
+    await vi.waitFor(() => expect(m.notices).toEqual(["La carte est rechargée."]));
+  });
+
+  it("un changement venu d'ailleurs pendant un enregistrement est montré ensuite", async () => {
+    const m = await mount();
+    click(find("Grands comptes"));
+    key(m.view.element, "Delete");
+    m.view.setMap({ ...sample(), roots: [node("Étranger")], places: [{ x: 0, y: 0 }] });
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    const other = structuredClone(m.disk.map);
+    other.roots.push(node("Plus tard"));
+    other.places.push({ x: 0, y: 700 });
+    m.disk.map = other;
+    m.view.setMap(sample());
+    await vi.waitFor(() => expect(titles()).toBeDefined());
   });
 });

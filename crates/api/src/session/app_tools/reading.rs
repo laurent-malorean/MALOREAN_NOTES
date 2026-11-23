@@ -22,6 +22,10 @@ struct FoundNote {
     /// Le passage autour des mots cherchés, s'il y en avait.
     #[serde(skip_serializing_if = "Option::is_none")]
     excerpt: Option<String>,
+    /// Pour un nœud d'une carte mentale : son chemin dans la carte (`1.0.2`) ; `path` est alors le
+    /// fichier de la carte.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    node: Option<String>,
 }
 
 /// Un modèle de note, par son nom (son titre).
@@ -42,7 +46,7 @@ fn content_types(arguments: &Value) -> Result<Vec<ContentType>, String> {
                 .ok_or_else(|| {
                     format!(
                         "type de contenu inconnu : « {name} » ; ceux d'une note : « note », \
-                         « cahier-de-recherche »"
+                         « cahier-de-recherche », « carte-mentale »"
                     )
                 })
         },
@@ -58,6 +62,18 @@ fn excerpt_text(parts: &[ExcerptPart]) -> String {
         .collect()
 }
 
+/// Les notes qui portent l'étiquette demandée, s'il y en a une.
+fn tagged_paths(
+    index: &dyn application::NoteIndex,
+    arguments: &Value,
+) -> Result<Option<HashSet<NotePath>>, application::AppError> {
+    let Some(tag) = optional(arguments, "tag") else {
+        return Ok(None);
+    };
+    let notes = ListTaggedNotes::new(index).execute(tag, NoteOrder::Modified)?;
+    Ok(Some(notes.iter().map(|note| note.path().clone()).collect()))
+}
+
 impl Session {
     /// Les notes qui contiennent les mots cherchés, portent l'étiquette et sont dans le dossier
     /// demandés, parmi les types de contenu demandés ; les plus récentes d'abord.
@@ -69,17 +85,7 @@ impl Session {
             .transpose()
             .map_err(|_| "dossier invalide".to_owned())?;
         let unavailable = |error: application::AppError| crate::ApiError::from(error).message;
-        let tagged: Option<HashSet<NotePath>> = match optional(arguments, "tag") {
-            Some(tag) => Some(
-                ListTaggedNotes::new(&*index)
-                    .execute(tag, NoteOrder::Modified)
-                    .map_err(unavailable)?
-                    .iter()
-                    .map(|note| note.path().clone())
-                    .collect(),
-            ),
-            None => None,
-        };
+        let tagged = tagged_paths(&*index, arguments).map_err(unavailable)?;
         let excerpts: Option<HashMap<NotePath, String>> =
             match optional(arguments, "query").and_then(SearchQuery::parse) {
                 Some(query) => Some(
@@ -118,9 +124,46 @@ impl Session {
                 excerpt: excerpts
                     .as_ref()
                     .and_then(|found| found.get(note.path()).cloned()),
+                node: None,
             })
             .collect();
+        let mut found = found;
+        found.extend(self.found_nodes(arguments, &*index, folder.as_ref(), tagged.as_ref())?);
+        found.truncate(MAX_RESULTS);
         written(&found)
+    }
+
+    /// Les nœuds des cartes mentales qui contiennent les mots cherchés, quand aucun type de
+    /// contenu n'est demandé : le chemin du fichier de leur carte et leur chemin de nœud
+    /// (fiche 0050).
+    fn found_nodes(
+        &self,
+        arguments: &Value,
+        index: &dyn application::NoteIndex,
+        folder: Option<&Folder>,
+        tagged: Option<&HashSet<NotePath>>,
+    ) -> Result<Vec<FoundNote>, String> {
+        let query = optional(arguments, "query").and_then(SearchQuery::parse);
+        let (Some(query), None) = (query, optional(arguments, "content_type")) else {
+            return Ok(Vec::new());
+        };
+        let nodes = SearchNotes::new(index)
+            .among(&[ContentType::Node])
+            .execute(&query, NoteOrder::Modified)
+            .map_err(|error| crate::ApiError::from(error).message)?;
+        Ok(nodes
+            .into_iter()
+            .filter(|node| folder.is_none_or(|folder| node.path.folder().is_within(folder)))
+            .filter(|node| tagged.is_none_or(|paths| paths.contains(&node.path)))
+            .map(|node| FoundNote {
+                folder: node.path.folder().to_path(),
+                path: node.path.to_path(),
+                title: node.title,
+                tags: Vec::new(),
+                excerpt: Some(excerpt_text(node.excerpt.parts())),
+                node: node.node,
+            })
+            .collect())
     }
 
     /// Les noms des modèles de note : les notes directement dans le dossier des modèles du tour.

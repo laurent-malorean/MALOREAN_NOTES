@@ -7,17 +7,21 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use application::{IndexOpener, IndexedNote, NoteIndex, NoteStamp, StoreError, WorkspaceLocation};
-use domain::research_notebook::{entry_summary, indexed_entries};
+use domain::mind_map::searchable_text;
 use domain::search::{SearchQuery, folded};
 use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, ToSql, params, params_from_iter};
+
+mod entries;
+mod nodes;
 
 /// Le format de la base : à changer à chaque changement du schéma ; un index d'un autre format
 /// est reconstruit. 2 : le type de contenu et le conteneur de chaque note (fiche 0034). 3 : le
 /// type des notes se nomme « note », et non plus « page » (fiche 0037). 4 : les cahiers de
 /// recherche et leurs entrées (fiche 0041). 6 : les segments des notes et leurs vecteurs de sens
-/// (fiche 0044). 7 : les cartes mentales, nouveau type de contenu (fiche 0050).
-pub const FORMAT_VERSION: i32 = 7;
+/// (fiche 0044). 7 : les cartes mentales, nouveau type de contenu (fiche 0050). 8 : leurs nœuds,
+/// cherchés à part, et le nœud de chaque segment.
+pub const FORMAT_VERSION: i32 = 8;
 const FILE_PREFIX: &str = "index-";
 const FILE_SUFFIX: &str = ".sqlite";
 /// Séparateur des étiquettes d'une note dans sa colonne : une étiquette tient sur une ligne.
@@ -25,7 +29,7 @@ const TAG_SEPARATOR: char = '\n';
 /// Les trigrammes de la recherche plein texte ne trouvent que les mots d'au moins 3 caractères.
 const TRIGRAM: usize = 3;
 /// Les tables du schéma, toutes présentes dans une base utilisable.
-const EXPECTED_TABLES: i64 = 7;
+const EXPECTED_TABLES: i64 = 9;
 
 const SETTINGS: &str = "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; \
                         PRAGMA foreign_keys = ON;";
@@ -64,13 +68,23 @@ CREATE TABLE entries (
 );
 CREATE INDEX entries_by_note ON entries (note);
 CREATE VIRTUAL TABLE entries_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
+CREATE TABLE nodes (
+    id INTEGER PRIMARY KEY,
+    note INTEGER NOT NULL REFERENCES notes (id) ON DELETE CASCADE,
+    path TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL
+);
+CREATE INDEX nodes_by_note ON nodes (note);
+CREATE VIRTUAL TABLE nodes_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
 CREATE TABLE segments (
     id INTEGER PRIMARY KEY,
     note TEXT NOT NULL,
     position INTEGER NOT NULL,
     heading TEXT NOT NULL,
     text TEXT NOT NULL,
-    key INTEGER NOT NULL
+    key INTEGER NOT NULL,
+    node TEXT
 );
 CREATE INDEX segments_by_note ON segments (note, position);
 CREATE TABLE segment_vectors (
@@ -200,7 +214,7 @@ fn usable(file: &Path) -> Option<Connection> {
     let tables: i64 = connection
         .query_row(
             "SELECT count(*) FROM sqlite_master WHERE name IN ('notes', 'note_tags', 'notes_text', \
-             'entries', 'entries_text', 'segments', 'segment_vectors')",
+             'entries', 'entries_text', 'nodes', 'nodes_text', 'segments', 'segment_vectors')",
             [],
             |row| row.get(0),
         )
@@ -322,35 +336,18 @@ impl NoteIndex for SqliteIndex {
             })?;
             rows.collect::<rusqlite::Result<Vec<_>>>()
         })?;
+        for (note, text) in &mut found {
+            if note.content_type() == ContentType::MindMap {
+                *text = searchable_text(note);
+            }
+        }
         if types.contains(&ContentType::Entry) {
             found.extend(self.found_entries(query)?);
         }
+        if types.contains(&ContentType::Node) {
+            found.extend(self.found_nodes(query)?);
+        }
         Ok(found)
-    }
-}
-
-impl SqliteIndex {
-    /// Les entrées des cahiers de recherche qui contiennent tous les mots de `query`, chacune
-    /// avec son texte, dans l'ordre où elles ont été gardées.
-    fn found_entries(&self, query: &SearchQuery) -> Result<Vec<(NoteSummary, String)>, StoreError> {
-        let (filter, values) = search_filter(query, "entries_text");
-        self.run(|connection| {
-            let sql = format!(
-                "SELECT n.path, e.title, n.modified, e.content FROM entries_text \
-                 JOIN entries AS e ON e.id = entries_text.rowid JOIN notes AS n ON n.id = e.note \
-                 WHERE {filter} ORDER BY e.id"
-            );
-            let mut statement = connection.prepare(&sql)?;
-            let rows = statement.query_map(params_from_iter(values), |row| {
-                let notebook = note_path(row, 0)?;
-                let modified = Modified(unsigned(row, 2)?);
-                Ok((
-                    entry_summary(&notebook, row.get(1)?, modified),
-                    row.get::<_, String>(3)?,
-                ))
-            })?;
-            rows.collect()
-        })
     }
 }
 
@@ -392,6 +389,10 @@ fn forget(connection: &Connection, path: &NotePath) -> rusqlite::Result<()> {
             "DELETE FROM entries_text WHERE rowid IN (SELECT id FROM entries WHERE note = ?1)",
             [id],
         )?;
+        connection.execute(
+            "DELETE FROM nodes_text WHERE rowid IN (SELECT id FROM nodes WHERE note = ?1)",
+            [id],
+        )?;
         connection.execute("DELETE FROM notes_text WHERE rowid = ?1", [id])?;
         connection.execute("DELETE FROM notes WHERE id = ?1", [id])?;
     }
@@ -422,7 +423,7 @@ fn keep(connection: &Connection, note: &IndexedNote) -> rusqlite::Result<()> {
     let id = connection.last_insert_rowid();
     connection.execute(
         "INSERT INTO notes_text (rowid, folded) VALUES (?1, ?2)",
-        params![id, folded(&note.content)],
+        params![id, folded(&nodes::searched_text(&summary, &note.content))],
     )?;
     for tag in summary.tags() {
         connection.execute(
@@ -430,16 +431,8 @@ fn keep(connection: &Connection, note: &IndexedNote) -> rusqlite::Result<()> {
             params![id, tag],
         )?;
     }
-    for (entry, text) in indexed_entries(&summary, &note.content) {
-        connection.execute(
-            "INSERT INTO entries (note, title, content) VALUES (?1, ?2, ?3)",
-            params![id, entry.title(), text],
-        )?;
-        connection.execute(
-            "INSERT INTO entries_text (rowid, folded) VALUES (?1, ?2)",
-            params![connection.last_insert_rowid(), folded(&text)],
-        )?;
-    }
+    entries::keep_entries(connection, id, &summary, &note.content)?;
+    nodes::keep_nodes(connection, id, &summary, &note.content)?;
     Ok(())
 }
 

@@ -285,6 +285,29 @@ fn add_entry() -> Described {
     )
 }
 
+fn create_mind_map() -> Described {
+    (
+        "Crée une carte mentale (une note dont l'en-tête porte `type: carte-mentale`) selon les \
+         règles de MALOREAN Notes : titre `# title` en tête, nom du fichier tiré du titre (sans \
+         écraser une autre note), dans `folder` (la racine par défaut ; créé avec ses parents \
+         s'il n'existe pas). `content`, facultatif, est la liste de départ : une puce `- ` par \
+         nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour son détail, \
+         ` <!-- couleur: rouge -->` au bout d'une puce pour sa couleur (rouge, orange, jaune, \
+         vert, turquoise, bleu, violet, rose, marron, ardoise). Rend son chemin. Ensuite, la \
+         carte se lit et s'écrit avec vos outils de fichiers : n'écrivez dans la liste que des \
+         puces et des lignes de détail, et ne touchez jamais à la propriété `racines` de \
+         l'en-tête (elle est tenue par l'application).",
+        input(
+            json!({
+                "title": text("Le titre de la carte."),
+                "folder": folder(),
+                "content": text("La liste à puces de départ ; une carte vide si absent."),
+            }),
+            &["title"],
+        ),
+    )
+}
+
 fn viewed_note() -> Described {
     (
         "Ce que l'utilisateur regarde dans MALOREAN Notes : la note ouverte dans la colonne \
@@ -326,6 +349,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::UnpinNote => unpin_note(),
         AppTool::AddAttachment => add_attachment(),
         AppTool::AddEntry => add_entry(),
+        AppTool::CreateMindMap => create_mind_map(),
         AppTool::ViewedNote => viewed_note(),
         AppTool::ShowNote => show_note(),
     }
@@ -385,7 +409,7 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 22] = [
+        let expected: [(AppTool, &[&str]); 23] = [
             (AppTool::SearchNotes, &[]),
             (AppTool::SearchByMeaning, &["question"]),
             (AppTool::ListTags, &[]),
@@ -406,6 +430,7 @@ mod tests {
             (AppTool::UnpinNote, path),
             (AppTool::AddAttachment, &["path", "file"]),
             (AppTool::AddEntry, &["path", "text"]),
+            (AppTool::CreateMindMap, &["title"]),
             (AppTool::ViewedNote, &[]),
             (AppTool::ShowNote, path),
         ];

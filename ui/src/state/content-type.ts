@@ -6,6 +6,7 @@ const LABELS: Record<ContentTypeItem, string> = {
   researchNotebook: "Cahier de recherche",
   mindMap: "Carte mentale",
   entry: "Entrée",
+  node: "Nœud",
 };
 
 /** Ce qui sépare le type de contenu du titre de son conteneur : « Entrée · Levures ». */

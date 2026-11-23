@@ -30,14 +30,20 @@ export function noteMenu(actions: NoteMenuActions): MenuEntry[] {
 
 /** Ce qu'un clic sur une note peut demander. */
 export interface NoteOpening {
-  readonly open: (path: string) => void;
+  /** Ouvre la note ; `node`, pour une carte mentale, est le chemin du nœud à y choisir. */
+  readonly open: (path: string, node?: string | null) => void;
   readonly place: (path: string, placement: Placement) => void;
 }
 
 /** Un clic sur l'élément ouvre la note ; un Cmd+clic l'ouvre dans un nouvel onglet. */
-export function openOnClick(element: HTMLElement, path: string, actions: NoteOpening): void {
+export function openOnClick(
+  element: HTMLElement,
+  path: string,
+  actions: NoteOpening,
+  node: string | null = null,
+): void {
   element.addEventListener("click", (event) => {
     if (event.metaKey) actions.place(path, "newTab");
-    else actions.open(path);
+    else actions.open(path, node);
   });
 }

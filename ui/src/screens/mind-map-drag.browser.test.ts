@@ -49,7 +49,7 @@ describe("carte mentale : glisser", () => {
     expect(document.querySelector(".mind-map-ghost")).toBeNull();
     expect(m.view.map().roots.map((r) => r.title)).toEqual(["Clients"]);
     expect(m.view.map().roots[0]?.children[1]?.children[0]?.title).toBe("Calendrier");
-    expect(m.saved).toHaveLength(1);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
   });
 
   it("sur le quart haut ou bas, il devient un frère, un trait le montre", async () => {

@@ -55,6 +55,7 @@ pub struct NoteSummary {
     tags: Vec<String>,
     content_type: ContentType,
     container: Option<NotePath>,
+    node: Option<String>,
 }
 
 impl NoteSummary {
@@ -72,6 +73,7 @@ impl NoteSummary {
             tags: tags(content),
             content_type: ContentType::of(content),
             container: None,
+            node: None,
         }
     }
 
@@ -93,6 +95,7 @@ impl NoteSummary {
             tags,
             content_type: ContentType::Note,
             container: None,
+            node: None,
         }
     }
 
@@ -102,6 +105,19 @@ impl NoteSummary {
         self.content_type = content_type;
         self.container = container;
         self
+    }
+
+    /// Le même résumé, pour le nœud de chemin `node` (`1.0.2`) de sa carte (fiche 0050).
+    #[must_use]
+    pub fn of_node(mut self, node: String) -> Self {
+        self.node = Some(node);
+        self
+    }
+
+    /// Le chemin du nœud d'une carte mentale que ce résumé désigne ; aucun pour le reste.
+    #[must_use]
+    pub fn node(&self) -> Option<&str> {
+        self.node.as_deref()
     }
 
     /// Son type de contenu.

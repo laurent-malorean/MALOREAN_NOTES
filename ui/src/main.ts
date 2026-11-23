@@ -118,7 +118,7 @@ const workspaces = createWorkspaces({
 const newPane = paneMaker({
   ...{ backend: bridge, shared, workspacePath: workspace.path, related: search.meaning },
   events: {
-    ...{ openNote: (path) => actions.open(path), error: messages.error },
+    ...{ openNote: (path) => actions.open(path), error: messages.error, show: messages.show },
     openLink: (title, inNewTab) => run(workspace.followLink(title, inNewTab)),
   },
   notebook: { add: notebooks.add, entries: bridge.listEntries },

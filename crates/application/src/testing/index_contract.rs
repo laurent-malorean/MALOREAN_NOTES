@@ -63,6 +63,8 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     a_research_notebook_is_of_its_type_and_lists_no_entry(&empty_index());
     each_entry_is_searched_on_its_own_with_its_notebook_for_container(&empty_index());
     entries_follow_their_notebook_kept_again_removed_or_cleared(&empty_index());
+    a_mind_map_is_searched_by_title_and_tags_and_each_node_on_its_own(&empty_index());
+    nodes_follow_their_mind_map_kept_again_removed_or_cleared(&empty_index());
 }
 
 /// Un cahier de recherche du 16 novembre 2026 : une entrée sur le pain, une sur le levain.
@@ -414,4 +416,69 @@ fn search_keeps_to_the_types_asked(index: &impl NoteIndex) {
     let query = SearchQuery::parse("pain").unwrap();
     assert_eq!(index.search(&query, &[ContentType::Note]).unwrap().len(), 1);
     assert!(index.search(&query, &[]).unwrap().is_empty());
+}
+
+/// Une carte mentale : un nœud sur le pain avec détail, un autre sur le levain, un sous-nœud.
+const MIND_MAP: &str = "---\ntype: carte-mentale\ntags: [labo]\n---\n# Recettes\n\n\
+                        - Pain\n  > farine et eau\n  - Levain\n- Brioche\n";
+
+fn node(title: &str, node: &str, modified: u64) -> NoteSummary {
+    NoteSummary::indexed(
+        path("Labo/recettes.md"),
+        title.to_owned(),
+        Modified(modified),
+        false,
+        Vec::new(),
+    )
+    .of_type(ContentType::Node, Some(path("Labo/recettes.md")))
+    .of_node(node.to_owned())
+}
+
+fn a_mind_map_is_searched_by_title_and_tags_and_each_node_on_its_own(index: &impl NoteIndex) {
+    index.put(&[note("Labo/recettes.md", MIND_MAP, 5)]).unwrap();
+    // La carte n'est trouvée que par son titre et ses étiquettes, pas par ses nœuds.
+    let by = |query: &str, types: &[ContentType]| found_items(index, query, types);
+    assert_eq!(by("recettes", &[ContentType::MindMap]).len(), 1);
+    assert_eq!(by("labo", &[ContentType::MindMap]).len(), 1);
+    assert!(by("pain", &[ContentType::MindMap]).is_empty());
+    assert_eq!(
+        by("recettes", &[ContentType::MindMap])[0].0.content_type(),
+        ContentType::MindMap
+    );
+    // Chaque nœud est un résultat à lui seul, avec sa carte pour conteneur et son chemin.
+    assert_eq!(
+        by("farine", &[ContentType::Node]),
+        [(node("Pain", "0", 5), "Pain\nfarine et eau".to_owned())]
+    );
+    assert_eq!(
+        by("levain", &[ContentType::Node]),
+        [(node("Levain", "0.0", 5), "Levain\n".to_owned())]
+    );
+    assert_eq!(by("brioche", &ContentType::ALL).len(), 1);
+    assert!(by("recettes", &[ContentType::Node]).is_empty());
+}
+
+fn nodes_follow_their_mind_map_kept_again_removed_or_cleared<I: NoteIndex>(index: &I) {
+    let nodes = |index: &dyn NoteIndex| found_items(index, "pain", &[ContentType::Node]).len();
+    index.put(&[note("Labo/recettes.md", MIND_MAP, 5)]).unwrap();
+    assert_eq!(nodes(index), 1);
+    index
+        .put(&[note(
+            "Labo/recettes.md",
+            "---\ntype: carte-mentale\n---\n# Recettes\n\n- Tarte\n",
+            6,
+        )])
+        .unwrap();
+    assert_eq!(nodes(index), 0);
+    assert_eq!(found_items(index, "tarte", &[ContentType::Node]).len(), 1);
+    index
+        .put(&[note("Labo/recettes.md", "# Plus une carte\n- pain\n", 7)])
+        .unwrap();
+    assert_eq!(found_items(index, "tarte", &[ContentType::Node]).len(), 0);
+    index.put(&[note("Labo/recettes.md", MIND_MAP, 8)]).unwrap();
+    index.remove(&[path("Labo/recettes.md")]).unwrap();
+    assert_eq!(nodes(index), 0);
+    index.put(&[note("Labo/recettes.md", MIND_MAP, 9)]).unwrap();
+    index.clear().unwrap();
+    assert_eq!(nodes(index), 0);
 }
