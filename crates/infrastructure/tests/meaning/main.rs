@@ -5,5 +5,6 @@
 mod embedder;
 mod folder;
 mod http_server;
+mod real_download;
 mod real_model;
 mod tiny_model;

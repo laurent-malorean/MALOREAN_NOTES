@@ -351,6 +351,25 @@ fn rebuilding_needs_a_workspace_and_computes_the_vectors_again() {
 }
 
 #[test]
+fn rebuilding_without_the_chosen_model_says_to_download_it_and_changes_nothing() {
+    let recorder = Arc::new(Recorder::default());
+    let session = session_with(
+        Arc::new(FakeMeaningModels::default()),
+        Arc::new(InMemoryNoteStore::with_notes(&NOTES)),
+        &recorder,
+    );
+    session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+    session.wait_for_meaning();
+    assert_eq!(
+        session.rebuild_meaning().unwrap_err().message,
+        "le modèle « E5 petit » n'est pas téléchargé : téléchargez-le dans les réglages"
+    );
+    session.wait_for_meaning();
+    assert_eq!(session.meaning_overview().unwrap().with_vector, 0);
+    assert!(recorder.progress().is_empty());
+}
+
+#[test]
 fn a_search_by_words_and_meaning_gives_the_results_and_why_the_meaning_is_missing() {
     let (session, _) = computed();
     let found = session

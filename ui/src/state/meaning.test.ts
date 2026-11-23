@@ -295,6 +295,22 @@ describe("réglages du sens", () => {
     ]);
   });
 
+  it("dit que le calcul attend quand le modèle utilisé n'est pas téléchargé", () => {
+    const state = read({ smallDownloaded: false });
+    expect(indexLines(state).at(-1)).toBe(
+      "Le calcul du sens est en attente : le modèle « E5 petit » n'est pas téléchargé. Cliquez sur « Télécharger » ci-dessus.",
+    );
+    expect(indexLines(read({ chosen: "e5-large", smallDownloaded: false })).at(-1)).toContain(
+      "« E5 grand »",
+    );
+    expect(indexLines(read())).toHaveLength(3);
+  });
+
+  it("ne dit pas que le calcul attend pendant le téléchargement du modèle", () => {
+    const state = downloadStarted(read({ smallDownloaded: false }), "e5-small");
+    expect(indexLines(state)).toHaveLength(3);
+  });
+
   it("ajoute l'avancement du calcul en cours", () => {
     const state = computeHeard(read(), {
       ...{ kind: "progress", done: 200, total: 411, model: "e5-small" },

@@ -11,7 +11,9 @@ use application::use_cases::{
     ChooseModel, DownloadModel, ReadMeaningStatus, RebuildMeaning, RelatedNotes, RemoveModel,
     SearchWithMeaning,
 };
-use application::{AppError, MeaningModels, MeaningStore, MemoryMeaningIndex};
+use application::{
+    AppError, MeaningError, MeaningModels, MeaningStore, MemoryMeaningIndex, ModelState,
+};
 use domain::{MeaningModel, NotePath};
 
 use super::meaning_worker::MeaningWorker;
@@ -244,10 +246,14 @@ impl Session {
     ///
     /// # Errors
     ///
-    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucun espace de travail ouvert, index
-    /// illisible.
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucun espace de travail ouvert, modèle choisi
+    /// non téléchargé (le message dit de le télécharger), index illisible.
     pub fn rebuild_meaning(&self) -> Result<(), ApiError> {
         let opened = self.opened()?;
+        let model = self.preferences.meaning_model().map_err(AppError::from)?;
+        if self.meaning_models.state(model) == ModelState::NotDownloaded {
+            return Err(AppError::from(MeaningError::ModelMissing(model)).into());
+        }
         RebuildMeaning::new(&*opened.index, &*opened.meaning, &*self.preferences).execute()?;
         self.worker.request();
         Ok(())

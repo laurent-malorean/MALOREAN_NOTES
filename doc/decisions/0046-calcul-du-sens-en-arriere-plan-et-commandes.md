@@ -14,6 +14,9 @@
 - **Recherche : une commande à part** plutôt qu'un paramètre de `search_notes`. La recherche par les mots rend une liste, la recherche mixte rend les résultats et la raison typée (`MeaningUse`) : changer la forme de `search_notes` aurait cassé l'écran actuel avant la brique de l'interface. `search_notes` ne change pas ; l'interface choisira la commande selon l'option « par le sens ».
 - **Outil `search_by_meaning`** : joué par la même recherche mixte que la commande (une seule logique), dans l'espace de travail du tour. Entrée : `question` (exigée), `limit` (entier de 1 à 100, 10 par défaut ; plus de 100 est ramené à 100). Sortie : `meaning_used`, `reason` (seulement si le sens manque), `notes` (`path`, `title`, `excerpt`). Il ne change rien.
 
+- **Modèle choisi non téléchargé** (ajouté le 23/11) : le calcul n'a pas lieu et ne fait pas de bruit à chaque enregistrement, mais l'écran le dit dès l'ouverture de l'onglet « Index » (« Le calcul du sens est en attente : le modèle « E5 petit » n'est pas téléchargé. Cliquez sur « Télécharger » ci-dessus. »), sauf pendant son téléchargement. `rebuild_meaning` refuse alors, sans rien changer, avec le message de `MeaningError::ModelMissing` (« téléchargez-le dans les réglages »). Le téléchargement n'est jamais lancé sans la demande de l'utilisateur (470 Mo) ; à sa fin, le calcul repart tout seul.
+- **Vrai téléchargement** : le test manuel `real_download` (ignoré par défaut, `cargo test -p infrastructure --test meaning real_download -- --ignored`) télécharge le petit modèle depuis Hugging Face dans un dossier temporaire puis calcule des vecteurs ; mesuré le 23/11 : réussi en 13 s, adresses et sommes SHA-256 justes.
+
 ## Conséquences
 
 - L'interface (brique suivante) branche les deux événements et les huit commandes ; les types TypeScript sont générés (`MeaningOverviewItem`, `ModelOverviewItem`, `MeaningProgressItem`, `ModelDownloadItem`, `MeaningSearchItem`, `MeaningUseItem`).
