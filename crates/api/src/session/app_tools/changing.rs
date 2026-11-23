@@ -5,6 +5,7 @@
 use application::use_cases::{AttachWorkspaceFile, CreateNote, CreateNoteFromTemplate, ListNotes};
 use domain::app_tools::AppTool;
 use domain::links::same_title;
+use domain::mind_map::with_list;
 use domain::tag::{retagged, same_tag, tags, writable_tag};
 use domain::title::retitled;
 use domain::{Folder, NoteOrder, NotePath};
@@ -52,6 +53,7 @@ impl Session {
         match tool {
             AppTool::CreateNote => self.tool_create_note(arguments),
             AppTool::CreateFolder => self.tool_create_folder(arguments),
+            AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(turn, arguments),
             AppTool::TrashNote => {
                 let trashed = self.trash_note(required(arguments, "path")?);
@@ -118,6 +120,22 @@ impl Session {
             parent = folder;
         }
         Ok(parent)
+    }
+
+    /// Une carte mentale neuve, titrée `title`, dans `folder` : sa liste de départ `content`.
+    fn tool_create_mind_map(&self, arguments: &Value) -> Result<String, String> {
+        let title = required(arguments, "title")?;
+        let folder =
+            Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
+        self.ensure_folder(&folder.to_path())?;
+        let content = with_list(title, optional(arguments, "content").unwrap_or_default());
+        let store = self.store().map_err(|error| error.message)?;
+        let created = CreateNote::new(&*store)
+            .with_content(&folder, &content)
+            .map_err(said)?;
+        written(&Placed {
+            path: created.to_path(),
+        })
     }
 
     /// Une note neuve, titrée `title`, dans `folder` : son texte `text` sous ce titre.

@@ -25,7 +25,11 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     pour connaître les étiquettes, les liens entrants, les modèles de note et l'historique des \
     versions, pour créer, renommer, ranger, étiqueter, épingler ou jeter une note selon ses règles, \
     pour savoir quelle note l'utilisateur regarde et lui en montrer une. Pour changer le texte d'une note, utilisez vos propres outils de fichiers (remplacer \
-    un passage par un autre). Les notes sont désignées par leur chemin depuis l'espace de travail \
+    un passage par un autre). Une carte mentale (`type: carte-mentale`) se crée avec `create_mind_map` ; \
+    ensuite vous la lisez et l'écrivez comme une note : sous son titre `# …`, elle n'a qu'une liste \
+    à puces (une puce `- ` par nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour \
+    son détail, ` <!-- couleur: nom -->` au bout pour sa couleur) ; n'y écrivez que des puces et des \
+    lignes de détail, et ne touchez jamais à la propriété `racines` de son en-tête. Les notes sont désignées par leur chemin depuis l'espace de travail \
     (`dossier/nom.md`).";
 
 /// L'issue d'un appel d'outil : le texte rendu à Claude, ou ce qui a empêché l'outil.

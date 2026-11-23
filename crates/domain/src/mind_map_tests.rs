@@ -204,3 +204,15 @@ fn each_node_gives_one_segment_under_the_title_of_the_map() {
     assert_eq!(all[1].node(), Some("0.0"));
     assert_eq!(all[0].text(), "");
 }
+
+#[test]
+fn a_new_map_starts_with_a_given_list_written_as_the_application_writes_it() {
+    assert_eq!(with_list("Idées", ""), new_mind_map("Idées"));
+    assert_eq!(
+        with_list(
+            "Idées",
+            "* A\n    + B <!--couleur:Rouge-->\nparagraphe\n- C"
+        ),
+        "---\ntype: carte-mentale\nracines: [{x: 0, y: 0}, {x: 0, y: 160}]\n---\n# Idées\n\n- A\n  - B <!-- couleur: rouge -->\n- C\n"
+    );
+}

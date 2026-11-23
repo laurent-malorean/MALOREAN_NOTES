@@ -54,6 +54,9 @@ pub enum AppTool {
     /// Ajouter une entrée à la fin d'un cahier de recherche, ou une correction d'une de ses
     /// entrées : jamais rien changer d'autre.
     AddEntry,
+    /// Créer une carte mentale selon les règles : titre, nom du fichier tiré du titre, liste de
+    /// départ facultative.
+    CreateMindMap,
     /// Ce que l'utilisateur regarde : la note ouverte dans la colonne active, le texte
     /// sélectionné.
     ViewedNote,
@@ -63,7 +66,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 22] = [
+    pub const ALL: [Self; 23] = [
         Self::SearchNotes,
         Self::SearchByMeaning,
         Self::ListTags,
@@ -84,6 +87,7 @@ impl AppTool {
         Self::UnpinNote,
         Self::AddAttachment,
         Self::AddEntry,
+        Self::CreateMindMap,
         Self::ViewedNote,
         Self::ShowNote,
     ];
@@ -112,6 +116,7 @@ impl AppTool {
             Self::UnpinNote => "unpin_note",
             Self::AddAttachment => "add_attachment",
             Self::AddEntry => "add_entry",
+            Self::CreateMindMap => "create_mind_map",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
         }
@@ -165,7 +170,8 @@ impl AppTool {
             | Self::PinNote
             | Self::UnpinNote
             | Self::AddAttachment
-            | Self::AddEntry => true,
+            | Self::AddEntry
+            | Self::CreateMindMap => true,
         }
     }
 
@@ -176,7 +182,7 @@ impl AppTool {
         match self {
             Self::SearchNotes => Some("query"),
             Self::SearchByMeaning => Some("question"),
-            Self::CreateNote | Self::CreateNoteFromTemplate => Some("title"),
+            Self::CreateNote | Self::CreateNoteFromTemplate | Self::CreateMindMap => Some("title"),
             Self::CreateFolder
             | Self::LinkingNotes
             | Self::ListVersions
@@ -285,7 +291,8 @@ mod tests {
                 "pin_note",
                 "unpin_note",
                 "add_attachment",
-                "add_entry"
+                "add_entry",
+                "create_mind_map"
             ]
         );
     }
@@ -317,6 +324,7 @@ mod tests {
                 path,
                 path,
                 path,
+                Some("title"),
                 None,
                 path
             ]

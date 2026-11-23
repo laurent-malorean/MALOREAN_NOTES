@@ -300,7 +300,7 @@ fn a_search_by_an_unknown_content_type_or_an_invalid_folder_is_refused() {
             "search_notes",
             json!({ "content_type": "kanban" })
         ),
-        "type de contenu inconnu : « kanban » ; ceux d'une note : « note », « cahier-de-recherche »"
+        "type de contenu inconnu : « kanban » ; ceux d'une note : « note », « cahier-de-recherche », « carte-mentale »"
     );
     assert!(
         refused(
@@ -405,4 +405,51 @@ fn the_versions_of_a_note_are_listed_and_read() {
         refused(&session, key, "list_versions", json!({ "path": "../a.md" })),
         "nom de note invalide : « ../a.md »"
     );
+}
+
+#[test]
+fn a_search_gives_the_nodes_of_mind_maps_with_the_path_of_their_map_and_of_the_node() {
+    let session = opened(&[
+        (
+            "Idees/carte.md",
+            "---\ntype: carte-mentale\ntags: [labo]\n---\n# Recettes\n\n- Pain\n  - Levain\n    > farine\n",
+        ),
+        ("note.md", "# Note\nlevain"),
+    ]);
+    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let key = tools.key().as_str();
+    let by_words = found(&session, key, "search_notes", json!({ "query": "levain" }));
+    let nodes: Vec<&Value> = by_words
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|found| found.get("node").is_some())
+        .collect();
+    assert_eq!(nodes.len(), 1);
+    assert_eq!(nodes[0]["path"], "Idees/carte.md");
+    assert_eq!(nodes[0]["node"], "0.0");
+    assert_eq!(nodes[0]["title"], "Levain");
+    // La carte elle-même n'est trouvée que par son titre et ses étiquettes.
+    let maps = found(
+        &session,
+        key,
+        "search_notes",
+        json!({ "query": "recettes", "content_type": "carte-mentale" }),
+    );
+    assert_eq!(paths(&maps), ["Idees/carte.md"]);
+    assert!(maps[0].get("node").is_none());
+    let none = found(
+        &session,
+        key,
+        "search_notes",
+        json!({ "query": "pain", "content_type": "carte-mentale" }),
+    );
+    assert!(paths(&none).is_empty());
+    let in_other_folder = found(
+        &session,
+        key,
+        "search_notes",
+        json!({ "query": "levain", "folder": "Autre" }),
+    );
+    assert!(in_other_folder.as_array().unwrap().is_empty());
 }

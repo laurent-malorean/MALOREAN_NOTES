@@ -31,6 +31,13 @@ Avant chaque écriture, l'écran relit le fichier. S'il n'est plus tel que l'éc
 - Liens : le texte du fichier contient déjà les `[[…]]` des nœuds : les liens entrants de la note désignée montrent la carte, et `[[titre de la carte]]` se résout comme pour une note (testé). Le filtre par étiquette voit la carte, ses étiquettes étant dans l'en-tête.
 - Écran : « Nœud » est le nom montré du type ; un clic sur un résultat avec un chemin de nœud ouvre la carte et la fait « révéler » ce nœud (`Pane.revealNode`).
 
+## Claude (§ 10)
+
+- Outil `create_mind_map` (« Création d'une carte mentale » dans la colonne) : `title`, `folder` (racine par défaut, créé avec ses parents), `content` facultatif (la liste de départ, réécrite comme l'application l'écrit : `domain::mind_map::with_list`) ; passe par `CreateNote`, rend le chemin ; il change une note, donc le garde-fou du web le retient.
+- Consigne : les instructions du serveur d'outils et la description de l'outil disent le format en bref et de n'écrire dans la liste que des puces et des lignes de détail, sans jamais toucher à `racines`. Claude lit et écrit le fichier avec ses outils de fichiers ; une carte ouverte se met à jour par la surveillance du dossier.
+- `search_notes` rend aussi, sans type demandé, les nœuds : `path` (fichier de la carte) et `node` (chemin du nœud) ; `content_type` accepte `carte-mentale`.
+- « Montrer une note » ouvre la note dans la colonne : une carte s'y montre en carte.
+
 ## Conséquences
 
 - Le premier lancement de cette version relit tout l'espace de travail une fois (format 8).

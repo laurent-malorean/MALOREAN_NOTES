@@ -142,6 +142,16 @@ pub fn new_mind_map(title: &str) -> String {
     )
 }
 
+/// Le texte d'une carte neuve titrée `title` qui commence par la liste à puces `list` (au format
+/// de la spécification § 4.4, lignes hors format ignorées) : écrite comme l'application l'écrit,
+/// avec la place par défaut de chaque nœud racine.
+#[must_use]
+pub fn with_list(title: &str, list: &str) -> String {
+    let start = new_mind_map(title);
+    let map = MindMap::parse(&format!("{start}\n{list}"));
+    map.written_on(&start)
+}
+
 /// Le nom de la couleur de la palette que désigne `name` (espaces et majuscules ignorés).
 #[must_use]
 pub fn palette_name(name: &str) -> Option<&'static str> {

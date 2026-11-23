@@ -453,3 +453,27 @@ fn a_folder_with_an_invalid_name_is_refused() {
         "nom de dossier invalide : « .. »"
     );
 }
+
+#[test]
+fn a_mind_map_is_created_like_a_note_with_its_starting_list() {
+    let session = opened(&[("Idees/projet.md", "# Autre")]);
+    let created = done(
+        &session,
+        "create_mind_map",
+        json!({ "title": "Projet", "folder": "Idees", "content": "- A\n    - B" }),
+    );
+    assert_eq!(created, json!({ "path": "Idees/projet-2.md" }));
+    assert_eq!(
+        text(&session, "Idees/projet-2.md"),
+        "---\ntype: carte-mentale\nracines: [{x: 0, y: 0}]\n---\n# Projet\n\n- A\n  - B\n"
+    );
+    done(&session, "create_mind_map", json!({ "title": "Vide" }));
+    assert_eq!(
+        text(&session, "vide.md"),
+        "---\ntype: carte-mentale\n---\n# Vide\n"
+    );
+    assert_eq!(
+        failed(&session, "create_mind_map", json!({})),
+        "il manque « title »"
+    );
+}
