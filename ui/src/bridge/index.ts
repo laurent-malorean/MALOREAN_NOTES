@@ -158,11 +158,9 @@ export const createDailyNote = (journal: string, template: string | null) =>
 /** Crée dans `folder` un cahier de recherche titré `title`. */
 export const createResearchNotebook = (folder: string, title: string) =>
   invoke<SavedNote>("create_research_notebook", { folder, title });
-/** Ajoute l'entrée `text` à la fin du cahier, à l'heure qu'il est ; avec `corrected`, une correction de cette entrée. */
-export const addEntry = (path: string, text: string, corrected: string | null) =>
-  invoke<EntryItem>("add_entry", { path, text, corrected });
-/** Les cahiers de recherche de l'espace de travail, par titre. */
-export const listResearchNotebooks = () => invoke<WorkspaceNoteItem[]>("list_research_notebooks");
+/** Ajoute l'entrée `text` à la fin du cahier, à l'heure qu'il est. */
+export const addEntry = (path: string, text: string) =>
+  invoke<EntryItem>("add_entry", { path, text });
 /** Les entrées du cahier, de la plus ancienne à la plus récente. */
 export const listEntries = (path: string) => invoke<EntryItem[]>("list_entries", { path });
 /** L'adresse qui charge dans la fenêtre un fichier de l'espace de travail, comme une image. */

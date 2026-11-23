@@ -76,11 +76,11 @@ fn with_notebook() -> WebviewWindow<MockRuntime> {
     window
 }
 
-fn added(window: &WebviewWindow<MockRuntime>, text: &str, corrected: Value) -> Value {
+fn added(window: &WebviewWindow<MockRuntime>, text: &str) -> Value {
     call(
         window,
         "add_entry",
-        json!({ "path": "levures.md", "text": text, "corrected": corrected }),
+        json!({ "path": "levures.md", "text": text }),
     )
     .unwrap()
 }
@@ -94,35 +94,29 @@ fn a_notebook_is_created_then_receives_entries_with_the_argument_names_used_by_t
         "text": "un",
         "line": 11,
     });
-    assert_eq!(added(&window, "un", Value::Null), entry);
-    let corrected = added(&window, "deux", json!("2026-11-16-18h30"));
-    assert_eq!(corrected["anchor"], "2026-11-16-18h30-2");
+    assert_eq!(added(&window, "un"), entry);
+    let second = added(&window, "deux");
+    assert_eq!(second["anchor"], "2026-11-16-18h30-2");
     let entries = call(&window, "list_entries", json!({ "path": "levures.md" })).unwrap();
     assert_eq!(entries[0], entry);
     assert_eq!(entries.as_array().unwrap().len(), 2);
     assert!(BRIDGE_SOURCE.contains("\"create_research_notebook\", { folder, title }"));
-    assert!(BRIDGE_SOURCE.contains("\"add_entry\", { path, text, corrected }"));
+    assert!(BRIDGE_SOURCE.contains("\"add_entry\", { path, text }"));
     assert!(BRIDGE_SOURCE.contains("\"list_entries\", { path }"));
 }
 
 #[test]
-fn notebooks_are_listed_and_an_entry_is_refused_to_a_note() {
+fn an_entry_is_refused_to_a_note() {
     let window = with_notebook();
-    let notebooks = call(&window, "list_research_notebooks", json!({})).unwrap();
-    assert_eq!(
-        notebooks,
-        json!([{ "path": "levures.md", "title": "Levures", "folder": "" }])
-    );
     let refused = call(
         &window,
         "add_entry",
-        json!({ "path": "note.md", "text": "un", "corrected": null }),
+        json!({ "path": "note.md", "text": "un" }),
     );
     assert_eq!(
         refused.unwrap_err()["message"],
         "cette note n'est pas un cahier de recherche"
     );
-    assert!(BRIDGE_SOURCE.contains("\"list_research_notebooks\")"));
 }
 
 #[test]

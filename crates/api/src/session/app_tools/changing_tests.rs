@@ -370,18 +370,16 @@ fn an_entry_is_only_ever_added_at_the_end_of_a_research_notebook() {
         "line": 11,
     });
     assert_eq!(added, json!({ "path": "levures.md", "entry": entry }));
-    let corrected = done(
+    done(
         &session,
         "add_entry",
-        json!({ "path": "levures.md", "text": "Levure B", "corrected": "2026-11-16-18h30" }),
+        json!({ "path": "levures.md", "text": "Levure B" }),
     );
-    assert_eq!(corrected["entry"]["anchor"], "2026-11-16-18h30-2");
     assert_eq!(
         text(&session, "levures.md"),
         format!(
             "{notebook}\n## 2026\n\n### Novembre\n\n#### Lundi 16\n\n- 18:30 - Levure A\n  \
-             mousse\n- 18:30 - Correction de [l'entrée du 16 novembre 2026 à 18:30]\
-             (#2026-11-16-18h30) : Levure B\n"
+             mousse\n- 18:30 - Levure B\n"
         )
     );
     assert_eq!(
@@ -393,14 +391,6 @@ fn an_entry_is_only_ever_added_at_the_end_of_a_research_notebook() {
         "cette note n'est pas un cahier de recherche"
     );
     assert_eq!(text(&session, "note.md"), "# Note");
-    assert_eq!(
-        failed(
-            &session,
-            "add_entry",
-            json!({ "path": "levures.md", "text": "x", "corrected": "2026-01-01-00h00" })
-        ),
-        "l'entrée « 2026-01-01-00h00 » à corriger n'est pas dans ce cahier"
-    );
     assert_eq!(
         failed(&session, "add_entry", json!({ "path": "levures.md" })),
         "il manque « text »"

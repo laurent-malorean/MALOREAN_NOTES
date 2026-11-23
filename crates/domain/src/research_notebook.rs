@@ -53,8 +53,6 @@ pub enum RefusedEntry {
     NotANotebook,
     /// L'entrée n'a pas de texte.
     Empty,
-    /// L'entrée à corriger, désignée par son ancre, n'est pas dans le cahier.
-    CorrectedEntryNotFound(String),
 }
 
 impl fmt::Display for RefusedEntry {
@@ -62,12 +60,6 @@ impl fmt::Display for RefusedEntry {
         match self {
             Self::NotANotebook => f.write_str("cette note n'est pas un cahier de recherche"),
             Self::Empty => f.write_str("l'entrée est vide"),
-            Self::CorrectedEntryNotFound(anchor) => {
-                write!(
-                    f,
-                    "l'entrée « {anchor} » à corriger n'est pas dans ce cahier"
-                )
-            }
         }
     }
 }
@@ -415,34 +407,6 @@ pub fn with_entry(content: &str, at: &Moment, text: &str) -> Result<String, Refu
     written.push_str(&entry.join(newline));
     written.push_str(newline);
     Ok(written)
-}
-
-/// Le cahier avec, à la fin, une entrée du moment `at` qui corrige l'entrée d'ancre `corrected`
-/// (`#` devant permis) : « Correction de [l'entrée du …](#ancre) : » suivi de `text`. L'entrée
-/// corrigée ne change pas.
-///
-/// # Errors
-///
-/// Celles de [`with_entry`], et [`RefusedEntry::CorrectedEntryNotFound`] si aucune entrée du
-/// cahier n'a cette ancre.
-pub fn with_correction(
-    content: &str,
-    at: &Moment,
-    text: &str,
-    corrected: &str,
-) -> Result<String, RefusedEntry> {
-    notebook_checked(content)?;
-    written_lines(text)?;
-    let anchor = corrected.trim_start_matches(HEADING_MARK);
-    let target = entries(content)
-        .into_iter()
-        .find(|entry| entry.anchor() == anchor)
-        .ok_or_else(|| RefusedEntry::CorrectedEntryNotFound(anchor.to_owned()))?;
-    let reference = format!(
-        "Correction de [l'entrée du {}](#{anchor}) :",
-        target.label()
-    );
-    with_entry(content, at, &format!("{reference} {}", text.trim_start()))
 }
 
 /// Le résumé d'une entrée tel que l'index le garde : son moment `label` pour titre, le chemin

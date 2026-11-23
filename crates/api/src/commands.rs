@@ -540,7 +540,6 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         history::restore_version,
         research_notebook::create_research_notebook,
         research_notebook::add_entry,
-        research_notebook::list_research_notebooks,
         research_notebook::list_entries,
         export::choose_export_file,
         export::export_markdown,
