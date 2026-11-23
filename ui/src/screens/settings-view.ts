@@ -133,25 +133,25 @@ function tabs(panels: readonly HTMLElement[][], storage: PreferenceStorage): HTM
     section.append(...groups);
     return section;
   });
-  const select = (selected: number, focus: boolean) => {
+  const select = (selected: number) => {
     buttons.forEach((button, index) => {
       button.setAttribute("aria-selected", String(index === selected));
       button.tabIndex = index === selected ? 0 : -1;
     });
     sections.forEach((section, index) => (section.hidden = index !== selected));
     saveSettingsTab(storage, selected);
-    if (focus) buttons[selected]?.focus();
   };
   buttons.forEach((button, index) => {
-    button.addEventListener("click", () => select(index, false));
+    button.addEventListener("click", () => select(index));
     button.addEventListener("keydown", (event) => {
       const moved = tabMoved(index, event.key, buttons.length);
       if (moved === null) return;
       event.preventDefault();
-      select(moved, true);
+      select(moved);
+      (buttons[moved] as HTMLElement).focus();
     });
   });
-  select(loadSettingsTab(storage), false);
+  select(loadSettingsTab(storage));
   list.append(...buttons);
   body.append(...sections);
   const element = document.createElement("div");
