@@ -217,5 +217,11 @@ export function indexLines(state: MeaningState): string[] {
     `Segments : ${number.format(overview.segments)}`,
     `Segments calculés : ${number.format(overview.withVector)} sur ${number.format(overview.segments)}`,
   ];
+  const chosen = chosenModel(state);
+  if (chosen !== null && !chosen.downloaded && state.download?.model !== chosen.model) {
+    lines.push(
+      `Le calcul du sens est en attente : le modèle « ${chosen.label} » n'est pas téléchargé. Cliquez sur « Télécharger » ci-dessus.`,
+    );
+  }
   return state.compute === null ? lines : [...lines, computeLabel(state.compute)];
 }
