@@ -273,15 +273,12 @@ fn add_entry() -> Described {
         "Ajoute une entrée à la fin d'un cahier de recherche (une note dont l'en-tête porte \
          `type: cahier-de-recherche`), à l'heure qu'il est, sous les titres d'année, de mois et \
          de jour qui manquent. C'est la seule façon d'écrire dans un cahier : il ne se modifie \
-         jamais, ni par cet outil ni par vos outils de fichiers. Pour corriger une entrée, \
-         ajoutez une correction : donnez son ancre dans `corrected` (`2026-11-20-09h42`, telle \
-         que cet outil la rend ou qu'un lien `(#2026-11-20-09h42)` du cahier l'écrit) ; \
-         l'entrée corrigée ne change pas. Rend l'entrée ajoutée : ancre, moment et texte.",
+         jamais, ni par cet outil ni par vos outils de fichiers. Une erreur se \
+         rectifie par une nouvelle entrée. Rend l'entrée ajoutée : ancre, moment et texte.",
         input(
             json!({
                 "path": text("Chemin du cahier depuis l'espace de travail : `dossier/nom.md`."),
                 "text": text("Le texte de l'entrée ; plusieurs lignes permises."),
-                "corrected": text("L'ancre de l'entrée que celle-ci corrige, s'il y a lieu."),
             }),
             &["path", "text"],
         ),

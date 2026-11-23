@@ -3,7 +3,7 @@ import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { createEditor, type EditorOptions } from "./editor";
-import { isResearchNotebook } from "./research-notebook";
+import { entryDayLabel, isResearchNotebook } from "./research-notebook";
 
 const NOTEBOOK = "---\ntype: cahier-de-recherche\n---\n# Levures\n\n- 18:30 - un\n";
 
@@ -48,13 +48,13 @@ describe("cahier de recherche dans l'éditeur", () => {
     expect(changes).toEqual([]);
   });
 
-  it("une note relue qui devient un cahier passe en lecture seule, avec son « + »", () => {
-    const { parent, editor, view } = mount({ addEntry: () => {} });
+  it("une note relue qui devient un cahier passe en lecture seule, avec sa zone de saisie", () => {
+    const { parent, editor, view } = mount({ addEntry: async () => true });
     editor.show("# Note\n");
     expect(view.state.readOnly).toBe(false);
     editor.reload(NOTEBOOK);
     expect(view.state.readOnly).toBe(true);
-    expect(parent.querySelector(".notebook-bar")).not.toBeNull();
+    expect(parent.querySelector(".notebook-entry")).not.toBeNull();
   });
 
   it("montre la version relue sur le disque et la frappe d'une autre colonne", () => {
@@ -65,27 +65,59 @@ describe("cahier de recherche dans l'éditeur", () => {
     expect(editor.content()).toBe(next);
   });
 
-  it("montre en haut un « + » qui ouvre la fenêtre de saisie", () => {
-    let asked = 0;
-    const { parent, editor } = mount({ addEntry: () => (asked += 1) });
-    editor.show(NOTEBOOK);
-    expect(parent.querySelector(".cm-panels-top .notebook-bar")).not.toBeNull();
-    const add = parent.querySelector<HTMLButtonElement>(".cm-panels-top .notebook-add");
-    expect(add?.type).toBe("button");
-    expect(add?.textContent).toBe("+");
-    expect(add?.title).toBe("Ajouter une entrée");
-    expect(add?.getAttribute("aria-label")).toBe("Ajouter une entrée");
-    expect(parent.querySelector(".notebook-bar-label")?.textContent).toBe(
-      "Cahier de recherche : on n'y fait qu'ajouter",
-    );
-    add?.click();
-    expect(asked).toBe(1);
+  it("donne le jour sous lequel l'entrée sera rangée, en toutes lettres", () => {
+    expect(entryDayLabel(new Date(2026, 10, 23, 9, 42))).toBe("Lundi 23 novembre");
+    expect(entryDayLabel(new Date(2026, 11, 1))).toBe("Mardi 1er décembre");
   });
 
-  it("une note ordinaire se modifie et n'a pas de « + » ; sans action, un cahier non plus", async () => {
-    const { parent, editor, view, changes } = mount({ addEntry: () => {} });
+  it("montre en bas, sous le texte, une zone de saisie de 8 lignes et un seul bouton", () => {
+    const { parent, editor } = mount({
+      addEntry: async () => true,
+      today: () => new Date(2026, 10, 23),
+    });
+    editor.show(NOTEBOOK);
+    const area = parent.querySelector(".cm-panels-bottom .notebook-entry");
+    expect(area).not.toBeNull();
+    expect(parent.querySelector(".cm-panels-top")).toBeNull();
+    const text = area?.querySelector("textarea");
+    expect(text?.rows).toBe(8);
+    expect(text?.getAttribute("aria-label")).toBe("Nouvelle entrée");
+    expect(area?.querySelector(".notebook-entry-message")?.textContent).toBe(
+      "Nouvelle entrée — elle sera datée au moment de l'ajout et rangée sous « Lundi 23 novembre »",
+    );
+    expect(area?.textContent).toContain("Le reste du cahier est en lecture seule.");
+    const buttons = [...(area?.querySelectorAll("button") ?? [])];
+    expect(buttons.map((b) => [b.type, b.textContent])).toEqual([["button", "Ajouter l'entrée"]]);
+  });
+
+  it("ajoute le texte saisi, puis vide la zone ; si l'ajout échoue, le texte reste", async () => {
+    const asked: string[] = [];
+    let succeed = false;
+    const { parent, editor } = mount({
+      addEntry: async (text) => (asked.push(text), succeed),
+    });
+    editor.show(NOTEBOOK);
+    const text = parent.querySelector("textarea") as HTMLTextAreaElement;
+    const add = parent.querySelector(".notebook-entry button") as HTMLButtonElement;
+    await userEvent.click(text);
+    await userEvent.keyboard("un{Enter}deux");
+    expect(text.value).toBe("un\ndeux");
+    add.click();
+    await expect.poll(() => add.disabled).toBe(false);
+    expect(asked).toEqual(["un\ndeux"]);
+    expect(text.value).toBe("un\ndeux");
+    succeed = true;
+    add.click();
+    expect(add.disabled).toBe(true);
+    await expect.poll(() => text.value).toBe("");
+    expect(asked).toEqual(["un\ndeux", "un\ndeux"]);
+    expect(add.disabled).toBe(false);
+  });
+
+  it("une note ordinaire se modifie et n'a pas de zone de saisie ; sans action, un cahier non plus", async () => {
+    const { parent, editor, view, changes } = mount({ addEntry: async () => true });
     editor.show("# Note\n");
-    expect(parent.querySelector(".notebook-bar")).toBeNull();
+    expect(parent.querySelector(".notebook-entry")).toBeNull();
     view.focus();
     view.dispatch({ selection: { anchor: 7 } });
     await userEvent.keyboard("abc");
@@ -94,7 +126,7 @@ describe("cahier de recherche dans l'éditeur", () => {
     expect(view.state.readOnly).toBe(false);
     const bare = mount();
     bare.editor.show(NOTEBOOK);
-    expect(bare.parent.querySelector(".notebook-bar")).toBeNull();
+    expect(bare.parent.querySelector(".notebook-entry")).toBeNull();
     expect(bare.view.state.readOnly).toBe(true);
   });
 });

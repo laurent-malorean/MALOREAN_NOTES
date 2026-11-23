@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use super::{SharedSession, in_background};
-use crate::{ApiError, EntryItem, SavedNote, WorkspaceNoteItem};
+use crate::{ApiError, EntryItem, SavedNote};
 
 /// Crée dans `folder` un cahier de recherche titré `title`.
 ///
@@ -20,7 +20,7 @@ pub async fn create_research_notebook(
     in_background(move || session.create_research_notebook(&folder, &title)).await
 }
 
-/// Ajoute une entrée à la fin du cahier, ou une correction de l'entrée `corrected`.
+/// Ajoute une entrée à la fin du cahier.
 ///
 /// # Errors
 ///
@@ -30,23 +30,9 @@ pub async fn add_entry(
     session: SharedSession<'_>,
     path: String,
     text: String,
-    corrected: Option<String>,
 ) -> Result<EntryItem, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.add_entry(&path, &text, corrected.as_deref())).await
-}
-
-/// Les cahiers de recherche de l'espace de travail, par titre.
-///
-/// # Errors
-///
-/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::list_research_notebooks`].
-#[tauri::command]
-pub async fn list_research_notebooks(
-    session: SharedSession<'_>,
-) -> Result<Vec<WorkspaceNoteItem>, ApiError> {
-    let session = Arc::clone(&session);
-    in_background(move || session.list_research_notebooks()).await
+    in_background(move || session.add_entry(&path, &text)).await
 }
 
 /// Les entrées du cahier, de la plus ancienne à la plus récente.

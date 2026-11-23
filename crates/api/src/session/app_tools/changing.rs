@@ -88,9 +88,7 @@ impl Session {
             AppTool::AddAttachment => self.tool_add_attachment(arguments),
             AppTool::AddEntry => {
                 let (path, text) = (required(arguments, "path")?, required(arguments, "text")?);
-                let entry = self
-                    .add_entry(path, text, optional(arguments, "corrected"))
-                    .map_err(|e| e.message)?;
+                let entry = self.add_entry(path, text).map_err(|e| e.message)?;
                 written(&json!({ "path": path, "entry": entry }))
             }
             _ => unreachable!("un outil qui ne change rien est joué à part"),

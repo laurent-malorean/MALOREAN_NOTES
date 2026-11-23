@@ -45,7 +45,7 @@ export interface CommandsDeps {
   /** La note du jour du journal. */
   readonly journal: { open(): Promise<void> };
   /** Les cahiers de recherche : en créer un, ajouter une entrée sans en ouvrir. */
-  readonly notebooks: { create(): Promise<void>; add(): Promise<void> };
+  readonly notebooks: { create(): Promise<void> };
   readonly folders: { startCreation(): void };
   readonly trash: { show(): Promise<void> };
   readonly settings: { open(): void };
@@ -144,7 +144,6 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "new-note-from-template": () => run(deps.templates.newNote()),
     "daily-note": () => run(deps.journal.open()),
     "new-research-notebook": () => run(deps.notebooks.create()),
-    "add-entry": () => run(deps.notebooks.add()),
     "new-folder": () => deps.folders.startCreation(),
     "search-workspace": () => deps.searchField.focus(),
     "search-by-meaning": () => (deps.meaning.chooseMode("meaning"), deps.searchField.focus()),

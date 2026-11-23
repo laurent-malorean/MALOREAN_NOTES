@@ -127,18 +127,10 @@ fn an_empty_entry_or_a_note_that_is_not_a_notebook_is_refused() {
         Err(RefusedEntry::NotANotebook)
     );
     assert_eq!(
-        with_correction("# Une note", &moment, "texte", "x"),
-        Err(RefusedEntry::NotANotebook)
-    );
-    assert_eq!(
         RefusedEntry::NotANotebook.to_string(),
         "cette note n'est pas un cahier de recherche"
     );
     assert_eq!(RefusedEntry::Empty.to_string(), "l'entrée est vide");
-    assert_eq!(
-        RefusedEntry::CorrectedEntryNotFound("2026-11-20-09h42".to_owned()).to_string(),
-        "l'entrée « 2026-11-20-09h42 » à corriger n'est pas dans ce cahier"
-    );
 }
 
 #[test]
@@ -205,42 +197,6 @@ fn headings_are_read_whatever_the_case_of_the_month_or_the_weekday() {
     assert_eq!(read.len(), 1);
     assert_eq!(read[0].anchor(), "2026-11-20-09h42");
     assert_eq!(read[0].text(), "a\nsuite\n#### pas un titre");
-}
-
-#[test]
-fn a_correction_links_to_the_corrected_entry_and_changes_nothing_else() {
-    let first = added(&notebook(), at(2026, 11, 20, 9, 42), "Levure A : rien");
-    let corrected = with_correction(
-        &first,
-        &at(2026, 11, 20, 10, 15),
-        "  Levure A : mousse\nau bout d'une heure",
-        "#2026-11-20-09h42",
-    )
-    .unwrap();
-    assert_eq!(
-        corrected,
-        format!(
-            "{first}- 10:15 - Correction de [l'entrée du 20 novembre 2026 à 09:42]\
-             (#2026-11-20-09h42) : Levure A : mousse\n  au bout d'une heure\n"
-        )
-    );
-    assert_eq!(entries(&corrected)[0].text(), "Levure A : rien");
-}
-
-#[test]
-fn a_correction_of_a_missing_entry_or_without_text_is_refused() {
-    let first = added(&notebook(), at(2026, 11, 20, 9, 42), "un");
-    let moment = at(2026, 11, 20, 10, 0);
-    assert_eq!(
-        with_correction(&first, &moment, "texte", "2026-11-20-09h43"),
-        Err(RefusedEntry::CorrectedEntryNotFound(
-            "2026-11-20-09h43".to_owned()
-        ))
-    );
-    assert_eq!(
-        with_correction(&first, &moment, "  ", "2026-11-20-09h42"),
-        Err(RefusedEntry::Empty)
-    );
 }
 
 #[test]

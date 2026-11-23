@@ -72,25 +72,12 @@ export function fakeNotebook(state: FakeNotes, helpers: NotebookHelpers): Record
       state.notes[path] = { content, modified: helpers.tick() };
       return { path };
     },
-    add_entry: ({ path = "", text = "", corrected }) => {
+    add_entry: ({ path = "", text = "" }) => {
       const note = notebook(path);
       if (!text.trim()) throw { message: "l'entrée est vide" };
-      const target = fakeEntries(note.content).find((entry) => entry.anchor === corrected);
-      const written = target
-        ? `Correction de [l'entrée du ${target.label}](#${target.anchor}) : ${text.trim()}`
-        : text;
-      state.notes[path] = { content: appended(note.content, written), modified: helpers.tick() };
+      state.notes[path] = { content: appended(note.content, text), modified: helpers.tick() };
       return fakeEntries(state.notes[path].content).at(-1);
     },
-    list_research_notebooks: () =>
-      Object.entries(state.notes)
-        .filter(([, note]) => isNotebook(note.content))
-        .map(([path, note]) => ({
-          path,
-          title: titleOf(note.content),
-          folder: path.slice(0, Math.max(path.lastIndexOf("/"), 0)),
-        }))
-        .sort((a, b) => a.title.localeCompare(b.title, "fr")),
     list_entries: ({ path = "" }) => fakeEntries(notebook(path).content),
   };
 }

@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-20
 - **Statut** : acceptée
+- **Modifiée** par la fiche 0049 (23/11/2026) : l'interface d'ajout devient une zone de saisie en bas de la page, sans correction.
 - **Complète** les fiches 0034 et 0037 (types de contenu : deux nouveaux types, la propriété `type:` enfin lue ; format de l'index 4) et 0040 (un outil de plus pour Claude).
 
 ## Contexte

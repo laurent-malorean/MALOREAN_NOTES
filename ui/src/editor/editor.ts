@@ -30,7 +30,7 @@ import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
-import { researchNotebook } from "./research-notebook";
+import { type AddEntry, researchNotebook } from "./research-notebook";
 import { keptPosition } from "../state/external-change";
 import { firstMatch } from "../state/search-match";
 import type { NotePosition } from "../state/trail";
@@ -105,8 +105,8 @@ export interface EditorOptions {
   readonly outline?: HTMLElement;
   /** Ouvre la note désignée par un lien `[[titre]]`. */
   readonly openLink?: OpenNoteLink;
-  /** Ouvre la fenêtre de saisie d'une entrée du cahier de recherche montré (le « + »). */
-  readonly addEntry?: () => void;
+  /** Ajoute au cahier de recherche montré l'entrée saisie dans sa zone de saisie ; sans elle, pas de zone. */
+  readonly addEntry?: AddEntry;
 }
 
 /**
@@ -277,7 +277,7 @@ export function createEditor(
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
     openLink ? noteLinks(openLink) : [],
-    researchNotebook(fromElsewhere, options.addEntry),
+    researchNotebook(fromElsewhere, options.addEntry, today),
     history(),
     [listContinuation, firstTitle, findReplace],
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.

@@ -1,14 +1,11 @@
 //! Cahier de recherche (fiche 0041) : en créer un, ajouter une entrée (jamais rien changer
-//! d'autre), lister les cahiers de l'espace de travail et les entrées d'un cahier.
+//! d'autre), lister les entrées d'un cahier.
 
-use domain::note::{NoteOrder, sorted};
-use domain::research_notebook::{
-    Entry, RefusedEntry, entries, new_notebook, with_correction, with_entry,
-};
-use domain::{ContentType, Folder, NotePath, NoteSummary};
+use domain::research_notebook::{Entry, RefusedEntry, entries, new_notebook, with_entry};
+use domain::{ContentType, Folder, NotePath};
 
 use crate::use_cases::CreateNote;
-use crate::{AppError, Clock, NoteIndex, NoteStore};
+use crate::{AppError, Clock, NoteStore};
 
 /// Un nouveau cahier de recherche, sans entrée, qui n'écrase aucune autre note.
 #[derive(Debug)]
@@ -48,26 +45,16 @@ impl<'a> AddEntry<'a> {
         Self { store, clock }
     }
 
-    /// L'entrée ajoutée au cahier `notebook` : `text`, ou, avec `corrected`, une correction de
-    /// l'entrée de cette ancre. Rend l'entrée telle que le cahier l'écrit.
+    /// L'entrée `text` ajoutée au cahier `notebook`. Rend l'entrée telle que le cahier l'écrit.
     ///
     /// # Errors
     ///
-    /// [`AppError::EntryRefused`] si la note n'est pas un cahier, si l'entrée est vide ou si
-    /// l'entrée à corriger n'y est pas ; [`AppError::NoteNotFound`] si le cahier n'existe pas ;
+    /// [`AppError::EntryRefused`] si la note n'est pas un cahier, si l'entrée est vide ; [`AppError::NoteNotFound`] si le cahier n'existe pas ;
     /// [`AppError::StorageUnavailable`] si le stockage ne répond pas.
-    pub fn execute(
-        &self,
-        notebook: &NotePath,
-        text: &str,
-        corrected: Option<&str>,
-    ) -> Result<Entry, AppError> {
+    pub fn execute(&self, notebook: &NotePath, text: &str) -> Result<Entry, AppError> {
         let stored = self.store.read(notebook)?;
         let now = self.clock.now();
-        let content = match corrected {
-            Some(anchor) => with_correction(&stored.content, &now, text, anchor),
-            None => with_entry(&stored.content, &now, text),
-        }?;
+        let content = with_entry(&stored.content, &now, text)?;
         self.store.write(notebook, &content)?;
         entries(&content)
             .pop()
@@ -75,32 +62,17 @@ impl<'a> AddEntry<'a> {
     }
 }
 
-/// Les cahiers de recherche de l'espace de travail, et les entrées de chacun.
+/// Les entrées d'un cahier de recherche.
 #[derive(Debug)]
-pub struct ListResearchNotebooks<'a> {
-    index: &'a dyn NoteIndex,
+pub struct ListEntries<'a> {
     store: &'a dyn NoteStore,
 }
 
-impl<'a> ListResearchNotebooks<'a> {
-    /// Le cas d'usage, branché sur l'index et le stockage de l'espace de travail ouvert.
+impl<'a> ListEntries<'a> {
+    /// Le cas d'usage, branché sur le stockage de l'espace de travail ouvert.
     #[must_use]
-    pub fn new(index: &'a dyn NoteIndex, store: &'a dyn NoteStore) -> Self {
-        Self { index, store }
-    }
-
-    /// Les cahiers de tout l'espace de travail, par titre.
-    ///
-    /// # Errors
-    ///
-    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
-    pub fn notebooks(&self) -> Result<Vec<NoteSummary>, AppError> {
-        let all = self.index.all_notes()?;
-        let notebooks = all
-            .into_iter()
-            .filter(|note| note.content_type() == ContentType::ResearchNotebook)
-            .collect();
-        Ok(sorted(notebooks, NoteOrder::Title))
+    pub fn new(store: &'a dyn NoteStore) -> Self {
+        Self { store }
     }
 
     /// Les entrées du cahier `notebook`, de la plus ancienne à la plus récente.
@@ -109,7 +81,7 @@ impl<'a> ListResearchNotebooks<'a> {
     ///
     /// [`AppError::EntryRefused`] si la note n'est pas un cahier ; [`AppError::NoteNotFound`]
     /// s'il n'existe pas ; [`AppError::StorageUnavailable`] si le stockage ne répond pas.
-    pub fn entries(&self, notebook: &NotePath) -> Result<Vec<Entry>, AppError> {
+    pub fn execute(&self, notebook: &NotePath) -> Result<Vec<Entry>, AppError> {
         let content = self.store.read(notebook)?.content;
         if ContentType::of(&content) != ContentType::ResearchNotebook {
             return Err(RefusedEntry::NotANotebook.into());
@@ -123,7 +95,7 @@ mod tests {
     use domain::Moment;
 
     use super::*;
-    use crate::testing::{FixedClock, InMemoryNoteStore, indexed};
+    use crate::testing::{FixedClock, InMemoryNoteStore};
 
     fn path(text: &str) -> NotePath {
         NotePath::parse(text).unwrap()
@@ -150,7 +122,7 @@ mod tests {
         let store = InMemoryNoteStore::with_notes(&[("levures.md", NOTEBOOK)]);
         let at = clock(9, 42);
         let entry = AddEntry::new(&store, &at)
-            .execute(&path("levures.md"), "Levure A", None)
+            .execute(&path("levures.md"), "Levure A")
             .unwrap();
         assert_eq!(entry.anchor(), "2026-11-16-09h42");
         assert_eq!(entry.text(), "Levure A");
@@ -161,32 +133,16 @@ mod tests {
     }
 
     #[test]
-    fn a_correction_is_added_with_a_link_to_the_corrected_entry() {
-        let store = InMemoryNoteStore::with_notes(&[("levures.md", NOTEBOOK)]);
-        let notebook = path("levures.md");
-        AddEntry::new(&store, &clock(9, 42))
-            .execute(&notebook, "Levure A", None)
-            .unwrap();
-        let correction = AddEntry::new(&store, &clock(10, 0))
-            .execute(&notebook, "Levure B", Some("2026-11-16-09h42"))
-            .unwrap();
-        assert_eq!(
-            correction.text(),
-            "Correction de [l'entrée du 16 novembre 2026 à 09:42](#2026-11-16-09h42) : Levure B"
-        );
-    }
-
-    #[test]
     fn an_entry_is_refused_by_a_note_that_is_not_a_notebook_and_nothing_is_written() {
         let store = InMemoryNoteStore::with_notes(&[("note.md", "# Note")]);
         let at = clock(9, 42);
         let add = AddEntry::new(&store, &at);
         assert_eq!(
-            add.execute(&path("note.md"), "texte", None),
+            add.execute(&path("note.md"), "texte"),
             Err(AppError::EntryRefused(RefusedEntry::NotANotebook))
         );
         assert_eq!(
-            add.execute(&path("absente.md"), "texte", None),
+            add.execute(&path("absente.md"), "texte"),
             Err(AppError::NoteNotFound(path("absente.md")))
         );
         assert_eq!(store.read(&path("note.md")).unwrap().content, "# Note");
@@ -197,36 +153,24 @@ mod tests {
     }
 
     #[test]
-    fn notebooks_are_listed_by_title_and_their_entries_oldest_first() {
-        let store = InMemoryNoteStore::with_notes(&[
-            ("b.md", &NOTEBOOK.replace("Levures", "Bières")),
-            ("a.md", NOTEBOOK),
-            ("note.md", "# Note"),
-        ]);
-        let index = indexed(&store);
-        let list = ListResearchNotebooks::new(&index, &store);
-        let titles: Vec<String> = list
-            .notebooks()
-            .unwrap()
-            .iter()
-            .map(|n| n.title().to_owned())
-            .collect();
-        assert_eq!(titles, ["Bières", "Levures"]);
+    fn the_entries_of_a_notebook_are_listed_oldest_first_and_a_note_has_none() {
+        let store = InMemoryNoteStore::with_notes(&[("a.md", NOTEBOOK), ("note.md", "# Note")]);
         AddEntry::new(&store, &clock(9, 0))
-            .execute(&path("a.md"), "un", None)
+            .execute(&path("a.md"), "un")
             .unwrap();
         AddEntry::new(&store, &clock(9, 5))
-            .execute(&path("a.md"), "deux", None)
+            .execute(&path("a.md"), "deux")
             .unwrap();
+        let list = ListEntries::new(&store);
         let texts: Vec<String> = list
-            .entries(&path("a.md"))
+            .execute(&path("a.md"))
             .unwrap()
             .iter()
             .map(|e| e.text().to_owned())
             .collect();
         assert_eq!(texts, ["un", "deux"]);
         assert_eq!(
-            list.entries(&path("note.md")),
+            list.execute(&path("note.md")),
             Err(AppError::EntryRefused(RefusedEntry::NotANotebook))
         );
     }
