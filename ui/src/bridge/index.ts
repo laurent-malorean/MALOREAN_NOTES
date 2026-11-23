@@ -361,9 +361,9 @@ export const removeMeaningModel = (model: string) =>
   invoke<null>("remove_meaning_model", { model });
 /** Reconstruit l'index de sens de l'espace de travail ouvert ; les vecteurs se recalculent ensuite. */
 export const rebuildMeaning = () => invoke<null>("rebuild_meaning");
-/** Les notes de tout l'espace de travail qui répondent à `query` par leurs mots ou leur sens, et ce qu'il est advenu du sens. */
-export const searchNotesWithMeaning = (query: string) =>
-  invoke<MeaningSearchItem>("search_notes_with_meaning", { query });
+/** Les notes de tout l'espace de travail dont le sens est le plus proche de `query` (sans les mots), et ce qu'il est advenu du sens. */
+export const searchNotesByMeaning = (query: string) =>
+  invoke<MeaningSearchItem>("search_notes_by_meaning", { query });
 /** Les notes dont le sens est le plus proche de la note `path` : dix au plus. */
 export const relatedNotes = (path: string) => invoke<NoteListItem[]>("related_notes", { path });
 /** Même nom côté Rust (`MEANING_PROGRESS_EVENT`). */

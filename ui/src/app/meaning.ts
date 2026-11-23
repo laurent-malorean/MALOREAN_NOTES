@@ -1,24 +1,21 @@
 // Recherche par le sens, côté application : ce que l'interface sait des modèles et du calcul (aperçu
-// de Rust et événements), le choix du mode de recherche, les réglages du sens et les notes proches.
+// de Rust et événements), le calcul dit dans la colonne « idées », les réglages du sens et les notes proches.
 import type * as Bridge from "../bridge";
 import { askModelRemoval } from "../screens/confirmation";
 import type { Layout } from "../screens/layout";
 import { meaningSettingsFrame, renderMeaningSettings } from "../screens/meaning-settings";
 import type { RelatedNotes } from "../screens/note-pane";
-import { renderSearchMode } from "../screens/search-mode-view";
 import {
   computeHeard,
+  computeNote,
   downloadEnded,
   downloadHeard,
   downloadStarted,
-  effectiveMode,
   indexLines,
   type MeaningState,
   meaningStarted,
   modelRows,
   overviewRead,
-  type SearchMode,
-  searchModeView,
 } from "../state/meaning";
 import type { OpenColumns } from "./columns";
 import type { Messages } from "./messages";
@@ -36,17 +33,13 @@ export interface MeaningDeps extends Pick<Messages, "show" | "run"> {
     | "onMeaningProgress"
     | "onModelDownload"
   >;
-  readonly layout: Pick<Layout, "searchMode" | "confirmation">;
+  readonly layout: Pick<Layout, "ideasCompute" | "confirmation">;
   readonly columns: Pick<OpenColumns, "panes">;
-  /** Relance la recherche en cours : le mode, ou ce que le sens sait, a changé. */
+  /** Relance la recherche en cours : ce que le sens sait a changé. */
   readonly searchAgain: () => void;
 }
 
 export interface Meaning extends RelatedNotes {
-  /** Le mode de recherche qui sert vraiment : « par le sens » demande un modèle téléchargé. */
-  mode(): SearchMode;
-  /** Veut ce mode ; il sert dès que le sens le peut. */
-  chooseMode(mode: SearchMode): void;
   /** Affiche ou masque les notes proches, sous le texte de chaque colonne. */
   toggleRelated(): void;
   /** La partie « Recherche par le sens » de l'écran des réglages, redessinée à chaque changement. */
@@ -58,24 +51,14 @@ export interface Meaning extends RelatedNotes {
 /** Le sens vu par l'application : son état, ce qui le montre, et ce qui l'actionne. */
 class MeaningApp implements Meaning {
   private state: MeaningState = meaningStarted;
-  private wanted: SearchMode = "words";
   private relatedShown = false;
-  private drawnMode: string | null = null;
   private readonly frames = new Set<HTMLElement>();
 
   constructor(private readonly deps: MeaningDeps) {}
 
-  mode = () => effectiveMode(this.state, this.wanted);
-
   enabled = () => this.relatedShown;
 
   notes = (path: string) => this.deps.backend.relatedNotes(path);
-
-  chooseMode = (mode: SearchMode) => {
-    this.wanted = mode;
-    this.draw();
-    this.deps.searchAgain();
-  };
 
   toggleRelated = () => {
     this.relatedShown = !this.relatedShown;
@@ -117,7 +100,7 @@ class MeaningApp implements Meaning {
   /** Le calcul est fini : l'aperçu, les résultats de la recherche et les notes proches ont changé. */
   private computed() {
     this.deps.run(this.refresh());
-    if (this.mode() === "meaning") this.deps.searchAgain();
+    this.deps.searchAgain();
     this.showRelated();
   }
 
@@ -131,18 +114,12 @@ class MeaningApp implements Meaning {
     this.update((now) => overviewRead(now, overview));
   };
 
-  /** Redessine le choix du mode, si ce qu'il montre a changé, et les réglages ouverts. */
+  /** Redessine le calcul dit dans la colonne « idées », et les réglages ouverts. */
   private draw() {
-    const view = searchModeView(this.state, this.wanted);
-    const key = JSON.stringify(view);
-    if (key !== this.drawnMode) {
-      renderSearchMode(this.deps.layout.searchMode, view, {
-        choose: this.chooseMode,
-        download: (model) => this.deps.run(this.download(model, true)),
-        cancelDownload: this.cancel,
-      });
-    }
-    this.drawnMode = key;
+    const note = computeNote(this.state);
+    const { ideasCompute } = this.deps.layout;
+    ideasCompute.textContent = note ?? "";
+    ideasCompute.hidden = note === null;
     for (const frame of this.frames) {
       if (frame.isConnected) this.drawSettings(frame);
       else this.frames.delete(frame);
@@ -154,7 +131,7 @@ class MeaningApp implements Meaning {
     const view = { rows: modelRows(this.state), lines: indexLines(this.state) };
     renderMeaningSettings(frame, view, {
       choose: (model) => run(this.choose(model)),
-      download: (model) => run(this.download(model, false)),
+      download: (model) => run(this.download(model)),
       cancelDownload: this.cancel,
       remove: (model, label) => run(this.remove(model, label)),
       rebuild: () => run(this.rebuild()),
@@ -163,12 +140,10 @@ class MeaningApp implements Meaning {
 
   private readonly cancel = () => this.deps.run(this.deps.backend.cancelModelDownload());
 
-  /** Télécharge ; lancé du choix du mode (`thenSearch`), la recherche passe « par le sens » à la fin. */
-  private async download(model: string, thenSearch: boolean) {
+  private async download(model: string) {
     this.update((now) => downloadStarted(now, model));
     try {
       await this.deps.backend.downloadMeaningModel(model);
-      if (thenSearch) this.wanted = "meaning";
     } finally {
       this.update(downloadEnded);
       await this.refresh();

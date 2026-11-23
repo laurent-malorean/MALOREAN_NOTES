@@ -17,9 +17,17 @@ export interface Layout {
   readonly noteOrder: HTMLSelectElement;
   readonly newFolderButton: HTMLButtonElement;
   readonly trashButton: HTMLButtonElement;
+  /** Le champ de recherche, dans la bande du haut, entre la barre de mise en forme et les boutons Focus, Plan… */
   readonly searchField: HTMLInputElement;
-  /** Sous le champ de recherche : par les mots ou par le sens, et ce que le sens demande encore. */
-  readonly searchMode: HTMLElement;
+  /** La fenêtre de recherche : les résultats, en deux colonnes. */
+  readonly searchWindow: HTMLDialogElement;
+  readonly searchClose: HTMLButtonElement;
+  /** Colonne « Recherche match » : les notes qui contiennent les mots tapés. */
+  readonly matchResults: HTMLElement;
+  /** Colonne « Recherche idées » : les notes dont le sens est le plus proche, ou pourquoi le sens manque. */
+  readonly ideasResults: HTMLElement;
+  /** Où en est le calcul du sens, en tête de la colonne « idées ». */
+  readonly ideasCompute: HTMLElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
   /** La barre de mise en forme, au centre de la bande du haut, à gauche des boutons Focus, Plan… */
@@ -77,8 +85,6 @@ const TEMPLATE = `
           <span class="list-heading"></span>
           <button class="icon" data-new title="Nouvelle note">＋</button>
         </header>
-        <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
-        <div class="search-mode"></div>
         <div class="tag-filter" hidden></div>
         <label class="note-order">Trier par <select aria-label="Trier la liste"></select></label>
         <nav class="notes-list"></nav>
@@ -87,6 +93,7 @@ const TEMPLATE = `
       <main class="editor">
         <div class="editor-tools">
           <div class="format-bar"></div>
+          <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
           <div class="display-tools">
             <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
             <button class="tool" data-outline title="Plan de la note (Cmd+Maj+O)" aria-pressed="false">Plan</button>
@@ -102,6 +109,20 @@ const TEMPLATE = `
       <section class="claude-column" aria-label="Claude Code" hidden></section>
     </section>
     <div class="status" role="status"></div>
+    <dialog class="search-window" aria-label="Résultats de la recherche">
+      <button class="icon search-window-close" aria-label="Fermer la recherche" title="Fermer (Échap)">×</button>
+      <div class="search-columns">
+        <section class="search-column" aria-labelledby="search-match-title">
+          <h2 id="search-match-title">Recherche match</h2>
+          <div class="search-column-results match-results"></div>
+        </section>
+        <section class="search-column" aria-labelledby="search-ideas-title">
+          <h2 id="search-ideas-title">Recherche idées</h2>
+          <p class="search-column-note ideas-compute" hidden></p>
+          <div class="search-column-results ideas-results"></div>
+        </section>
+      </div>
+    </dialog>
     <dialog class="settings" aria-label="Réglages"></dialog>
     <dialog class="picker"></dialog>
     <dialog class="confirmation"></dialog>
@@ -123,7 +144,11 @@ export function createLayout(root: HTMLElement): Layout {
     newFolderButton: find("[data-new-folder]"),
     trashButton: find("[data-trash]"),
     searchField: find(".search-field"),
-    searchMode: find(".search-mode"),
+    searchWindow: find(".search-window"),
+    searchClose: find(".search-window-close"),
+    matchResults: find(".match-results"),
+    ideasResults: find(".ideas-results"),
+    ideasCompute: find(".ideas-compute"),
     notesList: find(".notes-list"),
     editor: find(".editor"),
     formatBar: find(".format-bar"),

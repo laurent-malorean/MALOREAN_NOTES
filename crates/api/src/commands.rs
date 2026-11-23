@@ -568,7 +568,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         meaning::cancel_model_download,
         meaning::remove_meaning_model,
         meaning::rebuild_meaning,
-        meaning::search_notes_with_meaning,
+        meaning::search_notes_by_meaning,
         meaning::related_notes,
     ]
 }

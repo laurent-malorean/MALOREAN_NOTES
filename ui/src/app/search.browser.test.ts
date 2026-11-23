@@ -66,7 +66,11 @@ describe("recherche dans l'espace de travail", () => {
     vi.advanceTimersByTime(SEARCH_DELAY_MS);
     expect(queries).toEqual(["cour"]);
     await vi.waitFor(() =>
-      expect(shownSearch()).toEqual({ query: "cour", results: [found("cour.md")] }),
+      expect(shownSearch()).toEqual({
+        query: "cour",
+        results: [found("cour.md")],
+        ideas: { results: [], meaning: { kind: "used" } },
+      }),
     );
   });
 
@@ -91,71 +95,62 @@ describe("recherche dans l'espace de travail", () => {
     search.type("cou");
     await search.search("cou");
     expect(queries).toEqual(["cou"]);
-    expect(shownSearch()).toEqual({ query: "cou", results: [found("cou.md")] });
+    expect(shownSearch()).toEqual({
+      query: "cou",
+      results: [found("cou.md")],
+      ideas: { results: [], meaning: { kind: "used" } },
+    });
     expect(screen.get().kind).toBe("workspace");
-  });
-  it("cherche par les mots tant que le mode « par le sens » n'est pas choisi", async () => {
-    const t = setup();
-    await t.search.search("cou");
-    expect(t.queries).toEqual(["cou"]);
-    expect(t.meaning.calls).not.toContain("chercher par le sens cou");
   });
 });
 
-describe("recherche par le sens", () => {
+describe("recherche par le sens, dans la même recherche", () => {
   const ready = withDownloaded(overviewOf(), { "e5-small": true });
   const used = { kind: "used" } as const;
 
-  async function inMeaningMode() {
+  it("lance les deux recherches pour les mêmes mots, chacune remplit sa colonne", async () => {
     const t = setup(workspaceScreen(), ready);
-    await vi.waitFor(() => expect(t.meaning.calls).toEqual(["aperçu"]));
-    t.search.meaning.chooseMode("meaning");
-    return t;
-  }
-
-  it("appelle la commande du sens, et garde ce qu'il est advenu du sens avec les notes trouvées", async () => {
-    const t = await inMeaningMode();
     const meaning = { kind: "notComputed", model: "e5-small", message: "Pas fini." } as const;
     t.meaning.answerWith({ results: [found("sens.md")], meaning });
     t.screen.show(searchTyped(t.screen.get(), "dessert"));
     await t.search.search("dessert");
+    expect(t.queries).toEqual(["dessert"]);
     expect(t.meaning.calls).toContain("chercher par le sens dessert");
-    expect(t.queries).toEqual([]);
-    expect(t.shownSearch()).toEqual({ query: "dessert", results: [found("sens.md")], meaning });
+    expect(t.shownSearch()).toEqual({
+      query: "dessert",
+      results: [found("dessert.md")],
+      ideas: { results: [found("sens.md")], meaning },
+    });
   });
 
-  it("montre les résultats d'une recherche où le sens a servi", async () => {
-    const t = await inMeaningMode();
-    t.meaning.answerWith({ results: [found("sens.md")], meaning: used });
+  it("dit dans la réponse du sens que le modèle manque, sans empêcher les mots de répondre", async () => {
+    const t = setup();
+    const meaning = { kind: "modelMissing", model: "e5-small", message: "Pas de modèle." } as const;
+    t.meaning.answerWith({ results: [], meaning });
     t.screen.show(searchTyped(t.screen.get(), "dessert"));
     await t.search.search("dessert");
-    expect(t.shownSearch()?.results).toEqual([found("sens.md")]);
+    expect(t.shownSearch()?.results).toEqual([found("dessert.md")]);
+    expect(t.shownSearch()?.ideas?.meaning).toEqual(meaning);
   });
 
-  it("refait la recherche en cours quand le mode change, par le sens puis par les mots", async () => {
+  it("refait la recherche en cours quand le calcul du sens finit", async () => {
     const t = setup(workspaceScreen(), ready);
     await vi.waitFor(() => expect(t.meaning.calls).toEqual(["aperçu"]));
     t.screen.show(searchTyped(t.screen.get(), "dessert"));
-    t.search.meaning.chooseMode("meaning");
-    await vi.waitFor(() => expect(t.meaning.calls).toContain("chercher par le sens dessert"));
-    t.search.meaning.chooseMode("words");
-    await vi.waitFor(() => expect(t.queries).toEqual(["dessert"]));
+    t.meaning.answerWith({ results: [found("sens.md")], meaning: used });
+    t.meaning.computing({ kind: "finished", model: "e5-small" });
+    await vi.waitFor(() => expect(t.shownSearch()?.ideas?.results).toEqual([found("sens.md")]));
+    expect(t.queries).toEqual(["dessert"]);
   });
 
-  it("ne cherche rien quand le mode change sans recherche, ou sous le seuil", async () => {
+  it("ne refait rien quand le calcul finit sans recherche, ou sous le seuil", async () => {
     const t = setup(workspaceScreen(), ready);
     await vi.waitFor(() => expect(t.meaning.calls).toEqual(["aperçu"]));
-    t.search.meaning.chooseMode("meaning");
+    t.meaning.computing({ kind: "finished", model: "e5-small" });
     t.screen.show(searchTyped(t.screen.get(), "de"));
-    t.search.meaning.chooseMode("words");
+    t.meaning.computing({ kind: "finished", model: "e5-small" });
     await Promise.resolve();
     expect(t.queries).toEqual([]);
-    expect(t.meaning.calls).toEqual(["aperçu"]);
-  });
-
-  it("garde l'accueil sans recherche en cours quand le mode change", () => {
-    const t = setup(workspaceScreen(), ready);
-    t.search.meaning.chooseMode("meaning");
-    expect(t.queries).toEqual([]);
+    expect(t.meaning.calls).not.toContain("chercher par le sens de");
   });
 });

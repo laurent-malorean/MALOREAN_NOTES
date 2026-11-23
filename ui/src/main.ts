@@ -126,9 +126,9 @@ const newPane = paneMaker({
 });
 const actions: ScreenActions = screenActions({
   ...{ backend: bridge, screen, columns, folders, workspace, trash, tags, recent },
-  ...{ exporting, history, notebooks, run },
+  ...{ exporting, history, notebooks, settings, run },
 });
-connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders });
+connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders, actions });
 const windowDisplay = connectWindowDisplay(layout, {
   ...{ ...messages, window: bridge, storage: localStorage },
 });

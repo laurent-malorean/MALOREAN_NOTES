@@ -1,24 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { MeaningOverviewItem } from "../bridge";
 import {
-  chosenModel,
   computeHeard,
   computeLabel,
+  computeNote,
   downloadEnded,
   downloadHeard,
   downloadStarted,
-  effectiveMode,
   indexLines,
   type MeaningState,
   meaningNotice,
+  modelMissing,
   meaningStarted,
-  meaningUsable,
   megabytes,
   modelRows,
   overviewRead,
   percent,
-  SEARCH_MODES,
-  searchModeView,
 } from "./meaning";
 
 const SMALL = 470_637_416;
@@ -76,30 +73,6 @@ describe("état du sens", () => {
     expect(meaningStarted).toEqual({ overview: null, download: null, compute: null });
   });
 
-  it("n'a rien d'utilisable avant le premier aperçu", () => {
-    expect(chosenModel(meaningStarted)).toBeNull();
-    expect(meaningUsable(meaningStarted)).toBe(false);
-  });
-
-  it("retrouve le modèle choisi parmi les modèles", () => {
-    expect(chosenModel(read({ chosen: "e5-large" }))?.label).toBe("E5 grand");
-    expect(chosenModel(read({ chosen: "inconnu" }))).toBeNull();
-  });
-
-  it("n'est utilisable que si le modèle choisi est téléchargé", () => {
-    expect(meaningUsable(read())).toBe(true);
-    expect(meaningUsable(read({ smallDownloaded: false }))).toBe(false);
-    expect(meaningUsable(read({ chosen: "e5-large" }))).toBe(false);
-    expect(meaningUsable(read({ chosen: "e5-large", largeDownloaded: true }))).toBe(true);
-  });
-
-  it("cherche par les mots tant que le sens ne peut pas servir", () => {
-    expect(effectiveMode(read(), "meaning")).toBe("meaning");
-    expect(effectiveMode(read(), "words")).toBe("words");
-    expect(effectiveMode(read({ smallDownloaded: false }), "meaning")).toBe("words");
-    expect(effectiveMode(meaningStarted, "meaning")).toBe("words");
-  });
-
   it("reprend un calcul que l'aperçu dit en cours, sans écraser celui qu'on suit", () => {
     expect(read({ computing: true }).compute).toEqual({ done: 120, total: 411 });
     expect(read({ computing: false }).compute).toBeNull();
@@ -149,77 +122,22 @@ describe("état du sens", () => {
   });
 });
 
-describe("choix du mode de recherche", () => {
-  it("propose les deux modes, par les mots d'abord", () => {
-    expect(SEARCH_MODES).toEqual([
-      { mode: "words", label: "Par les mots" },
-      { mode: "meaning", label: "Par le sens" },
-    ]);
-  });
-
-  it("grise le sens sans aperçu, sans rien dire", () => {
-    expect(searchModeView(meaningStarted, "meaning")).toEqual({
-      ...{ mode: "words", meaningAvailable: false, explanation: null },
-      ...{ offer: null, download: null, compute: null },
-    });
-  });
-
-  it("grise le sens, dit pourquoi et propose de télécharger le modèle choisi", () => {
-    expect(searchModeView(read({ smallDownloaded: false }), "meaning")).toEqual({
-      ...{ mode: "words", meaningAvailable: false },
-      explanation:
-        "Le modèle « E5 petit » n'est pas téléchargé : la recherche par le sens en a besoin.",
-      offer: { label: "Télécharger le modèle (449 Mo)", model: "e5-small" },
-      download: null,
-      compute: null,
-    });
-  });
-
-  it("nomme le modèle choisi et son poids", () => {
-    const view = searchModeView(read({ chosen: "e5-large" }), "words");
-    expect(view.explanation).toContain("E5 grand");
-    expect(view.offer?.label).toBe("Télécharger le modèle (2 136 Mo)");
-    expect(view.offer?.model).toBe("e5-large");
-  });
-
-  it("montre la progression du téléchargement à la place de l'offre", () => {
-    const state = downloadHeard(read({ smallDownloaded: false }), {
-      ...{ kind: "progress", model: "e5-small", done: 235_318_708, total: SMALL },
-    });
-    const view = searchModeView(state, "words");
-    expect(view.offer).toBeNull();
-    expect(view.download).toEqual({ text: "224 Mo sur 449 Mo (50 %)", percent: 50 });
-  });
-
-  it("n'offre pas un second téléchargement pendant celui d'un autre modèle", () => {
-    const state = downloadStarted(read({ smallDownloaded: false }), "e5-large");
-    const view = searchModeView(state, "words");
-    expect(view.offer).toBeNull();
-    expect(view.download).toBeNull();
-  });
-
-  it("active le sens quand le modèle est téléchargé, et garde le mode voulu", () => {
-    const words = searchModeView(read(), "words");
-    expect(words).toMatchObject({ mode: "words", meaningAvailable: true, explanation: null });
-    expect(words.offer).toBeNull();
-    expect(searchModeView(read(), "meaning").mode).toBe("meaning");
-  });
-
-  it("dit où en est le calcul, seulement en mode « Par le sens »", () => {
-    const state = computeHeard(read(), {
-      ...{ kind: "progress", done: 120, total: 411, model: "e5-small" },
-    });
-    expect(searchModeView(state, "meaning").compute).toBe("Calcul du sens : 120 / 411 segments");
-    expect(searchModeView(state, "words").compute).toBeNull();
-    expect(searchModeView(read(), "meaning").compute).toBeNull();
-  });
-
+describe("calcul du sens", () => {
   it("écrit le calcul du sens", () => {
     expect(computeLabel({ done: 0, total: 5 })).toBe("Calcul du sens : 0 / 5 segments");
   });
+
+  it("le dit dans la colonne « idées » seulement quand un calcul est en cours", () => {
+    const state = computeHeard(read(), {
+      ...{ kind: "progress", done: 120, total: 411, model: "e5-small" },
+    });
+    expect(computeNote(state)).toBe("Calcul du sens : 120 / 411 segments");
+    expect(computeNote(read())).toBeNull();
+    expect(computeNote(meaningStarted)).toBeNull();
+  });
 });
 
-describe("message au-dessus des résultats", () => {
+describe("message en tête de la colonne « idées »", () => {
   it("n'en dit rien quand le sens a servi, ou n'a pas été demandé", () => {
     expect(meaningNotice({ kind: "used" })).toBeNull();
     expect(meaningNotice(undefined)).toBeNull();
@@ -233,6 +151,17 @@ describe("message au-dessus des résultats", () => {
       "pas fini",
     );
     expect(meaningNotice({ kind: "failed", message: "raté" })).toBe("raté");
+  });
+
+  it("renvoie aux réglages seulement quand le modèle n'est pas téléchargé", () => {
+    expect(
+      modelMissing({ kind: "modelMissing", model: "e5-small", message: "pas de modèle" }),
+    ).toBe(true);
+    expect(modelMissing({ kind: "notComputed", model: "e5-small", message: "pas fini" })).toBe(
+      false,
+    );
+    expect(modelMissing({ kind: "used" })).toBe(false);
+    expect(modelMissing(undefined)).toBe(false);
   });
 });
 

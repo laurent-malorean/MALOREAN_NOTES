@@ -81,7 +81,6 @@ const deps: CommandsDeps = {
   assistant: { propose: (action) => void log.push(`aide à l'écriture ${action}`) },
   claude: { toggle: () => log.push("colonne Claude Code") },
   meaning: {
-    chooseMode: (mode) => void log.push(`mode ${mode}`),
     toggleRelated: () => void log.push("notes proches"),
   },
   run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
@@ -188,13 +187,6 @@ describe("commandes de la palette", () => {
     picker().querySelector<HTMLAnchorElement>(".about-site")?.click();
     await settle();
     expect(log).toEqual(["navigateur https://malorean.net"]);
-  });
-
-  it("« Rechercher par le sens » choisit ce mode et met le curseur dans la recherche", () => {
-    const focus = vi.spyOn(layout.searchField, "focus");
-    commandActions(deps)["search-by-meaning"]();
-    expect(log).toEqual(["mode meaning"]);
-    expect(focus).toHaveBeenCalled();
   });
 
   it("chercher met le curseur dans la recherche, ou dans la note", () => {

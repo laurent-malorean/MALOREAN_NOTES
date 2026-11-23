@@ -21,6 +21,7 @@ function setup() {
     search: { type: (query) => log.push(`chercher ${query}`) },
     trash: { show: async () => void log.push("corbeille") },
     folders: { startCreation: () => log.push("nouveau dossier") },
+    actions: { closeSearch: () => log.push("fermer la recherche") },
     error: (error) => log.push(`erreur ${String(error)}`),
     run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
   });
@@ -52,5 +53,11 @@ describe("boutons de la fenêtre", () => {
     layout.searchField.dispatchEvent(new Event("input"));
     await settle();
     expect(log).toEqual(["menu des espaces de travail", "chercher rome"]);
+  });
+
+  it("la croix de la fenêtre de recherche la ferme", () => {
+    const { layout, log } = setup();
+    layout.searchClose.click();
+    expect(log).toEqual(["fermer la recherche"]);
   });
 });

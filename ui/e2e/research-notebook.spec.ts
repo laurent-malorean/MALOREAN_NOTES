@@ -76,7 +76,7 @@ test("la recherche trouve une entrée seule, avec son cahier", async ({ page }) 
   const content = `${NOTEBOOK}\n## 2026\n\n### Novembre\n\n#### Lundi 16\n\n- 18:30 - du levain qui monte\n`;
   await launch(page, { ...NOTES, "Labo/levures.md": { content, modified: 10 } });
   await page.getByRole("searchbox", { name: "Rechercher" }).fill("levain");
-  const results = page.locator(".search-result");
+  const results = page.locator(".match-results .search-result");
   await expect(results).toHaveCount(2);
   await expect(results.nth(0).locator(".search-type")).toHaveText("Cahier de recherche");
   await expect(results.nth(1).locator(".note-title")).toHaveText("16 novembre 2026 à 18:30");

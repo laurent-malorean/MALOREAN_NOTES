@@ -167,7 +167,9 @@ test("la recherche trouve chaque nœud à part, et un clic ouvre la carte sur lu
   await page.setViewportSize({ width: 1200, height: 760 });
   await launch(page, NOTES);
   await page.getByRole("searchbox", { name: "Rechercher" }).fill("plombiers");
-  const result = page.locator(".search-result", { hasText: "Nœud · Lancement du produit" });
+  const result = page.locator(".match-results .search-result", {
+    hasText: "Nœud · Lancement du produit",
+  });
   await expect(result).toHaveCount(1);
   await expect(result.locator(".note-title")).toHaveText("Plombiers");
   await shot(page, "recherche");

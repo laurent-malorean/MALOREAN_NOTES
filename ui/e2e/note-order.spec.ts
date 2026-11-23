@@ -26,7 +26,7 @@ test("le tri par titre, choisi au-dessus de la liste, ignore les majuscules, gar
   await expect(titles(page)).toHaveText(["Zut", "avion", "Banane", "cerise"]);
 
   await page.locator(".search-field").fill("pain");
-  await expect(page.locator(".search-result .note-title")).toHaveText([
+  await expect(page.locator(".match-results .search-result .note-title")).toHaveText([
     "Zut",
     "avion",
     "Banane",

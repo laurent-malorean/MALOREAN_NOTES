@@ -63,7 +63,7 @@ export interface CommandsDeps {
   /** La colonne Claude Code, affichée ou masquée. */
   readonly claude: { toggle(): void };
   /** La recherche par le sens : son mode, et les notes proches sous le texte. */
-  readonly meaning: Pick<Meaning, "chooseMode" | "toggleRelated">;
+  readonly meaning: Pick<Meaning, "toggleRelated">;
   run(action: Promise<unknown>): void;
 }
 
@@ -148,7 +148,6 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "new-mind-map": () => run(deps.notebooks.createMindMap()),
     "new-folder": () => deps.folders.startCreation(),
     "search-workspace": () => deps.searchField.focus(),
-    "search-by-meaning": () => (deps.meaning.chooseMode("meaning"), deps.searchField.focus()),
     "find-in-note": () => columns.activePane().editor.openFind(),
     "find-and-replace": () => columns.activePane().editor.openReplace(),
     "correct-selection": () => deps.assistant.propose("correct"),

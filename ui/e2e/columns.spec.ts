@@ -271,7 +271,9 @@ test("Cmd+clic sur une note, dans la liste ou la recherche, l'ouvre dans un nouv
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×"]);
   await expect(tabs(page, 0).nth(1)).toHaveAttribute("aria-selected", "true");
   await page.getByRole("searchbox", { name: "Rechercher" }).fill("texte");
-  await page.locator(".search-result", { hasText: "Idée" }).click({ modifiers: ["Meta"] });
+  await page
+    .locator(".match-results .search-result", { hasText: "Idée" })
+    .click({ modifiers: ["Meta"] });
   await expect(tabs(page, 0)).toHaveText(["Courses×", "Courses×", "Idée×"]);
   await expect(firstLine(page, 0)).toHaveText("Idée");
 });

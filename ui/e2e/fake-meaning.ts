@@ -35,10 +35,9 @@ export interface FakeMeaning {
   };
 }
 
-/** Ce que la doublure prête à cette partie : les notes et la recherche par les mots. */
+/** Ce que la doublure prête à cette partie : les notes. */
 export interface MeaningHelpers {
   notes(): Record<string, { content: string; modified: number }>;
-  words(query: string): SearchResultItem[];
   listItem(entry: [string, { content: string; modified: number }]): NoteListItem;
   folded(text: string): string;
   folderOf(path: string): string;
@@ -117,23 +116,21 @@ function resultOf(
 
 function searching(state: State, helpers: MeaningHelpers): Handler {
   return ({ query = "" }) => {
-    const words = helpers.words(query);
     const model = state.chosen;
     if (!state.downloaded[model]) {
       const message = `Le modèle « ${LABELS[model]} » n'est pas téléchargé : la recherche s'est faite par les mots seuls.`;
-      return { results: words, meaning: { kind: "modelMissing", model, message } };
+      return { results: [], meaning: { kind: "modelMissing", model, message } };
     }
     if (!readyOf(state, helpers)) {
       const message =
         "Le sens n'est pas encore calculé pour toutes les notes : les résultats sont incomplets.";
-      return { results: words, meaning: { kind: "notComputed", model, message } };
+      return { results: [], meaning: { kind: "notComputed", model, message } };
     }
     const wanted = expanded(helpers.folded(query).split(/\s+/).filter(Boolean));
     const found = Object.entries(helpers.notes())
-      .filter(([path]) => !words.some((w) => w.path === path))
       .filter(([, note]) => [...wanted].some((w) => helpers.folded(note.content).includes(w)))
       .map(([path, note]) => resultOf(path, note, helpers));
-    return { results: [...words, ...found], meaning: { kind: "used" } };
+    return { results: found, meaning: { kind: "used" } };
   };
 }
 
@@ -198,7 +195,7 @@ export function fakeMeaning(fake: FakeMeaning, helpers: MeaningHelpers): Record<
       if (state.computing) await progress(state, helpers, 0);
       return null;
     },
-    search_notes_with_meaning: searching(state, helpers),
+    search_notes_by_meaning: searching(state, helpers),
     related_notes: relating(state, helpers),
   };
 }

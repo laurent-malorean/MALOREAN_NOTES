@@ -427,7 +427,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...fakeNotebook(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeMindMaps(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeMeaning(backend, {
-    ...{ notes: () => backend.notes, words: (query) => searchNotes(query), listItem, folded },
+    ...{ notes: () => backend.notes, listItem, folded },
     folderOf,
   }),
   search_notes: ({ query = "", order }) =>

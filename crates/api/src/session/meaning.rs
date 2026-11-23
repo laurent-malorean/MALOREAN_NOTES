@@ -8,8 +8,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, PoisonError};
 
 use application::use_cases::{
-    ChooseModel, DownloadModel, ReadMeaningStatus, RebuildMeaning, RelatedNotes, RemoveModel,
-    SearchWithMeaning,
+    ChooseModel, DownloadModel, MixedResults, ReadMeaningStatus, RebuildMeaning, RelatedNotes,
+    RemoveModel, SearchWithMeaning,
 };
 use application::{AppError, MeaningModels, MeaningStore, MemoryMeaningIndex};
 use domain::{MeaningModel, NotePath};
@@ -270,10 +270,28 @@ impl Session {
             model,
         )
         .execute(text)?;
-        Ok(MeaningSearchItem {
-            results: found.results.into_iter().map(search_result_item).collect(),
-            meaning: MeaningUseItem::from(&found.meaning),
-        })
+        Ok(search_item(found))
+    }
+
+    /// Les notes de l'espace de travail dont le sens est le plus proche de `text`, sans mêler les
+    /// mots : la colonne « idées » de la fenêtre de recherche. Si le sens manque, aucune note et
+    /// la raison, typée (modèle absent, calcul pas commencé, échec).
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; question vide, aucun espace de travail
+    /// ouvert, index illisible.
+    pub fn search_notes_by_meaning(&self, text: &str) -> Result<MeaningSearchItem, ApiError> {
+        let opened = self.opened()?;
+        let model = self.preferences.meaning_model().map_err(AppError::from)?;
+        let found = SearchWithMeaning::new(
+            &*opened.index,
+            &*opened.meaning,
+            &*self.meaning_models,
+            model,
+        )
+        .execute_by_meaning(text)?;
+        Ok(search_item(found))
     }
 
     /// Les notes dont le sens est le plus proche de la note `path` ([`RELATED_NOTES_LIMIT`] au
@@ -290,6 +308,14 @@ impl Session {
         let related = RelatedNotes::new(&*opened.index, &*opened.meaning, model)
             .execute(&note, RELATED_NOTES_LIMIT)?;
         Ok(related.iter().map(list_item).collect())
+    }
+}
+
+/// Le résultat d'une recherche, tel que l'interface le reçoit.
+fn search_item(found: MixedResults) -> MeaningSearchItem {
+    MeaningSearchItem {
+        results: found.results.into_iter().map(search_result_item).collect(),
+        meaning: MeaningUseItem::from(&found.meaning),
     }
 }
 

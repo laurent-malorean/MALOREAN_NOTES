@@ -118,19 +118,19 @@ pub async fn rebuild_meaning(session: SharedSession<'_>) -> Result<(), ApiError>
     in_background(move || session.rebuild_meaning()).await
 }
 
-/// Les notes de tout l'espace de travail qui répondent à `query` par leurs mots ou par leur sens ;
-/// si le sens manque, les mots répondent seuls et le résultat dit pourquoi.
+/// Les notes de tout l'espace de travail dont le sens est le plus proche de `query`, sans mêler
+/// les mots ; si le sens manque, aucune note et le résultat dit pourquoi.
 ///
 /// # Errors
 ///
-/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::search_notes_with_meaning`].
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::search_notes_by_meaning`].
 #[tauri::command]
-pub async fn search_notes_with_meaning(
+pub async fn search_notes_by_meaning(
     session: SharedSession<'_>,
     query: String,
 ) -> Result<MeaningSearchItem, ApiError> {
     let session = Arc::clone(&session);
-    in_background(move || session.search_notes_with_meaning(&query)).await
+    in_background(move || session.search_notes_by_meaning(&query)).await
 }
 
 /// Les notes dont le sens est le plus proche de la note `path`.

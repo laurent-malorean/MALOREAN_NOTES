@@ -1,6 +1,7 @@
 // Boutons de la fenêtre et champ de recherche : chacun lance l'action du module de son domaine.
 import type { Layout } from "../screens/layout";
 import { connectSearchField } from "../screens/search-field";
+import { connectSearchWindow } from "../screens/search-window";
 import { connectWorkspaceSwitcher } from "../screens/workspace-switcher";
 import type { Workspaces } from "./workspaces";
 
@@ -10,6 +11,8 @@ export interface ButtonsDeps {
   readonly search: { type(query: string): void };
   readonly trash: { show(): Promise<void> };
   readonly folders: { startCreation(): void };
+  /** La fenêtre de recherche se ferme par ce qu'on lui demande ici. */
+  readonly actions: { closeSearch(): void };
   error(error: unknown): void;
   run(action: Promise<unknown>): void;
 }
@@ -21,6 +24,8 @@ type ButtonsLayout = Pick<
   | "workspaceSwitcher"
   | "newNoteButton"
   | "searchField"
+  | "searchWindow"
+  | "searchClose"
   | "trashButton"
   | "newFolderButton"
 >;
@@ -33,6 +38,7 @@ export function connectButtons(layout: ButtonsLayout, deps: ButtonsDeps): void {
   connectWorkspaceSwitcher(layout.workspaceSwitcher, workspaces.menu, deps.error);
   layout.newNoteButton.addEventListener("click", () => run(deps.workspace.createNote()));
   connectSearchField(layout.searchField, deps.search.type);
+  connectSearchWindow(layout, deps.actions.closeSearch);
   layout.trashButton.addEventListener("click", () => run(deps.trash.show()));
   layout.newFolderButton.addEventListener("click", deps.folders.startCreation);
 }
