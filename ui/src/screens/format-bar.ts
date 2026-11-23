@@ -1,9 +1,10 @@
 // Barre de mise en forme : les boutons de la bande du haut qui lancent les commandes de mise en
 // forme et de copie sur la note de la colonne active, sans prendre le focus de l'éditeur.
 import type { CommandId } from "../state/commands";
+import { formatIcon } from "./format-icons";
 import { FORMAT_BAR, formatButtonName, formatButtonTitle } from "../state/format-bar";
 
-/** Pose les groupes de boutons dans la barre ; un clic lance la commande du bouton. */
+/** Pose les pilules de boutons dans la barre ; un clic lance la commande du bouton. */
 export function buildFormatBar(bar: HTMLElement, run: (command: CommandId) => void): void {
   bar.setAttribute("role", "toolbar");
   bar.setAttribute("aria-label", "Mise en forme");
@@ -15,12 +16,12 @@ export function buildFormatBar(bar: HTMLElement, run: (command: CommandId) => vo
       group.className = "format-group";
       group.setAttribute("role", "group");
       group.append(
-        ...buttons.map(({ command, text }) => {
+        ...buttons.map(({ command, icon }) => {
           const button = document.createElement("button");
           button.type = "button";
-          button.className = "tool";
+          button.className = "format-button";
           button.dataset.command = command;
-          button.textContent = text;
+          button.append(formatIcon(icon));
           button.setAttribute("aria-label", formatButtonName(command));
           button.title = formatButtonTitle(command);
           button.disabled = true;
