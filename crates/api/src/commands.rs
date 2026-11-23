@@ -10,8 +10,9 @@ use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::{
-    ApiError, AttachedFile, LinkingNoteItem, NoteContent, NoteListItem, NoteOrderItem, SaveResult,
-    SavedNote, SearchResultItem, Session, TagItem, TrashInfo, WorkspaceNoteItem,
+    ApiError, AttachedFile, IndexOverviewItem, LinkingNoteItem, NoteContent, NoteListItem,
+    NoteOrderItem, SaveResult, SavedNote, SearchResultItem, Session, TagItem, TrashInfo,
+    WorkspaceNoteItem,
 };
 
 /// Événement envoyé à l'interface quand l'espace de travail change hors de l'application ;
@@ -143,6 +144,17 @@ pub async fn list_tags(session: SharedSession<'_>) -> Result<Vec<TagItem>, ApiEr
 pub async fn rebuild_index(session: SharedSession<'_>) -> Result<(), ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.rebuild_index()).await
+}
+
+/// L'état de l'index de mots de l'espace de travail ouvert : ses notes, sa dernière reconstruction.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::index_overview`].
+#[tauri::command]
+pub async fn index_overview(session: SharedSession<'_>) -> Result<IndexOverviewItem, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.index_overview()).await
 }
 
 /// Les liens entrants d'une note.
@@ -499,6 +511,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         list_tagged_notes,
         list_tags,
         rebuild_index,
+        index_overview,
         list_recent_notes,
         read_note,
         save_note,

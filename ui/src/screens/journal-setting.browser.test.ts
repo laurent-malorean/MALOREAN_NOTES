@@ -8,9 +8,12 @@ function open(current: JournalSettings) {
   const dialog = document.createElement("dialog");
   document.body.replaceChildren(dialog);
   const changes: JournalSettings[] = [];
-  openSettings(dialog, DEFAULT_SETTINGS, () => undefined, [
-    journalGroup(current, (next) => changes.push(next)),
-  ]);
+  const group = journalGroup(current, (next) => changes.push(next));
+  openSettings(dialog, DEFAULT_SETTINGS, () => undefined, [group], {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  });
   const folder = dialog.querySelector<HTMLInputElement>("input[name=journalFolder]");
   const atLaunch = dialog.querySelector<HTMLInputElement>("input[name=journalAtLaunch]");
   if (!folder || !atLaunch) throw new Error("champ introuvable");
@@ -26,7 +29,7 @@ describe("réglages du journal", () => {
   it("a sa partie, avec le dossier du journal et la case de la note du jour au lancement", () => {
     const { dialog, folder, atLaunch } = open({ folder: "Carnet", atLaunch: false });
     const legends = [...dialog.querySelectorAll("legend")].map((l) => l.textContent);
-    expect(legends).toEqual(["Écriture", "Affichage", "Claude", "Journal"]);
+    expect(legends).toEqual(["Affichage", "Écriture", "Journal", "Claude"]);
     expect(labelOf(dialog, "Dossier du journal")?.control).toBe(folder);
     expect(labelOf(dialog, "Créer la note du jour au lancement")?.control).toBe(atLaunch);
     expect([folder.type, folder.value, atLaunch.type, atLaunch.checked]).toEqual([

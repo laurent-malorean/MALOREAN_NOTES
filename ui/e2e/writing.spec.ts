@@ -98,6 +98,7 @@ test("le nombre de caractères par page se règle, est gardé, et Échap ferme l
   await page.getByRole("button", { name: "Plein écran" }).click();
   await page.keyboard.press("Meta+,");
   const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByRole("tab", { name: "Écriture" }).click();
   await dialog.getByLabel("Caractères par page").fill("1000");
   await expect(bar).toContainText("3 pages");
   await page.keyboard.press("Escape");

@@ -69,6 +69,7 @@ test("télécharger le modèle depuis la recherche, chercher par le sens, ouvrir
   // L'autre modèle, choisi dans les réglages : il n'est pas téléchargé, la recherche le dit.
   await page.getByRole("button", { name: "Réglages" }).click();
   const settings = page.getByRole("dialog", { name: "Réglages" });
+  await settings.getByRole("tab", { name: "Index" }).click();
   await expect(settings.locator(".meaning-model", { hasText: "E5 petit" })).toContainText(
     "utilisé",
   );
@@ -116,6 +117,7 @@ test("les réglages montrent l'index de sens, le reconstruisent, et suppriment u
   await launch(page, { meaning: "ready" });
   await page.getByRole("button", { name: "Réglages" }).click();
   const settings = page.getByRole("dialog", { name: "Réglages" });
+  await settings.getByRole("tab", { name: "Index" }).click();
   const section = settings.locator(".meaning-settings");
   await expect(section).toContainText("Notes : 3");
   await expect(section).toContainText("Segments calculés : 3 sur 3");

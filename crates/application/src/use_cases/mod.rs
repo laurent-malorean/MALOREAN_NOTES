@@ -32,7 +32,7 @@ pub use history::{
     CompareVersion, KeepVersion, KeepVersionsBeforeChange, ListVersions, ReadVersion,
     RestoreVersion,
 };
-pub use index::{RebuildIndex, RefreshIndex};
+pub use index::{ReadIndexStatus, RebuildIndex, RefreshIndex};
 pub use list_notes::{ListAllNotes, ListNotes};
 pub use meaning::{
     BATCH_SIZE, ChooseModel, ComputeListener, ComputeMeaning, ComputeOutcome, ComputeProgress,

@@ -4,14 +4,24 @@ import { openSettings } from "./settings-view";
 import "../theme.css";
 import "../style.css";
 
-function open(settings: Settings = DEFAULT_SETTINGS) {
+function memoryStorage(initial: Record<string, string> = {}) {
+  const items = new Map(Object.entries(initial));
+  return {
+    getItem: (key: string) => items.get(key) ?? null,
+    setItem: (key: string, value: string) => void items.set(key, value),
+    removeItem: (key: string) => void items.delete(key),
+    items,
+  };
+}
+
+function open(settings: Settings = DEFAULT_SETTINGS, storage = memoryStorage()) {
   const dialog = document.createElement("dialog");
   document.body.replaceChildren(dialog);
   const changes: Settings[] = [];
-  openSettings(dialog, settings, (next) => changes.push(next), []);
+  openSettings(dialog, settings, (next) => changes.push(next), [], storage);
   const input = dialog.querySelector<HTMLInputElement>("input[name=charactersPerPage]");
   if (!input) throw new Error("champ introuvable");
-  return { dialog, input, changes };
+  return { dialog, input, changes, storage };
 }
 
 function type(input: HTMLInputElement, text: string) {
@@ -28,7 +38,7 @@ describe("écran de réglages", () => {
     const { dialog, input } = open();
     expect(dialog.open).toBe(true);
     expect(dialog.querySelector("h2")?.textContent).toBe("Réglages");
-    const close = dialog.querySelector("button");
+    const close = dialog.querySelector("button.primary");
     expect([close?.textContent, close?.className]).toEqual(["Fermer", "primary"]);
     expect(input.getAttribute("aria-invalid")).toBe("false");
     expect(error(dialog)?.hidden).toBe(true);
@@ -44,16 +54,93 @@ describe("écran de réglages", () => {
     expect(dialog.querySelectorAll(".setting")).toHaveLength(6);
   });
 
-  it("range les réglages par partie : écriture, affichage, puis Claude", () => {
+  it("range les réglages par partie : affichage, écriture, puis Claude", () => {
     const { dialog } = open();
     const parts = [...dialog.querySelectorAll("fieldset")].map((f) => [
       f.querySelector("legend")?.textContent,
       [...f.querySelectorAll("label")].map((l) => l.textContent),
     ]);
     expect(parts).toEqual([
-      ["Écriture", ["Caractères par page"]],
       ["Affichage", ["Police", "Taille du texte", "Largeur du texte", "Apparence"]],
+      ["Écriture", ["Caractères par page"]],
       ["Claude", ["Modifications après une lecture du web"]],
+    ]);
+  });
+
+  it("range les parties en onglets : un seul panneau est montré, le premier au départ", () => {
+    const { dialog } = open();
+    const tabs = [...dialog.querySelectorAll<HTMLElement>("[role=tab]")];
+    expect(tabs.map((t) => t.textContent)).toEqual(["Affichage", "Écriture", "Claude", "Index"]);
+    expect(tabs.map((t) => t.getAttribute("aria-selected"))).toEqual([
+      "true",
+      "false",
+      "false",
+      "false",
+    ]);
+    expect(dialog.querySelector("[role=tablist]")?.getAttribute("aria-label")).toBe(
+      "Parties des réglages",
+    );
+    const panels = [...dialog.querySelectorAll<HTMLElement>("[role=tabpanel]")];
+    expect(panels.map((p) => p.hidden)).toEqual([false, true, true, true]);
+    expect(panels[1]?.getAttribute("aria-labelledby")).toBe(tabs[1]?.id);
+    expect(tabs[1]?.getAttribute("aria-controls")).toBe(panels[1]?.id);
+    expect(tabs.map((t) => t.tabIndex)).toEqual([0, -1, -1, -1]);
+  });
+
+  it("change de panneau au clic sur un onglet, et se souvient du dernier onglet ouvert", () => {
+    const storage = memoryStorage();
+    const first = open(DEFAULT_SETTINGS, storage);
+    first.dialog.querySelectorAll<HTMLElement>("[role=tab]")[3]?.click();
+    const shown = [...first.dialog.querySelectorAll<HTMLElement>("[role=tabpanel]")].map(
+      (p) => !p.hidden,
+    );
+    expect(shown).toEqual([false, false, false, true]);
+    const second = open(DEFAULT_SETTINGS, storage);
+    const selected = second.dialog.querySelector("[role=tab][aria-selected=true]");
+    expect(selected?.textContent).toBe("Index");
+  });
+
+  it("change d'onglet avec les flèches, Début et Fin, en gardant le focus sur l'onglet", () => {
+    const { dialog } = open();
+    const tabs = [...dialog.querySelectorAll<HTMLElement>("[role=tab]")];
+    const press = (tab: HTMLElement | undefined, key: string) =>
+      tab?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+    press(tabs[0], "ArrowRight");
+    expect(tabs[1]?.getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tabs[1]);
+    press(tabs[1], "End");
+    expect(tabs[3]?.getAttribute("aria-selected")).toBe("true");
+    press(tabs[3], "ArrowRight");
+    expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
+    press(tabs[0], "ArrowLeft");
+    expect(tabs[3]?.getAttribute("aria-selected")).toBe("true");
+    press(tabs[3], "Home");
+    expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
+    const other = new KeyboardEvent("keydown", { key: "a", bubbles: true, cancelable: true });
+    tabs[0]?.dispatchEvent(other);
+    expect(other.defaultPrevented).toBe(false);
+  });
+
+  it("place les parties de plus dans leur onglet", () => {
+    const dialog = document.createElement("dialog");
+    document.body.replaceChildren(dialog);
+    const part = (name: string) => {
+      const fieldset = document.createElement("fieldset");
+      const legend = document.createElement("legend");
+      legend.textContent = name;
+      fieldset.append(legend);
+      return fieldset;
+    };
+    const extra = ["Modèles", "Journal", "Index", "Recherche par le sens"].map(part);
+    openSettings(dialog, DEFAULT_SETTINGS, () => {}, extra, memoryStorage());
+    const panels = [...dialog.querySelectorAll("[role=tabpanel]")].map((p) =>
+      [...p.querySelectorAll("legend")].map((l) => l.textContent),
+    );
+    expect(panels).toEqual([
+      ["Affichage"],
+      ["Écriture", "Modèles", "Journal"],
+      ["Claude"],
+      ["Index", "Recherche par le sens"],
     ]);
   });
 
@@ -135,14 +222,20 @@ describe("écran de réglages", () => {
 
   it("se ferme par son bouton", () => {
     const { dialog } = open();
-    dialog.querySelector<HTMLButtonElement>("button")?.click();
+    dialog.querySelector<HTMLButtonElement>("button.primary")?.click();
     expect(dialog.open).toBe(false);
   });
 
   it("repart des réglages donnés à chaque ouverture", () => {
     const { dialog } = open();
     dialog.close();
-    openSettings(dialog, { ...DEFAULT_SETTINGS, charactersPerPage: 3000 }, () => {}, []);
+    openSettings(
+      dialog,
+      { ...DEFAULT_SETTINGS, charactersPerPage: 3000 },
+      () => {},
+      [],
+      memoryStorage(),
+    );
     expect(dialog.querySelectorAll("input")).toHaveLength(1);
     expect(dialog.querySelector("input")?.value).toBe("3000");
   });

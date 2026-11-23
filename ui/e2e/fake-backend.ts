@@ -407,6 +407,9 @@ const trashCommands: Record<string, (args: Record<string, string>) => unknown> =
   },
 };
 
+/** La dernière reconstruction de l'index : le faux ne la date que par une heure fixe. */
+let indexRebuilt: string | null = null;
+
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
   ...fakeNotebook(backend, { freeName, slug, tick: () => (clock += 1) }),
@@ -443,7 +446,11 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
       .sort(listOrder(order)),
   list_tags: () => listTags(),
   // Le faux n'a pas d'index : la liste et la recherche relisent toujours les notes.
-  rebuild_index: () => null,
+  rebuild_index: () => ((indexRebuilt = "23 novembre 2026 à 14:30"), null),
+  index_overview: () => ({
+    notes: Object.keys(backend.notes).length,
+    rebuilt: indexRebuilt,
+  }),
   list_recent_notes: (args) =>
     (args.paths as unknown as string[]).flatMap((path) => {
       const note = backend.notes[path];

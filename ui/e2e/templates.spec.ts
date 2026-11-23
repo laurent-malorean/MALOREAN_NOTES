@@ -32,6 +32,7 @@ const savedContent = (page: Page, path: string) =>
 async function chooseTemplatesFolder(page: Page, label: string) {
   await page.getByRole("button", { name: "Réglages" }).click();
   const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByRole("tab", { name: "Écriture" }).click();
   await dialog.getByLabel("Dossier des modèles").selectOption({ label });
   await dialog.getByRole("button", { name: "Fermer" }).click();
 }

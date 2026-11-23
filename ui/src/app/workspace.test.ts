@@ -53,6 +53,7 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
         { path: `${into}/${path}` }
       ),
       rebuildIndex: async () => (calls.push("reconstruire l'index"), null),
+      indexOverview: async () => ({ notes: 0, rebuilt: null }),
     },
     screen,
     columns: columns.open,
@@ -60,6 +61,7 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
     folds: { load: (path) => (path === "/notes" ? ["projets"] : []) },
     storage,
     show: (message, kind) => messages.push(kind ? `[${kind}] ${message}` : message),
+    run: () => {},
     search: async (query) => void calls.push(`chercher ${query}`),
     recent: {
       list: async () => (calls.push("notes récentes"), [listed("r.md")]),
@@ -83,6 +85,10 @@ function memoryStorage() {
 }
 
 describe("espace de travail ouvert", () => {
+  it("ne donne aucune partie de réglages sans espace de travail ouvert", () => {
+    expect(setup(welcome).workspace.settingsGroups()).toEqual([]);
+  });
+
   it("s'ouvre sur sa racine ; les colonnes oublient les notes de la précédente", async () => {
     const t = setup(welcome, noteOpened(noteOpened(columnsStarted, "un.md"), "deux.md"));
     expect(t.workspace.path()).toBe("");

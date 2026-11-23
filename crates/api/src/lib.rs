@@ -12,11 +12,12 @@ pub use dto::{
     ActionKindItem, AgentStateItem, AppMenu, AssistantStatus, AttachedFile, ChosenFolder,
     ClaudeEventItem, ClaudeModelItem, ClaudeStatusItem, ContentTypeItem, DifferenceItem,
     DifferenceKind, EffortItem, EntryItem, ExcerptPartItem, ExportFile, ExportFormatItem,
-    LinkingNoteItem, MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem,
-    MenuEntryItem, MenuRoleItem, ModelDownloadItem, ModelOverviewItem, NoteContent, NoteListItem,
-    NoteOrderItem, ProposalItem, SaveResult, SavedNote, SearchResultItem, StandardItem, TagItem,
-    TrashInfo, TrashedNoteItem, TurnSettingsItem, VersionItem, WorkspaceChanged, WorkspaceInfo,
-    WorkspaceItem, WorkspaceNoteItem, WritingActionItem,
+    IndexOverviewItem, LinkingNoteItem, MeaningOverviewItem, MeaningProgressItem,
+    MeaningSearchItem, MeaningUseItem, MenuEntryItem, MenuRoleItem, ModelDownloadItem,
+    ModelOverviewItem, NoteContent, NoteListItem, NoteOrderItem, ProposalItem, SaveResult,
+    SavedNote, SearchResultItem, StandardItem, TagItem, TrashInfo, TrashedNoteItem,
+    TurnSettingsItem, VersionItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
+    WorkspaceNoteItem, WritingActionItem,
 };
 pub use error::ApiError;
 pub use session::{AppScreen, MeaningEvents, Session};

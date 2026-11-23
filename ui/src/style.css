@@ -1045,7 +1045,7 @@ button {
   margin-top: 0.2rem;
 }
 .settings {
-  width: min(32rem, 90vw);
+  width: min(46rem, 92vw);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1.2rem 1.4rem;
@@ -1092,7 +1092,39 @@ button {
 .setting-error[hidden] {
   display: none;
 }
+.settings-tabs {
+  display: flex;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.settings-tabs [role="tab"] {
+  font: inherit;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+.settings-tabs [role="tab"]:hover {
+  color: var(--text);
+}
+.settings-tabs [role="tab"][aria-selected="true"] {
+  color: var(--text);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+.settings-panel {
+  min-height: 18rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.settings-panel[hidden] {
+  display: none;
+}
 .settings footer {
+  margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
 }

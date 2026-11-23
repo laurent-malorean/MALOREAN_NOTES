@@ -1,12 +1,13 @@
 //! L'index de l'espace de travail ouvert : d'où il vient, et sa reconstruction à la demande.
 
-use std::sync::Arc;
+use std::sync::{Arc, PoisonError};
 
 use application::IndexOpener;
-use application::use_cases::RebuildIndex;
+use application::use_cases::{ReadIndexStatus, RebuildIndex};
+use domain::history::Version;
 
 use super::Session;
-use crate::ApiError;
+use crate::{ApiError, IndexOverviewItem};
 
 impl Session {
     /// La même session, dont chaque espace de travail ouvert a son index gardé par `indexes`.
@@ -24,7 +25,33 @@ impl Session {
     /// espace de travail illisible, index impossible à écrire.
     pub fn rebuild_index(&self) -> Result<(), ApiError> {
         let opened = self.opened()?;
-        Ok(RebuildIndex::new(&*opened.store, &*opened.index).execute()?)
+        RebuildIndex::new(&*opened.store, &*opened.index).execute()?;
+        self.rebuilt
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .insert(opened.name.as_str().to_owned(), self.clock.now());
+        Ok(())
+    }
+
+    /// L'état de l'index de mots de l'espace de travail ouvert : ses notes, et sa dernière
+    /// reconstruction depuis le lancement.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucun espace de travail ouvert,
+    /// index illisible.
+    pub fn index_overview(&self) -> Result<IndexOverviewItem, ApiError> {
+        let opened = self.opened()?;
+        let rebuilt = self
+            .rebuilt
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(opened.name.as_str())
+            .map(|moment| Version::at(*moment).label());
+        Ok(IndexOverviewItem {
+            notes: ReadIndexStatus::new(&*opened.index).indexed_notes()?,
+            rebuilt,
+        })
     }
 }
 
@@ -108,6 +135,35 @@ mod tests {
         assert_eq!(titles(&session), ["Abîmé"]);
         session.rebuild_index().unwrap();
         assert_eq!(titles(&session), ["A"]);
+    }
+
+    #[test]
+    fn the_overview_counts_the_notes_and_dates_the_last_rebuild() {
+        let store = Arc::new(InMemoryNoteStore::with_notes(&[
+            ("a.md", "# A"),
+            ("b.md", "# B"),
+        ]));
+        let session = session(&store, Arc::new(SharedIndex(Arc::default())));
+        assert_eq!(
+            session.index_overview().unwrap_err().message,
+            "aucun espace de travail n'est ouvert"
+        );
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        let before = session.index_overview().unwrap();
+        assert_eq!((before.notes, before.rebuilt), (2, None));
+        session.rebuild_index().unwrap();
+        let after = session.index_overview().unwrap();
+        assert_eq!(after.notes, 2);
+        assert_eq!(after.rebuilt.as_deref(), Some("16 novembre 2026 à 18:30"));
+    }
+
+    #[test]
+    fn a_failed_rebuild_is_not_dated() {
+        let store = Arc::new(InMemoryNoteStore::default());
+        let session = session(&store, Arc::new(SharedIndex(Arc::default())));
+        session.rebuild_index().unwrap_err();
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        assert_eq!(session.index_overview().unwrap().rebuilt, None);
     }
 
     #[test]

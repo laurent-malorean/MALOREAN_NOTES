@@ -53,6 +53,7 @@ test("Cmd+Maj+J ouvre la note du jour depuis le modèle Journal, dans le dossier
   await expect(tabs(page)).toHaveText(["Courses×", "16 novembre 2026×"]);
   await page.getByRole("button", { name: "Réglages" }).click();
   const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByRole("tab", { name: "Écriture" }).click();
   await dialog.getByLabel("Dossier des modèles").selectOption({ label: "Modèles" });
   await dialog.getByLabel("Dossier du journal").fill("Perso/Carnet");
   await dialog.getByLabel("Dossier du journal").press("Tab");

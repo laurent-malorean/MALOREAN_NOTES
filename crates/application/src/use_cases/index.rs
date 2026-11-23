@@ -53,6 +53,29 @@ impl<'a> RebuildIndex<'a> {
     }
 }
 
+/// Lire l'état de l'index de mots : combien de notes il connaît.
+#[derive(Debug)]
+pub struct ReadIndexStatus<'a> {
+    index: &'a dyn NoteIndex,
+}
+
+impl<'a> ReadIndexStatus<'a> {
+    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
+    #[must_use]
+    pub fn new(index: &'a dyn NoteIndex) -> Self {
+        Self { index }
+    }
+
+    /// Le nombre de notes que l'index connaît.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si l'index ne répond pas.
+    pub fn indexed_notes(&self) -> Result<usize, AppError> {
+        Ok(self.index.stamps()?.len())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,5 +120,14 @@ mod tests {
         stale(&store, &index);
         RebuildIndex::new(&store, &index).execute().unwrap();
         assert_eq!(titles(&index), ["A", "B"]);
+    }
+
+    #[test]
+    fn the_status_counts_the_notes_the_index_knows() {
+        let store = InMemoryNoteStore::with_notes(&[("a.md", "# A"), ("T/b.md", "# B")]);
+        let index = MemoryIndex::default();
+        assert_eq!(ReadIndexStatus::new(&index).indexed_notes().unwrap(), 0);
+        RefreshIndex::new(&store, &index).execute().unwrap();
+        assert_eq!(ReadIndexStatus::new(&index).indexed_notes().unwrap(), 2);
     }
 }

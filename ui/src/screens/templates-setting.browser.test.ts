@@ -10,7 +10,11 @@ function open(current: string | null) {
   const group = templatesFolderGroup(["Modèles", "Travail/Gabarits"], current, (folder) =>
     chosen.push(folder),
   );
-  openSettings(dialog, DEFAULT_SETTINGS, () => undefined, [group]);
+  openSettings(dialog, DEFAULT_SETTINGS, () => undefined, [group], {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  });
   const select = dialog.querySelector<HTMLSelectElement>("select[name=templatesFolder]");
   if (!select) throw new Error("champ introuvable");
   return { dialog, select, chosen };
@@ -22,7 +26,7 @@ describe("réglage du dossier des modèles", () => {
   it("a sa partie, après les autres réglages, avant le bouton pour fermer", () => {
     const { dialog, select } = open(null);
     const legends = [...dialog.querySelectorAll("legend")].map((l) => l.textContent);
-    expect(legends).toEqual(["Écriture", "Affichage", "Claude", "Modèles"]);
+    expect(legends).toEqual(["Affichage", "Écriture", "Modèles", "Claude"]);
     expect(dialog.querySelector("form")?.lastElementChild?.tagName).toBe("FOOTER");
     const label = [...dialog.querySelectorAll("label")].find(
       (l) => l.textContent === "Dossier des modèles",

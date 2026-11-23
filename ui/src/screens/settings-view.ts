@@ -1,4 +1,5 @@
 // Écran de réglages : une fenêtre par-dessus l'application, qui applique chaque réglage dès qu'il est changé.
+import type { PreferenceStorage } from "../state/focus-preference";
 import {
   type ChoiceField,
   type NumberField,
@@ -7,6 +8,13 @@ import {
   type Settings,
   settingChanged,
 } from "../state/settings";
+import {
+  loadSettingsTab,
+  placeInTabs,
+  SETTINGS_TABS,
+  saveSettingsTab,
+  tabMoved,
+} from "../state/settings-tabs";
 
 const number = new Intl.NumberFormat("fr-FR");
 
@@ -96,15 +104,72 @@ function group(name: string, editing: Editing): HTMLElement {
   return fieldset;
 }
 
+/** Le titre d'une partie de l'écran, qui dit dans quel onglet elle va. */
+const groupName = (element: HTMLElement) => element.querySelector("legend")?.textContent ?? "";
+
+/** Les onglets, et le panneau de chacun : un seul est montré, celui de `selected`. */
+function tabs(panels: readonly HTMLElement[][], storage: PreferenceStorage): HTMLElement {
+  const list = document.createElement("div");
+  list.setAttribute("role", "tablist");
+  list.setAttribute("aria-label", "Parties des réglages");
+  list.className = "settings-tabs";
+  const body = document.createElement("div");
+  body.className = "settings-panels";
+  const buttons = SETTINGS_TABS.map((tab, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = `settings-tab-${index}`;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-controls", `settings-panel-${index}`);
+    button.textContent = tab.name;
+    return button;
+  });
+  const sections = panels.map((groups, index) => {
+    const section = document.createElement("section");
+    section.id = `settings-panel-${index}`;
+    section.className = "settings-panel";
+    section.setAttribute("role", "tabpanel");
+    section.setAttribute("aria-labelledby", `settings-tab-${index}`);
+    section.append(...groups);
+    return section;
+  });
+  const select = (selected: number, focus: boolean) => {
+    buttons.forEach((button, index) => {
+      button.setAttribute("aria-selected", String(index === selected));
+      button.tabIndex = index === selected ? 0 : -1;
+    });
+    sections.forEach((section, index) => (section.hidden = index !== selected));
+    saveSettingsTab(storage, selected);
+    if (focus) buttons[selected]?.focus();
+  };
+  buttons.forEach((button, index) => {
+    button.addEventListener("click", () => select(index, false));
+    button.addEventListener("keydown", (event) => {
+      const moved = tabMoved(index, event.key, buttons.length);
+      if (moved === null) return;
+      event.preventDefault();
+      select(moved, true);
+    });
+  });
+  select(loadSettingsTab(storage), false);
+  list.append(...buttons);
+  body.append(...sections);
+  const element = document.createElement("div");
+  element.append(list, body);
+  return element;
+}
+
 /**
  * Ouvre l'écran de réglages sur `settings` ; chaque changement valable est passé à `onChange`.
- * `extra` : des parties de plus, qui gèrent elles-mêmes leurs réglages, après les autres.
+ * `extra` : des parties de plus, qui gèrent elles-mêmes leurs réglages, après les autres. Chaque
+ * partie va dans son onglet ; le dernier onglet ouvert, gardé dans `storage`, se rouvre.
  */
 export function openSettings(
   dialog: HTMLDialogElement,
   settings: Settings,
   onChange: (next: Settings) => void,
   extra: readonly HTMLElement[],
+  storage: PreferenceStorage,
 ): void {
   let current = settings;
   const editing: Editing = {
@@ -123,8 +188,11 @@ export function openSettings(
   close.textContent = "Fermer";
   const footer = document.createElement("footer");
   footer.append(close);
-  const groups = [...new Set(SETTING_FIELDS.map((f) => f.group))];
-  form.append(title, ...groups.map((name) => group(name, editing)), ...extra, footer);
+  const names = [...new Set(SETTING_FIELDS.map((f) => f.group))];
+  const elements = [...names.map((name) => group(name, editing)), ...extra];
+  const placed = placeInTabs(elements.map((element) => ({ name: groupName(element), element })));
+  const panels = placed.map((tab) => tab.map((item) => item.element));
+  form.append(title, tabs(panels, storage), footer);
   dialog.replaceChildren(form);
   dialog.showModal();
 }

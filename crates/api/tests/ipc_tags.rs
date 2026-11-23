@@ -129,3 +129,16 @@ fn the_index_is_rebuilt_on_request_of_the_interface() {
     assert_eq!(paths(&notes), ["a.md", "b.md"]);
     assert!(BRIDGE_SOURCE.contains("\"rebuild_index\""));
 }
+
+#[test]
+fn the_index_overview_is_read_on_request_of_the_interface() {
+    let closed = unopened(NOTES);
+    assert!(try_call(&closed, "index_overview", json!({})).is_err());
+    let window = window(NOTES);
+    let before = call(&window, "index_overview", json!({}));
+    assert_eq!(before, json!({"notes": 2, "rebuilt": null}));
+    call(&window, "rebuild_index", json!({}));
+    let after = call(&window, "index_overview", json!({}));
+    assert_eq!(after["rebuilt"], "16 novembre 2026 à 18:30");
+    assert!(BRIDGE_SOURCE.contains("\"index_overview\""));
+}

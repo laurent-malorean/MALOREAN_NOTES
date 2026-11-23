@@ -67,7 +67,7 @@ const recent = createRecentNotes({ backend: bridge, screen, columns, storage: lo
 const search = createSearch({ ...messages, backend: bridge, screen, layout, columns });
 const workspace = createWorkspace({
   ...{ backend: bridge, screen, columns, layout: layoutMemory, folds: foldMemory, recent },
-  ...{ storage: localStorage, show: messages.show, search: search.search },
+  ...{ storage: localStorage, show: messages.show, run, search: search.search },
 });
 const folders = createFolders({
   ...{ backend: bridge, screen, columns },
@@ -87,7 +87,7 @@ const settings = connectSettings(
   { documentElement: document.documentElement, ...layout },
   {
     ...{ columns, storage: localStorage, systemDark: matchMedia("(prefers-color-scheme: dark)") },
-    groups: () => [templates, journal, search.meaning],
+    groups: () => [templates, journal, workspace, search.meaning],
   },
 );
 const templates = createTemplates({

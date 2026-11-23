@@ -22,6 +22,7 @@ import {
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { FoldMemory } from "./fold-memory";
+import { indexSettings } from "./index-settings";
 import type { LayoutMemory } from "./layout-memory";
 import type { RecentNotes } from "./recent-notes";
 
@@ -36,6 +37,7 @@ export interface WorkspaceDeps {
     | "resolveLink"
     | "moveNote"
     | "rebuildIndex"
+    | "indexOverview"
   >;
   readonly screen: CurrentScreen;
   readonly columns: OpenColumns;
@@ -47,6 +49,8 @@ export interface WorkspaceDeps {
   readonly storage: PreferenceStorage;
   /** Montre un message quelques secondes. */
   show(message: string, kind?: MessageKind): void;
+  /** Lance une action sans l'attendre ; son erreur éventuelle est montrée. */
+  run(action: Promise<unknown>): void;
   /** Relance la recherche en cours sur les notes telles qu'elles sont maintenant. */
   search(query: string): Promise<void>;
   /** Les notes récentes, que Récentes montre et qui suivent une note déplacée. */
@@ -89,6 +93,8 @@ export interface Workspace {
   changePin(path: string, change: (path: string) => Promise<NoteContent>): Promise<void>;
   /** Reconstruit l'index à partir des fichiers, puis relit les dossiers, les étiquettes et la liste. */
   rebuildIndex(): Promise<void>;
+  /** La partie « Index » de l'écran de réglages ; aucune sans espace de travail ouvert. */
+  settingsGroups(): HTMLElement[];
 }
 
 /** Les notes que la liste montre : celles du dossier, du filtre par étiquette, ou les récentes. */
@@ -181,6 +187,12 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
     await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
     await refreshTags();
   };
+  const rebuildIndex = async () => {
+    await deps.backend.rebuildIndex();
+    await refreshFolders();
+    await refreshList(deps);
+    deps.show("Index reconstruit");
+  };
   return {
     path: () => workspacePath,
     open,
@@ -192,11 +204,8 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
     followLink: (title, inNewTab) => followLink(deps, title, inNewTab),
     moveNote: (path, into) => moveNote(deps, path, into),
     changePin: (path, change) => changePin(deps, path, change),
-    rebuildIndex: async () => {
-      await deps.backend.rebuildIndex();
-      await refreshFolders();
-      await refreshList(deps);
-      deps.show("Index reconstruit");
-    },
+    rebuildIndex,
+    settingsGroups: () =>
+      deps.screen.get().kind === "workspace" ? indexSettings(deps, rebuildIndex) : [],
   };
 }

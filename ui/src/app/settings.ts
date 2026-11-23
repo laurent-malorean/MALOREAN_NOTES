@@ -57,7 +57,7 @@ export function connectSettings(parts: SettingsParts, deps: SettingsDeps): AppSe
   deps.systemDark.addEventListener("change", showSettingsDisplay);
   const open = () => {
     const extra = deps.groups().flatMap((source) => source.settingsGroups());
-    openSettings(parts.settings, settings, apply, extra);
+    openSettings(parts.settings, settings, apply, extra, deps.storage);
   };
   parts.settingsButton.addEventListener("click", open);
   apply(settings);

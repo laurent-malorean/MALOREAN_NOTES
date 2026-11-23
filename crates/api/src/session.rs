@@ -43,7 +43,7 @@ use application::{
 
 use domain::search::{ExcerptPart, SearchQuery};
 use domain::title::displayed_title_of_note;
-use domain::{Fingerprint, Folder, FolderName, NotePath, NoteSummary};
+use domain::{Fingerprint, Folder, FolderName, Moment, NotePath, NoteSummary};
 
 use meaning_worker::MeaningWorker;
 
@@ -95,6 +95,9 @@ pub struct Session {
     worker: Arc<MeaningWorker>,
     /// Le téléchargement d'un modèle de sens en cours : un seul à la fois.
     download: Mutex<Option<meaning::DownloadInProgress>>,
+    /// Le moment de la dernière reconstruction de l'index de mots, par espace de travail,
+    /// depuis le lancement.
+    rebuilt: Mutex<HashMap<String, Moment>>,
 }
 
 /// L'espace de travail ouvert : où il est, ses notes, leur index (de mots et de sens) et leur
@@ -146,6 +149,7 @@ impl Session {
             meaning_events: None,
             worker,
             download: Mutex::new(None),
+            rebuilt: Mutex::default(),
         }
     }
 

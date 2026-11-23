@@ -497,3 +497,15 @@ pub struct ProposalItem {
     /// La sélection et la proposition comparées mot à mot.
     pub differences: Vec<DifferenceItem>,
 }
+
+/// L'état de l'index de mots de l'espace de travail ouvert, tel que l'écran des réglages le montre.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct IndexOverviewItem {
+    /// Le nombre de notes que l'index connaît.
+    #[ts(type = "number")]
+    pub notes: usize,
+    /// La dernière reconstruction depuis le lancement, en toutes lettres ; rien s'il n'y en a pas eu.
+    pub rebuilt: Option<String>,
+}

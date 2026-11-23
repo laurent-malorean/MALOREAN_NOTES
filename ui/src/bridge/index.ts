@@ -32,6 +32,7 @@ import type { WorkspaceChanged } from "./generated/WorkspaceChanged";
 import type { WorkspaceInfo } from "./generated/WorkspaceInfo";
 import type { WorkspaceItem } from "./generated/WorkspaceItem";
 import type { WorkspaceNoteItem } from "./generated/WorkspaceNoteItem";
+import type { IndexOverviewItem } from "./generated/IndexOverviewItem";
 import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
@@ -137,6 +138,7 @@ export const listRecentNotes = (paths: readonly string[]) =>
 export const listTags = () => invoke<TagItem[]>("list_tags");
 /** Reconstruit l'index de l'espace de travail ouvert à partir de ses fichiers. */
 export const rebuildIndex = () => invoke<null>("rebuild_index");
+export const indexOverview = () => invoke<IndexOverviewItem>("index_overview");
 /** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */
 export const resolveLink = (title: string) => invoke<string | null>("resolve_link", { title });
 /** Les liens entrants de la note `path` : les notes qui pointent vers elle. */
