@@ -2,6 +2,8 @@
 
 Spécification fonctionnelle, validée par l'utilisateur le 23/11. Ce document se lit seul : tout ce qu'il faut pour réaliser la fonction est ici.
 
+S'il manque un élément, voir le dépôt dont la fonction s'inspire : https://github.com/laurent-malorean/malorean_office.git (spécification : `spec/spec-fonctionnelles.md`, section 2.9 ; code : `web/mindmap*.js` et `src/wiki/infrastructure/markdown_fs/mindmap_format.py`). En cas de désaccord, ce document prime.
+
 ## 1. Vocabulaire
 
 | Mot | Sens |
