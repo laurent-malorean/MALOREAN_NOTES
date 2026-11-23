@@ -240,7 +240,10 @@ button {
   transform: translateX(-50%);
   margin: 0;
   width: min(var(--search-window-width), 94vw);
-  max-height: var(--search-window-height);
+  /* Hauteur définie (pas déduite du contenu) : WKWebView écrasait la fenêtre à zéro pendant le chargement. */
+  height: min(var(--search-window-height), calc(100vh - var(--search-window-top) - 1rem));
+  box-sizing: border-box;
+  overflow: hidden;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -262,8 +265,9 @@ button {
 .search-columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
-  flex: 1;
+  height: 100%;
 }
 .search-column {
   display: flex;
@@ -284,6 +288,7 @@ button {
 .search-column-results {
   overflow-y: auto;
   min-height: 0;
+  flex: 1 1 0;
 }
 .search-column-note {
   margin: 0 0.7rem 0.4rem;
