@@ -15,6 +15,7 @@ describe("palette de commandes", () => {
       ["add-entry", "Ajouter au cahier", null],
       ["new-folder", "Nouveau dossier", null],
       ["search-workspace", "Rechercher dans toutes les notes", null],
+      ["search-by-meaning", "Rechercher par le sens", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],
       ["find-and-replace", "Rechercher et remplacer", "Alt+Cmd+F"],
       ["bold", "Gras", "Cmd+B"],
@@ -32,6 +33,7 @@ describe("palette de commandes", () => {
       ["toggle-focus", "Mode focus", "Cmd+Maj+F"],
       ["toggle-typewriter", "Mode machine à écrire", "Cmd+Maj+T"],
       ["toggle-outline", "Plan de la note", "Cmd+Maj+O"],
+      ["toggle-related-notes", "Notes proches", null],
       ["toggle-claude-column", "Colonne Claude Code", "Ctrl+Cmd+L"],
       ["toggle-full-screen", "Plein écran", "Ctrl+Cmd+F"],
       ["toggle-side-panels", "Panneaux latéraux", "Cmd+0"],
@@ -71,6 +73,7 @@ describe("palette de commandes", () => {
     expect(labels("reglage")).toEqual(["Réglages"]);
     expect(labels("note")).toEqual([
       "Note du jour",
+      "Notes proches",
       "Ouvrir une note",
       "Nouvelle note",
       "Nouvelle note depuis un modèle",

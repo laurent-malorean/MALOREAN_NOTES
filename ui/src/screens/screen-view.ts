@@ -1,4 +1,5 @@
 import { nameOf } from "../state/folders";
+import { meaningNotice } from "../state/meaning";
 import { type Screen, type Search, searchable } from "../state/screen";
 import { type FolderActions, renderFoldersList } from "./folders-list";
 import type { Layout } from "./layout";
@@ -50,6 +51,7 @@ function renderList(
       search.results,
       screen.selected,
       actions,
+      meaningNotice(search.meaning),
     );
   } else {
     renderNotesList(layout.notesList, screen.notes, screen.selected, actions);

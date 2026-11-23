@@ -17,6 +17,7 @@ mod mac_clipboard;
 mod mcp_relay;
 mod model_folder;
 mod sqlite_index;
+mod sqlite_meaning_index;
 mod system_clock;
 mod web_guard;
 
@@ -34,4 +35,5 @@ pub use mac_clipboard::MacClipboard;
 pub use mcp_relay::{RELAY_OPTION, relay};
 pub use model_folder::ModelFolder;
 pub use sqlite_index::{FORMAT_VERSION, SqliteIndex, SqliteIndexes};
+pub use sqlite_meaning_index::SqliteMeaningIndex;
 pub use system_clock::SystemClock;

@@ -212,6 +212,18 @@ describe("recherche", () => {
     expect(searchOf(screen)).toEqual({ query: "pain", results: [result("a.md")] });
   });
 
+  it("garde ce qu'il est advenu du sens avec les notes trouvées, jusqu'à la frappe suivante", () => {
+    const meaning = { kind: "failed", message: "raté" } as const;
+    const answered = searchAnswered(
+      searchTyped(opened(), "pain"),
+      "pain",
+      [result("a.md")],
+      meaning,
+    );
+    expect(searchOf(answered)).toEqual({ query: "pain", results: [result("a.md")], meaning });
+    expect(searchOf(searchTyped(answered, "pains"))?.meaning).toBeUndefined();
+  });
+
   it("garde les résultats précédents pendant qu'on continue de taper", () => {
     const answered = searchAnswered(searchTyped(opened(), "pai"), "pai", [result("a.md")]);
     expect(searchOf(searchTyped(answered, "pain"))).toEqual({

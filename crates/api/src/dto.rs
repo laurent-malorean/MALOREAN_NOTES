@@ -5,9 +5,14 @@ use ts_rs::TS;
 
 mod claude;
 mod claude_load;
+mod meaning;
 mod turn_settings;
 
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
+pub use meaning::{
+    MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,
+    ModelOverviewItem,
+};
 pub use turn_settings::{ClaudeModelItem, EffortItem, TurnSettingsItem};
 pub(crate) use turn_settings::{continued_conversation, turn_settings};
 

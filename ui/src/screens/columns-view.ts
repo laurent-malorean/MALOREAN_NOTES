@@ -9,10 +9,11 @@ import {
 import { trailOf, type TrailStep } from "../state/trail";
 import { renderTabs } from "./tabs-view";
 
-/** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément et la place des liens entrants. */
+/** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément et la place des liens entrants et des notes proches. */
 export interface ColumnParts {
   readonly element: HTMLElement;
   readonly backlinks: HTMLElement;
+  readonly related: HTMLElement;
 }
 
 /** Ce que les colonnes annoncent ou demandent. */
@@ -201,9 +202,13 @@ function columnElement(
   backlinks.className = "backlinks";
   backlinks.setAttribute("aria-label", "Liens entrants");
   backlinks.hidden = true;
-  element.append(header, backlinks);
+  const related = document.createElement("nav");
+  related.className = "backlinks related-notes";
+  related.setAttribute("aria-label", "Notes proches");
+  related.hidden = true;
+  element.append(header, backlinks, related);
   return {
-    parts: { element, backlinks },
+    parts: { element, backlinks, related },
     trail,
     tabs,
     split,

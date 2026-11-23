@@ -37,6 +37,7 @@ impl Session {
         let opened = self.opened()?;
         let (store, index, history) = (opened.store, opened.index, opened.history);
         let clock = Arc::clone(&self.clock);
+        let worker = Arc::clone(&self.worker);
         let watching = watcher
             .watch(
                 &opened.location,
@@ -54,6 +55,7 @@ impl Session {
                     if let Err(error) = RefreshIndex::new(&*store, &*index).execute() {
                         tracing::warn!(?error, "l'index n'a pas pu suivre le changement");
                     }
+                    worker.request();
                     announce(WorkspaceChanged {
                         notes: change.notes.iter().map(NotePath::to_path).collect(),
                     });

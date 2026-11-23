@@ -1,5 +1,5 @@
 // Une colonne à l'écran : son éditeur, la note qu'il montre, partagée avec les autres colonnes.
-import type { AttachmentOrigin, EntryItem } from "../bridge";
+import type { AttachmentOrigin, EntryItem, NoteListItem } from "../bridge";
 import type { AttachedFile } from "../bridge/generated/AttachedFile";
 import type { LinkingNoteItem } from "../bridge/generated/LinkingNoteItem";
 import { createEditor, type Editor } from "../editor/editor";
@@ -7,6 +7,7 @@ import type { OpenNoteLink } from "../editor/links/note-links";
 import { lineStart } from "../state/research-notebook";
 import { renderBacklinks } from "./backlinks-view";
 import type { ColumnParts } from "./columns-view";
+import { renderRelatedNotes } from "./related-view";
 import type { SharedNotes, Viewer } from "./shared-notes";
 
 /** Ce qu'une colonne demande à Rust, par le pont. */
@@ -37,6 +38,13 @@ export interface NotebookActions {
   entries(path: string): Promise<EntryItem[]>;
 }
 
+/** Les notes proches, sous le texte : affichées ou non, et celles d'une note (fiche 0046). */
+export interface RelatedNotes {
+  /** La liste est demandée : sans cela, rien n'est lu ni montré. */
+  enabled(): boolean;
+  notes(path: string): Promise<NoteListItem[]>;
+}
+
 export interface PaneOptions {
   readonly backend: PaneBackend;
   readonly events: PaneEvents;
@@ -46,6 +54,8 @@ export interface PaneOptions {
   readonly resolveImage: (src: string, note: string | null) => string;
   /** Sans elles, un cahier de recherche reste en lecture seule, sans « + » ni lien vers une entrée. */
   readonly notebook?: NotebookActions;
+  /** Sans elles, aucune liste de notes proches n'est montrée. */
+  readonly related?: RelatedNotes;
 }
 
 export interface Pane {
@@ -63,6 +73,8 @@ export interface Pane {
   forget(): void;
   /** Montre les liens entrants de la note ; une réponse arrivée pour une autre note est ignorée. */
   showBacklinks(): Promise<void>;
+  /** Montre les notes proches de la note, ou cache la liste si elle n'est pas demandée. */
+  showRelated(): Promise<void>;
   /** La note a changé sur le disque : voir la fiche de décision 0014. */
   followDisk(): Promise<void>;
   /** Retire la colonne de l'écran, ce qui est tapé étant enregistré. */
@@ -115,6 +127,7 @@ class NotePane implements Pane, Viewer {
     this.shown = path;
     await this.options.shared.leave(this);
     void this.showBacklinks().catch(this.options.events.error);
+    void this.showRelated().catch(this.options.events.error);
     if (path === null) return this.editor.show("");
     await this.options.shared.join(path, this);
   }
@@ -132,6 +145,17 @@ class NotePane implements Pane, Viewer {
     const notes = path === null ? [] : await this.options.backend.listBacklinks(path);
     if (this.shown === path)
       renderBacklinks(this.parts.backlinks, notes, this.options.events.openNote);
+  }
+
+  async showRelated(): Promise<void> {
+    const { related, events } = this.options;
+    const path = this.shown;
+    const wanted = related !== undefined && related.enabled() && path !== null;
+    if (!wanted) return renderRelatedNotes(this.parts.related, null, events.openNote);
+    const notes = await related.notes(path);
+    if (this.shown === path && related.enabled()) {
+      renderRelatedNotes(this.parts.related, notes, events.openNote);
+    }
   }
 
   async followDisk(): Promise<void> {

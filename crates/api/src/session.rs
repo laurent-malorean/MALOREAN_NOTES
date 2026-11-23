@@ -3,6 +3,7 @@
 mod app_tools;
 
 pub use app_tools::AppScreen;
+pub use meaning::MeaningEvents;
 mod attachments;
 mod claude;
 mod export;
@@ -10,6 +11,10 @@ mod history;
 mod index;
 mod journal;
 mod links;
+mod meaning;
+#[cfg(test)]
+mod meaning_fakes;
+mod meaning_worker;
 mod quick_open;
 mod recent_notes;
 mod research_notebook;
@@ -31,14 +36,16 @@ use application::use_cases::{
 };
 use application::{
     AppError, ClaudeCode, Clipboard, Clock, ExportStore, History, HistoryOpener, IndexOpener,
-    IndexedStore, MemoryHistories, MemoryIndexes, NoteIndex, NoteStore, Preferences, StoredNote,
-    VersionedStore, Watching, WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
-    WritingAssistant,
+    IndexedStore, MeaningModels, MeaningStore, MemoryHistories, MemoryIndexes, NoMeaningModels,
+    NoteIndex, NoteStore, OpenedIndex, Preferences, StoredNote, VersionedStore, Watching,
+    WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher, WritingAssistant,
 };
 
 use domain::search::{ExcerptPart, SearchQuery};
 use domain::title::displayed_title_of_note;
 use domain::{Fingerprint, Folder, FolderName, NotePath, NoteSummary};
+
+use meaning_worker::MeaningWorker;
 
 use crate::{
     ApiError, ExcerptPartItem, NoteContent, NoteListItem, NoteOrderItem, SavedNote,
@@ -80,16 +87,25 @@ pub struct Session {
     views: Mutex<HashMap<u64, mpsc::Sender<app_tools::View>>>,
     /// Le numéro de la prochaine de ces demandes.
     view_requests: AtomicU64,
+    /// Les modèles de sens du Mac.
+    meaning_models: Arc<dyn MeaningModels>,
+    /// L'interface, pour le calcul des vecteurs de sens et le téléchargement d'un modèle.
+    meaning_events: Option<Arc<dyn MeaningEvents>>,
+    /// Le calcul des vecteurs de sens, en arrière-plan.
+    worker: Arc<MeaningWorker>,
+    /// Le téléchargement d'un modèle de sens en cours : un seul à la fois.
+    download: Mutex<Option<meaning::DownloadInProgress>>,
 }
 
-/// L'espace de travail ouvert : où il est, ses notes, leur index et leur historique, qui suivent
-/// chaque changement fait par l'application, et ses versions en attente.
+/// L'espace de travail ouvert : où il est, ses notes, leur index (de mots et de sens) et leur
+/// historique, qui suivent chaque changement fait par l'application, et ses versions en attente.
 #[derive(Debug, Clone)]
 struct OpenWorkspaceState {
     name: WorkspaceName,
     location: WorkspaceLocation,
     store: Arc<dyn NoteStore>,
     index: Arc<dyn NoteIndex>,
+    meaning: Arc<dyn MeaningStore>,
     history: Arc<dyn History>,
     /// Les notes enregistrées par l'application depuis leur dernière version : une version en
     /// est gardée quand on quitte l'application.
@@ -106,6 +122,9 @@ impl Session {
         preferences: Arc<dyn Preferences>,
         clock: Arc<dyn Clock>,
     ) -> Self {
+        let meaning_models: Arc<dyn MeaningModels> = Arc::new(NoMeaningModels);
+        let worker =
+            MeaningWorker::new(Arc::clone(&preferences), Arc::clone(&meaning_models), None);
         Self {
             opener,
             preferences,
@@ -123,6 +142,10 @@ impl Session {
             screen: None,
             views: Mutex::default(),
             view_requests: AtomicU64::new(0),
+            meaning_models,
+            meaning_events: None,
+            worker,
+            download: Mutex::new(None),
         }
     }
 
@@ -287,7 +310,13 @@ impl Session {
         self.keep_pending_versions();
         let info = workspace::workspace_info(&opened);
         let location = opened.workspace.location;
-        let index = self.indexes.open(&location).map_err(AppError::from)?;
+        let OpenedIndex {
+            words: index,
+            meaning,
+        } = self
+            .indexes
+            .open_with_meaning(&location)
+            .map_err(AppError::from)?;
         let history = self.histories.open(&location).map_err(AppError::from)?;
         RefreshIndex::new(&*opened.store, &*index).execute()?;
         let versioned = Arc::new(VersionedStore::new(opened.store, Arc::clone(&history)));
@@ -296,6 +325,7 @@ impl Session {
             location,
             store: Arc::new(IndexedStore::new(versioned, Arc::clone(&index))),
             index,
+            meaning: Arc::clone(&meaning),
             history,
             pending: Arc::default(),
         };
@@ -303,6 +333,7 @@ impl Session {
             .workspace
             .write()
             .unwrap_or_else(PoisonError::into_inner) = Some(state);
+        self.worker.switch(meaning);
         Ok(info)
     }
 

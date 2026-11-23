@@ -1,6 +1,7 @@
 // Une colonne et ses voisines pour les tests d'écran : espace de travail en mémoire, minuteur manuel.
 import { EditorView } from "@codemirror/view";
 import type { AttachmentOrigin } from "../src/bridge";
+import type { NoteListItem } from "../src/bridge";
 import type { LinkingNoteItem } from "../src/bridge/generated/LinkingNoteItem";
 import type { SaveResult } from "../src/bridge/generated/SaveResult";
 import type { Scheduler } from "../src/state/autosave";
@@ -12,13 +13,22 @@ import {
   type SharedNotesBackend as SharedBackend,
 } from "../src/screens/shared-notes";
 
+/** Le pont d'une colonne ; `relatedNotes` rend les notes proches posées dans `related`. */
+type FakePaneBackend = PaneBackend &
+  SharedBackend & {
+    fail: boolean;
+    failVersion: boolean;
+    relatedNotes: (path: string) => Promise<NoteListItem[]>;
+  };
+
 /** Un espace de travail en mémoire : chaque note, son contenu ; l'empreinte est le contenu même. */
 export function fakeBackend(notes: Record<string, string>) {
   const calls: string[] = [];
   const backlinks: Record<string, LinkingNoteItem[]> = {};
+  const related: Record<string, NoteListItem[]> = {};
   /** Une réponse retenue jusqu'à ce que sa porte s'ouvre : « lire a.md », « liens a.md ». */
   const gates: Record<string, Promise<void>> = {};
-  const backend: PaneBackend & SharedBackend & { fail: boolean; failVersion: boolean } = {
+  const backend: FakePaneBackend = {
     fail: false,
     failVersion: false,
     readNote: async (path) => {
@@ -49,11 +59,8 @@ export function fakeBackend(notes: Record<string, string>) {
         ? Promise.reject(new Error("historique plein"))
         : Promise.resolve(null);
     },
-    listBacklinks: async (path) => {
-      calls.push(`liens ${path}`);
-      await gates[`liens ${path}`];
-      return backlinks[path] ?? [];
-    },
+    listBacklinks: (path) => answered("liens", path, backlinks),
+    relatedNotes: (path) => answered("proches", path, related),
     attachFile: (path: string, file: File, origin: AttachmentOrigin) => {
       calls.push(`joindre ${path} ${file.name} ${origin.kind}`);
       if (backend.fail) return Promise.reject(new Error("refusé"));
@@ -64,13 +71,19 @@ export function fakeBackend(notes: Record<string, string>) {
       return backend.fail ? Promise.reject(new Error("introuvable")) : Promise.resolve(null);
     },
   };
+  /** Note l'appel, attend sa porte, rend la liste de `path`. */
+  const answered = async <T>(call: string, path: string, lists: Record<string, T[]>) => {
+    calls.push(`${call} ${path}`);
+    await gates[`${call} ${path}`];
+    return lists[path] ?? [];
+  };
   /** Retient la réponse `call` ; rend de quoi la laisser passer. */
   const hold = (call: string) => {
     let open = () => {};
     gates[call] = new Promise((resolve) => (open = resolve));
     return open;
   };
-  return { backend, calls, notes, backlinks, hold };
+  return { backend, calls, notes, backlinks, related, relatedShown: { on: false }, hold };
 }
 
 /** Un minuteur qu'on déclenche à la main. */
@@ -86,12 +99,19 @@ export function manualScheduler() {
 }
 
 /** Ce que l'on observe d'une colonne posée : son élément, ses événements, son éditeur. */
-function column(shared: SharedNotes, backend: PaneBackend, events: string[], errors: string[]) {
+function column(
+  shared: SharedNotes,
+  fake: ReturnType<typeof fakeBackend>,
+  events: string[],
+  errors: string[],
+) {
+  const { backend } = fake;
   const element = document.createElement("section");
   const backlinks = document.createElement("nav");
-  element.append(backlinks);
+  const related = document.createElement("nav");
+  element.append(backlinks, related);
   document.body.append(element);
-  const parts: ColumnParts = { element, backlinks };
+  const parts: ColumnParts = { element, backlinks, related };
   const images: string[] = [];
   const pane: Pane = createPane(parts, {
     backend,
@@ -101,6 +121,7 @@ function column(shared: SharedNotes, backend: PaneBackend, events: string[], err
       openLink: (title) => events.push(`lien ${title}`),
       error: (error) => errors.push((error as Error).message),
     },
+    related: { enabled: () => fake.relatedShown.on, notes: backend.relatedNotes },
     resolveImage: (src, note) => {
       images.push(`${note ?? "aucune"} ${src}`);
       return src;
@@ -142,7 +163,7 @@ export function mountColumns(
       error: (error) => errors.push((error as Error).message),
     },
   });
-  const columns = Array.from({ length: count }, () => column(shared, fake.backend, events, errors));
+  const columns = Array.from({ length: count }, () => column(shared, fake, events, errors));
   const first = columns[0] as ReturnType<typeof column>;
   const fireVersion = versionTimer.fire;
   return { ...first, columns, shared, ...fake, ...timer, fireVersion, events, titles, errors };

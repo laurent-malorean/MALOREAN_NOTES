@@ -20,7 +20,13 @@ import type { TurnSettingsItem } from "./generated/TurnSettingsItem";
 import type { DifferenceItem } from "./generated/DifferenceItem";
 import type { ExportFile } from "./generated/ExportFile";
 import type { ExportFormatItem } from "./generated/ExportFormatItem";
+import type { MeaningOverviewItem } from "./generated/MeaningOverviewItem";
+import type { MeaningProgressItem } from "./generated/MeaningProgressItem";
+import type { MeaningSearchItem } from "./generated/MeaningSearchItem";
+import type { MeaningUseItem } from "./generated/MeaningUseItem";
 import type { MenuEntryItem } from "./generated/MenuEntryItem";
+import type { ModelDownloadItem } from "./generated/ModelDownloadItem";
+import type { ModelOverviewItem } from "./generated/ModelOverviewItem";
 import type { StandardItem } from "./generated/StandardItem";
 import type { WorkspaceChanged } from "./generated/WorkspaceChanged";
 import type { WorkspaceInfo } from "./generated/WorkspaceInfo";
@@ -59,7 +65,13 @@ export type {
   DifferenceItem,
   ExportFile,
   ExportFormatItem,
+  MeaningOverviewItem,
+  MeaningProgressItem,
+  MeaningSearchItem,
+  MeaningUseItem,
   MenuEntryItem,
+  ModelDownloadItem,
+  ModelOverviewItem,
   StandardItem,
   WorkspaceChanged,
   WorkspaceInfo,
@@ -317,3 +329,34 @@ export const openWebAddress = (address: string) => invoke<null>("open_web_addres
 /** Ouvre ce que vise la cible d'un lien Markdown de la note : adresse web dans le navigateur, pièce jointe avec l'application du Mac. */
 export const openLinkTarget = (path: string, target: string) =>
   invoke<null>("open_link_target", { path, target });
+
+/** L'état de la recherche par le sens : modèle choisi, chaque modèle, index de sens, calcul. */
+export const meaningOverview = () => invoke<MeaningOverviewItem>("meaning_overview");
+/** Choisit le modèle de sens, désigné par son nom (`e5-small`, `e5-large`). */
+export const chooseMeaningModel = (model: string) =>
+  invoke<null>("choose_meaning_model", { model });
+/** Télécharge un modèle de sens ; se termine avec le téléchargement, dont l'avancement arrive par `onModelDownload`. */
+export const downloadMeaningModel = (model: string) =>
+  invoke<null>("download_meaning_model", { model });
+/** Annule le téléchargement du modèle en cours, s'il y en a un. */
+export const cancelModelDownload = () => invoke<null>("cancel_model_download");
+/** Supprime un modèle de sens du Mac. */
+export const removeMeaningModel = (model: string) =>
+  invoke<null>("remove_meaning_model", { model });
+/** Reconstruit l'index de sens de l'espace de travail ouvert ; les vecteurs se recalculent ensuite. */
+export const rebuildMeaning = () => invoke<null>("rebuild_meaning");
+/** Les notes de tout l'espace de travail qui répondent à `query` par leurs mots ou leur sens, et ce qu'il est advenu du sens. */
+export const searchNotesWithMeaning = (query: string) =>
+  invoke<MeaningSearchItem>("search_notes_with_meaning", { query });
+/** Les notes dont le sens est le plus proche de la note `path` : dix au plus. */
+export const relatedNotes = (path: string) => invoke<NoteListItem[]>("related_notes", { path });
+/** Même nom côté Rust (`MEANING_PROGRESS_EVENT`). */
+const MEANING_PROGRESS_EVENT = "meaning-progress";
+/** Prévient de l'avancement du calcul des vecteurs de sens, en arrière-plan. */
+export const onMeaningProgress = (handler: (progress: MeaningProgressItem) => void) =>
+  listen<MeaningProgressItem>(MEANING_PROGRESS_EVENT, (event) => handler(event.payload));
+/** Même nom côté Rust (`MODEL_DOWNLOAD_EVENT`). */
+const MODEL_DOWNLOAD_EVENT = "model-download";
+/** Prévient de l'avancement du téléchargement d'un modèle de sens. */
+export const onModelDownload = (handler: (progress: ModelDownloadItem) => void) =>
+  listen<ModelDownloadItem>(MODEL_DOWNLOAD_EVENT, (event) => handler(event.payload));

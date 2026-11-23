@@ -55,7 +55,9 @@ describe("modifications faites hors de l'application", () => {
       "liste",
       "toutes les notes",
       "liens a.md",
+      "proches a.md",
       "liens b.md",
+      "proches b.md",
       "relire b.md",
       "fini",
     ]);

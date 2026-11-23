@@ -6,10 +6,13 @@ use std::path::Path;
 use std::sync::Arc;
 
 use api::{Session, commands};
+use application::{
+    IndexOpener, NoteIndex, OpenedIndex, SegmentingIndex, StoreError, WorkspaceLocation,
+};
 use infrastructure::{
     AppToolsRelay, AppleWritingAssistant, ClaudeCodeCli, FsExportStore, FsHistories,
-    FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, MacClipboard, RELAY_OPTION,
-    SocketPlace, SqliteIndexes, SystemClock, claude_folders, relay,
+    FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, MacClipboard, ModelFolder,
+    RELAY_OPTION, SocketPlace, SqliteIndexes, SystemClock, claude_folders, relay,
 };
 use tauri::{Manager, RunEvent};
 
@@ -47,6 +50,26 @@ fn claude_code(home: Option<&Path>, place: Option<&SocketPlace>) -> ClaudeCodeCl
     }
 }
 
+/// Les index des espaces de travail : l'index de mots et l'index de sens partagent le même fichier,
+/// et chaque changement de l'index de mots range aussi les segments des notes dans l'index de sens
+/// (fiches 0044 et 0046).
+#[derive(Debug)]
+struct MeaningIndexes(SqliteIndexes);
+
+impl IndexOpener for MeaningIndexes {
+    fn open(&self, location: &WorkspaceLocation) -> Result<Arc<dyn NoteIndex>, StoreError> {
+        Ok(self.open_with_meaning(location)?.words)
+    }
+
+    fn open_with_meaning(&self, location: &WorkspaceLocation) -> Result<OpenedIndex, StoreError> {
+        let (words, meaning) = self.0.open_with_meaning(location)?;
+        Ok(OpenedIndex {
+            words: Arc::new(SegmentingIndex::new(words, meaning.clone())),
+            meaning,
+        })
+    }
+}
+
 /// Ouvre la prise locale des outils de l'application, qui répond par `session`, et la garde
 /// ouverte tant que l'application tourne.
 fn serve_app_tools(app: &tauri::App, place: SocketPlace, session: &Arc<Session>) {
@@ -58,6 +81,34 @@ fn serve_app_tools(app: &tauri::App, place: SocketPlace, session: &Arc<Session>)
         }
         Err(error) => tracing::warn!(%error, "prise des outils non ouverte"),
     }
+}
+
+/// La session avec ses stockages : espaces de travail, index de mots et de sens, modèles de sens
+/// (dans le dossier de support de l'application, `models/`), historique, surveillance, exports,
+/// presse-papiers et aide à l'écriture. Sans modèle de sens téléchargé, la recherche se fait par
+/// les mots seuls.
+fn base_session(
+    app: &tauri::App,
+    preferences: JsonPreferences,
+) -> Result<Session, Box<dyn std::error::Error>> {
+    let support = app.path().app_data_dir()?;
+    Ok(Session::new(
+        Arc::new(FsWorkspaceOpener),
+        Arc::new(preferences),
+        Arc::new(SystemClock),
+    )
+    .with_indexes(Arc::new(MeaningIndexes(SqliteIndexes::new(
+        support.clone(),
+    ))))
+    .with_meaning_models(Arc::new(ModelFolder::new(&support)))
+    .with_meaning_events(Arc::new(commands::meaning::TauriMeaningEvents(
+        app.handle().clone(),
+    )))
+    .with_histories(Arc::new(FsHistories))
+    .with_watcher(Arc::new(FsWorkspaceWatcher))
+    .with_exports(Arc::new(FsExportStore))
+    .with_clipboard(Arc::new(MacClipboard::default()))
+    .with_writing_assistant(Arc::new(AppleWritingAssistant::installed())))
 }
 
 fn main() {
@@ -79,17 +130,7 @@ fn main() {
         .setup(|app| {
             let preferences =
                 JsonPreferences::new(app.path().app_config_dir()?.join(PREFERENCES_FILE));
-            let session = Session::new(
-                Arc::new(FsWorkspaceOpener),
-                Arc::new(preferences),
-                Arc::new(SystemClock),
-            )
-            .with_indexes(Arc::new(SqliteIndexes::new(app.path().app_data_dir()?)))
-            .with_histories(Arc::new(FsHistories))
-            .with_watcher(Arc::new(FsWorkspaceWatcher))
-            .with_exports(Arc::new(FsExportStore))
-            .with_clipboard(Arc::new(MacClipboard::default()))
-            .with_writing_assistant(Arc::new(AppleWritingAssistant::installed()));
+            let session = base_session(app, preferences)?;
             // La prise locale des outils de l'application : réservée au compte de l'utilisateur,
             // aucun port réseau (fiche 0040). Sans elle, Claude n'a que ses propres outils.
             let place = SocketPlace::new()
@@ -116,7 +157,9 @@ fn main() {
             // Quitter l'application, c'est quitter ses notes : une version de chacune de celles
             // enregistrées depuis leur dernière version.
             if let RunEvent::Exit = event {
-                app.state::<Arc<Session>>().keep_pending_versions();
+                let session = app.state::<Arc<Session>>();
+                session.keep_pending_versions();
+                session.stop_meaning();
             }
         }),
         Err(error) => {

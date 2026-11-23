@@ -14,6 +14,9 @@ const MCP_PREFIX: &str = "mcp__";
 pub enum AppTool {
     /// Chercher des notes avec l'index : plein texte, étiquette, dossier, type de contenu.
     SearchNotes,
+    /// Chercher des notes par ce qu'elles disent plutôt que par leurs mots exacts : la recherche
+    /// par le sens, mêlée à celle par les mots.
+    SearchByMeaning,
     /// La liste des étiquettes, avec le nombre de notes de chacune.
     ListTags,
     /// Les notes dont un lien entre notes désigne une note.
@@ -60,8 +63,9 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 22] = [
         Self::SearchNotes,
+        Self::SearchByMeaning,
         Self::ListTags,
         Self::LinkingNotes,
         Self::ListTemplates,
@@ -89,6 +93,7 @@ impl AppTool {
     pub const fn name(self) -> &'static str {
         match self {
             Self::SearchNotes => "search_notes",
+            Self::SearchByMeaning => "search_by_meaning",
             Self::ListTags => "list_tags",
             Self::LinkingNotes => "linking_notes",
             Self::ListTemplates => "list_templates",
@@ -140,6 +145,7 @@ impl AppTool {
     pub const fn changes_notes(self) -> bool {
         match self {
             Self::SearchNotes
+            | Self::SearchByMeaning
             | Self::ListTags
             | Self::LinkingNotes
             | Self::ListTemplates
@@ -169,6 +175,7 @@ impl AppTool {
     pub const fn target_field(self) -> Option<&'static str> {
         match self {
             Self::SearchNotes => Some("query"),
+            Self::SearchByMeaning => Some("question"),
             Self::CreateNote | Self::CreateNoteFromTemplate => Some("title"),
             Self::CreateFolder
             | Self::LinkingNotes
@@ -231,6 +238,12 @@ mod tests {
             "mcp__malorean__search_notes"
         );
         assert_eq!(AppTool::named("rm"), None);
+        assert_eq!(AppTool::SearchByMeaning.name(), "search_by_meaning");
+        assert_eq!(
+            AppTool::SearchByMeaning.full_name(),
+            "mcp__malorean__search_by_meaning"
+        );
+        assert_eq!(AppTool::ALL[1], AppTool::SearchByMeaning);
     }
 
     #[test]
@@ -285,6 +298,7 @@ mod tests {
             targets,
             [
                 Some("query"),
+                Some("question"),
                 None,
                 path,
                 None,

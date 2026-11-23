@@ -6,6 +6,7 @@ import { type FakeClaude, fakeClaude, fakeClaudeState } from "./fake-claude";
 import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
+import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning";
 import { fakeEntryResults, fakeNotebook, isNotebook } from "./fake-notebook";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 import { type FakeWriting, fakeWriting, fakeWritingState } from "./fake-writing";
@@ -15,7 +16,8 @@ interface FakeNote {
   modified: number;
 }
 
-export interface FakeBackend extends FakeExports, FakeMenu, FakeHistory, FakeWriting, FakeClaude {
+export interface FakeBackend
+  extends FakeExports, FakeMenu, FakeHistory, FakeWriting, FakeClaude, FakeMeaning {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -69,6 +71,7 @@ const backend: FakeBackend = {
   ...fakeMenuState(),
   ...fakeWritingState(params),
   ...fakeClaudeState(params),
+  ...fakeMeaningState(params),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
   readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
@@ -407,6 +410,10 @@ const trashCommands: Record<string, (args: Record<string, string>) => unknown> =
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
   ...fakeNotebook(backend, { freeName, slug, tick: () => (clock += 1) }),
+  ...fakeMeaning(backend, {
+    ...{ notes: () => backend.notes, words: (query) => searchNotes(query), listItem, folded },
+    folderOf,
+  }),
   search_notes: ({ query = "", order }) =>
     new Promise((resolve) =>
       setTimeout(() => resolve(searchNotes(query, order)), backend.searchDuration),

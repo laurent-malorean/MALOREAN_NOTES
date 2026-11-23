@@ -64,7 +64,7 @@ const columns = createOpenColumns({
 });
 const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage });
 const recent = createRecentNotes({ backend: bridge, screen, columns, storage: localStorage });
-const search = createSearch({ backend: bridge, screen, run });
+const search = createSearch({ ...messages, backend: bridge, screen, layout, columns });
 const workspace = createWorkspace({
   ...{ backend: bridge, screen, columns, layout: layoutMemory, folds: foldMemory, recent },
   ...{ storage: localStorage, show: messages.show, search: search.search },
@@ -87,7 +87,7 @@ const settings = connectSettings(
   { documentElement: document.documentElement, ...layout },
   {
     ...{ columns, storage: localStorage, systemDark: matchMedia("(prefers-color-scheme: dark)") },
-    groups: () => [...templates.settingsGroups(), ...journal.settingsGroups()],
+    groups: () => [templates, journal, search.meaning],
   },
 );
 const templates = createTemplates({
@@ -116,7 +116,7 @@ const workspaces = createWorkspaces({
   askRemoval: (name) => askWorkspaceRemoval(layout.confirmation, name),
 });
 const newPane = paneMaker({
-  ...{ backend: bridge, shared, workspacePath: workspace.path },
+  ...{ backend: bridge, shared, workspacePath: workspace.path, related: search.meaning },
   events: {
     ...{ openNote: (path) => actions.open(path), error: messages.error },
     openLink: (title, inNewTab) => run(workspace.followLink(title, inNewTab)),
@@ -136,7 +136,7 @@ const commands = connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
   ...{ picker: layout.picker, searchField: layout.searchField, exporting, assistant },
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent, history },
-  ...{ claude, notebooks },
+  ...{ claude, notebooks, meaning: search.meaning },
 });
 const formatBar = connectFormatBar(layout.formatBar, commands);
 const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...messages });

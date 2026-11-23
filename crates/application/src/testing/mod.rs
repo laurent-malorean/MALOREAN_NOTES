@@ -15,6 +15,7 @@ mod fakes;
 pub mod history_contract;
 pub mod index_contract;
 pub mod meaning_contract;
+pub mod meaning_index_contract;
 pub mod preferences_contract;
 mod trash_contract;
 pub mod writing_contract;

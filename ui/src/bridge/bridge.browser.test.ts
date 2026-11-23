@@ -551,4 +551,35 @@ describe("pont vers Rust : barre des menus", () => {
     await emit("menu-command", "close-tab");
     expect(received).toEqual(["close-tab"]);
   });
+  it("appelle chaque commande du sens, un modèle désigné par son nom", async () => {
+    const calls = recordCalls(null);
+    await bridge.meaningOverview();
+    await bridge.chooseMeaningModel("e5-large");
+    await bridge.downloadMeaningModel("e5-small");
+    await bridge.cancelModelDownload();
+    await bridge.removeMeaningModel("e5-small");
+    await bridge.rebuildMeaning();
+    await bridge.searchNotesWithMeaning("dessert aux pommes");
+    await bridge.relatedNotes("tarte.md");
+    expect(calls).toEqual([
+      { command: "meaning_overview", args: {} },
+      { command: "choose_meaning_model", args: { model: "e5-large" } },
+      { command: "download_meaning_model", args: { model: "e5-small" } },
+      { command: "cancel_model_download", args: {} },
+      { command: "remove_meaning_model", args: { model: "e5-small" } },
+      { command: "rebuild_meaning", args: {} },
+      { command: "search_notes_with_meaning", args: { query: "dessert aux pommes" } },
+      { command: "related_notes", args: { path: "tarte.md" } },
+    ]);
+  });
+
+  it("transmet l'avancement du calcul du sens et du téléchargement d'un modèle", async () => {
+    mockIPC(() => null, { shouldMockEvents: true });
+    const heard: string[] = [];
+    await bridge.onMeaningProgress((item) => heard.push(`calcul ${item.kind}`));
+    await bridge.onModelDownload((item) => heard.push(`téléchargement ${item.kind}`));
+    await emit("meaning-progress", { kind: "progress", done: 1, total: 2, model: "e5-small" });
+    await emit("model-download", { kind: "finished", model: "e5-small" });
+    expect(heard).toEqual(["calcul progress", "téléchargement finished"]);
+  });
 });

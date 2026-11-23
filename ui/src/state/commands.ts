@@ -11,6 +11,7 @@ export type CommandId =
   | "add-entry"
   | "new-folder"
   | "search-workspace"
+  | "search-by-meaning"
   | "find-in-note"
   | "find-and-replace"
   | FormatCommandId
@@ -21,6 +22,7 @@ export type CommandId =
   | "toggle-focus"
   | "toggle-typewriter"
   | "toggle-outline"
+  | "toggle-related-notes"
   | "toggle-claude-column"
   | "toggle-full-screen"
   | "toggle-side-panels"
@@ -73,6 +75,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "add-entry", label: "Ajouter au cahier" },
   { id: "new-folder", label: "Nouveau dossier" },
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
+  { id: "search-by-meaning", label: "Rechercher par le sens" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },
   { id: "find-and-replace", label: "Rechercher et remplacer", shortcut: "Alt+Cmd+F" },
   { id: "bold", label: "Gras", shortcut: "Cmd+B" },
@@ -90,6 +93,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "toggle-focus", label: "Mode focus", shortcut: "Cmd+Maj+F" },
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },
+  { id: "toggle-related-notes", label: "Notes proches" },
   { id: "toggle-claude-column", label: "Colonne Claude Code", shortcut: "Ctrl+Cmd+L" },
   { id: "toggle-full-screen", label: "Plein écran", shortcut: "Ctrl+Cmd+F" },
   { id: "toggle-side-panels", label: "Panneaux latéraux", shortcut: "Cmd+0" },

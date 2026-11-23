@@ -18,6 +18,8 @@ export interface Layout {
   readonly newFolderButton: HTMLButtonElement;
   readonly trashButton: HTMLButtonElement;
   readonly searchField: HTMLInputElement;
+  /** Sous le champ de recherche : par les mots ou par le sens, et ce que le sens demande encore. */
+  readonly searchMode: HTMLElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
   /** La barre de mise en forme, au centre de la bande du haut, à gauche des boutons Focus, Plan… */
@@ -76,6 +78,7 @@ const TEMPLATE = `
           <button class="icon" data-new title="Nouvelle note">＋</button>
         </header>
         <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
+        <div class="search-mode"></div>
         <div class="tag-filter" hidden></div>
         <label class="note-order">Trier par <select aria-label="Trier la liste"></select></label>
         <nav class="notes-list"></nav>
@@ -120,6 +123,7 @@ export function createLayout(root: HTMLElement): Layout {
     newFolderButton: find("[data-new-folder]"),
     trashButton: find("[data-trash]"),
     searchField: find(".search-field"),
+    searchMode: find(".search-mode"),
     notesList: find(".notes-list"),
     editor: find(".editor"),
     formatBar: find(".format-bar"),

@@ -21,6 +21,7 @@ pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 pub mod claude;
 pub mod export;
 pub mod history;
+pub mod meaning;
 pub mod menu;
 pub mod research_notebook;
 pub mod workspaces;
@@ -544,5 +545,13 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         claude::stop_claude,
         claude::log_out_of_claude,
         claude::log_in_to_claude,
+        meaning::meaning_overview,
+        meaning::choose_meaning_model,
+        meaning::download_meaning_model,
+        meaning::cancel_model_download,
+        meaning::remove_meaning_model,
+        meaning::rebuild_meaning,
+        meaning::search_notes_with_meaning,
+        meaning::related_notes,
     ]
 }

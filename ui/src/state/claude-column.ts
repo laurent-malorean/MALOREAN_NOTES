@@ -54,6 +54,7 @@ export const ACTION_LABELS: Readonly<Record<ActionKindItem, string>> = {
 /** Ce que fait chaque outil de l'application (fiche 0040), comme la colonne l'écrit. */
 export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   search_notes: "Recherche dans l’index",
+  search_by_meaning: "Recherche par le sens",
   list_tags: "Étiquettes",
   linking_notes: "Liens entrants",
   list_templates: "Modèles",

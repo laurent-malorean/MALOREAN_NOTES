@@ -1,4 +1,11 @@
-import type { WorkspaceInfo, NoteListItem, SearchResultItem, TagItem, TrashInfo } from "../bridge";
+import type {
+  MeaningUseItem,
+  NoteListItem,
+  SearchResultItem,
+  TagItem,
+  TrashInfo,
+  WorkspaceInfo,
+} from "../bridge";
 import { movedPath } from "./folders";
 import { foldedMoved, foldToggled, parentsUnfolded } from "./folding";
 import { DEFAULT_ORDER, type NoteOrder } from "./note-order";
@@ -6,11 +13,13 @@ import { initialSelection } from "./selection";
 
 /**
  * Une recherche en cours : les mots tapés et les notes trouvées à la dernière réponse
- * (`null` tant qu'aucune réponse n'est arrivée).
+ * (`null` tant qu'aucune réponse n'est arrivée). Une recherche par le sens garde aussi ce qu'il est
+ * advenu du sens (`meaning`), pour le dire au-dessus des résultats.
  */
 export interface Search {
   readonly query: string;
   readonly results: readonly SearchResultItem[] | null;
+  readonly meaning?: MeaningUseItem;
 }
 
 /**
@@ -174,10 +183,11 @@ export function searchAnswered(
   screen: Screen,
   query: string,
   results: readonly SearchResultItem[],
+  meaning?: MeaningUseItem,
 ): Screen {
   // Stryker disable next-line ConditionalExpression: l'accueil n'a pas de recherche, la seconde condition l'écarte aussi ; TypeScript exige la première.
   if (screen.kind !== "workspace" || screen.search?.query !== query) return screen;
-  return { ...screen, search: { query, results } };
+  return { ...screen, search: { query, results, meaning } };
 }
 
 /** La note sélectionnée, s'il y en a une. */

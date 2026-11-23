@@ -9,6 +9,7 @@ use application::testing::preferences_contract::preferences_contract;
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
+use domain::MeaningModel;
 use infrastructure::JsonPreferences;
 use tempfile::TempDir;
 
@@ -151,4 +152,38 @@ fn preferences_that_cannot_be_written_are_reported() {
         preferences.save_workspaces(&one("Notes", "/Users/moi/Notes")),
         Err(StoreError::Unavailable(_))
     ));
+}
+
+#[test]
+fn the_chosen_meaning_model_survives_a_restart() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("preferences.json");
+    JsonPreferences::new(file.clone())
+        .save_meaning_model(MeaningModel::Large)
+        .unwrap();
+    assert_eq!(
+        JsonPreferences::new(file).meaning_model().unwrap(),
+        MeaningModel::Large
+    );
+}
+
+#[test]
+fn an_unknown_meaning_model_name_falls_back_to_the_default() {
+    let (_dir, preferences) = written(r#"{ "meaning_model": "e5-geant" }"#);
+    assert_eq!(preferences.meaning_model().unwrap(), MeaningModel::DEFAULT);
+    let (_dir, preferences) = written(r#"{ "meaning_model": "e5-large" }"#);
+    assert_eq!(preferences.meaning_model().unwrap(), MeaningModel::Large);
+    let (_dir, broken) = written("pas du json");
+    assert_eq!(broken.meaning_model().unwrap(), MeaningModel::DEFAULT);
+}
+
+#[test]
+fn choosing_a_model_keeps_the_workspaces_of_an_old_file() {
+    let (_dir, preferences) = written(r#"{ "last_library": "/Users/moi/Notes" }"#);
+    preferences.save_meaning_model(MeaningModel::Large).unwrap();
+    assert_eq!(
+        preferences.workspaces().unwrap(),
+        one("Notes", "/Users/moi/Notes")
+    );
+    assert_eq!(preferences.meaning_model().unwrap(), MeaningModel::Large);
 }

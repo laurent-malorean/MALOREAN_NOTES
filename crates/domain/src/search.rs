@@ -66,6 +66,26 @@ impl Excerpt {
     pub fn parts(&self) -> &[ExcerptPart] {
         &self.0
     }
+
+    /// L'extrait d'un segment trouvé par le sens, sans mot mis en valeur : le titre de sa section
+    /// (ce qui suit le titre de la note `note_title` dans son titre complet `heading`), « — », puis
+    /// le début de son texte sur une seule ligne, coupé par « … » au bout de [`EXCERPT_LENGTH`]
+    /// caractères. Un segment sans section ne montre que son texte.
+    #[must_use]
+    pub fn of_segment(note_title: &str, heading: &str, text: &str) -> Self {
+        let line = text.split_whitespace().collect::<Vec<_>>().join(" ");
+        let mut start: String = line.chars().take(EXCERPT_LENGTH).collect();
+        if line.chars().count() > EXCERPT_LENGTH {
+            start.push_str(ELLIPSIS);
+        }
+        let section = heading
+            .strip_prefix(note_title)
+            .and_then(|rest| rest.strip_prefix(" > "));
+        Self(vec![ExcerptPart::Text(match section {
+            Some(section) => format!("{section} — {start}"),
+            None => start,
+        })])
+    }
 }
 
 /// Un texte sans majuscule ni accent ; chaque caractère garde la place de celui d'origine.
@@ -188,6 +208,37 @@ mod tests {
 
     fn matched(s: &str) -> ExcerptPart {
         Match(s.to_owned())
+    }
+
+    #[test]
+    fn a_segment_excerpt_shows_its_section_then_the_start_of_its_text() {
+        let excerpt = Excerpt::of_segment("Ma note", "Ma note > Dessert", "Tarte\n  aux   pommes");
+        assert_eq!(excerpt.parts(), [text("Dessert — Tarte aux pommes")]);
+    }
+
+    #[test]
+    fn a_segment_excerpt_without_section_shows_only_its_text() {
+        let excerpt = Excerpt::of_segment("Ma note", "Ma note", "Tarte");
+        assert_eq!(excerpt.parts(), [text("Tarte")]);
+        // Un titre de note qui contient « > » n'est pas pris pour une section.
+        let excerpt = Excerpt::of_segment("A > B", "A > B", "Tarte");
+        assert_eq!(excerpt.parts(), [text("Tarte")]);
+        let excerpt = Excerpt::of_segment("A > B", "A > B > C", "Tarte");
+        assert_eq!(excerpt.parts(), [text("C — Tarte")]);
+    }
+
+    #[test]
+    fn a_segment_excerpt_is_cut_after_the_excerpt_length() {
+        let exact = "a".repeat(EXCERPT_LENGTH);
+        assert_eq!(
+            Excerpt::of_segment("N", "N", &exact).parts(),
+            [text(&exact)]
+        );
+        let longer = format!("{exact}b");
+        assert_eq!(
+            Excerpt::of_segment("N", "N", &longer).parts(),
+            [text(&format!("{exact}…"))]
+        );
     }
 
     #[test]

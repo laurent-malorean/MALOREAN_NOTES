@@ -4,7 +4,7 @@ use domain::history::Version;
 use domain::research_notebook::RefusedEntry;
 use domain::{Folder, NotePath, RefusedAttachment};
 
-use crate::{AssistError, StoreError, Unavailability};
+use crate::{AssistError, MeaningError, MeaningIndexError, StoreError, Unavailability};
 
 /// Ce qui peut empêcher un cas d'usage d'aboutir.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -93,6 +93,15 @@ pub enum AppError {
     /// L'entrée n'est pas ajoutée au cahier de recherche ; la raison est lisible.
     #[error("{0}")]
     EntryRefused(#[from] RefusedEntry),
+    /// La recherche par le sens a reçu une question vide.
+    #[error("la question est vide : écrivez ce que vous cherchez")]
+    EmptyQuestion,
+    /// Le modèle de sens a échoué ou manque ; le message dit quoi faire.
+    #[error("{0}")]
+    Meaning(#[from] MeaningError),
+    /// L'index de sens a échoué ; le message dit quoi faire.
+    #[error("{0}")]
+    MeaningIndex(#[from] MeaningIndexError),
 }
 
 impl From<AssistError> for AppError {
@@ -245,6 +254,21 @@ mod tests {
         assert_eq!(
             AppError::AttachmentRefused(refused.clone()).to_string(),
             refused.to_string()
+        );
+    }
+
+    #[test]
+    fn meaning_errors_keep_their_own_message() {
+        let missing = MeaningError::ModelMissing(domain::MeaningModel::Small);
+        assert_eq!(
+            AppError::from(missing.clone()).to_string(),
+            missing.to_string()
+        );
+        let index = MeaningIndexError::Unavailable("disque plein".into());
+        assert_eq!(AppError::from(index.clone()).to_string(), index.to_string());
+        assert_eq!(
+            AppError::EmptyQuestion.to_string(),
+            "la question est vide : écrivez ce que vous cherchez"
         );
     }
 

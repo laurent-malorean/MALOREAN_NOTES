@@ -20,6 +20,67 @@ describe("colonne : la note qu'elle montre", () => {
     expect(m.events).toEqual(["ouvrir b.md"]);
   });
 
+  it("montre les notes proches de la note quand la liste est demandée, et un clic en ouvre une", async () => {
+    const m = mount();
+    m.relatedShown.on = true;
+    m.related["a.md"] = [{ path: "b.md", title: "B", modified: 0, pinned: false, tags: [] }];
+    await m.pane.load("a.md");
+    await expect.poll(() => m.parts.related.textContent).toContain("B");
+    expect(m.parts.related.hidden).toBe(false);
+    m.parts.related.querySelector("button")?.click();
+    expect(m.events).toEqual(["ouvrir b.md"]);
+  });
+
+  it("ne demande rien et ne montre rien quand la liste des notes proches n'est pas demandée", async () => {
+    const m = mount();
+    await m.pane.load("a.md");
+    await settle();
+    expect(m.calls).not.toContain("proches a.md");
+    expect(m.parts.related.hidden).toBe(true);
+    expect(m.parts.related.childElementCount).toBe(0);
+  });
+
+  it("dit qu'aucune note n'est proche, et cache la liste sans note", async () => {
+    const m = mount();
+    m.relatedShown.on = true;
+    await m.pane.load("a.md");
+    await expect.poll(() => m.parts.related.textContent).toContain("Aucune note proche");
+    await m.pane.load(null);
+    await settle();
+    expect(m.parts.related.hidden).toBe(true);
+    expect(m.calls).not.toContain("proches null");
+  });
+
+  it("ignore les notes proches arrivées pour une note qu'elle ne montre plus, ou quand la liste est masquée", async () => {
+    const m = mount();
+    m.relatedShown.on = true;
+    m.related["a.md"] = [{ path: "x.md", title: "X", modified: 0, pinned: false, tags: [] }];
+    const open = m.hold("proches a.md");
+    await m.pane.load("a.md");
+    await m.pane.load("b.md");
+    open();
+    await settle();
+    expect(m.parts.related.textContent).not.toContain("X");
+    const second = m.hold("proches a.md");
+    const loading = m.pane.load("a.md");
+    m.relatedShown.on = false;
+    second();
+    await loading;
+    await settle();
+    expect(m.parts.related.textContent).not.toContain("X");
+  });
+
+  it("remontre ou cache les notes proches à la demande", async () => {
+    const m = mount();
+    await m.pane.load("a.md");
+    m.relatedShown.on = true;
+    await m.pane.showRelated();
+    expect(m.parts.related.hidden).toBe(false);
+    m.relatedShown.on = false;
+    await m.pane.showRelated();
+    expect(m.parts.related.hidden).toBe(true);
+  });
+
   it("ne relit pas la note qu'elle montre déjà", async () => {
     const m = mount();
     await m.pane.load("a.md");
@@ -96,6 +157,7 @@ describe("colonne : enregistrement de ce qu'on tape", () => {
   it("sans minuteur fourni, enregistre après la pause habituelle", async () => {
     const element = document.createElement("section");
     const backlinks = document.createElement("nav");
+    const related = document.createElement("nav");
     document.body.replaceChildren(element);
     const fake = fakeBackend({ "a.md": "# A" });
     const ignore = () => {};
@@ -104,7 +166,7 @@ describe("colonne : enregistrement de ce qu'on tape", () => {
       events: { saved: ignore, titled: ignore, deleted: ignore, error: ignore },
     });
     const pane = createPane(
-      { element, backlinks },
+      { element, backlinks, related },
       {
         backend: fake.backend,
         shared,

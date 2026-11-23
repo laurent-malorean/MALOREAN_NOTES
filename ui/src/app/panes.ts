@@ -8,6 +8,7 @@ import {
   type Pane,
   type PaneBackend,
   type PaneEvents,
+  type RelatedNotes,
 } from "../screens/note-pane";
 import type { SharedNotes } from "../screens/shared-notes";
 import { folderOf } from "../state/folders";
@@ -18,6 +19,8 @@ export interface PanesDeps {
   readonly events: PaneEvents;
   /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
   readonly notebook: NotebookActions;
+  /** Les notes proches de chaque colonne : demandées ou non, et lues par Rust. */
+  readonly related?: RelatedNotes;
   /** Le dossier de l'espace de travail ouvert. */
   workspacePath(): string;
   /** Règle l'éditeur d'une nouvelle colonne comme ceux des autres : mode focus, caractères par page. */
@@ -43,6 +46,7 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       shared: deps.shared,
       events: deps.events,
       notebook: deps.notebook,
+      related: deps.related,
       resolveImage: (src, note) =>
         imageIn(deps.workspacePath(), note, src, deps.backend.fileAddress),
     });

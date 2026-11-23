@@ -26,9 +26,10 @@ describe("éditeur d'une colonne", () => {
     });
     const element = document.createElement("section");
     const backlinks = document.createElement("nav");
-    element.append(backlinks);
+    const related = document.createElement("nav");
+    element.append(backlinks, related);
     document.body.replaceChildren(element);
-    const pane = make({ element, backlinks });
+    const pane = make({ element, backlinks, related });
     expect(configure).toHaveBeenCalledWith(pane.editor);
     await pane.load("voyages/rome.md");
     await expect.poll(() => addresses).toContain("/lib/voyages/vue.png");
@@ -53,9 +54,10 @@ describe("éditeur d'une colonne", () => {
     });
     const element = document.createElement("section");
     const backlinks = document.createElement("nav");
-    element.append(backlinks);
+    const related = document.createElement("nav");
+    element.append(backlinks, related);
     document.body.replaceChildren(element);
-    const pane = make({ element, backlinks });
+    const pane = make({ element, backlinks, related });
     await pane.load("levures.md");
     element.querySelector<HTMLButtonElement>(".notebook-add")?.click();
     expect(notebook.add).toHaveBeenCalledWith("levures.md");

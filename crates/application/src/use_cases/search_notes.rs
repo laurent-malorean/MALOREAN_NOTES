@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use domain::note::compare;
 use domain::search::{Excerpt, SearchQuery, search};
-use domain::{ContentType, Modified, NoteOrder, NotePath};
+use domain::{ContentType, Modified, NoteOrder, NotePath, NoteSummary};
 
 use crate::{AppError, NoteIndex};
 
@@ -30,6 +30,25 @@ pub struct SearchResult {
     pub modified: Modified,
     /// Le passage autour du premier mot trouvé.
     pub excerpt: Excerpt,
+}
+
+impl SearchResult {
+    /// Le résultat pour `note`, avec son extrait et le titre de son conteneur s'il en a un.
+    pub(crate) fn of(
+        note: &NoteSummary,
+        excerpt: Excerpt,
+        container_title: Option<String>,
+    ) -> Self {
+        Self {
+            excerpt,
+            path: note.path().clone(),
+            title: note.title().to_owned(),
+            content_type: note.content_type(),
+            container_title,
+            container: note.container().cloned(),
+            modified: note.modified(),
+        }
+    }
 }
 
 /// Les notes de tout l'espace de travail qui contiennent tous les mots cherchés, trouvées par
@@ -88,15 +107,12 @@ impl<'a> SearchNotes<'a> {
         Ok(found
             .into_iter()
             .filter_map(|(note, content)| {
-                Some(SearchResult {
-                    excerpt: search(query, &content)?,
-                    path: note.path().clone(),
-                    title: note.title().to_owned(),
-                    content_type: note.content_type(),
-                    container_title: note.container().and_then(|c| titles.get(c).cloned()),
-                    container: note.container().cloned(),
-                    modified: note.modified(),
-                })
+                let container_title = note.container().and_then(|c| titles.get(c).cloned());
+                Some(SearchResult::of(
+                    &note,
+                    search(query, &content)?,
+                    container_title,
+                ))
             })
             .collect())
     }

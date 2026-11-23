@@ -147,4 +147,33 @@ describe("résultats de recherche", () => {
     renderSearchResults(container, "Notes", null, null, ignore);
     expect(container.querySelector(".search-message")?.textContent).toBe("Recherche…");
   });
+  it("écrit au-dessus des résultats pourquoi le sens n'a pas servi", () => {
+    const container = list();
+    renderSearchResults(container, "Notes", results, null, ignore, "Téléchargez le modèle.");
+    const notice = container.firstElementChild as HTMLElement;
+    expect(notice.textContent).toBe("Téléchargez le modèle.");
+    expect(notice.classList.contains("search-notice")).toBe(true);
+    expect(notice.getAttribute("role")).toBe("note");
+    expect(texts(container, ".note-title")).toEqual(["Lundi", "Courses"]);
+    expect(container.querySelectorAll(".search-notice")).toHaveLength(1);
+  });
+
+  it("garde ce message quand aucune note n'est trouvée, avant le constat", () => {
+    const container = list();
+    renderSearchResults(container, "Notes", [], null, ignore, "Le calcul n'est pas fini.");
+    expect(texts(container, ".search-message")).toEqual([
+      "Le calcul n'est pas fini.",
+      "Aucune note trouvée",
+    ]);
+  });
+
+  it("n'écrit aucun message sans cause, ni avant la première réponse", () => {
+    const container = list();
+    renderSearchResults(container, "Notes", results, null, ignore);
+    expect(container.querySelector(".search-notice")).toBeNull();
+    expect(container.children).toHaveLength(2);
+    expect(container.childNodes).toHaveLength(2);
+    renderSearchResults(container, "Notes", null, null, ignore, "Un message");
+    expect(texts(container, ".search-message")).toEqual(["Recherche…"]);
+  });
 });

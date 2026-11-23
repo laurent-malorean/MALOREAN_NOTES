@@ -29,6 +29,7 @@ async function followWorkspaceChange(deps: ExternalChangesDeps, change: Workspac
   await deps.columns.change(notesChangedOutside(columns, change.notes, workspace));
   for (const pane of deps.columns.panes().values()) {
     await pane.showBacklinks();
+    await pane.showRelated();
     if (touchesNote(change.notes, pane.note())) await pane.followDisk();
   }
 }

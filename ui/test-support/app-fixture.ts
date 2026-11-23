@@ -39,6 +39,7 @@ export function fakePane(note: string | null = null, log: string[] = []) {
     flush: vi.fn(async () => void log.push(`enregistrer ${shown}`)),
     forget: vi.fn(() => void log.push(`oublier ${shown}`)),
     showBacklinks: vi.fn(async () => void log.push(`liens ${shown}`)),
+    showRelated: vi.fn(async () => void log.push(`proches ${shown}`)),
     followDisk: vi.fn(async () => void log.push(`relire ${shown}`)),
     destroy: vi.fn(),
   };

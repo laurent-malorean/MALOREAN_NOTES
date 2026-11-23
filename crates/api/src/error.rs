@@ -81,6 +81,35 @@ impl ApiError {
         }
     }
 
+    /// L'interface désigne un modèle de sens qui n'existe pas.
+    pub(crate) fn unknown_meaning_model(name: &str) -> Self {
+        Self {
+            message: format!(
+                "modèle de sens inconnu : « {name} » ; ceux qui existent : « e5-small », « e5-large »"
+            ),
+        }
+    }
+
+    /// Un téléchargement de modèle de sens est déjà en cours : un seul à la fois.
+    pub(crate) fn download_running(model: domain::MeaningModel) -> Self {
+        Self {
+            message: format!(
+                "le téléchargement du modèle « {} » est déjà en cours : attendez qu'il se termine, ou annulez-le",
+                model.label()
+            ),
+        }
+    }
+
+    /// L'interface demande de supprimer le modèle de sens qu'elle est en train de télécharger.
+    pub(crate) fn removing_while_downloading(model: domain::MeaningModel) -> Self {
+        Self {
+            message: format!(
+                "le modèle « {} » est en cours de téléchargement : annulez le téléchargement avant de le supprimer",
+                model.label()
+            ),
+        }
+    }
+
     pub(crate) fn internal(reason: &impl std::fmt::Display) -> Self {
         tracing::error!(%reason, "erreur interne");
         Self {

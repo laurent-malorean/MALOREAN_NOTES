@@ -173,6 +173,17 @@ describe("affichage de l'écran", () => {
     expect(view.searchField.value).toBe("pain");
   });
 
+  it("écrit au-dessus des notes trouvées pourquoi le sens n'a pas servi", () => {
+    const view = layout();
+    const opened = workspaceOpened(workspace, [], []);
+    const meaning = { kind: "failed", message: "Le calcul a échoué." } as const;
+    const searching = searchAnswered(searchTyped(opened, "pain"), "pain", [], meaning);
+    renderScreen(view, searching, ignore);
+    expect(view.notesList.querySelector(".search-notice")?.textContent).toBe("Le calcul a échoué.");
+    renderScreen(view, searchAnswered(searchTyped(opened, "pain"), "pain", []), ignore);
+    expect(view.notesList.querySelector(".search-notice")).toBeNull();
+  });
+
   it("sous le seuil de recherche, garde le texte et montre les notes du dossier", () => {
     const view = layout();
     const opened = workspaceOpened(

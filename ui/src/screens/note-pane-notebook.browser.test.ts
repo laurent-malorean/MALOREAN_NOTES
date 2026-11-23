@@ -14,7 +14,8 @@ const OTHER = "# Autre\n\n\n\n\n\n\nfin";
 function mount(notebook?: NotebookActions) {
   const element = document.createElement("section");
   const backlinks = document.createElement("nav");
-  element.append(backlinks);
+  const related = document.createElement("nav");
+  element.append(backlinks, related);
   document.body.replaceChildren(element);
   const fake = fakeBackend({ "levures.md": NOTEBOOK, "autre.md": OTHER });
   const ignore = () => {};
@@ -24,7 +25,7 @@ function mount(notebook?: NotebookActions) {
     events: { saved: ignore, titled: ignore, deleted: ignore, error: ignore },
   });
   const pane = createPane(
-    { element, backlinks },
+    { element, backlinks, related },
     {
       backend: fake.backend,
       shared,

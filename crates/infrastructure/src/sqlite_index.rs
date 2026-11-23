@@ -15,8 +15,9 @@ use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, ToSql, params, par
 /// Le format de la base : à changer à chaque changement du schéma ; un index d'un autre format
 /// est reconstruit. 2 : le type de contenu et le conteneur de chaque note (fiche 0034). 3 : le
 /// type des notes se nomme « note », et non plus « page » (fiche 0037). 4 : les cahiers de
-/// recherche et leurs entrées (fiche 0041).
-pub const FORMAT_VERSION: i32 = 5;
+/// recherche et leurs entrées (fiche 0041). 6 : les segments des notes et leurs vecteurs de sens
+/// (fiche 0044).
+pub const FORMAT_VERSION: i32 = 6;
 const FILE_PREFIX: &str = "index-";
 const FILE_SUFFIX: &str = ".sqlite";
 /// Séparateur des étiquettes d'une note dans sa colonne : une étiquette tient sur une ligne.
@@ -24,7 +25,7 @@ const TAG_SEPARATOR: char = '\n';
 /// Les trigrammes de la recherche plein texte ne trouvent que les mots d'au moins 3 caractères.
 const TRIGRAM: usize = 3;
 /// Les tables du schéma, toutes présentes dans une base utilisable.
-const EXPECTED_TABLES: i64 = 5;
+const EXPECTED_TABLES: i64 = 7;
 
 const SETTINGS: &str = "PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; \
                         PRAGMA foreign_keys = ON;";
@@ -63,6 +64,21 @@ CREATE TABLE entries (
 );
 CREATE INDEX entries_by_note ON entries (note);
 CREATE VIRTUAL TABLE entries_text USING fts5 (folded, tokenize = 'trigram case_sensitive 1');
+CREATE TABLE segments (
+    id INTEGER PRIMARY KEY,
+    note TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    heading TEXT NOT NULL,
+    text TEXT NOT NULL,
+    key INTEGER NOT NULL
+);
+CREATE INDEX segments_by_note ON segments (note, position);
+CREATE TABLE segment_vectors (
+    segment INTEGER NOT NULL REFERENCES segments (id) ON DELETE CASCADE,
+    model TEXT NOT NULL,
+    vector BLOB NOT NULL,
+    PRIMARY KEY (segment, model)
+);
 ";
 
 const SUMMARY_COLUMNS: &str = "path, title, modified, pinned, tags, type, container";
@@ -70,7 +86,7 @@ const SUMMARY_COLUMNS: &str = "path, title, modified, pinned, tags, type, contai
 /// Les index des espaces de travail, un fichier chacun dans `folder`.
 #[derive(Debug)]
 pub struct SqliteIndexes {
-    folder: PathBuf,
+    pub(crate) folder: PathBuf,
 }
 
 impl SqliteIndexes {
@@ -133,7 +149,7 @@ impl SqliteIndex {
 
     /// Fait `work` sur la base. Si elle se révèle abîmée, son fichier est effacé : le prochain
     /// lancement, ou la reconstruction demandée, repart d'un index vide.
-    fn run<T>(
+    pub(crate) fn run<T>(
         &self,
         work: impl FnOnce(&mut Connection) -> rusqlite::Result<T>,
     ) -> Result<T, StoreError> {
@@ -184,7 +200,7 @@ fn usable(file: &Path) -> Option<Connection> {
     let tables: i64 = connection
         .query_row(
             "SELECT count(*) FROM sqlite_master WHERE name IN ('notes', 'note_tags', 'notes_text', \
-             'entries', 'entries_text')",
+             'entries', 'entries_text', 'segments', 'segment_vectors')",
             [],
             |row| row.get(0),
         )
@@ -243,6 +259,7 @@ impl NoteIndex for SqliteIndex {
             let transaction = connection.transaction()?;
             for note in notes {
                 forget(&transaction, note)?;
+                transaction.execute("DELETE FROM segments WHERE note = ?1", [note.to_path()])?;
             }
             transaction.commit()
         })
@@ -487,7 +504,7 @@ fn signed(value: u64) -> rusqlite::Result<i64> {
     i64::try_from(value).map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))
 }
 
-fn unavailable(error: &impl std::fmt::Display) -> StoreError {
+pub(crate) fn unavailable(error: &impl std::fmt::Display) -> StoreError {
     StoreError::Unavailable(error.to_string())
 }
 

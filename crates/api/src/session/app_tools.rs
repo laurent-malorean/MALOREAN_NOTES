@@ -6,6 +6,7 @@
 mod catalog;
 mod changing;
 mod mcp;
+mod meaning;
 mod reading;
 mod screen;
 
@@ -140,6 +141,7 @@ impl Session {
         }
         match tool {
             AppTool::SearchNotes => self.tool_search_notes(arguments),
+            AppTool::SearchByMeaning => self.tool_search_by_meaning(arguments),
             AppTool::ListTags => written(&self.list_tags().map_err(|e| e.message)?),
             AppTool::LinkingNotes => {
                 let path = required(arguments, "path")?;
@@ -172,3 +174,6 @@ mod changing_tests;
 
 #[cfg(test)]
 mod screen_tests;
+
+#[cfg(test)]
+mod meaning_tests;

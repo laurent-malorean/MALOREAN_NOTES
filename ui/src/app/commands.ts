@@ -20,6 +20,7 @@ import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { NoteHistory } from "./history";
+import type { Meaning } from "./meaning";
 import type { WritingAssistance } from "./writing-assistant";
 import type { WritingModes } from "./writing-modes";
 import type { Workspaces } from "./workspaces";
@@ -60,6 +61,8 @@ export interface CommandsDeps {
   readonly assistant: Pick<WritingAssistance, "propose">;
   /** La colonne Claude Code, affichée ou masquée. */
   readonly claude: { toggle(): void };
+  /** La recherche par le sens : son mode, et les notes proches sous le texte. */
+  readonly meaning: Pick<Meaning, "chooseMode" | "toggleRelated">;
   run(action: Promise<unknown>): void;
 }
 
@@ -144,6 +147,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "add-entry": () => run(deps.notebooks.add()),
     "new-folder": () => deps.folders.startCreation(),
     "search-workspace": () => deps.searchField.focus(),
+    "search-by-meaning": () => (deps.meaning.chooseMode("meaning"), deps.searchField.focus()),
     "find-in-note": () => columns.activePane().editor.openFind(),
     "find-and-replace": () => columns.activePane().editor.openReplace(),
     "correct-selection": () => deps.assistant.propose("correct"),
@@ -152,6 +156,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "toggle-focus": () => writing.toggleFocus(),
     "toggle-typewriter": () => writing.toggleTypewriter(),
     "toggle-outline": () => writing.toggleOutline(),
+    "toggle-related-notes": () => deps.meaning.toggleRelated(),
     "toggle-claude-column": () => deps.claude.toggle(),
     "toggle-full-screen": () => run(deps.window.toggleFullScreen()),
     "toggle-side-panels": () => deps.window.toggleSidePanels(),

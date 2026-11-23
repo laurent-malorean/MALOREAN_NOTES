@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { fakeColumns, fakePane } from "../../test-support/app-fixture";
 import { createLayout } from "../screens/layout";
-import { connectSettings } from "./settings";
+import { connectSettings, type SettingsGroups } from "./settings";
 
 function setup(
   stored: Record<string, string> = {},
-  groups: () => readonly HTMLElement[] = () => [],
+  groups: () => readonly SettingsGroups[] = () => [],
 ) {
   const items = new Map(Object.entries(stored));
   const storage = {
@@ -74,7 +74,7 @@ describe("réglages", () => {
       opened += 1;
       const part = document.createElement("fieldset");
       part.className = "de-plus";
-      return [part];
+      return [{ settingsGroups: () => [part] }];
     });
     t.settings.open();
     expect(t.layout.settings.querySelectorAll(".de-plus")).toHaveLength(1);
@@ -82,5 +82,25 @@ describe("réglages", () => {
     t.settings.open();
     expect(opened).toBe(2);
     t.layout.settings.close();
+  });
+
+  it("ajoute à la fenêtre les parties que donnent les sources de réglages, dans leur ordre, à chaque ouverture", () => {
+    let opened = 0;
+    const part = (name: string) => {
+      const fieldset = document.createElement("fieldset");
+      fieldset.id = `${name}-${opened}`;
+      return fieldset;
+    };
+    const t = setup({}, () => [
+      { settingsGroups: () => [part("un")] },
+      { settingsGroups: () => [part("deux"), part("trois")] },
+    ]);
+    t.layout.settingsButton.click();
+    const ids = () => [...t.layout.settings.querySelectorAll("fieldset[id]")].map((f) => f.id);
+    expect(ids()).toEqual(["un-0", "deux-0", "trois-0"]);
+    t.layout.settings.close();
+    opened = 1;
+    t.layout.settingsButton.click();
+    expect(ids()).toEqual(["un-1", "deux-1", "trois-1"]);
   });
 });

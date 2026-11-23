@@ -104,6 +104,10 @@ describe("colonnes à l'écran", () => {
     expect(parts.backlinks.parentElement).toBe(parts.element);
     expect(parts.backlinks.hidden).toBe(true);
     expect(parts.backlinks.getAttribute("aria-label")).toBe("Liens entrants");
+    expect(parts.related.previousElementSibling).toBe(parts.backlinks);
+    expect(parts.related.hidden).toBe(true);
+    expect(parts.related.getAttribute("aria-label")).toBe("Notes proches");
+    expect(parts.related.className).toBe("backlinks related-notes");
   });
 
   it("garde l'élément d'une colonne, et ce qui y a le focus, tant qu'elle existe", () => {

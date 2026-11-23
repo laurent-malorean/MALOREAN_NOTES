@@ -3,12 +3,13 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use crate::Workspaces;
+use crate::{MeaningStore, MemoryMeaningIndex, Workspaces};
 use domain::export::ExportDestination;
 use domain::history::Version;
 use domain::search::SearchQuery;
 use domain::{
-    AttachmentName, ContentType, FileName, Folder, Modified, Moment, NotePath, NoteSummary,
+    AttachmentName, ContentType, FileName, Folder, MeaningModel, Modified, Moment, NotePath,
+    NoteSummary,
 };
 
 /// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
@@ -519,6 +520,30 @@ pub trait IndexOpener: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si aucun index ne peut être ouvert ni créé.
     fn open(&self, location: &WorkspaceLocation) -> Result<Arc<dyn NoteIndex>, StoreError>;
+
+    /// L'index de mots de l'espace de travail situé à `location`, et son index de sens (le
+    /// même fichier). Par défaut, l'index de mots de [`IndexOpener::open`] et un index de sens
+    /// vide, que rien ne remplit : la recherche par le sens n'y trouve rien.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si aucun index ne peut être ouvert ni créé.
+    fn open_with_meaning(&self, location: &WorkspaceLocation) -> Result<OpenedIndex, StoreError> {
+        Ok(OpenedIndex {
+            words: self.open(location)?,
+            meaning: Arc::new(MemoryMeaningIndex::default()),
+        })
+    }
+}
+
+/// Les index d'un espace de travail ouvert : celui des mots (qui tient celui du sens à jour) et
+/// celui du sens.
+#[derive(Debug, Clone)]
+pub struct OpenedIndex {
+    /// L'index de mots, que l'application met à jour à chaque changement des notes.
+    pub words: Arc<dyn NoteIndex>,
+    /// L'index de sens du même espace de travail.
+    pub meaning: Arc<dyn MeaningStore>,
 }
 
 /// Préférences gardées d'un lancement à l'autre.
@@ -536,6 +561,21 @@ pub trait Preferences: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
     fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError>;
+
+    /// Le modèle de sens choisi pour toute l'application ; [`MeaningModel::DEFAULT`] tant que
+    /// rien n'est choisi, ou si le nom gardé n'est plus celui d'un modèle connu.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
+    fn meaning_model(&self) -> Result<MeaningModel, StoreError>;
+
+    /// Garde ce modèle de sens comme choisi, sans toucher au reste des préférences.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
+    fn save_meaning_model(&self, model: MeaningModel) -> Result<(), StoreError>;
 }
 
 #[cfg(test)]

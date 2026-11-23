@@ -7,6 +7,7 @@ mod folders;
 mod history;
 mod index;
 mod list_notes;
+mod meaning;
 mod move_note;
 mod note_links;
 mod pin_note;
@@ -33,6 +34,12 @@ pub use history::{
 };
 pub use index::{RebuildIndex, RefreshIndex};
 pub use list_notes::{ListAllNotes, ListNotes};
+pub use meaning::{
+    BATCH_SIZE, ChooseModel, ComputeListener, ComputeMeaning, ComputeOutcome, ComputeProgress,
+    DownloadModel, MeaningOverview, MeaningUse, MixedResults, ModelOverview, ReadMeaningStatus,
+    RebuildMeaning, RelatedNotes, RemoveModel, SEGMENTS_PER_NOTE, SearchByMeaning,
+    SearchWithMeaning,
+};
 pub use move_note::MoveNote;
 pub use note_links::{LinkingNote, NoteLinks};
 pub use pin_note::PinNote;

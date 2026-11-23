@@ -30,6 +30,7 @@ impl Session {
             &Fingerprint::parse(fingerprint)?,
         )?;
         self.saved_since_version(&note, &saved.path)?;
+        self.worker.request();
         Ok(SaveResult {
             path: saved.path.to_path(),
             title: displayed_title_of_note(content, saved.path.name()),

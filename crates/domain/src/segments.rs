@@ -30,6 +30,13 @@ impl Segment {
     pub fn text(&self) -> &str {
         &self.text
     }
+
+    /// Ce que le moteur de sens lit pour calculer le vecteur du segment : son titre complet, une
+    /// ligne vide, puis son texte. Le titre donne au modèle le sujet que le texte seul n'a pas.
+    #[must_use]
+    pub fn embedding_text(&self) -> String {
+        format!("{}\n\n{}", self.heading(), self.text)
+    }
 }
 
 /// Les segments de la note de titre `note_title` et de texte `content`, dans l'ordre de la note.
@@ -156,6 +163,93 @@ fn chars_cut(word: &str) -> Vec<String> {
         .chunks(MAX_SEGMENT_CHARS)
         .map(|part| part.iter().collect())
         .collect()
+}
+
+/// La clé d'un segment : un hachage stable de son contenu (titre complet et texte). Deux segments
+/// de même contenu ont la même clé, d'une exécution à l'autre ; l'index de sens s'en sert pour
+/// garder le vecteur d'un segment qui n'a pas changé.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SegmentKey(u64);
+
+impl SegmentKey {
+    /// La clé de valeur `value` (celle que l'index a gardée).
+    #[must_use]
+    pub fn new(value: u64) -> Self {
+        Self(value)
+    }
+
+    /// La valeur de la clé, à ranger dans l'index.
+    #[must_use]
+    pub fn value(self) -> u64 {
+        self.0
+    }
+}
+
+/// Sépare le titre complet du texte dans ce qu'on hache : « A » + « B » et « AB » + « » diffèrent.
+const KEY_SEPARATOR: u8 = 0;
+const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
+const FNV_PRIME: u64 = 0x0100_0000_01b3;
+
+impl Segment {
+    /// Sa clé : FNV-1a sur 64 bits de son titre complet, d'un octet nul, puis de son texte (même
+    /// hachage que l'empreinte de dossier de la fiche 0028).
+    #[must_use]
+    pub fn key(&self) -> SegmentKey {
+        let heading = self.heading();
+        let bytes = heading
+            .bytes()
+            .chain([KEY_SEPARATOR])
+            .chain(self.text.bytes());
+        SegmentKey(bytes.fold(FNV_OFFSET, |hash, byte| {
+            (hash ^ u64::from(byte)).wrapping_mul(FNV_PRIME)
+        }))
+    }
+
+    /// Le segment lu dans l'index : son titre complet et son texte, tels qu'ils y ont été gardés.
+    /// Il se comporte comme l'original (même titre complet, même texte, même clé).
+    #[must_use]
+    pub fn from_stored(heading: &str, text: &str) -> Self {
+        Self {
+            note_title: heading.to_owned(),
+            section: None,
+            text: text.to_owned(),
+        }
+    }
+}
+
+/// Ce qu'on garde et ce qu'on jette quand les segments d'une note changent.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Reuse<I> {
+    /// Pour chaque nouveau segment, dans l'ordre, l'ancien à garder (de même clé), s'il y en a un.
+    pub kept: Vec<Option<I>>,
+    /// Les anciens segments qu'aucun nouveau ne reprend.
+    pub removed: Vec<I>,
+}
+
+/// Apparie les nouveaux segments (leurs clés) aux anciens `(identifiant, clé)` : chaque ancien
+/// sert au plus une fois, le premier de même clé d'abord ; deux segments identiques dans une note
+/// s'apparient donc chacun au leur.
+#[must_use]
+pub fn reuse<I: Copy>(old: &[(I, SegmentKey)], new: &[SegmentKey]) -> Reuse<I> {
+    let mut free: Vec<bool> = vec![true; old.len()];
+    let kept = new
+        .iter()
+        .map(|key| {
+            let found = old
+                .iter()
+                .enumerate()
+                .find(|(index, (_, old_key))| free[*index] && old_key == key)?;
+            free[found.0] = false;
+            Some(found.1.0)
+        })
+        .collect();
+    let removed = old
+        .iter()
+        .zip(&free)
+        .filter(|(_, free)| **free)
+        .map(|((id, _), _)| *id)
+        .collect();
+    Reuse { kept, removed }
 }
 
 #[cfg(test)]
@@ -360,5 +454,96 @@ mod tests {
                 pair("Ma note", "xxxxx"),
             ]
         );
+    }
+
+    #[test]
+    fn a_key_is_the_fnv_hash_of_the_heading_a_zero_byte_and_the_text() {
+        let segment = &segments("Note", "## Titre\n\nle texte")[0];
+        assert_eq!(segment.heading(), "Note > Titre");
+        assert_eq!(segment.key(), SegmentKey::new(0xa4eb_4e45_a391_e5d0));
+        assert_eq!(segment.key().value(), 0xa4eb_4e45_a391_e5d0);
+    }
+
+    #[test]
+    fn the_embedding_text_is_the_full_heading_then_a_blank_line_then_the_text() {
+        let found = segments("Ma note", "## Dessert\n\nTarte aux pommes");
+        assert_eq!(
+            found[0].embedding_text(),
+            "Ma note > Dessert\n\nTarte aux pommes"
+        );
+        assert_eq!(
+            Segment::from_stored("Ma note > Dessert", "Tarte").embedding_text(),
+            "Ma note > Dessert\n\nTarte"
+        );
+    }
+
+    #[test]
+    fn the_separator_keeps_the_heading_and_the_text_apart() {
+        assert_eq!(
+            Segment::from_stored("", "").key().value(),
+            0xaf63_bd4c_8601_b7df
+        );
+        assert_eq!(
+            Segment::from_stored("a", "").key().value(),
+            0x089b_e207_b544_f1e4
+        );
+        assert_eq!(
+            Segment::from_stored("", "a").key().value(),
+            0x0832_6707_b4eb_37da
+        );
+        assert_ne!(
+            Segment::from_stored("a", "b").key(),
+            Segment::from_stored("", "ab").key()
+        );
+    }
+
+    #[test]
+    fn a_key_changes_with_the_heading_or_the_text_only() {
+        let first = segments("Note", "un")[0].key();
+        assert_eq!(first, segments("Note", "un")[0].key());
+        assert_ne!(first, segments("Autre", "un")[0].key());
+        assert_ne!(first, segments("Note", "deux")[0].key());
+        assert_eq!(first, segments("Note", "---\ntags: x\n---\nun")[0].key());
+    }
+
+    #[test]
+    fn a_stored_segment_behaves_like_the_original() {
+        for segment in segments("Ma note", "intro\n\n## Suite > et fin\n\ntexte") {
+            let stored = Segment::from_stored(&segment.heading(), segment.text());
+            assert_eq!(stored.heading(), segment.heading());
+            assert_eq!(stored.text(), segment.text());
+            assert_eq!(stored.key(), segment.key());
+        }
+    }
+
+    fn key(value: u64) -> SegmentKey {
+        SegmentKey::new(value)
+    }
+
+    #[test]
+    fn unchanged_segments_are_kept_whatever_their_place() {
+        let old = [(10, key(1)), (11, key(2)), (12, key(3))];
+        let plan = reuse(&old, &[key(3), key(9), key(1)]);
+        assert_eq!(plan.kept, [Some(12), None, Some(10)]);
+        assert_eq!(plan.removed, [11]);
+    }
+
+    #[test]
+    fn identical_segments_are_matched_one_to_one() {
+        let old = [(1, key(5)), (2, key(5))];
+        let plan = reuse(&old, &[key(5), key(5), key(5)]);
+        assert_eq!(plan.kept, [Some(1), Some(2), None]);
+        assert!(plan.removed.is_empty());
+        let plan = reuse(&old, &[key(5)]);
+        assert_eq!(plan.kept, [Some(1)]);
+        assert_eq!(plan.removed, [2]);
+    }
+
+    #[test]
+    fn nothing_old_or_nothing_new_is_handled() {
+        assert_eq!(reuse::<u8>(&[], &[key(1)]).kept, [None]);
+        let plan = reuse(&[(7, key(1))], &[]);
+        assert!(plan.kept.is_empty());
+        assert_eq!(plan.removed, [7]);
     }
 }

@@ -61,6 +61,28 @@ fn search_notes() -> Described {
     )
 }
 
+fn search_by_meaning() -> Described {
+    (
+        "Cherche des notes par ce qu'elles disent, pas par leurs mots exacts : à utiliser quand \
+         on ne connaît pas les mots employés dans les notes (une idée, une question, un \
+         synonyme). `question` s'écrit en une phrase naturelle. Rend les notes les plus proches, \
+         la mieux classée d'abord : chemin, titre, et l'extrait trouvé (titre de la section, \
+         puis le début de son texte). Si le sens n'est pas disponible (modèle non téléchargé, \
+         calcul pas fini), la recherche par mots répond seule, et `reason` dit pourquoi : \
+         dis-le à l'utilisateur.",
+        input(
+            json!({
+                "question": text("Ce qu'on cherche, en une phrase : `comment j'ai décidé du budget`."),
+                "limit": json!({
+                    "type": "integer",
+                    "description": "Combien de notes au plus (10 par défaut, 100 au plus).",
+                }),
+            }),
+            &["question"],
+        ),
+    )
+}
+
 fn list_tags() -> Described {
     (
         "Liste les étiquettes de l'espace de travail, chacune avec son nombre de notes.",
@@ -288,6 +310,7 @@ fn show_note() -> Described {
 fn described(tool: AppTool) -> Described {
     match tool {
         AppTool::SearchNotes => search_notes(),
+        AppTool::SearchByMeaning => search_by_meaning(),
         AppTool::ListTags => list_tags(),
         AppTool::LinkingNotes => linking_notes(),
         AppTool::ListTemplates => list_templates(),
@@ -346,13 +369,14 @@ mod tests {
             assert_eq!(unknown, 0, "{tool:?}");
             let kinds: Vec<_> = properties
                 .iter()
-                .map(|(name, property)| (name == "tags", property["type"].as_str().unwrap()))
+                .map(|(name, property)| (name.as_str(), property["type"].as_str().unwrap()))
                 .collect();
-            assert!(
-                kinds
-                    .iter()
-                    .all(|(tags, kind)| *kind == if *tags { "array" } else { "string" })
-            );
+            assert!(kinds.iter().all(|(name, kind)| *kind
+                == match *name {
+                    "tags" => "array",
+                    "limit" => "integer",
+                    _ => "string",
+                }));
             assert!(
                 properties
                     .values()
@@ -364,8 +388,9 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 21] = [
+        let expected: [(AppTool, &[&str]); 22] = [
             (AppTool::SearchNotes, &[]),
+            (AppTool::SearchByMeaning, &["question"]),
             (AppTool::ListTags, &[]),
             (AppTool::LinkingNotes, path),
             (AppTool::ListTemplates, &[]),
@@ -390,6 +415,22 @@ mod tests {
         for (tool, fields) in expected {
             assert_eq!(checked_schema(tool)["required"], json!(fields), "{tool:?}");
         }
+    }
+
+    #[test]
+    fn the_search_by_meaning_takes_a_question_and_a_limit_and_tells_when_to_use_it() {
+        let described = tool_description(AppTool::SearchByMeaning);
+        let mut fields: Vec<_> = described["inputSchema"]["properties"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect();
+        fields.sort();
+        assert_eq!(fields, ["limit", "question"]);
+        let description = described["description"].as_str().unwrap();
+        assert!(description.contains("mots exacts"), "{description}");
+        assert!(description.contains("`reason`"), "{description}");
     }
 
     #[test]

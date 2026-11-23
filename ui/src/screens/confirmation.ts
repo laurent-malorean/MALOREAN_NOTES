@@ -55,3 +55,10 @@ export const askWorkspaceRemoval = (dialog: HTMLDialogElement, name: string) =>
     question: `Retirer « ${name} » de la liste des espaces de travail ? Ses notes restent dans leur dossier.`,
     confirm: "Retirer",
   });
+
+/** Demande avant de supprimer du Mac le modèle de sens `name` : il faudrait le télécharger de nouveau. */
+export const askModelRemoval = (dialog: HTMLDialogElement, name: string) =>
+  askConfirmation(dialog, {
+    question: `Supprimer le modèle « ${name} » du Mac ? Pour l'utiliser de nouveau, il faudra le télécharger.`,
+    confirm: "Supprimer",
+  });

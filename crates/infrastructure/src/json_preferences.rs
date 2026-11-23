@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
+use domain::MeaningModel;
 use serde::{Deserialize, Serialize};
 
 /// Un espace de travail tel qu'il est écrit dans le fichier.
@@ -26,6 +27,9 @@ struct Stored {
     workspaces: Vec<StoredWorkspace>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     active: Option<String>,
+    /// Le nom du modèle de sens choisi ; un nom inconnu vaut le modèle par défaut.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    meaning_model: Option<String>,
 }
 
 impl Stored {
@@ -60,6 +64,7 @@ impl Stored {
                 })
                 .collect(),
             active: workspaces.active().map(|w| w.name.as_str().to_owned()),
+            meaning_model: None,
         }
     }
 }
@@ -122,7 +127,27 @@ impl Preferences for JsonPreferences {
     }
 
     fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError> {
-        self.save(&Stored::of(workspaces))
+        let meaning_model = self.load()?.meaning_model;
+        self.save(&Stored {
+            meaning_model,
+            ..Stored::of(workspaces)
+        })
+    }
+
+    fn meaning_model(&self) -> Result<MeaningModel, StoreError> {
+        Ok(self
+            .load()?
+            .meaning_model
+            .and_then(|name| MeaningModel::from_name(&name))
+            .unwrap_or(MeaningModel::DEFAULT))
+    }
+
+    fn save_meaning_model(&self, model: MeaningModel) -> Result<(), StoreError> {
+        // Un fichier d'avant les espaces de travail les garde sous sa forme actuelle : on ne
+        // réécrit pas l'ancienne clé.
+        let mut stored = Stored::of(&self.workspaces()?);
+        stored.meaning_model = Some(model.name().to_owned());
+        self.save(&stored)
     }
 }
 

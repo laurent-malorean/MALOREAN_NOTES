@@ -76,13 +76,27 @@ impl MeaningVector {
         if self.0.len() != other.0.len() {
             return 0.0;
         }
-        self.0.iter().zip(&other.0).map(|(a, b)| a * b).sum()
+        dot_product(&self.0, &other.0)
     }
+}
+
+/// Le produit scalaire de deux suites de même longueur (la plus courte décide sinon) : les
+/// produits sont additionnés dans l'ordre, pour que chaque calcul donne le même résultat.
+#[must_use]
+pub fn dot_product(a: &[f32], b: &[f32]) -> f32 {
+    a.iter().zip(b).map(|(a, b)| a * b).sum()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_dot_product_adds_the_products_in_order() {
+        assert_eq!(dot_product(&[1.0, 2.0, 3.0], &[4.0, 5.0, 6.0]), 32.0);
+        assert_eq!(dot_product(&[], &[]), 0.0);
+        assert_eq!(dot_product(&[2.0], &[-3.0]), -6.0);
+    }
 
     fn vector(values: &[f32]) -> MeaningVector {
         MeaningVector::new(values.to_vec()).unwrap()

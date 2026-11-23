@@ -38,7 +38,7 @@ pub use content_type::ContentType;
 pub use file_name::{FileName, InvalidFileName};
 pub use folder::{Folder, FolderName, InvalidFolderName, NotePath};
 pub use meaning::{Architecture, MeaningModel, ModelFile, ModelFileInfo};
-pub use meaning_vector::{InvalidMeaningVector, MeaningVector};
+pub use meaning_vector::{InvalidMeaningVector, MeaningVector, dot_product};
 pub use note::{Modified, NoteOrder, NoteSummary};
 pub use title::Title;
 pub use web_address::WebAddress;
