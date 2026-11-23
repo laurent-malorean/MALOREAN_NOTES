@@ -20,6 +20,7 @@ pub mod note;
 pub mod research_notebook;
 pub mod saving;
 pub mod search;
+pub mod segments;
 pub mod tag;
 pub mod template;
 pub mod title;
