@@ -153,6 +153,12 @@ export function modelRows(state: MeaningState): ModelRow[] {
   });
 }
 
+/** Le modèle choisi, s'il y a un aperçu. */
+function chosenModel(state: MeaningState) {
+  const overview = state.overview;
+  return overview?.models.find((model) => model.model === overview.chosen) ?? null;
+}
+
 /** L'état de l'index de sens, ligne à ligne ; rien sans aperçu. */
 export function indexLines(state: MeaningState): string[] {
   const overview = state.overview;
