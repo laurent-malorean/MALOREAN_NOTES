@@ -14,3 +14,7 @@
 ## Conséquences
 
 - L'état de recherche de l'écran garde les deux réponses (`results` pour les mots, `ideas` pour le sens) ; la liste des notes ne montre plus de résultats, et le filtre par étiquette et Récentes restent visibles pendant une recherche.
+
+## Hauteur de la fenêtre (correctif)
+
+La fenêtre a une hauteur définie (70 % de l'écran au plus, jamais plus que la place sous le champ), pas une hauteur déduite de son contenu : dans le moteur du Mac, une colonne en `flex: 1` dans une boîte de hauteur automatique s'écrasait à zéro tant que les résultats n'étaient pas là, et la fenêtre devenait un filet transparent avec ses titres posés sur les onglets. Le parcours `ui/e2e/search-window-display.spec.ts` (thème sombre, 400 résultats, réponses lentes) garde cette hauteur, le fond, le premier plan et le défilement.
