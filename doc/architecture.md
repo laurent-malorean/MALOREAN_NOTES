@@ -18,7 +18,7 @@ crates/
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
-                      disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, cahiers de recherche, recherche (et sens : mode de recherche, modèles, notes proches), corbeille, enregistrement,
+                      disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, cahiers de recherche et cartes mentales (création), recherche (et sens : mode de recherche, modèles, notes proches), corbeille, enregistrement,
                       modifications extérieures, historique, aide à l'écriture, outils d'écriture, réglages, export, commandes, barre des menus, boutons de la fenêtre
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité

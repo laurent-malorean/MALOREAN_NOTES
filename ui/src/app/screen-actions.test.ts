@@ -39,6 +39,11 @@ function setup(searching: string | null = null) {
       changePin: (path, change) =>
         done(`${change === backend.pinNote ? "épingler" : "désépingler"} ${path}`)(),
       sortBy: (order) => done(`trier par ${order}`)(),
+      createNote: (folder) => done(`nouvelle note ${folder}`)(),
+    },
+    notebooks: {
+      create: (folder) => done(`nouveau cahier ${folder}`)(),
+      createMindMap: (folder) => done(`nouvelle carte mentale ${folder}`)(),
     },
     trash: {
       trashNote: (path) => done(`jeter ${path}`)(),
@@ -85,6 +90,9 @@ describe("demandes de l'écran", () => {
     t.actions.restoreFolder("projets");
     t.actions.empty();
     t.actions.fold("projets");
+    t.actions.newNote("projets");
+    t.actions.newMindMap("projets");
+    t.actions.newNotebook("projets");
     t.actions.selectTag("perso");
     t.actions.clearTag();
     t.actions.sortNotes("title");
@@ -109,12 +117,15 @@ describe("demandes de l'écran", () => {
       "rendre le dossier projets",
       "vider",
       "plier projets",
+      "nouvelle note projets",
+      "nouvelle carte mentale projets",
+      "nouveau cahier projets",
       "filtrer #perso",
       "retirer le filtre",
       "trier par title",
       "récentes",
     ]);
-    expect(t.ran).toHaveLength(15);
+    expect(t.ran).toHaveLength(18);
   });
 
   it("ouvre une note, la place ou la ferme dans les colonnes", async () => {

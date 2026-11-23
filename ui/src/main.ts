@@ -18,9 +18,9 @@ import { createLayoutMemory } from "./app/layout-memory";
 import { createWorkspace } from "./app/workspace";
 import { createWorkspaces } from "./app/workspaces";
 import { createMessages } from "./app/messages";
+import { createNewContents } from "./app/new-contents";
 import { paneMaker } from "./app/panes";
 import { createRecentNotes } from "./app/recent-notes";
-import { createResearchNotebooks } from "./app/research-notebook";
 import { savingEvents } from "./app/saving";
 import { screenActions } from "./app/screen-actions";
 import { createSearch } from "./app/search";
@@ -97,7 +97,7 @@ const templates = createTemplates({
 const journal = createJournal({
   ...{ backend: bridge, storage: localStorage, screen, columns, workspace },
 });
-const notebooks = createResearchNotebooks({
+const notebooks = createNewContents({
   ...{ ...messages, backend: bridge, screen, columns, workspace, dialog: layout.confirmation },
 });
 const exporting = createExport({
@@ -126,7 +126,7 @@ const newPane = paneMaker({
 });
 const actions: ScreenActions = screenActions({
   ...{ backend: bridge, screen, columns, folders, workspace, trash, tags, recent },
-  ...{ exporting, history, run },
+  ...{ exporting, history, notebooks, run },
 });
 connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders });
 const windowDisplay = connectWindowDisplay(layout, {

@@ -8,6 +8,7 @@ import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { Folders } from "./folders";
+import type { NewContents } from "./new-contents";
 import type { NoteHistory } from "./history";
 import type { Workspace } from "./workspace";
 import type { RecentNotes } from "./recent-notes";
@@ -19,7 +20,9 @@ export interface ScreenActionsDeps {
   readonly screen: Pick<CurrentScreen, "get">;
   readonly columns: Pick<OpenColumns, "openNote" | "update" | "activePane">;
   readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
-  readonly workspace: Pick<Workspace, "moveNote" | "changePin" | "sortBy">;
+  readonly workspace: Pick<Workspace, "moveNote" | "changePin" | "sortBy" | "createNote">;
+  /** Ce qu'on crée dans un dossier, par son menu. */
+  readonly notebooks: Pick<NewContents, "create" | "createMindMap">;
   readonly trash: Pick<
     Trash,
     "trashNote" | "trashFolder" | "restoreNote" | "restoreFolder" | "empty"
@@ -46,6 +49,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     recent,
     exporting,
     history,
+    notebooks,
     run,
   } = deps;
   /** Ouvre la note ; trouvée par une recherche, elle s'ouvre sur le terme cherché. */
@@ -61,6 +65,9 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     rename: (path, name) => run(folders.rename(path, name)),
     move: (path, into) => run(folders.move(path, into)),
     fold: (path) => folders.fold(path),
+    newNote: (folder) => run(workspace.createNote(folder)),
+    newMindMap: (folder) => run(notebooks.createMindMap(folder)),
+    newNotebook: (folder) => run(notebooks.create(folder)),
     moveNote: (path, into) => run(workspace.moveNote(path, into)),
     pin: (path) => run(workspace.changePin(path, backend.pinNote)),
     unpin: (path) => run(workspace.changePin(path, backend.unpinNote)),

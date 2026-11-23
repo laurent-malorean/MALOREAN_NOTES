@@ -74,7 +74,7 @@ export interface Workspace {
   /** Trie la liste (et la recherche en cours) autrement ; ce tri est gardé pour l'espace de travail. */
   sortBy(order: NoteOrder): Promise<void>;
   /** Crée une note dans le dossier affiché et l'ouvre, prête à écrire. */
-  createNote(): Promise<void>;
+  createNote(folder?: string): Promise<void>;
   /**
    * Ouvre la note qu'un lien `[[titre]]` désigne, ce qui est tapé étant enregistré d'abord : dans
    * l'onglet actif, qui garde la note quittée dans son parcours, ou dans un nouvel onglet.
@@ -140,8 +140,8 @@ async function sortBy(deps: WorkspaceDeps, workspace: string, order: NoteOrder) 
   await refreshList(deps);
 }
 
-async function createNote(deps: WorkspaceDeps) {
-  const created = await deps.backend.createNote(currentFolder(deps.screen.get()));
+async function createNote(deps: WorkspaceDeps, folder?: string) {
+  const created = await deps.backend.createNote(folder ?? currentFolder(deps.screen.get()));
   await refreshList(deps);
   await deps.columns.openNote(created.path);
   deps.columns.activePane().editor.focus();
@@ -200,7 +200,7 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
     refreshTags,
     refreshList: () => refreshList(deps),
     sortBy: (order) => sortBy(deps, workspacePath, order),
-    createNote: () => createNote(deps),
+    createNote: (folder) => createNote(deps, folder),
     followLink: (title, inNewTab) => followLink(deps, title, inNewTab),
     moveNote: (path, into) => moveNote(deps, path, into),
     changePin: (path, change) => changePin(deps, path, change),

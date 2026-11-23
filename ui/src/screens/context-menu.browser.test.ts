@@ -5,6 +5,12 @@ const menu = () => document.querySelector<HTMLElement>(".context-menu");
 const entries = () =>
   [...document.querySelectorAll(".context-menu button")].map((b) => b.textContent);
 
+// Sans la feuille de style de l'application, un menu occuperait toute la largeur de la page.
+const style = document.createElement("style");
+style.textContent =
+  ".context-menu { position: fixed; width: 12rem; display: flex; flex-direction: column; }";
+document.head.append(style);
+
 afterEach(() => {
   closeContextMenu();
   document.body.replaceChildren();
@@ -24,6 +30,29 @@ describe("menu contextuel", () => {
       b.getAttribute("role"),
     );
     expect(roles).toEqual(["menuitem", "menuitem"]);
+  });
+
+  it("reste entier dans la fenêtre : un menu ouvert près d'un bord se décale", () => {
+    const many = Array.from({ length: 12 }, (_, at) => ({ label: `Choix ${at}`, run: () => {} }));
+    showContextMenu(window.innerWidth - 5, window.innerHeight - 5, many);
+    const box = (menu() as HTMLElement).getBoundingClientRect();
+    expect(box.right).toBeLessThanOrEqual(window.innerWidth);
+    expect(box.bottom).toBeLessThanOrEqual(window.innerHeight);
+    expect(box.left).toBeGreaterThanOrEqual(0);
+    expect(box.top).toBeGreaterThanOrEqual(0);
+  });
+
+  it("montre une pastille, une coche et un séparateur quand le choix les demande", () => {
+    showContextMenu(0, 0, [
+      { label: "rouge", swatch: "rouge", checked: true, run: () => {} },
+      { label: "Autre", separatorBefore: true, run: () => {} },
+    ]);
+    const [first, second] = [...document.querySelectorAll<HTMLElement>(".context-menu button")];
+    expect(first?.querySelector(".context-menu-swatch")).not.toBeNull();
+    expect(first?.getAttribute("aria-checked")).toBe("true");
+    expect(first?.getAttribute("role")).toBe("menuitemcheckbox");
+    expect(second?.classList.contains("separated")).toBe(true);
+    expect(second?.querySelector(".context-menu-swatch")).toBeNull();
   });
 
   it("montre grisé un choix impossible, et sous les choix une note qui dit pourquoi", () => {

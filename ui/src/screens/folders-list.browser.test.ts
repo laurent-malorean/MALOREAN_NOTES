@@ -23,6 +23,9 @@ function column(
     moveNote: (path, into) => calls.push(["moveNote", path, into]),
     trashFolder: (path) => calls.push(["trashFolder", path]),
     fold: (path) => calls.push(["fold", path]),
+    newNote: (folder) => calls.push(["newNote", folder]),
+    newMindMap: (folder) => calls.push(["newMindMap", folder]),
+    newNotebook: (folder) => calls.push(["newNotebook", folder]),
   };
   renderFoldersList(container, "Notes", folders, selected, actions, folded);
   return { container, calls, actions };
@@ -250,7 +253,7 @@ describe("déplacer une note dans un dossier", () => {
   });
 });
 
-describe("jeter un dossier", () => {
+describe("le menu d'un dossier", () => {
   afterEach(() => closeContextMenu());
   const rightClick = (target: HTMLElement) => {
     const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true });
@@ -258,19 +261,36 @@ describe("jeter un dossier", () => {
     return event;
   };
 
-  it("le clic droit sur un dossier propose de le placer dans la corbeille", () => {
+  const entries = () => [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
+
+  it("le clic droit sur un dossier propose de créer, dans l'ordre, une note, une carte mentale, un cahier de recherche, puis de le placer dans la corbeille", () => {
     const { container, calls } = column();
     expect(rightClick(item(container, "Travail")).defaultPrevented).toBe(true);
-    const entries = [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
-    expect(entries.map((e) => e.textContent)).toEqual(["Placer dans la corbeille"]);
-    entries[0]?.click();
-    expect(calls).toEqual([["trashFolder", "Travail"]]);
+    expect(entries().map((e) => e.textContent)).toEqual([
+      "Nouvelle note",
+      "Nouvelle carte mentale",
+      "Nouveau cahier de recherche",
+      "Placer dans la corbeille",
+    ]);
+    for (const entry of entries()) entry.click();
+    expect(calls).toEqual([
+      ["newNote", "Travail"],
+      ["newMindMap", "Travail"],
+      ["newNotebook", "Travail"],
+      ["trashFolder", "Travail"],
+    ]);
   });
 
-  it("l'espace de travail lui-même n'a pas ce menu", () => {
-    const { container } = column();
-    expect(rightClick(item(container, "")).defaultPrevented).toBe(false);
-    expect(document.querySelector(".context-menu")).toBeNull();
+  it("la racine propose les trois créations, mais pas la corbeille", () => {
+    const { container, calls } = column();
+    expect(rightClick(item(container, "")).defaultPrevented).toBe(true);
+    expect(entries().map((e) => e.textContent)).toEqual([
+      "Nouvelle note",
+      "Nouvelle carte mentale",
+      "Nouveau cahier de recherche",
+    ]);
+    entries()[1]?.click();
+    expect(calls).toEqual([["newMindMap", ""]]);
   });
 
   it("aucun dossier n'est choisi quand la corbeille est affichée", () => {

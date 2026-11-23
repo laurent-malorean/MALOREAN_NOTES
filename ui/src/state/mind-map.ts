@@ -253,5 +253,16 @@ export function typedOf(node: MindNodeItem): string {
   return [node.title, ...node.detail].join("\n");
 }
 
+/** La première clé `type:` au premier niveau de l'en-tête, sa valeur jusqu'au commentaire. */
+const TYPE_LINE = /^type[ \t]*:([^#\n]*)/m;
+const HEADER = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+
+/** La note est une carte mentale : son en-tête le déclare, comme Rust le lit (guillemets permis). */
+export function isMindMapContent(content: string): boolean {
+  const header = HEADER.exec(content)?.[1];
+  const value = header === undefined ? undefined : TYPE_LINE.exec(header)?.[1];
+  return value !== undefined && value.trim().replace(/^["']|["']$/g, "") === "carte-mentale";
+}
+
 /** Les branches pliées, par chemin. */
 export type Folded = ReadonlySet<string>;

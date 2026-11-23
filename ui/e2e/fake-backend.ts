@@ -7,7 +7,8 @@ import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning";
-import { fakeEntryResults, fakeNotebook, isNotebook } from "./fake-notebook";
+import { fakeContentType, fakeMindMaps } from "./fake-mind-map";
+import { fakeEntryResults, fakeNotebook } from "./fake-notebook";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 import { type FakeWriting, fakeWriting, fakeWritingState } from "./fake-writing";
 
@@ -274,12 +275,11 @@ function searchNotes(query: string, order?: string) {
     .sort((a, b) => sort(listItem(a), listItem(b)))
     .flatMap(([path, note]) => {
       const found = { path, folder: folderOf(path), modified: note.modified, container: null };
-      const notebook = isNotebook(note.content);
       return [
         {
           ...found,
           title: titleOf(note.content) ?? "Sans titre",
-          contentType: notebook ? ("researchNotebook" as const) : ("note" as const),
+          contentType: fakeContentType(note.content),
           containerTitle: null,
           excerpt: excerpt(note.content),
         },
@@ -413,6 +413,7 @@ let indexRebuilt: string | null = null;
 const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...trashCommands,
   ...fakeNotebook(backend, { freeName, slug, tick: () => (clock += 1) }),
+  ...fakeMindMaps(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeMeaning(backend, {
     ...{ notes: () => backend.notes, words: (query) => searchNotes(query), listItem, folded },
     folderOf,

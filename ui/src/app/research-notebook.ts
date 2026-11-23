@@ -20,8 +20,8 @@ export interface ResearchNotebooksDeps extends Pick<Messages, "show" | "error"> 
 }
 
 export interface ResearchNotebooks {
-  /** Fait choisir le titre d'un nouveau cahier, le crée dans le dossier affiché et l'ouvre. */
-  create(): Promise<void>;
+  /** Fait choisir le titre d'un nouveau cahier, le crée dans `folder` (le dossier affiché par défaut) et l'ouvre. */
+  create(folder?: string): Promise<void>;
   /** Ajoute `text` au cahier `path` (sa zone de saisie) ; dit si c'est fait, l'erreur étant alors affichée. */
   add(path: string, text: string): Promise<boolean>;
 }
@@ -32,12 +32,12 @@ export const NEW_NOTEBOOK = {
   confirm: "Créer",
 };
 
-async function create(deps: ResearchNotebooksDeps) {
+async function create(deps: ResearchNotebooksDeps, folder?: string) {
   if (deps.screen.get().kind !== "workspace") return;
   const title = await askName(deps.dialog, NEW_NOTEBOOK);
   if (title === null) return;
   const created = await deps.backend.createResearchNotebook(
-    currentFolder(deps.screen.get()),
+    folder ?? currentFolder(deps.screen.get()),
     title,
   );
   await deps.workspace.refreshList();
@@ -65,5 +65,5 @@ async function add(deps: ResearchNotebooksDeps, path: string, text: string): Pro
 }
 
 export function createResearchNotebooks(deps: ResearchNotebooksDeps): ResearchNotebooks {
-  return { create: () => create(deps), add: (path, text) => add(deps, path, text) };
+  return { create: (folder) => create(deps, folder), add: (path, text) => add(deps, path, text) };
 }

@@ -64,6 +64,7 @@ const deps: CommandsDeps = {
   journal: { open: async () => void log.push("note du jour") },
   notebooks: {
     create: async () => void log.push("nouveau cahier"),
+    createMindMap: async () => void log.push("nouvelle carte mentale"),
   },
   folders: { startCreation: () => log.push("nouveau dossier") },
   trash: { show: async () => void log.push("corbeille") },
@@ -119,6 +120,7 @@ describe("commandes de la palette", () => {
       "new-note-from-template",
       "daily-note",
       "new-research-notebook",
+      "new-mind-map",
       "new-folder",
       "toggle-focus",
       "toggle-typewriter",
@@ -151,6 +153,7 @@ describe("commandes de la palette", () => {
       "depuis un modèle",
       "note du jour",
       "nouveau cahier",
+      "nouvelle carte mentale",
       "nouveau dossier",
       "focus",
       "machine à écrire",
