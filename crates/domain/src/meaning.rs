@@ -45,6 +45,12 @@ pub struct ModelFileInfo {
 }
 
 impl ModelFileInfo {
+    /// Décrit `file` : sa taille en octets et sa somme SHA-256 en hexadécimal minuscule.
+    #[must_use]
+    pub const fn new(file: ModelFile, size: u64, sha256: &'static str) -> Self {
+        Self { file, size, sha256 }
+    }
+
     /// Le fichier décrit.
     #[must_use]
     pub fn file(&self) -> ModelFile {
@@ -65,7 +71,7 @@ impl ModelFileInfo {
 }
 
 const fn info(file: ModelFile, size: u64, sha256: &'static str) -> ModelFileInfo {
-    ModelFileInfo { file, size, sha256 }
+    ModelFileInfo::new(file, size, sha256)
 }
 
 const SMALL_FILES: [ModelFileInfo; 3] = [
@@ -315,6 +321,14 @@ mod tests {
                 "62c24cdc13d4c9952d63718d6c9fa4c287974249e16b7ade6d5a85e7bbb75626",
             ]
         );
+    }
+
+    #[test]
+    fn a_file_is_described_by_its_size_and_checksum() {
+        let info = ModelFileInfo::new(ModelFile::Tokenizer, 12, "ab");
+        assert_eq!(info.file(), ModelFile::Tokenizer);
+        assert_eq!(info.size(), 12);
+        assert_eq!(info.sha256(), "ab");
     }
 
     #[test]

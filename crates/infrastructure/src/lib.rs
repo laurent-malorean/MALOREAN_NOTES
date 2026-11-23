@@ -3,6 +3,7 @@
 //! (modèle d'IA du Mac), Claude Code piloté en arrière-plan.
 
 mod apple_writing;
+mod candle_embedder;
 mod claude_code_cli;
 mod claude_stream;
 mod fs_export_store;
@@ -14,11 +15,13 @@ mod local_socket;
 #[cfg(target_os = "macos")]
 mod mac_clipboard;
 mod mcp_relay;
+mod model_folder;
 mod sqlite_index;
 mod system_clock;
 mod web_guard;
 
 pub use apple_writing::{AppleWritingAssistant, WRITING_HELPER};
+pub use candle_embedder::CandleEmbedder;
 pub use claude_code_cli::{AppToolsRelay, ClaudeCodeCli, claude_folders};
 pub use fs_export_store::FsExportStore;
 pub use fs_history::{FsHistories, FsHistory};
@@ -29,5 +32,6 @@ pub use local_socket::{LineAnswer, LocalSocket, SocketPlace};
 #[cfg(target_os = "macos")]
 pub use mac_clipboard::MacClipboard;
 pub use mcp_relay::{RELAY_OPTION, relay};
+pub use model_folder::ModelFolder;
 pub use sqlite_index::{FORMAT_VERSION, SqliteIndex, SqliteIndexes};
 pub use system_clock::SystemClock;

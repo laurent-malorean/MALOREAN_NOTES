@@ -23,6 +23,18 @@ objc2 = "0.6"
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSObject", "NSString", "NSURL", "NSDictionary"] }
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSMenu", "NSPasteboard", "NSPrintInfo", "NSPrintOperation", "NSResponder", "NSView", "NSWindow"] }
 objc2-web-kit = { version = "0.3", default-features = false, features = ["std", "objc2-app-kit", "WKWebView"] }
+# Recherche par le sens (fiche 0042) : le moteur de calcul des vecteurs de sens. `candle` exécute
+# le modèle en Rust (`accelerate` : calcul rapide sur le processeur du Mac ; pas de GPU : plus lent pour ces modèles, fiche 0043),
+# `tokenizers` découpe le texte en jetons (sans fonction par défaut : rien en C).
+candle-core = { version = "0.11", features = ["accelerate"] }
+candle-nn = { version = "0.11", features = ["accelerate"] }
+candle-transformers = { version = "0.11", features = ["accelerate"] }
+tokenizers = { version = "0.22", default-features = false, features = ["fancy-regex"] }
+# Téléchargement des modèles de sens (fiche 0043) : le client que Tauri tire déjà, en mode
+# bloquant, avec le TLS du système (Security.framework) plutôt que `rustls` et `ring`.
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "native-tls"] }
+# Somme SHA-256 des fichiers téléchargés (déjà tirée par Tauri).
+sha2 = "0.10"
 proptest = "1"
 # Index de chaque espace de travail (fiche 0028) : SQLite compilé avec l'application (`bundled`),
 # recherche plein texte FTS5 comprise.

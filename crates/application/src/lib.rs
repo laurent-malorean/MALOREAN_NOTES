@@ -4,6 +4,7 @@ mod claude;
 pub mod error;
 mod history;
 mod indexed_store;
+mod meaning_ports;
 mod memory_history;
 mod memory_index;
 pub mod ports;
@@ -18,6 +19,9 @@ pub use claude::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTur
 pub use error::AppError;
 pub use history::{History, HistoryOpener, HistoryPlace};
 pub use indexed_store::IndexedStore;
+pub use meaning_ports::{
+    DownloadProgress, Embedder, MeaningError, MeaningModels, ModelState, ProgressListener,
+};
 pub use memory_history::{MemoryHistories, MemoryHistory};
 pub use memory_index::{MemoryIndex, MemoryIndexes};
 pub use ports::{

@@ -22,6 +22,7 @@ Application Tauri 2 : un workspace Cargo (une crate par couche) et une interface
 - **Sens des dépendances** : jamais à l'envers. `api` ne dépend jamais d'`infrastructure` ; `domain` et `application` ne dépendent ni d'`api` ni d'`infrastructure` ; `ui/` ne parle qu'aux commandes de `api`. *Vérifié par : le compilateur — une crate ne peut utiliser que ce que son `Cargo.toml` déclare. Toute nouvelle dépendance entre crates se relit en revue.*
 - **Assemblage** : on crée et on relie les objets dans `app/src/main.rs` seulement.
 - **Dépendances externes** : déclarées une fois dans `[workspace.dependencies]`, avec leur version. Le domaine n'en ajoute pas sans raison écrite.
+- **Ajouter une dépendance, c'est en adopter toutes ses dépendances** : avant de l'ajouter, regarder l'arbre complet qu'elle amène (`cargo tree -p <crate>`, puis `cargo deny check` sur une copie du changement) : licence de chacune, entretien (dernière version, avis « non entretenue »), failles connues, poids ajouté à l'application et à la compilation. Un problème trouvé (dépendance non entretenue, faille, licence hors liste) **se remonte à l'utilisateur** avec ce qu'elle fait, le risque réel et les pistes (autre dépendance, mise à jour, exception) ; personne ne le contourne seul. Une exception dans `deny.toml` (avis ignoré, licence ajoutée) n'est écrite qu'avec l'accord de l'utilisateur, avec en commentaire son motif, sa date et la condition de son retrait. *Vérifié par : `cargo deny` dans `scripts/ci.sh` ; revue pour l'analyse.*
 
 ## 2. Séparation des responsabilités
 

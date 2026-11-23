@@ -27,6 +27,13 @@ ignore = true
 
 [advisories]
 yanked = "deny"
+ignore = [
+  # `paste` n'est plus entretenue, sans faille connue : macro de compilation seule (elle colle des
+  # noms dans le code, rien à l'exécution), tirée par `gemm`, donc par `candle-core` (recherche par
+  # le sens, fiche 0042). Exception décidée par l'utilisateur le 23/11/2026 ; à retirer dès que
+  # candle ou `gemm` s'en passe.
+  "RUSTSEC-2024-0436",
+]
 
 [bans]
 multiple-versions = "allow"
