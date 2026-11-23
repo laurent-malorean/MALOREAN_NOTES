@@ -28,6 +28,7 @@ ui/                   interface TypeScript (Vite)
 scripts/ci.sh         CI locale : barrière de commit, `--fonction`, `--livraison`, `--echantillon` (fiches 0047 et 0049)
 scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-doc-only.sh
 scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
+.github/workflows/mutation-domaine.yml   mutation de toute la crate `domain` chaque nuit sur GitHub Actions (fiche 0050)
 ```
 
 Sens des dépendances : `api` → `application` → `domain` ; `infrastructure` → `application` → `domain` ; `app` → tout ; `ui/` → commandes de `api` uniquement.
@@ -122,6 +123,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0015-ci-avant-chaque-commit.md` | La mini CI avant chaque commit, plus rien à l'envoi (remplacée en partie par la 0047) |
 | `0047-ci-a-trois-niveaux.md` | Barrière de commit rapide, mutation du diff en arrière-plan, CI complète à la livraison ; durées avant/après (la dette bloquante est remplacée par la 0049) |
 | `0049-politique-de-ci-mutation-ciblee.md` | La mutation n'est plus exigée à chaque commit : domaine seul, non bloquante ; échantillon par fonction ailleurs ; fin de fonction sans mutation ; tag `ci-verte` ; livraison |
+| `0050-mutation-du-domaine-de-nuit-sur-github.md` | Mutation de toute la crate `domain` chaque nuit sur GitHub Actions (Linux, gratuit : dépôt public) ; un survivant fait échouer le travail |
 | `0016-liens-entre-notes.md` | Liens entre notes : `[[titre]]`, résolus par le titre à la demande |
 | `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
 | `0018-plein-ecran-et-panneaux-lateraux.md` | Plein écran et panneaux latéraux : deux réglages indépendants |
