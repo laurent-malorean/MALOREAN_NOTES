@@ -62,6 +62,24 @@ impl Session {
         Ok(())
     }
 
+    /// Écrit l'image d'une carte mentale (octets PNG) au fichier `destination`.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué : emplacement invalide, fichier
+    /// impossible à écrire, export indisponible.
+    pub fn export_image(&self, destination: &str, bytes: &[u8]) -> Result<(), ApiError> {
+        let exports = self
+            .exports
+            .as_deref()
+            .ok_or_else(ApiError::exports_unavailable)?;
+        let destination = ExportDestination::parse(destination)?;
+        exports
+            .write_image(&destination, bytes)
+            .map_err(AppError::from)?;
+        Ok(())
+    }
+
     /// La même session, qui peut copier dans le presse-papiers.
     #[must_use]
     pub fn with_clipboard(mut self, clipboard: Arc<dyn Clipboard>) -> Self {
@@ -163,6 +181,35 @@ mod tests {
         assert_eq!(
             exports.file("/Users/moi/Documents/A.md"),
             Some(b"# A\ntexte".to_vec())
+        );
+    }
+
+    #[test]
+    fn an_image_is_exported_as_it_is() {
+        let exports = Arc::new(InMemoryExportStore::default());
+        let session = opened(&[]).with_exports(Arc::clone(&exports) as _);
+        session
+            .export_image("/Users/moi/Documents/Carte.png", b"\x89PNG")
+            .unwrap();
+        assert_eq!(
+            exports.file("/Users/moi/Documents/Carte.png"),
+            Some(b"\x89PNG".to_vec())
+        );
+    }
+
+    #[test]
+    fn an_image_refusal_reaches_the_interface_as_a_message() {
+        assert_eq!(
+            opened(&[])
+                .export_image("/Carte.png", b"x")
+                .unwrap_err()
+                .message,
+            "l'export n'est pas disponible"
+        );
+        let session = opened(&[]).with_exports(Arc::new(InMemoryExportStore::default()) as _);
+        assert_eq!(
+            session.export_image("Carte.png", b"x").unwrap_err().message,
+            "emplacement d'export invalide : « Carte.png »"
         );
     }
 

@@ -365,6 +365,11 @@ pub trait ExportStore: Send + Sync + Debug {
         text: &str,
         attachments: &[ExportedAttachment],
     ) -> Result<(), StoreError>;
+
+    /// Écrit une image au fichier exporté, à la place d'un fichier existant.
+    /// # Errors
+    /// [`StoreError::Unavailable`] si le fichier ne peut pas être écrit.
+    fn write_image(&self, to: &ExportDestination, bytes: &[u8]) -> Result<(), StoreError>;
 }
 
 /// Le presse-papiers du système, où une note copiée est posée pour être collée ailleurs.

@@ -66,6 +66,40 @@ pub async fn export_markdown(
     in_background(move || session.export_markdown(&path, &destination)).await
 }
 
+/// En-tête de [`export_image`] : l'emplacement complet du fichier à écrire, encodé comme une
+/// adresse (`%XX`).
+pub const DESTINATION_HEADER: &str = "x-destination";
+
+/// Écrit l'image PNG d'une carte mentale, reçue telle quelle (octets bruts), au fichier dont
+/// l'emplacement est dans l'en-tête [`DESTINATION_HEADER`].
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::export_image`]. S'y ajoute
+/// une requête incomplète (contenu ou en-tête manquant).
+#[tauri::command]
+pub async fn export_image(
+    request: tauri::ipc::Request<'_>,
+    session: SharedSession<'_>,
+) -> Result<(), ApiError> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err(ApiError::incomplete_export_image());
+    };
+    let bytes = bytes.clone();
+    let destination = request
+        .headers()
+        .get(DESTINATION_HEADER)
+        .and_then(|value| value.to_str().ok())
+        .map(|value| {
+            percent_encoding::percent_decode_str(value)
+                .decode_utf8_lossy()
+                .into_owned()
+        })
+        .ok_or_else(ApiError::incomplete_export_image)?;
+    let session = Arc::clone(&session);
+    in_background(move || session.export_image(&destination, &bytes)).await
+}
+
 /// Imprime l'interface dans le fichier PDF `destination` : seule sa feuille d'impression, où
 /// l'interface a posé le rendu HTML de la note, paraît sur le papier. WebKit écrit le fichier
 /// peu après la réponse.

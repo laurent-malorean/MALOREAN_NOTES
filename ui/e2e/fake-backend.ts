@@ -3,6 +3,7 @@
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { type FakeClaude, fakeClaude, fakeClaudeState } from "./fake-claude";
+import { attachFile, keepImage } from "./fake-attachments";
 import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
@@ -65,6 +66,7 @@ const backend: FakeBackend = {
   opened: [],
   saveDialogs: [],
   exported: {},
+  exportedImages: {},
   printed: [],
   copied: [],
   copiedMarkdown: [],
@@ -528,14 +530,6 @@ const windowCommands: Record<string, (args: Record<string, unknown>) => unknown>
   ...fakeClaude(backend, (path, content) => backend.changeOutside(path, content)),
 };
 
-/** Pièces jointes : même nommage que Rust, en plus simple (moment figé). */
-const PASTED_NAMES: Record<string, string> = {
-  "image/png": "image-2026-11-16-1830.png",
-  "application/pdf": "document-2026-11-16-1830.pdf",
-};
-const ATTACHABLE = /\.(png|jpe?g|gif|webp|heic|tiff|svg|pdf)$/i;
-const encodedInLink = (text: string) =>
-  text.replaceAll(" ", "%20").replaceAll("(", "%28").replaceAll(")", "%29");
 /** Les en-têtes de la dernière commande : le simulateur de Tauri ne les transmet pas. */
 let lastHeaders: Record<string, string> = {};
 
@@ -543,29 +537,6 @@ const header = (name: string) => {
   const value = lastHeaders[name];
   return value === undefined ? undefined : decodeURIComponent(value);
 };
-
-/** Le nom que prend le fichier dans `assets` : le sien, ou un suffixe libre. */
-function freeAttachmentName(assets: string, wanted: string) {
-  const [base = "", extension = ""] = /^(.*)\.([^.]+)$/.exec(wanted)?.slice(1) ?? [];
-  let name = wanted;
-  for (let n = 2; `${assets}${name}` in backend.attachments; n++)
-    name = `${base}-${n}.${extension}`;
-  return name;
-}
-
-function attachFile(bytes: Uint8Array) {
-  const note = header("x-note") ?? "";
-  const wanted = header("x-file-name") ?? PASTED_NAMES[header("x-media-type") ?? ""] ?? "";
-  if (!ATTACHABLE.test(wanted)) {
-    throw { message: `« ${wanted} » ne peut pas être joint à une note` };
-  }
-  const stem = note.replace(/^.*\//, "").replace(/\.md$/, "");
-  const assets = `${note.replace(/[^/]*$/, "")}${stem}.assets/`;
-  const name = freeAttachmentName(assets, wanted);
-  backend.attachments[`${assets}${name}`] = bytes.length;
-  const target = `${stem}.assets/${encodedInLink(name)}`;
-  return { markdown: /\.pdf$/i.test(name) ? `[${name}](${target})` : `![](${target})` };
-}
 
 commands.open_link_target = ({ target = "" }) => void backend.opened.push(target);
 commands.open_web_address = ({ address = "" }) => void backend.opened.push(address);
@@ -576,7 +547,8 @@ mockIPC(
     backend.calls.push(command);
     const windowCommand = windowCommands[command];
     if (windowCommand) return windowCommand((args ?? {}) as Record<string, unknown>);
-    if (command === "attach_file") return attachFile(args as Uint8Array);
+    if (command === "attach_file") return attachFile(backend, header, args as Uint8Array);
+    if (command === "export_image") return keepImage(backend, header, args as Uint8Array);
     const handler = commands[command];
     if (!handler) throw { message: `commande inconnue : ${command}` };
     return handler((args ?? {}) as Record<string, string>);

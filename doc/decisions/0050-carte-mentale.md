@@ -42,3 +42,9 @@ Avant chaque écriture, l'écran relit le fichier. S'il n'est plus tel que l'éc
 
 - Le premier lancement de cette version relit tout l'espace de travail une fois (format 8).
 - Les règles de modification (annulation, conflit) vivent côté interface.
+
+## Double-clic et image (corrections du 23/11)
+
+- **Double-clic sur un nœud** : un clic redessine tous les nœuds, et le navigateur ne dit plus ni « clic » ni « double-clic » quand l'élément pressé a été remplacé entre l'appui et le relâchement. La carte capture donc le pointeur à l'appui (comme la carte de référence) et retrouve le nœud sous le pointeur par `document.elementFromPoint`, sans quoi un double-clic sur un nœud existant ne le modifiait pas. Le bouton de pliage n'est pas capturé (son clic doit lui arriver).
+- **Image de la carte** (§ 6.6) : `screens/mind-map-image.ts` recopie les nœuds et les liens affichés, chacun avec ses styles calculés, dans une image SVG (`foreignObject`), dessinée sur un canevas puis lue en PNG ; le cadre (marge de 40 points, 2 pixels par point) est calculé par `state/mind-map-image.ts`. L'interface envoie les octets à Rust tels quels (`export_image`, destination dans l'en-tête `x-destination`, comme `attach_file`) ; Rust écrit le fichier par le port `ExportStore::write_image`. `ExportFormat::Png` ne sert qu'au nom proposé et au filtre de la fenêtre d'enregistrement ; le choix du format au clavier de l'export d'une note reste PDF ou Markdown.
+

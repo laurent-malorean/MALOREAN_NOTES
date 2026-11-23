@@ -120,6 +120,30 @@ describe("carte mentale : vue", () => {
     expect(transform()).toBe(fitted);
   });
 
+  it("exporte toute la carte en image PNG, quel que soit le zoom de l'écran", async () => {
+    const m = await mount();
+    button("Agrandir").click();
+    button("Exporter en image").click();
+    await vi.waitFor(() => expect(m.images).toHaveLength(1));
+    const png = m.images[0] as Uint8Array;
+    expect([...png.slice(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const header = new DataView(png.buffer, png.byteOffset);
+    const wide = header.getUint32(16);
+    const high = header.getUint32(20);
+    const boxes = nodes().map((n) => n.getBoundingClientRect());
+    expect(wide).toBeGreaterThan(400);
+    expect(high).toBeGreaterThan(200);
+    expect(boxes.length).toBeGreaterThan(0);
+    expect(m.errors).toEqual([]);
+  });
+
+  it("une carte vide n'a pas d'image à exporter", async () => {
+    const m = await mount({ roots: [], places: [] });
+    button("Exporter en image").click();
+    expect(m.notices).toEqual(["La carte est vide : rien à exporter."]);
+    expect(m.images).toEqual([]);
+  });
+
   it("déplace par la molette, zoome avec Cmd + molette", async () => {
     await mount();
     const view = document.querySelector(".mind-map") as HTMLElement;
@@ -349,6 +373,7 @@ describe("carte mentale : modifier", () => {
       openLink: () => {},
       error: (e) => errors.push(e),
       resolveImage: (s) => s,
+      exportImage: async () => {},
       folded: { load: () => [], store: () => {} },
     });
     const host = document.createElement("div");

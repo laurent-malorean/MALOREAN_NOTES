@@ -33,4 +33,8 @@ impl ExportStore for FsExportStore {
         }
         Ok(())
     }
+
+    fn write_image(&self, destination: &ExportDestination, bytes: &[u8]) -> Result<(), StoreError> {
+        fs::write(destination.location(), bytes).map_err(|e| unavailable(&e))
+    }
 }

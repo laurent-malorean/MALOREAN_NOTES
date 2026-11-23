@@ -3,4 +3,4 @@
 /**
  * Le format d'export choisi dans l'interface.
  */
-export type ExportFormatItem = "pdf" | "markdown";
+export type ExportFormatItem = "pdf" | "markdown" | "png";

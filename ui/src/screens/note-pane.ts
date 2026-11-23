@@ -100,11 +100,18 @@ class NotePane implements Pane, Viewer {
     private readonly options: PaneOptions,
   ) {
     const { backend, events, shared, notebook } = options;
-    const { readMindMap, saveMindMap } = backend;
+    const { readMindMap, saveMindMap, chooseExportFile, exportImage } = backend;
     this.map =
-      readMindMap && saveMindMap
+      readMindMap && saveMindMap && chooseExportFile && exportImage
         ? createMindMapPane(parts.element, {
-            backend: { readMindMap, saveMindMap, openLinkTarget: backend.openLinkTarget },
+            backend: {
+              readMindMap,
+              saveMindMap,
+              openLinkTarget: backend.openLinkTarget,
+              chooseExportFile,
+              exportImage,
+            },
+            storage: localStorage,
             openLink: events.openLink,
             error: events.error,
             notice: (message) => events.show?.(message, "info"),

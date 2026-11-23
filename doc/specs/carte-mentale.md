@@ -259,10 +259,11 @@ La carte est créée dans le dossier cliqué.
 | Cmd + molette, ou pincer le trackpad | Zoome autour du pointeur |
 | Bouton « + » / « − » | Zoome ×1,2 / ÷1,2 autour du centre de la vue |
 | Bouton « Tout afficher » | Cadre toute la carte |
+| Bouton « Exporter en image » | Enregistre toute la carte en image PNG (§ 6.6) |
 
 - **Zoom** : de 20 % à 300 %.
 - **Cadrage** : la carte entière tient dans la vue, avec 40 points de marge, centrée, et le zoom n'y dépasse pas 150 %.
-- **Boutons** : « − », « + » et « Tout afficher » sont en bas à droite de la vue.
+- **Boutons** : « − », « + », « Tout afficher » et « Exporter en image » (libellé « Image ») sont en bas à droite de la vue.
 
 ### 6.5 Branches pliées
 
@@ -272,6 +273,14 @@ La carte est créée dans le dossier cliqué.
   - Il affiche « +N » quand elle est pliée, N étant le nombre de descendants cachés.
 - Un clic sur le bouton plie ou déplie la branche.
 - Les branches pliées sont gardées sur ce Mac seulement, pour chaque carte, d'un lancement à l'autre. Elles ne vont jamais dans le fichier.
+
+### 6.6 Image de la carte
+
+- Le bouton « Exporter en image » ouvre la fenêtre d'enregistrement du Mac, comme l'export d'une note : nom proposé = titre de la carte suivi de `.png`, dossier du dernier export (sinon Documents). Annuler n'écrit rien.
+- L'image montre toute la carte telle qu'elle est dessinée : tous les nœuds affichés et leurs liens, couleurs et Markdown compris, une branche pliée seulement par son nœud. Ni le zoom, ni la vue, ni la sélection, ni les boutons de pliage n'y paraissent.
+- Elle est sur le fond de la carte, avec 40 points de marge, à 2 pixels par point.
+- Une carte sans nœud n'a pas d'image : « La carte est vide : rien à exporter. »
+- Une fois écrite : « « titre » exportée dans *chemin* ».
 
 ## 7. Modifier
 
@@ -385,5 +394,4 @@ Ce qui le trouve : les mots de son titre et de son détail. Un clic ouvre la car
 - Branches des deux côtés d'un nœud racine.
 - Recherche dans la carte ouverte.
 - Passage liste ↔ carte : voir et modifier la carte en texte dans l'éditeur.
-- Export en image.
 - Icônes, étiquettes ou dates sur un nœud.

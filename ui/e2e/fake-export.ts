@@ -13,6 +13,8 @@ export interface FakeExports {
   saveDialogs: { name: string; folder: string | null }[];
   /** Les fichiers exportés, par emplacement : le texte d'un Markdown, le HTML imprimé d'un PDF. */
   exported: Record<string, string>;
+  /** Les images PNG exportées, par emplacement : leurs octets. */
+  exportedImages: Record<string, Uint8Array>;
   /** Chaque fenêtre d'impression ouverte : le HTML de la feuille d'impression à ce moment. */
   printed: string[];
   /** Chaque copie mise en forme posée dans le presse-papiers : ses deux formats. */
@@ -23,7 +25,7 @@ export interface FakeExports {
 
 const sheet = () => document.querySelector(".print-sheet")?.innerHTML ?? "";
 const DOCUMENTS = "/Users/moi/Documents";
-const EXTENSIONS: Record<string, string> = { pdf: "pdf", markdown: "md" };
+const EXTENSIONS: Record<string, string> = { pdf: "pdf", markdown: "md", png: "png" };
 
 export function fakeExport(exports: FakeExports): Record<string, Handler> {
   return {

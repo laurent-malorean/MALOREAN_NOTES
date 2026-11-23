@@ -19,6 +19,8 @@ pub enum ExportFormat {
     Pdf,
     /// Le fichier de la note tel quel.
     Markdown,
+    /// L'image d'une carte mentale entière.
+    Png,
 }
 
 impl ExportFormat {
@@ -28,6 +30,7 @@ impl ExportFormat {
         match self {
             Self::Pdf => "pdf",
             Self::Markdown => "md",
+            Self::Png => "png",
         }
     }
 }
@@ -152,6 +155,14 @@ mod tests {
         assert_eq!(
             export_file_name("Réunion du lundi", ExportFormat::Markdown),
             "Réunion du lundi.md"
+        );
+    }
+
+    #[test]
+    fn the_proposed_name_of_an_image_ends_with_png() {
+        assert_eq!(
+            export_file_name("Soft Power", ExportFormat::Png),
+            "Soft Power.png"
         );
     }
 

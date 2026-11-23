@@ -20,6 +20,7 @@ import {
   typedOf,
   updateNode,
 } from "../state/mind-map";
+import { imageFrame } from "../state/mind-map-image";
 import { type Op, typedOp } from "../state/mind-map-ops";
 import { changed, EMPTY_HISTORY, type MapHistory, redone, undone } from "../state/mind-map-history";
 import { type Box, bounds, layoutMap } from "../state/mind-map-layout";
@@ -35,12 +36,20 @@ import {
   ZOOM_STEP,
   zoomed,
 } from "../state/mind-map-viewport";
+import { mapImage } from "./mind-map-image";
 import { showContextMenu } from "./context-menu";
 import { nodeMenu } from "./mind-map-menu";
 import { MapSaver } from "./mind-map-saver";
 import { nodeKey, type KeyHost } from "./mind-map-keys";
-import { createNodeRenderer, WIKI_ADDRESS } from "./mind-map-nodes";
-import { button, confirmDeletion, drawLinks, nodeElement } from "./mind-map-paint";
+import { createNodeRenderer } from "./mind-map-nodes";
+import {
+  button,
+  confirmDeletion,
+  drawLinks,
+  followLink,
+  nodeElement,
+  pathOfTarget,
+} from "./mind-map-paint";
 import { dropTarget, startDrag, startPan } from "./mind-map-drag";
 import "./mind-map.css";
 
@@ -57,6 +66,8 @@ export interface MindMapDeps {
   readonly openLink: (target: string) => void;
   readonly error: (error: unknown) => void;
   readonly resolveImage: (src: string) => string;
+  /** Enregistre l'image PNG de la carte entière (fenêtre d'enregistrement du Mac). */
+  readonly exportImage: (png: Uint8Array) => Promise<void>;
   /** Les branches pliées de cette carte, gardées sur ce Mac. */
   readonly folded: {
     load(): readonly string[];
@@ -137,6 +148,7 @@ class MindMapScreen implements MindMapView {
       button("Réduire", "−", () => this.zoomBy(1 / ZOOM_STEP)),
       button("Agrandir", "+", () => this.zoomBy(ZOOM_STEP)),
       button("Tout afficher", "Tout afficher", () => this.fit()),
+      button("Exporter en image", "Image", () => this.exportImage()),
     );
     this.element.append(this.world, this.empty, controls);
     this.listen();
@@ -255,6 +267,14 @@ class MindMapScreen implements MindMapView {
   private fit(): void {
     this.viewport = fitted(bounds(this.boxes), this.size());
     this.apply();
+  }
+
+  private exportImage(): void {
+    const frame = imageFrame(bounds(this.boxes));
+    if (frame === null) return this.deps.notice("La carte est vide : rien à exporter.");
+    mapImage(frame, this.element, this.world, this.links)
+      .then((png) => this.deps.exportImage(png))
+      .catch(this.deps.error);
   }
 
   private zoomBy(factor: number): void {
@@ -466,24 +486,7 @@ class MindMapScreen implements MindMapView {
     el.addEventListener("pointerdown", (event) => this.pointerDown(event));
     el.addEventListener("dblclick", (event) => this.doubleClick(event));
     el.addEventListener("contextmenu", (event) => this.contextMenu(event));
-    el.addEventListener("click", (event) => this.click(event));
-  }
-
-  private pathOf(target: EventTarget | null): NodePath | null {
-    const key = (target as HTMLElement | null)?.closest<HTMLElement>(".mind-map-node")?.dataset
-      .path;
-    return key === undefined || key === "" ? null : key.split(".").map(Number);
-  }
-
-  private click(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    const link = target.closest<HTMLAnchorElement>("a[href]");
-    if (link === null) return;
-    event.preventDefault();
-    const address = link.getAttribute("href") ?? "";
-    if (address.startsWith(WIKI_ADDRESS))
-      this.deps.openWikiLink(decodeURIComponent(address.slice(WIKI_ADDRESS.length)), event.metaKey);
-    else this.deps.openLink(address);
+    el.addEventListener("click", (event) => followLink(event, this.deps));
   }
 
   private wheel(event: WheelEvent): void {
@@ -497,7 +500,13 @@ class MindMapScreen implements MindMapView {
     const target = event.target as HTMLElement;
     if (target.closest(".mind-map-controls, .mind-map-input, .mind-map-confirm, a")) return;
     this.element.focus({ preventScroll: true });
-    const path = this.pathOf(target);
+    // Le clic redessine les nœuds : sans capture, plus ni clic ni double-clic.
+    try {
+      this.element.setPointerCapture(event.pointerId);
+    } catch {
+      /* pointeur déjà relâché : rien à suivre */
+    }
+    const path = pathOfTarget(target);
     if (path === null) this.panByDragging(event);
     else this.pressNode(event, path);
   }
@@ -534,7 +543,9 @@ class MindMapScreen implements MindMapView {
   private doubleClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (target.closest(".mind-map-controls, .mind-map-input")) return;
-    const path = this.pathOf(target);
+    // Le premier clic a redessiné les nœuds : le nœud est sous le pointeur, plus la cible.
+    const path =
+      pathOfTarget(document.elementFromPoint(event.clientX, event.clientY)) ?? pathOfTarget(target);
     if (path !== null) {
       this.chosen = path;
       this.beginEdit(path, this.current, false);
@@ -550,7 +561,7 @@ class MindMapScreen implements MindMapView {
 
   private contextMenu(event: MouseEvent): void {
     event.preventDefault();
-    const path = this.pathOf(event.target);
+    const path = pathOfTarget(event.target);
     if (path === null) return;
     this.choose(path);
     const current = nodeAt(this.current, path)?.color ?? null;

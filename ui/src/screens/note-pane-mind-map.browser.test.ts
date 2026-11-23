@@ -29,6 +29,13 @@ function mount(withMaps = true, failing = false) {
   const ignore = () => {};
   const errors: unknown[] = [];
   const opened: [string, boolean][] = [];
+  const asked: [string, string, string | null][] = [];
+  const written: [string, number][] = [];
+  const shown: string[] = [];
+  let chosen: { path: string; folder: string } | null = {
+    path: "/Users/moi/Documents/Projet.png",
+    folder: "/Users/moi/Documents",
+  };
   const backend = withMaps
     ? {
         ...fake.backend,
@@ -38,6 +45,12 @@ function mount(withMaps = true, failing = false) {
           return structuredClone(MAP);
         },
         saveMindMap: async (_path: string, map: MindMapItem) => void saved.push(map),
+        chooseExportFile: async (title: string, format: string, folder: string | null) => {
+          asked.push([title, format, folder]);
+          return chosen;
+        },
+        exportImage: async (destination: string, png: Uint8Array) =>
+          void written.push([destination, png.length]),
       }
     : fake.backend;
   const shared = createSharedNotes({
@@ -53,11 +66,24 @@ function mount(withMaps = true, failing = false) {
         openNote: ignore,
         openLink: (title, inNewTab) => opened.push([title, inNewTab]),
         error: (e) => errors.push(e),
+        show: (message) => shown.push(message),
       },
       resolveImage: (src) => src,
     },
   );
-  return { pane, element, saved, read, errors, opened, fake };
+  return {
+    pane,
+    element,
+    saved,
+    read,
+    errors,
+    opened,
+    fake,
+    asked,
+    written,
+    shown,
+    cancel: () => void (chosen = null),
+  };
 }
 
 const mapShown = (element: HTMLElement) => element.classList.contains("mind-map-shown");
@@ -90,6 +116,35 @@ describe("colonne : une carte mentale", () => {
     await vi.waitFor(() => expect(m.saved).toHaveLength(1));
     expect(m.saved[0]?.roots[1]?.color).toBe("rouge");
     expect(m.fake.calls.some((c) => c.startsWith("enregistrer"))).toBe(false);
+  });
+
+  it("l'image de la carte est écrite là où la fenêtre d'enregistrement l'a désigné, le dossier retenu", async () => {
+    localStorage.removeItem("malorean.export-folder");
+    const m = mount();
+    await m.pane.load("projet.md");
+    await vi.waitFor(() =>
+      expect(m.element.querySelectorAll(".mind-map-node[data-path]")).toHaveLength(2),
+    );
+    const export_ = () =>
+      (
+        m.element.querySelector(".mind-map-button[aria-label='Exporter en image']") as HTMLElement
+      ).click();
+    export_();
+    await vi.waitFor(() => expect(m.written).toHaveLength(1));
+    expect(m.asked).toEqual([["Projet", "png", null]]);
+    expect(m.written[0]?.[0]).toBe("/Users/moi/Documents/Projet.png");
+    expect(m.written[0]?.[1]).toBeGreaterThan(100);
+    expect(m.shown).toEqual(["« Projet » exportée dans /Users/moi/Documents/Projet.png"]);
+    export_();
+    await vi.waitFor(() => expect(m.asked).toHaveLength(2));
+    expect(m.asked[1]).toEqual(["Projet", "png", "/Users/moi/Documents"]);
+    m.cancel();
+    export_();
+    await vi.waitFor(() => expect(m.asked).toHaveLength(3));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(m.written).toHaveLength(2);
+    expect(m.errors).toEqual([]);
+    localStorage.removeItem("malorean.export-folder");
   });
 
   it("suit un changement venu du disque", async () => {

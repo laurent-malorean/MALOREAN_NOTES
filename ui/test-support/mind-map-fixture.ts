@@ -32,6 +32,8 @@ export interface Mounted {
   /** Le fichier : la carte que la lecture rend et que l'enregistrement remplace. */
   disk: { map: MindMapItem };
   notices: string[];
+  /** Les images PNG enregistrées. */
+  images: Uint8Array[];
 }
 
 export const nodes = () => [...document.querySelectorAll<HTMLElement>(".mind-map-node[data-path]")];
@@ -70,6 +72,7 @@ export async function mount(map: MindMapItem = sample(), folded: string[] = []) 
   const links: string[] = [];
   const stored: string[][] = [];
   const notices: string[] = [];
+  const images: Uint8Array[] = [];
   const disk = { map: structuredClone(map) };
   const view = createMindMapView({
     save: async (m) => {
@@ -82,6 +85,7 @@ export async function mount(map: MindMapItem = sample(), folded: string[] = []) 
     openLink: (target) => links.push(target),
     error: (e) => errors.push(e),
     resolveImage: (src) => src,
+    exportImage: async (png) => void images.push(png),
     folded: { load: () => folded, store: (keys) => void stored.push([...keys]) },
   });
   view.element.style.flex = "1";
@@ -89,5 +93,5 @@ export async function mount(map: MindMapItem = sample(), folded: string[] = []) 
   view.setMap(map);
   view.show();
   if (map.roots.length > 0) await settle();
-  return { view, saved, errors, wiki, links, stored, disk, notices };
+  return { view, saved, errors, wiki, links, stored, disk, notices, images };
 }
