@@ -112,7 +112,12 @@ describe("écran de réglages, tel que décrit", () => {
       "large Grande",
       "larger Très grande",
     ]);
-    expect(choices("textWidth")).toEqual(["narrow Étroite", "medium Moyenne", "wide Large"]);
+    expect(choices("textWidth")).toEqual([
+      "narrow Étroite",
+      "medium Moyenne",
+      "wide Large",
+      "wider Très large",
+    ]);
     expect(choices("appearance")).toEqual(["auto Automatique", "light Claire", "dark Sombre"]);
     expect(choices("claudeChangesAfterWeb")).toEqual([
       "allow Laisser Claude modifier",

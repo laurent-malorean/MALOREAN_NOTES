@@ -112,7 +112,7 @@ Les mots du projet. Un seul mot par notion, partout (écrans, documents, code, t
 | Caractères par page | `charactersPerPage` | Réglage : nombre de caractères d'une page, 1 500 par défaut (un feuillet). |
 | Police | `font` | Réglage d'affichage : la famille de caractères du texte des notes — avec empattements (par défaut), sans empattements, ou à chasse fixe. |
 | Taille du texte | `textSize` | Réglage d'affichage : petite, moyenne (par défaut), grande ou très grande. |
-| Largeur du texte | `textWidth` | Réglage d'affichage : largeur de la colonne de texte — étroite, moyenne (par défaut) ou large. |
+| Largeur du texte | `textWidth` | Réglage d'affichage : largeur de la colonne de texte — étroite, moyenne (par défaut), large ou très large. |
 | Apparence | `appearance` | Réglage d'affichage : claire, sombre, ou automatique (comme le Mac, par défaut). |
 | Mode machine à écrire | `Typewriter` | Affichage où la ligne en cours d'écriture reste au milieu de la colonne active : elle y va dès la mise en marche, et y revient à chaque frappe ou déplacement du curseur ; une note qu'on ouvre se montre d'abord depuis son début. |
 | Colonne | `Column` | Zone d'édition de la fenêtre, à droite de la liste des notes ; jusqu'à trois côte à côte. Elle a ses onglets et montre la note de son onglet actif. Les listes des dossiers et des notes ne sont pas des colonnes. |

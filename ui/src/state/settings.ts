@@ -3,7 +3,7 @@ import type { PreferenceStorage } from "./focus-preference";
 
 export type Font = "serif" | "sans" | "mono";
 export type TextSize = "small" | "medium" | "large" | "larger";
-export type TextWidth = "narrow" | "medium" | "wide";
+export type TextWidth = "narrow" | "medium" | "wide" | "wider";
 export type Appearance = "auto" | "light" | "dark";
 /** Ce que Claude fait de ses créations et modifications après avoir lu le web (fiche 0032). */
 export type ClaudeChanges = "allow" | "ask";
@@ -103,6 +103,7 @@ export const SETTING_FIELDS: readonly SettingField[] = [
       { value: "narrow", label: "Étroite" },
       { value: "medium", label: "Moyenne" },
       { value: "wide", label: "Large" },
+      { value: "wider", label: "Très large" },
     ],
   },
   {

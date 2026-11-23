@@ -57,10 +57,10 @@ describe("réglages d'affichage du texte", () => {
   });
 
   it("prennent la largeur choisie parmi celles du thème", () => {
-    const widths = ["narrow", "medium", "wide"] as const;
+    const widths = ["narrow", "medium", "wide", "wider"] as const;
     const seen = widths.map((textWidth) => (show({ textWidth }), variable("--text-width")));
     expect(seen).toEqual(widths.map((width) => variable(`--text-width-${width}`)));
-    expect(new Set(seen).size).toBe(3);
+    expect(new Set(seen).size).toBe(4);
   });
 
   it("s'appliquent au texte de la note", () => {

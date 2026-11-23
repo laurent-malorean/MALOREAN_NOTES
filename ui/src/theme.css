@@ -76,6 +76,7 @@
   --text-width-narrow: 34rem;
   --text-width-medium: 42rem;
   --text-width-wide: 54rem;
+  --text-width-wider: 70rem;
   --text-width: var(--text-width-medium);
   --heading1-size: 1.8em;
   --heading2-size: 1.45em;
@@ -175,6 +176,9 @@
 }
 :root[data-text-width="wide"] {
   --text-width: var(--text-width-wide);
+}
+:root[data-text-width="wider"] {
+  --text-width: var(--text-width-wider);
 }
 
 /* Apparence sombre : choisie, ou automatique quand le Mac est en sombre */
