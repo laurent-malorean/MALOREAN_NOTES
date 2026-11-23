@@ -246,3 +246,41 @@ proptest! {
         prop_assert_eq!(FileName::parse(copy.as_str()), Ok(copy.clone()));
     }
 }
+
+/// Une note parmi un petit alphabet, pour que les listes se recoupent.
+fn small_note() -> impl Strategy<Value = NotePath> {
+    prop::sample::select(vec!["a", "b", "c", "d", "e", "f"])
+        .prop_filter_map("nom de note valide", |name| {
+            NotePath::parse(&format!("{name}.md")).ok()
+        })
+}
+
+proptest! {
+    #[test]
+    fn fusing_lists_loses_no_note_and_invents_none(
+        lists in prop::collection::vec(prop::collection::vec(small_note(), 0..8), 0..5),
+    ) {
+        let fused = domain::ranking::fuse(&lists);
+        let given: std::collections::HashSet<_> = lists.iter().flatten().collect();
+        let got: std::collections::HashSet<_> = fused.iter().collect();
+        prop_assert_eq!(given, got);
+        prop_assert_eq!(fused.len(), fused.iter().collect::<std::collections::HashSet<_>>().len());
+    }
+
+    #[test]
+    fn a_note_at_the_head_of_every_list_heads_the_fusion(
+        head in small_note(),
+        tails in prop::collection::vec(prop::collection::vec(small_note(), 0..8), 1..5),
+    ) {
+        let lists: Vec<Vec<NotePath>> = tails
+            .into_iter()
+            .map(|tail| {
+                let mut list = vec![head.clone()];
+                list.extend(tail.into_iter().filter(|note| *note != head));
+                list
+            })
+            .collect();
+        let fused = domain::ranking::fuse(&lists);
+        prop_assert_eq!(fused.first(), Some(&head));
+    }
+}
