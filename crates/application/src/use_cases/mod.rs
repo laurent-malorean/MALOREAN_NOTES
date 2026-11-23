@@ -8,6 +8,7 @@ mod history;
 mod index;
 mod list_notes;
 mod meaning;
+mod mind_map;
 mod move_note;
 mod note_links;
 mod pin_note;
@@ -40,6 +41,7 @@ pub use meaning::{
     RebuildMeaning, RelatedNotes, RemoveModel, SEGMENTS_PER_NOTE, SearchByMeaning,
     SearchWithMeaning,
 };
+pub use mind_map::{CreateMindMap, ReadMindMap, SaveMindMap};
 pub use move_note::MoveNote;
 pub use note_links::{LinkingNote, NoteLinks};
 pub use pin_note::PinNote;

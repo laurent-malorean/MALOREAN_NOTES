@@ -1,0 +1,106 @@
+// Carte mentale d'une colonne (fiche 0050) : quand la note montrée est une carte mentale, la carte
+// prend la place de l'éditeur de texte, sur toute la surface de la colonne. Rust lit et écrit le
+// fichier ; l'éditeur garde le texte de la note, caché, pour l'enregistrement et l'historique.
+import type { MindMapItem } from "../bridge";
+import { isMindMapContent } from "../state/mind-map";
+import { createMindMapView, type MindMapView } from "./mind-map-view";
+
+/** Ce que la carte d'une colonne demande à Rust, par le pont. */
+export interface MindMapBackend {
+  readonly readMindMap: (path: string) => Promise<MindMapItem>;
+  readonly saveMindMap: (path: string, map: MindMapItem) => Promise<unknown>;
+  readonly openLinkTarget: (path: string, target: string) => Promise<unknown>;
+}
+
+export interface MindMapPaneOptions {
+  readonly backend: MindMapBackend;
+  readonly openLink: (title: string, inNewTab: boolean) => void;
+  readonly error: (error: unknown) => void;
+  /** L'adresse chargeable d'une image écrite dans la note `note`. */
+  readonly resolveImage: (src: string, note: string | null) => string;
+}
+
+export interface MindMapPane {
+  /** Montre la carte si la note `path`, de texte `content`, en est une ; l'éditeur sinon. */
+  sync(path: string | null, content: string): Promise<void>;
+  /** La carte est affichée. */
+  shown(): boolean;
+  destroy(): void;
+}
+
+const FOLDED_KEY = "mind-map-folded:";
+
+/** Les branches pliées d'une carte, gardées sur ce Mac. */
+function foldedMemory(path: string) {
+  return {
+    load(): string[] {
+      try {
+        return JSON.parse(localStorage.getItem(FOLDED_KEY + path) ?? "[]") as string[];
+      } catch {
+        return [];
+      }
+    },
+    store(keys: readonly string[]): void {
+      try {
+        localStorage.setItem(FOLDED_KEY + path, JSON.stringify(keys));
+      } catch {
+        // Le stockage est refusé : les branches pliées ne sont pas gardées.
+      }
+    },
+  };
+}
+
+class ColumnMindMap implements MindMapPane {
+  private view: MindMapView | null = null;
+  private path: string | null = null;
+
+  constructor(
+    private readonly column: HTMLElement,
+    private readonly options: MindMapPaneOptions,
+  ) {}
+
+  shown(): boolean {
+    return this.view !== null;
+  }
+
+  async sync(path: string | null, content: string): Promise<void> {
+    if (path === null || !isMindMapContent(content)) return this.close();
+    if (this.path !== path) this.open(path);
+    const map = await this.options.backend.readMindMap(path);
+    // La colonne a pu montrer une autre note pendant la lecture.
+    if (this.path !== path) return;
+    this.view?.setMap(map);
+    this.view?.show();
+  }
+
+  destroy(): void {
+    this.close();
+  }
+
+  private open(path: string): void {
+    this.close();
+    const { backend, openLink, error, resolveImage } = this.options;
+    this.path = path;
+    this.view = createMindMapView({
+      save: (map) => backend.saveMindMap(path, map).then(() => undefined),
+      openWikiLink: openLink,
+      openLink: (target) => void backend.openLinkTarget(path, target).catch(error),
+      error,
+      resolveImage: (src) => resolveImage(src, path),
+      folded: foldedMemory(path),
+    });
+    this.column.append(this.view.element);
+    this.column.classList.add("mind-map-shown");
+  }
+
+  private close(): void {
+    this.view?.destroy();
+    this.view = null;
+    this.path = null;
+    this.column.classList.remove("mind-map-shown");
+  }
+}
+
+export function createMindMapPane(column: HTMLElement, options: MindMapPaneOptions): MindMapPane {
+  return new ColumnMindMap(column, options);
+}

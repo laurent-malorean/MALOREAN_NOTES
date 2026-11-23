@@ -204,7 +204,7 @@ fn a_base_of_another_format_loses_its_segments() {
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .unwrap();
     assert_eq!(version, FORMAT_VERSION);
-    assert_eq!(FORMAT_VERSION, 6);
+    assert_eq!(FORMAT_VERSION, 7);
 }
 
 #[test]

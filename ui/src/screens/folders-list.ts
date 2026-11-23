@@ -19,6 +19,10 @@ export interface FolderActions {
   readonly trashFolder: (path: string) => void;
   /** Plie le dossier, ou le déplie s'il est plié. */
   readonly fold: (path: string) => void;
+  /** Crée, dans ce dossier, une note, une carte mentale ou un cahier de recherche. */
+  readonly newNote: (folder: string) => void;
+  readonly newMindMap: (folder: string) => void;
+  readonly newNotebook: (folder: string) => void;
 }
 
 /** Comment un dossier se montre : sans sous-dossier, plié ou déplié. */
@@ -100,16 +104,27 @@ function item(
     if (event.detail < 2) actions.select(path);
   });
   acceptDrops(button, path, actions);
+  button.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    showContextMenu(event.clientX, event.clientY, [
+      { label: "Nouvelle note", run: () => actions.newNote(path) },
+      { label: "Nouvelle carte mentale", run: () => actions.newMindMap(path) },
+      { label: "Nouveau cahier de recherche", run: () => actions.newNotebook(path) },
+      ...(path === ROOT
+        ? []
+        : [
+            {
+              label: "Placer dans la corbeille",
+              separatorBefore: true,
+              run: () => actions.trashFolder(path),
+            },
+          ]),
+    ]);
+  });
   if (path !== ROOT) {
     button.draggable = true;
     button.addEventListener("dragstart", () => startDragging({ kind: "folder", path }));
     button.addEventListener("dragend", stopDragging);
-    button.addEventListener("contextmenu", (event) => {
-      event.preventDefault();
-      showContextMenu(event.clientX, event.clientY, [
-        { label: "Placer dans la corbeille", run: () => actions.trashFolder(path) },
-      ]);
-    });
     button.addEventListener("dblclick", () => {
       const input = nameInput(
         name,

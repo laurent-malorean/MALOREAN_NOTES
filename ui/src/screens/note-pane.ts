@@ -6,12 +6,13 @@ import { createEditor, type Editor } from "../editor/editor";
 import type { OpenNoteLink } from "../editor/links/note-links";
 import { lineStart } from "../state/research-notebook";
 import { renderBacklinks } from "./backlinks-view";
+import { createMindMapPane, type MindMapBackend, type MindMapPane } from "./mind-map-pane";
 import type { ColumnParts } from "./columns-view";
 import { renderRelatedNotes } from "./related-view";
 import type { SharedNotes, Viewer } from "./shared-notes";
 
 /** Ce qu'une colonne demande à Rust, par le pont. */
-export interface PaneBackend {
+export interface PaneBackend extends Partial<MindMapBackend> {
   readonly listBacklinks: (path: string) => Promise<LinkingNoteItem[]>;
   readonly attachFile: (
     path: string,
@@ -88,12 +89,23 @@ const ANCHOR_MARK = "#";
 class NotePane implements Pane, Viewer {
   readonly editor: Editor;
   private shown: string | null = null;
+  private readonly map: MindMapPane | null;
 
   constructor(
     private readonly parts: ColumnParts,
     private readonly options: PaneOptions,
   ) {
     const { backend, events, shared, notebook } = options;
+    const { readMindMap, saveMindMap } = backend;
+    this.map =
+      readMindMap && saveMindMap
+        ? createMindMapPane(parts.element, {
+            backend: { readMindMap, saveMindMap, openLinkTarget: backend.openLinkTarget },
+            openLink: events.openLink,
+            error: events.error,
+            resolveImage: options.resolveImage,
+          })
+        : null;
     this.editor = createEditor(
       parts.element,
       (content, changes) => shared.typed(this, changes, content),
@@ -128,8 +140,21 @@ class NotePane implements Pane, Viewer {
     await this.options.shared.leave(this);
     void this.showBacklinks().catch(this.options.events.error);
     void this.showRelated().catch(this.options.events.error);
-    if (path === null) return this.editor.show("");
+    if (path === null) {
+      this.editor.show("");
+      return this.showMap();
+    }
     await this.options.shared.join(path, this);
+    await this.showMap();
+  }
+
+  /** La carte mentale prend la place de l'éditeur si la note en est une. */
+  private async showMap(): Promise<void> {
+    try {
+      await this.map?.sync(this.shown, this.editor.content());
+    } catch (error) {
+      this.options.events.error(error);
+    }
   }
 
   async flush(): Promise<void> {
@@ -160,6 +185,7 @@ class NotePane implements Pane, Viewer {
 
   async followDisk(): Promise<void> {
     await this.options.shared.followDisk(this);
+    await this.showMap();
   }
 
   /** La note vient d'être enregistrée sous ce chemin ; son titre, donc ses liens entrants, ont pu changer. */
@@ -170,6 +196,7 @@ class NotePane implements Pane, Viewer {
 
   destroy(): void {
     void this.options.shared.leave(this).catch(this.options.events.error);
+    this.map?.destroy();
     this.editor.destroy();
   }
 

@@ -16,6 +16,9 @@ import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
 import type { EffortItem } from "./generated/EffortItem";
 import type { EntryItem } from "./generated/EntryItem";
+import type { MindMapItem } from "./generated/MindMapItem";
+import type { MindNodeItem } from "./generated/MindNodeItem";
+import type { PlaceItem } from "./generated/PlaceItem";
 import type { TurnSettingsItem } from "./generated/TurnSettingsItem";
 import type { DifferenceItem } from "./generated/DifferenceItem";
 import type { ExportFile } from "./generated/ExportFile";
@@ -62,6 +65,9 @@ export type {
   ClaudeModelItem,
   EffortItem,
   EntryItem,
+  MindMapItem,
+  MindNodeItem,
+  PlaceItem,
   TurnSettingsItem,
   DifferenceItem,
   ExportFile,
@@ -162,6 +168,11 @@ export const createResearchNotebook = (folder: string, title: string) =>
 export const addEntry = (path: string, text: string) =>
   invoke<EntryItem>("add_entry", { path, text });
 /** Les entrées du cahier, de la plus ancienne à la plus récente. */
+export const createMindMap = (folder: string, title: string) =>
+  invoke<SavedNote>("create_mind_map", { folder, title });
+export const readMindMap = (path: string) => invoke<MindMapItem>("read_mind_map", { path });
+export const saveMindMap = (path: string, map: MindMapItem) =>
+  invoke<null>("save_mind_map", { path, map });
 export const listEntries = (path: string) => invoke<EntryItem[]>("list_entries", { path });
 /** L'adresse qui charge dans la fenêtre un fichier de l'espace de travail, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);

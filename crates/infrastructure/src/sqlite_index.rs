@@ -16,8 +16,8 @@ use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, ToSql, params, par
 /// est reconstruit. 2 : le type de contenu et le conteneur de chaque note (fiche 0034). 3 : le
 /// type des notes se nomme « note », et non plus « page » (fiche 0037). 4 : les cahiers de
 /// recherche et leurs entrées (fiche 0041). 6 : les segments des notes et leurs vecteurs de sens
-/// (fiche 0044).
-pub const FORMAT_VERSION: i32 = 6;
+/// (fiche 0044). 7 : les cartes mentales, nouveau type de contenu (fiche 0050).
+pub const FORMAT_VERSION: i32 = 7;
 const FILE_PREFIX: &str = "index-";
 const FILE_SUFFIX: &str = ".sqlite";
 /// Séparateur des étiquettes d'une note dans sa colonne : une étiquette tient sur une ligne.

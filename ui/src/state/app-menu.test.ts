@@ -62,6 +62,7 @@ describe("barre des menus", () => {
           "Nouvelle note depuis un modèle… Cmd+Shift+N",
           "Note du jour Cmd+Shift+J",
           "Nouveau cahier de recherche…",
+          "Nouvelle carte mentale…",
           "Nouveau dossier",
           "—",
           "Ouverture rapide… Cmd+O",

@@ -11,6 +11,9 @@ pub enum ContentType {
     /// Une note où l'on ne fait qu'ajouter des entrées datées, déclarée par
     /// `type: cahier-de-recherche` dans son en-tête.
     ResearchNotebook,
+    /// Une note montrée en carte, déclarée par `type: carte-mentale` dans son en-tête
+    /// (fiche 0050).
+    MindMap,
     /// Une entrée d'un cahier de recherche : elle n'a pas de fichier à elle, son cahier est son
     /// conteneur. Aucun en-tête ne la déclare.
     Entry,
@@ -18,10 +21,15 @@ pub enum ContentType {
 
 impl ContentType {
     /// Tous les types de contenu : ce sur quoi porte une recherche par défaut.
-    pub const ALL: [Self; 3] = [Self::Note, Self::ResearchNotebook, Self::Entry];
+    pub const ALL: [Self; 4] = [
+        Self::Note,
+        Self::ResearchNotebook,
+        Self::MindMap,
+        Self::Entry,
+    ];
 
     /// Les types qu'une note (un fichier) peut avoir.
-    pub const FILES: [Self; 2] = [Self::Note, Self::ResearchNotebook];
+    pub const FILES: [Self; 3] = [Self::Note, Self::ResearchNotebook, Self::MindMap];
 
     /// Le nom du type, tel que l'écrit la propriété `type:` d'un en-tête et que l'index le
     /// garde.
@@ -30,6 +38,7 @@ impl ContentType {
         match self {
             Self::Note => "note",
             Self::ResearchNotebook => "cahier-de-recherche",
+            Self::MindMap => "carte-mentale",
             Self::Entry => "entree",
         }
     }
@@ -58,7 +67,10 @@ mod tests {
     #[test]
     fn each_type_has_its_name() {
         let names: Vec<_> = ContentType::ALL.map(ContentType::name).into();
-        assert_eq!(names, ["note", "cahier-de-recherche", "entree"]);
+        assert_eq!(
+            names,
+            ["note", "cahier-de-recherche", "carte-mentale", "entree"]
+        );
     }
 
     #[test]
@@ -71,10 +83,14 @@ mod tests {
     }
 
     #[test]
-    fn only_notes_and_research_notebooks_are_files() {
+    fn only_notes_research_notebooks_and_mind_maps_are_files() {
         assert_eq!(
             ContentType::FILES,
-            [ContentType::Note, ContentType::ResearchNotebook]
+            [
+                ContentType::Note,
+                ContentType::ResearchNotebook,
+                ContentType::MindMap
+            ]
         );
     }
 
@@ -84,6 +100,10 @@ mod tests {
         assert_eq!(
             of("---\ntype: cahier-de-recherche\n---\n# C"),
             ContentType::ResearchNotebook
+        );
+        assert_eq!(
+            of("---\ntype: carte-mentale\n---\n# C"),
+            ContentType::MindMap
         );
         assert_eq!(of("# Sans en-tête"), ContentType::Note);
         assert_eq!(of("---\ntype: note\n---\n# N"), ContentType::Note);

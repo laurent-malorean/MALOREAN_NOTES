@@ -93,6 +93,9 @@ pub enum AppError {
     /// L'entrée n'est pas ajoutée au cahier de recherche ; la raison est lisible.
     #[error("{0}")]
     EntryRefused(#[from] RefusedEntry),
+    /// La note n'est pas une carte mentale (fiche 0050).
+    #[error("cette note n'est pas une carte mentale")]
+    NotAMindMap,
     /// La recherche par le sens a reçu une question vide.
     #[error("la question est vide : écrivez ce que vous cherchez")]
     EmptyQuestion,

@@ -18,7 +18,7 @@ crates/
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
-                      disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, cahiers de recherche, recherche (et sens : mode de recherche, modèles, notes proches), corbeille, enregistrement,
+                      disposition gardée, dossiers pliés gardés, espace de travail, dossiers, demandes de l'écran, modèles, journal, cahiers de recherche et cartes mentales (création), recherche (et sens : mode de recherche, modèles, notes proches), corbeille, enregistrement,
                       modifications extérieures, historique, aide à l'écriture, outils d'écriture, réglages, export, commandes, barre des menus, boutons de la fenêtre
   src/bridge/         seul module qui appelle Rust ; types générés
   src/editor/         éditeur CodeMirror 6, une extension par fonctionnalité
@@ -147,6 +147,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0039-fenetre-a-propos.md` | Fenêtre « À propos » : une fenêtre de l'interface (icône, nom, version du `package.json`, auteur), son site ouvert dans le navigateur par Rust (`open_web_address`) |
 | `0040-outils-de-l-application-pour-claude.md` | Outils de l'application pour Claude : un serveur MCP local (le protocole dans `api`), joint par un relais (le programme de l'application) et une prise Unix réservée au compte de l'utilisateur, sans aucun port réseau ; une clé par tour ; les outils passent par les cas d'usage, dans l'espace de travail du tour |
 | `0049-zone-de-saisie-du-cahier.md` | Zone de saisie du cahier : on ajoute une entrée depuis le bas de la page du cahier, sans fenêtre, sans « + », sans commande ni correction ; l'outil `add_entry` de Claude perd sa correction |
+| `0050-carte-mentale.md` | Carte mentale : une note `type: carte-mentale` (liste à puces et propriété `racines`), lue et écrite par le domaine, une commande de lecture et d'enregistrement ; l'arbre et ses changements sont tenus par l'interface ; index au format 7 |
 | `0041-cahier-de-recherche.md` | Cahier de recherche : une note `type: cahier-de-recherche` où Rust seul ajoute des entrées datées (titres d'année, de mois, de jour) ; lecture seule dans l'éditeur, zone de saisie en bas de la page (fiche 0049), pas de correction ; chaque entrée indexée à part avec son cahier pour conteneur (format de l'index 4) ; outil `add_entry` pour Claude |
 | `0045-cas-d-usage-de-la-recherche-par-le-sens.md` | Cas d'usage de la recherche par le sens : un index de mots décoré pour tenir les segments à jour, calcul synchrone par lots avec arrêt, mots seuls avec la raison quand le sens manque, modèle choisi dans les préférences |
 | `0046-calcul-du-sens-en-arriere-plan-et-commandes.md` | Calcul du sens en arrière-plan et commandes : un travailleur unique par session, deux événements (`meaning-progress`, `model-download`), huit commandes, une commande de recherche à part, l'outil `search_by_meaning`, index de mots et de sens ouverts ensemble |

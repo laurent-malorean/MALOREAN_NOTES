@@ -15,6 +15,7 @@ mod meaning;
 #[cfg(test)]
 mod meaning_fakes;
 mod meaning_worker;
+mod mind_map;
 mod quick_open;
 mod recent_notes;
 mod research_notebook;

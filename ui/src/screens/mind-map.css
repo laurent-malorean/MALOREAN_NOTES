@@ -1,0 +1,240 @@
+/* Carte mentale (fiche 0050) : les nœuds, leurs liens, la vue. Couleurs et polices viennent du thème. */
+.column > .mind-map {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* CodeMirror impose `display: flex !important` à son éditeur. */
+.column.mind-map-shown > .cm-editor {
+  display: none !important;
+}
+.mind-map {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+  outline: none;
+  cursor: grab;
+  touch-action: none;
+}
+.mind-map[hidden] {
+  display: none;
+}
+.mind-map-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.mind-map-links {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+.mind-map-link {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5px;
+}
+.mind-map-node {
+  position: absolute;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: calc(10ch + 24px);
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--side-panel);
+  color: var(--text);
+  font-family: var(--sans);
+  cursor: default;
+  user-select: none;
+}
+.mind-map-node.root {
+  border-width: 3px;
+}
+.mind-map-node.root .mind-map-title {
+  font-weight: 700;
+}
+.mind-map-node.level-1 {
+  font-size: var(--mind-map-title-size-1);
+}
+.mind-map-node.level-2 {
+  font-size: var(--mind-map-title-size-2);
+}
+.mind-map-node.level-3 {
+  font-size: var(--mind-map-title-size-3);
+}
+.mind-map-node.level-4 {
+  font-size: var(--mind-map-title-size-4);
+}
+.mind-map-node.colored {
+  border-color: var(--node-color);
+  background: color-mix(in srgb, var(--node-color) 18%, var(--bg));
+}
+.mind-map-node.selected {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--selected);
+}
+.mind-map-node.colored.selected {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-color) 35%, transparent);
+}
+.mind-map-node.editing {
+  visibility: hidden;
+}
+.mind-map-probe {
+  visibility: hidden;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+}
+.mind-map-title {
+  white-space: nowrap;
+}
+.mind-map-title p,
+.mind-map-detail p {
+  margin: 0;
+}
+.mind-map-detail {
+  margin-top: 4px;
+  max-width: 40ch;
+  font-size: 85%;
+  font-weight: 400;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.mind-map-node.wide .mind-map-detail {
+  max-width: none;
+}
+.mind-map-detail ul,
+.mind-map-detail ol {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.mind-map-title a,
+.mind-map-detail a {
+  color: var(--accent);
+  cursor: pointer;
+}
+.mind-map-fold {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(50%, -50%);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.mind-map-node.drop-child {
+  outline: 2px solid var(--accent);
+}
+.mind-map-node.drop-before {
+  box-shadow: 0 -4px 0 var(--accent);
+}
+.mind-map-node.drop-after {
+  box-shadow: 0 4px 0 var(--accent);
+}
+.mind-map-ghost {
+  position: absolute;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.mind-map-input {
+  position: absolute;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 12rem;
+  min-height: 2.4rem;
+  padding: 6px 12px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  resize: both;
+}
+.mind-map-input.refused {
+  border-color: var(--danger);
+}
+.mind-map-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: var(--muted);
+  pointer-events: none;
+}
+.mind-map-empty[hidden] {
+  display: none;
+}
+.mind-map-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+}
+.mind-map-button {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.context-menu-swatch {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.5em;
+  border-radius: 50%;
+  background: var(--swatch);
+}
+.context-menu button.checked::after {
+  content: " ✓";
+}
+.context-menu button.separated {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 4px 4px;
+}
+.mind-map-confirm {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 24rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+.mind-map-confirm p {
+  flex: 1 0 100%;
+  margin: 0;
+}
+.mind-map-confirm .danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}

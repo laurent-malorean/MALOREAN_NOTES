@@ -10,6 +10,17 @@
 
   /* Couleurs */
   --bg: #fbfaf7;
+  /* Palette des nœuds d'une carte mentale : la même dans les deux thèmes (fiche 0050) */
+  --mind-map-rouge: #dc2626;
+  --mind-map-orange: #f97316;
+  --mind-map-jaune: #e3c400;
+  --mind-map-vert: #22a447;
+  --mind-map-turquoise: #14b8b0;
+  --mind-map-bleu: #2563eb;
+  --mind-map-violet: #9333ea;
+  --mind-map-rose: #ec6aa8;
+  --mind-map-marron: #92643a;
+  --mind-map-ardoise: #64748b;
   --side-panel: #f2f0eb;
   --text: #1f1f1f;
   --muted: #6b6b6b;
@@ -104,6 +115,12 @@
   --claude-send-size: 1.75rem;
   --claude-stop-square-size: 0.6rem;
   --claude-attached-title-max-width: 9rem;
+
+  /* Carte mentale : taille du titre selon le niveau (1 : nœuds racines), en points */
+  --mind-map-title-size-1: 19.2px;
+  --mind-map-title-size-2: 16px;
+  --mind-map-title-size-3: 12.8px;
+  --mind-map-title-size-4: 10.24px;
 
   /* Fenêtre */
   --folders-width: 200px;

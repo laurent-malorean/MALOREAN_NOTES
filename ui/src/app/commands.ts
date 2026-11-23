@@ -1,5 +1,6 @@
 // Commandes : ce que fait chaque commande de la palette et chaque raccourci clavier, l'ouverture
 // rapide d'une note par son titre et le choix du tri de la liste.
+import type { NewContents } from "./new-contents";
 import type * as Bridge from "../bridge";
 import { openAbout } from "../screens/about-view";
 import { openPicker } from "../screens/picker";
@@ -45,7 +46,7 @@ export interface CommandsDeps {
   /** La note du jour du journal. */
   readonly journal: { open(): Promise<void> };
   /** Les cahiers de recherche : en créer un, ajouter une entrée sans en ouvrir. */
-  readonly notebooks: { create(): Promise<void> };
+  readonly notebooks: Pick<NewContents, "create" | "createMindMap">;
   readonly folders: { startCreation(): void };
   readonly trash: { show(): Promise<void> };
   readonly settings: { open(): void };
@@ -144,6 +145,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "new-note-from-template": () => run(deps.templates.newNote()),
     "daily-note": () => run(deps.journal.open()),
     "new-research-notebook": () => run(deps.notebooks.create()),
+    "new-mind-map": () => run(deps.notebooks.createMindMap()),
     "new-folder": () => deps.folders.startCreation(),
     "search-workspace": () => deps.searchField.focus(),
     "search-by-meaning": () => (deps.meaning.chooseMode("meaning"), deps.searchField.focus()),

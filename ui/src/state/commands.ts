@@ -8,6 +8,7 @@ export type CommandId =
   | "new-note-from-template"
   | "daily-note"
   | "new-research-notebook"
+  | "new-mind-map"
   | "new-folder"
   | "search-workspace"
   | "search-by-meaning"
@@ -71,6 +72,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "new-note-from-template", label: "Nouvelle note depuis un modèle", shortcut: "Cmd+Maj+N" },
   { id: "daily-note", label: "Note du jour", shortcut: "Cmd+Maj+J" },
   { id: "new-research-notebook", label: "Nouveau cahier de recherche" },
+  { id: "new-mind-map", label: "Nouvelle carte mentale" },
   { id: "new-folder", label: "Nouveau dossier" },
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
   { id: "search-by-meaning", label: "Rechercher par le sens" },
