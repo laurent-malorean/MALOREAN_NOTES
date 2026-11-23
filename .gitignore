@@ -19,3 +19,5 @@ stats.md
 
 
 _DIST/
+# Un dossier de travail par fonction (git worktree), jamais versionné
+worktrees/

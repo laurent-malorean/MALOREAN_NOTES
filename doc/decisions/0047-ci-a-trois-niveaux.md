@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-23
 - **Statut** : acceptée
+- **Remplacée en partie par la fiche 0049** : la dette de mutation bloquante, la mutation du diff de tout le code à chaque commit et la CI complète à la livraison n'existent plus ; la barrière rapide, le crochet `post-commit` et la voie documentation restent.
 - **Remplace en partie** la fiche 0015 (la mini CI complète avant chaque commit) et la règle « seul un passage complet autorise un commit ».
 
 ## Contexte
@@ -11,7 +12,7 @@ La CI prenait 41 % du temps de travail (30,2 h sur 73,6 h, 394 passages) ; une g
 ## Décision
 
 1. **Barrière de commit** (`scripts/ci.sh`, par défaut) : fichiers privés, vocabulaire, longueur des fichiers, mise en forme, lints, `cargo deny`, tests des seules crates touchées et de leurs dépendantes, côté interface formatage, types, lints et tests des fichiers touchés (`vitest related`). Autorise commit et push. Documentation Markdown seule : contrôles du texte seulement.
-2. **Mutation du diff du commit, en arrière-plan** : crochet `post-commit` versionné (`scripts/hooks`, branché par `scripts/install-hooks.sh`, `core.hooksPath` local). Copie figée du commit, `cargo mutants --in-diff` (tests de la seule crate de l'erreur) et Stryker incrémental. Un travail à la fois ; le plus récent remplace l'attente et couvre les commits sautés. Verdict : `tmp/mutation/<commit>.txt` et `tmp/mutation/dernier`, lu par `scripts/ci.sh --verdict`.
+2. **Mutation du diff du commit, en arrière-plan** : crochet `post-commit` versionné (`scripts/hooks`, branché par `scripts/install-hooks.sh`, `core.hooksPath` local). Copie figée du commit, `cargo mutants --in-diff` (tests de la seule crate de l'erreur) et Stryker incrémental. Un travail à la fois ; le plus récent remplace l'attente et couvre les commits sautés. Verdict : `.git/ci-mutation/<commit>.txt` et `.git/ci-mutation/dernier`, lu par `scripts/ci.sh --verdict`.
 3. **Dette de mutation** : des survivants refusent le commit suivant, sauf s'il change un fichier cité ou un test de la même crate (ou de l'interface). Pas d'option de contournement. Un commit de documentation seule passe. Le push n'est jamais bloqué. Payée quand un verdict suivant est OK (il reteste alors aussi les fichiers cités).
 4. **Livraison** : `scripts/ci.sh --complet` (couverture globale, parcours complets et ralentis, mutation de tout le code), obligatoire, refusée si une dette est ouverte ou si le dernier verdict n'est pas OK.
 

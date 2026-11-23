@@ -10,6 +10,7 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 - `doc/architecture.md` (+ `architecture.svg`) : couches, organisation du projet, parcours d'une action.
 - `doc/code.md` : règles de qualité et leurs contrôles.
 - `doc/ontology.md` : vocabulaire, à employer partout.
+- `doc/travail-en-branches.md` : une branche et un dossier de travail (`worktrees/<fonction>`) par fonction ; nommage, création, fusion, nettoyage.
 - `doc/decisions/` : fiches des décisions d'architecture.
 - `doc/specs/` : spécifications fonctionnelles validées, une par fonction.
 
@@ -24,17 +25,18 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 
 - `todo.md` ne liste que ce qui est à produire (fonctions, bugs, code de qualité) ; les règles de développement vont dans `CLAUDE.md` et `doc/code.md` ; l'ordre des prochaines tâches est dans `CLAUDE.local.md`.
 - **Bugs d'abord** : la section « Bugs » de `todo.md` passe avant toute nouvelle fonction.
+- **Une fonction = une branche et un dossier de travail** (`worktrees/<fonction>`, voir `doc/travail-en-branches.md`) : plusieurs agents peuvent avancer en même temps, chacun dans son dossier ; seul l'agent principal fusionne dans `main`.
 - **Un agent par tâche**, avec une consigne qui se suffit à elle-même ; les agents travaillent l'un après l'autre, jamais deux en même temps sur la même branche.
 - Chaque tâche : TDD, mini CI, commit, case cochée dans `todo.md` aussitôt.
 - Une tâche marquée « à préciser » ou « à discuter » attend l'utilisateur : ne pas la coder.
 
-## CI à trois niveaux (doc/decisions/0047, doc/specs/ci-plus-rapide.md)
+## CI : barrière à chaque commit, mutation ciblée et non bloquante (doc/decisions/0049)
 
-- **Niveau 1, barrière de commit** : avant chaque commit, `./scripts/ci.sh` (moins de 3 minutes ; moins d'une minute pour de la documentation Markdown seule). Secrets exclus, vocabulaire, longueur des fichiers, mise en forme, lints sans avertissement, dépendances, tests des seules crates touchées (et de leurs dépendantes), côté interface formatage, types, lints et tests des fichiers touchés. **La barrière autorise le commit et le push** ; si elle échoue : ne pas commiter, corriger, relancer. Jamais de contournement (`--no-verify`, test désactivé, lint levé sans raison).
-- **Niveau 2, mutation du diff du commit, en arrière-plan** : après chaque commit, le crochet git `post-commit` (posé une fois par `scripts/install-hooks.sh`) mute le seul diff de ce commit sur une copie figée, pendant que le travail continue ; `./scripts/ci.sh --verdict` donne le résultat. Seuil 100 %. Des survivants ouvrent une **dette de mutation** : la barrière refuse le commit suivant, sauf s'il la corrige (il change un fichier cité par le verdict ou un test de la même crate). Pas d'autre chemin. Le push n'est jamais bloqué.
-- **Niveau 3, livraison** : `./scripts/ci.sh --complet` (couverture globale, parcours complets et ralentis, mutation de tout le code) est obligatoire avant une livraison, refusée si une dette de mutation est ouverte. `--copie` joue un passage sur une copie figée pendant qu'on continue ; `--verifier` confirme que le code est celui d'un passage réussi ; `--sans-mutation` joue le niveau 3 sans mutation.
-- **Écrire les tests qui tuent les mutants en même temps que le code** : la mutation vient après le commit, mais la règle des 100 % reste entière. Constats sur le temps de la CI, pièges connus et pistes : `doc/code.md`, section « Temps de la CI ».
-- **Ménage du dossier de compilation** : la CI le fait seule à la fin de la barrière et de `--complet` (seulement le périmé de plus d'un jour, au-delà de 20 Go, jamais pendant qu'un autre travail tourne) ; `./scripts/ci.sh --menage [--a-blanc]` à la demande. Ne jamais effacer le dossier de compilation à la main : tout recompiler coûte plusieurs minutes.
+- **Barrière de commit** : avant chaque commit, `./scripts/ci.sh` (moins de 3 minutes ; quelques secondes pour de la documentation Markdown seule). Secrets exclus, vocabulaire, longueur des fichiers, mise en forme, lints sans avertissement, dépendances, tests avec couverture (Rust ≥ 95 %, interface : seuils de Vitest). **Elle autorise le commit et le push** ; si elle échoue : ne pas commiter, corriger, relancer. Jamais de contournement (`--no-verify`, test désactivé, lint levé sans raison).
+- **La mutation n'est plus une barrière** : après un commit qui touche `crates/domain`, le crochet `post-commit` (posé une fois par `scripts/install-hooks.sh`) mute le diff du domaine en arrière-plan (coupure 30 s) ; `./scripts/ci.sh --verdict` donne le résultat. Un survivant s'écrit dans la liste de suivi (`.git/ci-mutation/suivi.txt`) à traiter ; **il ne refuse jamais un commit**. Le reste du code (application, api, infrastructure, interface) n'est pas muté à chaque commit : seulement à la demande (`--echantillon`, `--mutation-interface`) ou à la livraison.
+- **Fin de fonction** : `./scripts/ci.sh --fonction` (moins de 10 minutes) : la barrière en entier, couverture globale, tous les parcours (normaux et lecture ralentie), sans mutation. `--copie` la joue sur une copie figée pendant qu'on continue.
+- **Livraison** : `./scripts/ci.sh --livraison` (moins de 25 minutes) : la fin de fonction, puis la mutation du domaine et un échantillon (un dixième, une erreur par fonction) du diff Rust depuis le tag local `ci-verte` ; à son succès, `ci-verte` avance à HEAD. `--tout-le-code` (mutation de tout le code, plus de 2 heures) est exceptionnel : jamais lancé par une règle.
+- **Écrire les tests qui tuent les erreurs introduites en même temps que le code** : chaque valeur littérale, borne et cas limite a un test qui l'affirme. Constats, durées et pièges : `doc/code.md`, section « Temps de la CI ».
 - L'envoi (push) ne relance pas la CI.
 
 ## Secrets
