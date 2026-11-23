@@ -18,6 +18,10 @@ Un travail GitHub Actions, `.github/workflows/mutation-domaine.yml`, joue chaque
 - **Domaine seul** : Rust pur, rapide à muter, là où les règles métier se cassent en silence. Le reste (application, api, infrastructure, interface) demande macOS, WebKit ou des tests longs ; il reste à la demande en local.
 - **Linux** : la crate `domain` n'a aucune dépendance macOS ; `ubuntu-latest` est la machine la plus courante et la plus rapide à obtenir.
 
+## Mesure (23/11/2026, première exécution)
+
+992 erreurs introduites en 47 minutes (48 min 31 s au total, installation comprise), contre environ 27 minutes estimées sur le Mac : 880 attrapées, 106 non compilables, 6 délais, 0 survivant. Les 6 délais sont des boucles infinies provoquées par l'erreur (`deduplicated`, `linked_titles`, `plan_save`, `cut`) : l'erreur est détectée, elle ne fait donc pas échouer le travail (cargo-mutants rend alors le code 3, lu dans le bilan comme en local).
+
 ## Conséquences
 
 - On gagne le tout-domaine vérifié chaque nuit, sans coût ni occupation du Mac.
