@@ -573,24 +573,45 @@ button {
   gap: 0.4rem;
   margin-left: auto;
 }
+/* Une pilule par groupe de boutons : fond discret, coins arrondis, icônes seules. */
 .format-group {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--format-button-gap);
+  padding: var(--format-pill-padding);
+  border: 1px solid var(--border);
+  border-radius: var(--format-pill-radius);
+  background: var(--format-pill-background);
 }
-.format-group + .format-group {
-  border-left: 1px solid var(--border);
-  padding-left: 0.4rem;
+.format-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--format-button-size);
+  height: var(--format-button-size);
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--format-button-radius);
+  cursor: pointer;
 }
-.format-bar .tool:disabled {
+.format-button svg {
+  width: var(--format-icon-size);
+  height: var(--format-icon-size);
+}
+.format-button:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--selected);
+}
+.format-button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--selected);
+}
+.format-button:disabled {
   opacity: var(--format-bar-disabled-opacity);
   cursor: default;
-}
-.format-bar .tool[data-command="bold"] {
-  font-weight: bold;
-}
-.format-bar .tool[data-command="italic"] {
-  font-style: italic;
 }
 .tool {
   font: inherit;

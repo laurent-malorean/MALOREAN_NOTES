@@ -150,6 +150,13 @@
   /* Barre de mise en forme : écart entre les boutons d'un groupe, boutons grisés sans note */
   --format-button-gap: 0.25rem;
   --format-bar-disabled-opacity: 0.4;
+  /* Pilules de la barre : fond, coins, marge, taille des boutons et de leurs icônes */
+  --format-pill-background: color-mix(in srgb, var(--selected) 45%, var(--bg));
+  --format-pill-radius: 999px;
+  --format-pill-padding: 0.2rem 0.4rem;
+  --format-button-size: 1.8rem;
+  --format-button-radius: 999px;
+  --format-icon-size: 1.1rem;
   /* Flèche du parcours d'un onglet qui ne mène nulle part. */
   --trail-disabled-opacity: 0.35;
 }

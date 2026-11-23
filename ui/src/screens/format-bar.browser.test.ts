@@ -13,25 +13,32 @@ function setup() {
 }
 
 describe("barre de mise en forme", () => {
-  it("est une barre d'outils nommée, en trois groupes de boutons", () => {
+  it("est une barre d'outils nommée, en deux pilules de boutons", () => {
     const { bar } = setup();
     expect(bar.getAttribute("role")).toBe("toolbar");
     expect(bar.getAttribute("aria-label")).toBe("Mise en forme");
     const groups = [...bar.children];
-    expect(groups.map((group) => group.getAttribute("role"))).toEqual(["group", "group", "group"]);
+    expect(groups.map((group) => group.getAttribute("role"))).toEqual(["group", "group"]);
     expect(groups.every((group) => group.classList.contains("format-group"))).toBe(true);
-    expect(groups.map((group) => group.querySelectorAll("button").length)).toEqual([3, 6, 2]);
+    expect(groups.map((group) => group.querySelectorAll("button").length)).toEqual([9, 2]);
   });
 
-  it("chaque bouton montre son texte court, porte le nom de sa commande et sa bulle d'aide", () => {
-    const { button } = setup();
+  it("chaque bouton montre une icône seule, porte le nom de sa commande et sa bulle d'aide", () => {
+    const { bar, button } = setup();
     const bold = button("Gras");
-    expect(bold.textContent).toBe("G");
+    expect(bold.textContent).toBe("");
     expect(bold.title).toBe("Gras (Cmd+B)");
     expect(bold.type).toBe("button");
-    expect(bold.classList.contains("tool")).toBe(true);
+    expect(bold.classList.contains("format-button")).toBe(true);
     expect(bold.dataset.command).toBe("bold");
-    expect(button("Copier en texte mis en forme").textContent).toBe("Copier mis en forme");
+    for (const each of bar.querySelectorAll("button")) {
+      expect(each.textContent).toBe("");
+      const icon = each.querySelector("svg") as SVGSVGElement;
+      expect(icon.getAttribute("aria-hidden")).toBe("true");
+      expect(icon.getAttribute("viewBox")).toBe("0 0 24 24");
+      expect(icon.querySelectorAll("path").length).toBeGreaterThan(0);
+    }
+    expect(button("Copier en texte mis en forme").querySelector("svg")).not.toBeNull();
   });
 
   it("un clic lance la commande du bouton", () => {
