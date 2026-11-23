@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Après chaque commit : test de mutation du diff, en arrière-plan, sans bloquer (scripts/mutation-diff.sh).
+# Posé par scripts/install-hooks.sh. Les commits sans code (documentation seule) n'ont rien à muter.
+root=$(git rev-parse --show-toplevel) || exit 0
+sha=$(git rev-parse HEAD)
+changed=$(git diff-tree --no-commit-id --name-only -r --root "$sha")
+if printf '%s\n' "$changed" | "$root/scripts/ci-doc-only.sh"; then exit 0; fi
+mkdir -p "$root/tmp/mutation"
+nohup "$root/scripts/mutation-diff.sh" "$sha" >"$root/tmp/mutation/journal.log" 2>&1 </dev/null &
+disown 2>/dev/null || true
+exit 0

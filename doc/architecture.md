@@ -25,7 +25,8 @@ ui/                   interface TypeScript (Vite)
   src/rendering/      rendu HTML d'une note (export PDF, impression, copie mise en forme), styles en ligne, texte brut
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
-scripts/ci.sh         mini CI locale, avant chaque push
+scripts/ci.sh         CI locale à trois niveaux : barrière de commit, `--complet` avant livraison, `--verdict` (fiche 0047)
+scripts/mutation-diff.sh   test de mutation du diff d'un commit, en arrière-plan (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; scripts/ci-debt.sh : dette de mutation ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-doc-only.sh
 scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
 ```
 
@@ -117,7 +118,8 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0012-corbeille.md` | Corbeille : un dossier caché `.trash/` qui garde le chemin d'origine |
 | `0013-pieces-jointes-collees.md` | Pièces jointes collées ou glissées : octets envoyés à Rust, nom décidé par le domaine |
 | `0014-modifications-externes.md` | Modifications faites hors de l'application : recharger, ou garder les deux versions |
-| `0015-ci-avant-chaque-commit.md` | La mini CI avant chaque commit, plus rien à l'envoi |
+| `0015-ci-avant-chaque-commit.md` | La mini CI avant chaque commit, plus rien à l'envoi (remplacée en partie par la 0047) |
+| `0047-ci-a-trois-niveaux.md` | Barrière de commit rapide, mutation du diff en arrière-plan avec dette, CI complète à la livraison ; durées avant/après |
 | `0016-liens-entre-notes.md` | Liens entre notes : `[[titre]]`, résolus par le titre à la demande |
 | `0017-colonnes-et-onglets.md` | Colonnes et onglets : un état pur dans l'interface, un éditeur par colonne |
 | `0018-plein-ecran-et-panneaux-lateraux.md` | Plein écran et panneaux latéraux : deux réglages indépendants |

@@ -1,28 +1,32 @@
 #!/usr/bin/env bash
-# Mini CI locale : lancée avant chaque commit, sur le code tel qu'il sera commité.
-# S'arrête au premier contrôle raté ; on ne commite que si tout réussit.
-# L'envoi (push) ne relance rien : le contenu envoyé est celui qui a passé la CI.
-#   scripts/ci.sh            tous les contrôles, test de mutation du code modifié seulement :
-#                            Rust pas encore commité, interface changée depuis le dernier passage de Stryker ;
-#                            si l'interface a des survivantes, elles seules sont retestées une fois, pour
-#                            compter un test ajouté qui les tue (scripts/ui-mutations.sh)
-#   scripts/ci.sh --complet  tous les contrôles, test de mutation de tout le code, Rust et interface (avant de livrer)
-#   scripts/ci.sh --sans-mutation  tous les contrôles sauf les tests de mutation (les plus longs) : pour
-#                            avancer problème après problème ; ce n'est PAS un passage de commit, il faut
-#                            ensuite un `scripts/ci.sh` complet sur tout le lot avant de commiter
+# CI locale à trois niveaux (doc/code.md, « Temps de la CI » ; doc/decisions/0047).
+#   scripts/ci.sh            NIVEAU 1, barrière de commit (moins de 3 minutes) : fichiers privés, vocabulaire,
+#                            longueur des fichiers, mise en forme, lints, dépendances, tests des seules crates
+#                            touchées (et de leurs dépendantes), côté interface formatage, types, lints et
+#                            tests des fichiers touchés. Pas de mutation, de parcours complets ni de couverture
+#                            globale. Un commit de documentation Markdown seule (doc/**/*.md, README.md ;
+#                            scripts/ci-doc-only.sh) ne joue que les contrôles du texte. Une dette de mutation
+#                            ouverte (survivantes du dernier commit) refuse le commit, sauf s'il la corrige.
+#                            Autorise le commit et le push.
+#   NIVEAU 2 (automatique)   après chaque commit, le crochet scripts/hooks/post-commit (branché par
+#                            scripts/install-hooks.sh) lance en arrière-plan le test de mutation du diff de ce
+#                            commit (scripts/mutation-diff.sh) ; `scripts/ci.sh --verdict` en donne le verdict.
+#   scripts/ci.sh --complet  NIVEAU 3, livraison : tout, couverture globale, parcours complets et ralentis,
+#                            test de mutation de tout le code, Rust et interface. Refusé si une dette de
+#                            mutation est ouverte.
+#   scripts/ci.sh --sans-mutation  tous les contrôles du niveau 3 sauf les tests de mutation
 #   scripts/ci.sh --copie    (avec ou sans --complet / --sans-mutation) joue la CI sur une copie figée du
 #                            code, rangée hors du dépôt : on peut continuer à modifier le code pendant
 #                            qu'elle tourne ; ce qu'elle valide est l'état du code à son lancement
-#   scripts/ci.sh --verifier dit si le code est exactement celui de la dernière CI complète réussie
-#                            (à lancer avant de commiter, surtout après --copie)
-# Un passage complet qui voit le code changer pendant qu'il tourne (sans --copie) échoue : son verdict
-# ne vaudrait pas pour ce qui serait commité. Rust et interface se contrôlent en parallèle ; les types
-# partagés sont régénérés dans un dossier à part puis comparés aux types du dépôt.
-# Seuil du test de mutation : 100 %, des deux côtés.
+#   scripts/ci.sh --verifier dit si le code est exactement celui de la dernière CI réussie (barrière ou complet)
+#   scripts/ci.sh --verdict  affiche le dernier verdict du test de mutation du diff (OK, survivantes, en cours)
+# Un passage qui voit le code changer pendant qu'il tourne (sans --copie) échoue : son verdict ne vaudrait pas
+# pour ce qui serait commité. Rust et interface se contrôlent en parallèle ; les types partagés sont régénérés
+# dans un dossier à part puis comparés aux types du dépôt.
+# Seuil du test de mutation : 100 %, des deux côtés (jamais baissé, seulement vérifié plus tard).
 # Rust : les copies mutées se construisent lints coupés (.cargo/mutants.toml), sinon une erreur
 # introduite qui laisse du code inutilisé ne compile pas et n'est jamais testée. Un passage où
 # des erreurs ont été introduites mais aucune testée (toutes non compilables) est refusé.
-# Les seuils ne baissent jamais : on les relève quand la couverture monte.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -230,6 +234,7 @@ tree_hash() {
 run_in_snapshot() {
   local validated status=0
   validated=$(tree_hash)
+  local PWD_ROOT=$PWD
   step "Copie figée du code dans ${SNAPSHOT_DIR}"
   mkdir -p "$SNAPSHOT_DIR"
   [ ! -L "$SNAPSHOT_DIR/ui/node_modules" ] || rm "$SNAPSHOT_DIR/ui/node_modules"
@@ -237,7 +242,7 @@ run_in_snapshot() {
     --exclude=/target --exclude=/ui/.stryker-tmp --exclude=/ui/.vitest \
     --exclude=/ui/test-results --exclude=/ui/playwright-report --exclude=/ui/coverage \
     --exclude=/_DIST --exclude=/tmp --exclude=/_SECRET --exclude=/CLAUDE.local.md ./ "$SNAPSHOT_DIR/"
-  (cd "$SNAPSHOT_DIR" && CI_IN_SNAPSHOT=1 ./scripts/ci.sh "$@") || status=$?
+  (cd "$SNAPSHOT_DIR" && MUTATION_DIR="$PWD_ROOT/tmp/mutation" CI_IN_SNAPSHOT=1 ./scripts/ci.sh "$@") || status=$?
   if [ "$status" -eq 0 ]; then
     if [ -f "$SNAPSHOT_DIR/ui/reports/stryker-incremental.json" ]; then
       mkdir -p ui/reports
@@ -291,21 +296,112 @@ check_mutations() {
   run_mutants --no-shuffle
 }
 
-check_uncommitted_mutations() {
-  require cargo mutants --version
-  require jq --version
-  local diff
-  diff=$(mktemp)
-  # Le code Rust qui sera commité : les changements suivis, plus les nouveaux fichiers.
-  git add --intent-to-add -- '*.rs' 2>/dev/null || true
-  git diff HEAD -- '*.rs' > "$diff"
-  step "Rust : test de mutation du code pas encore commité"
-  if [ ! -s "$diff" ]; then
-    printf '(aucun code Rust modifié)\n'
-  else
-    run_mutants --in-diff "$diff"
+# Fichiers que le commit changerait : changés par rapport à HEAD (index et arbre de travail) et nouveaux ;
+# les essais de l'utilisateur (data_fake/) ne comptent pas.
+changed_files() {
+  { git diff HEAD --name-only; git ls-files --others --exclude-standard; } | grep -v '^data_fake/' | sort -u || true
+}
+
+# Dépendances entre crates (sens : crate -> elle et les crates qui en dépendent). Une crate inconnue ou un
+# changement de Cargo.toml, Cargo.lock ou .cargo/ rejoue tout l'espace de travail.
+reverse_closure() {
+  case "$1" in
+    domain) echo "domain application infrastructure api app" ;;
+    application) echo "application infrastructure api app" ;;
+    infrastructure) echo "infrastructure app" ;;
+    api) echo "api app" ;;
+    app) echo "app" ;;
+    *) echo ALL ;;
+  esac
+}
+
+# Les crates à tester pour les fichiers changés (vide : aucun changement Rust ; ALL : tout).
+barrier_crates() {
+  local file crate set=" "
+  while IFS= read -r file; do
+    case "$file" in
+      crates/*/*) crate=$(printf '%s' "$file" | cut -d/ -f2); set+="$(reverse_closure "$crate") " ;;
+      Cargo.toml | Cargo.lock | deny.toml | .cargo/* | rust-toolchain*) set+="ALL " ;;
+    esac
+  done
+  case "$set" in *" ALL "*) echo ALL ;; *) printf '%s\n' $set | sort -u | xargs echo ;; esac
+}
+
+check_rust_barrier() {
+  local crates=$1 args=() crate
+  require cargo deny --version
+  step "Rust : mise en forme"
+  cargo fmt --all --check
+  step "Rust : Clippy (aucun avertissement toléré)"
+  cargo clippy --workspace --all-targets --all-features -- -D warnings
+  if [ "$crates" = ALL ]; then args=(--workspace); else for crate in $crates; do args+=(-p "$crate"); done; fi
+  step "Rust : tests de ${crates/ALL/tout l espace de travail} (les autres crates ne dépendent pas du code changé)"
+  TS_RS_EXPORT_DIR="$GENERATED_EXPORT" cargo test "${args[@]}" --all-features
+  step "Rust : dépendances (licences, failles connues)"
+  cargo deny check
+}
+
+# Les types régénérés par les tests joués sont ceux du dépôt (la comparaison de tout le dossier : --complet).
+check_generated_types_played() {
+  [ -d "$GENERATED_EXPORT" ] || return 0
+  local file
+  for file in "$GENERATED_EXPORT"/*; do
+    [ -e "$file" ] || continue
+    cmp -s "$file" "$GENERATED_TYPES/$(basename "$file")" \
+      || fail "type généré pas à jour : $(basename "$file") (lancer \`cargo test --workspace\`, puis commiter)"
+  done
+}
+
+check_ui_barrier() {
+  local files=() file all_src=1
+  while IFS= read -r file; do
+    case "$file" in
+      ui/src/bridge/generated/*) ;;
+      ui/src/*.ts) [ -f "$file" ] && files+=("${file#ui/}") ;;
+      ui/*) all_src=0 ;;
+    esac
+  done
+  check_theme
+  step "Interface : mise en forme, types, lints"
+  (cd ui && npx --no-install prettier --check . && npx --no-install tsc --noEmit && npx --no-install eslint .)
+  if [ "$all_src" -eq 0 ]; then
+    step "Interface : tests de logique et d'écran (réglages changés : tous les tests)"
+    (cd ui && npx --no-install vitest run)
+  elif [ "${#files[@]}" -gt 0 ]; then
+    step "Interface : tests des fichiers touchés (et de ceux qui en dépendent)"
+    (cd ui && npx --no-install vitest related --run "${files[@]}")
   fi
-  rm -f "$diff"
+}
+
+# NIVEAU 1 : la barrière de commit.
+run_barrier() {
+  local changed crates
+  changed=$(changed_files)
+  if printf '%s\n' "$changed" | grep -q '^scripts/'; then
+    step "Scripts de CI changés : scénarios de la barrière et de la voie documentation"
+    scripts/test-ci-gate.sh
+  fi
+  step "Dette de mutation : le dernier commit n'a-t-il rien laissé passer ?"
+  printf '%s\n' "$changed" | scripts/ci-debt.sh check
+  crates=$(printf '%s\n' "$changed" | barrier_crates)
+  BARRIER_CRATES=$crates
+  if [ -f Cargo.toml ] && [ -n "$crates" ] && [ -f ui/package.json ] && printf '%s\n' "$changed" | grep -q '^ui/'; then
+    step "Rust et interface, en parallèle"
+    run_both check_rust_barrier_changed check_ui_barrier_changed
+  else
+    if [ -f Cargo.toml ] && [ -n "$crates" ]; then check_rust_barrier_changed; fi
+    if [ -f ui/package.json ] && printf '%s\n' "$changed" | grep -q '^ui/'; then check_ui_barrier_changed; fi
+  fi
+  check_generated_types_played
+}
+check_ui_barrier_changed() { changed_files | check_ui_barrier; }
+check_rust_barrier_changed() { check_rust_barrier "$BARRIER_CRATES"; }
+
+# Les fichiers qui seraient commités (changés par rapport à HEAD, dans l'index ou l'arbre de travail,
+# plus les nouveaux) sont-ils tous de la documentation Markdown ? (règle : scripts/ci-doc-only.sh)
+docs_only_change() {
+  git rev-parse --git-dir >/dev/null 2>&1 || return 1
+  { git diff HEAD --name-only; git ls-files --others --exclude-standard; } | scripts/ci-doc-only.sh
 }
 
 MODE=""
@@ -316,9 +412,13 @@ for argument in "$@"; do
     --complet | --sans-mutation) MODE=$argument; FORWARDED+=("$argument") ;;
     --copie) SNAPSHOT=1 ;;
     --verifier) verify_validated_tree; exit 0 ;;
+    --verdict) if [ -f tmp/mutation/encours ]; then printf '(test de mutation en cours sur %s)\n' "$(cat tmp/mutation/encours)"; fi
+      scripts/ci-debt.sh verdict; exit 0 ;;
     *) fail "option inconnue : $argument" ;;
   esac
 done
+# Livraison : aucune dette de mutation ouverte (vérifié ici, hors copie, tmp/ n'y étant pas copié).
+if [ "$MODE" = --complet ] && [ -z "${CI_IN_SNAPSHOT:-}" ]; then scripts/ci-debt.sh check-strict; fi
 if [ "$SNAPSHOT" -eq 1 ] && [ -z "${CI_IN_SNAPSHOT:-}" ]; then run_in_snapshot ${FORWARDED[@]+"${FORWARDED[@]}"}; fi
 
 STARTED_TREE=""
@@ -327,6 +427,25 @@ if [ -z "${CI_IN_SNAPSHOT:-}" ]; then STARTED_TREE=$(tree_hash); fi
 check_private_files
 check_vocabulary
 check_file_length
+scripts/test-ci-doc-only.sh >/dev/null
+if [ "$MODE" = "" ]; then
+  # Un commit qui ne touche que de la documentation Markdown ne rejoue pas les contrôles du code.
+  if docs_only_change; then
+    printf '\n(documentation Markdown seule : contrôles du code, tests et mutation sautés)\n'
+    if [ -z "${CI_IN_SNAPSHOT:-}" ]; then printf '%s' "$(tree_hash)" > "$VALIDATED_TREE_FILE"; fi
+    printf '\n✓ Barrière de commit réussie (documentation seule)\n'
+    exit 0
+  fi
+  run_barrier
+  if [ -n "$STARTED_TREE" ]; then
+    [ "$(tree_hash)" = "$STARTED_TREE" ] \
+      || fail "le code a changé pendant la CI : ce passage ne vaut pas pour ce qui serait commité (relancer, ou utiliser --copie)"
+    printf '%s' "$STARTED_TREE" > "$VALIDATED_TREE_FILE"
+  fi
+  printf '\n✓ Barrière de commit réussie : commit autorisé ; le test de mutation du diff suivra en arrière-plan (scripts/ci.sh --verdict)\n'
+  exit 0
+fi
+
 if [ -f Cargo.toml ] && [ -f ui/package.json ]; then
   step "Rust et interface, en parallèle"
   run_both check_rust check_ui
@@ -338,10 +457,9 @@ fi
 case "$MODE" in
   --complet) check_mutations; check_ui_mutations complet ;;
   --sans-mutation)
-    printf '\n(tests de mutation sautés : lancer scripts/ci.sh sans option avant de commiter)\n'
-    printf '\n✓ Contrôles réussis, sans mutation : pas encore un passage de commit\n'
+    printf '\n(tests de mutation sautés : lancer scripts/ci.sh --complet avant une livraison)\n'
+    printf '\n✓ Contrôles réussis, sans mutation\n'
     exit 0 ;;
-  *) check_uncommitted_mutations; check_ui_mutations ;;
 esac
 
 if [ -n "$STARTED_TREE" ]; then
@@ -349,4 +467,4 @@ if [ -n "$STARTED_TREE" ]; then
     || fail "le code a changé pendant la CI : ce passage ne vaut pas pour ce qui serait commité (relancer, ou utiliser --copie)"
   printf '%s' "$STARTED_TREE" > "$VALIDATED_TREE_FILE"
 fi
-printf '\n✓ Mini CI réussie\n'
+printf '\n✓ CI complète réussie : livraison possible\n'
