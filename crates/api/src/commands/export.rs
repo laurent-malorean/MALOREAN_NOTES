@@ -14,7 +14,8 @@ use crate::{ApiError, ExportFile, ExportFormatItem};
 
 /// Ouvre la fenêtre d'enregistrement du Mac, le nom tiré du titre de la note, dans `folder`
 /// (le dossier du dernier export) ou à défaut dans le dossier Documents ; rien si l'utilisateur
-/// annule.
+/// annule. Si `near` donne une note, la fenêtre s'ouvre d'abord dans le dossier de cette note
+/// (l'image d'une carte mentale va à côté de la carte).
 ///
 /// # Errors
 ///
@@ -26,10 +27,15 @@ pub async fn choose_export_file<R: Runtime>(
     title: String,
     format: ExportFormatItem,
     folder: Option<String>,
+    near: Option<String>,
 ) -> Result<Option<ExportFile>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || {
         let extension = ExportFormat::from(format).extension();
+        let folder = match near {
+            Some(note) => Some(session.note_folder_location(&note)?),
+            None => folder,
+        };
         let folder = folder
             .map(PathBuf::from)
             .or_else(|| app.path().document_dir().ok());

@@ -104,7 +104,7 @@ fn a_pdf_is_refused_outside_a_complete_path() {
         "emplacement d'export invalide : « Alpha.pdf »"
     );
     assert!(BRIDGE_SOURCE.contains("\"export_pdf\", { destination }"));
-    assert!(BRIDGE_SOURCE.contains("\"choose_export_file\", { title, format, folder }"));
+    assert!(BRIDGE_SOURCE.contains("\"choose_export_file\", { title, format, folder, near }"));
 }
 
 #[test]

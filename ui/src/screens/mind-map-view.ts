@@ -398,7 +398,7 @@ class MindMapScreen implements MindMapView {
     });
     this.draw(() => {
       area.focus();
-      area.select();
+      area.setSelectionRange(area.value.length, area.value.length);
       const box = this.boxOf(path);
       if (box) {
         this.viewport = revealed(this.viewport, this.rect(box), this.size());

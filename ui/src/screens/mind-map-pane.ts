@@ -2,8 +2,6 @@
 // prend la place de l'éditeur de texte, sur toute la surface de la colonne. Rust lit et écrit le
 // fichier ; l'éditeur garde le texte de la note, caché, pour l'enregistrement et l'historique.
 import type { ExportFile, ExportFormatItem, MindMapItem } from "../bridge";
-import type { PreferenceStorage } from "../state/focus-preference";
-import { loadExportFolder, saveExportFolder } from "../state/export";
 import { mapTitle } from "../state/mind-map-image";
 import { isMindMapContent } from "../state/mind-map";
 import { createMindMapView, type MindMapView } from "./mind-map-view";
@@ -17,6 +15,7 @@ export interface MindMapBackend {
     title: string,
     format: ExportFormatItem,
     folder: string | null,
+    near: string | null,
   ) => Promise<ExportFile | null>;
   readonly exportImage: (destination: string, png: Uint8Array) => Promise<unknown>;
 }
@@ -29,8 +28,6 @@ export interface MindMapPaneOptions {
   readonly notice: (message: string) => void;
   /** L'adresse chargeable d'une image écrite dans la note `note`. */
   readonly resolveImage: (src: string, note: string | null) => string;
-  /** Où le dossier du dernier export est gardé. */
-  readonly storage: PreferenceStorage;
 }
 
 export interface MindMapPane {
@@ -117,12 +114,12 @@ class ColumnMindMap implements MindMapPane {
     this.column.classList.add("mind-map-shown");
   }
 
-  /** Fait choisir le fichier dans la fenêtre d'enregistrement du Mac, puis y écrit l'image. */
+  /** Fait choisir le fichier dans la fenêtre d'enregistrement du Mac, qui s'ouvre dans le dossier de la carte, puis y écrit l'image. */
   private async saveImage(png: Uint8Array): Promise<void> {
-    const { backend, storage, notice } = this.options;
-    const file = await backend.chooseExportFile(this.title, "png", loadExportFolder(storage));
+    const { backend, notice } = this.options;
+    if (this.path === null) return;
+    const file = await backend.chooseExportFile(this.title, "png", null, this.path);
     if (file === null) return;
-    saveExportFolder(storage, file.folder);
     await backend.exportImage(file.path, png);
     notice(`« ${this.title} » exportée dans ${file.path}`);
   }

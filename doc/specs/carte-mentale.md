@@ -276,7 +276,7 @@ La carte est créée dans le dossier cliqué.
 
 ### 6.6 Image de la carte
 
-- Le bouton « Exporter en image » ouvre la fenêtre d'enregistrement du Mac, comme l'export d'une note : nom proposé = titre de la carte suivi de `.png`, dossier du dernier export (sinon Documents). Annuler n'écrit rien.
+- Le bouton « Exporter en image » ouvre la fenêtre d'enregistrement du Mac, comme l'export d'une note : nom proposé = titre de la carte suivi de `.png`, dossier proposé = **le dossier de la carte** dans l'espace de travail (le dernier export d'une note n'y change rien). L'image écrite apparaît donc à côté de la carte, dans la liste de l'espace de travail comme dans le Finder. Annuler n'écrit rien.
 - L'image montre toute la carte telle qu'elle est dessinée : tous les nœuds affichés et leurs liens, couleurs et Markdown compris, une branche pliée seulement par son nœud. Ni le zoom, ni la vue, ni la sélection, ni les boutons de pliage n'y paraissent.
 - Elle est sur le fond de la carte, avec 40 points de marge, à 2 pixels par point.
 - Une carte sans nœud n'a pas d'image : « La carte est vide : rien à exporter. »
@@ -304,7 +304,7 @@ La carte est créée dans le dossier cliqué.
 | Partout | Cmd+Maj+Z | Rétablit le dernier changement annulé |
 
 Règles :
-- **Saisie** : un champ de saisie remplace le nœud. Il contient le titre, puis le détail sur les lignes suivantes.
+- **Saisie** : un champ de saisie remplace le nœud. Il contient le titre, puis le détail sur les lignes suivantes. Le curseur se place à la fin du texte, sans rien sélectionner : ce qu'on tape s'ajoute à la suite (nœud neuf : champ vide).
 - **Titre vide** : valider une première ligne vide est refusé ; le nœud reste en saisie.
 - **Choisir un nœud** le rend visible : la vue se déplace si besoin.
 - **Annulation** : 50 changements au plus. Un changement venu d'ailleurs vide l'historique d'annulation et de rétablissement.

@@ -264,10 +264,15 @@ export async function attachFile(
 
 /**
  * Fait choisir le fichier d'un export dans la fenêtre d'enregistrement du Mac, le nom tiré du
- * titre, dans `folder` (dossier du dernier export) ou à défaut dans Documents ; rien si annulé.
+ * titre, dans le dossier de la note `near` si elle est donnée, sinon dans `folder` (dossier du
+ * dernier export) ou à défaut dans Documents ; rien si annulé.
  */
-export const chooseExportFile = (title: string, format: ExportFormatItem, folder: string | null) =>
-  invoke<ExportFile | null>("choose_export_file", { title, format, folder });
+export const chooseExportFile = (
+  title: string,
+  format: ExportFormatItem,
+  folder: string | null,
+  near: string | null = null,
+) => invoke<ExportFile | null>("choose_export_file", { title, format, folder, near });
 /** Écrit la note en Markdown au fichier `destination`, ses pièces jointes copiées à côté. */
 export const exportMarkdown = (path: string, destination: string) =>
   invoke<null>("export_markdown", { path, destination });

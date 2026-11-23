@@ -399,10 +399,18 @@ describe("pont vers Rust : pièces jointes", () => {
   it("exporte une note : fichier choisi, puis Markdown ou PDF", async () => {
     const calls = recordCalls(null);
     await bridge.chooseExportFile("Lundi", "pdf", null);
+    await bridge.chooseExportFile("Carte", "png", "/Docs", "idées/Carte.md");
     await bridge.exportMarkdown("a.md", "/Docs/Lundi.md");
     await bridge.exportPdf("/Docs/Lundi.pdf");
     expect(calls).toEqual([
-      { command: "choose_export_file", args: { title: "Lundi", format: "pdf", folder: null } },
+      {
+        command: "choose_export_file",
+        args: { title: "Lundi", format: "pdf", folder: null, near: null },
+      },
+      {
+        command: "choose_export_file",
+        args: { title: "Carte", format: "png", folder: "/Docs", near: "idées/Carte.md" },
+      },
       { command: "export_markdown", args: { path: "a.md", destination: "/Docs/Lundi.md" } },
       { command: "export_pdf", args: { destination: "/Docs/Lundi.pdf" } },
     ]);
