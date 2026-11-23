@@ -94,10 +94,23 @@ describe("titres", () => {
   it("s'applique à chaque ligne sélectionnée", () => {
     expect(after("‹un\ndeux›", (s) => setHeading(s, 1))).toBe("# ‹un\n# deux›");
   });
+
+  it("sur une ligne vide, laisse le curseur après les dièses", () => {
+    expect(after("|", (s) => setHeading(s, 2))).toBe("## |");
+  });
+
+  it("en début de ligne, laisse le curseur après les dièses", () => {
+    expect(after("|titre", (s) => setHeading(s, 1))).toBe("# |titre");
+  });
 });
 
 describe("listes", () => {
   const bullet = (s: EditorState) => toggleList(s, "bullet");
+
+  it("sur une ligne vide, laisse le curseur après la puce et après le numéro", () => {
+    expect(after("|", bullet)).toBe("- |");
+    expect(after("|", (s) => toggleList(s, "numbered"))).toBe("1. |");
+  });
   const numbered = (s: EditorState) => toggleList(s, "numbered");
 
   it("met une puce ou un numéro à chaque ligne", () => {

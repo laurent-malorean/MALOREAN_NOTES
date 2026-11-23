@@ -1,6 +1,12 @@
 // Mise en forme : chaque commande transforme le texte autour de la sélection ; ses raccourcis
 // viennent de la liste des commandes.
-import { EditorSelection, type EditorState, type TransactionSpec } from "@codemirror/state";
+import {
+  type ChangeSpec,
+  ChangeSet,
+  EditorSelection,
+  type EditorState,
+  type TransactionSpec,
+} from "@codemirror/state";
 import { type Command, keymap } from "@codemirror/view";
 import type { FormatCommandId } from "../../state/commands";
 import { commandKeys } from "./command-keys";
@@ -66,6 +72,12 @@ const BULLET = /^(\s*)[-*+] (?!\[)/;
 const NUMBERED = /^(\s*)\d+[.)] /;
 const ITEM = /^(\s*)(?:[-*+]|\d+[.)]) /;
 
+/** Les modifications de début de ligne ; un curseur placé à cet endroit se range après ce qui est inséré. */
+function atLineStart(state: EditorState, changes: ChangeSpec[]): TransactionSpec {
+  const set = ChangeSet.of(changes, state.doc.length);
+  return { changes: set, selection: state.selection.map(set, 1) };
+}
+
 /** Les lignes touchées par la sélection. */
 function selectedLines(state: EditorState) {
   const { from, to } = state.selection.main;
@@ -81,8 +93,9 @@ export function setHeading(state: EditorState, level: number): TransactionSpec {
   const lines = selectedLines(state);
   // Stryker disable next-line OptionalChaining: un titre reconnu a toujours ses dièses ; TypeScript exige le cas contraire.
   const same = lines.every((line) => HEADING.exec(line.text)?.[1]?.length === level);
-  return {
-    changes: lines.map((line) => {
+  return atLineStart(
+    state,
+    lines.map((line) => {
       const current = HEADING.exec(line.text)?.[0] ?? "";
       return {
         from: line.from,
@@ -90,7 +103,7 @@ export function setHeading(state: EditorState, level: number): TransactionSpec {
         insert: same ? "" : `${"#".repeat(level)} `,
       };
     }),
-  };
+  );
 }
 
 /** Les deux sortes de listes : comment reconnaître une ligne, quelle marque lui donner. */
@@ -104,8 +117,9 @@ export function toggleList(state: EditorState, kind: keyof typeof LISTS): Transa
   const lines = selectedLines(state);
   const { pattern, marker } = LISTS[kind];
   const all = lines.every((line) => pattern.test(line.text));
-  return {
-    changes: lines.map((line, index) => {
+  return atLineStart(
+    state,
+    lines.map((line, index) => {
       const existing = ITEM.exec(line.text);
       const indent = existing?.[1] ?? "";
       return {
@@ -114,7 +128,7 @@ export function toggleList(state: EditorState, kind: keyof typeof LISTS): Transa
         insert: all ? indent : `${indent}${marker(index)}`,
       };
     }),
-  };
+  );
 }
 
 /** Ce que fait chaque commande de mise en forme au texte. */
