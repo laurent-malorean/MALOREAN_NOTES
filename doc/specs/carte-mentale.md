@@ -359,6 +359,8 @@ Ce qui le trouve : les mots de son titre et de son détail. Un clic ouvre la car
 
 **Liens entre notes** : un `[[titre]]` dans le titre ou le détail d'un nœud est un lien de la carte. La note désignée montre la carte dans ses liens entrants.
 
+**Lien vers une carte** : depuis n'importe quelle note, `[[titre de la carte]]` désigne la carte, avec les mêmes règles qu'un lien vers une note. Un clic sur ce lien ouvre la carte en carte, jamais son fichier en texte. La carte montre la note dans ses liens entrants.
+
 **Étiquettes** : celles de l'en-tête valent pour la carte. Le filtre par étiquette la montre.
 
 ## 10. Claude
