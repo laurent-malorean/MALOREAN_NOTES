@@ -12,18 +12,10 @@ const NOTHING_FOUND = "Aucune note trouvée";
 const SEARCHING = "Recherche…";
 const FOLDER_SEPARATOR = " / ";
 
-function message(text: string): HTMLElement {
+export function message(text: string): HTMLElement {
   const element = document.createElement("p");
   element.className = "search-message";
   element.textContent = text;
-  return element;
-}
-
-/** Pourquoi le sens n'a pas servi, au-dessus des résultats : ce qu'il manque et quoi faire. */
-function notice(text: string): HTMLElement {
-  const element = message(text);
-  element.classList.add("search-notice");
-  element.setAttribute("role", "note");
   return element;
 }
 
@@ -62,7 +54,7 @@ function place(folder: string, result: SearchResultItem): HTMLElement {
 /**
  * Affiche les notes trouvées (titre, dossier, type de contenu, extrait aux mots surlignés) ; un clic ouvre la note,
  * un Cmd+clic l'ouvre dans un nouvel onglet, un clic droit propose le menu d'une note.
- * `null` : aucune réponse encore. `meaningNotice` : ce que dit la recherche par le sens quand le sens manque.
+ * `null` : aucune réponse encore.
  */
 export function renderSearchResults(
   container: HTMLElement,
@@ -70,15 +62,10 @@ export function renderSearchResults(
   results: readonly SearchResultItem[] | null,
   selected: string | null,
   actions: SearchResultActions,
-  meaningNotice: string | null = null,
 ): void {
   if (results === null) return container.replaceChildren(message(SEARCHING));
-  const notices = meaningNotice === null ? [] : [notice(meaningNotice)];
-  if (results.length === 0) {
-    return container.replaceChildren(...notices, message(NOTHING_FOUND));
-  }
+  if (results.length === 0) return container.replaceChildren(message(NOTHING_FOUND));
   container.replaceChildren(
-    ...notices,
     ...results.map((result) => {
       const item = document.createElement("button");
       item.className = "search-result";

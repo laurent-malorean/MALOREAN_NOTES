@@ -68,6 +68,19 @@ describe("réglages", () => {
     t.layout.settings.close();
   });
 
+  it("ouvre les réglages sur l'onglet demandé, et seulement s'il existe", () => {
+    const t = setup();
+    t.settings.openTab("Index");
+    expect(t.layout.settings.open).toBe(true);
+    const selected = () =>
+      t.layout.settings.querySelector('[role="tab"][aria-selected="true"]')?.textContent;
+    expect(selected()).toBe("Index");
+    t.layout.settings.close();
+    t.settings.openTab("Inconnu");
+    expect(selected()).toBe("Index");
+    t.layout.settings.close();
+  });
+
   it("la fenêtre montre aussi les parties de plus, refaites à chaque ouverture", () => {
     let opened = 0;
     const t = setup({}, () => {

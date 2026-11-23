@@ -394,6 +394,23 @@ fn a_search_by_words_and_meaning_gives_the_results_and_why_the_meaning_is_missin
 }
 
 #[test]
+fn a_search_by_meaning_alone_gives_the_closest_notes_without_the_words() {
+    let (session, _) = computed();
+    let found = session
+        .search_notes_by_meaning("dessert aux pommes")
+        .unwrap();
+    assert_eq!(found.meaning, MeaningUseItem::Used);
+    assert_eq!(found.results[0].path, "tarte.md");
+    // Le sens classe aussi les notes sans le mot cherché.
+    assert_eq!(found.results.len(), 3);
+    session.choose_meaning_model("e5-large").unwrap();
+    session.wait_for_meaning();
+    let found = session.search_notes_by_meaning("pommes").unwrap();
+    assert!(matches!(found.meaning, MeaningUseItem::ModelMissing { .. }));
+    assert!(found.results.is_empty());
+}
+
+#[test]
 fn a_blank_question_or_no_workspace_is_an_error_that_says_what_to_do() {
     let (session, _) = computed();
     assert_eq!(
@@ -412,6 +429,17 @@ fn a_blank_question_or_no_workspace_is_an_error_that_says_what_to_do() {
             .unwrap_err()
             .message,
         "aucun espace de travail n'est ouvert"
+    );
+    assert_eq!(
+        closed
+            .search_notes_by_meaning("pommes")
+            .unwrap_err()
+            .message,
+        "aucun espace de travail n'est ouvert"
+    );
+    assert_eq!(
+        session.search_notes_by_meaning(" ").unwrap_err().message,
+        "la question est vide : écrivez ce que vous cherchez"
     );
     assert_eq!(
         closed.related_notes("a.md").unwrap_err().message,

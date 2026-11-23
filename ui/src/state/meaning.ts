@@ -1,21 +1,11 @@
 // Recherche par le sens : l'état que l'interface en tient (aperçu, téléchargement, calcul), et ce
-// qu'elle en montre (choix du mode de recherche, réglages), sans écran.
+// qu'elle en montre (colonne « idées » de la fenêtre de recherche, réglages), sans écran.
 import type {
   MeaningOverviewItem,
   MeaningProgressItem,
   MeaningUseItem,
   ModelDownloadItem,
-  ModelOverviewItem,
 } from "../bridge";
-
-/** Comment la recherche cherche : par les mots, ou par le sens (mêlé aux mots). */
-export type SearchMode = "words" | "meaning";
-
-/** Les modes, dans l'ordre où le choix les montre. */
-export const SEARCH_MODES: readonly { readonly mode: SearchMode; readonly label: string }[] = [
-  { mode: "words", label: "Par les mots" },
-  { mode: "meaning", label: "Par le sens" },
-];
 
 /** Le téléchargement d'un modèle en cours (`total` 0 tant qu'on ne le sait pas). */
 export interface Download {
@@ -77,22 +67,6 @@ export function computeHeard(state: MeaningState, item: MeaningProgressItem): Me
   return { ...state, compute };
 }
 
-/** Le modèle choisi, s'il y a un aperçu. */
-export function chosenModel(state: MeaningState): ModelOverviewItem | null {
-  const overview = state.overview;
-  return overview?.models.find((model) => model.model === overview.chosen) ?? null;
-}
-
-/** Le sens peut servir : le modèle choisi est téléchargé. */
-export function meaningUsable(state: MeaningState): boolean {
-  return chosenModel(state)?.downloaded === true;
-}
-
-/** Le mode qui sert vraiment : « par le sens » demande un modèle téléchargé. */
-export function effectiveMode(state: MeaningState, wanted: SearchMode): SearchMode {
-  return meaningUsable(state) ? wanted : "words";
-}
-
 const MEBIBYTE = 1024 * 1024;
 const number = new Intl.NumberFormat("fr-FR");
 
@@ -130,48 +104,19 @@ export function computeLabel(compute: Compute): string {
   return `Calcul du sens : ${number.format(compute.done)} / ${number.format(compute.total)} segments`;
 }
 
-/** Ce que le choix du mode de recherche montre. */
-export interface SearchModeView {
-  /** Le mode qui sert vraiment. */
-  readonly mode: SearchMode;
-  /** « Par le sens » peut être choisi. */
-  readonly meaningAvailable: boolean;
-  /** Pourquoi « Par le sens » est grisé. */
-  readonly explanation: string | null;
-  /** L'action qui lance le téléchargement du modèle choisi : son nom, et le modèle. */
-  readonly offer: { readonly label: string; readonly model: string } | null;
-  /** Le téléchargement du modèle choisi, en cours. */
-  readonly download: Progress | null;
-  /** L'avancement du calcul, seulement en mode « Par le sens ». */
-  readonly compute: string | null;
-}
-
-/** Ce que montre le choix du mode, selon l'état du sens et le mode voulu. */
-export function searchModeView(state: MeaningState, wanted: SearchMode): SearchModeView {
-  const chosen = chosenModel(state);
-  const mode = effectiveMode(state, wanted);
-  const none = { explanation: null, offer: null, download: null, compute: null };
-  if (chosen === null) return { mode, meaningAvailable: false, ...none };
-  if (!chosen.downloaded) {
-    const running = runningDownload(state, chosen.model);
-    const elsewhere = state.download !== null;
-    return {
-      ...{ mode, meaningAvailable: false },
-      explanation: `Le modèle « ${chosen.label} » n'est pas téléchargé : la recherche par le sens en a besoin.`,
-      offer: elsewhere
-        ? null
-        : { label: `Télécharger le modèle (${megabytes(chosen.size)})`, model: chosen.model },
-      download: running && downloadProgress(running),
-      compute: null,
-    };
-  }
-  const compute = mode === "meaning" && state.compute !== null ? computeLabel(state.compute) : null;
-  return { ...{ mode, meaningAvailable: true, ...none }, compute };
-}
-
-/** Le message à écrire au-dessus des résultats quand le sens manque ; rien s'il a servi. */
+/** Le message à écrire en tête de la colonne « idées » quand le sens manque ; rien s'il a servi. */
 export function meaningNotice(use: MeaningUseItem | undefined): string | null {
   return use === undefined || use.kind === "used" ? null : use.message;
+}
+
+/** Le sens manque parce que le modèle n'est pas téléchargé : la colonne renvoie aux réglages. */
+export function modelMissing(use: MeaningUseItem | undefined): boolean {
+  return use?.kind === "modelMissing";
+}
+
+/** Où en est le calcul du sens, dit dans la colonne « idées » ; rien s'il n'y en a pas en cours. */
+export function computeNote(state: MeaningState): string | null {
+  return state.compute === null ? null : computeLabel(state.compute);
 }
 
 /** Un modèle, tel que les réglages le montrent. */

@@ -4,6 +4,7 @@ import { showDisplay } from "../screens/display";
 import { openSettings } from "../screens/settings-view";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { loadSettings, saveSettings, type Settings } from "../state/settings";
+import { SETTINGS_TABS, saveSettingsTab } from "../state/settings-tabs";
 import type { OpenColumns } from "./columns";
 
 export interface SettingsParts {
@@ -36,6 +37,8 @@ export interface SettingsDeps {
 export interface AppSettings {
   /** Ouvre la fenêtre des réglages. */
   open(): void;
+  /** Ouvre la fenêtre des réglages sur l'onglet de ce nom (« Index »…) ; un nom inconnu laisse le dernier onglet. */
+  openTab(name: string): void;
   /** Règle l'éditeur d'une nouvelle colonne sur les réglages en cours. */
   configure(editor: Editor): void;
 }
@@ -59,10 +62,16 @@ export function connectSettings(parts: SettingsParts, deps: SettingsDeps): AppSe
     const extra = deps.groups().flatMap((source) => source.settingsGroups());
     openSettings(parts.settings, settings, apply, extra, deps.storage);
   };
+  const openTab = (name: string) => {
+    const index = SETTINGS_TABS.findIndex((tab) => tab.name === name);
+    if (index >= 0) saveSettingsTab(deps.storage, index);
+    open();
+  };
   parts.settingsButton.addEventListener("click", open);
   apply(settings);
   return {
     open,
+    openTab,
     configure: (editor) => editor.setCharactersPerPage(settings.charactersPerPage),
   };
 }

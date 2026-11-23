@@ -91,6 +91,11 @@
   --backlinks-text-size: 13px;
   --backlinks-max-height: 30%;
   --picker-max-height: 50vh;
+  --search-field-width: 20rem;
+  --search-field-min-width: 6rem;
+  --search-window-top: 3.4rem;
+  --search-window-width: 60rem;
+  --search-window-height: 70vh;
   --confirmation-width: 26rem;
   --confirmation-text-size: 14px;
   --about-width: 20rem;

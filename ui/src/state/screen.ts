@@ -1,5 +1,5 @@
 import type {
-  MeaningUseItem,
+  MeaningSearchItem,
   NoteListItem,
   SearchResultItem,
   TagItem,
@@ -12,14 +12,15 @@ import { DEFAULT_ORDER, type NoteOrder } from "./note-order";
 import { initialSelection } from "./selection";
 
 /**
- * Une recherche en cours : les mots tapés et les notes trouvées à la dernière réponse
- * (`null` tant qu'aucune réponse n'est arrivée). Une recherche par le sens garde aussi ce qu'il est
- * advenu du sens (`meaning`), pour le dire au-dessus des résultats.
+ * Une recherche en cours : les mots tapés, les notes trouvées par les mots à la dernière réponse
+ * (`null` tant qu'aucune réponse n'est arrivée : colonne « match » de la fenêtre de recherche) et
+ * la dernière réponse de la recherche par le sens (`ideas`, absente tant qu'elle n'est pas arrivée :
+ * colonne « idées »).
  */
 export interface Search {
   readonly query: string;
   readonly results: readonly SearchResultItem[] | null;
-  readonly meaning?: MeaningUseItem;
+  readonly ideas?: MeaningSearchItem;
 }
 
 /**
@@ -165,10 +166,10 @@ export function searchedQuery(screen: Screen): string | null {
 export function searchTyped(screen: Screen, query: string): Screen {
   if (screen.kind !== "workspace") return screen;
   if (query.trim() === "") return { ...screen, search: null };
-  const previous = searchable(query) ? screen.search?.results : null;
+  const kept = searchable(query) ? screen.search : null;
   return {
     ...screen,
-    search: { query, results: previous ?? null },
+    search: { query, results: kept?.results ?? null, ...(kept?.ideas && { ideas: kept.ideas }) },
     trash: null,
   };
 }
@@ -178,16 +179,22 @@ export function trashShown(screen: Screen, trash: TrashInfo): Screen {
   return screen.kind === "workspace" ? { ...screen, trash, search: null } : screen;
 }
 
-/** Les notes trouvées pour `query` ; ignorées si la recherche a changé ou s'est arrêtée entre-temps. */
+/** Les notes trouvées par les mots pour `query` ; ignorées si la recherche a changé ou s'est arrêtée entre-temps. */
 export function searchAnswered(
   screen: Screen,
   query: string,
   results: readonly SearchResultItem[],
-  meaning?: MeaningUseItem,
 ): Screen {
   // Stryker disable next-line ConditionalExpression: l'accueil n'a pas de recherche, la seconde condition l'écarte aussi ; TypeScript exige la première.
   if (screen.kind !== "workspace" || screen.search?.query !== query) return screen;
-  return { ...screen, search: { query, results, meaning } };
+  return { ...screen, search: { ...screen.search, query, results } };
+}
+
+/** La réponse de la recherche par le sens pour `query` ; ignorée si la recherche a changé ou s'est arrêtée. */
+export function ideasAnswered(screen: Screen, query: string, ideas: MeaningSearchItem): Screen {
+  // Stryker disable next-line ConditionalExpression: l'accueil n'a pas de recherche, la seconde condition l'écarte aussi ; TypeScript exige la première.
+  if (screen.kind !== "workspace" || screen.search?.query !== query) return screen;
+  return { ...screen, search: { ...screen.search, ideas } };
 }
 
 /** La note sélectionnée, s'il y en a une. */

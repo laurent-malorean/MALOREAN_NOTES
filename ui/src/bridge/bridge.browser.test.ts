@@ -558,7 +558,7 @@ describe("pont vers Rust : barre des menus", () => {
     await bridge.cancelModelDownload();
     await bridge.removeMeaningModel("e5-small");
     await bridge.rebuildMeaning();
-    await bridge.searchNotesWithMeaning("dessert aux pommes");
+    await bridge.searchNotesByMeaning("dessert aux pommes");
     await bridge.relatedNotes("tarte.md");
     expect(calls).toEqual([
       { command: "meaning_overview", args: {} },
@@ -567,7 +567,7 @@ describe("pont vers Rust : barre des menus", () => {
       { command: "cancel_model_download", args: {} },
       { command: "remove_meaning_model", args: { model: "e5-small" } },
       { command: "rebuild_meaning", args: {} },
-      { command: "search_notes_with_meaning", args: { query: "dessert aux pommes" } },
+      { command: "search_notes_by_meaning", args: { query: "dessert aux pommes" } },
       { command: "related_notes", args: { path: "tarte.md" } },
     ]);
   });

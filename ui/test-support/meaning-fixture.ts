@@ -56,7 +56,7 @@ interface Context {
 }
 
 type Backend = MeaningDeps["backend"] & {
-  searchNotesWithMeaning: (query: string) => Promise<MeaningSearchItem>;
+  searchNotesByMeaning: (query: string) => Promise<MeaningSearchItem>;
 };
 
 /** Les modèles : choisir, télécharger, annuler, supprimer. */
@@ -104,7 +104,7 @@ function modelsBackend(
 function indexBackend(c: Context): Omit<Backend, keyof ReturnType<typeof modelsBackend>> {
   return {
     rebuildMeaning: async () => (c.calls.push("reconstruire"), null),
-    searchNotesWithMeaning: async (query) => {
+    searchNotesByMeaning: async (query) => {
       c.calls.push(`chercher par le sens ${query}`);
       return c.searched;
     },
@@ -143,8 +143,8 @@ export function fakeMeaning(start: MeaningOverviewItem = overviewOf()) {
 
 /** Les éléments de la fenêtre que le sens dessine, dans le document. */
 export function meaningLayout() {
-  const searchMode = document.createElement("div");
+  const ideasCompute = document.createElement("p");
   const confirmation = document.createElement("dialog");
-  document.body.replaceChildren(searchMode, confirmation);
-  return { searchMode, confirmation };
+  document.body.replaceChildren(ideasCompute, confirmation);
+  return { ideasCompute, confirmation };
 }

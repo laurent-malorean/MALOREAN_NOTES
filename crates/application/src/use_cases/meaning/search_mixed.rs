@@ -129,6 +129,20 @@ impl<'a> SearchWithMeaning<'a> {
         })
     }
 
+    /// Les notes trouvées par le sens seul, la plus proche d'abord ([`MAX_RESULTS`] au plus), sans
+    /// mêler les mots. Si le sens n'est pas disponible, aucune note, et le résultat dit pourquoi.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::EmptyQuestion`] si `text` ne contient aucun mot ;
+    /// [`AppError::StorageUnavailable`] si l'index de mots ne répond pas. Une panne du sens n'est
+    /// pas une erreur : elle est dite dans [`MixedResults::meaning`].
+    pub fn execute_by_meaning(&self, text: &str) -> Result<MixedResults, AppError> {
+        SearchQuery::parse(text).ok_or(AppError::EmptyQuestion)?;
+        let (results, meaning) = self.by_meaning(text)?;
+        Ok(MixedResults { results, meaning })
+    }
+
     /// La liste du sens, ou rien avec la raison.
     fn by_meaning(&self, text: &str) -> Result<(Vec<SearchResult>, MeaningUse), AppError> {
         if self.models.state(self.model) == ModelState::NotDownloaded {
@@ -401,6 +415,45 @@ mod tests {
         assert_eq!(
             mixed(&fixture, "pommes").unwrap().results.len(),
             MAX_RESULTS
+        );
+    }
+
+    fn by_meaning_only(fixture: &Fixture, text: &str) -> Result<MixedResults, AppError> {
+        SearchWithMeaning::new(&*fixture.words, &*fixture.meaning, &fixture.models, MODEL)
+            .execute_by_meaning(text)
+    }
+
+    #[test]
+    fn the_meaning_alone_answers_with_every_computed_note_and_no_word_needed() {
+        let fixture = Fixture::computed(&NOTES);
+        let found = by_meaning_only(&fixture, "pommes").unwrap();
+        assert_eq!(found.meaning, MeaningUse::Used);
+        // Pain ne contient pas « pommes » : seul le sens le propose.
+        assert_eq!(found.results.len(), 3);
+        assert!(titles(&found).contains(&"Pain"));
+    }
+
+    #[test]
+    fn the_meaning_alone_says_why_it_is_missing_and_gives_no_note() {
+        let missing = Fixture {
+            models: FakeMeaningModels::default(),
+            ..Fixture::computed(&NOTES)
+        };
+        let found = by_meaning_only(&missing, "pommes").unwrap();
+        assert_eq!(found.meaning, MeaningUse::ModelMissing(MODEL));
+        assert!(found.results.is_empty());
+        let waiting = Fixture::new(&NOTES);
+        let found = by_meaning_only(&waiting, "pommes").unwrap();
+        assert_eq!(found.meaning, MeaningUse::NotComputed(MODEL));
+        assert!(found.results.is_empty());
+    }
+
+    #[test]
+    fn the_meaning_alone_refuses_an_empty_question() {
+        let fixture = Fixture::computed(&NOTES);
+        assert_eq!(
+            by_meaning_only(&fixture, "  "),
+            Err(AppError::EmptyQuestion)
         );
     }
 

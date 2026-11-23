@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { SearchResultItem } from "../bridge";
+import type { MeaningSearchItem, SearchResultItem } from "../bridge";
 import {
   folderSelected,
+  ideasAnswered,
   workspaceOpened,
   recentShown,
   searchAnswered,
@@ -43,6 +44,8 @@ const ignore: ScreenActions = {
   clearTag: () => {},
   sortNotes: () => {},
   showRecent: () => {},
+  closeSearch: () => {},
+  openIndexSettings: () => {},
 };
 
 function layout() {
@@ -150,7 +153,7 @@ describe("affichage de l'écran", () => {
     expect(calls).toEqual(["note a.md", "dossier Travail"]);
   });
 
-  it("montre les notes trouvées à la place de la liste pendant une recherche", () => {
+  it("montre les notes trouvées dans la fenêtre de recherche, sans toucher à la liste des notes", () => {
     const view = layout();
     const opened = workspaceOpened(
       workspace,
@@ -171,21 +174,29 @@ describe("affichage de l'écran", () => {
     const calls: string[] = [];
     const searching = searchAnswered(searchTyped(opened, "pain"), "pain", [result]);
     renderScreen(view, searching, { ...ignore, open: (p) => calls.push(p) });
-    expect(view.notesList.querySelector(".note-item")).toBeNull();
-    view.notesList.querySelector<HTMLElement>(".search-result")?.click();
+    expect(view.searchWindow.open).toBe(true);
+    expect(view.notesList.querySelector(".search-result")).toBeNull();
+    expect(view.notesList.querySelector(".note-item")?.textContent).toContain("Alpha");
+    view.matchResults.querySelector<HTMLElement>(".search-result")?.click();
     expect(calls).toEqual(["b.md"]);
     expect(view.searchField.value).toBe("pain");
+    renderScreen(view, folderSelected(opened, "", []), ignore);
+    expect(view.searchWindow.open).toBe(false);
   });
 
-  it("écrit au-dessus des notes trouvées pourquoi le sens n'a pas servi", () => {
+  it("montre dans la colonne « idées » la réponse de la recherche par le sens", () => {
     const view = layout();
     const opened = workspaceOpened(workspace, [], []);
-    const meaning = { kind: "failed", message: "Le calcul a échoué." } as const;
-    const searching = searchAnswered(searchTyped(opened, "pain"), "pain", [], meaning);
+    const failed: MeaningSearchItem = {
+      results: [],
+      meaning: { kind: "failed", message: "Le calcul a échoué." },
+    };
+    const searching = ideasAnswered(searchTyped(opened, "pain"), "pain", failed);
     renderScreen(view, searching, ignore);
-    expect(view.notesList.querySelector(".search-notice")?.textContent).toBe("Le calcul a échoué.");
-    renderScreen(view, searchAnswered(searchTyped(opened, "pain"), "pain", []), ignore);
-    expect(view.notesList.querySelector(".search-notice")).toBeNull();
+    expect(view.ideasResults.querySelector(".search-notice")?.textContent).toBe(
+      "Le calcul a échoué.",
+    );
+    expect(view.matchResults.textContent).toBe("Recherche…");
   });
 
   it("sous le seuil de recherche, garde le texte et montre les notes du dossier", () => {
@@ -197,7 +208,7 @@ describe("affichage de l'écran", () => {
     );
     renderScreen(view, searchTyped(opened, "pa"), ignore);
     expect(view.searchField.value).toBe("pa");
-    expect(view.notesList.querySelector(".search-message")).toBeNull();
+    expect(view.searchWindow.open).toBe(false);
     expect(view.notesList.querySelector(".note-item")?.textContent).toContain("Alpha");
   });
 
@@ -285,14 +296,12 @@ describe("affichage du filtre par étiquette", () => {
     expect(calls).toEqual(["retirer"]);
   });
 
-  it("pendant une recherche ou dans la corbeille, la barre du filtre est cachée", () => {
+  it("pendant une recherche, la barre du filtre reste ; dans la corbeille, elle est cachée", () => {
     const view = layout();
     const screen = tagSelected(opened, "perso", [tagged]);
     renderScreen(view, searchTyped(screen, "pain"), ignore);
-    expect(view.tagFilter.hidden).toBe(true);
-    expect(view.tagsList.querySelector(".tag-item.selected")).toBeNull();
-    renderScreen(view, searchTyped(screen, "pa"), ignore);
     expect(view.tagFilter.hidden).toBe(false);
+    expect(view.tagsList.querySelector(".tag-item.selected")).not.toBeNull();
     renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
     expect(view.tagFilter.hidden).toBe(true);
     expect(view.listHeading.textContent).toBe("Corbeille");
@@ -332,13 +341,13 @@ describe("affichage de Récentes", () => {
     expect(titles).toEqual(["Bêta", "Alpha"]);
   });
 
-  it("pendant une recherche ou dans la corbeille, Récentes n'est plus en évidence", () => {
+  it("pendant une recherche, Récentes reste en évidence ; dans la corbeille, elle ne l'est plus", () => {
     const view = layout();
     const screen = recentShown(opened, [note("a.md", "Alpha")]);
     renderScreen(view, searchTyped(screen, "pain"), ignore);
-    expect(view.recentButton.classList.contains("selected")).toBe(false);
-    expect(view.listHeading.textContent).toBe("Notes");
-    expect(view.noteOrder.parentElement?.hidden).toBe(false);
+    expect(view.recentButton.classList.contains("selected")).toBe(true);
+    expect(view.listHeading.textContent).toBe("Récentes");
+    expect(view.noteOrder.parentElement?.hidden).toBe(true);
     renderScreen(view, trashShown(screen, { folders: [], notes: [] }), ignore);
     expect(view.recentButton.classList.contains("selected")).toBe(false);
     expect(view.listHeading.textContent).toBe("Corbeille");

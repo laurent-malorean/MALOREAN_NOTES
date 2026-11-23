@@ -1,12 +1,11 @@
 import { nameOf } from "../state/folders";
-import { meaningNotice } from "../state/meaning";
-import { type Screen, type Search, searchable } from "../state/screen";
+import { type Screen, searchable } from "../state/screen";
 import { type FolderActions, renderFoldersList } from "./folders-list";
 import type { Layout } from "./layout";
 import { type NoteOrderActions, renderNoteOrder } from "./note-order-view";
 import { type NoteActions, renderNotesList } from "./notes-list";
 import { type RecentActions, renderRecentEntry } from "./recent-view";
-import { renderSearchResults } from "./search-results";
+import { renderSearchWindow, type SearchWindowActions } from "./search-window";
 import { renderTagFilter, renderTagsList, type TagActions } from "./tags-view";
 import { renderTrash, type TrashActions } from "./trash-view";
 
@@ -16,7 +15,8 @@ export type ScreenActions = FolderActions &
   TrashActions &
   TagActions &
   NoteOrderActions &
-  RecentActions;
+  RecentActions &
+  SearchWindowActions;
 
 const TRASH_TITLE = "Corbeille";
 const RECENT_TITLE = "Récentes";
@@ -35,24 +35,10 @@ function listTitle(screen: WorkspaceScreen, tag: string | null, recent: boolean)
   return tag === null ? folderName(screen.workspace.name, screen.folder) : `#${tag}`;
 }
 
-/** La liste des notes : la corbeille, les notes trouvées, ou celles du dossier ou du filtre. */
-function renderList(
-  layout: Layout,
-  screen: WorkspaceScreen,
-  search: Search | null,
-  actions: ScreenActions,
-) {
+/** La liste des notes : la corbeille, ou celles du dossier, du filtre ou de Récentes. */
+function renderList(layout: Layout, screen: WorkspaceScreen, actions: ScreenActions) {
   if (screen.trash) {
     renderTrash(layout.notesList, screen.workspace.name, screen.trash, actions);
-  } else if (search) {
-    renderSearchResults(
-      layout.notesList,
-      screen.workspace.name,
-      search.results,
-      screen.selected,
-      actions,
-      meaningNotice(search.meaning),
-    );
   } else {
     renderNotesList(layout.notesList, screen.notes, screen.selected, actions);
   }
@@ -82,8 +68,8 @@ function renderWorkspace(layout: Layout, screen: WorkspaceScreen, actions: Scree
   layout.welcome.hidden = true;
   layout.mainArea.hidden = false;
   const search = screen.search && searchable(screen.search.query) ? screen.search : null;
-  // Le filtre et Récentes se voient quand la liste montre leurs notes : ni recherche, ni corbeille.
-  const aside = screen.trash !== null || search !== null;
+  // Le filtre et Récentes se voient quand la liste montre leurs notes : pas la corbeille.
+  const aside = screen.trash !== null;
   const shown = { tag: aside ? null : screen.tag, recent: !aside && screen.recent };
   layout.workspaceSwitcher.textContent = screen.workspace.name;
   layout.listHeading.textContent = listTitle(screen, shown.tag, shown.recent);
@@ -97,7 +83,8 @@ function renderWorkspace(layout: Layout, screen: WorkspaceScreen, actions: Scree
   layout.trashButton.classList.toggle("selected", screen.trash !== null);
   // Remettre la même valeur ne déplace pas le curseur du champ.
   layout.searchField.value = screen.search?.query ?? "";
-  renderList(layout, screen, search, actions);
+  renderList(layout, screen, actions);
+  renderSearchWindow(layout, screen.workspace.name, search, screen.selected, actions);
 }
 
 /** Met la fenêtre en accord avec l'état de l'écran ; chaque cas est traité. */

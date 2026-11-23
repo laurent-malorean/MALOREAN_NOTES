@@ -3,7 +3,6 @@ import {
   fakeMeaning,
   meaningLayout,
   overviewOf,
-  SMALL_BYTES,
   withDownloaded,
 } from "../../test-support/meaning-fixture";
 import type { Pane } from "../screens/note-pane";
@@ -28,116 +27,32 @@ function setup(start = overviewOf()) {
   const pane = { showRelated: async () => void refreshed.push("proches") } as unknown as Pane;
   panes.set(1, pane);
   meaning.start();
-  const buttons = () => [...layout.searchMode.querySelectorAll("button")];
-  const button = (name: string) => buttons().find((b) => b.textContent === name);
-  const text = () => layout.searchMode.textContent;
-  return { ...fake, layout, meaning, shown, errors, searched, refreshed, button, buttons, text };
+  const text = () => layout.ideasCompute.textContent;
+  return { ...fake, layout, meaning, shown, errors, searched, refreshed, text };
 }
 
 beforeEach(() => document.body.replaceChildren());
 
-describe("recherche par le sens : choix du mode", () => {
-  it("lit l'aperçu au démarrage, grise « Par le sens » et propose le téléchargement", async () => {
-    const t = setup();
-    await vi.waitFor(() => expect(t.button("Télécharger le modèle (449 Mo)")).toBeDefined());
-    expect(t.calls).toEqual(["aperçu"]);
-    expect((t.button("Par le sens") as HTMLButtonElement).disabled).toBe(true);
-    expect(t.button("Par les mots")?.getAttribute("aria-pressed")).toBe("true");
-    expect(t.text()).toContain(
-      "Le modèle « E5 petit » n'est pas téléchargé : la recherche par le sens en a besoin.",
-    );
-    expect(t.meaning.mode()).toBe("words");
-  });
-
-  it("télécharge le modèle, montre la progression, puis choisit « Par le sens » à la fin", async () => {
-    const t = setup();
-    await vi.waitFor(() => expect(t.button("Télécharger le modèle (449 Mo)")).toBeDefined());
-    t.button("Télécharger le modèle (449 Mo)")?.click();
-    expect(t.calls).toContain("télécharger e5-small");
-    expect(t.button("Télécharger le modèle (449 Mo)")).toBeUndefined();
-    t.downloading({ kind: "progress", model: "e5-small", done: 235_318_708, total: SMALL_BYTES });
-    expect(t.text()).toContain("224 Mo sur 449 Mo (50 %)");
-    expect(t.layout.searchMode.querySelector("progress")?.value).toBe(50);
-    t.setOverview(withDownloaded(overviewOf(), { "e5-small": true }));
-    t.endDownload();
-    await vi.waitFor(() =>
-      expect(t.button("Par le sens")?.getAttribute("aria-pressed")).toBe("true"),
-    );
-    expect((t.button("Par le sens") as HTMLButtonElement).disabled).toBe(false);
-    expect(t.layout.searchMode.querySelector("progress")).toBeNull();
-    expect(t.meaning.mode()).toBe("meaning");
-    expect(t.searched).toEqual(["encore"]);
-    expect(t.errors).toEqual([]);
-  });
-
-  it("annule le téléchargement, qui rend la main avec son message", async () => {
-    const t = setup();
-    await vi.waitFor(() => expect(t.button("Télécharger le modèle (449 Mo)")).toBeDefined());
-    t.button("Télécharger le modèle (449 Mo)")?.click();
-    t.downloading({ kind: "progress", model: "e5-small", done: 1, total: SMALL_BYTES });
-    t.button("Annuler le téléchargement")?.click();
-    await vi.waitFor(() => expect(t.errors).toEqual(["Téléchargement annulé."]));
-    await vi.waitFor(() => expect(t.button("Télécharger le modèle (449 Mo)")).toBeDefined());
-    expect(t.calls).toContain("annuler");
-    expect(t.meaning.mode()).toBe("words");
-  });
-
-  it("garde « Par les mots » quand le téléchargement échoue, et le dit", async () => {
-    const t = setup();
-    await vi.waitFor(() => expect(t.button("Télécharger le modèle (449 Mo)")).toBeDefined());
-    t.button("Télécharger le modèle (449 Mo)")?.click();
-    t.endDownload("Réseau indisponible.");
-    await vi.waitFor(() => expect(t.errors).toEqual(["Réseau indisponible."]));
-    await vi.waitFor(() => expect(t.button("Télécharger le modèle (449 Mo)")).toBeDefined());
-    expect(t.meaning.mode()).toBe("words");
-  });
-
-  it("change de mode au clic quand le sens est prêt, et refait la recherche", async () => {
-    const t = setup(withDownloaded(overviewOf(), { "e5-small": true }));
-    await vi.waitFor(() =>
-      expect((t.button("Par le sens") as HTMLButtonElement).disabled).toBe(false),
-    );
-    t.button("Par le sens")?.click();
-    expect(t.meaning.mode()).toBe("meaning");
-    expect(t.button("Par le sens")?.getAttribute("aria-pressed")).toBe("true");
-    expect(t.searched).toEqual(["encore"]);
-    t.button("Par les mots")?.click();
-    expect(t.meaning.mode()).toBe("words");
-    expect(t.searched).toEqual(["encore", "encore"]);
-  });
-
-  it("veut le mode « par le sens » même avant le téléchargement : il sert dès que le sens le peut", async () => {
+describe("recherche par le sens : calcul dit dans la colonne « idées »", () => {
+  it("lit l'aperçu au démarrage, sans rien dire du calcul", async () => {
     const t = setup();
     await vi.waitFor(() => expect(t.calls).toEqual(["aperçu"]));
-    t.meaning.chooseMode("meaning");
-    expect(t.meaning.mode()).toBe("words");
-    t.setOverview(withDownloaded(overviewOf(), { "e5-small": true }));
-    t.endDownload();
-    t.computing({ kind: "finished", model: "e5-small" });
-    await vi.waitFor(() => expect(t.meaning.mode()).toBe("meaning"));
+    expect(t.text()).toBe("");
+    expect(t.layout.ideasCompute.hidden).toBe(true);
   });
 
-  it("dit où en est le calcul, en mode « par le sens », puis relance la recherche à la fin", async () => {
+  it("dit où en est le calcul, puis relance la recherche à la fin", async () => {
     const t = setup(withDownloaded(overviewOf(), { "e5-small": true }));
-    await vi.waitFor(() =>
-      expect((t.button("Par le sens") as HTMLButtonElement).disabled).toBe(false),
-    );
-    t.button("Par le sens")?.click();
-    t.searched.length = 0;
+    await vi.waitFor(() => expect(t.calls).toEqual(["aperçu"]));
     t.computing({ kind: "progress", done: 120, total: 411, model: "e5-small" });
-    expect(t.text()).toContain("Calcul du sens : 120 / 411 segments");
+    expect(t.text()).toBe("Calcul du sens : 120 / 411 segments");
+    expect(t.layout.ideasCompute.hidden).toBe(false);
     t.computing({ kind: "finished", model: "e5-small" });
-    expect(t.text()).not.toContain("Calcul du sens");
+    expect(t.text()).toBe("");
+    expect(t.layout.ideasCompute.hidden).toBe(true);
     expect(t.searched).toEqual(["encore"]);
     expect(t.refreshed).toEqual(["proches"]);
     await vi.waitFor(() => expect(t.calls.filter((c) => c === "aperçu")).toHaveLength(2));
-  });
-
-  it("ne refait pas la recherche par les mots quand le calcul finit", async () => {
-    const t = setup(withDownloaded(overviewOf(), { "e5-small": true }));
-    await vi.waitFor(() => expect(t.calls).toEqual(["aperçu"]));
-    t.computing({ kind: "finished", model: "e5-small" });
-    expect(t.searched).toEqual([]);
   });
 
   it("dit l'échec du calcul, et relit l'aperçu", async () => {
@@ -146,15 +61,6 @@ describe("recherche par le sens : choix du mode", () => {
     t.computing({ kind: "failed", message: "Le calcul a échoué." });
     expect(t.shown).toEqual(["error Le calcul a échoué."]);
     await vi.waitFor(() => expect(t.calls).toEqual(["aperçu", "aperçu"]));
-  });
-
-  it("ne redessine pas le choix quand rien n'a changé", async () => {
-    const t = setup(withDownloaded(overviewOf(), { "e5-small": true }));
-    await vi.waitFor(() => expect(t.buttons()).toHaveLength(2));
-    const first = t.buttons()[0];
-    t.computing({ kind: "failed", message: "x" });
-    await vi.waitFor(() => expect(t.calls).toHaveLength(2));
-    expect(t.buttons()[0]).toBe(first);
   });
 });
 
@@ -238,7 +144,7 @@ describe("recherche par le sens : réglages", () => {
     );
   });
 
-  it("télécharge un modèle sans changer le mode de recherche, et l'annule", async () => {
+  it("télécharge un modèle, et l'annule", async () => {
     const t = setup(withDownloaded(overviewOf(), { "e5-small": true }));
     await vi.waitFor(() => expect(t.calls).toEqual(["aperçu"]));
     const s = settingsOf(t);
@@ -247,7 +153,6 @@ describe("recherche par le sens : réglages", () => {
     expect(s.text()).toContain("0 Mo sur 0 Mo (0 %)");
     s.named("Annuler le téléchargement")?.click();
     await vi.waitFor(() => expect(t.errors).toEqual(["Téléchargement annulé."]));
-    expect(t.meaning.mode()).toBe("words");
   });
 
   it("nomme dans la confirmation le modèle qu'on supprime", async () => {
@@ -261,16 +166,16 @@ describe("recherche par le sens : réglages", () => {
     t.layout.confirmation.querySelector<HTMLButtonElement>("button.link")?.click();
   });
 
-  it("télécharge depuis les réglages sans passer la recherche « par le sens », même une fois fini", async () => {
+  it("télécharge depuis les réglages, puis relit l'aperçu et refait la recherche", async () => {
     const t = setup();
     await vi.waitFor(() => expect(t.calls).toEqual(["aperçu"]));
     const s = settingsOf(t);
     s.button("Télécharger « E5 petit »")?.click();
     t.setOverview(withDownloaded(overviewOf(), { "e5-small": true }));
     t.endDownload();
-    await vi.waitFor(() => expect(t.button("Par le sens")?.disabled).toBe(false));
-    expect(t.button("Par les mots")?.getAttribute("aria-pressed")).toBe("true");
-    expect(t.meaning.mode()).toBe("words");
+    await vi.waitFor(() => expect(t.searched).toEqual(["encore"]));
+    expect(s.text()).toContain("téléchargé");
+    expect(t.errors).toEqual([]);
   });
 
   it("supprime un modèle après confirmation, et rien si on refuse", async () => {

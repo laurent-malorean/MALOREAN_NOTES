@@ -15,7 +15,6 @@ describe("palette de commandes", () => {
       ["new-mind-map", "Nouvelle carte mentale", null],
       ["new-folder", "Nouveau dossier", null],
       ["search-workspace", "Rechercher dans toutes les notes", null],
-      ["search-by-meaning", "Rechercher par le sens", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],
       ["find-and-replace", "Rechercher et remplacer", "Alt+Cmd+F"],
       ["bold", "Gras", "Cmd+B"],

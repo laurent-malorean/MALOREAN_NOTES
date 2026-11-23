@@ -254,15 +254,29 @@ test("la recherche trouve les notes de tous les dossiers et ouvre celle qu'on cl
   });
   const field = page.getByRole("searchbox", { name: "Rechercher" });
   await field.fill("PAIN");
-  await expect(page.locator(".search-result .note-title")).toHaveText(["Courses", "Réunion"]);
-  await expect(page.locator(".search-result .search-folder")).toHaveText(["Notes", "Travail"]);
-  await expect(page.locator(".search-result .search-type")).toHaveText(["Note", "Note"]);
-  await expect(page.locator(".search-result mark").first()).toHaveText("pain");
-  await page.locator(".search-result", { hasText: "Réunion" }).click();
+  await expect(page.locator(".match-results .search-result .note-title")).toHaveText([
+    "Courses",
+    "Réunion",
+  ]);
+  await expect(page.locator(".match-results .search-result .search-folder")).toHaveText([
+    "Notes",
+    "Travail",
+  ]);
+  await expect(page.locator(".match-results .search-result .search-type")).toHaveText([
+    "Note",
+    "Note",
+  ]);
+  await expect(page.locator(".match-results .search-result mark").first()).toHaveText("pain");
+  await page.locator(".match-results .search-result", { hasText: "Réunion" }).click();
   await expect(editorLines(page).first()).toHaveText("Réunion");
-  await field.press("Escape");
+  await expect(page.locator(".search-window")).toBeHidden();
   await expect(field).toHaveValue("");
   await expect(titles(page)).toHaveText(["Courses", "Idée"]);
+  await field.fill("PAIN");
+  await expect(page.locator(".search-window")).toBeVisible();
+  await field.press("Escape");
+  await expect(page.locator(".search-window")).toBeHidden();
+  await expect(field).toHaveValue("");
 });
 
 test("taper vite dans la recherche ne perd aucune lettre, même si une réponse arrive en route", async ({
@@ -276,7 +290,7 @@ test("taper vite dans la recherche ne perd aucune lettre, même si une réponse 
   await page.waitForTimeout(250);
   await page.keyboard.type("bonne", { delay: 60 });
   await expect(field).toHaveValue("lisbonne");
-  await expect(page.locator(".search-result .note-title")).toHaveText(["Lisbonne"]);
+  await expect(page.locator(".match-results .search-result .note-title")).toHaveText(["Lisbonne"]);
   await expect(field).toHaveValue("lisbonne");
   const searches = await page.evaluate(() =>
     window.backend.calls.filter((c) => c === "search_notes"),
@@ -284,7 +298,7 @@ test("taper vite dans la recherche ne perd aucune lettre, même si une réponse 
   expect(searches).toHaveLength(2);
 });
 
-test("en dessous de trois caractères, la liste reste celle du dossier, sauf pour un nombre", async ({
+test("en dessous de trois caractères, la fenêtre reste fermée, sauf pour un nombre", async ({
   page,
 }) => {
   await launch(page, {
@@ -297,15 +311,19 @@ test("en dessous de trois caractères, la liste reste celle du dossier, sauf pou
   await field.pressSequentially("pa");
   await page.waitForTimeout(400);
   await expect(titles(page)).toHaveText(["Courses", "Budget"]);
+  await expect(page.locator(".search-window")).toBeHidden();
   expect(await page.evaluate(() => window.backend.calls)).not.toContain("search_notes");
   await field.fill("42");
-  await expect(page.locator(".search-result .note-title")).toHaveText(["Budget"]);
+  await expect(page.locator(".match-results .search-result .note-title")).toHaveText(["Budget"]);
 });
 
 test("une recherche sans résultat le dit", async ({ page }) => {
   await launch(page);
   await page.getByRole("searchbox", { name: "Rechercher" }).fill("introuvable");
-  await expect(page.locator(".notes-list")).toHaveText("Aucune note trouvée");
+  await expect(page.locator(".match-results")).toHaveText("Aucune note trouvée");
+  await expect(page.locator(".ideas-results")).toContainText(
+    "Le modèle « E5 petit » n'est pas téléchargé",
+  );
 });
 
 test("épingler une note par clic droit la met en tête, sans perdre ce qu'on tape", async ({

@@ -66,16 +66,18 @@ test("la liste des étiquettes filtre ; Échap retire le filtre ; choisir un dos
   await expect(titles(page)).toHaveText(["Budget"]);
 });
 
-test("la recherche porte sur tout l'espace de travail ; vidée, le filtre revient", async ({
+test("la recherche porte sur tout l'espace de travail, sans toucher au filtre", async ({
   page,
 }) => {
   await launch(page);
   await tagsList(page).locator(".tag-item", { hasText: "perso" }).click();
   await expect(titles(page)).toHaveText(["Courses", "Randonnée"]);
   await page.locator(".search-field").fill("budget");
-  await expect(page.locator(".search-result .note-title")).toHaveText(["Budget"]);
-  await expect(filterBar(page)).toBeHidden();
+  await expect(page.locator(".match-results .search-result .note-title")).toHaveText(["Budget"]);
+  await expect(filterBar(page)).toBeVisible();
+  await expect(titles(page)).toHaveText(["Courses", "Randonnée"]);
   await page.locator(".search-field").press("Escape");
+  await expect(page.locator(".search-window")).toBeHidden();
   await expect(filterBar(page)).toBeVisible();
   await expect(titles(page)).toHaveText(["Courses", "Randonnée"]);
 });

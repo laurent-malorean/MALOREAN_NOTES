@@ -334,12 +334,12 @@ fn rebuilding_needs_a_workspace() {
 }
 
 #[test]
-fn the_search_with_meaning_gives_results_and_the_typed_reason_when_the_meaning_is_missing() {
+fn the_search_by_meaning_gives_results_and_the_typed_reason_when_the_meaning_is_missing() {
     let (window, session) = window(small());
     open(&window, &session);
     let found = call(
         &window,
-        "search_notes_with_meaning",
+        "search_notes_by_meaning",
         json!({ "query": "dessert aux pommes" }),
     )
     .unwrap();
@@ -356,25 +356,25 @@ fn the_search_with_meaning_gives_results_and_the_typed_reason_when_the_meaning_i
         json!({ "model": "e5-small" }),
     )
     .unwrap();
-    let words = call(
+    let missing = call(
         &window,
-        "search_notes_with_meaning",
+        "search_notes_by_meaning",
         json!({ "query": "pommes" }),
     )
     .unwrap();
-    assert_eq!(words["meaning"]["kind"], "modelMissing");
-    assert_eq!(words["meaning"]["model"], "e5-small");
+    assert_eq!(missing["meaning"]["kind"], "modelMissing");
+    assert_eq!(missing["meaning"]["model"], "e5-small");
     assert!(
-        words["meaning"]["message"]
+        missing["meaning"]["message"]
             .as_str()
             .unwrap()
             .contains("téléchargez-le")
     );
-    assert_eq!(words["results"].as_array().unwrap().len(), 2);
+    assert!(missing["results"].as_array().unwrap().is_empty());
     assert_eq!(
         error_message(call(
             &window,
-            "search_notes_with_meaning",
+            "search_notes_by_meaning",
             json!({ "query": " " })
         )),
         "la question est vide : écrivez ce que vous cherchez"

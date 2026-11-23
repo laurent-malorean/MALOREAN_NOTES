@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { NoteListItem, SearchResultItem } from "../bridge";
+import type { MeaningSearchItem, NoteListItem, SearchResultItem } from "../bridge";
 import {
   currentFolder,
   folderFolded,
@@ -12,6 +12,7 @@ import {
   notesRefreshed,
   SEARCH_MIN_LENGTH,
   searchable,
+  ideasAnswered,
   searchAnswered,
   searchedQuery,
   searchTyped,
@@ -213,16 +214,42 @@ describe("recherche", () => {
     expect(searchOf(screen)).toEqual({ query: "pain", results: [result("a.md")] });
   });
 
-  it("garde ce qu'il est advenu du sens avec les notes trouvées, jusqu'à la frappe suivante", () => {
-    const meaning = { kind: "failed", message: "raté" } as const;
-    const answered = searchAnswered(
-      searchTyped(opened(), "pain"),
+  it("garde la réponse de la recherche par le sens avec les notes trouvées par les mots", () => {
+    const ideas: MeaningSearchItem = { results: [result("b.md")], meaning: { kind: "used" } };
+    const answered = ideasAnswered(
+      searchAnswered(searchTyped(opened(), "pain"), "pain", [result("a.md")]),
+      "pain",
+      ideas,
+    );
+    expect(searchOf(answered)).toEqual({ query: "pain", results: [result("a.md")], ideas });
+    const reversed = searchAnswered(
+      ideasAnswered(searchTyped(opened(), "pain"), "pain", ideas),
       "pain",
       [result("a.md")],
-      meaning,
     );
-    expect(searchOf(answered)).toEqual({ query: "pain", results: [result("a.md")], meaning });
-    expect(searchOf(searchTyped(answered, "pains"))?.meaning).toBeUndefined();
+    expect(searchOf(reversed)).toEqual(searchOf(answered));
+  });
+
+  it("garde aussi la réponse du sens pendant qu'on continue de taper, et l'oublie sous le seuil", () => {
+    const ideas: MeaningSearchItem = {
+      results: [],
+      meaning: { kind: "failed", message: "raté" },
+    };
+    const answered = ideasAnswered(searchTyped(opened(), "pai"), "pai", ideas);
+    expect(searchOf(searchTyped(answered, "pain"))).toEqual({
+      query: "pain",
+      results: null,
+      ideas,
+    });
+    expect(searchOf(searchTyped(answered, "pa"))).toEqual({ query: "pa", results: null });
+  });
+
+  it("ignore la réponse du sens d'une recherche dépassée ou finie", () => {
+    const ideas: MeaningSearchItem = { results: [], meaning: { kind: "used" } };
+    const typed = searchTyped(searchTyped(opened(), "pai"), "pain");
+    expect(ideasAnswered(typed, "pai", ideas)).toBe(typed);
+    expect(ideasAnswered(opened(), "pain", ideas)).toEqual(opened());
+    expect(ideasAnswered(welcome, "pain", ideas)).toBe(welcome);
   });
 
   it("garde les résultats précédents pendant qu'on continue de taper", () => {

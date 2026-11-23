@@ -3,13 +3,14 @@
 import type * as Bridge from "../bridge";
 import type { ScreenActions } from "../screens/screen-view";
 import { noteClosed, notePlaced } from "../state/columns";
-import { searchedQuery } from "../state/screen";
+import { searchedQuery, searchTyped } from "../state/screen";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { Folders } from "./folders";
 import type { NewContents } from "./new-contents";
 import type { NoteHistory } from "./history";
+import type { AppSettings } from "./settings";
 import type { Workspace } from "./workspace";
 import type { RecentNotes } from "./recent-notes";
 import type { Tags } from "./tags";
@@ -17,7 +18,7 @@ import type { Trash } from "./trash";
 
 export interface ScreenActionsDeps {
   readonly backend: Pick<typeof Bridge, "pinNote" | "unpinNote">;
-  readonly screen: Pick<CurrentScreen, "get">;
+  readonly screen: Pick<CurrentScreen, "get" | "show">;
   readonly columns: Pick<OpenColumns, "openNote" | "update" | "activePane">;
   readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
   readonly workspace: Pick<Workspace, "moveNote" | "changePin" | "sortBy" | "createNote">;
@@ -33,6 +34,8 @@ export interface ScreenActionsDeps {
   readonly exporting: Exporting;
   /** L'historique d'une note, demandé par son menu dans la liste. */
   readonly history: NoteHistory;
+  /** Les réglages, que la fenêtre de recherche ouvre sur l'onglet « Index » quand le sens manque. */
+  readonly settings: Pick<AppSettings, "openTab">;
   /** Lance l'action ; son échec est montré. */
   run(action: Promise<unknown>): void;
 }
@@ -50,13 +53,19 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     exporting,
     history,
     notebooks,
+    settings,
     run,
   } = deps;
-  /** Ouvre la note ; trouvée par une recherche, elle s'ouvre sur le terme cherché. */
+  /** Ferme la fenêtre de recherche, et vide le champ ; sans fenêtre ouverte, ne touche à rien. */
+  const closeSearch = () => {
+    if (searchedQuery(screen.get()) !== null) screen.show(searchTyped(screen.get(), ""));
+  };
+  /** Ouvre la note ; trouvée par une recherche, elle s'ouvre sur le terme cherché, et la fenêtre se ferme. */
   const openAtSearch = async (path: string, node: string | null = null) => {
-    await columns.openNote(path);
-    if (node !== null) return columns.activePane().revealNode(node);
     const query = searchedQuery(screen.get());
+    await columns.openNote(path);
+    closeSearch();
+    if (node !== null) return columns.activePane().revealNode(node);
     if (query !== null) columns.activePane().editor.reveal(query);
   };
   return {
@@ -73,7 +82,10 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     pin: (path) => run(workspace.changePin(path, backend.pinNote)),
     unpin: (path) => run(workspace.changePin(path, backend.unpinNote)),
     trash: (path) => run(trash.trashNote(path)),
-    place: (path, placement) => run(columns.update((now) => notePlaced(now, path, placement))),
+    place: (path, placement) =>
+      run(columns.update((now) => notePlaced(now, path, placement)).then(closeSearch)),
+    closeSearch,
+    openIndexSettings: () => settings.openTab("Index"),
     closeNote: (path) => run(columns.update((now) => noteClosed(now, path))),
     exportNote: (path) => exporting.exportNote(path),
     printNote: (path) => exporting.printNote(path),

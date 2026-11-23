@@ -100,7 +100,6 @@ describe("barre des menus", () => {
           "Rechercher… Cmd+F",
           "Rechercher et remplacer… Alt+Cmd+F",
           "Rechercher dans toutes les notes…",
-          "Rechercher par le sens…",
           "—",
           "Corriger la sélection… Ctrl+Cmd+K",
           "Reformuler la sélection… Ctrl+Cmd+R",

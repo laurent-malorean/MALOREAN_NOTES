@@ -23,6 +23,8 @@ function setup(searching: string | null = null) {
   } as unknown as Pane);
   const screen = {
     get: () => ({ kind: "workspace", search: searching && { query: searching, results: null } }),
+    show: (next: { search: { query: string } | null }) =>
+      void calls.push(`écran ${next.search === null ? "sans recherche" : next.search.query}`),
   } as unknown as CurrentScreen;
   const actions = screenActions({
     backend,
@@ -65,6 +67,7 @@ function setup(searching: string | null = null) {
       copyMarkdown: (path) => void calls.push(`copier en Markdown ${path}`),
     },
     history: { show: (path) => void calls.push(`historique ${path}`) },
+    settings: { openTab: (name) => void calls.push(`réglages ${name}`) },
     run: (action) => void ran.push(action),
   });
   return { actions, calls, ran, columns };
@@ -151,7 +154,7 @@ describe("demandes de l'écran", () => {
     const searched = setup("beagle");
     searched.actions.open("b.md");
     await Promise.all(searched.ran);
-    expect(searched.calls).toEqual(["montrer beagle"]);
+    expect(searched.calls).toEqual(["écran sans recherche", "montrer beagle"]);
     const shortSearch = setup("be");
     shortSearch.actions.open("b.md");
     await Promise.all(shortSearch.ran);
@@ -160,5 +163,39 @@ describe("demandes de l'écran", () => {
     plain.actions.open("b.md");
     await Promise.all(plain.ran);
     expect(plain.calls).toEqual([]);
+  });
+
+  it("ouvrir un résultat ferme la recherche ; dans un nouvel onglet aussi, mais pas hors recherche", async () => {
+    const searched = setup("beagle");
+    searched.actions.place("c.md", "newTab");
+    await Promise.all(searched.ran);
+    expect(searched.calls).toEqual(["écran sans recherche"]);
+    const plain = setup();
+    plain.actions.place("c.md", "newTab");
+    plain.actions.open("b.md");
+    await Promise.all(plain.ran);
+    expect(plain.calls).toEqual([]);
+  });
+
+  it("une carte mentale ouverte par un nœud ferme aussi la recherche", async () => {
+    const t = setup("pain");
+    t.actions.open("carte.md", "0.1");
+    await Promise.all(t.ran);
+    expect(t.calls).toEqual(["écran sans recherche", "nœud 0.1"]);
+  });
+
+  it("ferme la recherche à la demande de la fenêtre, et ne touche à rien sans recherche", () => {
+    const searched = setup("beagle");
+    searched.actions.closeSearch();
+    expect(searched.calls).toEqual(["écran sans recherche"]);
+    const plain = setup();
+    plain.actions.closeSearch();
+    expect(plain.calls).toEqual([]);
+  });
+
+  it("mène la fenêtre de recherche aux réglages de l'index", () => {
+    const t = setup("beagle");
+    t.actions.openIndexSettings();
+    expect(t.calls).toEqual(["réglages Index"]);
   });
 });

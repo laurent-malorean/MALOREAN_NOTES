@@ -82,7 +82,6 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "find-in-note", label: "Rechercher…" },
       { command: "find-and-replace", label: "Rechercher et remplacer…" },
       { command: "search-workspace", label: "Rechercher dans toutes les notes…" },
-      { command: "search-by-meaning", label: "Rechercher par le sens…" },
       "separator",
       { command: "correct-selection", label: "Corriger la sélection…" },
       { command: "rephrase-selection", label: "Reformuler la sélection…" },

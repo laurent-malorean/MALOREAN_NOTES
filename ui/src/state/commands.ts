@@ -11,7 +11,6 @@ export type CommandId =
   | "new-mind-map"
   | "new-folder"
   | "search-workspace"
-  | "search-by-meaning"
   | "find-in-note"
   | "find-and-replace"
   | FormatCommandId
@@ -75,7 +74,6 @@ export const COMMANDS: readonly Command[] = [
   { id: "new-mind-map", label: "Nouvelle carte mentale" },
   { id: "new-folder", label: "Nouveau dossier" },
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
-  { id: "search-by-meaning", label: "Rechercher par le sens" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },
   { id: "find-and-replace", label: "Rechercher et remplacer", shortcut: "Alt+Cmd+F" },
   { id: "bold", label: "Gras", shortcut: "Cmd+B" },

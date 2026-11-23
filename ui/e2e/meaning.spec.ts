@@ -1,6 +1,6 @@
-// Parcours de la recherche par le sens : télécharger le modèle depuis la recherche, chercher par le
-// sens, ouvrir une note proche, choisir l'autre modèle dans les réglages. Rust est remplacé par le faux
-// (e2e/fake-meaning.ts) : le téléchargement et le calcul se terminent quand le parcours le décide.
+// Parcours de la recherche par le sens : la colonne « idées » de la fenêtre de recherche (modèle absent,
+// calcul, résultats), ouvrir une note proche, choisir l'autre modèle dans les réglages. Rust est remplacé
+// par le faux (e2e/fake-meaning.ts) : le téléchargement et le calcul se terminent quand le parcours le décide.
 import { expect, type Page, test } from "@playwright/test";
 import { waitForLaunchedNote, waitForNote } from "./journey";
 
@@ -23,38 +23,48 @@ async function launch(page: Page, extra: Record<string, string> = {}) {
 }
 
 const choose = (page: Page, id: string) => page.evaluate((id) => window.backend.chooseMenu(id), id);
-const mode = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
-const resultTitles = (page: Page) => page.locator(".search-result .note-title");
+const field = (page: Page) => page.getByRole("searchbox", { name: "Rechercher" });
+const ideas = (page: Page) => page.locator(".ideas-results");
+const ideasTitles = (page: Page) => ideas(page).locator(".search-result .note-title");
 
-test("télécharger le modèle depuis la recherche, chercher par le sens, ouvrir une note proche, choisir l'autre modèle", async ({
+test("la colonne « idées » dit que le modèle manque, renvoie aux réglages, puis donne les notes de même sens", async ({
   page,
 }) => {
   await launch(page);
-  await page.getByRole("searchbox", { name: "Rechercher" }).fill("dessert");
-  await expect(page.getByText("Aucune note trouvée")).toBeVisible();
+  await field(page).fill("dessert");
+  await expect(page.locator(".match-results")).toHaveText("Aucune note trouvée");
 
-  // Le modèle n'est pas téléchargé : « Par le sens » est grisé, la zone dit pourquoi et quoi faire.
-  await expect(mode(page, "Par le sens")).toBeDisabled();
-  await expect(page.locator(".search-mode-note")).toContainText(
+  // Le modèle n'est pas téléchargé : la colonne le dit et renvoie aux Réglages > Index.
+  await expect(ideas(page).locator(".search-notice")).toContainText(
     "Le modèle « E5 petit » n'est pas téléchargé",
   );
-  await page.getByRole("button", { name: "Télécharger le modèle (449 Mo)" }).click();
-  await expect(page.locator(".search-mode .download-text")).toHaveText("224 Mo sur 449 Mo (50 %)");
-  await expect(page.locator(".search-mode progress")).toHaveJSProperty("value", 50);
+  await ideas(page).getByRole("button", { name: "Ouvrir Réglages > Index" }).click();
+  const settings = page.getByRole("dialog", { name: "Réglages" });
+  await expect(settings.getByRole("tab", { name: "Index" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await settings.getByRole("button", { name: "Télécharger « E5 petit »" }).click();
+  await expect(settings.locator(".download-text").first()).toHaveText("224 Mo sur 449 Mo (50 %)");
 
-  // Le téléchargement fini, le mode s'active ; le calcul commence, la recherche le dit.
+  // Le téléchargement fini, le calcul commence : la colonne le dit.
   await page.evaluate(() => window.backend.meaning.finishDownload());
-  await expect(mode(page, "Par le sens")).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".search-mode-note")).toHaveText("Calcul du sens : 1 / 3 segments");
-  await expect(page.locator(".search-notice")).toContainText("pas encore calculé");
+  await settings.getByRole("button", { name: "Fermer" }).click();
+  await field(page).fill("dessert ");
+  await expect(page.locator(".ideas-compute")).toHaveText("Calcul du sens : 1 / 3 segments");
+  await expect(ideas(page).locator(".search-notice")).toContainText("pas encore calculé");
 
   // Le calcul fini, la recherche est refaite : les notes de même sens apparaissent.
   await page.evaluate(() => window.backend.meaning.finishComputing());
-  await expect(page.locator(".search-notice")).toHaveCount(0);
-  await expect(resultTitles(page)).toHaveText(["Tarte aux pommes", "Gâteau au yaourt"]);
-  await expect(page.locator(".search-excerpt").first()).toContainText("beurre dans une pâte");
-  await page.locator(".search-result", { hasText: "Gâteau au yaourt" }).click();
+  await expect(ideas(page).locator(".search-notice")).toHaveCount(0);
+  await expect(ideasTitles(page)).toHaveText(["Tarte aux pommes", "Gâteau au yaourt"]);
+  await expect(ideas(page).locator(".search-excerpt").first()).toContainText(
+    "beurre dans une pâte",
+  );
+  await ideas(page).locator(".search-result", { hasText: "Gâteau au yaourt" }).click();
   await waitForNote(page, "Gâteau au yaourt");
+  await expect(page.locator(".search-window")).toBeHidden();
+  await expect(field(page)).toHaveValue("");
 
   // Les notes proches de la note ouverte, un clic ouvre la note.
   const related = page.getByRole("navigation", { name: "Notes proches" });
@@ -68,7 +78,6 @@ test("télécharger le modèle depuis la recherche, chercher par le sens, ouvrir
 
   // L'autre modèle, choisi dans les réglages : il n'est pas téléchargé, la recherche le dit.
   await page.getByRole("button", { name: "Réglages" }).click();
-  const settings = page.getByRole("dialog", { name: "Réglages" });
   await settings.getByRole("tab", { name: "Index" }).click();
   await expect(settings.locator(".meaning-model", { hasText: "E5 petit" })).toContainText(
     "utilisé",
@@ -81,34 +90,29 @@ test("télécharger le modèle depuis la recherche, chercher par le sens, ouvrir
     "non téléchargé",
   );
   await settings.getByRole("button", { name: "Fermer" }).click();
-  await expect(page.locator(".search-mode-note")).toContainText("Le modèle « E5 grand »");
-  await expect(
-    page.getByRole("button", { name: "Télécharger le modèle (2 136 Mo)" }),
-  ).toBeVisible();
-  await expect(mode(page, "Par le sens")).toBeDisabled();
+  await field(page).fill("dessert");
+  await expect(ideas(page).locator(".search-notice")).toContainText("Le modèle « E5 grand »");
 });
 
-test("annuler le téléchargement remet l'offre, et le dit", async ({ page }) => {
-  await launch(page);
-  await page.getByRole("button", { name: "Télécharger le modèle (449 Mo)" }).click();
-  await page.getByRole("button", { name: "Annuler le téléchargement" }).click();
-  await expect(page.locator(".toast-error")).toHaveText("Téléchargement annulé.");
-  await expect(page.getByRole("button", { name: "Télécharger le modèle (449 Mo)" })).toBeVisible();
-  await expect(mode(page, "Par le sens")).toBeDisabled();
-});
-
-test("« Rechercher par le sens » du menu choisit ce mode et place le curseur dans la recherche", async ({
+test("avec le sens prêt, les deux colonnes répondent à la même recherche, chacune à sa façon", async ({
   page,
 }) => {
   await launch(page, { meaning: "ready" });
-  await expect(mode(page, "Par le sens")).toBeEnabled();
-  await choose(page, "search-by-meaning");
-  await expect(mode(page, "Par le sens")).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("searchbox", { name: "Rechercher" })).toBeFocused();
-  await page.keyboard.type("dessert");
-  await expect(resultTitles(page)).toHaveText(["Tarte aux pommes", "Gâteau au yaourt"]);
-  await mode(page, "Par les mots").click();
-  await expect(page.getByText("Aucune note trouvée")).toBeVisible();
+  await field(page).fill("dessert");
+  await expect(page.locator(".match-results")).toHaveText("Aucune note trouvée");
+  await expect(ideasTitles(page)).toHaveText(["Tarte aux pommes", "Gâteau au yaourt"]);
+  await field(page).fill("pain");
+  await expect(page.locator(".match-results .search-result .note-title")).toHaveText(["Courses"]);
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".search-window")).toBeHidden();
+});
+
+test("« Rechercher dans toutes les notes » du menu place le curseur dans la recherche", async ({
+  page,
+}) => {
+  await launch(page, { meaning: "ready" });
+  await choose(page, "search-workspace");
+  await expect(field(page)).toBeFocused();
 });
 
 test("les réglages montrent l'index de sens, le reconstruisent, et suppriment un modèle après confirmation", async ({
