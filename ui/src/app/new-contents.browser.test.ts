@@ -4,6 +4,7 @@ import { createNewContents } from "./new-contents";
 
 const calls: string[] = [];
 let kind = "workspace";
+let active: string | null = null;
 const dialog = document.createElement("dialog");
 document.body.append(dialog);
 
@@ -14,6 +15,10 @@ function setup() {
         calls.push(`carte ${folder} ${title}`);
         return { path: "carte.md" };
       },
+      createCanvas: async (folder: string, title: string): Promise<SavedNote> => {
+        calls.push(`canvas ${folder} ${title}`);
+        return { path: "plan.canvas" };
+      },
       createResearchNotebook: async () => ({ path: "cahier.md" }),
       addEntry: async () => ({ anchor: "", label: "", text: "", line: 0 }),
     },
@@ -21,7 +26,7 @@ function setup() {
     columns: {
       current: () => ({}),
       panes: () => new Map(),
-      activePane: () => ({}),
+      activePane: () => ({ note: () => active }),
       openNote: async (path: string) => void calls.push(`ouvrir ${path}`),
     },
     workspace: { refreshList: async () => void calls.push("liste") },
@@ -41,6 +46,7 @@ const answer = (name: string | null) => {
 beforeEach(() => {
   calls.length = 0;
   kind = "workspace";
+  active = null;
   if (dialog.open) dialog.close();
 });
 
@@ -72,6 +78,40 @@ describe("nouvelle carte mentale", () => {
     kind = "welcome";
     await setup().createMindMap();
     expect(dialog.open).toBe(false);
+    expect(calls).toEqual([]);
+  });
+});
+
+describe("nouveau canvas", () => {
+  it("demande le nom, crée le canvas dans le dossier donné, la liste est relue et il s'ouvre", async () => {
+    const creating = setup().createCanvas("Clic");
+    answer("Plan");
+    await creating;
+    expect(calls).toEqual(["canvas Clic Plan", "liste", "ouvrir plan.canvas"]);
+  });
+
+  it("sans dossier donné, c'est celui du fichier actif, à défaut le dossier affiché", async () => {
+    active = "Notes/Projet/idee.md";
+    const first = setup().createCanvas();
+    answer("Plan");
+    await first;
+    expect(calls[0]).toBe("canvas Notes/Projet Plan");
+    calls.length = 0;
+    active = null;
+    const second = setup().createCanvas();
+    answer("Plan");
+    await second;
+    expect(calls[0]).toBe("canvas Idees Plan");
+  });
+
+  it("refuse un nom vide, Échap annule, rien hors d'un espace de travail", async () => {
+    const creating = setup().createCanvas();
+    answer(" ");
+    await vi.waitFor(() => expect(dialog.open).toBe(true));
+    answer(null);
+    await creating;
+    kind = "welcome";
+    await setup().createCanvas();
     expect(calls).toEqual([]);
   });
 });

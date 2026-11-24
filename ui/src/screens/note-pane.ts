@@ -6,6 +6,7 @@ import { createEditor, type Editor } from "../editor/editor";
 import type { OpenNoteLink } from "../editor/links/note-links";
 import { lineStart } from "../state/research-notebook";
 import { renderBacklinks } from "./backlinks-view";
+import { type CanvasDeps, type CanvasPane, createCanvasPane } from "./canvas-pane";
 import { createMindMapPane, type MindMapBackend, type MindMapPane } from "./mind-map-pane";
 import type { ColumnParts } from "./columns-view";
 import { renderRelatedNotes } from "./related-view";
@@ -59,6 +60,8 @@ export interface PaneOptions {
   readonly notebook?: NotebookActions;
   /** Sans elles, aucune liste de notes proches n'est montrée. */
   readonly related?: RelatedNotes;
+  /** Sans lui, un canvas reste du texte (fiche 0052). */
+  readonly canvas?: CanvasDeps;
 }
 
 export interface Pane {
@@ -76,6 +79,8 @@ export interface Pane {
   forget(): void;
   /** Une carte mentale montrée : choisit son nœud de ce chemin (`1.0.2`), ses ancêtres dépliés, la vue centrée sur lui. */
   revealNode(node: string): void;
+  /** Le canvas montré, s'il y en a un (fiche 0052). */
+  canvasPane(): CanvasPane | null;
   /** Montre les liens entrants de la note ; une réponse arrivée pour une autre note est ignorée. */
   showBacklinks(): Promise<void>;
   /** Montre les notes proches de la note, ou cache la liste si elle n'est pas demandée. */
@@ -94,6 +99,7 @@ class NotePane implements Pane, Viewer {
   readonly editor: Editor;
   private shown: string | null = null;
   private readonly map: MindMapPane | null;
+  private readonly canvas: CanvasPane | null;
 
   constructor(
     private readonly parts: ColumnParts,
@@ -117,6 +123,15 @@ class NotePane implements Pane, Viewer {
             resolveImage: options.resolveImage,
           })
         : null;
+    this.canvas = options.canvas
+      ? createCanvasPane(parts.element, {
+          deps: options.canvas,
+          openNote: (path) => events.openNote(path),
+          error: events.error,
+          notice: (message) => events.show?.(message, "info"),
+          resolveImage: options.resolveImage,
+        })
+      : null;
     this.editor = createEditor(
       parts.element,
       (content, changes) => shared.typed(this, changes, content),
@@ -159,9 +174,10 @@ class NotePane implements Pane, Viewer {
     await this.showMap();
   }
 
-  /** La carte mentale prend la place de l'éditeur si la note en est une. */
+  /** La carte mentale ou le canvas prend la place de l'éditeur si le fichier en est un. */
   private async showMap(): Promise<void> {
     try {
+      await this.canvas?.sync(this.shown);
       await this.map?.sync(this.shown, this.editor.content());
     } catch (error) {
       this.options.events.error(error);
@@ -178,6 +194,10 @@ class NotePane implements Pane, Viewer {
 
   revealNode(node: string): void {
     this.map?.reveal(node);
+  }
+
+  canvasPane(): CanvasPane | null {
+    return this.canvas;
   }
 
   async showBacklinks(): Promise<void> {
@@ -212,6 +232,7 @@ class NotePane implements Pane, Viewer {
   destroy(): void {
     void this.options.shared.leave(this).catch(this.options.events.error);
     this.map?.destroy();
+    this.canvas?.destroy();
     this.editor.destroy();
   }
 

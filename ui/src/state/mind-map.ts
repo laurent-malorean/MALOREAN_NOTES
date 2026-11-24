@@ -1,23 +1,12 @@
 // Carte mentale (fiche 0050) : l'arbre des nœuds et ses changements, des fonctions pures. L'écran
 // enregistre l'arbre entier après chaque changement ; Rust seul connaît le format du fichier.
 import type { MindMapItem, MindNodeItem, PlaceItem } from "../bridge";
+import { PALETTE } from "./palette";
 
 /** Le chemin d'un nœud : ses rangs depuis 0 (`[1, 0, 2]` s'écrit `1.0.2`). */
 export type NodePath = readonly number[];
 
-/** Les 10 couleurs de la palette, dans l'ordre des menus. */
-export const PALETTE = [
-  "rouge",
-  "orange",
-  "jaune",
-  "vert",
-  "turquoise",
-  "bleu",
-  "violet",
-  "rose",
-  "marron",
-  "ardoise",
-] as const;
+export { PALETTE };
 
 /** L'écart vertical par défaut entre deux nœuds racines. */
 const ROOT_ROW = 160;

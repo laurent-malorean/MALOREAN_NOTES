@@ -36,6 +36,7 @@ const ignore: ScreenActions = {
   fold: () => {},
   newNote: () => {},
   newMindMap: () => {},
+  newCanvas: () => {},
   newNotebook: () => {},
   restoreNote: () => {},
   restoreFolder: () => {},

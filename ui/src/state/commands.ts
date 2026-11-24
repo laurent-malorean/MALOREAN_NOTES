@@ -9,6 +9,10 @@ export type CommandId =
   | "daily-note"
   | "new-research-notebook"
   | "new-mind-map"
+  | "new-canvas"
+  | "canvas-fit"
+  | "canvas-go-to-group"
+  | "canvas-export-image"
   | "new-folder"
   | "search-workspace"
   | "find-in-note"
@@ -72,6 +76,10 @@ export const COMMANDS: readonly Command[] = [
   { id: "daily-note", label: "Note du jour", shortcut: "Cmd+Maj+J" },
   { id: "new-research-notebook", label: "Nouveau cahier de recherche" },
   { id: "new-mind-map", label: "Nouvelle carte mentale" },
+  { id: "new-canvas", label: "Canvas : créer un canvas" },
+  { id: "canvas-fit", label: "Canvas : tout voir" },
+  { id: "canvas-go-to-group", label: "Canvas : aller à un groupe" },
+  { id: "canvas-export-image", label: "Canvas : exporter en image" },
   { id: "new-folder", label: "Nouveau dossier" },
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },

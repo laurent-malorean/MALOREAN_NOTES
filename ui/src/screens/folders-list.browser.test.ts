@@ -25,6 +25,7 @@ function column(
     fold: (path) => calls.push(["fold", path]),
     newNote: (folder) => calls.push(["newNote", folder]),
     newMindMap: (folder) => calls.push(["newMindMap", folder]),
+    newCanvas: (folder) => calls.push(["newCanvas", folder]),
     newNotebook: (folder) => calls.push(["newNotebook", folder]),
   };
   renderFoldersList(container, "Notes", folders, selected, actions, folded);
@@ -263,12 +264,13 @@ describe("le menu d'un dossier", () => {
 
   const entries = () => [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
 
-  it("le clic droit sur un dossier propose de créer, dans l'ordre, une note, une carte mentale, un cahier de recherche, puis de le placer dans la corbeille", () => {
+  it("le clic droit sur un dossier propose de créer, dans l'ordre, une note, une carte mentale, un canvas, un cahier de recherche, puis de le placer dans la corbeille", () => {
     const { container, calls } = column();
     expect(rightClick(item(container, "Travail")).defaultPrevented).toBe(true);
     expect(entries().map((e) => e.textContent)).toEqual([
       "Nouvelle note",
       "Nouvelle carte mentale",
+      "Nouveau canvas",
       "Nouveau cahier de recherche",
       "Placer dans la corbeille",
     ]);
@@ -276,17 +278,19 @@ describe("le menu d'un dossier", () => {
     expect(calls).toEqual([
       ["newNote", "Travail"],
       ["newMindMap", "Travail"],
+      ["newCanvas", "Travail"],
       ["newNotebook", "Travail"],
       ["trashFolder", "Travail"],
     ]);
   });
 
-  it("la racine propose les trois créations, mais pas la corbeille", () => {
+  it("la racine propose les quatre créations, mais pas la corbeille", () => {
     const { container, calls } = column();
     expect(rightClick(item(container, "")).defaultPrevented).toBe(true);
     expect(entries().map((e) => e.textContent)).toEqual([
       "Nouvelle note",
       "Nouvelle carte mentale",
+      "Nouveau canvas",
       "Nouveau cahier de recherche",
     ]);
     entries()[1]?.click();

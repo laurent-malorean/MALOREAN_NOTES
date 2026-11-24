@@ -41,3 +41,11 @@ L'aide d'Obsidian ne décrit pas la recherche dans un canvas ; le canvas est don
 
 - Le premier lancement de cette version indexe les `.canvas` déjà présents (ils étaient ignorés jusque-là).
 - Les `.canvas` apparaissent dans la liste des notes avec le type « Canvas ».
+
+## Écran (fait le 24/11)
+
+- **Colonne** : si le fichier montré se termine par `.canvas`, `screens/canvas-pane.ts` pose le canvas (`screens/canvas-view.ts`) à la place de l'éditeur de texte, caché mais gardé (historique, changements venus d'ailleurs : `followDisk` relit le canvas et le reprend s'il n'y a rien à enregistrer). Le pont (`read_canvas`, `save_canvas`) et les fenêtres (choix d'une note, saisie, groupe) arrivent par `app/canvas-host.ts`.
+- **Modules** : état pur testé sans navigateur (`state/canvas-model|geometry|snap|align|history|viewport|image.ts`) ; dessin des cartes (`canvas-cards.ts`), des flèches (`canvas-arrows.ts`), gestes à la souris (`canvas-gestures.ts`), saisie sur place (`canvas-edit.ts`), menus et actions (`canvas-menus.ts`, `canvas-actions.ts`), boutons (`canvas-controls.ts`, `canvas-selection-bar.ts`), image (`canvas-image.ts`). Les couleurs viennent de `--palette-<nom>` ; une couleur hexadécimale du fichier hors palette est montrée telle quelle.
+- **Rendu** : les groupes sont dessinés sous les flèches et les autres cartes quel que soit leur rang dans le fichier (le rang du fichier, lui, suit § 7.3 : une carte sélectionnée ou déplacée passe en fin de tableau). Très dézoomé (sous 25 %), une carte n'est plus qu'un rectangle avec une icône.
+- **Image PNG** : même recette que la carte mentale (`foreignObject` couvrant toute l'image à l'origine, sans `x`/`y`/`viewBox` ; flèches par la transformation SVG) ; un test relit le PNG et vérifie la taille du cadre (marge de 40 points) et que chaque carte a sa zone dessinée.
+- **Média** : l'aide d'Obsidian parle de médias de l'espace de travail ; sans liste des fichiers de l'espace, le média est choisi sur le Mac et joint au canvas comme la pièce jointe d'une note (`<nom>.assets/`).

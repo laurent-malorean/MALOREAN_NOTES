@@ -16,6 +16,8 @@ import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
 import type { EffortItem } from "./generated/EffortItem";
 import type { EntryItem } from "./generated/EntryItem";
+import type { CanvasArrowItem } from "./generated/CanvasArrowItem";
+import type { CanvasCardItem } from "./generated/CanvasCardItem";
 import type { CanvasFileItem } from "./generated/CanvasFileItem";
 import type { CanvasItem } from "./generated/CanvasItem";
 import type { MindMapItem } from "./generated/MindMapItem";
@@ -67,6 +69,8 @@ export type {
   ClaudeModelItem,
   EffortItem,
   EntryItem,
+  CanvasArrowItem,
+  CanvasCardItem,
   CanvasFileItem,
   CanvasItem,
   MindMapItem,
