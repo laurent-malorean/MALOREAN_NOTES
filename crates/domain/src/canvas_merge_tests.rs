@@ -121,3 +121,12 @@ fn unknown_root_properties_follow_the_side_that_changed_them() {
     assert_eq!(Canvas::merged(&base, &base, &theirs).extra, theirs.extra);
     assert_eq!(Canvas::merged(&base, &theirs, &base).extra, theirs.extra);
 }
+
+#[test]
+fn an_arrow_to_a_deleted_card_goes_even_when_other_cards_remain() {
+    let base = canvas(&[("a", 0), ("b", 0), ("c", 0)], &[("e", "a", "b")]);
+    let mine = canvas(&[("a", 0), ("c", 0)], &[]);
+    let merged = Canvas::merged(&base, &mine, &base);
+    assert_eq!(cards(&merged), pairs(&[("a", 0), ("c", 0)]));
+    assert!(merged.arrows.is_empty());
+}

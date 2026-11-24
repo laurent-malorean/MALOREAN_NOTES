@@ -92,3 +92,26 @@ fn an_error_says_where_it_is() {
         "valeur attendue (caractère 1)"
     );
 }
+
+#[test]
+fn nesting_is_limited_for_arrays_and_for_objects() {
+    let arrays = |n: usize| format!("{}{}", "[".repeat(n), "]".repeat(n));
+    let objects = |n: usize| format!("{}1{}", "{\"a\":".repeat(n), "}".repeat(n));
+    assert!(Json::parse(&arrays(129)).is_ok());
+    assert!(Json::parse(&arrays(130)).is_err());
+    assert!(Json::parse(&objects(128)).is_ok());
+    assert!(Json::parse(&objects(129)).is_err());
+}
+
+#[test]
+fn every_short_escape_is_decoded() {
+    assert_eq!(parsed(r#""\b\f\n\r\t""#).as_str(), Some("\u{8}\u{c}\n\r\t"));
+}
+
+#[test]
+fn spaces_and_commas_between_items_are_skipped() {
+    let json = parsed(" [ 1 ,\n2\t, \r\n 3 ] ");
+    assert_eq!(json.to_compact(), "[1,2,3]");
+    let object = parsed(" { \"a\" : [ 1 , 2 ] , \"b\" : \"x\" } ");
+    assert_eq!(object.to_compact(), r#"{"a":[1,2],"b":"x"}"#);
+}

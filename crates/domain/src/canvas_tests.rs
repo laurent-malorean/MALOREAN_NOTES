@@ -315,3 +315,50 @@ fn a_canvas_is_searched_by_the_texts_it_shows() {
     assert_eq!(searchable_text("pas du json"), "");
     assert_eq!(searchable_text("{}"), "");
 }
+
+#[test]
+fn a_rectangle_contains_another_up_to_its_edges_only() {
+    let outer = Rect {
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100,
+    };
+    let at = |x, y, width, height| Rect {
+        x,
+        y,
+        width,
+        height,
+    };
+    assert!(outer.contains(&at(20, 30, 10, 10)));
+    assert!(outer.contains(&at(50, 50, 50, 50)));
+    assert!(!outer.contains(&at(51, 50, 50, 50)));
+    assert!(!outer.contains(&at(50, 51, 50, 50)));
+    let small = Rect {
+        x: 2,
+        y: 2,
+        width: 3,
+        height: 3,
+    };
+    assert!(small.contains(&at(2, 2, 3, 3)));
+    assert!(!small.contains(&at(3, 3, 3, 3)));
+    assert!(!small.contains(&at(3, 2, 3, 3)));
+    assert!(!small.contains(&at(2, 3, 3, 3)));
+}
+
+#[test]
+fn the_gap_between_centers_counts_widths_and_heights() {
+    let from = Rect {
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+    };
+    let wide = Rect {
+        x: 5,
+        y: 100,
+        width: 100,
+        height: 10,
+    };
+    assert_eq!(deduce_sides(from, wide), (Side::Bottom, Side::Top));
+}
