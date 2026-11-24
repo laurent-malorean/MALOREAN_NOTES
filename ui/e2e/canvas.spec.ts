@@ -264,3 +264,59 @@ test("l'image PNG du canvas contient chaque carte dans un cadre à 40 points de 
   // Cartes de 0,0 à 1220,420 : cadre de 1300 × 500 points, deux pixels par point.
   expect(size).toEqual([2600, 1000]);
 });
+
+test("choisir une image l'ajoute au canvas : la carte affiche l'image, on peut tracer une flèche vers une autre carte", async ({
+  page,
+}) => {
+  const notes = {
+    "dessins.canvas": {
+      content: JSON.stringify({
+        nodes: [],
+        edges: [],
+      }),
+      modified: 10,
+    },
+  };
+  const params = new URLSearchParams({
+    notes: JSON.stringify(notes),
+    folders: "[]",
+    remembered: "1",
+    servedImages: "1",
+  });
+  await page.setViewportSize({ width: 1300, height: 800 });
+  await page.goto(`/e2e/app.html?${params.toString()}`);
+  await page.locator(".note-item", { hasText: "dessins" }).click();
+  await expect(page.locator(".canvas-view")).toBeVisible();
+  await page.evaluate(() => (document.documentElement.dataset.appearance = "dark"));
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Ajouter un média" }).click();
+  await (await chooser).setFiles("e2e/served-image.png");
+  const image = page.locator(".canvas-card img.canvas-card-image");
+  await expect(image).toBeVisible();
+  await expect
+    .poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth))
+    .toBeGreaterThan(0);
+  await expect
+    .poll(() => saved(page, "dessins.canvas"))
+    .toContain('"file": "dessins.assets/served-image.png');
+  // Pas d'erreur affichée.
+  await expect(page.locator(".status")).not.toContainText("erreur");
+  // Une autre carte, à gauche de l'image, puis une flèche de l'image vers elle.
+  await page.locator(".canvas-surface").dblclick({ position: { x: 130, y: 560 } });
+  await page.keyboard.type("Cible");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".canvas-text-body")).toHaveText("Cible");
+  const from = page.locator(".canvas-card:has(img.canvas-card-image)");
+  const fromBox = await boxOf(page, ".canvas-card:has(img.canvas-card-image)");
+  await page.mouse.move(fromBox.x + fromBox.width / 2, fromBox.y + fromBox.height / 2);
+  const dot = await from.locator(".canvas-link-dot-right").boundingBox();
+  if (dot === null) throw new Error("le rond de la flèche n'est pas affiché");
+  const target = await boxOf(page, ".canvas-card-text");
+  await page.mouse.move(dot.x + dot.width / 2, dot.y + dot.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + 20, target.y + target.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.locator(".canvas-arrow-head")).toHaveCount(1);
+  await expect.poll(() => saved(page, "dessins.canvas")).toContain('"toNode"');
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/canvas-image-corrigee.png` });
+});

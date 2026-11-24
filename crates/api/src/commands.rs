@@ -3,9 +3,9 @@
 use std::sync::Arc;
 
 use application::use_cases::{AttachmentSource, LinkDestination};
+use base64::Engine;
 use domain::WebAddress;
-use percent_encoding::percent_decode_str;
-use tauri::ipc::{Invoke, InvokeBody, Request};
+use tauri::ipc::Invoke;
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_opener::OpenerExt;
 
@@ -404,46 +404,35 @@ pub async fn empty_trash(session: SharedSession<'_>) -> Result<(), ApiError> {
     in_background(move || session.empty_trash()).await
 }
 
-/// En-têtes d'une pièce jointe envoyée par l'interface, encodés comme une adresse (`%XX`).
-/// Le chemin de la note qui la reçoit :
-pub const NOTE_HEADER: &str = "x-note";
-/// Le nom d'un fichier glissé :
-pub const FILE_NAME_HEADER: &str = "x-file-name";
-/// Le type d'un contenu collé (`image/png`…), quand aucun nom n'est donné :
-pub const MEDIA_TYPE_HEADER: &str = "x-media-type";
-
-fn header(request: &Request<'_>, name: &str) -> Option<String> {
-    let value = request.headers().get(name)?.to_str().ok()?;
-    Some(percent_decode_str(value).decode_utf8_lossy().into_owned())
-}
-
-/// Joint à une note un fichier collé ou glissé, reçu tel quel (octets bruts) ; rend le lien
-/// Markdown à insérer. La note est dans l'en-tête [`NOTE_HEADER`], le nom du fichier glissé
-/// dans [`FILE_NAME_HEADER`], ou le type du contenu collé dans [`MEDIA_TYPE_HEADER`].
+/// Joint à une note un fichier collé ou glissé ; rend le lien Markdown à insérer. Le contenu
+/// arrive en base64 dans des arguments JSON, jamais en corps brut avec des en-têtes : le corps
+/// brut se perd quand Tauri bascule sur `postMessage` et WebKit peut tronquer un gros corps.
+/// `file_name` est le nom d'un fichier glissé ou choisi, `media_type` le type d'un contenu collé
+/// (`image/png`…), donné quand il n'y a pas de nom.
 ///
 /// # Errors
 ///
-/// Le message de l'erreur, prêt à afficher : voir [`Session::attach_file`]. S'y ajoute une
-/// requête incomplète (contenu ou en-tête manquant).
+/// Le message de l'erreur, prêt à afficher : voir [`Session::attach_file`]. S'y ajoutent un
+/// contenu vide ou qui n'est pas du base64 valide (reçu en partie), et ni nom ni type.
 #[tauri::command]
 pub async fn attach_file(
-    request: Request<'_>,
     session: SharedSession<'_>,
+    note: String,
+    file_name: Option<String>,
+    media_type: Option<String>,
+    content: String,
 ) -> Result<AttachedFile, ApiError> {
-    let incomplete = || ApiError::incomplete_attachment();
-    let InvokeBody::Raw(bytes) = request.body() else {
-        return Err(incomplete());
-    };
-    let bytes = bytes.clone();
-    let note = header(&request, NOTE_HEADER).ok_or_else(incomplete)?;
-    let file_name = header(&request, FILE_NAME_HEADER);
-    let media_type = header(&request, MEDIA_TYPE_HEADER);
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(content)
+        .ok()
+        .filter(|bytes| !bytes.is_empty())
+        .ok_or_else(ApiError::incomplete_attachment)?;
     let session = Arc::clone(&session);
     in_background(move || {
         let source = match (&file_name, &media_type) {
             (Some(file_name), _) => AttachmentSource::Dropped { file_name },
             (None, Some(media_type)) => AttachmentSource::Pasted { media_type },
-            (None, None) => return Err(incomplete()),
+            (None, None) => return Err(ApiError::incomplete_attachment()),
         };
         session.attach_file(&note, source, &bytes)
     })

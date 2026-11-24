@@ -257,22 +257,20 @@ export type AttachmentOrigin =
   | { readonly kind: "pasted"; readonly mediaType: string }
   | { readonly kind: "dropped"; readonly fileName: string };
 
-/** En-têtes d'une pièce jointe, encodés comme une adresse ; mêmes noms côté Rust. */
-const NOTE_HEADER = "x-note";
-const FILE_NAME_HEADER = "x-file-name";
-const MEDIA_TYPE_HEADER = "x-media-type";
-
-/** Joint un fichier à la note `path` (envoyé tel quel, en octets) ; rend le lien à insérer. */
+/**
+ * Joint un fichier à la note `path` ; rend le lien à insérer. Les octets partent en base64 dans
+ * des arguments JSON, jamais en corps brut avec des en-têtes : le corps brut se perd quand Tauri
+ * bascule sur `postMessage` et WebKit peut tronquer un gros corps.
+ */
 export async function attachFile(
   path: string,
   file: Blob,
   origin: AttachmentOrigin,
 ): Promise<AttachedFile> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  const headers: Record<string, string> = { [NOTE_HEADER]: encodeURIComponent(path) };
-  if (origin.kind === "dropped") headers[FILE_NAME_HEADER] = encodeURIComponent(origin.fileName);
-  else headers[MEDIA_TYPE_HEADER] = encodeURIComponent(origin.mediaType);
-  return invoke<AttachedFile>("attach_file", bytes, { headers });
+  const content = base64(new Uint8Array(await file.arrayBuffer()));
+  const name =
+    origin.kind === "dropped" ? { fileName: origin.fileName } : { mediaType: origin.mediaType };
+  return invoke<AttachedFile>("attach_file", { note: path, ...name, content });
 }
 
 /**

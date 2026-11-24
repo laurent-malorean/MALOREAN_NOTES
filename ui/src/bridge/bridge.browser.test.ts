@@ -330,54 +330,31 @@ describe("pont vers Rust : corbeille", () => {
   });
 });
 
-interface SentFile {
-  readonly command: string;
-  readonly bytes: unknown;
-  readonly headers: unknown;
-}
-
-/** Note ce que le pont envoie, en-têtes compris (le simulateur de Tauri les ignore). */
-function recordSentFiles(answer: unknown): SentFile[] {
-  recordCalls(answer);
-  const sent: SentFile[] = [];
-  type Invoke = (command: string, args: unknown, options?: { headers?: unknown }) => unknown;
-  const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
-    .__TAURI_INTERNALS__;
-  const invoke = internals.invoke;
-  internals.invoke = (command, bytes, options) => {
-    sent.push({ command, bytes, headers: options?.headers });
-    return invoke(command, bytes, options);
-  };
-  return sent;
-}
-
 describe("pont vers Rust : pièces jointes", () => {
   const link = { markdown: "![](a.assets/x.png)" };
 
-  it("envoie un fichier glissé en octets, avec la note et son nom encodés", async () => {
-    const sent = recordSentFiles(link);
+  it("envoie un fichier glissé en base64 dans des arguments JSON, sans corps brut ni en-tête", async () => {
+    const calls = recordCalls(link);
     const file = new File(["PDF"], "billet d'été.pdf");
     const attached = await bridge.attachFile("Voyages/été.md", file, {
       kind: "dropped",
       fileName: file.name,
     });
     expect(attached).toEqual(link);
-    expect(sent).toEqual([
+    expect(calls).toEqual([
       {
         command: "attach_file",
-        bytes: new Uint8Array([80, 68, 70]),
-        headers: {
-          "x-note": "Voyages%2F%C3%A9t%C3%A9.md",
-          "x-file-name": "billet%20d'%C3%A9t%C3%A9.pdf",
-        },
+        args: { note: "Voyages/été.md", fileName: "billet d'été.pdf", content: "UERG" },
       },
     ]);
   });
 
   it("envoie un contenu collé avec son type", async () => {
-    const sent = recordSentFiles(link);
+    const calls = recordCalls(link);
     await bridge.attachFile("a.md", new Blob(["x"]), { kind: "pasted", mediaType: "image/png" });
-    expect(sent[0]?.headers).toEqual({ "x-note": "a.md", "x-media-type": "image%2Fpng" });
+    expect(calls).toEqual([
+      { command: "attach_file", args: { note: "a.md", mediaType: "image/png", content: "eA==" } },
+    ]);
   });
 
   it("demande d'ouvrir une pièce jointe de la note", async () => {

@@ -3,7 +3,7 @@
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { type FakeClaude, fakeClaude, fakeClaudeState } from "./fake-claude";
-import { type ExportImageArgs, attachFile, keepImage } from "./fake-attachments";
+import { type AttachArgs, type ExportImageArgs, attachFile, keepImage } from "./fake-attachments";
 import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
@@ -534,14 +534,6 @@ const windowCommands: Record<string, (args: Record<string, unknown>) => unknown>
   ...fakeClaude(backend, (path, content) => backend.changeOutside(path, content)),
 };
 
-/** Les en-têtes de la dernière commande : le simulateur de Tauri ne les transmet pas. */
-let lastHeaders: Record<string, string> = {};
-
-const header = (name: string) => {
-  const value = lastHeaders[name];
-  return value === undefined ? undefined : decodeURIComponent(value);
-};
-
 commands.open_link_target = ({ target = "" }) => void backend.opened.push(target);
 commands.open_web_address = ({ address = "" }) => void backend.opened.push(address);
 
@@ -551,7 +543,7 @@ mockIPC(
     backend.calls.push(command);
     const windowCommand = windowCommands[command];
     if (windowCommand) return windowCommand((args ?? {}) as Record<string, unknown>);
-    if (command === "attach_file") return attachFile(backend, header, args as Uint8Array);
+    if (command === "attach_file") return attachFile(backend, args as unknown as AttachArgs);
     if (command === "export_image") return keepImage(backend, args as unknown as ExportImageArgs);
     const handler = commands[command];
     if (!handler) throw { message: `commande inconnue : ${command}` };
@@ -562,15 +554,12 @@ mockIPC(
 
 mockConvertFileSrc("macos");
 
-type Invoke = (
-  command: string,
-  args: unknown,
-  options?: { headers?: Record<string, string> },
-) => unknown;
-const internals = (window as unknown as { __TAURI_INTERNALS__: { invoke: Invoke } })
-  .__TAURI_INTERNALS__;
-const forward = internals.invoke;
-internals.invoke = (command, args, options) => {
-  lastHeaders = options?.headers ?? {};
-  return forward(command, args, options);
-};
+/**
+ * Parcours des images : l'adresse d'un fichier de l'espace de travail devient celle d'une vraie
+ * image servie par le serveur des parcours, pour vérifier l'affichage (largeur naturelle).
+ */
+if (params.get("servedImages") === "1")
+  (
+    window as unknown as { __TAURI_INTERNALS__: { convertFileSrc: (path: string) => string } }
+  ).__TAURI_INTERNALS__.convertFileSrc = (path) =>
+    `/e2e/served-image.png?path=${encodeURIComponent(path)}`;
