@@ -1,0 +1,112 @@
+# Canvas : comportement
+
+Spécification fonctionnelle de l'usage d'un canvas dans MALOREAN Notes. **Principe décidé par l'utilisateur le 24/11 : on suit Obsidian**, rien n'est inventé. Ce document reprend le comportement décrit par l'aide officielle d'Obsidian (page « Canvas », <https://obsidian.md/help/plugins/canvas>), version bureau seulement. Le format du fichier est dans [canvas.md](canvas.md). Ce document se lit seul.
+
+Un canvas est un nouveau type de contenu, à côté des notes, des cahiers de recherche et des cartes mentales. C'est un fichier `.canvas` de l'espace de travail, au format ouvert JSON Canvas : il s'ouvre aussi dans Obsidian.
+
+## 1. Créer un canvas
+
+- Clic droit sur un dossier de l'espace de travail, puis **« Nouveau canvas »**. Le fichier est créé dans ce dossier.
+- Par la palette de commandes : **« Canvas : créer un canvas »** ; le fichier est créé dans le même dossier que le fichier actif.
+
+## 2. Ajouter des cartes
+
+La barre d'outils au bas du canvas porte trois boutons, qu'on sélectionne ou qu'on glisse sur le canvas :
+- le **fichier vierge** : une carte texte ;
+- le **document** : une note de l'espace de travail ;
+- l'**image** : un média de l'espace de travail.
+
+Autres façons, par type de carte :
+
+- **Carte texte** : aussi par double-clic sur le canvas. Son contenu est du Markdown (liens, blocs de code…, comme dans une note). Une carte texte n'apparaît pas dans les rétroliens tant qu'elle n'est pas convertie : clic droit, « Convertir en fichier… », saisir le nom, « Enregistrer ».
+- **Note** : clic droit sur le canvas, « Ajouter une note de l'espace de travail » ; ou glisser une note depuis la liste des notes. Pour n'en montrer qu'une partie : clic droit sur la carte, « Réduire à un titre… » ou « Réduire à un bloc… », puis choisir le titre ou le bloc.
+- **Média** : clic droit sur le canvas, « Ajouter un média de l'espace de travail » ; ou glisser un média depuis la liste. Images, audio, PDF et autres médias.
+- **Page web** : clic droit sur le canvas, « Ajouter une page web », saisir l'adresse, « Enregistrer » ; ou glisser une adresse depuis le navigateur. Pour l'ouvrir dans le navigateur : Cmd + clic sur le libellé de la carte, ou clic droit puis « Ouvrir le lien externe ». Menu de la carte : « Copier l'adresse », « Changer l'adresse… », « Recharger la page ».
+- **Dossier** : glisser un dossier ajoute tous ses fichiers.
+
+Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles ne sont pas reprises.
+
+## 3. Modifier, supprimer, remplacer
+
+- **Modifier** : double-clic sur une carte texte ou note ; on arrête en cliquant hors de la carte ou avec Échap. Autres moyens : clic droit puis « Modifier », ou « Modifier » dans les commandes de la sélection.
+- **Supprimer** : clic droit puis « Retirer » ; ou la touche Suppr (Retour arrière) ; ou « Retirer » dans les commandes de la sélection.
+- **Remplacer** (note ou média, par un élément du même type) : clic droit, « Changer le fichier », choisir le fichier.
+
+## 4. Sélection
+
+- Clic sur une carte, ou glisser un rectangle autour de plusieurs cartes.
+- Maj + clic ajoute ou retire une carte de la sélection.
+- Cmd + A sélectionne tout.
+- Pour faire défiler le contenu d'une carte, il faut d'abord la sélectionner.
+
+## 5. Déplacer, redimensionner, dupliquer, aligner
+
+- **Déplacer** : glisser une carte sélectionnée ; sélectionner une carte la met au premier plan. Maj pendant le glissement contraint le déplacement à une direction. Espace désactive l'accrochage.
+- **Dupliquer** : Option + glisser la sélection.
+- **Redimensionner** : glisser un bord quelconque. Espace désactive l'accrochage ; Maj conserve le rapport largeur/hauteur.
+- **Aligner et répartir** (au moins deux cartes sélectionnées, « Aligner » dans les commandes de la sélection) : aligner à gauche, au centre, à droite, en haut, au milieu, en bas ; disposer en ligne, en colonne, en grille ; répartir l'espace horizontal ou vertical ; justifier horizontalement ou verticalement.
+
+## 6. Flèches (connexions)
+
+- **Créer** : survoler un bord de carte jusqu'à voir un rond plein, puis glisser ce rond jusqu'au bord d'une autre carte. Relâcher dans le vide permet de créer une nouvelle carte à l'autre bout.
+- **Déconnecter** : survoler la ligne jusqu'à voir deux petits ronds, puis glisser un rond sans l'accrocher à une carte. Ou clic droit sur la ligne puis « Retirer » ; ou sélectionner la ligne puis Suppr.
+- **Reconnecter une extrémité** : glisser son rond vers une autre carte.
+- **Suivre une connexion** : clic droit près d'une extrémité, puis « Suivre la connexion » ; le canvas se centre sur la carte à l'autre bout.
+- **Sens** : par défaut, la flèche pointe vers la seconde carte. Sélectionner la ligne, puis « Sens de la ligne » : sans flèche, un sens (par défaut), deux sens.
+- **Étiquette** : double-clic sur la ligne, saisir le texte, puis Échap ou un clic sur le canvas. Ou « Modifier l'étiquette » (commandes de la sélection, ou clic droit). « Retirer l'étiquette » l'enlève.
+- **Couleur** : sélectionner des cartes ou des connexions, « Couleur » (icône palette), choisir une couleur.
+
+## 7. Groupes
+
+- **Groupe vide** : clic droit sur le canvas, « Créer un groupe ».
+- **Groupe avec des cartes** : sélectionner les cartes, clic droit sur l'une d'elles, « Créer un groupe ».
+- **Renommer** : double-clic sur le nom, Entrée pour valider.
+- **Arrière-plan** : sélectionner le groupe, « Définir l'arrière-plan », choisir une image de l'espace de travail. « Modifier l'arrière-plan » propose : remplacer, retirer, couvrir (`cover`), garder les proportions (`ratio`), répéter (`repeat`).
+- **Aller à un groupe** : commande « Canvas : aller à un groupe » ; elle liste les groupes et centre le canvas sur celui choisi.
+
+## 8. Menus du clic droit
+
+- **Sur le canvas** : ajouter une note, ajouter un média, ajouter une page web, créer un groupe.
+- **Sur une carte** : convertir en fichier, réduire à un titre, réduire à un bloc, changer le fichier, ouvrir le lien externe, modifier, retirer, zoomer sur la sélection ; pour une page web : copier l'adresse, changer l'adresse, recharger la page.
+- **Sur une ligne** : retirer, modifier l'étiquette, suivre la connexion.
+
+## 9. Navigation et zoom
+
+- **Déplacer la vue** : Espace + glisser ; ou le bouton central de la souris + glisser ; la molette déplace verticalement, Maj + molette horizontalement.
+- **Zoom** : Espace ou Cmd + molette ; ou les boutons « Zoomer » et « Dézoomer » en haut à droite.
+- **Tout voir** : bouton « Tout voir » ou Maj + 1.
+- **Zoom sur la sélection** : clic droit sur une carte sélectionnée, ou Maj + 2.
+- **Zoom initial** : bouton « Rétablir le zoom » en haut à droite.
+
+## 10. Réglages du canvas (icône engrenage)
+
+- **Accrocher à la grille** : au déplacement et au redimensionnement, selon la grille du fond.
+- **Accrocher aux objets** : aux cartes proches.
+- **Lecture seule** : empêche toute modification.
+
+## 11. Annuler et rétablir
+
+- **Annuler** : bouton « Annuler » à droite du canvas, ou Cmd + Z.
+- **Rétablir** : bouton « Rétablir », ou Cmd + Maj + Z (ou Cmd + Y).
+
+## 12. Exporter en image
+
+Commande **« Canvas : exporter en image »** (bureau). Options : « Zone » (canvas entier ou fenêtre seulement), « Zoom » (qualité, taille estimée affichée), « Afficher le logo » (activé par défaut), « Mode confidentiel » (masque tout le texte, désactivé par défaut). Nom proposé : le nom du canvas, en `.png`. Un canvas vide ne s'exporte pas.
+
+## 13. Intégrer un canvas dans une note
+
+Un canvas peut être intégré dans une note avec la syntaxe d'intégration de fichier habituelle.
+
+## 14. Ce que l'aide d'Obsidian ne dit pas
+
+Ces points ne sont pas décrits par la page d'aide. Ils se constatent dans Obsidian (ou se décident) avant d'être codés ; **rien n'est supposé** :
+
+- le rendu de la barre d'outils et la liste complète de ses boutons ;
+- les noms et les teintes des couleurs proposées ;
+- un raccourci pour créer une carte texte au clavier (seul le double-clic est indiqué) ;
+- le sens exact de « sans flèche », « un sens » et « deux sens » au-delà de leur nom ;
+- comment placer une carte dans un groupe sur bureau (l'aide ne le décrit que pour le mobile : glisser la carte dans la zone du groupe, et les cartes suivent le groupe quand on le déplace) ;
+- le comportement exact de la duplication avec Option (contrainte, accrochage) ;
+- l'aperçu mis en forme d'une note dans une carte ;
+- les raccourcis clavier autres que ceux cités ;
+- les limites de taille ou de nombre de cartes.
