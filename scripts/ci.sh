@@ -385,6 +385,7 @@ run_barrier() {
     scripts/test-ci-gate.sh
     scripts/test-ci-menage.sh
     scripts/test-ci-rejeu.sh
+    scripts/test-essai-application.sh
   fi
   if [ -f Cargo.toml ] && printf '%s\n' "$changed" | rust_touched; then rust=1; fi
   if [ -f ui/package.json ] && printf '%s\n' "$changed" | grep -q '^ui/'; then ui=1; fi

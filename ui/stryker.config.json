@@ -2,7 +2,14 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
-  "mutate": ["src/**/*.ts", "!src/**/*.test.ts", "!src/bridge/generated/**", "!src/main.ts"],
+  "mutate": [
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/bridge/generated/**",
+    "!src/main.ts",
+    "!src/essai/index.ts",
+    "!src/essai/scenarios/**"
+  ],
   "coverageAnalysis": "perTest",
   "concurrency": 4,
   "reporters": ["clear-text", "html"],

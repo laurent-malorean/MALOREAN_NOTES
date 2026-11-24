@@ -1,5 +1,4 @@
-// Assemblage de l'interface : crée chaque partie et les relie entre elles, sans logique.
-// Le fonctionnement vit dans les modules de chaque domaine, sous `app/` (doc/code.md).
+// Assemblage : crée chaque partie de l'interface et les relie, sans logique (le fonctionnement vit sous app/, doc/code.md).
 import * as bridge from "./bridge";
 import { createClaudeColumn } from "./app/claude-column";
 import { createOpenColumns } from "./app/columns";
@@ -148,3 +147,4 @@ bridge
   // La note du jour, une fois les colonnes retrouvées.
   .then((opened) => (opened ? workspace.open(opened).then(journal.atLaunch) : undefined))
   .catch(messages.error);
+if (__ESSAI__) void import("./essai").then((e) => e.start({ bridge, actions, workspace, columns }));

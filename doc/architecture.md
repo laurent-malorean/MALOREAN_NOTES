@@ -165,6 +165,10 @@ ui/node_modules/.bin/tauri build --bundles app --config '{"build":{"beforeBuildC
 
 Le résultat est `target/release/bundle/macos/MALOREAN Notes.app` (sans `.dmg`, plus long à faire). L'application n'est pas signée par Apple : au premier lancement, clic droit puis « Ouvrir ». Mesuré le 23/11/2026 : 23 secondes avec un dossier de compilation chaud.
 
+### Construire l'application d'essai
+
+`scripts/essai-application.sh` fait la même construction avec un autre identifiant (`com.malorean.notes.essai`, nom « MALOREAN Notes Essai »), la fonctionnalité Cargo `essai` et l'interface construite avec `MALOREAN_ESSAI_BUILD=1` (dossier `ui/dist-essai`) ; voir la fiche 0054. L'application livrée ne contient ni ce code ni ses commandes.
+
 ## Décisions ouvertes
 
 - Cibles de performance (taille d'espace de travail, temps d'ouverture, temps de recherche, mémoire). Premier relevé, 2 000 notes, index à jour : ouverture 10 ms, liste d'un dossier 0,8 ms, recherche 1,5 à 12 ms (fiche 0028) ; inchangés avec les types de contenu (fiches 0034 et 0037).

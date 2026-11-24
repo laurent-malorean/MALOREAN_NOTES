@@ -2,9 +2,16 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import { waitForTestFrame } from "./test-support/test-frame";
 
+// L'essai de l'application réelle (fiche 0054) : `MALOREAN_ESSAI_BUILD=1` construit l'interface avec le
+// code d'essai ; sans elle, `__ESSAI__` est faux et le code d'essai n'entre pas dans l'application.
+const essai =
+  (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env
+    .MALOREAN_ESSAI_BUILD === "1";
+
 // Port fixe : Tauri charge l'interface depuis cette adresse en développement.
 export default defineConfig({
   clearScreen: false,
+  define: { __ESSAI__: JSON.stringify(essai) },
   server: { port: 5173, strictPort: true },
   build: { target: "safari16", outDir: "dist" },
   test: {
@@ -38,7 +45,12 @@ export default defineConfig({
     coverage: {
       provider: "istanbul",
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.test.ts", "src/bridge/generated/**", "src/main.ts"],
+      // L'essai de l'application réelle (index.ts, scenarios/) ne se joue que dans la vraie fenêtre :
+      // sa logique (runner, png, conduct, wait) est testée, ses scénarios sont le test.
+      exclude: [
+        ...["src/**/*.test.ts", "src/bridge/generated/**", "src/main.ts"],
+        ...["src/essai/index.ts", "src/essai/scenarios/**"],
+      ],
       // main.ts (assemblage) est couvert par les parcours complets (e2e/).
       // Seuils qui ne baissent jamais : on les relève quand la couverture monte.
       thresholds: { lines: 98, statements: 98, branches: 94, functions: 98 },

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { attachedPath, createCanvasHost, hasCanvasBackend } from "./canvas-host";
+import { attachedPath, createCanvasHost, fileChoice, hasCanvasBackend } from "./canvas-host";
 
 const picker = document.createElement("dialog");
 const dialog = document.createElement("dialog");
@@ -110,6 +110,21 @@ describe("ce que le canvas demande à l'application", () => {
     backend.attachFile.mockClear();
     expect(await host().chooseMedia("plan.canvas")).toBeNull();
     expect(backend.attachFile).not.toHaveBeenCalled();
+  });
+
+  it("le choix du fichier peut être remplacé : le fichier donné est joint sans fenêtre", async () => {
+    const original = fileChoice.pick;
+    const given = new File(["x"], "donne.png", { type: "image/png" });
+    fileChoice.pick = async () => given;
+    try {
+      expect(await host().chooseMedia("plan.canvas")).toBe("plan.assets/b c.png");
+      expect(backend.attachFile).toHaveBeenLastCalledWith("plan.canvas", given, {
+        kind: "dropped",
+        fileName: "donne.png",
+      });
+    } finally {
+      fileChoice.pick = original;
+    }
   });
 
   it("copier écrit dans le presse-papiers", () => {

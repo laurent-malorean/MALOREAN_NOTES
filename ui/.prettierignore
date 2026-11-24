@@ -1,4 +1,5 @@
 dist/
+dist-essai/
 node_modules/
 src/bridge/generated/
 test-results/
@@ -7,3 +8,4 @@ coverage/
 reports/
 .stryker-tmp/
 .vitest/
+test-support/essai/
