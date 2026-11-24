@@ -55,6 +55,17 @@ expect_pass "documentation et un autre fichier"
 grep -q 'documentation Markdown seule' "$log" && fail "un fichier hors documentation doit rejouer la barrière normale"
 reset
 
+# 1b. longueur des fichiers : le dossier worktrees/ (les autres branches, chacune a sa propre barrière) n'est pas
+# contrôlé ; un fichier trop long ailleurs refuse la barrière
+mkdir -p worktrees/essai
+seq 601 > worktrees/essai/long.rs
+echo "x" > autre.txt
+expect_pass "un fichier trop long dans worktrees/ ne refuse pas la barrière"
+mv worktrees/essai/long.rs long.rs
+expect_fail "un fichier trop long hors de worktrees/ refuse la barrière"
+grep -q 'fichiers trop longs' "$log" || fail "le refus doit dire que des fichiers sont trop longs"
+reset
+
 # 2. options et verdict
 expect_fail "--complet n'existe plus" --complet
 grep -q -- '--livraison' "$log" || fail "le refus de --complet doit citer les options qui le remplacent"

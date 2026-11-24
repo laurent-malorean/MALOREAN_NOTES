@@ -164,8 +164,9 @@ $found"
 check_file_length() {
   step "Longueur des fichiers (${MAX_FILE_LINES} lignes au plus)"
   local too_long
+  # worktrees/ : les autres branches, chacune contrôlée par sa propre barrière dans son dossier.
   too_long=$(find . \( -name '*.rs' -o -name '*.ts' \) \
-      -not -path '*/target/*' -not -path '*/node_modules/*' -not -path '*/.vitest/*' -not -path '*/.stryker-tmp/*' -not -path "./${GENERATED_TYPES}/*" \
+      -not -path './worktrees/*' -not -path '*/target/*' -not -path '*/node_modules/*' -not -path '*/.vitest/*' -not -path '*/.stryker-tmp/*' -not -path "./${GENERATED_TYPES}/*" \
       -exec wc -l {} + \
     | awk -v max="$MAX_FILE_LINES" '$2 != "total" && $1 > max')
   [ -z "$too_long" ] || fail "fichiers trop longs :
