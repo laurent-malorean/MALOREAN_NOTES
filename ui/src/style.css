@@ -691,6 +691,17 @@ button {
 .editor .cm-line {
   padding: 0;
 }
+/* Cahier de recherche : une barre à gauche de chaque entrée, sur toute sa hauteur ; l'espace
+   avant l'entrée est en haut de sa première ligne, sans barre. */
+.editor .cm-line.entry-bar {
+  padding-left: var(--entry-bar-indent);
+  background: linear-gradient(var(--entry-bar), var(--entry-bar)) left bottom /
+    var(--entry-bar-width) 100% no-repeat;
+}
+.editor .cm-line.entry-bar-first {
+  padding-top: var(--entry-bar-gap);
+  background-size: var(--entry-bar-width) calc(100% - var(--entry-bar-gap));
+}
 .editor .cm-placeholder {
   color: var(--marker);
 }
