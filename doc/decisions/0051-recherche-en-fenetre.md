@@ -17,4 +17,4 @@
 
 ## Hauteur de la fenêtre (correctif)
 
-La fenêtre a une hauteur définie (70 % de l'écran au plus, jamais plus que la place sous le champ), pas une hauteur déduite de son contenu : dans le moteur du Mac, une colonne en `flex: 1` dans une boîte de hauteur automatique s'écrasait à zéro tant que les résultats n'étaient pas là, et la fenêtre devenait un filet transparent avec ses titres posés sur les onglets. Le parcours `ui/e2e/search-window-display.spec.ts` (thème sombre, 400 résultats, réponses lentes) garde cette hauteur, le fond, le premier plan et le défilement.
+La fenêtre a une hauteur définie (toute la place entre le champ, avec une marge, et le bas de l'écran, avec une marge), pas une hauteur déduite de son contenu : dans le moteur du Mac, une colonne en `flex: 1` dans une boîte de hauteur automatique s'écrasait à zéro tant que les résultats n'étaient pas là, et la fenêtre devenait un filet transparent avec ses titres posés sur les onglets. Le parcours `ui/e2e/search-window-display.spec.ts` (thème sombre, 400 résultats, réponses lentes) garde cette hauteur, le fond, le premier plan et le défilement.

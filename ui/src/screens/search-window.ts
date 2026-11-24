@@ -12,7 +12,10 @@ export interface SearchWindowActions extends SearchResultActions {
 }
 
 /** Espace, en pixels, entre le champ de recherche et la fenêtre. */
-const SPACE_UNDER_FIELD = 6;
+const SPACE_UNDER_FIELD = 24;
+
+/** Marge, en pixels, entre le bas de la fenêtre et le bas de l'écran. */
+const SPACE_AT_BOTTOM = 24;
 
 /** Le bouton qui mène au téléchargement du modèle, quand c'est lui qui manque. */
 const INDEX_SETTINGS_LABEL = "Ouvrir Réglages > Index";
@@ -66,7 +69,10 @@ export function renderSearchWindow(
   renderIdeas(layout.ideasResults, workspaceName, search.ideas, selected, actions);
   if (window.open) return;
   // Sous le champ, où que la bande du haut le range (elle passe à la ligne en fenêtre étroite).
-  window.style.top = `${layout.searchField.getBoundingClientRect().bottom + SPACE_UNDER_FIELD}px`;
+  const top = layout.searchField.getBoundingClientRect().bottom + SPACE_UNDER_FIELD;
+  window.style.top = `${top}px`;
+  // Elle descend jusqu'en bas de l'écran, en laissant une marge.
+  window.style.height = `calc(100vh - ${top}px - ${SPACE_AT_BOTTOM}px)`;
   // `show` donne le focus à la fenêtre ; le champ garde le sien pour qu'on continue de taper.
   const typing = document.activeElement as HTMLElement;
   window.show();

@@ -241,7 +241,7 @@ button {
   margin: 0;
   width: min(var(--search-window-width), 94vw);
   /* Hauteur définie (pas déduite du contenu) : WKWebView écrasait la fenêtre à zéro pendant le chargement. */
-  height: min(var(--search-window-height), calc(100vh - var(--search-window-top) - 1rem));
+  height: calc(100vh - var(--search-window-top) - 1.5rem);
   box-sizing: border-box;
   overflow: hidden;
   padding: 0;

@@ -106,7 +106,17 @@ describe("fenêtre de recherche : les deux colonnes", () => {
     layout.mainArea.hidden = false;
     draw({ query: "pain", results: null });
     const field = layout.searchField.getBoundingClientRect();
-    expect(layout.searchWindow.style.top).toBe(`${field.bottom + 6}px`);
+    expect(layout.searchWindow.style.top).toBe(`${field.bottom + 24}px`);
+  });
+
+  it("descend jusqu'en bas de l'écran, en laissant une marge", () => {
+    layout.mainArea.hidden = false;
+    draw({ query: "pain", results: null });
+    const field = layout.searchField.getBoundingClientRect();
+    // La feuille de style n'est pas chargée ici : on lit la hauteur demandée (haut + marge du bas retirés de l'écran).
+    const height = layout.searchWindow.style.height;
+    expect(height).toContain("100vh");
+    expect(height).toContain(`${field.bottom + 24 + 24}px`);
   });
 
   it("se ferme et se vide quand la recherche s'arrête", () => {
