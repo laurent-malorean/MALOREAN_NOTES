@@ -101,7 +101,8 @@
 }
 .canvas-card-file:has(.canvas-card-image) {
   background: transparent;
-  border-color: transparent;
+  /* Pas de bord : l'image remplit toute la carte, sans bande. */
+  border-width: 0;
 }
 .canvas-card-note,
 .canvas-card-page {

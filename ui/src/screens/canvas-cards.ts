@@ -50,6 +50,16 @@ function handles(): HTMLElement[] {
 
 export const isImage = (file: string) => IMAGE.test(file);
 
+/** Les dimensions naturelles de l'image à l'adresse `src`, une fois chargée ; `null` si elle ne charge pas. */
+export function naturalSize(src: string): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
 class Painter implements CardPainter {
   private readonly html = new Map<string, string>();
   private readonly painted = new WeakMap<HTMLElement, CanvasCardItem>();

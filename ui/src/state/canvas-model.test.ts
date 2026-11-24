@@ -6,6 +6,7 @@ import {
   broughtToFront,
   cardTitle,
   colored,
+  imageSize,
   isGroup,
   members,
   moved,
@@ -261,5 +262,32 @@ describe("zone", () => {
         { x: 20, y: 0, w: 10, h: 10 },
       ]),
     ).toEqual({ x: 0, y: 0, w: 30, h: 15 });
+  });
+});
+
+describe("canvas : taille d'une carte image neuve", () => {
+  it("garde les proportions de l'image, à 400 de large, hauteur arrondie", () => {
+    expect(imageSize({ width: 600, height: 300 })).toEqual({ width: 400, height: 200 });
+    expect(imageSize({ width: 300, height: 200 })).toEqual({ width: 400, height: 267 });
+    expect(imageSize({ width: 400, height: 450 })).toEqual({ width: 400, height: 450 });
+  });
+
+  it("plafonne la hauteur à 600 en réduisant la largeur", () => {
+    expect(imageSize({ width: 300, height: 600 })).toEqual({ width: 300, height: 600 });
+    expect(imageSize({ width: 100, height: 700 })).toEqual({ width: 86, height: 600 });
+    expect(imageSize({ width: 400, height: 600 })).toEqual({ width: 400, height: 600 });
+  });
+
+  it("sans dimensions, prend la taille d'une carte de fichier", () => {
+    expect(imageSize({ width: 0, height: 0 })).toEqual({ width: 400, height: 300 });
+    expect(imageSize({ width: 5, height: 0 })).toEqual({ width: 400, height: 300 });
+  });
+
+  it("la carte de fichier prend la taille donnée, sinon celle par défaut", () => {
+    expect(newFileCard(0, 0, "a.png", { width: 300, height: 600 })).toMatchObject({
+      width: 300,
+      height: 600,
+    });
+    expect(newFileCard(0, 0, "a.md")).toMatchObject({ width: 400, height: 300 });
   });
 });

@@ -23,6 +23,7 @@ import {
 import { type Edges, type SnapSettings, snapMove, snapResize } from "../state/canvas-snap";
 import { type Point, type Rect, type Viewport, panned, toMap } from "../state/canvas-viewport";
 import { curveOf } from "./canvas-arrows";
+import { isImage } from "./canvas-cards";
 
 /** Deux appuis à moins de ce délai (ms) et de cette distance (pixels) font un double-clic. */
 const DOUBLE_CLICK_MS = 400;
@@ -330,6 +331,8 @@ class Gestures {
     const edges = edgesOf(grip.dataset.edges ?? "");
     const others = before.cards.filter((c) => c.id !== id).map(rectOf);
     const startBox = rectOf(target);
+    // Une image garde ses proportions sans Maj ; Maj ne change rien de plus.
+    const isImageCard = target.kind === "file" && isImage(target.file ?? "");
     let latest = before;
     const apply = (e: Pointer) => {
       const scale = this.host.view().scale;
@@ -341,8 +344,12 @@ class Gestures {
         w: startBox.w + (edges.right ? dx : 0) - (edges.left ? dx : 0),
         h: startBox.h + (edges.bottom ? dy : 0) - (edges.top ? dy : 0),
       };
-      if (e.shift) box = ratioKept(box, startBox, edges);
-      if (!this.host.spaceDown()) box = snapResize(box, edges, others, this.host.snap(), scale);
+      const snapped = (b: Rect) =>
+        this.host.spaceDown() ? b : snapResize(b, edges, others, this.host.snap(), scale);
+      box = resizedBox(
+        { box, start: startBox, edges, keepRatio: e.shift, image: isImageCard },
+        snapped,
+      );
       const r = {
         x: Math.round(box.x),
         y: Math.round(box.y),
@@ -468,10 +475,30 @@ class Gestures {
   }
 }
 
+/**
+ * La boîte après Maj (rapport gardé) et accrochage ; pour une image, l'accrochage passe avant le rapport,
+ * qui reste gardé quoi qu'il arrive.
+ */
+function resizedBox(
+  it: { box: Rect; start: Rect; edges: Edges; keepRatio: boolean; image: boolean },
+  snapped: (box: Rect) => Rect,
+): Rect {
+  const kept = it.keepRatio && !it.image ? ratioKept(it.box, it.start, it.edges) : it.box;
+  const box = snapped(kept);
+  return it.image ? ratioKept(box, it.start, it.edges) : box;
+}
+
 /** La boîte redimensionnée gardant le rapport largeur/hauteur de `start` (Maj pendant le redimensionnement). */
 function ratioKept(box: Rect, start: Rect, edges: Edges): Rect {
   const ratio = start.w / start.h;
-  const w = Math.max(box.w, box.h * ratio);
+  const sideOnly = (edges.left || edges.right) !== (edges.top || edges.bottom);
+  // Une poignée de côté mène une seule dimension ; un coin, la plus grande des deux.
+  const w =
+    sideOnly && (edges.top || edges.bottom)
+      ? box.h * ratio
+      : sideOnly
+        ? box.w
+        : Math.max(box.w, box.h * ratio);
   const h = w / ratio;
   return {
     x: edges.left ? box.x + box.w - w : box.x,

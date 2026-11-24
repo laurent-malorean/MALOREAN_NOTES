@@ -147,6 +147,7 @@ class View implements CanvasView {
       removeSelection: () => this.removeSelection(),
       zoomToSelection: () => this.zoomToSelection(),
       ...{ chooseNote: options.chooseNote, chooseMedia: options.chooseMedia },
+      resolveImage: options.painter.resolveImage,
       ...{ askText: options.askText, copy: options.copy },
       ...{ openExternal: options.openExternal, error: options.error },
     });

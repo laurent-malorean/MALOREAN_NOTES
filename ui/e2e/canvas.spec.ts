@@ -320,3 +320,57 @@ test("choisir une image l'ajoute au canvas : la carte affiche l'image, on peut t
   await expect.poll(() => saved(page, "dessins.canvas")).toContain('"toNode"');
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/canvas-image-corrigee.png` });
 });
+
+test("une photo en hauteur ajoutée au canvas : la carte suit ses proportions, sans bande, et se redimensionne sans les déformer (thème sombre)", async ({
+  page,
+}) => {
+  const notes = {
+    "photos.canvas": { content: JSON.stringify({ nodes: [], edges: [] }), modified: 10 },
+  };
+  const params = new URLSearchParams({
+    notes: JSON.stringify(notes),
+    folders: "[]",
+    remembered: "1",
+    servedImages: "tall",
+  });
+  await page.setViewportSize({ width: 1300, height: 800 });
+  await page.goto(`/e2e/app.html?${params.toString()}`);
+  await page.locator(".note-item", { hasText: "photos" }).click();
+  await expect(page.locator(".canvas-view")).toBeVisible();
+  await page.evaluate(() => (document.documentElement.dataset.appearance = "dark"));
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Ajouter un média" }).click();
+  await (await chooser).setFiles("e2e/served-tall.png");
+  const image = page.locator(".canvas-card img.canvas-card-image");
+  await expect(image).toBeVisible();
+  // Image de 300 × 600 : largeur 400 donnerait 800, plafonné à 600 de haut, donc 300 de large.
+  await expect.poll(() => saved(page, "photos.canvas")).toContain('"width": 300');
+  expect(await saved(page, "photos.canvas")).toContain('"height": 600');
+  // Aucune bande : le rectangle de l'image est celui de la carte (à un point près), et il a les proportions 1 : 2.
+  const cardBox = await boxOf(page, ".canvas-card:has(img.canvas-card-image)");
+  const imageBox = await boxOf(page, ".canvas-card img.canvas-card-image");
+  for (const key of ["x", "y", "width", "height"] as const)
+    expect(Math.abs(imageBox[key] - cardBox[key])).toBeLessThanOrEqual(1);
+  expect(Math.abs(cardBox.height / cardBox.width - 2)).toBeLessThan(0.02);
+  const shown = await image.evaluate((img: HTMLImageElement) => [
+    img.naturalWidth,
+    img.naturalHeight,
+  ]);
+  expect(shown).toEqual([300, 600]);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/canvas-image-proportions-corrigee.png` });
+  // Redimensionner à la souris par le coin bas droit conserve le rapport 1 : 2.
+  await page.locator(".canvas-card:has(img.canvas-card-image)").click();
+  const grip = await boxOf(page, ".canvas-card .canvas-grip-rb");
+  const gx = grip.x + grip.width / 2;
+  const gy = grip.y + grip.height / 2;
+  await page.mouse.move(gx, gy);
+  await page.mouse.down();
+  await page.mouse.move(gx - 40, gy - 80, { steps: 6 });
+  await page.mouse.up();
+  const resized = await boxOf(page, ".canvas-card:has(img.canvas-card-image)");
+  expect(resized.width).toBeLessThan(cardBox.width - 20);
+  expect(Math.abs(resized.height / resized.width - 2)).toBeLessThan(0.02);
+  const imageAfter = await boxOf(page, ".canvas-card img.canvas-card-image");
+  expect(Math.abs(imageAfter.width - resized.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(imageAfter.height - resized.height)).toBeLessThanOrEqual(1);
+});
