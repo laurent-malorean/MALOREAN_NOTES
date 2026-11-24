@@ -362,3 +362,21 @@ fn the_gap_between_centers_counts_widths_and_heights() {
     };
     assert_eq!(deduce_sides(from, wide), (Side::Bottom, Side::Top));
 }
+
+#[test]
+fn the_source_position_counts_in_the_gap_between_centers() {
+    let rect = |x, y| Rect {
+        x,
+        y,
+        width: 10,
+        height: 10,
+    };
+    assert_eq!(
+        deduce_sides(rect(100, 100), rect(200, 100)),
+        (Side::Right, Side::Left)
+    );
+    assert_eq!(
+        deduce_sides(rect(100, 100), rect(100, 200)),
+        (Side::Bottom, Side::Top)
+    );
+}

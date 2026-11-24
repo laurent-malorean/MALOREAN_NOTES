@@ -130,3 +130,13 @@ fn an_arrow_to_a_deleted_card_goes_even_when_other_cards_remain() {
     assert_eq!(cards(&merged), pairs(&[("a", 0), ("c", 0)]));
     assert!(merged.arrows.is_empty());
 }
+
+#[test]
+fn an_arrow_added_elsewhere_to_a_card_i_deleted_is_dropped() {
+    let base = canvas(&[("a", 0), ("b", 0), ("c", 0)], &[]);
+    let mine = canvas(&[("a", 0), ("c", 0)], &[]);
+    let theirs = canvas(&[("a", 0), ("b", 0), ("c", 0)], &[("f", "a", "b")]);
+    assert!(Canvas::merged(&base, &mine, &theirs).arrows.is_empty());
+    let kept = canvas(&[("a", 0), ("b", 0), ("c", 0)], &[("f", "a", "c")]);
+    assert_eq!(Canvas::merged(&base, &base, &kept).arrows.len(), 1);
+}
