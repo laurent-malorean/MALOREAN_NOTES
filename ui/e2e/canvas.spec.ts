@@ -115,11 +115,16 @@ const NOTES = {
   "plan.canvas": { content: CANVAS, modified: 10 },
 };
 
-async function launch(page: Page, notes: Record<string, { content: string; modified: number }>) {
+async function launch(
+  page: Page,
+  notes: Record<string, { content: string; modified: number }>,
+  extra: Record<string, string> = {},
+) {
   const params = new URLSearchParams({
     notes: JSON.stringify(notes),
     folders: JSON.stringify(["Plans"]),
     remembered: "1",
+    ...extra,
   });
   await page.setViewportSize({ width: 1300, height: 800 });
   await page.goto(`/e2e/app.html?${params.toString()}`);
@@ -246,7 +251,8 @@ test("le clic droit sur un dossier propose « Nouveau canvas » ; le canvas s'ou
 test("l'image PNG du canvas contient chaque carte dans un cadre à 40 points de marge", async ({
   page,
 }) => {
-  await launch(page, NOTES);
+  // Les images du canvas sont servies : un export ne s'écrit que si chaque image se lit.
+  await launch(page, NOTES, { servedImages: "1" });
   await page.locator(".note-item", { hasText: "plan" }).click();
   await expect(page.locator(".canvas-view")).toBeVisible();
   await page.evaluate(() => window.backend.chooseMenu("canvas-export-image"));
