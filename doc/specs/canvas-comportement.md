@@ -19,7 +19,7 @@ La barre d'outils au bas du canvas porte trois boutons, qu'on sélectionne ou qu
 Autres façons, par type de carte :
 
 - **Carte texte** : aussi par double-clic sur le canvas. Son contenu est du Markdown (liens, blocs de code…, comme dans une note). Une carte texte n'apparaît pas dans les rétroliens tant qu'elle n'est pas convertie : clic droit, « Convertir en fichier… », saisir le nom, « Enregistrer ».
-- **Note** : clic droit sur le canvas, « Ajouter une note de l'espace de travail » ; ou glisser une note depuis la liste des notes. Pour n'en montrer qu'une partie : clic droit sur la carte, « Réduire à un titre… » ou « Réduire à un bloc… », puis choisir le titre ou le bloc.
+- **Note** : clic droit sur le canvas, « Ajouter une note de l'espace de travail » ; ou glisser une note depuis la liste des notes. **Décidé par l'utilisateur le 24/11 (écart voulu avec Obsidian) : la carte n'affiche pas d'aperçu de la note, elle montre un lien** (le nom de la note, en couleur de lien) qui ouvre la note. Dans une carte texte, `[[nom de la note]]` est de même un lien ; la forme d'intégration d'Obsidian (`![[nom de la note]]`, qui dessine la note dans la carte avec une barre bleue à gauche et un bouton d'agrandissement) n'est pas rendue en aperçu. Un aperçu serait trop petit pour être lisible. Les commandes « Réduire à un titre » et « Réduire à un bloc » n'ont donc pas de sens et ne sont pas reprises.
 - **Média** : clic droit sur le canvas, « Ajouter un média de l'espace de travail » ; ou glisser un média depuis la liste. Images, audio, PDF et autres médias.
 - **Page web** : clic droit sur le canvas, « Ajouter une page web », saisir l'adresse, « Enregistrer » ; ou glisser une adresse depuis le navigateur. Pour l'ouvrir dans le navigateur : Cmd + clic sur le libellé de la carte, ou clic droit puis « Ouvrir le lien externe ». Menu de la carte : « Copier l'adresse », « Changer l'adresse… », « Recharger la page ».
 - **Dossier** : glisser un dossier ajoute tous ses fichiers.
@@ -72,7 +72,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 ## 8. Menus du clic droit
 
 - **Sur le canvas** : ajouter une note, ajouter un média, ajouter une page web, créer un groupe.
-- **Sur une carte** : convertir en fichier, réduire à un titre, réduire à un bloc, changer le fichier, ouvrir le lien externe, modifier, retirer, zoomer sur la sélection ; pour une page web : copier l'adresse, changer l'adresse, recharger la page.
+- **Sur une carte** : convertir en fichier, changer le fichier, ouvrir le lien externe, modifier, retirer, zoomer sur la sélection ; pour une page web : copier l'adresse, changer l'adresse, recharger la page.
 - **Sur une ligne** : retirer, modifier l'étiquette, suivre la connexion.
 
 ## 9. Navigation et zoom
@@ -123,6 +123,5 @@ Ces points ne sont pas décrits par la page d'aide. Ils se constatent dans Obsid
 - les noms des couleurs proposées et leurs valeurs exactes ;
 - un raccourci pour créer une carte texte au clavier (seul le double-clic est indiqué) ;
 - le comportement exact de la duplication avec Option (contrainte, accrochage) ;
-- l'aperçu mis en forme d'une note dans une carte ;
 - les raccourcis clavier autres que ceux cités ;
 - les limites de taille ou de nombre de cartes.
