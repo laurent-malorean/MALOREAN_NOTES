@@ -52,7 +52,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - **Déconnecter** : survoler la ligne jusqu'à voir deux petits ronds, puis glisser un rond sans l'accrocher à une carte. Ou clic droit sur la ligne puis « Retirer » ; ou sélectionner la ligne puis Suppr.
 - **Reconnecter une extrémité** : glisser son rond vers une autre carte.
 - **Suivre une connexion** : clic droit près d'une extrémité, puis « Suivre la connexion » ; le canvas se centre sur la carte à l'autre bout.
-- **Sens** : par défaut, la flèche pointe vers la seconde carte. Sélectionner la ligne, puis « Sens de la ligne » : sans flèche, un sens (par défaut), deux sens.
+- **Sens** : par défaut, la flèche pointe vers la seconde carte. Sélectionner la ligne, puis le bouton « sens de la ligne » de sa barre ouvre un menu de trois choix, avec l'icône de chacun et une coche sur le choix actuel : **« Non directionnel »** (un trait), **« Unidirectionnel »** (une flèche vers la seconde carte, le choix par défaut), **« Bidirectionnel »** (une flèche à chaque bout). Dans le fichier, ils s'écrivent comme dans le format (voir [canvas.md](canvas.md), § 5) : trait sans pointe, flèche du départ vers l'arrivée, flèche aux deux bouts.
 - **Étiquette** : double-clic sur la ligne, saisir le texte, puis Échap ou un clic sur le canvas. Ou « Modifier l'étiquette » (commandes de la sélection, ou clic droit). « Retirer l'étiquette » l'enlève.
 - **Couleur** : sélectionner des cartes ou des connexions, « Couleur » (icône palette), choisir une couleur. **Décidé par l'utilisateur le 24/11 (écart voulu avec Obsidian) : pas de couleur libre.** Obsidian propose ses 7 couleurs puis un rond arc-en-ciel pour une couleur libre ; ici, le menu ne propose que **les couleurs de la palette de l'application** (celles de la carte mentale, voir ci-dessous), et rien d'autre.
 
@@ -108,6 +108,7 @@ Constaté sur une capture fournie par l'utilisateur (un grand canvas, thème som
 - **Barre d'outils du bas** : exactement **trois boutons** carrés, côte à côte et centrés au bas du canvas : un fichier vierge, un document avec des lignes, une image. Ce sont les trois boutons du § 2.
 - **Commandes en haut à droite**, en colonne de boutons carrés, de haut en bas : **réglages** (engrenage) ; puis un groupe **zoomer** (+), **rétablir le zoom** (flèche circulaire), **tout voir** (quatre coins), **dézoomer** (−) ; puis **annuler** et **rétablir** ; puis **aide** (point d'interrogation).
 - **Barre d'une carte sélectionnée** : au-dessus de la carte, une petite barre de boutons carrés : supprimer (corbeille), couleur (palette), zoom sur la sélection, modifier (crayon). Le bouton couleur ouvre une rangée de ronds colorés ; la couleur choisie est entourée d'un anneau.
+- **Barre d'une ligne sélectionnée** : au-dessus de la ligne, cinq boutons carrés : supprimer (corbeille), couleur (palette), zoom sur la sélection, sens de la ligne (l'icône montre le sens actuel : une flèche pour « unidirectionnel »), modifier l'étiquette (crayon). La ligne sélectionnée est tracée plus épaisse, avec un halo.
 - **Fond** : points espacés régulièrement (la grille d'accrochage du § 10).
 - **Cartes** : rectangles aux coins peu arrondis, colorables ; teintes vues : olive/jaune, rouge, bleu-violet et brun. Une carte d'image montre l'image seule, sans cadre de texte.
 - **Flèches** : courbes fines avec une pointe à l'arrivée ; une même carte peut en envoyer beaucoup vers d'autres.
@@ -120,7 +121,6 @@ Ces points ne sont pas décrits par la page d'aide. Ils se constatent dans Obsid
 
 - les noms des couleurs proposées et leurs valeurs exactes ;
 - un raccourci pour créer une carte texte au clavier (seul le double-clic est indiqué) ;
-- le sens exact de « sans flèche », « un sens » et « deux sens » au-delà de leur nom ;
 - comment placer une carte dans un groupe sur bureau (l'aide ne le décrit que pour le mobile : glisser la carte dans la zone du groupe, et les cartes suivent le groupe quand on le déplace) ;
 - le comportement exact de la duplication avec Option (contrainte, accrochage) ;
 - l'aperçu mis en forme d'une note dans une carte ;
