@@ -29,7 +29,7 @@ function mount(withMaps = true, failing = false) {
   const ignore = () => {};
   const errors: unknown[] = [];
   const opened: [string, boolean][] = [];
-  const asked: [string, string, string | null][] = [];
+  const asked: [string, string, string | null, string | null][] = [];
   const written: [string, number][] = [];
   const shown: string[] = [];
   let chosen: { path: string; folder: string } | null = {
@@ -45,8 +45,13 @@ function mount(withMaps = true, failing = false) {
           return structuredClone(MAP);
         },
         saveMindMap: async (_path: string, map: MindMapItem) => void saved.push(map),
-        chooseExportFile: async (title: string, format: string, folder: string | null) => {
-          asked.push([title, format, folder]);
+        chooseExportFile: async (
+          title: string,
+          format: string,
+          folder: string | null,
+          near: string | null,
+        ) => {
+          asked.push([title, format, folder, near]);
           return chosen;
         },
         exportImage: async (destination: string, png: Uint8Array) =>
@@ -118,7 +123,7 @@ describe("colonne : une carte mentale", () => {
     expect(m.fake.calls.some((c) => c.startsWith("enregistrer"))).toBe(false);
   });
 
-  it("l'image de la carte est écrite là où la fenêtre d'enregistrement l'a désigné, le dossier retenu", async () => {
+  it("l'image de la carte est écrite là où la fenêtre d'enregistrement l'a désignée, qui s'ouvre toujours dans le dossier de la carte", async () => {
     localStorage.removeItem("malorean.export-folder");
     const m = mount();
     await m.pane.load("projet.md");
@@ -131,13 +136,13 @@ describe("colonne : une carte mentale", () => {
       ).click();
     export_();
     await vi.waitFor(() => expect(m.written).toHaveLength(1));
-    expect(m.asked).toEqual([["Projet", "png", null]]);
+    expect(m.asked).toEqual([["Projet", "png", null, "projet.md"]]);
     expect(m.written[0]?.[0]).toBe("/Users/moi/Documents/Projet.png");
     expect(m.written[0]?.[1]).toBeGreaterThan(100);
     expect(m.shown).toEqual(["« Projet » exportée dans /Users/moi/Documents/Projet.png"]);
     export_();
     await vi.waitFor(() => expect(m.asked).toHaveLength(2));
-    expect(m.asked[1]).toEqual(["Projet", "png", "/Users/moi/Documents"]);
+    expect(m.asked[1]).toEqual(["Projet", "png", null, "projet.md"]);
     m.cancel();
     export_();
     await vi.waitFor(() => expect(m.asked).toHaveLength(3));

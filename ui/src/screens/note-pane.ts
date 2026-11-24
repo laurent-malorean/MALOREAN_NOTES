@@ -111,7 +111,6 @@ class NotePane implements Pane, Viewer {
               chooseExportFile,
               exportImage,
             },
-            storage: localStorage,
             openLink: events.openLink,
             error: events.error,
             notice: (message) => events.show?.(message, "info"),

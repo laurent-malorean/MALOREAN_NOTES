@@ -25,15 +25,20 @@ export interface FakeExports {
 
 const sheet = () => document.querySelector(".print-sheet")?.innerHTML ?? "";
 const DOCUMENTS = "/Users/moi/Documents";
+const WORKSPACE = "/Users/moi/Notes";
 const EXTENSIONS: Record<string, string> = { pdf: "pdf", markdown: "md", png: "png" };
 
 export function fakeExport(exports: FakeExports): Record<string, Handler> {
   return {
-    choose_export_file: ({ title = "", format = "", folder }) => {
+    choose_export_file: ({ title = "", format = "", folder, near }) => {
       const name = `${title}.${EXTENSIONS[format] ?? ""}`;
-      exports.saveDialogs.push({ name, folder: folder ?? null });
+      // Comme Rust : la note donnée (`near`) prime, son dossier est celui de l'espace de travail.
+      const start = near
+        ? `${WORKSPACE}${near.includes("/") ? `/${near.slice(0, near.lastIndexOf("/"))}` : ""}`
+        : (folder ?? null);
+      exports.saveDialogs.push({ name, folder: start });
       const path =
-        exports.nextExport === undefined ? `${folder ?? DOCUMENTS}/${name}` : exports.nextExport;
+        exports.nextExport === undefined ? `${start ?? DOCUMENTS}/${name}` : exports.nextExport;
       return path === null ? null : { path, folder: path.slice(0, path.lastIndexOf("/")) };
     },
     export_markdown: ({ path = "", destination = "" }) => {

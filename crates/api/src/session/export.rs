@@ -25,6 +25,23 @@ impl Session {
         export_file_name(title, format.into())
     }
 
+    /// Le dossier, dans l'espace de travail ouvert, où se trouve la note `path` : celui que la
+    /// fenêtre d'enregistrement propose en premier.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] si le chemin est invalide ou si aucun espace de travail n'est ouvert.
+    pub fn note_folder_location(&self, path: &str) -> Result<String, ApiError> {
+        let note = NotePath::parse(path)?;
+        let root = self.opened()?.location;
+        let folder = note.folder().to_path();
+        Ok(if folder.is_empty() {
+            root.as_str().to_owned()
+        } else {
+            format!("{}/{folder}", root.as_str().trim_end_matches('/'))
+        })
+    }
+
     /// Le fichier exporté choisi dans la fenêtre d'enregistrement, et son dossier ; rien si
     /// l'utilisateur a annulé.
     ///
@@ -138,6 +155,33 @@ mod tests {
         );
         session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         session
+    }
+
+    #[test]
+    fn the_dialog_opens_in_the_folder_of_the_note() {
+        let session = opened(&[]);
+        assert_eq!(
+            session
+                .note_folder_location("projets/2026/carte.md")
+                .unwrap(),
+            "/Users/moi/Notes/projets/2026"
+        );
+        assert_eq!(
+            session.note_folder_location("carte.md").unwrap(),
+            "/Users/moi/Notes"
+        );
+        assert!(session.note_folder_location("../x.md").is_err());
+        assert!(
+            Session::new(
+                Arc::new(FakeOpener::new(Arc::new(
+                    InMemoryNoteStore::with_notes(&[])
+                ))),
+                Arc::new(FakePreferences::default()),
+                Arc::new(FixedClock::default()),
+            )
+            .note_folder_location("carte.md")
+            .is_err()
+        );
     }
 
     #[test]
