@@ -95,7 +95,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 
 ## 12. Exporter en image
 
-Commande **« Canvas : exporter en image »** (bureau). Options : « Zone » (canvas entier ou fenêtre seulement), « Zoom » (qualité, taille estimée affichée), « Afficher le logo » (activé par défaut), « Mode confidentiel » (masque tout le texte, désactivé par défaut). Nom proposé : le nom du canvas, en `.png`. Un canvas vide ne s'exporte pas.
+Commande **« Canvas : exporter en image »** (bureau). Options : « Zone » (canvas entier ou fenêtre seulement), « Zoom » (qualité, taille estimée affichée), « Afficher le logo » (activé par défaut), « Mode confidentiel » (masque tout le texte, désactivé par défaut). Nom proposé : le nom du canvas, en `.png`. Un canvas vide ne s'exporte pas. Si une image du canvas ne peut pas être lue, l'export est refusé avec un message qui nomme le fichier (« L'image « … » n'a pas pu être lue : l'export est annulé. ») et aucun fichier n'est écrit ; une image n'est jamais exportée vide en silence.
 
 ## 13. Intégrer un canvas dans une note
 
