@@ -37,8 +37,13 @@ export function attachFile(backend: Files, header: Header, bytes: Uint8Array) {
   return { markdown: /\.pdf$/i.test(name) ? `[${name}](${target})` : `![](${target})` };
 }
 
-/** L'image PNG d'une carte, gardée à l'emplacement que dit l'en-tête. */
-export function keepImage(backend: Files, header: Header, png: Uint8Array) {
-  backend.exportedImages[header("x-destination") ?? ""] = png;
+export interface ExportImageArgs {
+  destination: string;
+  png: string;
+}
+
+/** L'image PNG d'une carte (reçue en base64, comme par Rust), gardée à son emplacement. */
+export function keepImage(backend: Files, { destination, png }: ExportImageArgs) {
+  backend.exportedImages[destination] = Uint8Array.from(atob(png), (c) => c.charCodeAt(0));
   return null;
 }

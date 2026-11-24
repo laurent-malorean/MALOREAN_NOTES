@@ -5,6 +5,7 @@ use std::ffi::c_void;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use base64::Engine;
 use domain::export::{ExportDestination, ExportFormat};
 use tauri::{AppHandle, Manager, Runtime, Webview};
 use tauri_plugin_dialog::DialogExt;
@@ -72,35 +73,25 @@ pub async fn export_markdown(
     in_background(move || session.export_markdown(&path, &destination)).await
 }
 
-/// En-tête de [`export_image`] : l'emplacement complet du fichier à écrire, encodé comme une
-/// adresse (`%XX`).
-pub const DESTINATION_HEADER: &str = "x-destination";
-
-/// Écrit l'image PNG d'une carte mentale, reçue telle quelle (octets bruts), au fichier dont
-/// l'emplacement est dans l'en-tête [`DESTINATION_HEADER`].
+/// Écrit l'image PNG d'une carte mentale au fichier `destination`. L'image arrive en base64
+/// dans les arguments JSON, comme tout autre argument : un corps brut n'est pas fiable, car
+/// Tauri le transforme en liste JSON quand le protocole `ipc://` de la fenêtre échoue (repli
+/// `postMessage`), et WebKit peut en tronquer un gros.
 ///
 /// # Errors
 ///
 /// Le message de l'erreur, prêt à afficher : voir [`crate::Session::export_image`]. S'y ajoute
-/// une requête incomplète (contenu ou en-tête manquant).
+/// une image vide ou qui n'est pas du base64 valide (reçue en partie).
 #[tauri::command]
 pub async fn export_image(
-    request: tauri::ipc::Request<'_>,
     session: SharedSession<'_>,
+    destination: String,
+    png: String,
 ) -> Result<(), ApiError> {
-    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
-        return Err(ApiError::incomplete_export_image());
-    };
-    let bytes = bytes.clone();
-    let destination = request
-        .headers()
-        .get(DESTINATION_HEADER)
-        .and_then(|value| value.to_str().ok())
-        .map(|value| {
-            percent_encoding::percent_decode_str(value)
-                .decode_utf8_lossy()
-                .into_owned()
-        })
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(png)
+        .ok()
+        .filter(|bytes| !bytes.is_empty())
         .ok_or_else(ApiError::incomplete_export_image)?;
     let session = Arc::clone(&session);
     in_background(move || session.export_image(&destination, &bytes)).await

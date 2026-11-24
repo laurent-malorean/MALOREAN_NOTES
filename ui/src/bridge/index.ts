@@ -276,11 +276,25 @@ export const chooseExportFile = (
 /** Écrit la note en Markdown au fichier `destination`, ses pièces jointes copiées à côté. */
 export const exportMarkdown = (path: string, destination: string) =>
   invoke<null>("export_markdown", { path, destination });
-/** Écrit l'image PNG d'une carte mentale (envoyée telle quelle, en octets) au fichier `destination`. */
+/**
+ * Octets en base64. Par morceaux : `String.fromCharCode(...octets)` d'un seul coup dépasse la
+ * pile d'appels sur une grande image.
+ */
+export function base64(bytes: Uint8Array): string {
+  const chunk = 0x8000;
+  let binary = "";
+  for (let start = 0; start < bytes.length; start += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(start, start + chunk));
+  }
+  return btoa(binary);
+}
+/**
+ * Écrit l'image PNG d'une carte mentale au fichier `destination`. Les octets partent en base64
+ * dans des arguments JSON, jamais en corps brut avec un en-tête : le corps brut se perd quand
+ * Tauri bascule sur `postMessage` et WebKit peut tronquer un gros corps.
+ */
 export const exportImage = (destination: string, png: Uint8Array) =>
-  invoke<null>("export_image", png, {
-    headers: { "x-destination": encodeURIComponent(destination) },
-  });
+  invoke<null>("export_image", { destination, png: base64(png) });
 /** Imprime la feuille d'impression de l'interface dans le fichier PDF `destination`. */
 export const exportPdf = (destination: string) => invoke<null>("export_pdf", { destination });
 /** Ouvre la fenêtre d'impression du Mac sur la feuille d'impression de l'interface. */
