@@ -54,7 +54,11 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - **Suivre une connexion** : clic droit près d'une extrémité, puis « Suivre la connexion » ; le canvas se centre sur la carte à l'autre bout.
 - **Sens** : par défaut, la flèche pointe vers la seconde carte. Sélectionner la ligne, puis « Sens de la ligne » : sans flèche, un sens (par défaut), deux sens.
 - **Étiquette** : double-clic sur la ligne, saisir le texte, puis Échap ou un clic sur le canvas. Ou « Modifier l'étiquette » (commandes de la sélection, ou clic droit). « Retirer l'étiquette » l'enlève.
-- **Couleur** : sélectionner des cartes ou des connexions, « Couleur » (icône palette), choisir une couleur.
+- **Couleur** : sélectionner des cartes ou des connexions, « Couleur » (icône palette), choisir une couleur. **Décidé par l'utilisateur le 24/11 (écart voulu avec Obsidian) : pas de couleur libre.** Obsidian propose ses 7 couleurs puis un rond arc-en-ciel pour une couleur libre ; ici, le menu ne propose que **les couleurs de la palette de l'application** (celles de la carte mentale, voir ci-dessous), et rien d'autre.
+
+**Une seule palette pour toute l'application (décidé le 24/11).** Les couleurs de la carte mentale (rouge, orange, jaune, vert, turquoise, bleu, violet, rose, marron, ardoise) sont **la** palette de l'application : le canvas, la carte mentale et toute fonction à venir qui colore quelque chose n'en ont pas d'autre. Aucune couleur n'est définie ailleurs que dans cette palette.
+
+**Dans le fichier.** Rouge, orange, jaune, vert, turquoise (cyan) et violet s'écrivent avec les préréglages `"1"` à `"6"` du format ; bleu, rose, marron et ardoise s'écrivent en hexadécimal `#RRGGBB`. Un canvas venu d'Obsidian qui contient une autre couleur est lu et affiché tel quel, sans être modifié ; on ne peut simplement pas en choisir une autre que celles de la palette.
 
 ## 7. Groupes
 
@@ -103,6 +107,7 @@ Constaté sur une capture fournie par l'utilisateur (un grand canvas, thème som
 
 - **Barre d'outils du bas** : exactement **trois boutons** carrés, côte à côte et centrés au bas du canvas : un fichier vierge, un document avec des lignes, une image. Ce sont les trois boutons du § 2.
 - **Commandes en haut à droite**, en colonne de boutons carrés, de haut en bas : **réglages** (engrenage) ; puis un groupe **zoomer** (+), **rétablir le zoom** (flèche circulaire), **tout voir** (quatre coins), **dézoomer** (−) ; puis **annuler** et **rétablir** ; puis **aide** (point d'interrogation).
+- **Barre d'une carte sélectionnée** : au-dessus de la carte, une petite barre de boutons carrés : supprimer (corbeille), couleur (palette), zoom sur la sélection, modifier (crayon). Le bouton couleur ouvre une rangée de ronds colorés ; la couleur choisie est entourée d'un anneau.
 - **Fond** : points espacés régulièrement (la grille d'accrochage du § 10).
 - **Cartes** : rectangles aux coins peu arrondis, colorables ; teintes vues : olive/jaune, rouge, bleu-violet et brun. Une carte d'image montre l'image seule, sans cadre de texte.
 - **Flèches** : courbes fines avec une pointe à l'arrivée ; une même carte peut en envoyer beaucoup vers d'autres.
