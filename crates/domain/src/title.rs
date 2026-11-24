@@ -95,7 +95,13 @@ pub fn displayed_title(content: &str) -> String {
 /// d'une note neuve (`sans-titre`, `sans-titre-2`…).
 #[must_use]
 pub fn displayed_title_of_note(content: &str, name: &FileName) -> String {
-    match Title::of(content) {
+    // Un canvas est du JSON : son titre est son nom, jamais une ligne de son contenu.
+    let title = if name.is_canvas() {
+        None
+    } else {
+        Title::of(content)
+    };
+    match title {
         Some(title) => title.0,
         None if name.is_untitled() => UNTITLED.to_owned(),
         None => name.stem().to_owned(),
@@ -108,6 +114,15 @@ mod tests {
 
     fn displayed(content: &str, name: &str) -> String {
         displayed_title_of_note(content, &FileName::parse(name).unwrap())
+    }
+
+    #[test]
+    fn a_canvas_shows_its_file_name_without_the_extension() {
+        assert_eq!(
+            displayed("# Pas un titre", "Plan du projet.canvas"),
+            "Plan du projet"
+        );
+        assert_eq!(displayed("{}", "sans-titre-2.canvas"), "Sans titre");
     }
 
     #[test]

@@ -147,6 +147,7 @@ test("le clic droit sur un dossier ou sur la racine crée une carte mentale deda
   await expect(page.locator(".context-menu button")).toHaveText([
     "Nouvelle note",
     "Nouvelle carte mentale",
+    "Nouveau canvas",
     "Nouveau cahier de recherche",
     "Placer dans la corbeille",
   ]);

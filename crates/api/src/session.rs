@@ -1,10 +1,10 @@
 //! L'espace de travail ouvert et les cas d'usage qu'on lui applique.
 
 mod app_tools;
-
 pub use app_tools::AppScreen;
 pub use meaning::MeaningEvents;
 mod attachments;
+mod canvas;
 mod claude;
 mod export;
 mod history;

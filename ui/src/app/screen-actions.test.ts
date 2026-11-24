@@ -47,6 +47,7 @@ function setup(searching: string | null = null) {
     notebooks: {
       create: (folder) => done(`nouveau cahier ${folder}`)(),
       createMindMap: (folder) => done(`nouvelle carte mentale ${folder}`)(),
+      createCanvas: (folder) => done(`nouveau canvas ${folder}`)(),
     },
     trash: {
       trashNote: (path) => done(`jeter ${path}`)(),

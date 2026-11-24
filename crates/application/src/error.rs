@@ -96,6 +96,12 @@ pub enum AppError {
     /// La note n'est pas une carte mentale (fiche 0050).
     #[error("cette note n'est pas une carte mentale")]
     NotAMindMap,
+    /// Le fichier n'est pas un canvas (fiche 0052).
+    #[error("ce fichier n'est pas un canvas")]
+    NotACanvas,
+    /// Le contenu du canvas n'est pas valide : la raison est lisible (fiche 0052).
+    #[error("{0}")]
+    InvalidCanvas(#[from] domain::canvas::CanvasError),
     /// La recherche par le sens a reçu une question vide.
     #[error("la question est vide : écrivez ce que vous cherchez")]
     EmptyQuestion,

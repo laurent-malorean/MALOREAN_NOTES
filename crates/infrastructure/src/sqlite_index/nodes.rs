@@ -64,11 +64,12 @@ pub(super) fn keep_nodes(
 }
 
 /// Ce que la recherche par les mots lit d'une note : son texte, sauf pour une carte mentale, dont
-/// seuls le titre et les étiquettes comptent (ses nœuds sont cherchés à part).
+/// seuls le titre et les étiquettes comptent (ses nœuds sont cherchés à part), et pour un canvas, les
+/// textes qu'il montre (pas son JSON).
 pub(super) fn searched_text(summary: &NoteSummary, content: &str) -> String {
-    if summary.content_type() == ContentType::MindMap {
-        searchable_text(summary)
-    } else {
-        content.to_owned()
+    match summary.content_type() {
+        ContentType::MindMap => searchable_text(summary),
+        ContentType::Canvas => domain::canvas::indexed_text(summary.title(), content),
+        _ => content.to_owned(),
     }
 }

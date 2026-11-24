@@ -16,6 +16,10 @@ import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
 import type { EffortItem } from "./generated/EffortItem";
 import type { EntryItem } from "./generated/EntryItem";
+import type { CanvasArrowItem } from "./generated/CanvasArrowItem";
+import type { CanvasCardItem } from "./generated/CanvasCardItem";
+import type { CanvasFileItem } from "./generated/CanvasFileItem";
+import type { CanvasItem } from "./generated/CanvasItem";
 import type { MindMapItem } from "./generated/MindMapItem";
 import type { MindNodeItem } from "./generated/MindNodeItem";
 import type { PlaceItem } from "./generated/PlaceItem";
@@ -65,6 +69,10 @@ export type {
   ClaudeModelItem,
   EffortItem,
   EntryItem,
+  CanvasArrowItem,
+  CanvasCardItem,
+  CanvasFileItem,
+  CanvasItem,
   MindMapItem,
   MindNodeItem,
   PlaceItem,
@@ -168,6 +176,11 @@ export const createResearchNotebook = (folder: string, title: string) =>
 export const addEntry = (path: string, text: string) =>
   invoke<EntryItem>("add_entry", { path, text });
 /** Les entrées du cahier, de la plus ancienne à la plus récente. */
+export const createCanvas = (folder: string, title: string) =>
+  invoke<SavedNote>("create_canvas", { folder, title });
+export const readCanvas = (path: string) => invoke<CanvasFileItem>("read_canvas", { path });
+export const saveCanvas = (path: string, base: string, canvas: CanvasItem) =>
+  invoke<CanvasFileItem>("save_canvas", { path, base, canvas });
 export const createMindMap = (folder: string, title: string) =>
   invoke<SavedNote>("create_mind_map", { folder, title });
 export const readMindMap = (path: string) => invoke<MindMapItem>("read_mind_map", { path });

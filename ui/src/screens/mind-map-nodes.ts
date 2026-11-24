@@ -39,7 +39,7 @@ function titleMarkdown(title: string): string {
 export const WIKI_ADDRESS = "#wiki-";
 
 /** Les liens `[[titre]]` et `[[titre|texte]]` du Markdown, écrits en liens que le rendu garde. */
-function wikiToLinks(markdown: string): string {
+export function wikiToLinks(markdown: string): string {
   return markdown.replace(WIKI_LINK, (_, target: string, text?: string) => {
     return `[${text ?? target}](${WIKI_ADDRESS}${encodeURIComponent(target.trim())})`;
   });
@@ -89,7 +89,7 @@ class Renderer implements NodeRenderer {
     if (level === 1) element.classList.add("root");
     if (node.color !== null) {
       element.classList.add("colored");
-      element.style.setProperty("--node-color", `var(--mind-map-${node.color})`);
+      element.style.setProperty("--node-color", `var(--palette-${node.color})`);
     }
     element.replaceChildren();
     const title = document.createElement("div");

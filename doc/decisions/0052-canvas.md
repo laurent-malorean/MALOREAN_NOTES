@@ -1,0 +1,51 @@
+# 0052 — Canvas : un fichier `.canvas` de l'espace de travail, au format d'Obsidian, lu et écrit par le domaine
+
+- **Date** : 2026-11-24
+- **Statut** : acceptée (la partie format, fichiers, index et enregistrement ; l'écran est complété plus bas à mesure qu'il se fait)
+- **Complète** les fiches 0034, 0037, 0041 et 0050 (types de contenu : un quatrième type de fichier, `canvas`).
+
+## Contexte
+
+Spécifications validées par l'utilisateur le 24/11 : `doc/specs/canvas.md` (le format du fichier, JSON Canvas d'Obsidian, à respecter à la lettre) et `doc/specs/canvas-comportement.md` (l'écran). Principe de l'utilisateur : on suit Obsidian, rien n'est inventé ; ce qui n'est pas dans les spécifications n'est pas fait et se déclare comme « manque ». Un canvas est un fichier `.canvas` (JSON), pas une note Markdown : il n'a ni en-tête, ni titre `#`, ni étiquettes.
+
+## Décision
+
+- **Un fichier `.canvas` est un fichier de l'espace de travail comme une note** : `FileName` accepte `.md` et `.canvas` (le nom d'un canvas se tire du titre demandé, `plan-du-projet.canvas`, avec le premier suffixe `-2` libre). Tout ce qui range, liste, renomme, déplace, met à la corbeille, historise (versions), surveille et indexe une note s'applique donc au canvas sans second chemin de code : l'arbre des fichiers, la liste, la recherche, la corbeille et l'historique le montrent déjà. Son titre est le nom du fichier sans extension (jamais une ligne de son contenu).
+- **Type de contenu** : `ContentType::Canvas` (`"canvas"`) est un type de fichier, reconnu à l'**extension** (`ContentType::of_file`) et non à un en-tête : un `type: canvas` dans une note Markdown n'en fait pas un canvas. L'index garde le type tel quel (aucun changement de format de base : les canvas sont de nouveaux fichiers, pas des fichiers reclassés).
+- **Domaine** (`domain::canvas`, `canvas_write`, `canvas_color`, `canvas_merge`, `json`) :
+  - `json::Json` : un lecteur et écrivain de JSON qui garde l'ordre des champs et le texte exact des nombres (le domaine n'a pas de dépendance JSON ; la fiche 0047 garde ses dépendances courtes).
+  - `Canvas::parse` applique les règles de validité du § 8 de la spécification (JSON bien formé, types de carte, entiers, côtés, extrémités, styles, identifiants uniques sur cartes et flèches, flèches vers des cartes existantes, `subpath` commençant par `#`). Une couleur hors des préréglages et des hexadécimaux est gardée telle quelle (Obsidian l'ouvre aussi). Les **propriétés inconnues** (racine, cartes, flèches, y compris un champ d'un autre type de carte) sont gardées telles quelles.
+  - `Canvas::to_text` écrit comme Obsidian : tabulations, un objet par ligne, aucun espace, pas de retour final, accents tels quels, champs dans l'ordre du § 7.2, valeurs par défaut des extrémités supprimées, côtés absents déduits et écrits ; les propriétés inconnues suivent les champs connus. Un fichier déjà écrit ainsi se réécrit à l'identique (testé sur l'exemple de la spécification). Un canvas vide s'écrit avec ses deux listes vides en ligne (`"nodes":[]`) : la spécification ne dit pas comment Obsidian écrit une liste vide.
+  - `deduce_sides` : la spécification ne donne que l'exemple de deux cartes côte à côte (de `right` vers `left`) ; la règle retenue pour le reste est le sens de l'écart entre les centres (horizontal si l'écart horizontal est au moins égal au vertical).
+  - `Canvas::members_of` : l'appartenance à un groupe est purement géométrique (rectangle entièrement dans le cadre, bords compris).
+  - `canvas_color` : la palette de l'application (celle de la carte mentale) s'écrit en préréglages `"1"` à `"6"` (rouge, orange, jaune, vert, turquoise, violet) ou en hexadécimal (bleu, rose, marron, ardoise) ; un test lit le thème pour que ces hexadécimaux soient ceux de `--palette-<nom>`.
+  - `Canvas::merged` : la fusion à trois versions (départ, la nôtre, celle du fichier), carte par carte et flèche par flèche.
+- **Palette unique** : les 10 couleurs sont `--palette-<nom>` dans `ui/src/theme.css`, seul endroit où elles sont définies (renommées depuis `--mind-map-<nom>`).
+- **Cas d'usage et commandes** : `CreateCanvas`, `ReadCanvas`, `SaveCanvas` ; commandes `create_canvas(folder, title)`, `read_canvas(path)` (le canvas et le texte exact du fichier), `save_canvas(path, base, canvas)`. Un fichier qui n'est pas un `.canvas` est refusé (« ce fichier n'est pas un canvas ») ; un contenu invalide aussi, avec sa raison, sans rien écrire.
+- **Entre Rust et l'interface** : `CanvasItem` (cartes, flèches, propriétés inconnues comme JSON texte). La couleur passe sous deux formes : `color` (telle qu'écrite dans le fichier) et `palette` (le nom de la palette qu'elle désigne, ou rien) ; l'écran choisit une couleur en posant `palette`, Rust écrit alors le préréglage ou l'hexadécimal, et garde la valeur d'origine si elle désignait déjà cette couleur. Les positions passent en nombres et sont arrondies à l'entier à l'écriture. Les côtés absents d'une flèche sont déduits à la lecture : l'écran n'a jamais à les deviner.
+- **Règles qui restent dans l'interface** (fonctions pures testées sans navigateur, `ui/src/state/canvas-*.ts`) : accrochage, alignements, déplacement et redimensionnement, tracé des flèches, annulation. Elles tournent à chaque mouvement du pointeur, ce que le pont vers Rust ne tient pas ; Rust reste seul à connaître le format du fichier (même partage que la carte mentale, fiche 0050).
+
+## Enregistrement sûr contre les conflits
+
+L'écran garde le texte du fichier tel qu'il l'a lu (`base`). `save_canvas` relit le fichier : s'il est identique à `base`, il écrit le canvas de l'écran ; sinon, il fusionne (`Canvas::merged`) le canvas de départ, celui de l'écran et celui du fichier, puis écrit le résultat et le rend à l'écran. Ce qui n'a changé que d'un côté est repris ; ce qui a changé des deux côtés prend la version de l'écran ; une carte supprimée d'un côté et modifiée de l'autre est gardée ; une flèche dont une carte a disparu disparaît. Un fichier devenu invalide n'est jamais écrasé. Rien n'est écrit si le texte ne change pas.
+
+## Recherche et index
+
+L'aide d'Obsidian ne décrit pas la recherche dans un canvas ; le canvas est donc traité comme les autres fichiers du projet pour être trouvable :
+
+- **Par les mots** : l'index garde le fichier (`content`), mais la recherche lit son titre puis `canvas::searchable_text` : le texte des cartes texte, les noms des groupes, les étiquettes des flèches, les noms de fichier et les adresses des cartes. Le JSON (`nodes`, `width`…) n'est pas cherché. Un canvas est un résultat de type « Canvas » ; ses cartes ne sont pas indexées à part (pas de conteneur, contrairement au nœud d'une carte mentale).
+- **Par le sens** : un canvas est segmenté comme une note sur ces mêmes textes.
+- **Liens** : le contenu étant du JSON, les `[[liens]]` d'une carte texte ne sont pas comptés comme liens entrants ; `[[plan]]` ne se résout pas vers un canvas. Ce n'est pas décrit par l'aide d'Obsidian pour le canvas, et rien n'est inventé.
+
+## Conséquences
+
+- Le premier lancement de cette version indexe les `.canvas` déjà présents (ils étaient ignorés jusque-là).
+- Les `.canvas` apparaissent dans la liste des notes avec le type « Canvas ».
+
+## Écran (fait le 24/11)
+
+- **Colonne** : si le fichier montré se termine par `.canvas`, `screens/canvas-pane.ts` pose le canvas (`screens/canvas-view.ts`) à la place de l'éditeur de texte, caché mais gardé (historique, changements venus d'ailleurs : `followDisk` relit le canvas et le reprend s'il n'y a rien à enregistrer). Le pont (`read_canvas`, `save_canvas`) et les fenêtres (choix d'une note, saisie, groupe) arrivent par `app/canvas-host.ts`.
+- **Modules** : état pur testé sans navigateur (`state/canvas-model|geometry|snap|align|history|viewport|image.ts`) ; dessin des cartes (`canvas-cards.ts`), des flèches (`canvas-arrows.ts`), gestes à la souris (`canvas-gestures.ts`), saisie sur place (`canvas-edit.ts`), menus et actions (`canvas-menus.ts`, `canvas-actions.ts`), boutons (`canvas-controls.ts`, `canvas-selection-bar.ts`), image (`canvas-image.ts`). Les couleurs viennent de `--palette-<nom>` ; une couleur hexadécimale du fichier hors palette est montrée telle quelle.
+- **Rendu** : les groupes sont dessinés sous les flèches et les autres cartes quel que soit leur rang dans le fichier (le rang du fichier, lui, suit § 7.3 : une carte sélectionnée ou déplacée passe en fin de tableau). Très dézoomé (sous 25 %), une carte n'est plus qu'un rectangle avec une icône.
+- **Image PNG** : même recette que la carte mentale (`foreignObject` couvrant toute l'image à l'origine, sans `x`/`y`/`viewBox` ; flèches par la transformation SVG) ; un test relit le PNG et vérifie la taille du cadre (marge de 40 points) et que chaque carte a sa zone dessinée.
+- **Média** : l'aide d'Obsidian parle de médias de l'espace de travail ; sans liste des fichiers de l'espace, le média est choisi sur le Mac et joint au canvas comme la pièce jointe d'une note (`<nom>.assets/`).

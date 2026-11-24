@@ -65,13 +65,14 @@ impl NoteSummary {
     #[must_use]
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
         let title = displayed_title_of_note(content, path.name());
+        let content_type = ContentType::of_file(path.name(), content);
         Self {
             path,
             title,
             modified,
             pinned: is_pinned(content),
             tags: tags(content),
-            content_type: ContentType::of(content),
+            content_type,
             container: None,
             node: None,
         }

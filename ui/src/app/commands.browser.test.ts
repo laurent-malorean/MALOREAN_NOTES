@@ -65,6 +65,7 @@ const deps: CommandsDeps = {
   notebooks: {
     create: async () => void log.push("nouveau cahier"),
     createMindMap: async () => void log.push("nouvelle carte mentale"),
+    createCanvas: async () => void log.push("nouveau canvas"),
   },
   folders: { startCreation: () => log.push("nouveau dossier") },
   trash: { show: async () => void log.push("corbeille") },

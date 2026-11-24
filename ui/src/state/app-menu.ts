@@ -45,6 +45,7 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "daily-note" },
       { command: "new-research-notebook", label: "Nouveau cahier de recherche…" },
       { command: "new-mind-map", label: "Nouvelle carte mentale…" },
+      { command: "new-canvas", label: "Nouveau canvas…" },
       { command: "new-folder" },
       "separator",
       { command: "quick-open", label: "Ouverture rapide…" },
@@ -122,6 +123,10 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "previous-tab" },
       "separator",
       { command: "sort-notes", label: "Trier la liste…" },
+      "separator",
+      { command: "canvas-fit" },
+      { command: "canvas-go-to-group", label: "Canvas : aller à un groupe…" },
+      { command: "canvas-export-image", label: "Canvas : exporter en image…" },
     ],
   },
   {

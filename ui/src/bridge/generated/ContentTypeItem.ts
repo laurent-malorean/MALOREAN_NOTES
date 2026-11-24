@@ -3,4 +3,4 @@
 /**
  * Le type de contenu d'un élément de l'index.
  */
-export type ContentTypeItem = "note" | "researchNotebook" | "mindMap" | "entry" | "node";
+export type ContentTypeItem = "note" | "researchNotebook" | "mindMap" | "canvas" | "entry" | "node";

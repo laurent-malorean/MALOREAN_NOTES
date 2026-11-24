@@ -1,10 +1,11 @@
 import type { ContentTypeItem } from "../bridge";
 
-/** Le nom montré de chaque type de contenu (fiches 0034, 0037, 0041 et 0050). */
+/** Le nom montré de chaque type de contenu (fiches 0034, 0037, 0041, 0050 et 0052). */
 const LABELS: Record<ContentTypeItem, string> = {
   note: "Note",
   researchNotebook: "Cahier de recherche",
   mindMap: "Carte mentale",
+  canvas: "Canvas",
   entry: "Entrée",
   node: "Nœud",
 };

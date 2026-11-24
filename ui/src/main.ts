@@ -116,7 +116,7 @@ const workspaces = createWorkspaces({
   askRemoval: (name) => askWorkspaceRemoval(layout.confirmation, name),
 });
 const newPane = paneMaker({
-  ...{ backend: bridge, shared, workspacePath: workspace.path, related: search.meaning },
+  ...{ backend: bridge, shared, workspacePath: workspace.path, related: search.meaning, layout },
   events: {
     ...{ openNote: (path) => actions.open(path), error: messages.error, show: messages.show },
     openLink: (title, inNewTab) => run(workspace.followLink(title, inNewTab)),

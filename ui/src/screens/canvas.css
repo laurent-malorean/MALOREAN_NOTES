@@ -1,0 +1,423 @@
+/* Canvas (fiche 0052) : le tableau blanc, ses cartes, ses flèches, ses boutons. Couleurs et polices viennent du thème. */
+.column > .canvas-view {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* CodeMirror impose `display: flex !important` à son éditeur. */
+.column.canvas-shown > .cm-editor {
+  display: none !important;
+}
+.canvas-view {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+  outline: none;
+  touch-action: none;
+}
+.canvas-view[hidden] {
+  display: none;
+}
+.canvas-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+  /* Le fond : des points espacés régulièrement, comme la grille d'accrochage. */
+  background-image: radial-gradient(circle, var(--marker) 1px, transparent 1.2px);
+  background-size: var(--grid-size, 20px) var(--grid-size, 20px);
+  background-position: var(--grid-x, 0) var(--grid-y, 0);
+}
+.canvas-view.space .canvas-surface {
+  cursor: grab;
+}
+.canvas-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.canvas-groups,
+.canvas-cards,
+.canvas-labels {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.canvas-arrows {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+}
+.canvas-draft {
+  pointer-events: none;
+}
+
+/* Cartes */
+.canvas-card {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--card-color, var(--border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--card-color, transparent) 14%, var(--side-panel));
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+}
+.canvas-card.selected {
+  box-shadow: 0 0 0 3px var(--accent);
+}
+.canvas-card-body {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+.canvas-card.only-selected .canvas-card-body {
+  overflow: auto;
+}
+.canvas-text-body > :first-child {
+  margin-top: 0;
+}
+.canvas-text-body > :last-child {
+  margin-bottom: 0;
+}
+.canvas-text-body h1 {
+  font-size: 1.5em;
+}
+.canvas-card-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.canvas-card-file .canvas-card-body:has(.canvas-card-image) {
+  padding: 0;
+}
+.canvas-card-file:has(.canvas-card-image) {
+  background: transparent;
+  border-color: transparent;
+}
+.canvas-card-note,
+.canvas-card-page {
+  color: var(--accent);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.canvas-card-group {
+  background: color-mix(in srgb, var(--card-color, var(--muted)) 10%, transparent);
+  border-color: var(--card-color, var(--border));
+}
+.canvas-card-group .canvas-card-body {
+  padding: 0;
+  pointer-events: none;
+}
+.canvas-group-label {
+  position: absolute;
+  left: -2px;
+  top: -30px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 3px 10px;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--card-color, var(--selected));
+  color: var(--on-accent);
+  font-size: 14px;
+  pointer-events: auto;
+}
+.canvas-card-group .canvas-card-body {
+  overflow: visible;
+}
+.canvas-far-icon {
+  display: none;
+}
+.canvas-far .canvas-far-icon {
+  display: flex;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+.canvas-far .canvas-far-icon .canvas-icon {
+  width: 70%;
+  max-width: 120px;
+}
+.canvas-far .canvas-card-body > * {
+  visibility: hidden;
+}
+.canvas-far .canvas-card-group .canvas-far-icon {
+  display: none;
+}
+.canvas-far .canvas-card:not(.canvas-card-group) {
+  background: color-mix(in srgb, var(--card-color, var(--muted)) 60%, var(--bg));
+}
+.canvas-editor {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 8px 10px;
+  border: 0;
+  resize: none;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  outline: 2px solid var(--accent);
+}
+.canvas-card-group > .canvas-editor {
+  inset: auto;
+  left: 0;
+  top: -32px;
+  width: 200px;
+  height: 28px;
+  padding: 2px 8px;
+}
+
+/* Poignées : huit pour redimensionner, quatre ronds pour tirer une flèche */
+.canvas-grip,
+.canvas-link-dot {
+  position: absolute;
+  display: none;
+}
+.canvas-card.only-selected .canvas-grip {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: -6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.canvas-grip-lt {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.canvas-grip-t {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+.canvas-grip-rt {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+.canvas-grip-r {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+.canvas-grip-rb {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+.canvas-grip-b {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+.canvas-grip-lb {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+.canvas-grip-l {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}
+.canvas-card:hover > .canvas-link-dot,
+.canvas-card.only-selected > .canvas-link-dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: -7px;
+  border-radius: 50%;
+  background: var(--card-color, var(--accent));
+  border: 2px solid var(--bg);
+  cursor: crosshair;
+}
+.canvas-card.editing > .canvas-link-dot,
+.canvas-card.editing > .canvas-grip {
+  display: none;
+}
+.canvas-link-dot-top {
+  left: 50%;
+  top: 0;
+}
+.canvas-link-dot-right {
+  left: 100%;
+  top: 50%;
+}
+.canvas-link-dot-bottom {
+  left: 50%;
+  top: 100%;
+}
+.canvas-link-dot-left {
+  left: 0;
+  top: 50%;
+}
+
+/* Flèches */
+.canvas-arrow-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 16px;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.canvas-arrow-line {
+  fill: none;
+  stroke: var(--arrow-color, var(--muted));
+  stroke-width: 2px;
+  pointer-events: none;
+}
+.canvas-arrow-head {
+  fill: var(--arrow-color, var(--muted));
+  pointer-events: none;
+}
+.canvas-arrow.selected .canvas-arrow-line {
+  stroke-width: 4px;
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+.canvas-arrow-end {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 2px;
+  cursor: grab;
+}
+.canvas-arrow-draft {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2px;
+  stroke-dasharray: 6 4;
+}
+.canvas-arrow-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  white-space: pre-wrap;
+  pointer-events: none;
+}
+.canvas-arrow-label.selected {
+  outline: 2px solid var(--accent);
+}
+.canvas-labels > .canvas-editor {
+  position: absolute;
+  inset: auto;
+  width: 160px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  padding: 2px 8px;
+}
+
+/* Boutons */
+.canvas-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.canvas-button-group {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--side-panel);
+}
+.canvas-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.canvas-button:hover:not(:disabled) {
+  background: var(--selected);
+}
+.canvas-button:disabled {
+  color: var(--marker);
+  cursor: default;
+}
+.canvas-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.canvas-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--side-panel);
+}
+.canvas-selection-bar {
+  position: absolute;
+  transform: translateX(-50%) translateY(-100%);
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 320px;
+  justify-content: center;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--side-panel);
+}
+.canvas-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+.canvas-swatches[hidden] {
+  display: none;
+}
+.canvas-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch);
+  cursor: pointer;
+}
+.canvas-swatch.current {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}

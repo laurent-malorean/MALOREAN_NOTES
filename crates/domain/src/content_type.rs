@@ -1,6 +1,7 @@
 //! Le type de contenu de chaque élément de l'index (fiches 0034, 0037 et 0041) : la note, le
 //! cahier de recherche, et l'entrée d'un cahier de recherche.
 
+use crate::FileName;
 use crate::front_matter::declared_type;
 
 /// La sorte d'élément que l'index garde.
@@ -14,6 +15,8 @@ pub enum ContentType {
     /// Une note montrée en carte, déclarée par `type: carte-mentale` dans son en-tête
     /// (fiche 0050).
     MindMap,
+    /// Un canvas : un fichier `.canvas`, reconnu à son extension et non à un en-tête (fiche 0052).
+    Canvas,
     /// Une entrée d'un cahier de recherche : elle n'a pas de fichier à elle, son cahier est son
     /// conteneur. Aucun en-tête ne la déclare.
     Entry,
@@ -24,16 +27,22 @@ pub enum ContentType {
 
 impl ContentType {
     /// Tous les types de contenu : ce sur quoi porte une recherche par défaut.
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::Note,
         Self::ResearchNotebook,
         Self::MindMap,
+        Self::Canvas,
         Self::Entry,
         Self::Node,
     ];
 
     /// Les types qu'une note (un fichier) peut avoir.
-    pub const FILES: [Self; 3] = [Self::Note, Self::ResearchNotebook, Self::MindMap];
+    pub const FILES: [Self; 4] = [
+        Self::Note,
+        Self::ResearchNotebook,
+        Self::MindMap,
+        Self::Canvas,
+    ];
 
     /// Le nom du type, tel que l'écrit la propriété `type:` d'un en-tête et que l'index le
     /// garde.
@@ -43,6 +52,7 @@ impl ContentType {
             Self::Note => "note",
             Self::ResearchNotebook => "cahier-de-recherche",
             Self::MindMap => "carte-mentale",
+            Self::Canvas => "canvas",
             Self::Entry => "entree",
             Self::Node => "noeud",
         }
@@ -60,8 +70,24 @@ impl ContentType {
     #[must_use]
     pub fn of(content: &str) -> Self {
         declared_type(content)
-            .and_then(|name| Self::FILES.into_iter().find(|kind| kind.name() == name))
+            .and_then(|name| {
+                Self::FILES
+                    .into_iter()
+                    .filter(|kind| *kind != Self::Canvas)
+                    .find(|kind| kind.name() == name)
+            })
             .unwrap_or(Self::Note)
+    }
+
+    /// Le type du fichier `name` de texte `content` : un canvas si son nom finit par `.canvas`,
+    /// sinon celui que déclare l'en-tête de la note ([`Self::of`]).
+    #[must_use]
+    pub fn of_file(name: &FileName, content: &str) -> Self {
+        if name.is_canvas() {
+            Self::Canvas
+        } else {
+            Self::of(content)
+        }
     }
 }
 
@@ -78,6 +104,7 @@ mod tests {
                 "note",
                 "cahier-de-recherche",
                 "carte-mentale",
+                "canvas",
                 "entree",
                 "noeud"
             ]
@@ -94,13 +121,14 @@ mod tests {
     }
 
     #[test]
-    fn only_notes_research_notebooks_and_mind_maps_are_files() {
+    fn only_notes_research_notebooks_mind_maps_and_canvases_are_files() {
         assert_eq!(
             ContentType::FILES,
             [
                 ContentType::Note,
                 ContentType::ResearchNotebook,
-                ContentType::MindMap
+                ContentType::MindMap,
+                ContentType::Canvas
             ]
         );
     }
@@ -121,5 +149,23 @@ mod tests {
         assert_eq!(of("---\ntype: kanban\n---\n# K"), ContentType::Note);
         assert_eq!(of("---\ntype: entree\n---\n# E"), ContentType::Note);
         assert_eq!(of("---\ntype: noeud\n---\n# N"), ContentType::Note);
+        assert_eq!(of("---\ntype: canvas\n---\n# N"), ContentType::Note);
+    }
+
+    #[test]
+    fn a_canvas_is_known_by_its_file_name_and_never_by_a_header() {
+        let name = |text: &str| FileName::parse(text).unwrap();
+        assert_eq!(
+            ContentType::of_file(&name("plan.canvas"), "{}"),
+            ContentType::Canvas
+        );
+        assert_eq!(
+            ContentType::of_file(&name("plan.md"), "---\ntype: carte-mentale\n---\n# P"),
+            ContentType::MindMap
+        );
+        assert_eq!(
+            ContentType::of_file(&name("plan.md"), "---\ntype: canvas\n---\n# P"),
+            ContentType::Note
+        );
     }
 }

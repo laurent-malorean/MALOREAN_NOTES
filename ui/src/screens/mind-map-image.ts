@@ -3,11 +3,11 @@
 // dessinée sur un canevas puis lue en PNG. Le zoom et la vue de l'écran ne changent pas l'image.
 import { IMAGE_SCALE, type ImageFrame } from "../state/mind-map-image";
 
-const SVG = "http://www.w3.org/2000/svg";
-const XHTML = "http://www.w3.org/1999/xhtml";
+export const SVG = "http://www.w3.org/2000/svg";
+export const XHTML = "http://www.w3.org/1999/xhtml";
 
 /** Une copie de l'élément et de ce qu'il contient, chacun portant son apparence calculée. */
-function withStyles(element: Element): HTMLElement {
+export function withStyles(element: Element): HTMLElement {
   const copy = element.cloneNode(true) as HTMLElement;
   const originals = [element, ...element.querySelectorAll("*")];
   const copies = [copy, ...copy.querySelectorAll<HTMLElement>("*")];
@@ -24,7 +24,7 @@ function withStyles(element: Element): HTMLElement {
 }
 
 /** Le fond de la carte : le sien, sinon celui de la page. */
-function backgroundOf(surface: HTMLElement): string {
+export function backgroundOf(surface: HTMLElement): string {
   const own = getComputedStyle(surface).backgroundColor;
   const transparent = /,\s*0\)$/.test(own) || own === "transparent";
   return transparent ? getComputedStyle(document.body).backgroundColor : own;
@@ -78,7 +78,7 @@ function svgOf(
   return svg;
 }
 
-function loaded(source: string): Promise<HTMLImageElement> {
+export function loaded(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => resolve(image);
@@ -94,7 +94,11 @@ export async function mapImage(
   world: HTMLElement,
   links: Element,
 ): Promise<Uint8Array> {
-  const svg = svgOf(frame, world, links, backgroundOf(surface));
+  return pngOf(frame, svgOf(frame, world, links, backgroundOf(surface)));
+}
+
+/** L'image PNG d'une image SVG déjà composée, à la taille de `frame`. */
+export async function pngOf(frame: ImageFrame, svg: SVGSVGElement): Promise<Uint8Array> {
   const markup = new XMLSerializer().serializeToString(svg);
   const image = await loaded(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`);
   const canvas = document.createElement("canvas");

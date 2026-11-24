@@ -3,12 +3,14 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+mod canvas;
 mod claude;
 mod claude_load;
 mod meaning;
 mod mind_map;
 mod turn_settings;
 
+pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
 pub use meaning::{
     MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,
@@ -100,6 +102,8 @@ pub enum ContentTypeItem {
     ResearchNotebook,
     /// Une carte mentale.
     MindMap,
+    /// Un canvas.
+    Canvas,
     /// Une entrée d'un cahier de recherche.
     Entry,
     /// Un nœud d'une carte mentale.
@@ -112,6 +116,7 @@ impl From<domain::ContentType> for ContentTypeItem {
             domain::ContentType::Note => Self::Note,
             domain::ContentType::ResearchNotebook => Self::ResearchNotebook,
             domain::ContentType::MindMap => Self::MindMap,
+            domain::ContentType::Canvas => Self::Canvas,
             domain::ContentType::Entry => Self::Entry,
             domain::ContentType::Node => Self::Node,
         }

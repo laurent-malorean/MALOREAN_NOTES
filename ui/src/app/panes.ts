@@ -1,5 +1,6 @@
 // L'éditeur de chaque colonne : branché sur les notes partagées, réglé comme les autres colonnes.
 import type { Editor } from "../editor/editor";
+import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./canvas-host";
 import { imageAddress } from "../editor/image-address";
 import type { ColumnParts } from "../screens/columns-view";
 import {
@@ -10,15 +11,19 @@ import {
   type PaneEvents,
   type RelatedNotes,
 } from "../screens/note-pane";
+import type { Layout } from "../screens/layout";
 import type { SharedNotes } from "../screens/shared-notes";
 import { folderOf } from "../state/folders";
 
 export interface PanesDeps {
-  readonly backend: PaneBackend & { readonly fileAddress: (path: string) => string };
+  readonly backend: PaneBackend &
+    Partial<CanvasHostBackend> & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
   /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
   readonly notebook: NotebookActions;
+  /** Les fenêtres de l'écran, dont se sert le canvas d'une colonne pour choisir et demander (fiche 0052). */
+  readonly layout?: Pick<Layout, "picker" | "confirmation">;
   /** Les notes proches de chaque colonne : demandées ou non, et lues par Rust. */
   readonly related?: RelatedNotes;
   /** Le dossier de l'espace de travail ouvert. */
@@ -38,6 +43,15 @@ export function imageIn(
   return imageAddress(src, folder ? `${workspacePath}/${folder}` : workspacePath, fileAddress);
 }
 
+/** Ce que le canvas d'une colonne demande à l'application ; rien si les fenêtres ou le pont manquent. */
+function canvasOf(deps: PanesDeps) {
+  const { backend, layout } = deps;
+  if (layout === undefined || !hasCanvasBackend(backend)) return {};
+  return {
+    canvas: createCanvasHost({ backend, picker: layout.picker, dialog: layout.confirmation }),
+  };
+}
+
 /** Ce qui pose l'éditeur d'une colonne qui vient d'apparaître. */
 export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
   return (parts) => {
@@ -47,6 +61,7 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       events: deps.events,
       notebook: deps.notebook,
       related: deps.related,
+      ...canvasOf(deps),
       resolveImage: (src, note) =>
         imageIn(deps.workspacePath(), note, src, deps.backend.fileAddress),
     });

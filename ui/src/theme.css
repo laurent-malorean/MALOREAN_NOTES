@@ -10,17 +10,17 @@
 
   /* Couleurs */
   --bg: #fbfaf7;
-  /* Palette des nœuds d'une carte mentale : la même dans les deux thèmes (fiche 0050) */
-  --mind-map-rouge: #dc2626;
-  --mind-map-orange: #f97316;
-  --mind-map-jaune: #e3c400;
-  --mind-map-vert: #22a447;
-  --mind-map-turquoise: #14b8b0;
-  --mind-map-bleu: #2563eb;
-  --mind-map-violet: #9333ea;
-  --mind-map-rose: #ec6aa8;
-  --mind-map-marron: #92643a;
-  --mind-map-ardoise: #64748b;
+  /* Palette de l'application, définie une seule fois : la même dans les deux thèmes, pour la carte mentale, le canvas et toute fonction à venir qui colore (fiches 0050 et 0052) */
+  --palette-rouge: #dc2626;
+  --palette-orange: #f97316;
+  --palette-jaune: #e3c400;
+  --palette-vert: #22a447;
+  --palette-turquoise: #14b8b0;
+  --palette-bleu: #2563eb;
+  --palette-violet: #9333ea;
+  --palette-rose: #ec6aa8;
+  --palette-marron: #92643a;
+  --palette-ardoise: #64748b;
   --side-panel: #f2f0eb;
   --text: #1f1f1f;
   --muted: #6b6b6b;

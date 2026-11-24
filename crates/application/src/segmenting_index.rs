@@ -14,10 +14,13 @@ use crate::{IndexedNote, MeaningIndex, MeaningIndexError, NoteIndex, NoteStamp, 
 use domain::search::SearchQuery;
 
 /// Les segments de la note `note` de contenu `content` : son titre affiché sert de titre de
-/// note. Un cahier de recherche est segmenté comme une note (ses entrées n'ont pas de segments) ; une carte mentale donne un segment par nœud (fiche 0050).
+/// note. Un cahier de recherche est segmenté comme une note (ses entrées n'ont pas de segments) ; une carte mentale donne un segment par nœud (fiche 0050) ; un canvas est segmenté sur les textes qu'il montre (fiche 0052).
 #[must_use]
 pub fn note_segments(note: &NotePath, content: &str) -> Vec<Segment> {
     let title = displayed_title_of_note(content, note.name());
+    if note.name().is_canvas() {
+        return segments(&title, &domain::canvas::searchable_text(content));
+    }
     if is_mind_map(content) {
         return node_segments(&title, content);
     }

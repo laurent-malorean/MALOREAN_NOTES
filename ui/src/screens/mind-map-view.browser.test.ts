@@ -64,7 +64,7 @@ describe("carte mentale : affichage", () => {
     expect(element.querySelector("a")?.getAttribute("href")).toBe("#wiki-Autre%20note");
     expect(element.querySelectorAll(".mind-map-detail li")).toHaveLength(2);
     expect(element.classList.contains("colored")).toBe(true);
-    expect(element.style.getPropertyValue("--node-color")).toBe("var(--mind-map-bleu)");
+    expect(element.style.getPropertyValue("--node-color")).toBe("var(--palette-bleu)");
   });
 
   it("garde en texte un titre qui ressemble à du Markdown de bloc", async () => {

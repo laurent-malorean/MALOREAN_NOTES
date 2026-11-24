@@ -28,7 +28,7 @@ function entryButton(entry: MenuEntry): HTMLButtonElement {
   if (entry.swatch !== undefined) {
     const swatch = document.createElement("span");
     swatch.className = "context-menu-swatch";
-    swatch.style.setProperty("--swatch", `var(--mind-map-${entry.swatch})`);
+    swatch.style.setProperty("--swatch", `var(--palette-${entry.swatch})`);
     button.append(swatch);
   }
   button.append(entry.label);

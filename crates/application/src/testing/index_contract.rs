@@ -64,6 +64,7 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     each_entry_is_searched_on_its_own_with_its_notebook_for_container(&empty_index());
     entries_follow_their_notebook_kept_again_removed_or_cleared(&empty_index());
     a_mind_map_is_searched_by_title_and_tags_and_each_node_on_its_own(&empty_index());
+    a_canvas_is_searched_by_its_name_and_the_texts_it_shows(&empty_index());
     nodes_follow_their_mind_map_kept_again_removed_or_cleared(&empty_index());
 }
 
@@ -481,4 +482,23 @@ fn nodes_follow_their_mind_map_kept_again_removed_or_cleared<I: NoteIndex>(index
     index.put(&[note("Labo/recettes.md", MIND_MAP, 9)]).unwrap();
     index.clear().unwrap();
     assert_eq!(nodes(index), 0);
+}
+
+const CANVAS: &str = "{\n\t\"nodes\":[\n\t\t{\"id\":\"a3f9c2d41b7e8056\",\"type\":\"text\",\"text\":\"farine et eau\",\"x\":0,\"y\":0,\"width\":250,\"height\":60}\n\t],\n\t\"edges\":[]\n}";
+
+fn a_canvas_is_searched_by_its_name_and_the_texts_it_shows(index: &impl NoteIndex) {
+    index
+        .put(&[note("Labo/recettes.canvas", CANVAS, 5)])
+        .unwrap();
+    let by = |query: &str| found_items(index, query, &[ContentType::Canvas]);
+    assert_eq!(by("farine").len(), 1);
+    assert_eq!(by("recettes").len(), 1);
+    // Le JSON du fichier n'est pas cherché : seulement ce que le canvas montre.
+    assert!(by("nodes").is_empty());
+    assert!(by("width").is_empty());
+    let found = &by("farine")[0];
+    assert_eq!(found.0.content_type(), ContentType::Canvas);
+    assert_eq!(found.0.title(), "recettes");
+    assert_eq!(found.1, "recettes\nfarine et eau");
+    assert!(found_items(index, "farine", &[ContentType::Note]).is_empty());
 }

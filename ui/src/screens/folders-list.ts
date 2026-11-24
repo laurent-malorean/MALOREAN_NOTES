@@ -22,6 +22,7 @@ export interface FolderActions {
   /** Crée, dans ce dossier, une note, une carte mentale ou un cahier de recherche. */
   readonly newNote: (folder: string) => void;
   readonly newMindMap: (folder: string) => void;
+  readonly newCanvas: (folder: string) => void;
   readonly newNotebook: (folder: string) => void;
 }
 
@@ -109,6 +110,7 @@ function item(
     showContextMenu(event.clientX, event.clientY, [
       { label: "Nouvelle note", run: () => actions.newNote(path) },
       { label: "Nouvelle carte mentale", run: () => actions.newMindMap(path) },
+      { label: "Nouveau canvas", run: () => actions.newCanvas(path) },
       { label: "Nouveau cahier de recherche", run: () => actions.newNotebook(path) },
       ...(path === ROOT
         ? []
