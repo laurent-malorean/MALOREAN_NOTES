@@ -10,7 +10,7 @@ Le dossier de compilation de Cargo pesait 40 Go le 23/11 (31 Go de `target/debug
 ## Décision
 
 1. Un ménage (`scripts/ci-menage.sh`) retire seulement le périmé : les variantes de compilation (`build/<crate>/<empreinte>`, `deps`, `incremental`, le même sous `llvm-cov-target`, fichiers `.profraw`) dont aucun fichier n'a été lu ni modifié depuis plus d'un jour, sauf la variante la plus récemment utilisée de chaque crate. Les copies temporaires de cargo-mutants (`$TMPDIR/cargo-mutants-*.tmp`) et la copie figée de `--copie` suivent la même règle.
-2. Seulement au-delà de 20 Go (constante `SEUIL_GO`).
+2. Seulement au-delà de 8 Go (constante `SEUIL_GO`).
 3. Jamais pendant qu'un passage de la CI, la mutation du diff, un `cargo` ou un autre ménage tourne (contrôle des processus plus verrou) : il saute, avec une ligne qui le dit.
 4. À la fin de la barrière de commit (hors documentation seule) et de `--complet`, réussies ou non, silencieux hors un résumé d'une ligne ; son échec ne fait jamais échouer la CI. À part : `scripts/ci.sh --menage`, et `--menage --a-blanc` qui liste sans rien effacer.
 5. Garde-fous : `CARGO_TARGET_DIR` respecté ; le dossier doit porter la marque de Cargo (`CACHEDIR.TAG`), ne pas être un lien, ni `/`, ni le dossier personnel, ni le dépôt ; tout effacement est vérifié sous ce dossier.
@@ -19,7 +19,7 @@ Le dossier de compilation de Cargo pesait 40 Go le 23/11 (31 Go de `target/debug
 
 - **Date d'accès ou de modification, pas la modification seule** : Cargo réutilise une variante en lisant ses fichiers d'empreinte sans les modifier ; avec la seule date de modification, ce qui sert tous les jours serait jeté chaque jour et recompilé. Mesuré sur ce Mac (APFS) : la date d'accès de la variante réutilisée est à jour. On ne regarde que les fichiers, jamais les dossiers (les parcourir mettrait leur date d'accès à jour et fausserait la mesure suivante).
 - **Un jour** : une variante inutilisée depuis plus d'un jour correspond à un état du code ou des options que le travail courant n'utilise plus.
-- **Seuil** : sous 20 Go, le disque ne souffre pas ; le ménage ne coûte alors rien.
+- **Seuil** : sous 8 Go, le disque ne souffre pas ; le ménage ne coûte alors rien.
 
 ## Mesures
 

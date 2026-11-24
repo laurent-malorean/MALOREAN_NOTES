@@ -22,7 +22,7 @@ cd "$(dirname "$0")/.."
 ROOT=$(pwd -P)
 readonly ROOT
 
-readonly SEUIL_GO=20
+readonly SEUIL_GO=8
 readonly SEUIL_KO=${MENAGE_SEUIL_KO:-$((SEUIL_GO * 1024 * 1024))}
 readonly AGE_MAX_SECONDES=86400
 readonly CARGO_SIGNATURE=8a477f597d28d172789f06886806bc55
