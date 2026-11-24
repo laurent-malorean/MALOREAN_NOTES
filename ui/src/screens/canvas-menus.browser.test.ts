@@ -41,6 +41,7 @@ describe("canvas : menus du clic droit", () => {
       "Ajouter un média de l'espace de travail",
       "Ajouter une page web",
       "Créer un groupe",
+      "Aller à un groupe",
     ]);
     choose("Ajouter une note de l'espace de travail");
     await vi.waitFor(() => expect(m.saved).toHaveLength(1));
@@ -224,6 +225,28 @@ describe("canvas : vue, réglages, aide", () => {
     key("2", { shiftKey: true, code: "Digit2" });
     expect(transform()).not.toBe(before);
     button("Zoom sur la sélection").click();
+  });
+
+  it("« Aller à un groupe » lance l'action ; il est grisé sans groupe et reste offert en lecture seule", async () => {
+    const m = await mount();
+    rightClick(surface());
+    const entry = () =>
+      [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].find(
+        (b) => b.textContent === "Aller à un groupe",
+      );
+    expect(entry()?.disabled).toBe(false);
+    choose("Aller à un groupe");
+    expect(m.launched.goToGroup).toBe(1);
+    button("Réglages du canvas").click();
+    choose("Lecture seule");
+    rightClick(surface());
+    expect(menuItems()).toEqual(["Aller à un groupe"]);
+    closeContextMenu();
+    const empty = await mount({ cards: [], arrows: [], extra: [] });
+    rightClick(surface());
+    expect(entry()?.disabled).toBe(true);
+    choose("Aller à un groupe");
+    expect(empty.launched.goToGroup).toBe(0);
   });
 
   it("l'engrenage a trois cases gardées ; en lecture seule on ne change rien", async () => {

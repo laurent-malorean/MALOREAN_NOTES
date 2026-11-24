@@ -144,6 +144,8 @@ class ColumnCanvas implements CanvasPane {
       chooseMedia: () => deps.chooseMedia(path),
       askText: deps.askText,
       copy: deps.copy,
+      exportImage: () => void this.exportImage().catch(error),
+      goToGroup: () => void this.goToGroup().catch(error),
       notice,
       error,
       settings: settingsMemory,

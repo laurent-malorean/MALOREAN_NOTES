@@ -12,6 +12,7 @@ export interface MenuActions {
   readonly addMedia: () => void;
   readonly addPage: () => void;
   readonly addGroup: () => void;
+  readonly goToGroup: () => void;
   readonly groupSelection: () => void;
   readonly edit: () => void;
   readonly remove: () => void;
@@ -29,12 +30,13 @@ export interface MenuActions {
   readonly toggleSetting: (name: "grid" | "objects" | "readOnly") => void;
 }
 
-/** Sur le canvas : ajouter une note, un média, une page web, créer un groupe. */
-export const canvasMenu = (a: MenuActions): CanvasEntry[] => [
+/** Sur le canvas : ajouter une note, un média, une page web, créer un groupe, aller à un groupe (grisé sans groupe). */
+export const canvasMenu = (a: MenuActions, hasGroups: boolean): CanvasEntry[] => [
   { label: "Ajouter une note de l'espace de travail", run: a.addNote },
   { label: "Ajouter un média de l'espace de travail", run: a.addMedia },
   { label: "Ajouter une page web", run: a.addPage },
   { label: "Créer un groupe", run: a.addGroup },
+  { label: "Aller à un groupe", readOnly: true, disabled: !hasGroups, run: a.goToGroup },
 ];
 
 export type CardMenuKind = "text" | "file" | "link" | "group";
@@ -112,6 +114,9 @@ export const settingsMenu = (
 ];
 
 /** Les raccourcis que le canvas connaît : ce que montre le bouton d'aide. */
+export const helpMenu = (): MenuEntry[] =>
+  HELP_LINES.map((label) => ({ label, disabled: true, run: () => undefined }));
+
 export const HELP_LINES: readonly string[] = [
   "Double-clic sur le canvas : une carte texte.",
   "Maj + clic : ajouter ou retirer une carte de la sélection.",

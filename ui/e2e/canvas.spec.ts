@@ -380,3 +380,54 @@ test("une photo en hauteur ajoutée au canvas : la carte suit ses proportions, s
   expect(Math.abs(imageAfter.width - resized.width)).toBeLessThanOrEqual(1);
   expect(Math.abs(imageAfter.height - resized.height)).toBeLessThanOrEqual(1);
 });
+
+for (const appearance of ["dark", "light"]) {
+  test(`le bouton « Exporter en image » de la colonne de commandes lance l'export ; son icône est mesurée (thème ${appearance})`, async ({
+    page,
+  }) => {
+    await launch(page, NOTES, { servedImages: "1" });
+    await page.evaluate((a) => (document.documentElement.dataset.appearance = a), appearance);
+    await page.locator(".note-item", { hasText: "plan" }).click();
+    await expect(page.locator(".canvas-view")).toBeVisible();
+    const exportButton = page.getByRole("button", { name: "Exporter en image" });
+    await expect(exportButton).toBeEnabled();
+    await expect(exportButton).toHaveAttribute("title", "Exporter en image");
+    const icon = await exportButton.evaluate((b) => {
+      const svg = b.querySelector("svg") as SVGElement;
+      const box = svg.getBoundingClientRect();
+      const outer = b.getBoundingClientRect();
+      const stroke = getComputedStyle(svg.querySelector("path") as Element).stroke;
+      return {
+        w: box.width,
+        h: box.height,
+        inside: box.left >= outer.left && box.right <= outer.right,
+        stroke,
+        color: getComputedStyle(b).color,
+      };
+    });
+    expect(icon).toMatchObject({ w: 18, h: 18, inside: true });
+    expect(icon.stroke).toBe(icon.color);
+    expect(icon.color).toBe(appearance === "dark" ? "rgb(232, 230, 225)" : "rgb(31, 31, 31)");
+    if (SHOTS && appearance === "dark")
+      await page
+        .locator(".canvas-controls")
+        .screenshot({ path: `${SHOTS}/canvas-bouton-export.png` });
+    await exportButton.click();
+    const path = "/Users/moi/Notes/plan.png";
+    await expect
+      .poll(() => page.evaluate((p) => window.backend.exportedImages[p]?.length ?? 0, path))
+      .toBeGreaterThan(1000);
+  });
+}
+
+test("le clic droit sur le fond propose « Aller à un groupe » : la liste des groupes, puis la vue centrée sur le choisi", async ({
+  page,
+}) => {
+  await launch(page, NOTES);
+  await page.locator(".note-item", { hasText: "plan" }).click();
+  await expect(page.locator(".canvas-view")).toBeVisible();
+  await page.locator(".canvas-surface").click({ button: "right", position: { x: 5, y: 5 } });
+  await page.getByRole("menuitem", { name: "Aller à un groupe" }).click();
+  await page.getByRole("dialog", { name: "Aller à un groupe" }).getByText("Phase 1").click();
+  await expect(page.locator('.canvas-card[data-id="a1a1a1a1a1a1a1a1"]')).toHaveClass(/selected/);
+});

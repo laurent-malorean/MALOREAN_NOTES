@@ -39,7 +39,7 @@ import { type CardPainter, type CardPainterOptions, createCardPainter } from "./
 import { createBar, createControls } from "./canvas-controls";
 import { type EditHost, editArrowLabel, editGroupLabel, editText } from "./canvas-edit";
 import { attachGestures } from "./canvas-gestures";
-import { HELP_LINES, alignMenu, senseMenu, settingsMenu } from "./canvas-menus";
+import { alignMenu, helpMenu, senseMenu, settingsMenu } from "./canvas-menus";
 import { createSelectionBar } from "./canvas-selection-bar";
 import { type MenuEntry, closeContextMenu, showContextMenu } from "./context-menu";
 import "./canvas.css";
@@ -71,6 +71,9 @@ export interface CanvasViewOptions {
   /** Demande un texte ; `null` si on annule. */
   readonly askText: (question: string, initial: string, confirm: string) => Promise<string | null>;
   readonly copy: (text: string) => void;
+  /** Les actions « Canvas : exporter en image » et « Canvas : aller à un groupe » (bouton, menu du clic droit). */
+  readonly exportImage: () => void;
+  readonly goToGroup: () => void;
   readonly notice: (message: string) => void;
   readonly error: (error: unknown) => void;
   readonly settings: {
@@ -148,7 +151,7 @@ class View implements CanvasView {
       zoomToSelection: () => this.zoomToSelection(),
       ...{ chooseNote: options.chooseNote, chooseMedia: options.chooseMedia },
       resolveImage: options.painter.resolveImage,
-      ...{ askText: options.askText, copy: options.copy },
+      ...{ askText: options.askText, copy: options.copy, goToGroup: options.goToGroup },
       ...{ openExternal: options.openExternal, error: options.error },
     });
     this.controls = createControls({
@@ -157,13 +160,11 @@ class View implements CanvasView {
       zoomIn: () => this.zoomBy(ZOOM_STEP),
       resetZoom: () => this.setView(initial(this.size())),
       fit: () => this.fitAll(),
+      exportImage: options.exportImage,
       zoomOut: () => this.zoomBy(1 / ZOOM_STEP),
       undo: () => this.undo(),
       redo: () => this.redo(),
-      help: (at) =>
-        this.menuAtButton(at, () =>
-          HELP_LINES.map((label) => ({ label, disabled: true, run: () => undefined })),
-        ),
+      help: (at) => this.menuAtButton(at, helpMenu),
     });
     this.element.append(
       this.controls.element,
@@ -417,6 +418,7 @@ class View implements CanvasView {
     drawArrows(this.lines, this.labels, this.data, new Set(this.ids("arrow")), editingArrow);
     this.applyView();
     this.controls.history(this.history.past.length > 0, this.history.future.length > 0);
+    this.controls.exportable(this.data.cards.length > 0);
     this.drawBar();
   }
 
