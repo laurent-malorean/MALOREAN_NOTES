@@ -84,3 +84,40 @@ test("la recherche trouve une entrée seule, avec son cahier", async ({ page }) 
   await results.nth(1).click();
   await expect(entryArea(page)).toBeVisible();
 });
+
+const LONG_NOTEBOOK = `${NOTEBOOK}
+## 2026
+
+### Novembre
+
+#### Lundi 23
+
+- 09:42 - Première observation
+- 10:15 - Observation longue : la levure monte lentement, la mousse tient bien et l'odeur reste
+  franche, sans note de solvant, pendant toute la durée de la fermentation observée ce matin.
+
+  Un paragraphe en retrait détaille la température relevée.
+  - sous-puce : 19 degrés
+  - sous-puce : 20 degrés
+- 11:03 - Troisième observation
+`;
+
+for (const appearance of ["light", "dark"]) {
+  test(`chaque entrée du cahier a sa barre à gauche, séparée de la suivante (thème ${appearance})`, async ({
+    page,
+  }) => {
+    await launch(page, {
+      ...NOTES,
+      "Labo/levures.md": { content: LONG_NOTEBOOK, modified: 10 },
+    });
+    await page.evaluate(
+      (value) => (document.documentElement.dataset.appearance = value),
+      appearance,
+    );
+    await page.getByRole("searchbox", { name: "Rechercher" }).fill("levure");
+    await page.locator(".match-results .search-result").first().click();
+    await expect(page.locator(".cm-line.entry-bar-first")).toHaveCount(3);
+    const bars = await page.locator(".cm-line.entry-bar").count();
+    expect(bars).toBe(8);
+  });
+}

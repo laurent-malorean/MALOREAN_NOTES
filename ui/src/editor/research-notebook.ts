@@ -1,7 +1,21 @@
 // Cahier de recherche dans l'éditeur (fiche 0041) : en lecture seule, avec en bas la zone de saisie.
 // Seul Rust y ajoute des entrées ; l'éditeur montre sa nouvelle version.
-import { type AnnotationType, EditorState, type Extension, type Text } from "@codemirror/state";
-import { type Panel, showPanel } from "@codemirror/view";
+import { syntaxTree } from "@codemirror/language";
+import {
+  type AnnotationType,
+  EditorState,
+  type Extension,
+  type Range,
+  StateField,
+  type Text,
+} from "@codemirror/state";
+import {
+  Decoration,
+  type DecorationSet,
+  EditorView,
+  type Panel,
+  showPanel,
+} from "@codemirror/view";
 import { frontMatterEnd } from "./front-matter";
 
 /** Le nom du type de contenu des cahiers de recherche, tel que l'écrit leur en-tête. */
@@ -68,6 +82,37 @@ function entryArea(addEntry: AddEntry, today: () => Date): Panel {
   return { dom, top: false };
 }
 
+const ENTRY_LINE = Decoration.line({ class: "entry-bar" });
+const ENTRY_FIRST_LINE = Decoration.line({ class: "entry-bar entry-bar-first" });
+
+/**
+ * Les barres d'entrée : chaque élément de liste du premier niveau (hors en-tête) est une entrée,
+ * dont toutes les lignes portent la barre, la première en plus la marque `entry-bar-first`.
+ */
+function entryBars(state: EditorState): DecorationSet {
+  if (!isResearchNotebook(state.doc)) return Decoration.none;
+  const { doc } = state;
+  const headerEnd = frontMatterEnd(doc);
+  const ranges: Range<Decoration>[] = [];
+  syntaxTree(state).iterate({
+    enter: (node) => {
+      if (node.to <= headerEnd) return false;
+      if (node.name !== "ListItem") return node.name === "Document" || node.name === "BulletList";
+      if (node.node.parent?.parent?.name !== "Document") return false;
+      const last = doc.lineAt(node.to).number;
+      for (let n = doc.lineAt(node.from).number; n <= last; n++) {
+        ranges.push(
+          (n === doc.lineAt(node.from).number ? ENTRY_FIRST_LINE : ENTRY_LINE).range(
+            doc.line(n).from,
+          ),
+        );
+      }
+      return false;
+    },
+  });
+  return Decoration.set(ranges);
+}
+
 /**
  * Un cahier de recherche se lit sans se modifier : aucune frappe, aucun collage, aucune mise en
  * forme ; seules passent les transactions marquées `allowed` (version relue sur le disque, frappe
@@ -87,6 +132,11 @@ export function researchNotebook(
       (transaction) =>
         transaction.annotation(allowed) === true || !notebook(transaction.startState),
     ),
+    StateField.define<DecorationSet>({
+      create: entryBars,
+      update: (_, transaction) => entryBars(transaction.state),
+      provide: (field) => EditorView.decorations.from(field),
+    }),
     bar ? showPanel.compute(["doc"], (state) => (notebook(state) ? bar : null)) : [],
   ];
 }

@@ -3,6 +3,8 @@ import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { createEditor, type EditorOptions } from "./editor";
+import "../theme.css";
+import "../style.css";
 import { entryDayLabel, isResearchNotebook } from "./research-notebook";
 
 const NOTEBOOK = "---\ntype: cahier-de-recherche\n---\n# Levures\n\n- 18:30 - un\n";
@@ -128,5 +130,85 @@ describe("cahier de recherche dans l'éditeur", () => {
     bare.editor.show(NOTEBOOK);
     expect(bare.parent.querySelector(".notebook-entry")).toBeNull();
     expect(bare.view.state.readOnly).toBe(true);
+  });
+
+  describe("barre d'entrée", () => {
+    const ENTRIES =
+      "---\ntype: cahier-de-recherche\ntags:\n  - a\n---\n# Levures\n\n## 2026\n\n### Novembre\n\n" +
+      "#### Lundi 23\n\n- 09:00 - un\n  suite de un\n\n  paragraphe en retrait\n  - sous-puce\n- 10:00 - deux\n";
+    const lines = (parent: HTMLElement) => [...parent.querySelectorAll<HTMLElement>(".cm-line")];
+    const line = (parent: HTMLElement, text: string) => {
+      const found = lines(parent).find((l) => l.textContent?.includes(text));
+      if (!found) throw new Error(`ligne introuvable : ${text}`);
+      return found;
+    };
+    const entry = () => {
+      const made = mount();
+      made.parent.className = "editor";
+      made.editor.show(ENTRIES);
+      return made.parent;
+    };
+
+    it("pose une barre sur chaque ligne de chaque entrée, et sur rien d'autre", () => {
+      const parent = entry();
+      const barred = lines(parent)
+        .filter((l) => l.classList.contains("entry-bar"))
+        .map((l) => l.textContent);
+      expect(barred).toEqual([
+        "•09:00 - un",
+        "  suite de un",
+        "",
+        "  paragraphe en retrait",
+        "  •sous-puce",
+        "•10:00 - deux",
+      ]);
+      const first = lines(parent)
+        .filter((l) => l.classList.contains("entry-bar-first"))
+        .map((l) => l.textContent);
+      expect(first).toEqual(["•09:00 - un", "•10:00 - deux"]);
+      expect(line(parent, "tags:").classList.contains("entry-bar")).toBe(false);
+      expect(line(parent, "- a").classList.contains("entry-bar")).toBe(false);
+    });
+
+    it("dessine la barre à gauche, de la couleur du thème, sur toute la hauteur de l'entrée", () => {
+      const parent = entry();
+      for (const text of ["09:00 - un", "paragraphe en retrait", "sous-puce", "10:00 - deux"]) {
+        const style = getComputedStyle(line(parent, text));
+        expect(style.backgroundImage).toContain("gradient");
+        expect(style.backgroundRepeat).toBe("no-repeat");
+        expect(style.backgroundPositionX).toBe("0%");
+        expect(style.backgroundPositionY).toBe("100%");
+        expect(parseFloat(style.paddingLeft)).toBeGreaterThan(8);
+      }
+      const nextLine = getComputedStyle(line(parent, "suite de un"));
+      expect(nextLine.backgroundSize).toMatch(/^\d+(\.\d+)?px 100%$/);
+    });
+
+    it("sépare nettement deux entrées : leurs barres ne se touchent pas", () => {
+      const parent = entry();
+      const one = line(parent, "sous-puce").getBoundingClientRect();
+      const twoLine = line(parent, "10:00 - deux");
+      const two = twoLine.getBoundingClientRect();
+      const barStart = two.top + parseFloat(getComputedStyle(twoLine).paddingTop);
+      expect(barStart - one.bottom).toBeGreaterThanOrEqual(8);
+      const firstOfOne = line(parent, "09:00 - un").getBoundingClientRect();
+      const lastOfOne = line(parent, "sous-puce").getBoundingClientRect();
+      expect(lastOfOne.bottom).toBeGreaterThan(firstOfOne.bottom + 3 * 10);
+    });
+
+    it("n'en met pas dans une note ordinaire", () => {
+      const made = mount();
+      made.parent.className = "editor";
+      made.editor.show("# Note\n\n- un\n- deux\n");
+      expect(made.parent.querySelector(".entry-bar")).toBeNull();
+    });
+
+    it("suit la version relue du cahier", () => {
+      const made = mount();
+      made.editor.show(NOTEBOOK);
+      expect(made.parent.querySelectorAll(".entry-bar-first").length).toBe(1);
+      made.editor.reload(`${NOTEBOOK}- 18:31 - deux\n`);
+      expect(made.parent.querySelectorAll(".entry-bar-first").length).toBe(2);
+    });
   });
 });
