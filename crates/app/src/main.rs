@@ -16,6 +16,9 @@ use infrastructure::{
 };
 use tauri::{Manager, RunEvent};
 
+#[cfg(feature = "essai")]
+mod essai;
+
 const PREFERENCES_FILE: &str = "preferences.json";
 
 /// Lancée par Claude Code avec `--relais-mcp <prise> <clé>`, l'application n'est que le relais des
@@ -120,6 +123,11 @@ fn main() {
         run_relay(&arguments);
     }
     tracing_subscriber::fmt::init();
+    // Les commandes de l'essai de l'application réelle, seulement dans l'application construite pour
+    // lui (fiche 0054).
+    let handler = commands::invoke_handler();
+    #[cfg(feature = "essai")]
+    let handler = essai::handler(handler);
     let started = tauri::Builder::default()
         // La barre des menus est celle de l'interface (`install_menu`) : pas celle de Tauri, dont
         // Cmd+W fermerait la fenêtre au lieu de l'onglet.
@@ -148,9 +156,11 @@ fn main() {
                 serve_app_tools(app, place, &session);
             }
             app.manage(session);
+            #[cfg(feature = "essai")]
+            app.manage(essai::Essai::from_environment());
             Ok(())
         })
-        .invoke_handler(commands::invoke_handler())
+        .invoke_handler(handler)
         .build(tauri::generate_context!());
     match started {
         Ok(app) => app.run(|app, event| {

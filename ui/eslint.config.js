@@ -6,6 +6,7 @@ export default tseslint.config(
   {
     ignores: [
       "dist/",
+      "dist-essai/",
       "node_modules/",
       "src/bridge/generated/",
       "test-results/",

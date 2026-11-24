@@ -70,6 +70,12 @@ function pickedFile(): Promise<File | null> {
   });
 }
 
+/**
+ * Le choix d'un fichier du Mac : par défaut, la fenêtre du système. L'essai de l'application réelle
+ * (fiche 0054) y met un fichier donné, car aucun scénario ne pilote cette fenêtre.
+ */
+export const fileChoice: { pick: () => Promise<File | null> } = { pick: pickedFile };
+
 export function createCanvasHost(deps: CanvasHostDeps): CanvasDeps {
   const { backend } = deps;
   return {
@@ -96,7 +102,7 @@ export function createCanvasHost(deps: CanvasHostDeps): CanvasDeps {
     },
     // Le média est importé à côté du canvas, comme une pièce jointe d'une note.
     chooseMedia: async (canvas) => {
-      const file = await pickedFile();
+      const file = await fileChoice.pick();
       if (file === null) return null;
       const attached = await backend.attachFile(canvas, file, {
         kind: "dropped",

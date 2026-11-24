@@ -238,6 +238,10 @@ Outils à installer une fois : `rustup component add llvm-tools-preview`, `cargo
 
 On ne commite que si la barrière réussit ; l'envoi ne relance rien, puisque ce qui part a déjà passé la barrière. Jamais de contournement (`--no-verify`). Un nouveau dépassement qui passerait les contrôles est un défaut des contrôles : on les complète.
 
+### Essai de l'application réelle (à la demande)
+
+Les tests d'interface tournent dans WebKit de Playwright avec un faux Rust : ils ne voient ni l'IPC de Tauri, ni le protocole des fichiers, ni la vraie fenêtre. `scripts/essai-application.sh` construit le `.app` d'essai (fonctionnalité Cargo `essai`, constante Vite `__ESSAI__`), le lance sur un espace de travail temporaire, et sort 0 si tous les scénarios réussissent, 1 si l'un échoue (le rapport dit lequel et pourquoi), 2 sans rapport. Il dure plusieurs minutes (construction) et ouvre une fenêtre quelques secondes sur l'écran : on le lance avant une livraison, jamais dans la barrière. Ses preuves (`scripts/test-essai-application.sh`, avec une fausse application) passent dans la barrière quand un script change. Fiche 0054.
+
 ### Temps de la CI : constats et façon de travailler
 
 Constats (session du 22/11/2026, Mac Apple Silicon ; durées approximatives) :
