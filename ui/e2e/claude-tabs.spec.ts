@@ -27,7 +27,7 @@ const tabs = (page: Page) => column(page).getByRole("tab");
 const tab = (page: Page, title: string) => tabs(page).filter({ hasText: title });
 const sendButton = (page: Page) => column(page).getByRole("button", { name: "Envoyer" });
 const newConversation = (page: Page) =>
-  column(page).getByRole("button", { name: "Nouvelle conversation" }).click();
+  column(page).getByRole("button", { name: "Nouvelle conversation", exact: true }).click();
 
 /** Écrit et envoie un message à la souris. */
 async function send(page: Page, message: string) {
