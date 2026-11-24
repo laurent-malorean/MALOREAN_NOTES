@@ -216,3 +216,30 @@ fn a_new_map_starts_with_a_given_list_written_as_the_application_writes_it() {
         "---\ntype: carte-mentale\nracines: [{x: 0, y: 0}, {x: 0, y: 160}]\n---\n# Idées\n\n- A\n  - B <!-- couleur: rouge -->\n- C\n"
     );
 }
+
+#[test]
+fn the_places_property_covers_the_indented_and_listed_lines_after_it() {
+    let indented = [
+        "racines:",
+        "  - {x: 1, y: 2}",
+        "\t- {x: 3, y: 4}",
+        "tags: []",
+    ];
+    assert_eq!(places_key_lines(&indented), 3);
+    let listed = [
+        "racines:",
+        "- {x: 1, y: 2}",
+        "- {x: 3, y: 4}",
+        "type: carte-mentale",
+    ];
+    assert_eq!(places_key_lines(&listed), 3);
+    assert_eq!(places_key_lines(&["racines: []", "tags: []"]), 1);
+    assert_eq!(places_key_lines(&["tags: []", "  - a"]), 0);
+}
+
+#[test]
+fn the_list_starts_at_the_first_bullet_after_the_title() {
+    assert_eq!(list_of("# Titre\n\nun texte\n- a\n- b\n"), "- a\n- b\n");
+    assert_eq!(list_of("# Titre\n\n  * a\n"), "  * a\n");
+    assert_eq!(list_of("# Titre\n\nsans puce\n"), "");
+}
