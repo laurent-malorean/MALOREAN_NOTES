@@ -1,6 +1,7 @@
 //! Un type par intention de l'utilisateur.
 
 mod attachments;
+mod canvas;
 mod create_note;
 mod export;
 mod folders;
@@ -26,6 +27,7 @@ pub use attachments::{
     AttachFile, AttachWorkspaceFile, AttachmentSource, LinkDestination, MAX_ATTACHMENT_MEGABYTES,
     OpenLinkTarget,
 };
+pub use canvas::{CreateCanvas, ReadCanvas, SaveCanvas, SavedCanvas};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
 pub use export::ExportMarkdown;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};

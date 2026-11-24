@@ -5,6 +5,10 @@
 pub mod app_tools;
 pub mod attachment_name;
 pub mod attachments;
+pub mod canvas;
+pub mod canvas_color;
+mod canvas_merge;
+mod canvas_write;
 pub mod claude;
 pub mod conflict;
 pub mod content_type;
@@ -15,6 +19,7 @@ pub mod folder;
 pub mod front_matter;
 pub mod history;
 pub mod journal;
+pub mod json;
 pub mod links;
 pub mod meaning;
 pub mod meaning_vector;

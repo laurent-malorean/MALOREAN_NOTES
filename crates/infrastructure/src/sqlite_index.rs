@@ -337,8 +337,10 @@ impl NoteIndex for SqliteIndex {
             rows.collect::<rusqlite::Result<Vec<_>>>()
         })?;
         for (note, text) in &mut found {
-            if note.content_type() == ContentType::MindMap {
-                *text = searchable_text(note);
+            match note.content_type() {
+                ContentType::MindMap => *text = searchable_text(note),
+                ContentType::Canvas => *text = domain::canvas::indexed_text(note.title(), text),
+                _ => {}
             }
         }
         if types.contains(&ContentType::Entry) {

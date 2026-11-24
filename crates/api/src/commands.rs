@@ -19,6 +19,7 @@ use crate::{
 /// il porte un [`crate::WorkspaceChanged`].
 pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
+pub mod canvas;
 pub mod claude;
 pub mod export;
 pub mod history;
@@ -539,6 +540,9 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         history::compare_version,
         history::keep_version,
         history::restore_version,
+        canvas::create_canvas,
+        canvas::read_canvas,
+        canvas::save_canvas,
         mind_map::create_mind_map,
         mind_map::read_mind_map,
         mind_map::save_mind_map,

@@ -56,10 +56,10 @@ impl NoteIndex for MemoryIndex {
             let summary = NoteSummary::new(stamp.path.clone(), &note.content, stamp.modified);
             let mut entries = indexed_entries(&summary, &note.content);
             entries.extend(indexed_node_entries(&summary, &note.content));
-            let searchable = if summary.content_type() == ContentType::MindMap {
-                searchable_text(&summary)
-            } else {
-                note.content.clone()
+            let searchable = match summary.content_type() {
+                ContentType::MindMap => searchable_text(&summary),
+                ContentType::Canvas => domain::canvas::indexed_text(summary.title(), &note.content),
+                _ => note.content.clone(),
             };
             let kept = Known {
                 stamp,

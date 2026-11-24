@@ -1,4 +1,5 @@
-//! Nom de fichier d'une note : le titre en kebab-case, suivi de `.md`.
+//! Nom de fichier d'une note : le titre en kebab-case, suivi de `.md` (ou de `.canvas` pour un canvas,
+//! fiche 0052).
 
 use std::fmt;
 
@@ -8,15 +9,17 @@ use unicode_normalization::char::is_combining_mark;
 use crate::Title;
 
 const EXTENSION: &str = ".md";
+const CANVAS_EXTENSION: &str = ".canvas";
 const UNTITLED_STEM: &str = "sans-titre";
 const ATTACHMENT_SUFFIX: &str = ".assets";
 const FIRST_DUPLICATE_SUFFIX: u32 = 2;
 
-/// Nom d'un fichier de note : un seul élément de chemin, se terminant par `.md`.
+/// Nom d'un fichier de note : un seul élément de chemin, se terminant par `.md` ou, pour un canvas,
+/// par `.canvas`.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FileName(String);
 
-/// Nom refusé : vide, caché, hors dossier, ou qui n'est pas un fichier Markdown.
+/// Nom refusé : vide, caché, hors dossier, ou qui n'est ni un fichier Markdown ni un canvas.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InvalidFileName(pub String);
 
@@ -29,21 +32,17 @@ impl fmt::Display for InvalidFileName {
 impl std::error::Error for InvalidFileName {}
 
 impl FileName {
-    /// Accepte un nom existant s'il est sûr : pas de séparateur, pas caché, extension `.md`.
+    /// Accepte un nom existant s'il est sûr : pas de séparateur, pas caché, extension `.md` ou
+    /// `.canvas`.
     ///
     /// # Errors
     ///
     /// [`InvalidFileName`] si le nom est vide, caché, contient un séparateur de dossier
-    /// ou ne se termine pas par `.md`.
+    /// ou ne se termine ni par `.md` ni par `.canvas`.
     pub fn parse(name: &str) -> Result<Self, InvalidFileName> {
         // `.md` seul est refusé par la règle des fichiers cachés : pas besoin de l'exclure ici.
-        let has_md_extension = name
-            .len()
-            .checked_sub(EXTENSION.len())
-            .and_then(|stem_end| name.get(stem_end..))
-            .is_some_and(|extension| extension.eq_ignore_ascii_case(EXTENSION));
         let is_safe = !name.starts_with('.') && !name.contains(['/', '\\', '\0']);
-        if has_md_extension && is_safe {
+        if is_safe && extension_of(name).is_some() {
             Ok(Self(name.to_owned()))
         } else {
             Err(InvalidFileName(name.to_owned()))
@@ -62,6 +61,25 @@ impl FileName {
         Self(format!("{stem}{EXTENSION}"))
     }
 
+    /// Le nom d'un canvas tiré du titre `title`, en kebab-case ; `sans-titre.canvas` sans titre
+    /// utilisable.
+    #[must_use]
+    pub fn canvas_from_title(title: &str) -> Self {
+        let stem = kebab_case(title);
+        let stem = if stem.is_empty() {
+            UNTITLED_STEM
+        } else {
+            &stem
+        };
+        Self(format!("{stem}{CANVAS_EXTENSION}"))
+    }
+
+    /// Vrai pour le nom d'un canvas (`.canvas`).
+    #[must_use]
+    pub fn is_canvas(&self) -> bool {
+        extension_of(&self.0).is_some_and(|e| e.eq_ignore_ascii_case(CANVAS_EXTENSION))
+    }
+
     /// Ce nom, ou le premier `-2`, `-3`… qui n'est pas déjà pris.
     #[must_use]
     pub fn deduplicated(self, mut is_taken: impl FnMut(&Self) -> bool) -> Self {
@@ -69,7 +87,7 @@ impl FileName {
             return self;
         }
         (FIRST_DUPLICATE_SUFFIX..)
-            .map(|n| Self(format!("{}-{n}{EXTENSION}", self.stem())))
+            .map(|n| Self(format!("{}-{n}{}", self.stem(), self.extension())))
             .find(|candidate| !is_taken(candidate))
             .unwrap_or(self)
     }
@@ -91,10 +109,14 @@ impl FileName {
         })
     }
 
-    /// Le nom sans l'extension `.md`.
+    /// Le nom sans son extension (`.md` ou `.canvas`).
     #[must_use]
     pub fn stem(&self) -> &str {
-        &self.0[..self.0.len() - EXTENSION.len()]
+        &self.0[..self.0.len() - self.extension().len()]
+    }
+
+    fn extension(&self) -> &str {
+        extension_of(&self.0).unwrap_or(EXTENSION)
     }
 
     /// Le nom complet, extension comprise.
@@ -102,6 +124,17 @@ impl FileName {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+}
+
+/// L'extension reconnue qui termine `name`, majuscules ignorées, telle qu'écrite.
+fn extension_of(name: &str) -> Option<&str> {
+    [EXTENSION, CANVAS_EXTENSION]
+        .into_iter()
+        .find_map(|extension| {
+            let start = name.len().checked_sub(extension.len())?;
+            name.get(start..)
+                .filter(|written| written.eq_ignore_ascii_case(extension))
+        })
 }
 
 fn kebab_case(text: &str) -> String {
@@ -194,6 +227,33 @@ mod tests {
     fn existing_markdown_file_names_are_accepted() {
         assert!(FileName::parse("Ma Note.md").is_ok());
         assert!(FileName::parse("notes.MD").is_ok());
+    }
+
+    #[test]
+    fn a_canvas_name_is_accepted_and_kept_apart() {
+        let canvas = FileName::parse("Plan.canvas").unwrap();
+        assert!(canvas.is_canvas());
+        assert_eq!(canvas.stem(), "Plan");
+        assert!(FileName::parse("Plan.CANVAS").unwrap().is_canvas());
+        assert_eq!(FileName::parse("Plan.CANVAS").unwrap().stem(), "Plan");
+        assert!(!FileName::parse("plan.md").unwrap().is_canvas());
+        assert!(FileName::parse(".plan.canvas").is_err());
+        assert!(FileName::parse("a/b.canvas").is_err());
+        assert!(FileName::parse(".canvas").is_err());
+    }
+
+    #[test]
+    fn a_canvas_name_comes_from_its_title_and_is_numbered_when_taken() {
+        let name = FileName::canvas_from_title("Mon idée du jour");
+        assert_eq!(name.as_str(), "mon-idee-du-jour.canvas");
+        assert_eq!(
+            FileName::canvas_from_title("📝").as_str(),
+            "sans-titre.canvas"
+        );
+        let taken = ["mon-idee-du-jour.canvas"];
+        let next = name.deduplicated(|candidate| taken.contains(&candidate.as_str()));
+        assert_eq!(next.as_str(), "mon-idee-du-jour-2.canvas");
+        assert_eq!(next.attachment_folder(), "mon-idee-du-jour-2.assets");
     }
 
     #[test]
