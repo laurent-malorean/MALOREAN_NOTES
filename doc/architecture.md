@@ -26,7 +26,7 @@ ui/                   interface TypeScript (Vite)
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
 scripts/ci.sh         CI locale : barrière de commit, `--fonction`, `--livraison`, `--echantillon` (fiches 0047 et 0049)
-scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-doc-only.sh
+scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; mutation-rejeu.sh : rejeu des dépassements de délai de la mutation ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-rejeu.sh, test-ci-doc-only.sh
 scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
 .github/workflows/mutation-domaine.yml   mutation de toute la crate `domain` chaque nuit sur GitHub Actions (fiche 0050)
 ```

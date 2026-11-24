@@ -12,6 +12,9 @@
 #   scripts/ci.sh --livraison  la fin de fonction, puis la mutation du domaine (crates/domain) et un échantillon
 #                            (un dixième, une erreur par fonction) du reste du code Rust, sur le diff depuis le tag
 #                            local `ci-verte` ; à son succès, `ci-verte` avance à HEAD. Moins de 25 minutes.
+#                            Toute mutation lancée ici REJOUE une fois ses dépassements de délai (délai x 4, borné à
+#                            600 s, scripts/mutation-rejeu.sh, fiche 0052) : un survivant du rejeu est un survivant,
+#                            un dépassement qui persiste est un avertissement chiffré ; le rapport dit avant et après.
 #   scripts/ci.sh --echantillon  (à la demande, non bloquant, à lancer en arrière-plan) le même échantillon Rust ;
 #                            les survivants s'écrivent dans la liste de suivi (.git/ci-mutation/suivi.txt), le code de sortie reste 0.
 #   scripts/ci.sh --mutation-interface  (à la demande) Stryker de l'interface, incrémental, seuil 100 %.
@@ -86,6 +89,21 @@ run_mutants() {
   MUTANTS_RAN=0
   if [ "$MUTANTS_OUTCOMES" -nt "$started" ]; then MUTANTS_RAN=1; else printf '(aucune erreur à introduire dans ce code)\n'; fi
   rm -f "$started"
+  [ "$MUTANTS_RAN" -eq 0 ] || replay_timeouts "$@"
+}
+
+# Rejeu des dépassements de délai (scripts/mutation-rejeu.sh, doc/decisions/0052) : un dépassement n'est pas une
+# preuve ; rejoué une fois avec un délai quadruplé, le bilan est fusionné et lu comme celui d'une passe.
+# Reçoit les arguments de la passe : le délai en est extrait, le reste est rejoué tel quel.
+replay_timeouts() {
+  local args=() timeout_s="" previous=""
+  for a in "$@"; do
+    if [ "$a" = --timeout ]; then previous=$a; continue; fi
+    if [ "$previous" = --timeout ]; then timeout_s=$a; previous=""; continue; fi
+    args+=("$a")
+  done
+  [ -n "$timeout_s" ] || return 0
+  scripts/mutation-rejeu.sh . "$timeout_s" --all-features --jobs 4 "${args[@]}" || fail "le rejeu des dépassements n'a pas pu tourner"
 }
 
 # Lit le bilan de run_mutants. $1 : nom ; $2 : bloquant (1) ou non (0). Les survivants vont dans la liste de suivi.
@@ -98,6 +116,13 @@ report_mutants() {
   missed=$(jq '.missed' "$MUTANTS_OUTCOMES")
   printf '(%s : %s erreurs introduites, %s testées, %s non compilables, %s survivantes)\n' \
     "$1" "$total" "$tested" "$(jq '.unviable' "$MUTANTS_OUTCOMES")" "$missed"
+  local timeouts_before timeouts_after
+  timeouts_before=$(sed -n 's/^AVANT=\([0-9]*\) .*/\1/p' mutants.out/rejeu.txt 2>/dev/null)
+  timeouts_after=$(jq '.timeout' "$MUTANTS_OUTCOMES")
+  printf '(%s : %s dépassements avant rejeu, %s après)\n' "$1" "${timeouts_before:-0}" "$timeouts_after"
+  if [ "$timeouts_after" -gt 0 ]; then
+    printf '⚠ AVERTISSEMENT %s : %s dépassement(s) persistent après rejeu, ce n est pas une preuve : voir mutants.out/timeout.txt\n' "$1" "$timeouts_after"
+  fi
   if [ "$missed" -gt 0 ]; then
     mkdir -p "$(dirname "$SUIVI")"
     while IFS= read -r line; do printf '%s %s %s\n' "$(date +%F)" "$1" "$line" >> "$SUIVI"; done < mutants.out/missed.txt
@@ -355,9 +380,10 @@ run_barrier() {
   local changed rust=0 ui=0
   changed=$(changed_files)
   if printf '%s\n' "$changed" | grep -q '^scripts/'; then
-    step "Scripts de CI changés : scénarios de la barrière, de la voie documentation et du ménage"
+    step "Scripts de CI changés : scénarios de la barrière, du ménage et du rejeu des dépassements"
     scripts/test-ci-gate.sh
     scripts/test-ci-menage.sh
+    scripts/test-ci-rejeu.sh
   fi
   if [ -f Cargo.toml ] && printf '%s\n' "$changed" | rust_touched; then rust=1; fi
   if [ -f ui/package.json ] && printf '%s\n' "$changed" | grep -q '^ui/'; then ui=1; fi

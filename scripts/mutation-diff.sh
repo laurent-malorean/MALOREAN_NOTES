@@ -9,6 +9,8 @@
 # attente ($DIR/attente) et remplace l'attente précédente ; son diff part du dernier commit muté.
 # Verdict : $DIR/<commit>.txt et $DIR/dernier (`scripts/ci.sh --verdict`). Un survivant
 # s'ajoute à $DIR/suivi.txt, la liste de suivi à traiter ; il ne refuse JAMAIS un commit.
+# Pas de rejeu des dépassements ici (scripts/mutation-rejeu.sh, fiche 0052) : ce travail d'arrière-plan reste court
+# (coupure 30 s) et non bloquant ; un dépassement y est compté dans STATS, rejoué seulement par ci.sh et la CI de nuit.
 # Variables pour les tests : MUTATION_DIR, MUTATION_WORK, MUTANTS_BIN (défaut : cargo mutants).
 set -uo pipefail
 cd "$(dirname "$0")/.."
