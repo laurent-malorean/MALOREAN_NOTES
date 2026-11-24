@@ -5,7 +5,6 @@ import {
   createClaudeColumnView,
   EMPTY,
   OTHER_TAB_RUNNING,
-  PERMISSIONS,
   STOPPED,
   WEB_HELD_BACK,
   WORKING,
@@ -52,12 +51,25 @@ beforeEach(() => {
   });
 });
 
-describe("colonne Claude Code : les autorisations", () => {
-  it("disent en une ligne discrète ce que Claude peut faire ici, et rien d'autre", () => {
-    expect(find(".claude-permissions").textContent).toBe(PERMISSIONS);
-    expect(PERMISSIONS).toBe(
-      "Claude lit, crée et modifie les notes de cet espace de travail, sans demander, et peut chercher et lire sur le web ; après une lecture du web, ses modifications attendent votre accord. Rien d'autre : ni autre dossier, ni commande.",
-    );
+describe("colonne Claude Code : l'en-tête", () => {
+  it("ne rappelle plus les autorisations de Claude", () => {
+    expect(container.querySelector(".claude-permissions")).toBeNull();
+    expect(container.textContent).not.toContain("Rien d'autre");
+  });
+
+  it("Nouvelle conversation est l'icône de Claude seule, avec sa bulle d'aide et son nom", () => {
+    const fresh = find<HTMLButtonElement>("[data-new-conversation]");
+    expect(fresh.textContent?.trim()).toBe("");
+    expect(fresh.getAttribute("aria-label")).toBe("Nouvelle conversation");
+    expect(fresh.title).toContain("Nouvelle conversation");
+    const icon = fresh.querySelector("svg") as SVGSVGElement;
+    expect(icon.getAttribute("aria-hidden")).toBe("true");
+    expect(icon.querySelectorAll("line").length).toBe(12);
+    for (const ray of icon.querySelectorAll("line")) {
+      expect(ray.getAttribute("stroke")).toBe("currentColor");
+    }
+    fresh.click();
+    expect(log).toEqual(["nouvelle conversation"]);
   });
 });
 
@@ -111,7 +123,7 @@ describe("colonne Claude Code : le garde-fou du web", () => {
 describe("colonne Claude Code : les onglets de conversation", () => {
   it("leur barre est sous l'en-tête ; un clic montre un onglet, sa croix le ferme", () => {
     const bar = find(".claude-tabs");
-    expect(bar.previousElementSibling?.className).toBe("claude-header");
+    expect(find(".claude-tabs-bar").previousElementSibling?.className).toBe("claude-header");
     expect(bar.getAttribute("role")).toBe("tablist");
     expect(bar.getAttribute("aria-label")).toBe("Onglets de conversation");
     view.showTabs([
@@ -317,7 +329,7 @@ describe("colonne Claude Code : écrire et piloter le tour", () => {
     expect(button("stop").disabled).toBe(false);
     expect(button("new-conversation").disabled).toBe(false);
     expect(button("new-conversation").title).toBe(
-      "Ouvrir un onglet de conversation vide ; les autres conversations restent dans leurs onglets",
+      "Nouvelle conversation : ouvrir un onglet de conversation vide ; les autres conversations restent dans leurs onglets",
     );
     input().value = "Deux";
     press("Enter");

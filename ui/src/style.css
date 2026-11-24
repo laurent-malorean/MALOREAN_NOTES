@@ -1737,18 +1737,54 @@ button {
   font-weight: 600;
 }
 /* Onglets de conversation, sous l'en-tête, comme dans le module de VS Code. */
+.claude-tabs-bar {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--border);
+}
 .claude-tabs {
   display: flex;
+  flex: 1;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
-  border-bottom: 1px solid var(--border);
+}
+.claude-tabs::-webkit-scrollbar {
+  display: none;
+}
+/* Flèches de défilement des onglets : seulement quand ils débordent, grisées en butée. */
+.claude-tabs-arrow {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 0 0.2rem;
+}
+.claude-tabs-arrow[hidden] {
+  display: none;
+}
+.claude-tabs-arrow:disabled {
+  opacity: var(--trail-disabled-opacity);
+}
+.claude-tabs-arrow:disabled:hover {
+  color: var(--muted);
+}
+.claude-tabs-arrow-icon {
+  width: var(--claude-tabs-arrow-size);
+  height: var(--claude-tabs-arrow-size);
+}
+.claude-new-conversation {
+  display: flex;
+  align-items: center;
+  font-size: var(--claude-new-conversation-size);
 }
 .claude-tab {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 0.3rem;
-  min-width: 0;
-  max-width: var(--tab-max-width);
+  box-sizing: border-box;
+  width: var(--claude-tab-width);
   padding: 0.3rem 0.3rem 0.3rem 0.7rem;
   border-right: 1px solid var(--border);
   font-size: var(--tab-text-size);
@@ -1899,13 +1935,9 @@ button {
   flex-direction: column;
   gap: 0.4rem;
 }
-.claude-permissions {
-  padding: 0 0.8rem 0.6rem;
-}
 .claude-empty,
 .claude-working,
 .claude-other-tab,
-.claude-permissions,
 .claude-summary {
   color: var(--muted);
   font-size: var(--claude-detail-text-size);

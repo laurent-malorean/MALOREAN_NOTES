@@ -27,7 +27,7 @@ const tabs = (page: Page) => column(page).getByRole("tab");
 const tab = (page: Page, title: string) => tabs(page).filter({ hasText: title });
 const sendButton = (page: Page) => column(page).getByRole("button", { name: "Envoyer" });
 const newConversation = (page: Page) =>
-  column(page).getByRole("button", { name: "Nouvelle conversation" }).click();
+  column(page).getByRole("button", { name: "Nouvelle conversation", exact: true }).click();
 
 /** Écrit et envoie un message à la souris. */
 async function send(page: Page, message: string) {
@@ -109,3 +109,32 @@ test("chaque espace de travail a ses onglets de conversation", async ({ page }) 
   await expect(tabs(page)).toHaveText(["Écris un plan×"]);
   await expect(conversation(page).locator(".claude-user")).toContainText("Écris un plan");
 });
+
+for (const appearance of ["light", "dark"]) {
+  test(`beaucoup d'onglets : largeur fixe, flèches, défilement (thème ${appearance})`, async ({
+    page,
+  }) => {
+    await launch(page);
+    await page.evaluate(
+      (value) => (document.documentElement.dataset.appearance = value),
+      appearance,
+    );
+    const arrows = column(page).locator("[data-tabs-scroll]:not([hidden])");
+    await expect(arrows).toHaveCount(0);
+    const alone = (await tabs(page).first().boundingBox())?.width;
+    for (let count = 0; count < 12; count++) await newConversation(page);
+    await expect(tabs(page)).toHaveCount(13);
+    expect((await tabs(page).first().boundingBox())?.width).toBe(alone);
+    await expect(arrows).toHaveCount(2);
+    await expect(tabs(page).last()).toBeInViewport();
+    const left = column(page).getByRole("button", {
+      name: "Faire défiler les onglets vers la gauche",
+    });
+    const right = column(page).getByRole("button", {
+      name: "Faire défiler les onglets vers la droite",
+    });
+    await expect(right).toBeDisabled();
+    await left.click();
+    await expect(right).toBeEnabled();
+  });
+}
