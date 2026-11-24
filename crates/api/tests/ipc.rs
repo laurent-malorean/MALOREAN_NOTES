@@ -7,7 +7,6 @@
 
 use std::sync::Arc;
 
-use api::commands::{FILE_NAME_HEADER, MEDIA_TYPE_HEADER, NOTE_HEADER};
 use api::commands::{WORKSPACE_CHANGED_EVENT, invoke_handler};
 use api::{
     AttachedFile, LinkingNoteItem, NoteContent, NoteListItem, SaveResult, SavedNote,
@@ -496,61 +495,43 @@ fn a_folder_goes_to_the_trash_comes_back_and_the_trash_is_emptied() {
     assert!(trash.folders.is_empty() && trash.notes.is_empty());
 }
 
-/// Envoie un fichier comme l'interface : octets bruts, et en-têtes encodés comme une adresse.
-fn attach(
-    window: &WebviewWindow<MockRuntime>,
-    body: InvokeBody,
-    headers: &[(&str, &str)],
-) -> Result<Value, Value> {
-    let mut map = tauri::http::HeaderMap::new();
-    for (name, value) in headers {
-        map.insert(
-            tauri::http::HeaderName::from_bytes(name.as_bytes()).unwrap(),
-            value.parse().unwrap(),
-        );
-    }
-    let request = InvokeRequest {
-        cmd: "attach_file".into(),
-        callback: CallbackFn(0),
-        error: CallbackFn(1),
-        url: APP_ORIGIN.parse().unwrap(),
-        body,
-        headers: map,
-        invoke_key: INVOKE_KEY.to_string(),
-    };
-    get_ipc_response(window, request).map(|body| body.deserialize::<Value>().unwrap())
-}
-
 fn opened_with(notes: &[(&str, &str)]) -> WebviewWindow<MockRuntime> {
     let window = window(notes);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
     window
 }
 
+/// `content` en base64 : les octets d'un fichier ne voyagent jamais en corps brut.
+const PNG_BASE64: &str = "iVBORw==";
+
 #[test]
-fn a_dropped_file_is_attached_under_its_decoded_name() {
+fn a_dropped_file_is_attached_under_its_name_whatever_way_the_webview_carries_it() {
     let window = opened_with(&[("Voyages/été.md", "# Été")]);
-    let attached: AttachedFile = ok(attach(
+    // Arguments JSON ordinaires : ils arrivent pareil par `ipc://` et par le repli `postMessage`.
+    let attached: AttachedFile = ok(call(
         &window,
-        InvokeBody::Raw(b"PDF".to_vec()),
-        &[
-            (NOTE_HEADER, "Voyages/%C3%A9t%C3%A9.md"),
-            (FILE_NAME_HEADER, "billet%20d%27avion.pdf"),
-        ],
+        "attach_file",
+        json!({
+            "note": "Voyages/été.md",
+            "fileName": "billet d'avion.pdf",
+            "content": PNG_BASE64,
+        }),
     ));
     assert_eq!(
         attached.markdown,
         "[billet d'avion.pdf](été.assets/billet%20d'avion.pdf)"
     );
+    assert!(BRIDGE_SOURCE.contains("\"attach_file\", {"));
+    assert!(!BRIDGE_SOURCE.contains("headers"));
 }
 
 #[test]
 fn a_pasted_image_is_named_after_the_moment() {
     let window = opened_with(&[("a.md", "# A")]);
-    let attached: AttachedFile = ok(attach(
+    let attached: AttachedFile = ok(call(
         &window,
-        InvokeBody::Raw(b"PNG".to_vec()),
-        &[(NOTE_HEADER, "a.md"), (MEDIA_TYPE_HEADER, "image%2Fpng")],
+        "attach_file",
+        json!({ "note": "a.md", "mediaType": "image/png", "content": PNG_BASE64 }),
     ));
     assert_eq!(attached.markdown, "![](a.assets/image-2026-11-16-1830.png)");
 }
@@ -559,19 +540,19 @@ fn a_pasted_image_is_named_after_the_moment() {
 fn an_incomplete_attachment_is_refused() {
     let window = opened_with(&[("a.md", "# A")]);
     let refused = "le fichier à joindre n'a pas été reçu en entier";
-    let json_body = attach(
+    for content in ["pas du base64 !", "", "iVBOR"] {
+        let broken = call(
+            &window,
+            "attach_file",
+            json!({ "note": "a.md", "mediaType": "image/png", "content": content }),
+        );
+        assert_eq!(error_message(broken), refused);
+    }
+    let no_name = call(
         &window,
-        InvokeBody::Json(json!({})),
-        &[(NOTE_HEADER, "a.md")],
+        "attach_file",
+        json!({ "note": "a.md", "content": PNG_BASE64 }),
     );
-    assert_eq!(error_message(json_body), refused);
-    let no_note = attach(
-        &window,
-        InvokeBody::Raw(vec![1]),
-        &[(MEDIA_TYPE_HEADER, "image%2Fpng")],
-    );
-    assert_eq!(error_message(no_note), refused);
-    let no_name = attach(&window, InvokeBody::Raw(vec![1]), &[(NOTE_HEADER, "a.md")]);
     assert_eq!(error_message(no_name), refused);
 }
 
