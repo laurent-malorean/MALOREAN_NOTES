@@ -3,7 +3,7 @@
 import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { type FakeClaude, fakeClaude, fakeClaudeState } from "./fake-claude";
-import { attachFile, keepImage } from "./fake-attachments";
+import { type ExportImageArgs, attachFile, keepImage } from "./fake-attachments";
 import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
@@ -548,7 +548,7 @@ mockIPC(
     const windowCommand = windowCommands[command];
     if (windowCommand) return windowCommand((args ?? {}) as Record<string, unknown>);
     if (command === "attach_file") return attachFile(backend, header, args as Uint8Array);
-    if (command === "export_image") return keepImage(backend, header, args as Uint8Array);
+    if (command === "export_image") return keepImage(backend, args as unknown as ExportImageArgs);
     const handler = commands[command];
     if (!handler) throw { message: `commande inconnue : ${command}` };
     return handler((args ?? {}) as Record<string, string>);
