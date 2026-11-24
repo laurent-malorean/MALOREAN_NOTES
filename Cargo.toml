@@ -46,6 +46,8 @@ tauri-build = "2"
 tauri-plugin-dialog = "2"
 # Ouvrir une pièce jointe (PDF) avec l'application du Mac.
 tauri-plugin-opener = "2"
+# Décoder l'image d'une carte mentale envoyée en base64 par l'interface.
+base64 = "0.23"
 # Décoder les en-têtes d'une pièce jointe envoyée par l'interface.
 percent-encoding = "2"
 tempfile = "3"
