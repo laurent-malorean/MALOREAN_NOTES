@@ -48,14 +48,24 @@ export function attachedPath(canvas: string, markdown: string): string | null {
   return folder === "" ? file : `${folder}/${file}`;
 }
 
-/** Fait choisir un fichier du Mac par la fenêtre du système ; `null` si on annule. */
+/**
+ * Fait choisir un fichier du Mac par la fenêtre du système ; `null` si on annule. Le champ reste
+ * dans la page tant que la fenêtre est ouverte : WebKit peut oublier un champ détaché avant qu'il
+ * n'ait prévenu du choix.
+ */
 function pickedFile(): Promise<File | null> {
   return new Promise((resolve) => {
     const input = document.createElement("input");
     input.type = "file";
+    input.hidden = true;
     input.accept = "image/*,audio/*,video/*,application/pdf";
-    input.addEventListener("change", () => resolve(input.files?.[0] ?? null));
-    input.addEventListener("cancel", () => resolve(null));
+    const done = (file: File | null) => {
+      input.remove();
+      resolve(file);
+    };
+    input.addEventListener("change", () => done(input.files?.[0] ?? null));
+    input.addEventListener("cancel", () => done(null));
+    document.body.append(input);
     input.click();
   });
 }

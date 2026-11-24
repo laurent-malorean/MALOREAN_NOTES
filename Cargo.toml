@@ -49,7 +49,6 @@ tauri-plugin-opener = "2"
 # Décoder l'image d'une carte mentale envoyée en base64 par l'interface.
 base64 = "0.23"
 # Décoder les en-têtes d'une pièce jointe envoyée par l'interface.
-percent-encoding = "2"
 tempfile = "3"
 thiserror = "2"
 tracing = "0.1"

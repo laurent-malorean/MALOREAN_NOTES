@@ -92,9 +92,11 @@ describe("ce que le canvas demande à l'application", () => {
       const transfer = new DataTransfer();
       transfer.items.add(new File(["x"], "b c.png", { type: "image/png" }));
       this.files = transfer.files;
+      expect(this.isConnected).toBe(true);
       this.dispatchEvent(new Event("change"));
     });
     expect(await host().chooseMedia("plan.canvas")).toBe("plan.assets/b c.png");
+    expect(document.querySelector("input[type=file]")).toBeNull();
     expect(backend.attachFile).toHaveBeenCalledWith("plan.canvas", expect.any(File), {
       kind: "dropped",
       fileName: "b c.png",

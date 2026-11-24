@@ -1,12 +1,10 @@
 // Pièces jointes et images exportées simulées pour les parcours : même nommage que Rust, en plus
-// simple. Les en-têtes de la commande viennent de `fake-backend.ts` (le simulateur de Tauri ne les
-// transmet pas).
+// simple. Le contenu arrive en base64, comme par Rust.
 
 export interface Files {
   attachments: Record<string, number>;
   exportedImages: Record<string, Uint8Array>;
 }
-export type Header = (name: string) => string | undefined;
 
 /** Pièces jointes : même nommage que Rust, en plus simple (moment figé). */
 const PASTED_NAMES: Record<string, string> = {
@@ -25,11 +23,19 @@ function freeAttachmentName(backend: Files, assets: string, wanted: string) {
   return name;
 }
 
-export function attachFile(backend: Files, header: Header, bytes: Uint8Array) {
-  const note = header("x-note") ?? "";
-  const wanted = header("x-file-name") ?? PASTED_NAMES[header("x-media-type") ?? ""] ?? "";
+export interface AttachArgs {
+  note: string;
+  fileName?: string;
+  mediaType?: string;
+  content: string;
+}
+
+export function attachFile(backend: Files, args: AttachArgs) {
+  const { note } = args;
+  const bytes = Uint8Array.from(atob(args.content), (c) => c.charCodeAt(0));
+  const wanted = args.fileName ?? PASTED_NAMES[args.mediaType ?? ""] ?? "";
   if (!ATTACHABLE.test(wanted)) throw { message: `« ${wanted} » ne peut pas être joint` };
-  const stem = note.replace(/^.*\//, "").replace(/\.md$/, "");
+  const stem = note.replace(/^.*\//, "").replace(/\.[^.]*$/, "");
   const assets = `${note.replace(/[^/]*$/, "")}${stem}.assets/`;
   const name = freeAttachmentName(backend, assets, wanted);
   backend.attachments[`${assets}${name}`] = bytes.length;
