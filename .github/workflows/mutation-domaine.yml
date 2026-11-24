@@ -1,6 +1,7 @@
 # Test de mutation de la seule crate `domain`, chaque nuit (doc/decisions/0050, doc/code.md « Temps de la CI »).
 # Même réglage que scripts/mutation-diff.sh : coupure des erreurs qui bouclent à 30 s, tests du seul domaine.
-# Un survivant fait échouer le travail : GitHub envoie alors un e-mail.
+# Un survivant fait échouer le travail : GitHub envoie alors un e-mail. Les dépassements de délai sont rejoués une fois
+# avec un délai quadruplé (scripts/mutation-rejeu.sh, doc/decisions/0053).
 name: mutation-domaine
 
 on:
@@ -35,16 +36,23 @@ jobs:
       - name: Mutation du domaine
         # Codes de cargo-mutants : 0 tout attrapé, 2 survivant, 3 délais (avec ou sans survivant), 4 tests de base en échec.
         # Comme en local (scripts/ci.sh), le verdict se lit dans le bilan : seuls un survivant ou une erreur font échouer.
+        # Rejeu des dépassements (fiche 0053) : rejoués une fois avec un délai x 4 (120 s), bilan fusionné ; un survivant
+        # du rejeu fait échouer, un dépassement qui persiste avertit. Le rejeu ne porte que sur les dépassements (rares).
+        timeout-minutes: 75
         run: |
           code=0
           cargo mutants --package domain --all-features --jobs 4 --timeout 30 --test-workspace=false -o out || code=$?
           json=out/mutants.out/outcomes.json
           [ -f "$json" ] || { echo "::error::aucun bilan (code $code)"; exit 1; }
-          jq -c '{total: .total_mutants, caught, missed, timeout, unviable}' "$json"
           [ "$code" -le 3 ] && [ "$code" -ne 1 ] || { echo "::error::cargo-mutants a rendu le code $code"; exit 1; }
+          scripts/mutation-rejeu.sh out 30 --package domain --all-features --jobs 4 --test-workspace=false \
+            || { echo "::error::le rejeu des dépassements a échoué"; exit 1; }
+          jq -c '{total: .total_mutants, caught, missed, timeout, unviable}' "$json"
+          cat out/mutants.out/rejeu.txt
           missed=$(jq '.missed' "$json")
           [ "$missed" -eq 0 ] || { echo "::error::$missed survivant(s) :"; cat out/mutants.out/missed.txt; exit 1; }
-          [ "$(jq '.timeout' "$json")" -eq 0 ] || { echo "::warning::erreurs qui bouclent :"; cat out/mutants.out/timeout.txt; }
+          timeouts=$(jq '.timeout' "$json")
+          [ "$timeouts" -eq 0 ] || { echo "::warning::$timeouts dépassement(s) persistent après rejeu ($(cat out/mutants.out/rejeu.txt)) :"; cat out/mutants.out/timeout.txt; }
       - name: Joindre le bilan
         if: always()
         uses: actions/upload-artifact@v4.4.3
