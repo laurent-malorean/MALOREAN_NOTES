@@ -61,6 +61,7 @@ export interface ActionHost {
   readonly resolveImage: (file: string) => string;
   readonly askText: (question: string, initial: string, confirm: string) => Promise<string | null>;
   readonly copy: (text: string) => void;
+  readonly goToGroup: () => void;
   readonly openExternal: (url: string) => void;
   readonly error: (error: unknown) => void;
 }
@@ -191,6 +192,7 @@ export class Actions {
       addNote: () => void this.addFile(this.menuScreen(), host.chooseNote),
       addMedia: () => void this.addFile(this.menuScreen(), host.chooseMedia),
       addPage: () => void this.addPage(),
+      goToGroup: () => this.host.goToGroup(),
       addGroup: () => this.addCard((p) => newGroup(p.x, p.y), this.menuScreen()),
       groupSelection: () => {
         const made = withGroupAround(host.data(), this.ids("card"));
@@ -229,7 +231,11 @@ export class Actions {
       this.host.select([{ kind: "arrow", id: arrowId }]);
       return arrowMenu(actions, (arrow(this.host.data(), arrowId)?.label ?? "") !== "");
     }
-    if (!cardId) return canvasMenu(actions);
+    if (!cardId)
+      return canvasMenu(
+        actions,
+        this.host.data().cards.some((c) => c.kind === "group"),
+      );
     if (!this.ids("card").includes(cardId)) this.host.select([{ kind: "card", id: cardId }]);
     const kind = (card(this.host.data(), cardId)?.kind ?? "text") as CardMenuKind;
     return cardMenu(actions, kind, this.ids("card").length > 1);

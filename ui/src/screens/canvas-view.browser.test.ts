@@ -80,10 +80,38 @@ describe("canvas : affichage", () => {
       "Rétablir le zoom",
       "Tout voir",
       "Dézoomer",
+      "Exporter en image",
       "Annuler",
       "Rétablir",
       "Aide",
     ]);
+  });
+
+  it("« Exporter en image » lance l'export une fois par clic ; sur un canvas vide il est grisé et son infobulle le dit", async () => {
+    const m = await mount();
+    const exportButton = button("Exporter en image");
+    expect(exportButton.title).toBe("Exporter en image");
+    expect(exportButton.disabled).toBe(false);
+    exportButton.click();
+    expect(m.launched.exportImage).toBe(1);
+    expect(exportButton.querySelector("svg.canvas-icon")).not.toBeNull();
+    const empty = await mount({ cards: [], arrows: [], extra: [] });
+    const grey = button("Exporter en image");
+    expect(grey.disabled).toBe(true);
+    expect(grey.title).toBe("Exporter en image (un canvas vide ne s'exporte pas)");
+    grey.click();
+    expect(empty.launched.exportImage).toBe(0);
+  });
+
+  it("l'icône d'export tient dans son bouton et prend la couleur du texte, comme les autres", async () => {
+    await mount();
+    const box = button("Exporter en image").querySelector("svg")?.getBoundingClientRect();
+    const other = button("Tout voir").querySelector("svg")?.getBoundingClientRect();
+    expect([box?.width, box?.height]).toEqual([other?.width, other?.height]);
+    expect(box?.width).toBe(18);
+    expect(getComputedStyle(button("Exporter en image")).color).toBe(
+      getComputedStyle(button("Tout voir")).color,
+    );
   });
 
   it("toutes les cartes tiennent dans la vue à l'ouverture", async () => {

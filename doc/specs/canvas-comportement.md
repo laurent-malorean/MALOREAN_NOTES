@@ -66,11 +66,11 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - **Renommer** : double-clic sur le nom, Entrée pour valider.
 - **Arrière-plan** : sélectionner le groupe, « Définir l'arrière-plan », choisir une image de l'espace de travail. « Modifier l'arrière-plan » propose : remplacer, retirer, couvrir (`cover`), garder les proportions (`ratio`), répéter (`repeat`).
 - **Mettre une carte dans un groupe** : on glisse la carte dans le groupe. **La carte fait partie du groupe seulement si elle est entièrement à l'intérieur de son cadre.** Quand on déplace le groupe, les cartes qui en font partie se déplacent avec lui ; une carte qui dépasse du cadre, même un peu, reste en place. (Le fichier ne garde aucune liste : l'appartenance se calcule à partir des positions, voir [canvas.md](canvas.md), § 4.5.)
-- **Aller à un groupe** : commande « Canvas : aller à un groupe » ; elle liste les groupes et centre le canvas sur celui choisi.
+- **Aller à un groupe** : clic droit sur le canvas, « Aller à un groupe » (ou la commande « Canvas : aller à un groupe », même action) ; elle liste les groupes et centre le canvas sur celui choisi. L'entrée est grisée quand le canvas n'a aucun groupe, et reste offerte en lecture seule.
 
 ## 8. Menus du clic droit
 
-- **Sur le canvas** : ajouter une note, ajouter un média, ajouter une page web, créer un groupe.
+- **Sur le canvas** : ajouter une note, ajouter un média, ajouter une page web, créer un groupe, aller à un groupe (grisé sans groupe).
 - **Sur une carte** : convertir en fichier, changer le fichier, ouvrir le lien externe, modifier, retirer, zoomer sur la sélection ; pour une page web : copier l'adresse, changer l'adresse, recharger la page.
 - **Sur une ligne** : retirer, modifier l'étiquette, suivre la connexion.
 
@@ -81,6 +81,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - **Tout voir** : bouton « Tout voir » ou Maj + 1.
 - **Zoom sur la sélection** : clic droit sur une carte sélectionnée, ou Maj + 2.
 - **Zoom initial** : bouton « Rétablir le zoom » en haut à droite.
+- **Exporter en image** : bouton « Exporter en image » dans la colonne de commandes, dans son propre groupe juste sous les boutons de zoom et avant « Annuler » (icône de plateau de téléchargement, en traits fins comme les autres) ; il lance la même action que la commande « Canvas : exporter en image » (§ 12). Sur un canvas vide il est grisé et son infobulle le dit (« Exporter en image (un canvas vide ne s'exporte pas) »). Écart voulu avec Obsidian, pour la cohérence avec la carte mentale, qui a son bouton « Exporter en image ».
 
 ## 10. Réglages du canvas (icône engrenage)
 
@@ -95,7 +96,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 
 ## 12. Exporter en image
 
-Commande **« Canvas : exporter en image »** (bureau). Options : « Zone » (canvas entier ou fenêtre seulement), « Zoom » (qualité, taille estimée affichée), « Afficher le logo » (activé par défaut), « Mode confidentiel » (masque tout le texte, désactivé par défaut). Nom proposé : le nom du canvas, en `.png`. Un canvas vide ne s'exporte pas. Si une image du canvas ne peut pas être lue, l'export est refusé avec un message qui nomme le fichier (« L'image « … » n'a pas pu être lue : l'export est annulé. ») et aucun fichier n'est écrit ; une image n'est jamais exportée vide en silence.
+Bouton **« Exporter en image »** de la colonne de commandes (§ 9, écart voulu avec Obsidian pour la cohérence avec la carte mentale) ou commande **« Canvas : exporter en image »** (bureau) : la même action. Options : « Zone » (canvas entier ou fenêtre seulement), « Zoom » (qualité, taille estimée affichée), « Afficher le logo » (activé par défaut), « Mode confidentiel » (masque tout le texte, désactivé par défaut). Nom proposé : le nom du canvas, en `.png`. Un canvas vide ne s'exporte pas. Si une image du canvas ne peut pas être lue, l'export est refusé avec un message qui nomme le fichier (« L'image « … » n'a pas pu être lue : l'export est annulé. ») et aucun fichier n'est écrit ; une image n'est jamais exportée vide en silence.
 
 ## 13. Intégrer un canvas dans une note
 
@@ -106,7 +107,7 @@ Un canvas peut être intégré dans une note avec la syntaxe d'intégration de f
 Constaté sur une capture fournie par l'utilisateur (un grand canvas, thème sombre) ; ces points complètent l'aide :
 
 - **Barre d'outils du bas** : exactement **trois boutons** carrés, côte à côte et centrés au bas du canvas : un fichier vierge, un document avec des lignes, une image. Ce sont les trois boutons du § 2.
-- **Commandes en haut à droite**, en colonne de boutons carrés, de haut en bas : **réglages** (engrenage) ; puis un groupe **zoomer** (+), **rétablir le zoom** (flèche circulaire), **tout voir** (quatre coins), **dézoomer** (−) ; puis **annuler** et **rétablir** ; puis **aide** (point d'interrogation).
+- **Commandes en haut à droite**, en colonne de boutons carrés, de haut en bas : **réglages** (engrenage) ; puis un groupe **zoomer** (+), **rétablir le zoom** (flèche circulaire), **tout voir** (quatre coins), **dézoomer** (−) ; puis, ajouté ici, **exporter en image** (§ 9) ; puis **annuler** et **rétablir** ; puis **aide** (point d'interrogation).
 - **Barre d'une carte sélectionnée** : au-dessus de la carte, une petite barre de boutons carrés : supprimer (corbeille), couleur (palette), zoom sur la sélection, modifier (crayon). Le bouton couleur ouvre une rangée de ronds colorés ; la couleur choisie est entourée d'un anneau.
 - **Barre d'une ligne sélectionnée** : au-dessus de la ligne, cinq boutons carrés : supprimer (corbeille), couleur (palette), zoom sur la sélection, sens de la ligne (l'icône montre le sens actuel : une flèche pour « unidirectionnel »), modifier l'étiquette (crayon). La ligne sélectionnée est tracée plus épaisse, avec un halo.
 - **Fond** : points espacés régulièrement (la grille d'accrochage du § 10).

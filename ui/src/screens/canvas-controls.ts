@@ -1,5 +1,5 @@
 // Canvas (fiche 0052, spécification § 14) : les boutons carrés. En bas, la barre de trois boutons ; en haut à
-// droite, la colonne des commandes (réglages ; zoomer, rétablir le zoom, tout voir, dézoomer ; annuler,
+// droite, la colonne des commandes (réglages ; zoomer, rétablir le zoom, tout voir, dézoomer ; exporter en image ; annuler,
 // rétablir ; aide) ; au-dessus de la sélection, sa barre (supprimer, couleur, zoom sur la sélection, modifier,
 // et le sens d'une flèche ou l'alignement de plusieurs cartes).
 import { type CanvasIcon, canvasIcon } from "./canvas-icons";
@@ -24,11 +24,14 @@ export function iconButton(
   return button;
 }
 
+const EXPORT_LABEL = "Exporter en image";
+
 export interface ControlActions {
   readonly settings: (at: HTMLElement) => void;
   readonly zoomIn: () => void;
   readonly resetZoom: () => void;
   readonly fit: () => void;
+  readonly exportImage: () => void;
   readonly zoomOut: () => void;
   readonly undo: () => void;
   readonly redo: () => void;
@@ -39,6 +42,8 @@ export interface Controls {
   readonly element: HTMLElement;
   /** Grise annuler et rétablir quand il n'y a rien à annuler ou à rétablir. */
   history(canUndo: boolean, canRedo: boolean): void;
+  /** Grise « Exporter en image » quand le canvas est vide (il ne s'exporte pas). */
+  exportable(canExport: boolean): void;
 }
 
 function column(...buttons: HTMLElement[]): HTMLElement {
@@ -57,6 +62,7 @@ export function createControls(actions: ControlActions): Controls {
   );
   const undo = iconButton("undo", "Annuler", actions.undo);
   const redo = iconButton("redo", "Rétablir", actions.redo);
+  const exportImage = iconButton("export", EXPORT_LABEL, actions.exportImage);
   const help = iconButton("help", "Aide", (e) => actions.help(e.currentTarget as HTMLElement));
   element.append(
     column(settings),
@@ -66,6 +72,7 @@ export function createControls(actions: ControlActions): Controls {
       iconButton("fit", "Tout voir", actions.fit),
       iconButton("zoom-out", "Dézoomer", actions.zoomOut),
     ),
+    column(exportImage),
     column(undo, redo),
     column(help),
   );
@@ -74,6 +81,12 @@ export function createControls(actions: ControlActions): Controls {
     history: (canUndo, canRedo) => {
       undo.disabled = !canUndo;
       redo.disabled = !canRedo;
+    },
+    exportable: (canExport) => {
+      exportImage.disabled = !canExport;
+      exportImage.title = canExport
+        ? EXPORT_LABEL
+        : `${EXPORT_LABEL} (un canvas vide ne s'exporte pas)`;
     },
   };
 }

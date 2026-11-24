@@ -11,6 +11,7 @@ export type CanvasIcon =
   | "undo"
   | "redo"
   | "help"
+  | "export"
   | "trash"
   | "palette"
   | "focus"
@@ -41,6 +42,7 @@ const PATHS: Record<CanvasIcon, readonly string[]> = {
     "M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7",
     "M12 17h.01",
   ],
+  export: ["M12 4v11", "M7 10l5 5 5-5", "M5 20h14"],
   trash: ["M4 7h16", "M9 7V4h6v3", "M6 7l1 13h10l1-13", "M10 11v6", "M14 11v6"],
   palette: [
     "M12 3a9 9 0 1 0 0 18c1.4 0 2-1 1.5-2-.6-1.2.2-2.5 1.6-2.5H17a4 4 0 0 0 4-4c0-5-4-9.5-9-9.5z",

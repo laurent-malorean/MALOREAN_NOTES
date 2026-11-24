@@ -68,6 +68,8 @@ export interface Mounted {
   external: string[];
   copied: string[];
   notices: string[];
+  /** Combien de fois le bouton « Exporter en image » et l'entrée « Aller à un groupe » ont lancé leur action. */
+  launched: { exportImage: number; goToGroup: number };
   asked: string[][];
   settings: { current: CanvasSettings; stored: CanvasSettings[] };
   /** Ce que répondent les fenêtres : la note, le média, le texte choisis. */
@@ -147,6 +149,7 @@ export async function mount(canvas: CanvasItem = sample(), initial: Partial<Canv
     external: [],
     copied: [],
     notices: [],
+    launched: { exportImage: 0, goToGroup: 0 },
     asked: [],
     settings: { current: { grid: false, objects: false, readOnly: false, ...initial }, stored: [] },
     pictures: {},
@@ -171,6 +174,8 @@ export async function mount(canvas: CanvasItem = sample(), initial: Partial<Canv
       return m.answers.text;
     },
     copy: (text) => m.copied.push(text),
+    exportImage: () => void m.launched.exportImage++,
+    goToGroup: () => void m.launched.goToGroup++,
     notice: (message) => m.notices.push(message),
     error: (e) => m.errors.push(e),
     settings: {
