@@ -9,10 +9,15 @@ import { canvasFrame } from "../state/canvas-image";
 import { IMAGE_SCALE, type ImageFrame } from "../state/mind-map-image";
 import { SVG, XHTML, backgroundOf, pngOf, withStyles } from "./mind-map-image";
 
-/** L'image à l'adresse `src`, en adresse de données : une image SVG n'en charge pas d'autres. */
-async function inlined(src: string): Promise<string> {
+/**
+ * L'image à l'adresse `src`, en adresse de données : une image SVG n'en charge pas d'autres. Une image
+ * illisible fait échouer l'export, en nommant le fichier : jamais de carte image dessinée vide en silence.
+ */
+async function inlined(src: string, name: string): Promise<string> {
   try {
-    const blob = await (await fetch(src)).blob();
+    const response = await fetch(src);
+    if (!response.ok) throw new Error(`réponse ${response.status}`);
+    const blob = await response.blob();
     return await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));
@@ -20,11 +25,14 @@ async function inlined(src: string): Promise<string> {
       reader.readAsDataURL(blob);
     });
   } catch {
-    return "";
+    throw new Error(`L'image « ${name} » n'a pas pu être lue : l'export est annulé.`);
   }
 }
 
-async function cardCopies(world: Element): Promise<HTMLElement[]> {
+async function cardCopies(
+  world: Element,
+  names: ReadonlyMap<string, string>,
+): Promise<HTMLElement[]> {
   const copies: HTMLElement[] = [];
   for (const card of world.querySelectorAll(".canvas-card")) {
     const copy = withStyles(card);
@@ -32,7 +40,8 @@ async function cardCopies(world: Element): Promise<HTMLElement[]> {
     copy.style.boxShadow = "none";
     for (const extra of copy.querySelectorAll(".canvas-grip, .canvas-link-dot, .canvas-far-icon"))
       extra.remove();
-    for (const image of copy.querySelectorAll("img")) image.src = await inlined(image.src);
+    const name = names.get(card.getAttribute("data-id") ?? "") ?? "";
+    for (const image of copy.querySelectorAll("img")) image.src = await inlined(image.src, name);
     copies.push(copy);
   }
   return copies;
@@ -62,6 +71,7 @@ async function svgOf(
   frame: ImageFrame,
   world: Element,
   background: string,
+  names: ReadonlyMap<string, string>,
 ): Promise<SVGSVGElement> {
   const svg = document.createElementNS(SVG, "svg");
   svg.setAttribute("xmlns", SVG);
@@ -82,7 +92,7 @@ async function svgOf(
   page.style.cssText = `position:relative;width:${frame.pixelsWide}px;height:${frame.pixelsHigh}px;overflow:hidden`;
   const sheet = document.createElement("div");
   sheet.style.cssText = `position:absolute;left:${-frame.x * IMAGE_SCALE}px;top:${-frame.y * IMAGE_SCALE}px;transform:scale(${IMAGE_SCALE});transform-origin:0 0`;
-  sheet.append(...(await cardCopies(world)));
+  sheet.append(...(await cardCopies(world, names)));
   for (const label of world.querySelectorAll(".canvas-arrow-label"))
     sheet.append(withStyles(label));
   page.append(sheet);
@@ -100,5 +110,6 @@ export async function canvasImage(
   const world = root.querySelector(".canvas-world");
   if (frame === null || world === null) return null;
   const surface = root.querySelector<HTMLElement>(".canvas-surface") ?? root;
-  return pngOf(frame, await svgOf(frame, world, backgroundOf(surface)));
+  const names = new Map(canvas.cards.map((card) => [card.id, card.file ?? card.id]));
+  return pngOf(frame, await svgOf(frame, world, backgroundOf(surface), names));
 }
