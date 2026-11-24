@@ -39,7 +39,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - Cmd + A sélectionne tout.
 - Pour faire défiler le contenu d'une carte, il faut d'abord la sélectionner.
 
-## 5. Déplacer, redimensionner, dupliquer, aligner
+## 5. Déplacer, redimensionner, aligner
 
 - **Déplacer** : glisser une carte sélectionnée ; sélectionner une carte la met au premier plan. Maj pendant le glissement contraint le déplacement à une direction. Espace désactive l'accrochage.
 - **Redimensionner** : glisser un bord quelconque. Espace désactive l'accrochage ; Maj conserve le rapport largeur/hauteur.
