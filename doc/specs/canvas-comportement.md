@@ -66,6 +66,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - **Groupe avec des cartes** : sélectionner les cartes, clic droit sur l'une d'elles, « Créer un groupe ».
 - **Renommer** : double-clic sur le nom, Entrée pour valider.
 - **Arrière-plan** : sélectionner le groupe, « Définir l'arrière-plan », choisir une image de l'espace de travail. « Modifier l'arrière-plan » propose : remplacer, retirer, couvrir (`cover`), garder les proportions (`ratio`), répéter (`repeat`).
+- **Mettre une carte dans un groupe** : on glisse la carte dans le groupe. **La carte fait partie du groupe seulement si elle est entièrement à l'intérieur de son cadre.** Quand on déplace le groupe, les cartes qui en font partie se déplacent avec lui ; une carte qui dépasse du cadre, même un peu, reste en place. (Le fichier ne garde aucune liste : l'appartenance se calcule à partir des positions, voir [canvas.md](canvas.md), § 4.5.)
 - **Aller à un groupe** : commande « Canvas : aller à un groupe » ; elle liste les groupes et centre le canvas sur celui choisi.
 
 ## 8. Menus du clic droit
@@ -121,7 +122,6 @@ Ces points ne sont pas décrits par la page d'aide. Ils se constatent dans Obsid
 
 - les noms des couleurs proposées et leurs valeurs exactes ;
 - un raccourci pour créer une carte texte au clavier (seul le double-clic est indiqué) ;
-- comment placer une carte dans un groupe sur bureau (l'aide ne le décrit que pour le mobile : glisser la carte dans la zone du groupe, et les cartes suivent le groupe quand on le déplace) ;
 - le comportement exact de la duplication avec Option (contrainte, accrochage) ;
 - l'aperçu mis en forme d'une note dans une carte ;
 - les raccourcis clavier autres que ceux cités ;
