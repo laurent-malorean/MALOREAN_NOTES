@@ -152,6 +152,10 @@
   --divider-width: 5px;
   --tab-max-width: 14rem;
   --tab-text-size: 12px;
+  /* Onglets de conversation : largeur fixe, flèches de défilement, icône « Nouvelle conversation » */
+  --claude-tab-width: 9rem;
+  --claude-tabs-arrow-size: 0.9rem;
+  --claude-new-conversation-size: 1.1rem;
   /* Barre de mise en forme : écart entre les boutons d'un groupe, boutons grisés sans note */
   --format-button-gap: 0.25rem;
   --format-bar-disabled-opacity: 0.4;

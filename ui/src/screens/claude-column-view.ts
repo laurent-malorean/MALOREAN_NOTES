@@ -63,21 +63,40 @@ export const OTHER_TAB_RUNNING =
 export const EMPTY =
   "Demandez à Claude de lire, créer ou modifier les notes de cet espace de travail.";
 
-/** Les autorisations de Claude, rappelées sous la zone du message (fiche 0032). */
-export const PERMISSIONS =
-  "Claude lit, crée et modifie les notes de cet espace de travail, sans demander, et peut chercher et lire sur le web ; après une lecture du web, ses modifications attendent votre accord. Rien d'autre : ni autre dossier, ni commande.";
-
 /** Ce que dit la colonne quand le garde-fou du web a retenu des modifications (fiche 0032). */
 export const WEB_HELD_BACK =
   "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page web lui aurait glissé des instructions. Autoriser ses modifications ?";
 
+const RAYS = 12;
+const RAY_INNER = 4;
+const RAY_OUTER = 10.5;
+const CENTER = 12;
+
+/** Le point à `radius` du centre, sur le rayon `ray` : « x y » pour les attributs d'une ligne. */
+const onRay = (ray: number, radius: number) => {
+  const angle = (ray * 2 * Math.PI) / RAYS;
+  return [CENTER + radius * Math.sin(angle), CENTER - radius * Math.cos(angle)].map((v) =>
+    v.toFixed(2),
+  ) as [string, string];
+};
+
+/** Un rayon de l'icône de Claude. */
+function rayLine(ray: number) {
+  const [x1, y1] = onRay(ray, RAY_INNER);
+  const [x2, y2] = onRay(ray, RAY_OUTER);
+  return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`;
+}
+
+/** L'icône de Claude : douze rayons autour d'un centre vide, en `currentColor`. */
+const CLAUDE_ICON = `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">${Array.from({ length: RAYS }, (_, ray) => rayLine(ray)).join("")}</svg>`;
+
 const TEMPLATE = `
   <header class="claude-header">
     <span class="claude-title">Claude Code</span>
-    <button class="tool" data-new-conversation title="Ouvrir un onglet de conversation vide ; les autres conversations restent dans leurs onglets">Nouvelle conversation</button>
+    <button class="icon claude-new-conversation" data-new-conversation title="Nouvelle conversation : ouvrir un onglet de conversation vide ; les autres conversations restent dans leurs onglets" aria-label="Nouvelle conversation">${CLAUDE_ICON}</button>
     <button class="icon" data-close title="Masquer la colonne Claude Code (Ctrl+Cmd+L)" aria-label="Masquer la colonne Claude Code">×</button>
   </header>
-  <div class="claude-tabs" role="tablist" aria-label="Onglets de conversation"></div>
+  <div class="claude-tabs-bar"></div>
   <details class="claude-account"></details>
   <p class="claude-unavailable" role="alert" hidden></p>
   <details class="claude-agents" hidden></details>
@@ -90,7 +109,7 @@ const TEMPLATE = `
       <button type="submit" class="claude-send" data-send title="Envoyer (Entrée)" aria-label="Envoyer">↑</button>
     </div>
   </form>
-  <p class="claude-permissions">${PERMISSIONS}</p>`;
+  `;
 
 function element(tag: string, className: string, text = ""): HTMLElement {
   const created = document.createElement(tag);
@@ -261,7 +280,7 @@ export function createClaudeColumnView(
   find<HTMLButtonElement>("[data-close]").addEventListener("click", () => handlers.close());
   return {
     ...agentsAndBar(find, handlers),
-    showTabs: createConversationTabsView(find(".claude-tabs"), handlers),
+    showTabs: createConversationTabsView(find(".claude-tabs-bar"), handlers),
     render: (conversation, workspacePath, otherTabRunning = false) => {
       running = conversation.turn !== "idle";
       otherRunning = otherTabRunning;
