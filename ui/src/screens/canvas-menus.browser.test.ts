@@ -10,6 +10,7 @@ import {
   emptySpot,
   key,
   last,
+  picture,
   menuItems,
   mountAt100 as mount,
   pointer,
@@ -333,5 +334,51 @@ describe("canvas : répartir et accrocher", () => {
     choose("Accrocher aux objets");
     expect(m.settings.current).toMatchObject({ grid: true, objects: true, readOnly: false });
     expect(m.settings.stored).toHaveLength(2);
+  });
+});
+
+describe("canvas : proportions d'une image", () => {
+  const added = async (width: number, height: number) => {
+    const m = await mount();
+    m.pictures["img/b.png"] = picture(width, height);
+    button("Ajouter un média").click();
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    return { m, card: last(m)?.cards.at(-1) };
+  };
+
+  it("une image en hauteur de 300 × 600 donne une carte de 300 × 600 (hauteur plafonnée)", async () => {
+    const { card } = await added(300, 600);
+    expect([card?.width, card?.height]).toEqual([300, 600]);
+  });
+
+  it("une image de 600 × 300 donne une carte de 400 × 200", async () => {
+    const { card } = await added(600, 300);
+    expect([card?.width, card?.height]).toEqual([400, 200]);
+  });
+
+  it("une image qui ne charge pas donne la taille d'une carte de fichier", async () => {
+    const m = await mount();
+    m.pictures["img/b.png"] = "data:image/png;base64,AAAA";
+    button("Ajouter un média").click();
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    const card = last(m)?.cards.at(-1);
+    expect([card?.width, card?.height]).toEqual([400, 300]);
+  });
+
+  it("une note ajoutée garde la taille d'une carte de fichier", async () => {
+    const m = await mount();
+    button("Ajouter une note de l'espace de travail").click();
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    const card = last(m)?.cards.at(-1);
+    expect([card?.width, card?.height]).toEqual([400, 300]);
+  });
+
+  it("une image déjà dans le fichier n'est ni modifiée à l'ouverture ni réécrite", async () => {
+    const m = await mount();
+    m.pictures["img/a.png"] = picture(100, 700);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(m.saved).toHaveLength(0);
+    const i = m.disk.file.canvas.cards.find((c) => c.id === "i");
+    expect([i?.width, i?.height]).toEqual([200, 100]);
   });
 });

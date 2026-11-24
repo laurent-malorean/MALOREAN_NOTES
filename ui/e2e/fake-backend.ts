@@ -556,10 +556,13 @@ mockConvertFileSrc("macos");
 
 /**
  * Parcours des images : l'adresse d'un fichier de l'espace de travail devient celle d'une vraie
- * image servie par le serveur des parcours, pour vérifier l'affichage (largeur naturelle).
+ * image servie par le serveur des parcours (`1` : 64 × 40, `tall` : 300 × 600), pour vérifier l'affichage.
  */
-if (params.get("servedImages") === "1")
+const served = { "1": "served-image.png", tall: "served-tall.png" }[
+  params.get("servedImages") ?? ""
+];
+if (served !== undefined)
   (
     window as unknown as { __TAURI_INTERNALS__: { convertFileSrc: (path: string) => string } }
   ).__TAURI_INTERNALS__.convertFileSrc = (path) =>
-    `/e2e/served-image.png?path=${encodeURIComponent(path)}`;
+    `/e2e/${served}?path=${encodeURIComponent(path)}`;

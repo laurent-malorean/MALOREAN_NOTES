@@ -53,6 +53,12 @@ export function sample(): CanvasItem {
   };
 }
 
+/** Une image SVG de `width` × `height` points : un média dont on connaît les dimensions naturelles. */
+export const picture = (width: number, height: number) =>
+  `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#e55"/></svg>`,
+  )}`;
+
 export interface Mounted {
   view: CanvasView;
   /** Chaque canvas enregistré, avec le texte de départ. */
@@ -66,6 +72,8 @@ export interface Mounted {
   settings: { current: CanvasSettings; stored: CanvasSettings[] };
   /** Ce que répondent les fenêtres : la note, le média, le texte choisis. */
   answers: { note: string | null; media: string | null; text: string | null };
+  /** L'adresse de l'image de chaque média (le pixel du test si le média n'y figure pas). */
+  pictures: Record<string, string>;
   /** Le fichier : ce que la lecture rend et que l'enregistrement remplace. */
   disk: { file: CanvasFileItem };
 }
@@ -141,6 +149,7 @@ export async function mount(canvas: CanvasItem = sample(), initial: Partial<Canv
     notices: [],
     asked: [],
     settings: { current: { grid: false, objects: false, readOnly: false, ...initial }, stored: [] },
+    pictures: {},
     answers: { note: "Notes/Autre.md", media: "img/b.png", text: "https://exemple.fr" },
     disk: { file: { canvas: structuredClone(canvas), text: "v0" } },
   };
@@ -151,7 +160,7 @@ export async function mount(canvas: CanvasItem = sample(), initial: Partial<Canv
       return structuredClone(m.disk.file);
     },
     painter: {
-      resolveImage: () => PIXEL,
+      resolveImage: (path) => m.pictures[path] ?? PIXEL,
       openNote: (path, inNewTab) => m.notes.push([path, inNewTab]),
     },
     openExternal: (url) => m.external.push(url),

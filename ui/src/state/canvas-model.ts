@@ -11,6 +11,9 @@ export type Selectable = { readonly kind: "card" | "arrow"; readonly id: string 
 export const TEXT_SIZE = { width: 250, height: 60 };
 /** La taille d'une carte de note, de média ou de page web neuve : celle des exemples de canvas.md. */
 export const FILE_SIZE = { width: 400, height: 300 };
+/** La largeur d'une carte image neuve, et la hauteur au-delà de laquelle on la réduit. */
+export const IMAGE_WIDTH = 400;
+export const IMAGE_MAX_HEIGHT = 600;
 /** La taille d'un groupe neuf. */
 export const GROUP_SIZE = { width: 400, height: 300 };
 /** Le côté du carré qui entoure les cartes d'un groupe créé à partir d'une sélection. */
@@ -89,9 +92,32 @@ export const newTextCard = (x: number, y: number, text = ""): CanvasCardItem => 
   text,
 });
 
-/** Une carte de note ou de média neuve. */
-export const newFileCard = (x: number, y: number, file: string): CanvasCardItem => ({
-  ...base(newId(), x, y, FILE_SIZE),
+/**
+ * La taille d'une carte image neuve : celle des proportions de l'image (largeur 400, hauteur arrondie),
+ * réduite à 600 de haut au plus avec la même proportion ; la taille d'une carte de fichier si l'image
+ * n'a pas de dimensions.
+ */
+export function imageSize(natural: { width: number; height: number }): {
+  width: number;
+  height: number;
+} {
+  if (!(natural.width > 0 && natural.height > 0)) return FILE_SIZE;
+  const height = Math.round((IMAGE_WIDTH * natural.height) / natural.width);
+  if (height <= IMAGE_MAX_HEIGHT) return { width: IMAGE_WIDTH, height };
+  return {
+    width: Math.round((IMAGE_MAX_HEIGHT * natural.width) / natural.height),
+    height: IMAGE_MAX_HEIGHT,
+  };
+}
+
+/** Une carte de note ou de média neuve, de la taille `size` (celle d'un fichier sans taille). */
+export const newFileCard = (
+  x: number,
+  y: number,
+  file: string,
+  size: { width: number; height: number } = FILE_SIZE,
+): CanvasCardItem => ({
+  ...base(newId(), x, y, size),
   kind: "file",
   file,
 });

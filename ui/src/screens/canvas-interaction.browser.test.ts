@@ -138,6 +138,59 @@ describe("canvas : déplacer et redimensionner", () => {
   });
 });
 
+describe("canvas : redimensionner une image", () => {
+  const sizeOf = (m: Awaited<ReturnType<typeof mount>>) => {
+    const i = last(m)?.cards.find((c) => c.id === "i");
+    return { w: i?.width ?? 0, h: i?.height ?? 0 };
+  };
+
+  it("sans Maj, le rapport largeur/hauteur de l'image est conservé (coin)", async () => {
+    const m = await mount();
+    click(cardEl("i"));
+    drag(cardEl("i").querySelector(".canvas-grip-rb") as Element, 100, 10);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    expect(sizeOf(m)).toEqual({ w: 300, h: 150 });
+  });
+
+  it("une poignée de côté mène la dimension tirée, l'autre suit", async () => {
+    const m = await mount();
+    click(cardEl("i"));
+    drag(cardEl("i").querySelector(".canvas-grip-r") as Element, -40, 0);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    expect(sizeOf(m)).toEqual({ w: 160, h: 80 });
+    click(cardEl("i"));
+    drag(cardEl("i").querySelector(".canvas-grip-b") as Element, 0, 40);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(2));
+    expect(sizeOf(m)).toEqual({ w: 240, h: 120 });
+  });
+
+  it("l'accrochage aux objets ne déforme pas l'image", async () => {
+    const m = await mount(undefined, { objects: true });
+    click(cardEl("i"));
+    drag(cardEl("i").querySelector(".canvas-grip-rb") as Element, 103, 3);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    const { w, h } = sizeOf(m);
+    expect(Math.abs(w / h - 2)).toBeLessThan(0.02);
+  });
+
+  it("Maj ne change rien de plus pour une image", async () => {
+    const m = await mount();
+    click(cardEl("i"));
+    drag(cardEl("i").querySelector(".canvas-grip-rb") as Element, 100, 10, { shiftKey: true });
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    expect(sizeOf(m)).toEqual({ w: 300, h: 150 });
+  });
+
+  it("une carte texte ne garde pas son rapport sans Maj, une note non plus", async () => {
+    const m = await mount();
+    click(cardEl("n"));
+    drag(cardEl("n").querySelector(".canvas-grip-rb") as Element, 40, 20);
+    await vi.waitFor(() => expect(m.saved).toHaveLength(1));
+    const n = last(m)?.cards.find((c) => c.id === "n");
+    expect([n?.width, n?.height]).toEqual([300, 120]);
+  });
+});
+
 describe("canvas : flèches", () => {
   it("le rond d'un bord tiré jusqu'à une carte crée une flèche vers son côté le plus proche", async () => {
     const m = await mount();

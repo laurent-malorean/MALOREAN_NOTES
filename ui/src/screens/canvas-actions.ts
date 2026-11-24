@@ -8,6 +8,7 @@ import {
   type Sense,
   arrow,
   card,
+  imageSize,
   newFileCard,
   newGroup,
   newLinkCard,
@@ -27,6 +28,7 @@ import {
   canvasMenu,
   cardMenu,
 } from "./canvas-menus";
+import { naturalSize } from "./canvas-cards";
 import { showContextMenu } from "./context-menu";
 
 const IMAGE = /\.(png|jpe?g|gif|webp|svg|bmp|avif|heic)$/i;
@@ -55,6 +57,8 @@ export interface ActionHost {
   readonly zoomToSelection: () => void;
   readonly chooseNote: () => Promise<string | null>;
   readonly chooseMedia: () => Promise<string | null>;
+  /** L'adresse chargeable d'une image du canvas (chemin depuis la racine de l'espace de travail). */
+  readonly resolveImage: (file: string) => string;
   readonly askText: (question: string, initial: string, confirm: string) => Promise<string | null>;
   readonly copy: (text: string) => void;
   readonly openExternal: (url: string) => void;
@@ -121,7 +125,11 @@ export class Actions {
   ): Promise<void> {
     try {
       const file = await choose();
-      if (file !== null) this.addCard((p) => newFileCard(p.x, p.y, file), at);
+      if (file === null) return;
+      // Une image prend les proportions de l'image ; les autres fichiers, la taille d'une carte de fichier.
+      const natural = IMAGE.test(file) ? await naturalSize(this.host.resolveImage(file)) : null;
+      const size = natural === null ? undefined : imageSize(natural);
+      this.addCard((p) => newFileCard(p.x, p.y, file, size), at);
     } catch (error) {
       this.host.error(error);
     }
