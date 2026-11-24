@@ -278,7 +278,7 @@ La carte est créée dans le dossier cliqué.
 
 - Le bouton « Exporter en image » ouvre la fenêtre d'enregistrement du Mac, comme l'export d'une note : nom proposé = titre de la carte suivi de `.png`, dossier proposé = **le dossier de la carte** dans l'espace de travail (le dernier export d'une note n'y change rien). L'image écrite apparaît donc à côté de la carte, dans la liste de l'espace de travail comme dans le Finder. Annuler n'écrit rien.
 - L'image montre toute la carte telle qu'elle est dessinée : tous les nœuds affichés et leurs liens, couleurs et Markdown compris, une branche pliée seulement par son nœud. Ni le zoom, ni la vue, ni la sélection, ni les boutons de pliage n'y paraissent.
-- Elle est sur le fond de la carte, avec 40 points de marge, à 2 pixels par point.
+- Elle est sur le fond de la carte, avec 40 points de marge, à 2 pixels par point. Aucun nœud n'est coupé ni absent : chaque nœud affiché est à sa place, face à ses liens.
 - Une carte sans nœud n'a pas d'image : « La carte est vide : rien à exporter. »
 - Une fois écrite : « « titre » exportée dans *chemin* ».
 

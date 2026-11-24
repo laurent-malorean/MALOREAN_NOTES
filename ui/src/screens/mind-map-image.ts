@@ -38,39 +38,42 @@ function svgOf(
 ): SVGSVGElement {
   const svg = document.createElementNS(SVG, "svg");
   svg.setAttribute("xmlns", SVG);
-  svg.setAttribute("width", String(frame.width));
-  svg.setAttribute("height", String(frame.height));
+  // Pixels réels et cadre en points : l'image est tramée directement à 2 pixels par point, nette.
+  svg.setAttribute("width", String(frame.pixelsWide));
+  svg.setAttribute("height", String(frame.pixelsHigh));
   const ground = document.createElementNS(SVG, "rect");
-  ground.setAttribute("width", String(frame.width));
-  ground.setAttribute("height", String(frame.height));
+  ground.setAttribute("width", String(frame.pixelsWide));
+  ground.setAttribute("height", String(frame.pixelsHigh));
   ground.setAttribute("fill", background);
   const content = document.createElementNS(SVG, "g");
-  content.setAttribute("transform", `translate(${-frame.x} ${-frame.y})`);
+  const shifted = document.createElementNS(SVG, "g");
+  shifted.setAttribute("transform", `scale(${IMAGE_SCALE}) translate(${-frame.x} ${-frame.y})`);
   for (const path of links.querySelectorAll("path")) {
     const computed = getComputedStyle(path);
     const copy = path.cloneNode() as SVGPathElement;
     copy.setAttribute("fill", "none");
     copy.setAttribute("stroke", computed.stroke);
     copy.setAttribute("stroke-width", computed.strokeWidth);
-    content.append(copy);
+    shifted.append(copy);
   }
   const holder = document.createElementNS(SVG, "foreignObject");
-  holder.setAttribute("x", String(frame.x));
-  holder.setAttribute("y", String(frame.y));
-  holder.setAttribute("width", String(frame.width));
-  holder.setAttribute("height", String(frame.height));
+  holder.setAttribute("width", String(frame.pixelsWide));
+  holder.setAttribute("height", String(frame.pixelsHigh));
   const page = document.createElement("div");
   page.setAttribute("xmlns", XHTML);
-  page.style.cssText = `position:relative;width:${frame.width}px;height:${frame.height}px;margin-left:${-frame.x}px;margin-top:${-frame.y}px`;
+  page.style.cssText = `position:relative;width:${frame.pixelsWide}px;height:${frame.pixelsHigh}px;overflow:hidden`;
+  const sheet = document.createElement("div");
+  sheet.style.cssText = `position:absolute;left:${-frame.x * IMAGE_SCALE}px;top:${-frame.y * IMAGE_SCALE}px;transform:scale(${IMAGE_SCALE});transform-origin:0 0`;
+  page.append(sheet);
   for (const node of world.querySelectorAll(".mind-map-node[data-path]")) {
     const copy = withStyles(node);
     copy.classList.remove("selected", "editing");
     copy.style.boxShadow = "none";
     for (const fold of copy.querySelectorAll(".mind-map-fold")) fold.remove();
-    page.append(copy);
+    sheet.append(copy);
   }
   holder.append(page);
-  content.append(holder);
+  content.append(shifted, holder);
   svg.append(ground, content);
   return svg;
 }
@@ -99,7 +102,6 @@ export async function mapImage(
   canvas.height = frame.pixelsHigh;
   const context = canvas.getContext("2d");
   if (context === null) throw new Error("L'image n'a pas pu être créée.");
-  context.scale(IMAGE_SCALE, IMAGE_SCALE);
   context.drawImage(image, 0, 0);
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
   if (blob === null) throw new Error("L'image n'a pas pu être créée.");
