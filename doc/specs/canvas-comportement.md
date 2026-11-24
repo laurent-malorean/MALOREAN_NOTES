@@ -42,7 +42,6 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 ## 5. Déplacer, redimensionner, dupliquer, aligner
 
 - **Déplacer** : glisser une carte sélectionnée ; sélectionner une carte la met au premier plan. Maj pendant le glissement contraint le déplacement à une direction. Espace désactive l'accrochage.
-- **Dupliquer** : Option + glisser la sélection.
 - **Redimensionner** : glisser un bord quelconque. Espace désactive l'accrochage ; Maj conserve le rapport largeur/hauteur.
 - **Aligner et répartir** (au moins deux cartes sélectionnées, « Aligner » dans les commandes de la sélection) : aligner à gauche, au centre, à droite, en haut, au milieu, en bas ; disposer en ligne, en colonne, en grille ; répartir l'espace horizontal ou vertical ; justifier horizontalement ou verticalement.
 
@@ -116,11 +115,11 @@ Constaté sur une capture fournie par l'utilisateur (un grand canvas, thème som
 - **Très dézoomé** : les cartes texte se réduisent à un rectangle coloré portant une petite icône de lignes ; le texte n'est plus dessiné.
 - **Chargement** : un indicateur « Chargement des modules… » peut s'afficher en bas à droite à l'ouverture.
 
-## 15. Ce que l'aide d'Obsidian ne dit pas
+## 15. Décisions de l'utilisateur sur les derniers points (24/11)
 
-Ces points ne sont pas décrits par la page d'aide. Ils se constatent dans Obsidian (ou se décident) avant d'être codés ; **rien n'est supposé** :
+Ces points, non décrits par l'aide d'Obsidian, sont réglés ; **rien n'est supposé au-delà** :
 
-- un raccourci pour créer une carte texte au clavier (seul le double-clic est indiqué) ;
-- le comportement exact de la duplication avec Option (contrainte, accrochage) ;
-- les raccourcis clavier autres que ceux cités ;
-- les limites de taille ou de nombre de cartes.
+- **Pas de création de carte texte au clavier** : seul le double-clic (et les boutons de la barre du bas) crée une carte texte.
+- **Pas de duplication** (Option + glisser) : l'utilisateur ne l'a pas trouvée dans Obsidian ; elle n'est pas reprise.
+- **Aucun raccourci clavier** autre que ceux cités dans ce document.
+- **Aucune limite** de taille ni de nombre de cartes.
