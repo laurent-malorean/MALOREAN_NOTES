@@ -89,7 +89,7 @@ class Renderer implements NodeRenderer {
     if (level === 1) element.classList.add("root");
     if (node.color !== null) {
       element.classList.add("colored");
-      element.style.setProperty("--node-color", `var(--mind-map-${node.color})`);
+      element.style.setProperty("--node-color", `var(--palette-${node.color})`);
     }
     element.replaceChildren();
     const title = document.createElement("div");

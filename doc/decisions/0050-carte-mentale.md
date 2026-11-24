@@ -16,7 +16,7 @@ Spécification validée par l'utilisateur le 23/11 : `doc/specs/carte-mentale.md
 - **Interface** : la carte lue est un arbre (`MindMapItem`). Ses changements (ajouter, supprimer, déplacer, colorier…) sont des fonctions pures testées sans navigateur (`ui/src/state/mind-map*.ts`) ; l'interface enregistre l'arbre entier par `save_mind_map` après chaque changement. Rust reste seul à connaître le format du fichier.
 
 - **Colonne** : si la note montrée déclare `type: carte-mentale`, la carte (`screens/mind-map-view.ts`) remplace l'éditeur de texte, caché mais gardé pour l'enregistrement et l'historique (`screens/mind-map-pane.ts`). La disposition (`state/mind-map-layout.ts`), la vue (`state/mind-map-viewport.ts`), l'arbre (`state/mind-map.ts`) et l'annulation (`state/mind-map-history.ts`, 50 changements) sont des fonctions pures ; la mesure du texte vient du style, par un nœud caché. Le Markdown du titre et du détail passe par le rendu des notes ; les liens `[[titre]]` sont réécrits en liens avant le rendu.
-- **Couleurs** : les 10 couleurs de la palette sont dans le thème (`--mind-map-<nom>`) ; fond d'un nœud coloré = 18 % de sa couleur sur le fond, par `color-mix`.
+- **Couleurs** : les 10 couleurs de la palette sont dans le thème (`--palette-<nom>`, renommées le 24/11 : voir la fiche 0052) ; fond d'un nœud coloré = 18 % de sa couleur sur le fond, par `color-mix`.
 - **Plier** : les branches pliées sont gardées dans le stockage de l'interface, par chemin de note, jamais dans le fichier.
 - **Création** : clic droit sur un dossier ou la racine (« Nouvelle note », « Nouvelle carte mentale », « Nouveau cahier de recherche »), palette, menu Fichier ; le nom est redemandé tant qu'il est vide (`app/new-contents.ts`).
 
