@@ -97,12 +97,23 @@ Commande **« Canvas : exporter en image »** (bureau). Options : « Zone » (ca
 
 Un canvas peut être intégré dans une note avec la syntaxe d'intégration de fichier habituelle.
 
-## 14. Ce que l'aide d'Obsidian ne dit pas
+## 14. Observé sur une capture d'Obsidian (24/11, bureau)
+
+Constaté sur une capture fournie par l'utilisateur (un grand canvas, thème sombre) ; ces points complètent l'aide :
+
+- **Barre d'outils du bas** : exactement **trois boutons** carrés, côte à côte et centrés au bas du canvas : un fichier vierge, un document avec des lignes, une image. Ce sont les trois boutons du § 2.
+- **Commandes en haut à droite**, en colonne de boutons carrés, de haut en bas : **réglages** (engrenage) ; puis un groupe **zoomer** (+), **rétablir le zoom** (flèche circulaire), **tout voir** (quatre coins), **dézoomer** (−) ; puis **annuler** et **rétablir** ; puis **aide** (point d'interrogation).
+- **Fond** : points espacés régulièrement (la grille d'accrochage du § 10).
+- **Cartes** : rectangles aux coins peu arrondis, colorables ; teintes vues : olive/jaune, rouge, bleu-violet et brun. Une carte d'image montre l'image seule, sans cadre de texte.
+- **Flèches** : courbes fines avec une pointe à l'arrivée ; une même carte peut en envoyer beaucoup vers d'autres.
+- **Très dézoomé** : les cartes texte se réduisent à un rectangle coloré portant une petite icône de lignes ; le texte n'est plus dessiné.
+- **Chargement** : un indicateur « Chargement des modules… » peut s'afficher en bas à droite à l'ouverture.
+
+## 15. Ce que l'aide d'Obsidian ne dit pas
 
 Ces points ne sont pas décrits par la page d'aide. Ils se constatent dans Obsidian (ou se décident) avant d'être codés ; **rien n'est supposé** :
 
-- le rendu de la barre d'outils et la liste complète de ses boutons ;
-- les noms et les teintes des couleurs proposées ;
+- les noms des couleurs proposées et leurs valeurs exactes ;
 - un raccourci pour créer une carte texte au clavier (seul le double-clic est indiqué) ;
 - le sens exact de « sans flèche », « un sens » et « deux sens » au-delà de leur nom ;
 - comment placer une carte dans un groupe sur bureau (l'aide ne le décrit que pour le mobile : glisser la carte dans la zone du groupe, et les cartes suivent le groupe quand on le déplace) ;
