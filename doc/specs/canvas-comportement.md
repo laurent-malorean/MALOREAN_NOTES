@@ -120,7 +120,6 @@ Constaté sur une capture fournie par l'utilisateur (un grand canvas, thème som
 
 Ces points ne sont pas décrits par la page d'aide. Ils se constatent dans Obsidian (ou se décident) avant d'être codés ; **rien n'est supposé** :
 
-- les noms des couleurs proposées et leurs valeurs exactes ;
 - un raccourci pour créer une carte texte au clavier (seul le double-clic est indiqué) ;
 - le comportement exact de la duplication avec Option (contrainte, accrochage) ;
 - les raccourcis clavier autres que ceux cités ;
