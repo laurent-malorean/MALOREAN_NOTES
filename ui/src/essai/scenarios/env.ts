@@ -85,12 +85,14 @@ export function loadedImage(address: string): Promise<{ width: number; height: n
   });
 }
 
+/** Au-delà, les messages sont coupés : le rapport reste lisible. */
+const MESSAGES_LIMIT = 300;
+
 /** Ce que la fenêtre dit à l'utilisateur en ce moment (notifications, barre d'état) : la raison d'un échec silencieux. */
-export const shownMessages = (): string =>
-  findAll(".status, .toast, [role=alert]")
-    .map((e) => (e.textContent ?? "").trim())
-    .filter((text) => text !== "")
-    .join(" | ");
+export function shownMessages(): string {
+  const texts = findAll(".status, .toast, [role=alert]").map((e) => (e.textContent ?? "").trim());
+  return [...new Set(texts.filter((text) => text !== ""))].join(" | ").slice(0, MESSAGES_LIMIT);
+}
 
 /** Fait `action` ; son erreur dit à quelle étape elle est arrivée. */
 export async function step<T>(name: string, action: () => Promise<T>): Promise<T> {

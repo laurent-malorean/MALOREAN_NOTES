@@ -134,7 +134,7 @@ async function arrow(env: Env, trial: Trial): Promise<void> {
   trial.check(
     "la carte image existe avant de tracer la flèche",
     image !== undefined,
-    "aucune carte image dans le fichier : l'ajout d'une image n'a rien ajouté, la flèche ne peut pas partir d'elle",
+    `${cards.length} cartes dans le fichier, dont ${cards.filter((c) => c.kind === "file").length} image(s)`,
   );
   if (image === undefined || other === undefined) return;
   dragArrow(image.id, other.id);

@@ -106,8 +106,10 @@ async function showExportedCanvas(env: Env, content: CanvasItem): Promise<void> 
   const read = await step("lecture du canvas", () => env.bridge.readCanvas(path));
   await step("écriture du canvas d'essai", () => env.bridge.saveCanvas(path, read.text, content));
   env.open(path);
+  // La carte image de CE canvas : un canvas ouvert avant dans la colonne a aussi une image chargée.
+  const imageId = content.cards.find((c) => c.kind === "file")?.id ?? "";
   const loaded = () => {
-    const image = find<HTMLImageElement>(".canvas-card img");
+    const image = find<HTMLImageElement>(`.canvas-card[data-id="${imageId}"] img`);
     return image !== null && image.naturalWidth > 0 ? image : null;
   };
   await until("l'image de la carte image affichée", loaded, WAIT);

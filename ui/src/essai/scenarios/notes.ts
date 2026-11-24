@@ -59,7 +59,11 @@ async function checkEditor(env: Env, trial: Trial, path: string, markdown: strin
   env.open(path);
   const image = () => find<HTMLImageElement>(".cm-content img.cm-lp-image");
   const shown = await until("l'image dans l'éditeur", image, WAIT).catch(() => null);
-  trial.check("l'éditeur montre l'image", shown !== null, "aucune image dans l'éditeur");
+  trial.check(
+    "l'éditeur montre l'image",
+    shown !== null,
+    shown === null ? "aucune image dans l'éditeur" : "image présente dans l'éditeur",
+  );
   const loaded = () => (shown?.complete === true ? true : null);
   await until("le chargement de l'image de l'éditeur", loaded, WAIT).catch(() => null);
   const width = shown?.naturalWidth ?? 0;

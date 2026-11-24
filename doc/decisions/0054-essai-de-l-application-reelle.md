@@ -32,3 +32,9 @@ Un **mode d'essai** : l'application construite pour l'essai (le vrai `.app`, le 
 
 - `ui/src/main.ts` gagne une ligne (le chargement conditionnel) ; sa limite de 150 lignes est tenue en fusionnant les deux lignes de commentaire du haut.
 - La logique de l'essai (`runner`, `png`, `conduct`, `wait`, `report`) est testée par Vitest ; `index.ts` et `scenarios/` sont exclus de la couverture et de la mutation : leurs scénarios sont eux-mêmes le test.
+
+## Premiers constats (24/11/2026)
+
+- Sur le code d'avant la correction des pièces jointes (`394d7da`), l'essai voyait : `attach_file` refusé (« le fichier à joindre n'a pas été reçu en entier »), donc aucune carte image ajoutée au canvas, ni flèche, ni réouverture complète.
+- Sur `main` après cette correction : ajout d'une image, flèche, réouverture, export de la carte mentale, pièce jointe d'une note et fenêtre de recherche (sombre, 400 notes) réussissent.
+- Reste un défaut que seule la vraie application montre : l'export PNG du canvas dessine **sans ses images**. `fetch` d'une image du protocole des fichiers est refusé dans la vraie fenêtre (« Load failed » ; la politique de sécurité du contenu n'ouvre que `img-src` aux adresses `asset:`), et `canvas-image.ts` avale l'erreur et laisse l'image vide.
