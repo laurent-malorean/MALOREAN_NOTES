@@ -130,7 +130,7 @@ describe("colonne : un canvas", () => {
     const m = mount();
     await m.pane.load("plan.canvas");
     await vi.waitFor(() =>
-      expect(m.element.querySelector(".canvas-card-text strong")).not.toBeNull(),
+      expect(m.element.querySelector(".canvas-text-body strong")).not.toBeNull(),
     );
     await m.pane.canvasPane()?.exportImage();
     expect(m.log).toContain("choisir plan png null plan.canvas");
@@ -168,7 +168,7 @@ describe("colonne : un canvas", () => {
     const m = mount();
     await m.pane.load("plan.canvas");
     await vi.waitFor(() =>
-      expect(m.element.querySelector(".canvas-card-text strong")).not.toBeNull(),
+      expect(m.element.querySelector(".canvas-text-body strong")).not.toBeNull(),
     );
     m.cancel();
     await m.pane.canvasPane()?.exportImage();

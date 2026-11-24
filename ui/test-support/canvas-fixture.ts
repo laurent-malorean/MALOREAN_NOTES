@@ -125,7 +125,7 @@ export const choose = (label: string) =>
     .find((b) => b.textContent === label)
     ?.click();
 export const settle = () =>
-  vi.waitFor(() => expect(cardEl("t").querySelector(".canvas-card-text strong")).not.toBeNull());
+  vi.waitFor(() => expect(cardEl("t").querySelector(".canvas-text-body strong")).not.toBeNull());
 
 export async function mount(canvas: CanvasItem = sample(), initial: Partial<CanvasSettings> = {}) {
   const host = document.createElement("div");

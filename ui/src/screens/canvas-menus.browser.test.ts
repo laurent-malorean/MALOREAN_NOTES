@@ -308,3 +308,30 @@ describe("canvas : vue, réglages, aide", () => {
 });
 
 const view = () => document.querySelector(".canvas-view") as HTMLElement;
+
+describe("canvas : répartir et accrocher", () => {
+  it("avec trois cartes, l'espace se répartit dans les deux sens", async () => {
+    const m = await mount();
+    click(cardEl("t"));
+    click(cardEl("u"), { shiftKey: true });
+    click(cardEl("n"), { shiftKey: true });
+    button("Aligner").click();
+    const before = m.saved.length;
+    choose("Répartir l'espace horizontal");
+    await vi.waitFor(() => expect(m.saved.length).toBeGreaterThan(before));
+    const middle = m.saved.length;
+    button("Aligner").click();
+    choose("Répartir l'espace vertical");
+    await vi.waitFor(() => expect(m.saved.length).toBeGreaterThan(middle));
+  });
+
+  it("les cases de l'engrenage se cochent une à une et sont gardées", async () => {
+    const m = await mount();
+    button("Réglages du canvas").click();
+    choose("Accrocher à la grille");
+    button("Réglages du canvas").click();
+    choose("Accrocher aux objets");
+    expect(m.settings.current).toMatchObject({ grid: true, objects: true, readOnly: false });
+    expect(m.settings.stored).toHaveLength(2);
+  });
+});

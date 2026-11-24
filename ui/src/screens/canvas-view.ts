@@ -324,7 +324,7 @@ class View implements CanvasView {
         const saved = await this.options.save(sent, this.base);
         this.base = saved.text;
         // Le fichier avait changé ailleurs : ce que Rust a fusionné remplace l'écran, sauf si on a encore changé depuis.
-        if (!this.dirty && !same(saved.canvas, sent)) {
+        if (!this.dirty && this.editing === null && !same(saved.canvas, sent)) {
           this.data = saved.canvas;
           this.render();
         }
@@ -523,6 +523,10 @@ class View implements CanvasView {
       { passive: false },
     );
     this.surface.addEventListener("contextmenu", (event) => this.actions.contextMenu(event));
+    // Un appui sur le fond ne prend pas le focus : le champ de saisie qui vient de s'ouvrir le garde.
+    this.surface.addEventListener("mousedown", (event) => {
+      if ((event.target as HTMLElement).closest("textarea, input") === null) event.preventDefault();
+    });
     this.surface.addEventListener("pointerdown", () => {
       closeContextMenu();
       this.element.focus({ preventScroll: true });

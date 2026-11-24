@@ -90,7 +90,7 @@ class Painter implements CardPainter {
 
   private text(markdown: string): HTMLElement {
     const body = document.createElement("div");
-    body.className = "canvas-card-text";
+    body.className = "canvas-text-body";
     const cached = this.html.get(markdown);
     if (cached !== undefined) body.innerHTML = cached;
     else {

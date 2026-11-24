@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { arrowEl, button, cardEl, centre, mount, surface } from "../../test-support/canvas-fixture";
+import {
+  arrowEl,
+  button,
+  cardEl,
+  centre,
+  mount,
+  sample,
+  surface,
+} from "../../test-support/canvas-fixture";
 import "../theme.css";
 import { closeContextMenu } from "./context-menu";
 
@@ -99,5 +107,23 @@ describe("canvas : affichage", () => {
     expect((document.querySelector(".canvas-world") as HTMLElement).style.transform).toContain(
       "scale(1.25)",
     );
+  });
+});
+
+describe("canvas : relecture", () => {
+  it("un fichier relu redessine les cartes, le Markdown déjà mis en forme est repris tel quel", async () => {
+    const m = await mount();
+    const again = structuredClone(m.disk.file);
+    m.view.setFile({ ...again, text: "v1" });
+    expect(cardEl("t").querySelector("strong")?.textContent).toBe("texte");
+    expect(cardEl("n").querySelector("a")?.textContent).toBe("Projet");
+  });
+
+  it("un groupe sans nom n'a pas d'étiquette visible ; sans carte, rien à encadrer", async () => {
+    const canvas = sample();
+    const group = canvas.cards[0];
+    if (group) group.label = null;
+    await mount(canvas);
+    expect((cardEl("g").querySelector(".canvas-group-label") as HTMLElement).hidden).toBe(true);
   });
 });

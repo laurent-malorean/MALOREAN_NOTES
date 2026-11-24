@@ -65,3 +65,45 @@ describe("éditeur d'une colonne", () => {
     pane.destroy();
   });
 });
+
+describe("canvas d'une colonne", () => {
+  it("avec les fenêtres de l'écran et le pont du canvas, la colonne sait montrer un canvas", async () => {
+    const fake = fakeBackend({ "plan.canvas": "{}" });
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
+    });
+    const read = vi.fn(async () => ({ canvas: { cards: [], arrows: [], extra: [] }, text: "{}" }));
+    const make = paneMaker({
+      backend: {
+        ...fake.backend,
+        fileAddress: (path: string) => path,
+        readCanvas: read,
+        saveCanvas: vi.fn(),
+        openWebAddress: vi.fn(),
+        listAllNotes: async () => [],
+        chooseExportFile: vi.fn(),
+        exportImage: vi.fn(),
+      } as never,
+      shared,
+      events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      layout: {
+        picker: document.createElement("dialog"),
+        confirmation: document.createElement("dialog"),
+      },
+      workspacePath: () => "/lib",
+      configure: vi.fn(),
+    });
+    const element = document.createElement("section");
+    const backlinks = document.createElement("nav");
+    const related = document.createElement("nav");
+    element.append(backlinks, related);
+    document.body.replaceChildren(element);
+    const pane = make({ element, backlinks, related });
+    await pane.load("plan.canvas");
+    await expect.poll(() => read.mock.calls.length).toBe(1);
+    expect(pane.canvasPane()?.shown()).toBe(true);
+    pane.destroy();
+  });
+});

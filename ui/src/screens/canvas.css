@@ -80,13 +80,13 @@
 .canvas-card.only-selected .canvas-card-body {
   overflow: auto;
 }
-.canvas-card-text > :first-child {
+.canvas-text-body > :first-child {
   margin-top: 0;
 }
-.canvas-card-text > :last-child {
+.canvas-text-body > :last-child {
   margin-bottom: 0;
 }
-.canvas-card-text h1 {
+.canvas-text-body h1 {
   font-size: 1.5em;
 }
 .canvas-card-image {
