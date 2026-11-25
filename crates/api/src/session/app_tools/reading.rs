@@ -4,12 +4,13 @@
 use std::collections::{HashMap, HashSet};
 
 use application::use_cases::{ListAllNotes, ListNotes, ListTaggedNotes, MAX_RESULTS, SearchNotes};
+use domain::crm::CrmKind;
 use domain::search::{ExcerptPart, SearchQuery};
 use domain::{ContentType, Folder, NoteOrder, NotePath, NoteSummary};
 use serde::Serialize;
 use serde_json::Value;
 
-use super::{ToolsScope, optional, written};
+use super::{ToolsScope, optional, required, written};
 use crate::session::Session;
 
 /// Une note trouvée, telle que Claude la reçoit.
@@ -22,10 +23,30 @@ struct FoundNote {
     /// Le passage autour des mots cherchés, s'il y en avait.
     #[serde(skip_serializing_if = "Option::is_none")]
     excerpt: Option<String>,
+    /// Pour le CRM ou une fiche d'un CRM : son type de contenu (`crm`, `crm-action`…).
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    content_type: Option<&'static str>,
+    /// Pour une fiche d'un CRM : le chemin de son CRM.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crm: Option<String>,
     /// Pour un nœud d'une carte mentale : son chemin dans la carte (`1.0.2`) ; `path` est alors le
     /// fichier de la carte.
     #[serde(skip_serializing_if = "Option::is_none")]
     node: Option<String>,
+}
+
+/// Une note dont un lien désigne la note demandée, telle que Claude la reçoit.
+#[derive(Debug, Serialize)]
+struct LinkingNote {
+    path: String,
+    title: String,
+    folder: String,
+    /// Pour une fiche d'un CRM : son type de contenu (`crm-action`…).
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    content_type: Option<&'static str>,
+    /// Pour une fiche d'un CRM : le chemin de son CRM.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crm: Option<String>,
 }
 
 /// Un modèle de note, par son nom (son titre).
@@ -44,13 +65,21 @@ fn content_types(arguments: &Value) -> Result<Vec<ContentType>, String> {
                 .find(|kind| kind.name() == name)
                 .map(|kind| vec![kind])
                 .ok_or_else(|| {
+                    let crm_types = CrmKind::ALL
+                        .map(|kind| format!("« {} »", kind.name()))
+                        .join(", ");
                     format!(
                         "type de contenu inconnu : « {name} » ; ceux d'une note : « note », \
-                         « cahier-de-recherche », « carte-mentale »"
+                         « cahier-de-recherche », « carte-mentale », {crm_types}"
                     )
                 })
         },
     )
+}
+
+/// Le nom du type de contenu d'un CRM ou de l'une de ses fiches ; rien pour le reste.
+fn crm_type_of(content_type: ContentType) -> Option<&'static str> {
+    content_type.crm_kind().map(|_| content_type.name())
 }
 
 fn excerpt_text(parts: &[ExcerptPart]) -> String {
@@ -124,6 +153,8 @@ impl Session {
                 excerpt: excerpts
                     .as_ref()
                     .and_then(|found| found.get(note.path()).cloned()),
+                content_type: crm_type_of(note.content_type()),
+                crm: note.container().map(NotePath::to_path),
                 node: None,
             })
             .collect();
@@ -161,9 +192,30 @@ impl Session {
                 title: node.title,
                 tags: Vec::new(),
                 excerpt: Some(excerpt_text(node.excerpt.parts())),
+                content_type: None,
+                crm: None,
                 node: node.node,
             })
             .collect())
+    }
+
+    /// Les notes dont un lien désigne la note `path` ; pour une fiche d'un CRM, son type et son
+    /// CRM.
+    pub(super) fn tool_linking_notes(&self, arguments: &Value) -> Result<String, String> {
+        let path = required(arguments, "path")?;
+        let linking = self.list_backlinks(path).map_err(|error| error.message)?;
+        written(
+            &linking
+                .into_iter()
+                .map(|note| LinkingNote {
+                    content_type: note.content_type.and_then(super::meaning::crm_type_of),
+                    path: note.path,
+                    title: note.title,
+                    folder: note.folder,
+                    crm: note.crm,
+                })
+                .collect::<Vec<_>>(),
+        )
     }
 
     /// Les noms des modèles de note : les notes directement dans le dossier des modèles du tour.

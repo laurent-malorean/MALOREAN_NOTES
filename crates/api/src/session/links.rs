@@ -32,10 +32,15 @@ impl Session {
         let notes = NoteLinks::new(&*store).backlinks(&NotePath::parse(path)?)?;
         Ok(notes
             .into_iter()
-            .map(|note| LinkingNoteItem {
-                folder: note.path.folder().to_path(),
-                path: note.path.to_path(),
-                title: note.title,
+            .map(|note| {
+                let of_crm = note.content_type.crm_kind().is_some();
+                LinkingNoteItem {
+                    folder: note.path.folder().to_path(),
+                    path: note.path.to_path(),
+                    title: note.title,
+                    content_type: of_crm.then(|| note.content_type.into()),
+                    crm: note.container.as_ref().map(NotePath::to_path),
+                }
             })
             .collect())
     }
@@ -48,6 +53,7 @@ mod tests {
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
+    use crate::ContentTypeItem;
 
     fn opened(notes: &[(&str, &str)]) -> Session {
         let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
@@ -82,7 +88,45 @@ mod tests {
                 path: "Travail/lundi.md".into(),
                 title: "Lundi".into(),
                 folder: "Travail".into(),
+                content_type: None,
+                crm: None,
             }]
+        );
+    }
+
+    #[test]
+    fn the_cards_of_a_crm_that_link_a_note_come_with_their_type_and_their_crm() {
+        let session = opened(&[
+            ("plan.md", "# Plan"),
+            (
+                "c/actions/2026-11-24-devis.md",
+                "---\ntype: crm-action\nnotes: ['[[Plan]]']\n---\n# Devis",
+            ),
+            (
+                "c/personnes/jean.md",
+                "---\ntype: crm-personne\n---\n# Jean\n\nVoir [[Plan]].",
+            ),
+        ]);
+        let mut linking = session.list_backlinks("plan.md").unwrap();
+        linking.sort_by(|a, b| a.path.cmp(&b.path));
+        assert_eq!(
+            linking,
+            [
+                LinkingNoteItem {
+                    path: "c/actions/2026-11-24-devis.md".into(),
+                    title: "Devis".into(),
+                    folder: "c/actions".into(),
+                    content_type: Some(ContentTypeItem::CrmAction),
+                    crm: Some("c.md".into()),
+                },
+                LinkingNoteItem {
+                    path: "c/personnes/jean.md".into(),
+                    title: "Jean".into(),
+                    folder: "c/personnes".into(),
+                    content_type: Some(ContentTypeItem::CrmPerson),
+                    crm: Some("c.md".into()),
+                },
+            ]
         );
     }
 

@@ -31,7 +31,26 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     à puces (une puce `- ` par nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour \
     son détail, ` <!-- couleur: nom -->` au bout pour sa couleur) ; n'y écrivez que des puces et des \
     lignes de détail, et ne touchez jamais à la propriété `racines` de son en-tête. Les notes sont désignées par leur chemin depuis l'espace de travail \
-    (`dossier/nom.md`).";
+    (`dossier/nom.md`). \
+    Un CRM (`type: crm`, créé par `create_crm`) est une note ; ses fiches sont des notes rangées \
+    dans des dossiers qui portent le nom de son fichier, un par sorte de fiche : pour `clients.md`, \
+    `clients/entreprises/`, `clients/personnes/`, `clients/projets/`, `clients/actions/`. Leurs \
+    types : `type: crm-entreprise`, `type: crm-personne`, `type: crm-projet`, `type: crm-action`. \
+    Une fiche en désigne une autre par `[[nom-de-fichier]]`, sans dossier ni extension ; le nom du \
+    fichier est le nom en kebab-case (pour une action, sa date puis son titre : \
+    `2026-11-24-demande-de-devis.md`) ; ne renommez jamais le fichier d'une fiche. Une action a, \
+    dans son en-tête, `statut`, `date` (`2026-11-24`), `canal`, `projet`, `couleur`, `tags`, \
+    `notes`, `personnes` (chaque personne avec son entreprise du moment : \
+    `'[[jean-dupont]] · [[acme]]'`) et `rang` ; sous son titre `# …`, sa description, puis ses \
+    listes à cocher (`#### Liste à cocher : nom`, puis `- [ ]` ou `- [x]` par élément) et ses \
+    commentaires (`#### Commentaires`, puis `- 2026-11-24 10:32 · texte`). Une personne a \
+    `fonction`, `entreprise: '[[acme]]'` (rien pour une personne sans entreprise), `parcours`, \
+    `email`, `telephone`, `linkedin`. Règles : ne touchez jamais à la propriété `rang` d'une action \
+    (sa place dans la colonne, tenue par l'application) ; pour changer le statut d'une action, \
+    écrivez le nom exact d'une colonne du CRM : `TODO`, `Done`, `Cancel` et les étapes de la \
+    propriété `etapes` de l'en-tête du CRM (`Progress` et `WaitingFor` si elle est absente) ; ne \
+    supprimez rien sans que l'utilisateur le demande ; pour un compte rendu sur une action, \
+    ajoutez un commentaire plutôt que de réécrire sa description.";
 
 /// L'issue d'un appel d'outil : le texte rendu à Claude, ou ce qui a empêché l'outil.
 pub(super) type ToolOutcome = Result<String, String>;
@@ -126,6 +145,39 @@ mod tests {
         assert_eq!(result["instructions"], INSTRUCTIONS);
         let reply = replied(r#"{"jsonrpc":"2.0","id":1,"method":"initialize"}"#);
         assert_eq!(reply["result"]["protocolVersion"], PROTOCOL_VERSION);
+    }
+
+    /// La consigne sur les CRM dans la présentation du serveur (spécification du CRM, § 13).
+    #[test]
+    fn the_introduction_gives_the_instructions_on_crms() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            // Le format en bref : le rangement, les types, les références, les noms.
+            "Un CRM (`type: crm`, créé par `create_crm`)",
+            "dossiers qui portent le nom de son fichier",
+            "`clients/entreprises/`, `clients/personnes/`, `clients/projets/`, `clients/actions/`",
+            "`type: crm-entreprise`, `type: crm-personne`, `type: crm-projet`, `type: crm-action`",
+            "`[[nom-de-fichier]]`",
+            "`2026-11-24-demande-de-devis.md`",
+            "ne renommez jamais le fichier d'une fiche",
+            "`statut`, `date` (`2026-11-24`), `canal`, `projet`, `couleur`, `tags`, `notes`, `personnes`",
+            "`'[[jean-dupont]] · [[acme]]'`",
+            "`#### Liste à cocher : nom`",
+            "`- [ ]` ou `- [x]`",
+            "`#### Commentaires`",
+            "`- 2026-11-24 10:32 · texte`",
+            "`entreprise: '[[acme]]'`",
+            // Les règles.
+            "ne touchez jamais à la propriété `rang`",
+            "le nom exact d'une colonne du CRM",
+            "`TODO`, `Done`, `Cancel` et les étapes de la propriété `etapes`",
+            "`Progress` et `WaitingFor` si elle est absente",
+            "ne supprimez rien sans que l'utilisateur le demande",
+            "ajoutez un commentaire plutôt que de réécrire sa description",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
     }
 
     #[test]

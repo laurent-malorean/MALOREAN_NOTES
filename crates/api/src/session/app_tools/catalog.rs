@@ -46,15 +46,20 @@ fn search_notes() -> Described {
         "Cherche des notes de l'espace de travail avec l'index de MALOREAN Notes, sans \
          parcourir les fichiers : les notes qui contiennent tous les mots de `query` \
          (majuscules et accents ignorés), et/ou qui portent l'étiquette `tag`, et/ou rangées \
-         dans `folder` (sous-dossiers compris), et/ou d'un type de contenu (`note` ou \
-         `cahier-de-recherche`). Rend 100 notes au plus : chemin, titre, dossier, étiquettes, \
-         et un extrait autour des mots trouvés.",
+         dans `folder` (sous-dossiers compris), et/ou d'un type de contenu (`note`, \
+         `cahier-de-recherche`, `carte-mentale`, `crm` ou une fiche d'un CRM : `crm-entreprise`, \
+         `crm-personne`, `crm-action`, `crm-projet`). Rend 100 notes au plus : chemin, titre, \
+         dossier, étiquettes, et un extrait autour des mots trouvés ; pour un CRM ou une fiche, \
+         aussi `type` et, pour une fiche, `crm`, le chemin de son CRM.",
         input(
             json!({
                 "query": text("Les mots cherchés dans le texte des notes."),
                 "tag": text("Une étiquette que les notes doivent porter."),
                 "folder": text("Un dossier depuis l'espace de travail : `Travail/Projets`."),
-                "content_type": text("Un type de contenu : `note` ou `cahier-de-recherche`."),
+                "content_type": text(
+                    "Un type de contenu : `note`, `cahier-de-recherche`, `carte-mentale`, `crm`, \
+                     `crm-entreprise`, `crm-personne`, `crm-action` ou `crm-projet`."
+                ),
             }),
             &[],
         ),
@@ -67,7 +72,8 @@ fn search_by_meaning() -> Described {
          on ne connaît pas les mots employés dans les notes (une idée, une question, un \
          synonyme). `question` s'écrit en une phrase naturelle. Rend les notes les plus proches, \
          la mieux classée d'abord : chemin, titre, et l'extrait trouvé (titre de la section, \
-         puis le début de son texte). Si le sens n'est pas disponible (modèle non téléchargé, \
+         puis le début de son texte) ; pour un CRM ou une fiche d'un CRM, aussi `type` et, pour \
+         une fiche, `crm`, le chemin de son CRM. Si le sens n'est pas disponible (modèle non téléchargé, \
          calcul pas fini), la recherche par mots répond seule, et `reason` dit pourquoi : \
          dis-le à l'utilisateur.",
         input(
@@ -92,7 +98,9 @@ fn list_tags() -> Described {
 
 fn linking_notes() -> Described {
     (
-        "Les liens entrants d'une note : les notes dont un lien `[[titre]]` la désigne.",
+        "Les liens entrants d'une note : les notes dont un lien `[[titre]]` la désigne ; une \
+         action d'un CRM la désigne par ses notes liées, sa description ou un commentaire. Pour \
+         une fiche d'un CRM, `type` et `crm` (le chemin de son CRM) s'ajoutent.",
         input(json!({ "path": note_path() }), &["path"]),
     )
 }
@@ -308,6 +316,25 @@ fn create_mind_map() -> Described {
     )
 }
 
+fn create_crm() -> Described {
+    (
+        "Crée un CRM (une note dont l'en-tête porte `type: crm`) selon les règles de MALOREAN \
+         Notes : titre `# title` en tête, nom du fichier tiré du titre (sans écraser une autre \
+         note), dans `folder` (la racine par défaut ; créé avec ses parents s'il n'existe pas). \
+         Le titre tient sur une ligne et n'est pas vide. Rend son chemin. Ensuite, ses entreprises, \
+         personnes, actions et projets sont des fiches (des notes) rangées dans des dossiers qui \
+         portent le nom du fichier du CRM : vous les lisez et les écrivez avec vos outils de \
+         fichiers, selon la consigne donnée à la présentation du serveur.",
+        input(
+            json!({
+                "title": text("Le titre du CRM."),
+                "folder": folder(),
+            }),
+            &["title"],
+        ),
+    )
+}
+
 fn viewed_note() -> Described {
     (
         "Ce que l'utilisateur regarde dans MALOREAN Notes : la note ouverte dans la colonne \
@@ -350,6 +377,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::AddAttachment => add_attachment(),
         AppTool::AddEntry => add_entry(),
         AppTool::CreateMindMap => create_mind_map(),
+        AppTool::CreateCrm => create_crm(),
         AppTool::ViewedNote => viewed_note(),
         AppTool::ShowNote => show_note(),
     }
@@ -409,7 +437,7 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 23] = [
+        let expected: [(AppTool, &[&str]); 24] = [
             (AppTool::SearchNotes, &[]),
             (AppTool::SearchByMeaning, &["question"]),
             (AppTool::ListTags, &[]),
@@ -431,6 +459,7 @@ mod tests {
             (AppTool::AddAttachment, &["path", "file"]),
             (AppTool::AddEntry, &["path", "text"]),
             (AppTool::CreateMindMap, &["title"]),
+            (AppTool::CreateCrm, &["title"]),
             (AppTool::ViewedNote, &[]),
             (AppTool::ShowNote, path),
         ];
@@ -453,6 +482,46 @@ mod tests {
         let description = described["description"].as_str().unwrap();
         assert!(description.contains("mots exacts"), "{description}");
         assert!(description.contains("`reason`"), "{description}");
+    }
+
+    #[test]
+    fn the_searches_say_that_they_find_the_crms_and_their_cards_with_the_path_of_their_crm() {
+        for tool in [AppTool::SearchNotes, AppTool::SearchByMeaning] {
+            let description = tool_description(tool)["description"]
+                .as_str()
+                .unwrap()
+                .to_owned();
+            assert!(
+                description.contains("`crm`, le chemin de son CRM"),
+                "{description}"
+            );
+        }
+        let described = tool_description(AppTool::SearchNotes);
+        let description = described["description"].as_str().unwrap();
+        let property = described["inputSchema"]["properties"]["content_type"]["description"]
+            .as_str()
+            .unwrap();
+        for kind in [
+            "crm",
+            "crm-entreprise",
+            "crm-personne",
+            "crm-action",
+            "crm-projet",
+        ] {
+            let named = format!("`{kind}`");
+            assert!(description.contains(&named), "{kind}");
+            assert!(property.contains(&named), "{kind}");
+        }
+    }
+
+    #[test]
+    fn the_linking_notes_tell_that_an_action_links_by_its_notes_and_gives_its_crm() {
+        let description = tool_description(AppTool::LinkingNotes)["description"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        assert!(description.contains("notes liées, sa description ou un commentaire"));
+        assert!(description.contains("`type` et `crm`"));
     }
 
     #[test]

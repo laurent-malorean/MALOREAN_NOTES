@@ -341,6 +341,15 @@ pub struct LinkingNoteItem {
     pub title: String,
     /// Le dossier de la note : `""` pour la racine.
     pub folder: String,
+    /// Son type de contenu, pour le CRM et ses fiches seulement (« Action · titre » à l'écran) ;
+    /// absent pour une note.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub content_type: Option<ContentTypeItem>,
+    /// Pour une fiche d'un CRM, le chemin de son CRM, où l'ouvrir ; absent sinon.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub crm: Option<String>,
 }
 
 /// Une note de la corbeille.
