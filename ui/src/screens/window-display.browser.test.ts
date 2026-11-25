@@ -37,12 +37,21 @@ function fakeWindow(options: { failSet?: boolean; failAsk?: boolean; failListen?
 
 function setup(window = fakeWindow(), storage = memoryStorage()) {
   const mainArea = document.createElement("section");
-  mainArea.innerHTML = `<aside class="folders"></aside><aside class="notes-panel"></aside><section class="claude-column"></section>`;
+  mainArea.innerHTML = `<aside class="folders"><nav class="folders-list"></nav><button></button><nav class="tags-list"></nav><footer></footer></aside><aside class="notes-panel"></aside><section class="claude-column"></section>`;
+  const part = (selector: string) => mainArea.querySelector(selector) as HTMLElement;
   const fullScreenButton = document.createElement("button");
   const sidePanelsButton = document.createElement("button");
   const error = vi.fn();
   const display = connectWindowDisplay(
-    { mainArea, fullScreenButton, sidePanelsButton },
+    {
+      ...{ mainArea, fullScreenButton, sidePanelsButton },
+      ...{ folders: part(".folders"), foldersList: part(".folders-list") },
+      ...{
+        recentButton: part("button"),
+        tagsList: part(".tags-list"),
+        foldersFooter: part("footer"),
+      },
+    },
     { window, storage, error },
   );
   const panelsHidden = () => mainArea.classList.contains("panels-hidden");

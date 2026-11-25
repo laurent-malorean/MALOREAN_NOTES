@@ -3,6 +3,7 @@
 import { type PreferenceStorage } from "../state/focus-preference";
 import { loadSidePanels, nextSidePanels, saveSidePanels } from "../state/side-panels-preference";
 import { showFullScreen, showSidePanels } from "./editor-tools";
+import { connectFoldersHandle, type FoldersParts } from "./folders-handle";
 import { connectPanelEdges } from "./panel-edges";
 
 /** Ce que la fenêtre du Mac sait faire de son plein écran. */
@@ -13,7 +14,7 @@ export interface WindowControl {
   onWindowResized(callback: () => void): Promise<unknown>;
 }
 
-export interface WindowParts {
+export interface WindowParts extends FoldersParts {
   readonly mainArea: HTMLElement;
   readonly fullScreenButton: HTMLElement;
   readonly sidePanelsButton: HTMLElement;
@@ -64,6 +65,7 @@ export function connectWindowDisplay(
   parts.sidePanelsButton.addEventListener("click", toggleSidePanels);
   applySidePanels();
   connectPanelEdges(parts.mainArea, deps.storage);
+  connectFoldersHandle(parts, deps.storage);
 
   return {
     toggleFullScreen,
