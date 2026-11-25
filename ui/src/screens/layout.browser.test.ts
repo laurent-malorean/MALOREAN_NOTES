@@ -66,15 +66,15 @@ describe("mise en page", () => {
     document.body.replaceChildren(root);
     const layout = createLayout(root);
     expect(layout.formatBar.className).toBe("format-bar");
-    const blocks = layout.formatBar.parentElement as HTMLElement;
-    expect(blocks.className).toBe("tool-blocks");
-    expect(blocks.parentElement?.className).toBe("editor-tools");
-    expect([...blocks.children].map((child) => child.className)).toEqual([
+    const rows = layout.formatBar.parentElement as HTMLElement;
+    expect(rows.className).toBe("tool-rows");
+    expect(rows.parentElement?.className).toBe("editor-tools");
+    expect([...rows.children].map((child) => child.className)).toEqual([
       "format-bar",
       "display-tools format-group",
+      "search-field",
     ]);
-    expect(blocks.nextElementSibling).toBe(layout.searchField);
-    expect(layout.searchField.nextElementSibling).toBeNull();
+    expect(rows.lastElementChild).toBe(layout.searchField);
     const displayTools = layout.focusButton.parentElement as HTMLElement;
     expect(displayTools.className).toBe("display-tools format-group");
     expect(displayTools.firstElementChild).toBe(layout.focusButton);

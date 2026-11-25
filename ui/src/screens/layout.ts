@@ -110,11 +110,11 @@ const TEMPLATE = `
       </aside>
       <main class="editor">
         <div class="editor-tools">
-          <div class="tool-blocks">
+          <div class="tool-rows">
             <div class="format-bar"></div>
             <div class="display-tools format-group"></div>
+            <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
           </div>
-          <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
         </div>
         <div class="columns"></div>
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
