@@ -137,6 +137,8 @@ test("chaque entrée crée dans le dossier affiché", async ({ page }) => {
   await ask.getByRole("textbox").fill("Plan du menu");
   await ask.getByRole("button", { name: "Créer" }).click();
   await expect.poll(() => saved(page, "Plans/plan-du-menu.canvas")).not.toBeNull();
+  // Le contenu créé s'ouvre avant le menu suivant : fermer la vue d'avant ne ferme pas un menu ouvert.
+  await expect(page.locator(".canvas-view")).toBeVisible();
 
   await chevron(page).click();
   await menu(page).getByRole("menuitem", { name: "Carte mentale" }).click();
@@ -144,6 +146,8 @@ test("chaque entrée crée dans le dossier affiché", async ({ page }) => {
   await map.getByRole("textbox").fill("Carte du menu");
   await map.getByRole("button", { name: "Créer" }).click();
   await expect.poll(() => saved(page, "Plans/carte-du-menu.md")).toContain("carte-mentale");
+  await expect(page.locator(".mind-map")).toBeVisible();
+  await expect(page.locator(".canvas-view")).toHaveCount(0);
 
   await chevron(page).click();
   await menu(page).getByRole("menuitem", { name: "CRM" }).click();
@@ -151,6 +155,8 @@ test("chaque entrée crée dans le dossier affiché", async ({ page }) => {
   await crm.getByRole("textbox").fill("CRM du menu");
   await crm.getByRole("button", { name: "Créer" }).click();
   await expect.poll(() => saved(page, "Plans/crm-du-menu.md")).toContain("type: crm");
+  await expect(page.locator(".crm")).toBeVisible();
+  await expect(page.locator(".mind-map")).toHaveCount(0);
 
   await chevron(page).click();
   await menu(page).getByRole("menuitem", { name: "Cahier de recherche" }).click();
