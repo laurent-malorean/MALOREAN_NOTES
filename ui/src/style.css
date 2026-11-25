@@ -216,11 +216,11 @@ button {
   overflow-y: auto;
   padding: 0 0.5rem;
 }
-/* Champ de recherche : dans la bande du haut, entre la barre de mise en forme et les boutons Focus, Plan… */
+/* Champ de recherche : dans la bande du haut, à droite des trois blocs d'icônes */
 .search-field {
   flex: 1 1 var(--search-field-min-width);
   max-width: var(--search-field-width);
-  min-width: 0;
+  min-width: var(--search-field-min-width);
   padding: 0.25rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -584,28 +584,28 @@ button {
 .editor-tools {
   grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.4rem;
   padding: 0.6rem 0.8rem;
 }
-/* Barre de mise en forme : au centre de la place laissée à gauche des boutons Focus, Plan… ;
-   fenêtre étroite, elle passe à la ligne au lieu de cacher des boutons. */
-.format-bar {
+/* Les trois blocs d'icônes (mise en forme, copies, affichage) : sur une seule ligne tant que la place
+   le permet. Quand elle manque, le champ de recherche se réduit d'abord jusqu'à son minimum (il ne
+   rétrécit pas dessous), puis seulement alors les blocs reçoivent le manque et le dernier passe à la
+   ligne. */
+.tool-blocks {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.4rem;
-  margin-inline: auto;
-}
-/* Boutons d'affichage (Focus, Plan…) : ils passent à la ligne ensemble, à droite. */
-.display-tools {
-  display: flex;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.4rem;
-  margin-left: auto;
+}
+.format-bar {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
 }
 /* Une pilule par groupe de boutons : fond discret, coins arrondis, icônes seules. */
 .format-group {
@@ -639,7 +639,8 @@ button {
   color: var(--text);
   background: var(--selected);
 }
-.format-button[aria-pressed="true"] {
+.format-button[aria-pressed="true"],
+.format-button[aria-pressed="true"]:hover:not(:disabled) {
   color: var(--accent);
   background: var(--selected);
 }
