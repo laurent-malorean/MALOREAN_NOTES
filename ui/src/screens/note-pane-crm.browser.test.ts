@@ -37,9 +37,13 @@ function mount(withCrm = true, failing = false) {
       createCrmAction: async () => "a",
       moveCrmAction: async () => null,
       changeCrmAction: async () => null,
+      deleteCrmAction: async () => null,
       changeCrmStages: async () => [],
+      copyPlainText: async () => null,
+      openWebAddress: async () => null,
     },
     confirm: async () => true,
+    chooseNote: async () => null,
   };
   const pane = createPane(
     { element, backlinks, related },

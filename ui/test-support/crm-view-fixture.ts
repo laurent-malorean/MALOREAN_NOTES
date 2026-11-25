@@ -2,7 +2,7 @@
 // chaque appel, la mémoire de l'onglet, les erreurs, les questions posées.
 import { expect, vi } from "vitest";
 import type { CrmActionChangeItem, CrmFiltersItem, CrmItem, StageChangeItem } from "../src/bridge";
-import { createCrmView, type CrmView } from "../src/screens/crm-view";
+import { type CrmBackend, createCrmView, type CrmView } from "../src/screens/crm-view";
 import type { CrmTab } from "../src/state/crm";
 import { sample } from "./crm-fixture";
 
@@ -25,6 +25,14 @@ export interface MountedCrm {
   answer: { value: boolean };
   /** Le retard, en millisecondes, de chacune des prochaines lectures. */
   delays: number[];
+  /** Ce que la recherche de notes rend au prochain « Lier une note » (`null` : on annule). */
+  chosenNote: { value: string | null };
+  /** Les titres de notes ouverts, les messages dits, les adresses ouvertes, les textes copiés, les fiches de personnes ouvertes. */
+  opened: string[];
+  notices: string[];
+  addresses: string[];
+  copied: string[];
+  people: string[];
 }
 
 export interface MountOptions {
@@ -33,6 +41,58 @@ export interface MountOptions {
   width?: number;
   /** Faux : le CRM n'est pas lu à l'ouverture. */
   load?: boolean;
+  /** Vrai : la fenêtre d'une action propose le lien vers la fiche d'une personne. */
+  withPersonLink?: boolean;
+}
+
+/** Le faux pont de Rust : chaque appel est noté, le prochain geste peut échouer, la lecture rend le CRM du « disque ». */
+function fakeBackend(mounted: MountedCrm, calls: Call[]): CrmBackend {
+  const gesture = async (name: string, ...args: unknown[]) => {
+    calls.push([name, ...args]);
+    const { next } = mounted.fail;
+    mounted.fail.next = null;
+    if (next !== null) throw { message: next };
+  };
+  return {
+    readCrm: async (path: string, filters: CrmFiltersItem, weekDay: string | null) => {
+      calls.push(["readCrm", path, structuredClone(filters), weekDay]);
+      if (mounted.fail.read !== null) throw { message: mounted.fail.read };
+      const snapshot = structuredClone(mounted.disk.crm);
+      const delay = mounted.delays.shift() ?? 0;
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+      return snapshot;
+    },
+    createCrmAction: async (crm, draft) => {
+      await gesture("createCrmAction", crm, draft);
+      return "nouvelle-action";
+    },
+    moveCrmAction: async (crm, action, status, placement) => {
+      await gesture("moveCrmAction", crm, action, status, placement);
+      return null;
+    },
+    changeCrmAction: async (crm: string, action: string, change: CrmActionChangeItem) => {
+      await gesture("changeCrmAction", crm, action, change);
+      return null;
+    },
+    deleteCrmAction: async (crm: string, action: string) => {
+      await gesture("deleteCrmAction", crm, action);
+      return null;
+    },
+    changeCrmStages: async (crm: string, change: StageChangeItem) => {
+      await gesture("changeCrmStages", crm, change);
+      return [];
+    },
+    copyPlainText: async (text: string) => {
+      await gesture("copyPlainText", text);
+      mounted.copied.push(text);
+      return null;
+    },
+    openWebAddress: async (address: string) => {
+      await gesture("openWebAddress", address);
+      mounted.addresses.push(address);
+      return null;
+    },
+  };
 }
 
 export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> {
@@ -44,43 +104,20 @@ export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> 
   const mounted: MountedCrm = {
     ...{ host, calls, errors: [], questions: [], stored: [] },
     ...{ fail: { next: null, read: null }, answer: { value: true }, delays: [] },
+    ...{ chosenNote: { value: null }, opened: [], notices: [], addresses: [], copied: [] },
+    people: [],
     disk: { crm: options.crm ?? sample() },
     view: undefined as never,
   };
-  const gesture = async (name: string, ...args: unknown[]) => {
-    calls.push([name, ...args]);
-    const { next } = mounted.fail;
-    mounted.fail.next = null;
-    if (next !== null) throw { message: next };
-  };
   mounted.view = createCrmView({
     path: "clients.md",
-    backend: {
-      readCrm: async (path: string, filters: CrmFiltersItem, weekDay: string | null) => {
-        calls.push(["readCrm", path, structuredClone(filters), weekDay]);
-        if (mounted.fail.read !== null) throw { message: mounted.fail.read };
-        const snapshot = structuredClone(mounted.disk.crm);
-        const delay = mounted.delays.shift() ?? 0;
-        if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
-        return snapshot;
-      },
-      createCrmAction: async (crm, draft) => {
-        await gesture("createCrmAction", crm, draft);
-        return "nouvelle-action";
-      },
-      moveCrmAction: async (crm, action, status, placement) => {
-        await gesture("moveCrmAction", crm, action, status, placement);
-        return null;
-      },
-      changeCrmAction: async (crm: string, action: string, change: CrmActionChangeItem) => {
-        await gesture("changeCrmAction", crm, action, change);
-        return null;
-      },
-      changeCrmStages: async (crm: string, change: StageChangeItem) => {
-        await gesture("changeCrmStages", crm, change);
-        return [];
-      },
-    },
+    backend: fakeBackend(mounted, calls),
+    chooseNote: async () => mounted.chosenNote.value,
+    openNote: (title) => mounted.opened.push(title),
+    notice: (message) => mounted.notices.push(message),
+    ...(options.withPersonLink === true
+      ? { openPerson: (reference: string) => mounted.people.push(reference) }
+      : {}),
     confirm: async (question) => {
       mounted.questions.push(question);
       return mounted.answer.value;

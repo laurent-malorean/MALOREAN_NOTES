@@ -139,7 +139,12 @@ class NotePane implements Pane, Viewer {
         })
       : null;
     this.crm = options.crm
-      ? createCrmPane(parts.element, { deps: options.crm, error: events.error })
+      ? createCrmPane(parts.element, {
+          deps: options.crm,
+          error: events.error,
+          openNote: (title) => events.openLink(title, false),
+          notice: (message) => events.show?.(message),
+        })
       : null;
     this.editor = createEditor(
       parts.element,

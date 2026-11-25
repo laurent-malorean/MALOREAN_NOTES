@@ -1,10 +1,9 @@
 // L'éditeur de chaque colonne : branché sur les notes partagées, réglé comme les autres colonnes.
 import type { Editor } from "../editor/editor";
 import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./canvas-host";
-import { createCrmHost, hasCrmBackend } from "./crm-host";
+import { type CrmHostBackend, createCrmHost, hasCrmBackend } from "./crm-host";
 import { imageAddress } from "../editor/image-address";
 import type { ColumnParts } from "../screens/columns-view";
-import type { CrmBackend } from "../screens/crm-view";
 import {
   createPane,
   type NotebookActions,
@@ -20,7 +19,7 @@ import { folderOf } from "../state/folders";
 export interface PanesDeps {
   readonly backend: PaneBackend &
     Partial<CanvasHostBackend> &
-    Partial<CrmBackend> & { readonly fileAddress: (path: string) => string };
+    Partial<CrmHostBackend> & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
   /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
@@ -59,7 +58,7 @@ function canvasOf(deps: PanesDeps) {
 function crmOf(deps: PanesDeps) {
   const { backend, layout } = deps;
   if (layout === undefined || !hasCrmBackend(backend)) return {};
-  return { crm: createCrmHost({ backend, dialog: layout.confirmation }) };
+  return { crm: createCrmHost({ backend, dialog: layout.confirmation, picker: layout.picker }) };
 }
 
 /** Ce qui pose l'éditeur d'une colonne qui vient d'apparaître. */
