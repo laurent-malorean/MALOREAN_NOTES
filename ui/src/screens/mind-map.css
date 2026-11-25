@@ -200,14 +200,13 @@
   cursor: pointer;
 }
 .context-menu-swatch {
-  display: inline-block;
+  display: block;
   width: 0.8em;
   height: 0.8em;
-  margin-right: 0.5em;
   border-radius: 50%;
   background: var(--swatch);
 }
-.context-menu button.checked::after {
+.context-menu button.checked .context-menu-label::after {
   content: " ✓";
 }
 .context-menu button.separated {

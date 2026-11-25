@@ -5,7 +5,7 @@
 // une note glissée depuis la liste se dépose aussi sur un dossier.
 import { canMoveInto, folderTree } from "../state/folders";
 import { hasSubfolders, visibleFolders } from "../state/folding";
-import { showContextMenu } from "./context-menu";
+import { type MenuEntry, showContextMenu } from "./context-menu";
 import { type Dragged, dragged, startDragging, stopDragging } from "./dragging";
 import { showFullNameWhenTruncated } from "./truncated-name";
 
@@ -108,22 +108,7 @@ function item(
   acceptDrops(button, path, actions);
   button.addEventListener("contextmenu", (event) => {
     event.preventDefault();
-    showContextMenu(event.clientX, event.clientY, [
-      { label: "Nouvelle note", run: () => actions.newNote(path) },
-      { label: "Nouvelle carte mentale", run: () => actions.newMindMap(path) },
-      { label: "Nouveau canvas", run: () => actions.newCanvas(path) },
-      { label: "Nouveau cahier de recherche", run: () => actions.newNotebook(path) },
-      { label: "Nouveau CRM", run: () => actions.newCrm(path) },
-      ...(path === ROOT
-        ? []
-        : [
-            {
-              label: "Placer dans la corbeille",
-              separatorBefore: true,
-              run: () => actions.trashFolder(path),
-            },
-          ]),
-    ]);
+    showContextMenu(event.clientX, event.clientY, folderMenu(path, actions));
   });
   if (path !== ROOT) {
     button.draggable = true;
@@ -140,6 +125,31 @@ function item(
     });
   }
   return button;
+}
+
+/** Les choix du clic droit sur un dossier : ce qu'on y crée, puis (hors de la racine) sa mise à la corbeille. */
+function folderMenu(path: string, actions: FolderActions): MenuEntry[] {
+  return [
+    { label: "Nouvelle note", icon: "note", run: () => actions.newNote(path) },
+    { label: "Nouvelle carte mentale", icon: "mind-map", run: () => actions.newMindMap(path) },
+    { label: "Nouveau canvas", icon: "canvas", run: () => actions.newCanvas(path) },
+    {
+      label: "Nouveau cahier de recherche",
+      icon: "notebook",
+      run: () => actions.newNotebook(path),
+    },
+    { label: "Nouveau CRM", icon: "crm", run: () => actions.newCrm(path) },
+    ...(path === ROOT
+      ? []
+      : [
+          {
+            label: "Placer dans la corbeille",
+            icon: "trash" as const,
+            separatorBefore: true,
+            run: () => actions.trashFolder(path),
+          },
+        ]),
+  ];
 }
 
 /** Ce qui est glissé (dossier ou note), s'il peut aller dans le dossier `into` : ni là où il

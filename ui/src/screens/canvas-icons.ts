@@ -26,7 +26,7 @@ export type CanvasIcon =
   | "align"
   | "check";
 
-const PATHS: Record<CanvasIcon, readonly string[]> = {
+export const CANVAS_ICON_PATHS: Record<CanvasIcon, readonly string[]> = {
   settings: [
     "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
     "M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.3 3h-4l-.4 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z",
@@ -75,7 +75,7 @@ export function canvasIcon(name: CanvasIcon): SVGElement {
   svg.setAttribute("viewBox", "0 0 24 24");
   svg.setAttribute("aria-hidden", "true");
   svg.classList.add("canvas-icon");
-  for (const d of PATHS[name]) {
+  for (const d of CANVAS_ICON_PATHS[name]) {
     const path = document.createElementNS(SVG_NAMESPACE, "path");
     path.setAttribute("d", d);
     svg.append(path);

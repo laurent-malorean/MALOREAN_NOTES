@@ -35,7 +35,14 @@ describe("entrées du menu de création", () => {
 
   it("ont leur icône, et le raccourci de leur commande", () => {
     const { entries } = setup();
-    expect(entries.every((entry) => entry.icon instanceof SVGElement)).toBe(true);
+    expect(entries.map((entry) => entry.icon)).toEqual([
+      "note",
+      "template",
+      "notebook",
+      "mind-map",
+      "canvas",
+      "crm",
+    ]);
     expect(entries.map((entry) => entry.shortcut)).toEqual([
       "Cmd+N",
       "Cmd+Maj+N",

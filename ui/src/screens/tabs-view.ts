@@ -61,10 +61,22 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
       place: (placement) => actions.place(tab.id, placement),
       close: () => actions.close(tab.id),
     });
-    const printing = { label: "Imprimer…", run: () => actions.print(tab.note) };
-    const copying = { label: COPY_LABEL, run: () => actions.copy(tab.note) };
-    const markdown = { label: MARKDOWN_COPY_LABEL, run: () => actions.copyMarkdown(tab.note) };
-    const history = { label: HISTORY_LABEL, run: () => actions.history(tab.note) };
+    const printing = {
+      label: "Imprimer…",
+      icon: "print" as const,
+      run: () => actions.print(tab.note),
+    };
+    const copying = { label: COPY_LABEL, icon: "copy" as const, run: () => actions.copy(tab.note) };
+    const markdown = {
+      label: MARKDOWN_COPY_LABEL,
+      icon: "markdown" as const,
+      run: () => actions.copyMarkdown(tab.note),
+    };
+    const history = {
+      label: HISTORY_LABEL,
+      icon: "history" as const,
+      run: () => actions.history(tab.note),
+    };
     showContextMenu(event.clientX, event.clientY, [...menu, printing, copying, markdown, history]);
   });
   element.append(label, close);

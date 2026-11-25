@@ -102,14 +102,21 @@ function menuEntries(deps: WorkspacesDeps, list: readonly WorkspaceItem[]): Menu
   return [
     ...list.map((item) => ({
       label: item.name,
+      icon: "workspace" as const,
       checked: item.active,
       stateName: item.active ? "ouvert" : undefined,
       run: () => run(switchTo(deps, item.name)),
     })),
-    { label: "Ajouter un espace de travail…", separatorBefore: true, run: () => run(add(deps)) },
-    { label: "Renommer l'espace de travail…", run: () => run(rename(deps)) },
+    {
+      label: "Ajouter un espace de travail…",
+      icon: "add" as const,
+      separatorBefore: true,
+      run: () => run(add(deps)),
+    },
+    { label: "Renommer l'espace de travail…", icon: "edit" as const, run: () => run(rename(deps)) },
     ...others.map((item) => ({
       label: `Retirer « ${item.name} » de la liste…`,
+      icon: "remove" as const,
       run: () => run(remove(deps, item.name)),
     })),
   ];

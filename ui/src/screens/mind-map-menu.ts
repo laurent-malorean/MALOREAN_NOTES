@@ -19,10 +19,15 @@ export function nodeMenu(host: MenuHost, path: NodePath, current: string | null)
       checked: current === name,
       run: () => host.color(path, name),
     })),
-    { label: "Sans couleur", run: () => host.color(path, null) },
-    { label: "Ajouter un enfant", separatorBefore: true, run: () => host.add("child", path) },
-    { label: "Ajouter un frère", run: () => host.add("sibling", path) },
-    { label: "Modifier", run: () => host.edit(path) },
-    { label: "Supprimer", run: () => host.remove(path) },
+    { label: "Sans couleur", icon: "no-color", run: () => host.color(path, null) },
+    {
+      label: "Ajouter un enfant",
+      icon: "add-child",
+      separatorBefore: true,
+      run: () => host.add("child", path),
+    },
+    { label: "Ajouter un frère", icon: "add-sibling", run: () => host.add("sibling", path) },
+    { label: "Modifier", icon: "edit", run: () => host.edit(path) },
+    { label: "Supprimer", icon: "trash", run: () => host.remove(path) },
   ];
 }

@@ -53,14 +53,38 @@ function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteAction
   item.addEventListener("contextmenu", (event) => {
     event.preventDefault();
     const pinning = note.pinned
-      ? { label: "Désépingler", run: () => actions.unpin(note.path) }
-      : { label: "Épingler", run: () => actions.pin(note.path) };
-    const trashing = { label: "Placer dans la corbeille", run: () => actions.trash(note.path) };
-    const exporting = { label: "Exporter…", run: () => actions.exportNote(note.path) };
-    const printing = { label: "Imprimer…", run: () => actions.printNote(note.path) };
-    const copying = { label: COPY_LABEL, run: () => actions.copyNote(note.path) };
-    const markdown = { label: MARKDOWN_COPY_LABEL, run: () => actions.copyMarkdown(note.path) };
-    const history = { label: HISTORY_LABEL, run: () => actions.showHistory(note.path) };
+      ? { label: "Désépingler", icon: "unpin" as const, run: () => actions.unpin(note.path) }
+      : { label: "Épingler", icon: "pin" as const, run: () => actions.pin(note.path) };
+    const trashing = {
+      label: "Placer dans la corbeille",
+      icon: "trash" as const,
+      run: () => actions.trash(note.path),
+    };
+    const exporting = {
+      label: "Exporter…",
+      icon: "export" as const,
+      run: () => actions.exportNote(note.path),
+    };
+    const printing = {
+      label: "Imprimer…",
+      icon: "print" as const,
+      run: () => actions.printNote(note.path),
+    };
+    const copying = {
+      label: COPY_LABEL,
+      icon: "copy" as const,
+      run: () => actions.copyNote(note.path),
+    };
+    const markdown = {
+      label: MARKDOWN_COPY_LABEL,
+      icon: "markdown" as const,
+      run: () => actions.copyMarkdown(note.path),
+    };
+    const history = {
+      label: HISTORY_LABEL,
+      icon: "history" as const,
+      run: () => actions.showHistory(note.path),
+    };
     const placing = noteMenu({
       place: (placement) => actions.place(note.path, placement),
       close: () => actions.closeNote(note.path),

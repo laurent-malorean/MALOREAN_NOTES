@@ -3,7 +3,7 @@
 // des contenus à créer, sans rien créer d'eux-mêmes.
 import { LONG_PRESS_MS } from "../state/new-content-menu";
 import { contextMenuOpen, type MenuEntry, showContextMenu } from "./context-menu";
-import { newContentIcon } from "./new-content-icons";
+import { appIcon } from "./app-icons";
 
 /** Les deux boutons du menu de création. */
 export interface NewContentButtons {
@@ -24,7 +24,7 @@ export function connectNewContentMenu(
   { newNoteButton: plus, newContentButton: chevron }: NewContentButtons,
   actions: NewContentMenuActions,
 ): void {
-  chevron.append(newContentIcon("chevron"));
+  chevron.append(appIcon("chevron"));
   // Le menu s'ouvre juste sous les deux boutons, quel que soit celui qui le demande.
   const openMenu = (viaKeyboard: boolean) => {
     const box = plus.getBoundingClientRect();

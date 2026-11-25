@@ -11,6 +11,7 @@ import type { Env } from "./env";
 import { exportScenarios } from "./export";
 import { foldersHeightScenarios } from "./folders-height";
 import { linkMenuScenarios } from "./link-menu";
+import { menuIconsScenarios } from "./menu-icons";
 import { newContentMenuScenarios } from "./new-content-menu";
 import { noteScenarios } from "./notes";
 import { searchScenarios } from "./search";
@@ -27,6 +28,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...crmTabsScenarios(env),
     ...crmActionScenarios(env),
     ...newContentMenuScenarios(env),
+    ...menuIconsScenarios(env),
     ...linkMenuScenarios(env),
     ...tagFieldScenarios(env),
     ...settingsScenarios(),

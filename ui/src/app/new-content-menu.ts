@@ -2,7 +2,6 @@
 // droit sur un dossier (la note, le cahier, la carte mentale, le canvas, le CRM), prises dans le
 // dossier affiché, et la note depuis un modèle de la palette.
 import type { MenuEntry } from "../screens/context-menu";
-import { newContentIcon } from "../screens/new-content-icons";
 import type { ScreenActions } from "../screens/screen-view";
 import { NEW_CONTENT_MENU, type NewContentItem } from "../state/new-content-menu";
 import { currentFolder } from "../state/screen";
@@ -40,7 +39,7 @@ function launch(deps: NewContentMenuDeps, command: NewContentItem["command"]): (
 export function newContentEntries(deps: NewContentMenuDeps): readonly MenuEntry[] {
   return NEW_CONTENT_MENU.map((item) => ({
     label: item.label,
-    icon: newContentIcon(item.icon),
+    icon: item.icon,
     ...(item.shortcut === undefined ? {} : { shortcut: item.shortcut }),
     run: launch(deps, item.command),
   }));

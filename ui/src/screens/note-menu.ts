@@ -21,10 +21,10 @@ export const HISTORY_LABEL = "Historique…";
 /** Les choix du menu d'une note, dans l'ordre. */
 export function noteMenu(actions: NoteMenuActions): MenuEntry[] {
   return [
-    { label: "Ouvrir dans un nouvel onglet", run: () => actions.place("newTab") },
-    { label: "Ouvrir à gauche", run: () => actions.place("left") },
-    { label: "Ouvrir à droite", run: () => actions.place("right") },
-    { label: "Fermer", run: () => actions.close() },
+    { label: "Ouvrir dans un nouvel onglet", icon: "new-tab", run: () => actions.place("newTab") },
+    { label: "Ouvrir à gauche", icon: "open-left", run: () => actions.place("left") },
+    { label: "Ouvrir à droite", icon: "open-right", run: () => actions.place("right") },
+    { label: "Fermer", icon: "close", run: () => actions.close() },
   ];
 }
 

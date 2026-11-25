@@ -543,14 +543,21 @@ button {
   align-items: center;
   gap: var(--context-menu-icon-gap);
 }
-.context-menu button.with-extras > svg {
+/* La colonne des icônes : même largeur à chaque choix, vide quand le choix n'a pas d'icône. */
+.context-menu-icon {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: var(--context-menu-icon-size);
   height: var(--context-menu-icon-size);
+}
+.context-menu-icon > svg {
+  width: 100%;
+  height: 100%;
   stroke-width: var(--context-menu-icon-stroke);
   stroke-linecap: round;
   stroke-linejoin: round;
-  color: var(--muted);
 }
 .context-menu-label {
   flex: 1;

@@ -1,7 +1,7 @@
 // Une ligne de la liste des contenus liables : l'icône de son type, son titre, son dossier.
 import type { LinkableItem } from "../bridge";
 import { linkIcon } from "../state/link-choice";
-import { newContentIcon } from "./new-content-icons";
+import { appIcon } from "./app-icons";
 import type { PickerEntry } from "./picker";
 
 /** Le dossier montré pour un contenu de la racine dont le nom est aussi celui d'un autre contenu. */
@@ -16,6 +16,6 @@ export function linkEntry(item: LinkableItem): PickerEntry {
   return {
     label: item.title,
     detail: root ? ROOT_FOLDER_LABEL : item.folder,
-    icon: newContentIcon(linkIcon(item)),
+    icon: appIcon(linkIcon(item)),
   };
 }
