@@ -87,7 +87,9 @@ class LinkMenu {
   private current(): Open | null {
     const { state } = this.view;
     const { main } = state.selection;
-    if (!main.empty || !this.view.hasFocus) return null;
+    // Le focus de l'éditeur, non celui de la fenêtre : une fenêtre pas encore active reçoit déjà la frappe.
+    const focused = this.view.root.activeElement === this.view.contentDOM;
+    if (!main.empty || !focused) return null;
     const line = state.doc.lineAt(main.head);
     const trigger = linkTrigger(line.text, main.head - line.from);
     return trigger && { trigger, from: line.from + trigger.from, to: main.head };

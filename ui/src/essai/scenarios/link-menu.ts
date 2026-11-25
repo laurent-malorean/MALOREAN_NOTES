@@ -76,8 +76,23 @@ async function prepare(env: Env): Promise<void> {
   await bridge.createCanvas("", CANVAS);
   const draft = await bridge.createNote("");
   env.open(draft.path);
-  await until("l'éditeur de la note", () => find(".cm-editor"), WAIT);
+  // La colonne montrait un canvas ou un CRM : l'éditeur n'est à l'écran qu'une fois la note chargée.
+  await until(
+    "l'éditeur de la note, à l'écran",
+    () => {
+      const content = find<HTMLElement>(".cm-content");
+      return content !== null && rectOf(content).width > 0 && view().state.doc.length === 0
+        ? content
+        : null;
+    },
+    WAIT,
+  );
   view().focus();
+  await until(
+    "le focus dans l'éditeur",
+    () => (view().contentDOM === document.activeElement ? true : null),
+    WAIT,
+  );
 }
 
 /** Le menu ouvert par `[[doublon` : dans la fenêtre, ses deux lignes avec leur icône et leur dossier, atteintes par le pointeur. */
@@ -193,7 +208,11 @@ async function slashScenario(env: Env, trial: Trial): Promise<void> {
 
 async function buttonScenario(trial: Trial): Promise<void> {
   const editor = view();
-  editor.dispatch({ selection: { anchor: 0, head: 1 } });
+  editor.focus();
+  editor.dispatch({
+    changes: { from: 0, to: editor.state.doc.length, insert: "mot" },
+    selection: { anchor: 0, head: 3 },
+  });
   const button = find<HTMLButtonElement>('button[aria-label="Lien"]');
   if (button === null) throw new Error("bouton « Lien » absent");
   trial.check("le bouton « Lien » reçoit le pointeur", reachable(button), "");
@@ -218,7 +237,7 @@ async function buttonScenario(trial: Trial): Promise<void> {
   );
   trial.check(
     "« Une page web » pose un lien Markdown sur le texte sélectionné",
-    /^\[.\]\(url\)/.test(written()),
+    written().startsWith("[mot](url)"),
     written().slice(0, 20),
   );
 }
