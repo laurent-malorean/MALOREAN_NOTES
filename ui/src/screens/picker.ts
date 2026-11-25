@@ -6,6 +6,8 @@
 export interface PickerEntry {
   readonly label: string;
   readonly detail?: string | undefined;
+  /** Un dessin décoratif devant le nom (l'icône du type de contenu). */
+  readonly icon?: Element | undefined;
 }
 
 export interface PickerOptions<T> {
@@ -48,7 +50,7 @@ function searchField({
 }
 
 function optionElement(
-  { label, detail }: PickerEntry,
+  { label, detail, icon }: PickerEntry,
   index: number,
   selected: boolean,
   onClick: () => void,
@@ -58,7 +60,9 @@ function optionElement(
   element.className = "picker-option";
   element.setAttribute("role", "option");
   element.setAttribute("aria-selected", String(selected));
-  element.append(span("picker-label", label));
+  const name = span("picker-label", label);
+  if (icon) name.prepend(icon);
+  element.append(name);
   if (detail) element.append(span("picker-detail", detail));
   element.addEventListener("click", onClick);
   return element;

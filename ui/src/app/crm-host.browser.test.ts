@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { LinkableItem } from "../bridge";
 import { createCrmHost, hasCrmBackend } from "./crm-host";
 
 const backend = {
@@ -20,9 +21,28 @@ const backend = {
   crmEmailIsKnown: vi.fn(),
   copyPlainText: vi.fn(),
   openWebAddress: vi.fn(),
-  listAllNotes: vi.fn(async () => [
-    { path: "a/plan.md", title: "Plan de la salle", folder: "a" },
-    { path: "cahier.md", title: "Cahier des charges", folder: "" },
+  listLinkable: vi.fn(async (): Promise<LinkableItem[]> => [
+    {
+      path: "a/plan.md",
+      title: "Plan de la salle",
+      folder: "a",
+      contentType: "note",
+      link: "Plan de la salle",
+    },
+    {
+      path: "cahier.md",
+      title: "Cahier des charges",
+      folder: "",
+      contentType: "note",
+      link: "Cahier des charges",
+    },
+    {
+      path: "Idées/Plan.canvas",
+      title: "Plan",
+      folder: "Idées",
+      contentType: "canvas",
+      link: "Plan.canvas",
+    },
   ]),
 };
 
@@ -48,7 +68,7 @@ describe("pont du CRM d'une colonne", () => {
     expect(await refusing).toBe(false);
   });
 
-  it("fait choisir une note par la recherche de notes : son titre, ou rien si on annule", async () => {
+  it("fait choisir un contenu par la recherche : le lien à écrire, ou rien si on annule", async () => {
     const picker = document.createElement("dialog");
     document.body.replaceChildren(picker);
     const host = createCrmHost({
@@ -57,12 +77,17 @@ describe("pont du CRM d'une colonne", () => {
       picker,
     });
     const choosing = host.chooseNote();
-    await vi.waitFor(() => expect(picker.querySelectorAll(".picker-option")).toHaveLength(2));
+    await vi.waitFor(() => expect(picker.querySelectorAll(".picker-option")).toHaveLength(3));
     expect(picker.getAttribute("aria-label")).toBe("Lier une note");
-    expect(picker.querySelector("input")?.placeholder).toBe("Titre de la note");
+    expect(picker.querySelector("input")?.placeholder).toBe("Nom du contenu");
     expect(picker.querySelector(".picker-detail")?.textContent).toBe("a");
+    expect(picker.querySelectorAll(".picker-label svg")).toHaveLength(3);
     (picker.querySelectorAll(".picker-option")[1] as HTMLElement).click();
     expect(await choosing).toBe("Cahier des charges");
+    const canvas = host.chooseNote();
+    await vi.waitFor(() => expect(picker.querySelectorAll(".picker-option")).toHaveLength(3));
+    (picker.querySelectorAll(".picker-option")[2] as HTMLElement).click();
+    expect(await canvas).toBe("Plan.canvas");
     const cancelling = host.chooseNote();
     await vi.waitFor(() => expect(picker.open).toBe(true));
     picker.close();

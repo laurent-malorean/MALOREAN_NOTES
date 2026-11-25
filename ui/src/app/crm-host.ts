@@ -4,11 +4,10 @@ import type * as Bridge from "../bridge";
 import type { CrmDeps } from "../screens/crm-pane";
 import type { CrmBackend } from "../screens/crm-view";
 import { askConfirmation } from "../screens/confirmation";
-import { openPicker } from "../screens/picker";
-import { matchingNotes } from "../state/quick-open";
+import { chooseLinkable } from "./link-picker";
 
-/** Ce que le CRM d'une colonne demande à Rust : ses gestes, et la liste des notes pour en lier une à une action. */
-export type CrmHostBackend = CrmBackend & Pick<typeof Bridge, "listAllNotes">;
+/** Ce que le CRM d'une colonne demande à Rust : ses gestes, et la liste de ce qu'on peut lier pour en lier un à une action. */
+export type CrmHostBackend = CrmBackend & Pick<typeof Bridge, "listLinkable">;
 
 const BACKEND_KEYS = [
   "readCrm",
@@ -29,7 +28,7 @@ const BACKEND_KEYS = [
   "crmEmailIsKnown",
   "copyPlainText",
   "openWebAddress",
-  "listAllNotes",
+  "listLinkable",
 ] as const;
 
 /** Le pont a tout ce qu'il faut pour montrer des CRM (ce que n'ont pas les faux ponts de certains tests). */
@@ -44,32 +43,10 @@ export interface CrmHostDeps {
   readonly picker: HTMLDialogElement;
 }
 
-/** La recherche de notes de l'application : le titre de la note choisie, `null` si on annule. */
-function chooseNote(backend: CrmHostBackend, picker: HTMLDialogElement): Promise<string | null> {
-  return backend.listAllNotes().then(
-    (notes) =>
-      new Promise((resolve) => {
-        let chosen = false;
-        openPicker(picker, {
-          label: "Lier une note",
-          placeholder: "Titre de la note",
-          empty: "Aucune note ne correspond",
-          entries: (query) => matchingNotes(notes, query),
-          describe: (note) => ({ label: note.title, detail: note.folder }),
-          choose: (note) => {
-            chosen = true;
-            resolve(note.title);
-          },
-        });
-        picker.addEventListener("close", () => chosen || resolve(null), { once: true });
-      }),
-  );
-}
-
 export function createCrmHost({ backend, dialog, picker }: CrmHostDeps): CrmDeps {
   return {
     backend,
     confirm: (question, confirm) => askConfirmation(dialog, { question, confirm }),
-    chooseNote: () => chooseNote(backend, picker),
+    chooseNote: async () => (await chooseLinkable(backend, picker))?.link ?? null,
   };
 }

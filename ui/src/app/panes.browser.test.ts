@@ -131,7 +131,7 @@ describe("CRM d'une colonne", () => {
         ...moreBackend(async () => {}),
         copyPlainText: vi.fn(),
         openWebAddress: vi.fn(),
-        listAllNotes: vi.fn(async () => []),
+        listLinkable: vi.fn(async () => []),
       } as never,
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
