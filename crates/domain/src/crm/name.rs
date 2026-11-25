@@ -82,6 +82,13 @@ impl Name {
     }
 }
 
+/// L'ordre alphabétique de deux noms : sans compter majuscules ni accents ; à égalité, l'ordre
+/// des caractères.
+#[must_use]
+pub fn name_order(a: &str, b: &str) -> std::cmp::Ordering {
+    folded(a).cmp(&folded(b)).then_with(|| a.cmp(b))
+}
+
 /// Le texte de la fiche avec ce titre : la ligne de son titre `#` remplacée, le nom de fichier de
 /// la fiche ne changeant jamais.
 #[must_use]

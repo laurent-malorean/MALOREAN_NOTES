@@ -101,3 +101,11 @@ fn a_known_email_of_another_person_is_a_risk_of_duplicate() {
     assert!(!email_is_known("  ", ["  "]));
     assert!(!email_is_known("a@b.c", []));
 }
+
+#[test]
+fn names_are_ordered_alphabetically_without_case_or_accents() {
+    let mut names = ["éric", "Zoé", "adèle", "Adam", "Eric", "eric"];
+    names.sort_by(|a, b| name_order(a, b));
+    assert_eq!(names, ["Adam", "adèle", "Eric", "eric", "éric", "Zoé"]);
+    assert_eq!(name_order("a", "a"), std::cmp::Ordering::Equal);
+}

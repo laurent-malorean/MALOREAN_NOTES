@@ -3,6 +3,8 @@
 
 use std::fmt;
 
+use crate::Moment;
+
 /// Un jour du calendrier grégorien, de l'an 1 à l'an 9999, sans heure ; les jours se rangent
 /// du plus ancien au plus récent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -46,6 +48,16 @@ impl Day {
         } else {
             Err(InvalidDay(format!("{year:04}-{month:02}-{day:02}")))
         }
+    }
+
+    /// Le jour de ce moment de l'horloge.
+    ///
+    /// # Errors
+    ///
+    /// [`InvalidDay`] si le jour du mois n'existe pas ce mois-là (31 février).
+    pub fn from_moment(moment: Moment) -> Result<Self, InvalidDay> {
+        let (year, month, day, _, _) = moment.parts();
+        Self::new(year, month, day)
     }
 
     /// Le jour écrit `AAAA-MM-JJ` (quatre chiffres, puis deux, puis deux).
@@ -194,6 +206,13 @@ impl DayTime {
         (hour < 24 && minute < 60).then_some(Self { day, hour, minute })
     }
 
+    /// Le moment de l'horloge, à la minute ; rien si son jour n'existe pas.
+    #[must_use]
+    pub fn from_moment(moment: Moment) -> Option<Self> {
+        let (_, _, _, hour, minute) = moment.parts();
+        Self::new(Day::from_moment(moment).ok()?, hour, minute)
+    }
+
     /// Le moment écrit `AAAA-MM-JJ HH:MM` (deux chiffres pour l'heure et la minute) ; rien si le texte
     /// n'a pas cette forme.
     #[must_use]
@@ -244,6 +263,19 @@ mod tests {
 
     fn day(text: &str) -> Day {
         Day::parse(text).unwrap()
+    }
+
+    #[test]
+    fn a_day_and_a_time_are_those_of_the_clock() {
+        let moment = Moment::new(2026, 11, 24, 10, 32).unwrap();
+        assert_eq!(Day::from_moment(moment), Ok(day("2026-11-24")));
+        assert_eq!(
+            DayTime::from_moment(moment).map(|t| t.to_string()),
+            Some("2026-11-24 10:32".to_owned())
+        );
+        let impossible = Moment::new(2026, 2, 31, 10, 32).unwrap();
+        assert!(Day::from_moment(impossible).is_err());
+        assert_eq!(DayTime::from_moment(impossible), None);
     }
 
     #[test]

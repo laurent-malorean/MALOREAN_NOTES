@@ -123,6 +123,12 @@ fn closed_order(a: &Action, b: &Action) -> Ordering {
     .then_with(|| b.name.cmp(&a.name))
 }
 
+/// Ces actions, la plus récente d'abord : par date, une action sans date à la fin ; à date égale, la
+/// dernière créée d'abord (l'ordre d'une colonne terminée).
+pub fn sort_most_recent_first(actions: &mut [&Action]) {
+    actions.sort_by(|a, b| closed_order(a, b));
+}
+
 fn oldest_first(a: Option<Day>, b: Option<Day>) -> Ordering {
     match (a, b) {
         (Some(x), Some(y)) => x.cmp(&y),

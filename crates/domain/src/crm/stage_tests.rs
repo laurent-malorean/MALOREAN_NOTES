@@ -233,3 +233,15 @@ fn the_columns_are_todo_the_stages_then_done_and_cancel() {
     );
     assert_eq!(columns(&read(&[])), strings(&["TODO", "Done", "Cancel"]));
 }
+
+#[test]
+fn a_column_is_found_by_its_name_only_when_the_crm_has_it() {
+    let stages = read(&["Négo"]);
+    let column = |text: &str| Status::column(text, &stages).map(|s| s.name().to_owned());
+    assert_eq!(column("todo"), Some("TODO".to_owned()));
+    assert_eq!(column(" NEGO "), Some("Négo".to_owned()));
+    assert_eq!(column("done"), Some("Done".to_owned()));
+    assert_eq!(column("CANCEL"), Some("Cancel".to_owned()));
+    assert_eq!(column("Progress"), None);
+    assert_eq!(column(""), None);
+}

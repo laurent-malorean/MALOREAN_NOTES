@@ -245,6 +245,15 @@ impl Status {
         }
     }
 
+    /// La colonne de ce nom pour un CRM qui a ces `stages`, majuscules et accents ignorés ; rien si
+    /// le CRM n'a pas cette colonne (à la différence de [`Self::read`], qui range dans « TODO »).
+    #[must_use]
+    pub fn column(text: &str, stages: &Stages) -> Option<Self> {
+        Self::columns(stages)
+            .into_iter()
+            .find(|status| same(status.name(), text))
+    }
+
     /// Le nom de la colonne, tel qu'il s'écrit dans le fichier.
     #[must_use]
     pub fn name(&self) -> &str {
