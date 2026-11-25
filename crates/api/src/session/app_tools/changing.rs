@@ -12,7 +12,7 @@ use domain::{Folder, NoteOrder, NotePath};
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use super::{ToolsTurn, optional, required, written};
+use super::{ToolsScope, optional, required, written};
 use crate::ApiError;
 use crate::session::Session;
 
@@ -46,7 +46,7 @@ impl Session {
     /// Joue un outil qui crée, change, range ou jette une note.
     pub(super) fn call_changing_tool(
         &self,
-        turn: &ToolsTurn,
+        scope: &ToolsScope,
         tool: AppTool,
         arguments: &Value,
     ) -> Result<String, String> {
@@ -54,7 +54,7 @@ impl Session {
             AppTool::CreateNote => self.tool_create_note(arguments),
             AppTool::CreateFolder => self.tool_create_folder(arguments),
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
-            AppTool::CreateNoteFromTemplate => self.tool_create_from_template(turn, arguments),
+            AppTool::CreateNoteFromTemplate => self.tool_create_from_template(scope, arguments),
             AppTool::TrashNote => {
                 let trashed = self.trash_note(required(arguments, "path")?);
                 written(&json!({ "trashed": trashed.map_err(|e| e.message)? }))
@@ -162,7 +162,7 @@ impl Session {
     /// modèles du tour), titrée `title`.
     pub(super) fn tool_create_from_template(
         &self,
-        turn: &ToolsTurn,
+        scope: &ToolsScope,
         arguments: &Value,
     ) -> Result<String, String> {
         let (name, title) = (
@@ -171,7 +171,7 @@ impl Session {
         );
         let folder =
             Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
-        let templates_folder = turn.templates.as_ref().ok_or_else(|| {
+        let templates_folder = scope.templates.as_ref().ok_or_else(|| {
             "aucun dossier des modèles n'est choisi : l'utilisateur peut en choisir un dans les \
              réglages de MALOREAN Notes"
                 .to_owned()

@@ -24,13 +24,19 @@ use serde_json::Value;
 
 use super::Session;
 
-/// Ce que les outils savent du tour en cours : sa clé, son espace de travail, et le dossier
-/// des modèles que l'interface a choisi pour lui.
+/// Ce que les outils visent : un espace de travail, désigné par son nom, et le dossier des
+/// modèles que l'interface a choisi, s'il l'a fait.
+#[derive(Debug, Clone)]
+pub(super) struct ToolsScope {
+    workspace: WorkspaceName,
+    templates: Option<Folder>,
+}
+
+/// Ce que les outils savent du tour en cours : sa clé, et ce qu'il vise.
 #[derive(Debug, Clone)]
 pub(super) struct ToolsTurn {
     key: AppToolsKey,
-    workspace: WorkspaceName,
-    templates: Option<Folder>,
+    scope: ToolsScope,
 }
 
 /// Les outils ouverts pour un tour ; lâchés à la fin du tour, ils se referment.
@@ -51,6 +57,10 @@ impl Drop for OpenTools<'_> {
         *self.session.tools_turn() = None;
     }
 }
+
+/// Ce que l'application répond à une demande sans la clé du tour en cours.
+const TURN_KEY_REFUSED: &str = "clé refusée : les outils de MALOREAN Notes ne servent que pendant \
+     un tour de la colonne Claude Code";
 
 /// Les clés déjà tirées : chacune hache un nombre différent.
 static KEYS_DRAWN: AtomicU64 = AtomicU64::new(0);
@@ -105,8 +115,10 @@ impl Session {
         let key = new_key();
         *turn = Some(ToolsTurn {
             key: key.clone(),
-            workspace,
-            templates,
+            scope: ToolsScope {
+                workspace,
+                templates,
+            },
         });
         Some(OpenTools { session: self, key })
     }
@@ -120,24 +132,26 @@ impl Session {
             .clone()
             .filter(|turn| turn.key.as_str() == key);
         match turn {
-            Some(turn) => mcp::answer(line, true, |tool, arguments| {
-                self.call_tool(&turn, tool, arguments)
+            Some(turn) => mcp::answer(line, None, |tool, arguments| {
+                self.call_tool(&turn.scope, tool, arguments)
             }),
-            None => mcp::answer(line, false, |_, _| unreachable!("demande refusée")),
+            None => mcp::answer(line, Some(TURN_KEY_REFUSED), |_, _| {
+                unreachable!("demande refusée")
+            }),
         }
     }
 
     /// Joue un outil, dans l'espace de travail du tour seulement.
-    fn call_tool(&self, turn: &ToolsTurn, tool: AppTool, arguments: &Value) -> mcp::ToolOutcome {
+    fn call_tool(&self, scope: &ToolsScope, tool: AppTool, arguments: &Value) -> mcp::ToolOutcome {
         let opened = self.opened().map_err(|error| error.message)?;
-        if !opened.name.same_as(&turn.workspace) {
+        if !opened.name.same_as(&scope.workspace) {
             return Err(format!(
                 "l'espace de travail « {} » de ce tour n'est plus ouvert : rien n'a été fait",
-                turn.workspace.as_str()
+                scope.workspace.as_str()
             ));
         }
         if tool.changes_notes() {
-            return self.call_changing_tool(turn, tool, arguments);
+            return self.call_changing_tool(scope, tool, arguments);
         }
         match tool {
             AppTool::SearchNotes => self.tool_search_notes(arguments),
@@ -147,8 +161,8 @@ impl Session {
                 let path = required(arguments, "path")?;
                 written(&self.list_backlinks(path).map_err(|e| e.message)?)
             }
-            AppTool::ListTemplates => self.tool_list_templates(turn),
-            AppTool::ViewedNote => self.tool_viewed_note(turn),
+            AppTool::ListTemplates => self.tool_list_templates(scope),
+            AppTool::ViewedNote => self.tool_viewed_note(scope),
             AppTool::ShowNote => self.tool_show_note(arguments),
             AppTool::ListVersions => {
                 let path = required(arguments, "path")?;
