@@ -23,7 +23,7 @@ export interface ScreenActionsDeps {
   readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
   readonly workspace: Pick<Workspace, "moveNote" | "changePin" | "sortBy" | "createNote">;
   /** Ce qu'on crée dans un dossier, par son menu. */
-  readonly notebooks: Pick<NewContents, "create" | "createMindMap" | "createCanvas">;
+  readonly notebooks: Pick<NewContents, "create" | "createMindMap" | "createCanvas" | "createCrm">;
   readonly trash: Pick<
     Trash,
     "trashNote" | "trashFolder" | "restoreNote" | "restoreFolder" | "empty"
@@ -38,6 +38,22 @@ export interface ScreenActionsDeps {
   readonly settings: Pick<AppSettings, "openTab">;
   /** Lance l'action ; son échec est montré. */
   run(action: Promise<unknown>): void;
+}
+
+type Creations = Pick<
+  ScreenActions,
+  "newNote" | "newMindMap" | "newCanvas" | "newCrm" | "newNotebook"
+>;
+
+/** Ce qu'on crée dans un dossier, par le menu du dossier. */
+function creations({ workspace, notebooks, run }: ScreenActionsDeps): Creations {
+  return {
+    newNote: (folder) => run(workspace.createNote(folder)),
+    newMindMap: (folder) => run(notebooks.createMindMap(folder)),
+    newCanvas: (folder) => run(notebooks.createCanvas(folder)),
+    newCrm: (folder) => run(notebooks.createCrm(folder)),
+    newNotebook: (folder) => run(notebooks.create(folder)),
+  };
 }
 
 export function screenActions(deps: ScreenActionsDeps): ScreenActions {
@@ -74,10 +90,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     rename: (path, name) => run(folders.rename(path, name)),
     move: (path, into) => run(folders.move(path, into)),
     fold: (path) => folders.fold(path),
-    newNote: (folder) => run(workspace.createNote(folder)),
-    newMindMap: (folder) => run(deps.notebooks.createMindMap(folder)),
-    newCanvas: (folder) => run(deps.notebooks.createCanvas(folder)),
-    newNotebook: (folder) => run(deps.notebooks.create(folder)),
+    ...creations(deps),
     moveNote: (path, into) => run(workspace.moveNote(path, into)),
     pin: (path) => run(workspace.changePin(path, backend.pinNote)),
     unpin: (path) => run(workspace.changePin(path, backend.unpinNote)),

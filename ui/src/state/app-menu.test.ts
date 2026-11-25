@@ -64,6 +64,7 @@ describe("barre des menus", () => {
           "Nouveau cahier de recherche…",
           "Nouvelle carte mentale…",
           "Nouveau canvas…",
+          "Nouveau CRM…",
           "Nouveau dossier",
           "—",
           "Ouverture rapide… Cmd+O",

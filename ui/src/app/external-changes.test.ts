@@ -44,7 +44,7 @@ function setup(start: Screen = workspaceScreen(), options: { failListen?: boolea
 }
 
 describe("modifications faites hors de l'application", () => {
-  it("dossiers, liste et onglets suivent ; seules les colonnes de notes touchées relisent le disque", async () => {
+  it("dossiers, liste et onglets suivent ; seules les colonnes de notes touchées relisent le disque, les autres relisent leurs fiches", async () => {
     const t = setup();
     t.columns.panes.set(1, fakePane("a.md", t.log));
     t.columns.panes.set(2, fakePane("b.md", t.log));
@@ -56,6 +56,7 @@ describe("modifications faites hors de l'application", () => {
       "toutes les notes",
       "liens a.md",
       "proches a.md",
+      "fiches a.md b.md,c.md",
       "liens b.md",
       "proches b.md",
       "relire b.md",

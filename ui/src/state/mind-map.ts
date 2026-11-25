@@ -1,6 +1,7 @@
 // Carte mentale (fiche 0050) : l'arbre des nœuds et ses changements, des fonctions pures. L'écran
 // enregistre l'arbre entier après chaque changement ; Rust seul connaît le format du fichier.
 import type { MindMapItem, MindNodeItem, PlaceItem } from "../bridge";
+import { declaredType } from "./declared-type";
 import { PALETTE } from "./palette";
 
 /** Le chemin d'un nœud : ses rangs depuis 0 (`[1, 0, 2]` s'écrit `1.0.2`). */
@@ -243,15 +244,9 @@ export function typedOf(node: MindNodeItem): string {
   return [node.title, ...node.detail].join("\n");
 }
 
-/** La première clé `type:` au premier niveau de l'en-tête, sa valeur jusqu'au commentaire. */
-const TYPE_LINE = /^type[ \t]*:([^#\n]*)/m;
-const HEADER = /^---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
-
 /** La note est une carte mentale : son en-tête le déclare, comme Rust le lit (guillemets permis). */
 export function isMindMapContent(content: string): boolean {
-  const header = HEADER.exec(content)?.[1];
-  const value = header === undefined ? undefined : TYPE_LINE.exec(header)?.[1];
-  return value !== undefined && value.trim().replace(/^["']|["']$/g, "") === "carte-mentale";
+  return declaredType(content) === "carte-mentale";
 }
 
 /** Les branches pliées, par chemin. */

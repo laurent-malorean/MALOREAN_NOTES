@@ -2,6 +2,7 @@
 // couleur en commentaire, `racines` dans l'en-tête) comme Rust l'écrit. Les vraies règles (retraits
 // mêlés, lignes hors format, valeurs par défaut) sont testées côté Rust.
 import type { MindMapItem, MindNodeItem } from "../src/bridge";
+import { isCrmContent } from "../src/state/crm";
 import { isMindMapContent } from "../src/state/mind-map";
 
 type Handler = (args: Record<string, string>) => unknown;
@@ -17,9 +18,10 @@ export interface MindMapHelpers {
 }
 
 /** Le type de contenu que le faux donne à une note, comme l'index de Rust. */
-export function fakeContentType(content: string): "researchNotebook" | "mindMap" | "note" {
+export function fakeContentType(content: string): "researchNotebook" | "mindMap" | "crm" | "note" {
   if (/^---\n(?:.*\n)*?type: cahier-de-recherche\n(?:.*\n)*?---\n/.test(content))
     return "researchNotebook";
+  if (isCrmContent(content)) return "crm";
   return isMindMapContent(content) ? "mindMap" : "note";
 }
 

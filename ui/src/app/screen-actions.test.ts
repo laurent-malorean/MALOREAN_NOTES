@@ -48,6 +48,7 @@ function setup(searching: string | null = null) {
       create: (folder) => done(`nouveau cahier ${folder}`)(),
       createMindMap: (folder) => done(`nouvelle carte mentale ${folder}`)(),
       createCanvas: (folder) => done(`nouveau canvas ${folder}`)(),
+      createCrm: (folder) => done(`nouveau CRM ${folder}`)(),
     },
     trash: {
       trashNote: (path) => done(`jeter ${path}`)(),
@@ -106,6 +107,7 @@ describe("demandes de l'écran", () => {
     t.actions.newNote("projets");
     t.actions.newMindMap("projets");
     t.actions.newNotebook("projets");
+    t.actions.newCrm("projets");
     t.actions.selectTag("perso");
     t.actions.clearTag();
     t.actions.sortNotes("title");
@@ -133,12 +135,13 @@ describe("demandes de l'écran", () => {
       "nouvelle note projets",
       "nouvelle carte mentale projets",
       "nouveau cahier projets",
+      "nouveau CRM projets",
       "filtrer #perso",
       "retirer le filtre",
       "trier par title",
       "récentes",
     ]);
-    expect(t.ran).toHaveLength(18);
+    expect(t.ran).toHaveLength(19);
   });
 
   it("ouvre une note, la place ou la ferme dans les colonnes", async () => {

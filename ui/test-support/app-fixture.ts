@@ -41,6 +41,9 @@ export function fakePane(note: string | null = null, log: string[] = []) {
     showBacklinks: vi.fn(async () => void log.push(`liens ${shown}`)),
     showRelated: vi.fn(async () => void log.push(`proches ${shown}`)),
     followDisk: vi.fn(async () => void log.push(`relire ${shown}`)),
+    followCrm: vi.fn(
+      async (changed: readonly string[]) => void log.push(`fiches ${shown} ${changed.join(",")}`),
+    ),
     destroy: vi.fn(),
   };
   return pane as typeof pane & Pane;

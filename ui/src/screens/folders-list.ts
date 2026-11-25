@@ -19,11 +19,12 @@ export interface FolderActions {
   readonly trashFolder: (path: string) => void;
   /** Plie le dossier, ou le déplie s'il est plié. */
   readonly fold: (path: string) => void;
-  /** Crée, dans ce dossier, une note, une carte mentale ou un cahier de recherche. */
+  /** Crée, dans ce dossier, une note, une carte mentale, un canvas, un cahier de recherche ou un CRM. */
   readonly newNote: (folder: string) => void;
   readonly newMindMap: (folder: string) => void;
   readonly newCanvas: (folder: string) => void;
   readonly newNotebook: (folder: string) => void;
+  readonly newCrm: (folder: string) => void;
 }
 
 /** Comment un dossier se montre : sans sous-dossier, plié ou déplié. */
@@ -112,6 +113,7 @@ function item(
       { label: "Nouvelle carte mentale", run: () => actions.newMindMap(path) },
       { label: "Nouveau canvas", run: () => actions.newCanvas(path) },
       { label: "Nouveau cahier de recherche", run: () => actions.newNotebook(path) },
+      { label: "Nouveau CRM", run: () => actions.newCrm(path) },
       ...(path === ROOT
         ? []
         : [

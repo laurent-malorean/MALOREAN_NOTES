@@ -22,6 +22,23 @@ import type { CanvasArrowItem } from "./generated/CanvasArrowItem";
 import type { CanvasCardItem } from "./generated/CanvasCardItem";
 import type { CanvasFileItem } from "./generated/CanvasFileItem";
 import type { CanvasItem } from "./generated/CanvasItem";
+import type { ColumnItem } from "./generated/ColumnItem";
+import type { CompanyChoiceItem } from "./generated/CompanyChoiceItem";
+import type { CrmActionChangeItem } from "./generated/CrmActionChangeItem";
+import type { CrmActionDraftItem } from "./generated/CrmActionDraftItem";
+import type { CrmActionItem } from "./generated/CrmActionItem";
+import type { CrmCompanyChangeItem } from "./generated/CrmCompanyChangeItem";
+import type { CrmCompanyItem } from "./generated/CrmCompanyItem";
+import type { CrmFiltersItem } from "./generated/CrmFiltersItem";
+import type { CrmItem } from "./generated/CrmItem";
+import type { CrmPersonChangeItem } from "./generated/CrmPersonChangeItem";
+import type { CrmPersonItem } from "./generated/CrmPersonItem";
+import type { CrmProjectChangeItem } from "./generated/CrmProjectChangeItem";
+import type { CrmProjectItem } from "./generated/CrmProjectItem";
+import type { PlacementItem } from "./generated/PlacementItem";
+import type { StageChangeItem } from "./generated/StageChangeItem";
+import type { UrgencyItem } from "./generated/UrgencyItem";
+import type { WeekItem } from "./generated/WeekItem";
 import type { MindMapItem } from "./generated/MindMapItem";
 import type { MindNodeItem } from "./generated/MindNodeItem";
 import type { PlaceItem } from "./generated/PlaceItem";
@@ -77,6 +94,23 @@ export type {
   CanvasCardItem,
   CanvasFileItem,
   CanvasItem,
+  ColumnItem,
+  CompanyChoiceItem,
+  CrmActionChangeItem,
+  CrmActionDraftItem,
+  CrmActionItem,
+  CrmCompanyChangeItem,
+  CrmCompanyItem,
+  CrmFiltersItem,
+  CrmItem,
+  CrmPersonChangeItem,
+  CrmPersonItem,
+  CrmProjectChangeItem,
+  CrmProjectItem,
+  PlacementItem,
+  StageChangeItem,
+  UrgencyItem,
+  WeekItem,
   MindMapItem,
   MindNodeItem,
   PlaceItem,
@@ -190,6 +224,54 @@ export const createMindMap = (folder: string, title: string) =>
 export const readMindMap = (path: string) => invoke<MindMapItem>("read_mind_map", { path });
 export const saveMindMap = (path: string, map: MindMapItem) =>
   invoke<null>("save_mind_map", { path, map });
+/** Crée dans `folder` un CRM titré `title` (fiche 0058). */
+export const createCrm = (folder: string, title: string) =>
+  invoke<SavedNote>("create_crm", { folder, title });
+/** Le CRM de la note `path` : filtres appliqués au Kanban et à Ma semaine, semaine qui contient `weekDay` (celle d'aujourd'hui sans jour). */
+export const readCrm = (path: string, filters: CrmFiltersItem, weekDay: string | null) =>
+  invoke<CrmItem>("read_crm", { path, filters, weekDay });
+/** L'e-mail `email` est-il déjà celui d'une autre personne du CRM (hors `except`) ? */
+export const crmEmailIsKnown = (crm: string, email: string, except: string | null) =>
+  invoke<boolean>("crm_email_is_known", { crm, email, except });
+/** Crée une action ; rend sa référence. */
+export const createCrmAction = (crm: string, draft: CrmActionDraftItem) =>
+  invoke<string>("create_crm_action", { crm, draft });
+/** Change un seul champ de l'action `action`. */
+export const changeCrmAction = (crm: string, action: string, change: CrmActionChangeItem) =>
+  invoke<null>("change_crm_action", { crm, action, change });
+/** Met l'action dans la colonne `status`, à la place `placement`. */
+export const moveCrmAction = (
+  crm: string,
+  action: string,
+  status: string,
+  placement: PlacementItem,
+) => invoke<null>("move_crm_action", { crm, action, status, placement });
+export const deleteCrmAction = (crm: string, action: string) =>
+  invoke<null>("delete_crm_action", { crm, action });
+/** Crée une personne, dans l'entreprise `company` ou dans NODATA ; rend sa référence. */
+export const createCrmPerson = (crm: string, name: string, company: string | null) =>
+  invoke<string>("create_crm_person", { crm, name, company });
+export const changeCrmPerson = (crm: string, person: string, change: CrmPersonChangeItem) =>
+  invoke<null>("change_crm_person", { crm, person, change });
+export const deleteCrmPerson = (crm: string, person: string) =>
+  invoke<null>("delete_crm_person", { crm, person });
+/** Crée une entreprise ; rend sa référence. */
+export const createCrmCompany = (crm: string, name: string) =>
+  invoke<string>("create_crm_company", { crm, name });
+export const changeCrmCompany = (crm: string, company: string, change: CrmCompanyChangeItem) =>
+  invoke<null>("change_crm_company", { crm, company, change });
+export const deleteCrmCompany = (crm: string, company: string) =>
+  invoke<null>("delete_crm_company", { crm, company });
+/** Crée un projet ; rend sa référence. */
+export const createCrmProject = (crm: string, name: string) =>
+  invoke<string>("create_crm_project", { crm, name });
+export const changeCrmProject = (crm: string, project: string, change: CrmProjectChangeItem) =>
+  invoke<null>("change_crm_project", { crm, project, change });
+export const deleteCrmProject = (crm: string, project: string) =>
+  invoke<null>("delete_crm_project", { crm, project });
+/** Change les étapes du CRM (ajout, renommage, retrait, déplacement) ; rend les étapes obtenues. */
+export const changeCrmStages = (crm: string, change: StageChangeItem) =>
+  invoke<string[]>("change_crm_stages", { crm, change });
 export const listEntries = (path: string) => invoke<EntryItem[]>("list_entries", { path });
 /** L'adresse qui charge dans la fenêtre un fichier de l'espace de travail, comme une image. */
 export const fileAddress = (path: string) => convertFileSrc(path);

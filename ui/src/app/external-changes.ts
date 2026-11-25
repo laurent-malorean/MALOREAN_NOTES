@@ -31,6 +31,7 @@ async function followWorkspaceChange(deps: ExternalChangesDeps, change: Workspac
     await pane.showBacklinks();
     await pane.showRelated();
     if (touchesNote(change.notes, pane.note())) await pane.followDisk();
+    else await pane.followCrm(change.notes);
   }
 }
 

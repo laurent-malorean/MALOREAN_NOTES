@@ -149,6 +149,7 @@ test("le clic droit sur un dossier ou sur la racine crée une carte mentale deda
     "Nouvelle carte mentale",
     "Nouveau canvas",
     "Nouveau cahier de recherche",
+    "Nouveau CRM",
     "Placer dans la corbeille",
   ]);
   await shot(page, "menu-dossier");
