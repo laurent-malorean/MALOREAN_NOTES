@@ -83,7 +83,7 @@ test("sur une fenêtre large, les trois blocs et la recherche sont sur une seule
   expect(Math.round(search.width)).toBe(320);
 });
 
-test("la fenêtre se réduit : la recherche rétrécit d'abord jusqu'à son minimum, puis le bloc d'affichage passe à la ligne", async ({
+test("la fenêtre se réduit : la recherche rétrécit d'abord jusqu'à son minimum, puis deux lignes (affichage et recherche dessous)", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1800, height: 700 });
@@ -92,9 +92,12 @@ test("la fenêtre se réduit : la recherche rétrécit d'abord jusqu'à son mini
   const wide = await strip(page);
   // Largeur qui laisse juste la place des trois blocs et du champ à son minimum (6 rem = 96 px).
   const blocks = wide.display.x + wide.display.width - wide.format.x;
-  const exact = Math.ceil(blocks + 6.4 + 96 + 2 * 12.8);
+  // Un point de plus : le seuil de bascule (44,1 rem) laisse un demi-point de marge sur la largeur nécessaire.
+  const exact = Math.ceil(blocks + 6.4 + 96 + 2 * 12.8) + 1;
   await page.setViewportSize({ width: exact, height: 700 });
-  await expect.poll(async () => Math.round((await strip(page)).search.width)).toBe(96);
+  await expect
+    .poll(async () => Math.round((await strip(page)).search.width))
+    .toBeLessThanOrEqual(98);
   const one = await strip(page);
   expect(Math.abs(centre(one.display) - centre(one.format))).toBeLessThan(2);
   expect(Math.abs(centre(one.search) - centre(one.format))).toBeLessThan(2);
@@ -102,8 +105,10 @@ test("la fenêtre se réduit : la recherche rétrécit d'abord jusqu'à son mini
   await page.setViewportSize({ width: exact - 30, height: 700 });
   await expect.poll(async () => (await strip(page)).display.y).toBeGreaterThan(one.format.y + 10);
   const two = await strip(page);
+  // Deux lignes : mise en forme et copies en haut ; affichage et recherche dessous, la recherche au moins à son minimum.
   expect(two.display.y).toBeGreaterThanOrEqual(two.format.y + two.format.height - 1);
   expect(Math.abs(two.format.y - two.copy.y)).toBeLessThan(2);
+  expect(Math.abs(centre(two.search) - centre(two.display))).toBeLessThan(2);
   expect(Math.round(two.search.width)).toBeGreaterThanOrEqual(96);
   expect(two.overflow).toBe(0);
 });

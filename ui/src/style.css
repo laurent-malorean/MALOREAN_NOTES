@@ -727,22 +727,45 @@ button {
 }
 .editor-tools {
   grid-column: 1 / -1;
+  padding: 0.6rem 0.8rem;
+  /* Conteneur de requête : le choix entre une et deux lignes suit la largeur de la zone du milieu
+     (colonnes de gauche, colonne Claude Code), pas celle de la fenêtre. */
+  container: editor-tools / inline-size;
+}
+/* Une seule ligne tant que la place le permet : mise en forme, copies, affichage, recherche. */
+.tool-rows {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.4rem;
-  padding: 0.6rem 0.8rem;
 }
-/* Les trois blocs d'icônes (mise en forme, copies, affichage) : sur une seule ligne tant que la place
-   le permet. Quand elle manque, le champ de recherche se réduit d'abord jusqu'à son minimum (il ne
-   rétrécit pas dessous), puis seulement alors les blocs reçoivent le manque et le dernier passe à la
-   ligne. */
-.tool-blocks {
-  display: flex;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.4rem;
+/* Place insuffisante : deux lignes. En haut la mise en forme et les copies ; dessous l'affichage,
+   puis la recherche qui prend toute la largeur restante (jamais tronquée, jamais de ligne à moitié
+   vide). Le seuil est la largeur des trois blocs, des écarts et de la recherche à son minimum
+   (705 points mesurés) ; une requête de conteneur n'accepte pas de variable, d'où la valeur en rem
+   (44,1 rem), gardée par le parcours « top-bar-rows ». */
+@container editor-tools (max-width: 44.1rem) {
+  .tool-rows {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-content: stretch;
+    row-gap: 0.4rem;
+  }
+  .tool-rows > .format-bar {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .tool-rows > .search-field {
+    max-width: none;
+    width: 100%;
+  }
+}
+/* Plus étroit encore que l'affichage et la recherche à leur minimum (310 points, 19,5 rem) : la
+   recherche passe seule sur une troisième ligne, pleine largeur, plutôt que de déborder. */
+@container editor-tools (max-width: 19.5rem) {
+  .tool-rows > .search-field {
+    grid-column: 1 / -1;
+  }
 }
 .format-bar {
   display: flex;
