@@ -11,6 +11,7 @@ import {
 } from "../state/claude-column";
 import type { AgentMap } from "../state/agent-map";
 import { createAgentMapView } from "./agent-map-view";
+import { CLAUDE_RAY_COUNT, claudeRay } from "./claude-icon";
 import {
   type ConversationTabsHandlers,
   createConversationTabsView,
@@ -67,28 +68,17 @@ export const EMPTY =
 export const WEB_HELD_BACK =
   "Claude a lu le web pendant cette réponse : ses modifications de notes ont été retenues, au cas où une page web lui aurait glissé des instructions. Autoriser ses modifications ?";
 
-const RAYS = 12;
-const RAY_INNER = 4;
-const RAY_OUTER = 10.5;
-const CENTER = 12;
-
-/** Le point à `radius` du centre, sur le rayon `ray` : « x y » pour les attributs d'une ligne. */
-const onRay = (ray: number, radius: number) => {
-  const angle = (ray * 2 * Math.PI) / RAYS;
-  return [CENTER + radius * Math.sin(angle), CENTER - radius * Math.cos(angle)].map((v) =>
-    v.toFixed(2),
-  ) as [string, string];
-};
-
 /** Un rayon de l'icône de Claude. */
-function rayLine(ray: number) {
-  const [x1, y1] = onRay(ray, RAY_INNER);
-  const [x2, y2] = onRay(ray, RAY_OUTER);
+function rayLine(index: number) {
+  const {
+    from: [x1, y1],
+    to: [x2, y2],
+  } = claudeRay(index);
   return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`;
 }
 
 /** L'icône de Claude : douze rayons autour d'un centre vide, en `currentColor`. */
-const CLAUDE_ICON = `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">${Array.from({ length: RAYS }, (_, ray) => rayLine(ray)).join("")}</svg>`;
+const CLAUDE_ICON = `<svg viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">${Array.from({ length: CLAUDE_RAY_COUNT }, (_, ray) => rayLine(ray)).join("")}</svg>`;
 
 const TEMPLATE = `
   <header class="claude-header">

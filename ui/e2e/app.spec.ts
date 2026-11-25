@@ -361,15 +361,18 @@ test("le mode focus estompe tout sauf la phrase en cours, et reste réglé au re
   await page.keyboard.press("End");
   const focus = page.getByRole("button", { name: /^Focus/ });
   await focus.click();
-  await expect(focus).toHaveText("Focus : phrase");
+  await expect(focus).toHaveAttribute("aria-label", "Focus : phrase");
   await expect(page.locator(".cm-focus-dimmed").first()).toBeVisible();
   await expect(page.locator(".cm-focus-dimmed", { hasText: "Une autre." })).toHaveCount(0);
   await page.keyboard.press("Meta+Shift+F");
-  await expect(focus).toHaveText("Focus : paragraphe");
+  await expect(focus).toHaveAttribute("aria-label", "Focus : paragraphe");
   await page.reload();
-  await expect(page.getByRole("button", { name: /^Focus/ })).toHaveText("Focus : paragraphe");
+  await expect(page.getByRole("button", { name: /^Focus/ })).toHaveAttribute(
+    "aria-label",
+    "Focus : paragraphe",
+  );
   await page.keyboard.press("Meta+Shift+F");
-  await expect(page.getByRole("button", { name: /^Focus/ })).toHaveText("Focus");
+  await expect(page.getByRole("button", { name: /^Focus/ })).toHaveAttribute("aria-label", "Focus");
   await expect(page.locator(".cm-focus-dimmed")).toHaveCount(0);
 });
 
