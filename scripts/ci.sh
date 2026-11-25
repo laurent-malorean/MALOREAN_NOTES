@@ -17,6 +17,9 @@
 #                            un dépassement qui persiste est un avertissement chiffré ; le rapport dit avant et après.
 #   scripts/ci.sh --echantillon  (à la demande, non bloquant, à lancer en arrière-plan) le même échantillon Rust ;
 #                            les survivants s'écrivent dans la liste de suivi (.git/ci-mutation/suivi.txt), le code de sortie reste 0.
+#   scripts/ci.sh --branche  FIN DE TÂCHE D'UN AGENT (dans son dossier de travail) : mutation de tout le diff Rust de la
+#                            branche depuis main (domaine puis reste), avec rejeu des dépassements ; bloquant : un
+#                            survivant fait échouer, l'agent renforce ses tests et relance jusqu'à zéro survivant.
 #   scripts/ci.sh --mutation-interface  (à la demande) Stryker de l'interface, incrémental, seuil 100 %.
 #   scripts/ci.sh --tout-le-code  EXCEPTIONNEL (jamais lancé par une règle, plus de 2 heures) : tout, mutation de
 #                            tout le code Rust et de toute l'interface.
@@ -139,7 +142,10 @@ report_mutants() {
 # une « replace X with Y in … » sont écartées) ; $2 : bloquant (1) ou non (0).
 mutate_since_tag() {
   local kind=$1 blocking=$2 base diff
-  base=$(scripts/ci-verte.sh base) || fail "le tag ci-verte manque (scripts/ci-verte.sh poser <commit>)"
+  case "$kind" in
+    branche-*) base=$(git merge-base main HEAD) || fail "main introuvable : la branche ne peut pas être comparée" ;;
+    *) base=$(scripts/ci-verte.sh base) || fail "le tag ci-verte manque (scripts/ci-verte.sh poser <commit>)" ;;
+  esac
   diff=$(mktemp)
   case "$kind" in
     domaine)
@@ -152,6 +158,14 @@ mutate_since_tag() {
       step "Rust : échantillon de mutation (un dixième, tranche ${shard}/10, une erreur par fonction), diff depuis ci-verte"
       [ ! -s "$diff" ] || run_mutants --workspace --exclude "$COVERAGE_IGNORED" --exclude-re ' in ' \
         --shard "${shard}/10" --timeout "$SAMPLE_TIMEOUT" --test-workspace=false --in-diff "$diff" ;;
+    branche-domaine)
+      git diff "$base" -- 'crates/domain/*.rs' > "$diff"
+      step "Rust : mutation du domaine, diff de la branche depuis main (coupure ${DOMAIN_TIMEOUT} s)"
+      [ ! -s "$diff" ] || run_mutants --package domain --timeout "$DOMAIN_TIMEOUT" --test-workspace=false --in-diff "$diff" ;;
+    branche-reste)
+      git diff "$base" -- 'crates/*.rs' ':(exclude)crates/domain' > "$diff"
+      step "Rust : mutation du reste du code, diff de la branche depuis main (coupure ${SAMPLE_TIMEOUT} s)"
+      [ ! -s "$diff" ] || run_mutants --workspace --exclude "$COVERAGE_IGNORED" --timeout "$SAMPLE_TIMEOUT" --test-workspace=false --in-diff "$diff" ;;
   esac
   if [ -s "$diff" ]; then report_mutants "$kind" "$blocking"; else printf '(aucun code Rust changé depuis ci-verte)\n'; fi
   rm -f "$diff"
@@ -421,6 +435,7 @@ MENAGE=0
 BLANC=0
 SNAPSHOT=0
 SAMPLE=0
+BRANCH=0
 UI_MUTATION=0
 FORWARDED=()
 for argument in "$@"; do
@@ -429,6 +444,7 @@ for argument in "$@"; do
     --livraison) MODE=$argument; FORWARDED+=(--fonction) ;;
     --complet | --sans-mutation) fail "$argument n'existe plus : --fonction (fin de fonction), --livraison, ou --tout-le-code (exceptionnel)" ;;
     --echantillon) SAMPLE=1 ;;
+    --branche) BRANCH=1 ;;
     --mutation-interface) UI_MUTATION=1 ;;
     --copie) SNAPSHOT=1 ;;
     --menage) MENAGE=1 ;;
@@ -449,6 +465,16 @@ if [ "$SAMPLE" -eq 1 ]; then
   require cargo mutants --version
   require jq --version
   mutate_since_tag echantillon 0
+  exit 0
+fi
+# Fin de tâche d'un agent : toutes les erreurs du diff de la branche depuis main, bloquant jusqu'à zéro survivant.
+if [ "$BRANCH" -eq 1 ]; then
+  require cargo mutants --version
+  require jq --version
+  git diff --quiet HEAD -- . ':(exclude)data_fake' || fail "--branche : du code n'est pas commité, la mutation porte sur le diff des commits"
+  mutate_since_tag branche-domaine 1
+  mutate_since_tag branche-reste 1
+  printf '\n✓ Aucune erreur introduite dans la branche ne survit\n'
   exit 0
 fi
 if [ "$UI_MUTATION" -eq 1 ]; then check_ui_mutations modifie; exit 0; fi

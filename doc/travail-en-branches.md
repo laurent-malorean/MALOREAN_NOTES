@@ -25,6 +25,8 @@ Pas par l'option d'isolation de l'outil d'agent, qui crée un dossier et une bra
 - Le dossier n'a ni `target/` ni `ui/node_modules` : un dossier de compilation par fonction (`CARGO_TARGET_DIR=$HOME/Library/Caches/malorean-notes-target-<fonction>`, jamais dans iCloud), et `npm ci` dans `ui/`. La première compilation est longue (le moteur de calcul du sens) ; le disque est limité, donc ce dossier de compilation se supprime avec le reste à la fin.
 - Les commits suivent la barrière de commit (`./scripts/ci.sh`, voir `CLAUDE.md`). Le crochet `post-commit` du dépôt est partagé par tous les dossiers de travail : il ne lance de mutation que pour le domaine, sans bloquer.
 
+- **Avant de rendre la main**, l'agent lance `./scripts/ci.sh --branche` dans son dossier : mutation de tout le diff Rust de sa branche depuis `main`. Tant qu'il reste un survivant, il renforce ses tests, commite et relance. Il ne rend la main qu'à zéro survivant (un dépassement persistant se signale dans son compte rendu). Une seule mutation à la fois sur la machine.
+
 ## Publier et fusionner
 
 - La branche se pousse (`git push origin <fonction>`), jamais directement dans `main`.
