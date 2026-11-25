@@ -46,10 +46,7 @@ const { run } = messages;
 const foldMemory = createFoldMemory(localStorage);
 const screen = createCurrentScreen((s) => (renderScreen(layout, s, actions), foldMemory.save(s)));
 const columns = createOpenColumns({
-  container: layout.columns,
-  outline: layout.outline,
-  screen,
-  newPane: (parts) => newPane(parts),
+  ...{ container: layout.columns, outline: layout.outline, screen, newPane: (p) => newPane(p) },
   changed: (now) => (
     writing.showTypewriter(),
     layoutMemory.save(now),
@@ -129,7 +126,9 @@ const actions: ScreenActions = screenActions({
   ...{ backend: bridge, screen, columns, folders, workspace, trash, tags, recent },
   ...{ exporting, history, notebooks, settings, run },
 });
-connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders, actions });
+connectButtons(layout, {
+  ...{ ...messages, workspaces, workspace, search, trash, folders, actions, templates, screen },
+});
 const win = connectWindowDisplay(layout, { ...messages, window: bridge, storage: localStorage });
 const commands = connectCommands({
   ...{ backend: bridge, screen, columns, writing, window: win, run },

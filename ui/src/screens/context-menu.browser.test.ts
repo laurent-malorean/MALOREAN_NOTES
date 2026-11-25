@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { closeContextMenu, showContextMenu } from "./context-menu";
+import { closeContextMenu, contextMenuOpen, showContextMenu } from "./context-menu";
 
 const menu = () => document.querySelector<HTMLElement>(".context-menu");
 const entries = () =>
@@ -303,5 +303,52 @@ describe("menu contextuel", () => {
     closeContextMenu();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(menu()).toBeNull();
+  });
+
+  describe("icône et raccourci", () => {
+    it("montre l'icône devant le nom et le raccourci après, que la parole ne lit pas", () => {
+      const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      showContextMenu(0, 0, [
+        { label: "Note", icon, shortcut: "Cmd+N", run: () => {} },
+        { label: "Autre", run: () => {} },
+      ]);
+      const [first, second] = [...document.querySelectorAll<HTMLElement>(".context-menu button")];
+      expect(first?.firstElementChild).toBe(icon);
+      expect(first?.classList.contains("with-extras")).toBe(true);
+      const shortcut = first?.querySelector(".context-menu-shortcut");
+      expect(shortcut?.textContent).toBe("Cmd+N");
+      expect(shortcut?.getAttribute("aria-hidden")).toBe("true");
+      expect(first?.querySelector(".context-menu-label")?.textContent).toBe("Note");
+      expect(second?.classList.contains("with-extras")).toBe(false);
+      expect(second?.querySelector(".context-menu-shortcut")).toBeNull();
+    });
+  });
+
+  describe("fermeture", () => {
+    it("prévient quand il se ferme : par Échap, par un choix, par un clic ailleurs, par un autre menu", () => {
+      const closed: string[] = [];
+      const open = (name: string) =>
+        showContextMenu(0, 0, [{ label: name, run: () => {} }], undefined, {
+          onClose: () => closed.push(name),
+        });
+      open("a");
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      open("b");
+      document.querySelector<HTMLButtonElement>(".context-menu button")?.click();
+      open("c");
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      open("d");
+      open("e");
+      closeContextMenu();
+      expect(closed).toEqual(["a", "b", "c", "d", "e"]);
+    });
+
+    it("dit s'il est ouvert", () => {
+      expect(contextMenuOpen()).toBe(false);
+      showContextMenu(0, 0, [{ label: "Un", run: () => {} }]);
+      expect(contextMenuOpen()).toBe(true);
+      closeContextMenu();
+      expect(contextMenuOpen()).toBe(false);
+    });
   });
 });

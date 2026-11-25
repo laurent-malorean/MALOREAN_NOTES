@@ -17,6 +17,10 @@ export interface MenuEntry {
    * lecteurs d'écran ; les autres choix du menu s'alignent sur le nom.
    */
   readonly stateName?: string;
+  /** Un dessin devant le nom (décoratif). */
+  readonly icon?: SVGElement;
+  /** Le raccourci du choix, écrit après son nom (décoratif : le nom du choix reste seul lu). */
+  readonly shortcut?: string;
 }
 
 /** Comment s'ouvre le menu. */
@@ -29,9 +33,16 @@ export interface MenuOptions {
   readonly focus?: boolean;
   /** Avec `focus` : le bouton qui reprend le focus à la fermeture (sinon celui qui l'avait à l'ouverture). */
   readonly opener?: HTMLElement;
+  /** Appelé à la fermeture, quelle qu'en soit la cause. */
+  readonly onClose?: () => void;
 }
 
 let open: { readonly element: HTMLElement; readonly close: () => void } | null = null;
+
+/** Un menu est-il ouvert ? */
+export function contextMenuOpen(): boolean {
+  return open !== null;
+}
 
 /** Ferme le menu ouvert, s'il y en a un. */
 export function closeContextMenu(): void {
@@ -55,6 +66,23 @@ function stateSpan(name: string): HTMLSpanElement {
   return span;
 }
 
+/** Le nom du choix, avec son icône devant et son raccourci après. */
+function extras(button: HTMLButtonElement, entry: MenuEntry): void {
+  button.classList.add("with-extras");
+  if (entry.icon !== undefined) button.append(entry.icon);
+  const label = document.createElement("span");
+  label.className = "context-menu-label";
+  label.textContent = entry.label;
+  button.append(label);
+  if (entry.shortcut !== undefined) {
+    const shortcut = document.createElement("span");
+    shortcut.className = "context-menu-shortcut";
+    shortcut.setAttribute("aria-hidden", "true");
+    shortcut.textContent = entry.shortcut;
+    button.append(shortcut);
+  }
+}
+
 /** Le bouton d'un choix : son nom, sa pastille, sa coche, son séparateur. */
 function entryButton(entry: MenuEntry, aligned: boolean): HTMLButtonElement {
   const button = document.createElement("button");
@@ -67,7 +95,8 @@ function entryButton(entry: MenuEntry, aligned: boolean): HTMLButtonElement {
     swatch.style.setProperty("--swatch", `var(--palette-${entry.swatch})`);
     button.append(swatch);
   }
-  button.append(entry.label);
+  if (entry.icon !== undefined || entry.shortcut !== undefined) extras(button, entry);
+  else button.append(entry.label);
   if (entry.checked === true) {
     button.setAttribute("aria-checked", "true");
     button.setAttribute("role", "menuitemcheckbox");
@@ -148,6 +177,7 @@ export function showContextMenu(
     document.removeEventListener("keydown", onKey);
     open = null;
     if (keptFocus && opener instanceof HTMLElement) opener.focus();
+    options.onClose?.();
   }
   const aligned = entries.some((entry) => entry.stateName !== undefined);
   for (const entry of entries) {

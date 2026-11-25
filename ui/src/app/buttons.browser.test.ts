@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { settle } from "../../test-support/app-fixture";
+import { recordedScreen, settle } from "../../test-support/app-fixture";
 import { createLayout } from "../screens/layout";
 import { connectButtons } from "./buttons";
 
@@ -20,7 +20,16 @@ function setup() {
     search: { type: (query) => log.push(`chercher ${query}`) },
     trash: { show: async () => void log.push("corbeille") },
     folders: { startCreation: () => log.push("nouveau dossier") },
-    actions: { closeSearch: () => log.push("fermer la recherche") },
+    screen: recordedScreen().screen,
+    templates: { newNote: async () => void log.push("note depuis un modèle") },
+    actions: {
+      closeSearch: () => log.push("fermer la recherche"),
+      newNote: (folder) => log.push(`note dans « ${folder} »`),
+      newNotebook: (folder) => log.push(`cahier dans « ${folder} »`),
+      newMindMap: (folder) => log.push(`carte mentale dans « ${folder} »`),
+      newCanvas: (folder) => log.push(`canvas dans « ${folder} »`),
+      newCrm: (folder) => log.push(`CRM dans « ${folder} »`),
+    },
     error: (error) => log.push(`erreur ${String(error)}`),
     run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
   });
@@ -50,6 +59,28 @@ describe("boutons de la fenêtre", () => {
     layout.searchField.dispatchEvent(new Event("input"));
     await settle();
     expect(log).toEqual(["menu des espaces de travail", "chercher rome"]);
+  });
+
+  it("le « + » crée une note, le chevron ouvre le menu de création dont chaque entrée crée dans le dossier affiché", async () => {
+    const { layout, log } = setup();
+    layout.newNoteButton.click();
+    layout.newContentButton.click();
+    await settle();
+    expect(log).toEqual(["nouvelle note"]);
+    const entries = [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
+    expect(entries.map((entry) => entry.querySelector(".context-menu-label")?.textContent)).toEqual(
+      ["Note", "Note depuis un modèle", "Cahier de recherche", "Carte mentale", "Canvas", "CRM"],
+    );
+    for (const entry of entries) entry.click();
+    await settle();
+    expect(log.slice(1)).toEqual([
+      "note dans «  »",
+      "note depuis un modèle",
+      "cahier dans «  »",
+      "carte mentale dans «  »",
+      "canvas dans «  »",
+      "CRM dans «  »",
+    ]);
   });
 
   it("la barre du pied des dossiers ouvre le même menu des espaces de travail", async () => {

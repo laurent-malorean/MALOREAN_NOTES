@@ -246,6 +246,20 @@ button {
 .icon:hover {
   color: var(--text);
 }
+/* Menu de création : le « + » et son chevron, côte à côte */
+.new-content {
+  display: flex;
+  align-items: center;
+}
+.new-content-chevron {
+  padding: 0 var(--new-content-chevron-padding);
+}
+.new-content-chevron svg {
+  display: block;
+  width: var(--new-content-chevron-size);
+  height: var(--new-content-chevron-size);
+  stroke-width: var(--new-content-chevron-stroke);
+}
 .notes-list {
   flex: 1;
   overflow-y: auto;
@@ -472,6 +486,32 @@ button {
 .context-menu button:disabled {
   color: var(--muted);
   cursor: default;
+}
+.context-menu button.with-extras {
+  display: flex;
+  align-items: center;
+  gap: var(--context-menu-icon-gap);
+}
+.context-menu button.with-extras > svg {
+  flex: none;
+  width: var(--context-menu-icon-size);
+  height: var(--context-menu-icon-size);
+  stroke-width: var(--context-menu-icon-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--muted);
+}
+.context-menu-label {
+  flex: 1;
+}
+.context-menu-shortcut {
+  margin-left: var(--context-menu-shortcut-gap);
+  color: var(--muted);
+  font-size: var(--context-menu-note-text-size);
+}
+.context-menu button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: -2px;
 }
 .context-menu-note {
   max-width: 16rem;
