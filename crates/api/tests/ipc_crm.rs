@@ -298,3 +298,26 @@ fn a_refused_crm_command_says_why() {
         "« TODO », « Done » et « Cancel » sont déjà des colonnes."
     );
 }
+
+#[test]
+fn an_email_written_on_a_person_is_known_to_the_crm() {
+    let window = window(&workspace());
+    run(&window, "reopen_last_workspace", json!({}));
+    let crm = "clients.md";
+    let ask = |email: &str| {
+        run(
+            &window,
+            "crm_email_is_known",
+            json!({ "crm": crm, "email": email, "except": null }),
+        )
+    };
+    assert_eq!(ask("x@y.fr"), json!(false));
+    run(
+        &window,
+        "change_crm_person",
+        json!({ "crm": crm, "person": "jean",
+        "change": { "kind": "field", "field": "email", "value": "x@y.fr" } }),
+    );
+    assert_eq!(ask("x@y.fr"), json!(true));
+    assert_eq!(ask("autre@y.fr"), json!(false));
+}
