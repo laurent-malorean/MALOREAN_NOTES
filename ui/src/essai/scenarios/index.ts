@@ -9,6 +9,7 @@ import { crmActionScenarios } from "./crm-action";
 import { displayToolsScenarios } from "./display-tools";
 import type { Env } from "./env";
 import { exportScenarios } from "./export";
+import { foldersHeightScenarios } from "./folders-height";
 import { noteScenarios } from "./notes";
 import { searchScenarios } from "./search";
 import { settingsScenarios } from "./settings";
@@ -25,6 +26,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...settingsScenarios(),
     ...displayToolsScenarios(),
     ...workspaceSwitcherScenarios(env),
+    ...foldersHeightScenarios(),
     ...searchScenarios(env),
   ];
 }
