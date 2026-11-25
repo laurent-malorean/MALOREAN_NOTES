@@ -10,16 +10,16 @@ import { type FicheContext, editable, fieldRow, heading, notesField } from "./cr
 /** Les champs d'une entreprise : le nom du champ dans le fichier et son libellé. */
 export const COMPANY_FIELDS = [
   ["site", "Site"],
-  ["secteur", "Secteur"],
-  ["adresse", "Adresse"],
-  ["telephone", "Téléphone"],
+  ["sector", "Secteur"],
+  ["address", "Adresse"],
+  ["phone", "Téléphone"],
 ] as const;
 
 const VALUES: Record<string, (company: CrmCompanyItem) => string | null> = {
   site: (c) => c.site,
-  secteur: (c) => c.sector,
-  adresse: (c) => c.address,
-  telephone: (c) => c.phone,
+  sector: (c) => c.sector,
+  address: (c) => c.address,
+  phone: (c) => c.phone,
 };
 
 /** Les actions d'une personne, en lignes `date · statut · [projet] · titre` : un clic ouvre la fenêtre de l'action. */

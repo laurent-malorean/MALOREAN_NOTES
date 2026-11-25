@@ -44,24 +44,24 @@ async function disk(env: Env, relative: string): Promise<string | null> {
 }
 
 /** Crée un CRM avec une personne, un projet et une action qui les relie, par le vrai pont, et l'ouvre. */
-async function openedCrm(env: Env): Promise<{ path: string; folder: string }> {
+async function openedCrm(env: Env): Promise<{ path: string; folder: string; person: string }> {
   const { path } = await env.bridge.createCrm("", "Essai onglets");
   const person = await env.bridge.createCrmPerson(path, "Marie Durand", null);
   const project = await env.bridge.createCrmProject(path, "Refonte");
   await env.bridge.createCrmAction(path, {
-    ...{ title: "Appeler Marie", status: null, date: "2026-11-24", people: [person] },
+    ...{ title: "Planifier la refonte", status: null, date: "2026-11-24", people: [person] },
     ...{ channel: null, project, color: null, tags: [], linkedNotes: [], description: "" },
   });
   env.open(path);
   await until(
     "la carte du nouveau CRM à l'écran",
-    () => findAll(".crm-card-title").find((t) => t.textContent === "Appeler Marie") ?? null,
+    () => findAll(".crm-card-title").find((t) => t.textContent === "Planifier la refonte") ?? null,
     WAIT,
   );
-  return { path, folder: path.replace(/\.md$/, "") };
+  return { path, folder: path.replace(/\.md$/, ""), person };
 }
 
-async function peopleTab(env: Env, trial: Trial, folder: string): Promise<void> {
+async function peopleTab(env: Env, trial: Trial, folder: string, person: string): Promise<void> {
   tab("people")?.click();
   await until("la liste des personnes", () => find(".crm-people .crm-table"), WAIT);
   reachable(trial, "le tableau des personnes", find(".crm-table"));
@@ -77,14 +77,14 @@ async function peopleTab(env: Env, trial: Trial, folder: string): Promise<void> 
     written !== null && written.includes("type: crm-personne") && written.includes("# Léa Roy"),
     written ?? "absent",
   );
-  const unfold = find<HTMLElement>(".crm-row .crm-unfold");
+  const unfold = find<HTMLElement>(`.crm-row[data-person="${person}"] .crm-unfold`);
   reachable(trial, "« ▸ » d'une personne", unfold);
   unfold?.click();
   const line = await until("l'action de la personne", () => find(".crm-sub .crm-line"), WAIT);
   reachable(trial, "la ligne d'action d'une personne", line);
 }
 
-async function companiesTab(env: Env, trial: Trial, folder: string): Promise<void> {
+async function companiesTab(env: Env, trial: Trial, folder: string, who: string): Promise<void> {
   tab("companies")?.click();
   await until("l'arbre des entreprises", () => find(".crm-tree"), WAIT);
   trial.check(
@@ -107,14 +107,11 @@ async function companiesTab(env: Env, trial: Trial, folder: string): Promise<voi
   const unfold = find<HTMLElement>(".crm-node-company .crm-unfold");
   reachable(trial, "« ▸ » de NODATA", unfold);
   unfold?.click();
-  const person = await until("une personne de NODATA", () => find(".crm-node-person"), WAIT);
+  const sel = `.crm-node-person[data-person="${who}"]`;
+  const person = await until("une personne de NODATA", () => find(sel), WAIT);
   reachable(trial, "une personne dans l'arbre", person.querySelector(".crm-unfold"));
-  find<HTMLElement>(".crm-node-person .crm-unfold")?.click();
-  const line = await until(
-    "une action dans l'arbre",
-    () => find(".crm-node-person .crm-line"),
-    WAIT,
-  );
+  find<HTMLElement>(`${sel} .crm-unfold`)?.click();
+  const line = await until("une action dans l'arbre", () => find(`${sel} .crm-line`), WAIT);
   reachable(trial, "la ligne d'action de l'arbre", line);
 }
 
@@ -183,7 +180,7 @@ async function ficheScenario(env: Env, trial: Trial, path: string, folder: strin
     editor === null || getComputedStyle(editor).display === "none",
   );
   reachable(trial, "le titre de la fiche", title);
-  const role = find<HTMLElement>('.crm-fiche-field[data-field="fonction"] button');
+  const role = find<HTMLElement>('.crm-fiche-field[data-field="role"] button');
   reachable(trial, "le champ Fonction", role);
   role?.click();
   const input = await until(
@@ -207,9 +204,9 @@ async function ficheScenario(env: Env, trial: Trial, path: string, folder: strin
 }
 
 async function tabsScenario(env: Env, trial: Trial): Promise<void> {
-  const { path, folder } = await openedCrm(env);
-  await peopleTab(env, trial, folder);
-  await companiesTab(env, trial, folder);
+  const { path, folder, person } = await openedCrm(env);
+  await peopleTab(env, trial, folder, person);
+  await companiesTab(env, trial, folder, person);
   await projectsTab(env, trial, folder);
   await ficheScenario(env, trial, path, folder);
 }

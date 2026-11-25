@@ -10,16 +10,16 @@ import { type FicheContext, editable, fieldRow, heading, notesField } from "./cr
 
 /** Les champs d'une personne : le nom du champ dans le fichier et son libellé. */
 export const PERSON_FIELDS = [
-  ["fonction", "Fonction"],
+  ["role", "Fonction"],
   ["email", "E-mail"],
-  ["telephone", "Téléphone"],
+  ["phone", "Téléphone"],
   ["linkedin", "LinkedIn"],
 ] as const;
 
 const VALUES: Record<string, (person: CrmPersonItem) => string | null> = {
-  fonction: (p) => p.role,
+  role: (p) => p.role,
   email: (p) => p.email,
-  telephone: (p) => p.phone,
+  phone: (p) => p.phone,
   linkedin: (p) => p.linkedin,
 };
 

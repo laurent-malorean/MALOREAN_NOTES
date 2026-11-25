@@ -22,14 +22,12 @@ describe("fiche de personne : les champs", () => {
   it("montre le nom, les quatre champs, l'entreprise et le parcours", async () => {
     await mountFiche("person", "jean-dupont");
     expect(q(".crm-fiche-title").textContent).toBe("Jean Dupont");
-    expect(["fonction", "email", "telephone", "linkedin"].map((k) => field(k).textContent)).toEqual(
-      [
-        "FonctionResponsable maintenance",
-        "E-mailjean@acme.fr",
-        "Téléphone06 12 34 56 78",
-        "LinkedIn—",
-      ],
-    );
+    expect(["role", "email", "phone", "linkedin"].map((k) => field(k).textContent)).toEqual([
+      "FonctionResponsable maintenance",
+      "E-mailjean@acme.fr",
+      "Téléphone06 12 34 56 78",
+      "LinkedIn—",
+    ]);
     expect(q(".crm-fiche-company").textContent).toBe("EntrepriseAcmeChanger d'entreprise");
     expect([...document.querySelectorAll(".crm-career li")].map((l) => l.textContent)).toEqual([
       "Acme · 2026-03-01 →",

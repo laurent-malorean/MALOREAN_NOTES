@@ -79,7 +79,7 @@ test("fiche de personne : champs, notes, changer d'entreprise", async ({ page })
   await page.getByRole("button", { name: "Modifier : Fonction" }).click();
   await page.locator(".crm-fiche-input").fill("Directeur");
   await page.locator(".crm-fiche-input").press("Enter");
-  await expect(page.locator('[data-field="fonction"]')).toContainText("Directeur");
+  await expect(page.locator('[data-field="role"]')).toContainText("Directeur");
   expect(await savedContent(page, "clients/personnes/jean-dupont.md")).toContain(
     "fonction: Directeur",
   );

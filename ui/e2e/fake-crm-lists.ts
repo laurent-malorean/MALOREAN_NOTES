@@ -167,10 +167,19 @@ function changed(write: Write, path: string, c: Change) {
       return `${t.replace(/^# .*$[\s\S]*/m, `# ${title(t)}`)}\n${c.notes as string}\n`;
     if (c.kind === "company")
       return withKey(t, "entreprise", c.company ? `'[[${c.company as string}]]'` : null);
-    return withKey(t, c.field as string, (c.value as string) === "" ? null : (c.value as string));
+    const key = FILE_KEYS[c.field as string] ?? (c.field as string);
+    return withKey(t, key, (c.value as string) === "" ? null : (c.value as string));
   });
   return null;
 }
+
+/** Le nom d'un champ dans la commande de Rust, et sa propriété dans le fichier. */
+const FILE_KEYS: Record<string, string> = {
+  role: "fonction",
+  phone: "telephone",
+  sector: "secteur",
+  address: "adresse",
+};
 
 type Write = ReturnType<typeof writer>;
 

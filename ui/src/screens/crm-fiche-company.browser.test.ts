@@ -51,20 +51,20 @@ describe("fiche d'entreprise : les champs", () => {
     };
     await mountFiche("company", "acme", data);
     expect(q(".crm-fiche-title").textContent).toBe("Acme");
-    expect(["site", "secteur", "adresse", "telephone"].map((k) => field(k).textContent)).toEqual([
+    expect(["site", "sector", "address", "phone"].map((k) => field(k).textContent)).toEqual([
       "Sitehttps://acme.fr",
       "Secteur—",
       "Adresse—",
       "Téléphone—",
     ]);
-    expect(field("secteur").querySelector(".empty")).not.toBeNull();
+    expect(field("sector").querySelector(".empty")).not.toBeNull();
     expect(field("site").querySelector(".empty")).toBeNull();
   });
 
   it("modifie un champ en cliquant dessus : Entrée l'enregistre", async () => {
     const m = await mountFiche("company", "acme");
-    (field("secteur").querySelector("button") as HTMLElement).click();
-    const input = field("secteur").querySelector("input") as HTMLInputElement;
+    (field("sector").querySelector("button") as HTMLElement).click();
+    const input = field("sector").querySelector("input") as HTMLInputElement;
     expect(document.activeElement).toBe(input);
     type(input, "  Industrie ");
     press(input, "Enter");
@@ -74,7 +74,7 @@ describe("fiche d'entreprise : les champs", () => {
         "changeCrmCompany",
         "clients.md",
         "acme",
-        { kind: "field", field: "secteur", value: "Industrie" },
+        { kind: "field", field: "sector", value: "Industrie" },
       ],
     ]);
     expect(document.querySelector(".crm-fiche-input")).toBeNull();
@@ -82,8 +82,8 @@ describe("fiche d'entreprise : les champs", () => {
 
   it("enregistre en quittant le champ", async () => {
     const m = await mountFiche("company", "acme");
-    (field("adresse").querySelector("button") as HTMLElement).click();
-    const input = field("adresse").querySelector("input") as HTMLInputElement;
+    (field("address").querySelector("button") as HTMLElement).click();
+    const input = field("address").querySelector("input") as HTMLInputElement;
     type(input, "12 rue des Lilas");
     input.blur();
     await settle();
@@ -142,10 +142,10 @@ describe("fiche d'entreprise : les champs", () => {
 
   it("garde ce qui est tapé quand l'écran est relu pendant la saisie", async () => {
     const m = await mountFiche("company", "acme");
-    (field("secteur").querySelector("button") as HTMLElement).click();
-    type(field("secteur").querySelector("input") as HTMLInputElement, "Indus");
+    (field("sector").querySelector("button") as HTMLElement).click();
+    type(field("sector").querySelector("input") as HTMLInputElement, "Indus");
     await m.view.reload();
-    const input = field("secteur").querySelector("input") as HTMLInputElement;
+    const input = field("sector").querySelector("input") as HTMLInputElement;
     expect(input.value).toBe("Indus");
     expect(document.activeElement).toBe(input);
   });
