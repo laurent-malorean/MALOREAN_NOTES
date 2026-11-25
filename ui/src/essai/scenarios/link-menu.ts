@@ -11,7 +11,9 @@ import { type Env, centreOf, find, findAll, rectOf } from "./env";
 
 const WAIT = 20_000;
 const TWIN = "Doublon essai";
-const CANVAS = "Lien essai";
+/** Le canvas, titré « Lien essai » à sa création : son fichier s'appelle `lien-essai.canvas`. */
+const CANVAS_TITLE = "Lien essai";
+const CANVAS_NAME = "lien-essai";
 
 const menu = () => find<HTMLElement>(".link-menu");
 const rows = () => findAll<HTMLElement>(".link-menu-option");
@@ -73,7 +75,7 @@ async function prepare(env: Env): Promise<void> {
   const { bridge } = env;
   await noteTitled(env, "", TWIN);
   await noteTitled(env, "Essai", TWIN);
-  await bridge.createCanvas("", CANVAS);
+  await bridge.createCanvas("", CANVAS_TITLE);
   const draft = await bridge.createNote("");
   env.open(draft.path);
   // La colonne montrait un canvas ou un CRM : l'éditeur n'est à l'écran qu'une fois la note chargée.
@@ -167,12 +169,12 @@ async function bracketsScenario(env: Env, trial: Trial): Promise<void> {
   );
 }
 
-async function canvasScenario(trial: Trial): Promise<void> {
+async function canvasScenario(env: Env, trial: Trial): Promise<void> {
   type("\n[[lien ess");
   await until("le menu des liens", () => menu(), WAIT);
   trial.check(
     "le canvas est proposé",
-    rows().some((line) => line.textContent?.includes(CANVAS)),
+    rows().some((line) => line.textContent?.includes(CANVAS_NAME)),
     rows()
       .map((r) => r.textContent)
       .join("|"),
@@ -181,7 +183,7 @@ async function canvasScenario(trial: Trial): Promise<void> {
   await until("le menu fermé", () => (menu() === null ? true : null), WAIT);
   trial.check(
     "un canvas s'écrit avec son extension",
-    written().includes(`[[${CANVAS}.canvas]]`),
+    written().includes(`[[${CANVAS_NAME}.canvas]]`),
     written(),
   );
 }
@@ -245,7 +247,7 @@ async function buttonScenario(trial: Trial): Promise<void> {
 export function linkMenuScenarios(env: Env): Scenario[] {
   return [
     { name: "liens : [[, doublons, lien ambigu", run: (t) => bracketsScenario(env, t) },
-    { name: "liens : canvas", run: (t) => canvasScenario(t) },
+    { name: "liens : canvas", run: (t) => canvasScenario(env, t) },
     { name: "liens : / et dossier devant le nom", run: (t) => slashScenario(env, t) },
     { name: "liens : bouton « Lien »", run: (t) => buttonScenario(t) },
   ];
