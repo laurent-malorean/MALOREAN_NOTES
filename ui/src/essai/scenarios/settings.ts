@@ -1,5 +1,7 @@
 // Essai de l'application réelle (fiche 0054) : l'écran des Réglages dans la vraie fenêtre. Ses onglets s'ouvrent
 // par un clic ; les rectangles réels disent ce qui se voit (barres de l'onglet « Index »).
+import type { ConnectionInfo } from "../../bridge";
+import { renderConnectionSettings } from "../../screens/connection-settings";
 import type { Scenario, Trial } from "../runner";
 import { until } from "../wait";
 import { find, findAll, rectOf } from "./env";
@@ -76,31 +78,40 @@ async function indexTab(trial: Trial): Promise<void> {
   closeSettings(window);
 }
 
-/** Les boutons « Copier » : à la taille des boutons des Réglages, sous le texte ; un clic les passe au vert, « ✓ Copié ». */
-async function connectionTab(trial: Trial): Promise<void> {
-  const window = await openSettings();
-  const panel = await showTab(window, "Brancher une IA");
-  const create = await until(
-    "le bouton de création de la clé",
+/** Une clé de branchement factice : l'essai ne crée pas de vraie clé, qui ouvrirait une prise dans le dossier personnel. */
+const FAKE_KEY: ConnectionInfo = {
+  key: {
+    secret: "cle-d-essai",
+    createdOn: "25 novembre 2026",
+    claudeConfig: '{\n  "mcpServers": {}\n}',
+    codexConfig: "[mcp_servers.malorean]",
+  },
+};
+
+/** Dessine dans l'onglet réel la clé factice et ses blocs, et rend les trois boutons « Copier ». */
+async function drawnKeyButtons(panel: HTMLElement): Promise<HTMLButtonElement[]> {
+  const frame = await until(
+    "la partie « Brancher une IA »",
+    // Une fois l'état lu par l'application, pour qu'elle ne redessine pas la partie par-dessus la clé factice.
     () =>
-      findAll<HTMLButtonElement>("button", panel).find(
-        (b) => b.textContent === "Créer une clé de branchement",
-      ),
+      find("button", panel) === null ? null : find<HTMLElement>(".connection-settings", panel),
     WAIT,
   );
-  create.click();
-  const copies = await until(
-    "les trois boutons « Copier »",
-    () => {
-      const found = findAll<HTMLButtonElement>(".connection-copyable button", panel);
-      return found.length === COPY_BUTTONS ? found : null;
-    },
-    WAIT,
-  );
+  renderConnectionSettings(frame, FAKE_KEY, {
+    create: () => undefined,
+    revoke: () => undefined,
+    copy: () => Promise.resolve(true),
+  });
+  const found = findAll<HTMLButtonElement>(".connection-copyable button", frame);
+  if (found.length !== COPY_BUTTONS) throw new Error(`${found.length} boutons « Copier »`);
+  return found;
+}
+
+/** Les mesures du bouton « Copier » : sa taille, sa place par rapport au texte du bloc. */
+function checkCopyButtonBox(trial: Trial, panel: HTMLElement, first: HTMLButtonElement): void {
   const normal = findAll<HTMLButtonElement>("button", panel).find(
     (b) => b.textContent === "Révoquer la clé",
   );
-  const first = copies[0] as HTMLButtonElement;
   const box = rectOf(first);
   const text = find(".connection-text", first.parentElement ?? panel);
   trial.measure("boutonCopier", { bouton: box, texte: text === null ? null : rectOf(text) });
@@ -119,6 +130,15 @@ async function connectionTab(trial: Trial): Promise<void> {
     text !== null && box.y >= rectOf(text).y + rectOf(text).height,
     `bouton à ${Math.round(box.y)}`,
   );
+}
+
+/** Les boutons « Copier » : à la taille des boutons des Réglages, sous le texte ; un clic les passe au vert, « ✓ Copié ». */
+async function connectionTab(trial: Trial): Promise<void> {
+  const window = await openSettings();
+  const panel = await showTab(window, "Brancher une IA");
+  const copies = await drawnKeyButtons(panel);
+  const first = copies[0] as HTMLButtonElement;
+  checkCopyButtonBox(trial, panel, first);
   const before = getComputedStyle(first).color;
   first.click();
   await until("« ✓ Copié »", () => (first.textContent === "✓ Copié" ? true : null), WAIT);
