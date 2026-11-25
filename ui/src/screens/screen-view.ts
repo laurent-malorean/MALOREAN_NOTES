@@ -72,6 +72,8 @@ function renderWorkspace(layout: Layout, screen: WorkspaceScreen, actions: Scree
   const aside = screen.trash !== null;
   const shown = { tag: aside ? null : screen.tag, recent: !aside && screen.recent };
   layout.workspaceSwitcher.textContent = screen.workspace.name;
+  layout.workspaceBarName.textContent = screen.workspace.name;
+  layout.workspaceBar.setAttribute("aria-label", `Espace de travail : ${screen.workspace.name}`);
   layout.listHeading.textContent = listTitle(screen, shown.tag, shown.recent);
   renderNavigation(layout, screen, shown, actions);
   // La corbeille n'a pas de tri : ses notes sont rangées par chemin ; les récentes, par ouverture.

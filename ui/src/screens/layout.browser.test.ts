@@ -18,7 +18,8 @@ describe("mise en page", () => {
       layout.workspaceSwitcher,
       layout.listHeading,
       layout.addButton,
-      layout.switchButton,
+      layout.workspaceBar,
+      layout.workspaceBarName,
       layout.foldersList,
       layout.tagsList,
       layout.tagFilter,
@@ -40,8 +41,11 @@ describe("mise en page", () => {
       expect(element).toBeInstanceOf(HTMLElement);
     }
     expect(layout.addButton.textContent).toBe("Choisir un dossier de notes");
-    expect(layout.switchButton.textContent).toBe("Changer d'espace de travail");
     expect(layout.workspaceSwitcher.getAttribute("aria-haspopup")).toBe("menu");
+    expect(layout.workspaceBar.getAttribute("aria-haspopup")).toBe("menu");
+    expect(layout.workspaceBar.contains(layout.workspaceBarName)).toBe(true);
+    expect(layout.workspaceBar.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(root.textContent).not.toContain("Changer d'espace de travail");
     expect(layout.settings).toBeInstanceOf(HTMLDialogElement);
     expect(layout.picker).toBeInstanceOf(HTMLDialogElement);
     expect(layout.confirmation).toBeInstanceOf(HTMLDialogElement);

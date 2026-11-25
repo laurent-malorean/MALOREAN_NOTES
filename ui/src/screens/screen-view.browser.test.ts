@@ -75,6 +75,8 @@ describe("affichage de l'écran", () => {
     renderScreen(view, screen, ignore);
     expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([true, false]);
     expect(view.workspaceSwitcher.textContent).toBe("Notes");
+    expect(view.workspaceBarName.textContent).toBe("Notes");
+    expect(view.workspaceBar.getAttribute("aria-label")).toBe("Espace de travail : Notes");
     expect(view.listHeading.textContent).toBe("Notes");
     expect(view.notesList.querySelector(".note-item.selected .note-title")?.textContent).toBe(
       "Alpha",
@@ -86,6 +88,8 @@ describe("affichage de l'écran", () => {
     const opened = workspaceOpened({ name: "Perso", path: "/p" }, ["2026"], []);
     renderScreen(view, folderSelected(opened, "2026", []), ignore);
     expect(view.workspaceSwitcher.textContent).toBe("Perso");
+    expect(view.workspaceBarName.textContent).toBe("Perso");
+    expect(view.workspaceBar.getAttribute("aria-label")).toBe("Espace de travail : Perso");
     expect(view.listHeading.textContent).toBe("2026");
   });
 
