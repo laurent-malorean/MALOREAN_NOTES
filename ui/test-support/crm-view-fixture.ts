@@ -2,9 +2,10 @@
 // chaque appel, la mémoire de l'onglet, les erreurs, les questions posées.
 import { expect, vi } from "vitest";
 import type { CrmActionChangeItem, CrmFiltersItem, CrmItem, StageChangeItem } from "../src/bridge";
-import { createCrmView, type CrmView } from "../src/screens/crm-view";
+import { createCrmView, type CrmView, type CrmViewDeps } from "../src/screens/crm-view";
 import type { CrmTab } from "../src/state/crm";
 import { sample } from "./crm-fixture";
+import { moreBackend } from "./crm-lists-fixture";
 
 /** Un appel au pont : son nom puis ses arguments. */
 export type Call = readonly [string, ...unknown[]];
@@ -25,6 +26,10 @@ export interface MountedCrm {
   answer: { value: boolean };
   /** Le retard, en millisecondes, de chacune des prochaines lectures. */
   delays: number[];
+  /** Les fiches ouvertes par un clic sur un nom, les appels aux points de branchement de la fenêtre d'une action, ce qui est gardé déplié. */
+  opened: string[];
+  hooked: Call[];
+  kept: string[];
 }
 
 export interface MountOptions {
@@ -33,6 +38,28 @@ export interface MountOptions {
   width?: number;
   /** Faux : le CRM n'est pas lu à l'ouverture. */
   load?: boolean;
+  /** Ce qui était gardé déplié (texte JSON). */
+  unfolded?: string | null;
+}
+
+function emptyMount(host: HTMLElement, calls: Call[], crm: CrmItem): MountedCrm {
+  return {
+    ...{ host, calls, errors: [], questions: [], stored: [] },
+    ...{ fail: { next: null, read: null }, answer: { value: true }, delays: [] },
+    ...{ opened: [], hooked: [], kept: [], disk: { crm }, view: undefined as never },
+  };
+}
+
+/** Ce que les listes demandent à l'écran : ouvrir une fiche, la fenêtre d'une action, la mémoire de ce qui est déplié. */
+function listsDeps(mounted: MountedCrm, options: MountOptions): Partial<CrmViewDeps> {
+  return {
+    openFiche: (path) => void mounted.opened.push(path),
+    hooks: {
+      onOpenAction: (reference, crm) => void mounted.hooked.push(["onOpenAction", reference, crm]),
+      onNewAction: (person, crm) => void mounted.hooked.push(["onNewAction", person, crm]),
+    },
+    unfolded: { load: () => options.unfolded ?? null, store: (raw) => void mounted.kept.push(raw) },
+  };
 }
 
 export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> {
@@ -41,12 +68,7 @@ export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> 
   host.style.cssText = `width:${String(options.width ?? 1500)}px;height:700px;position:relative`;
   document.body.replaceChildren(host);
   const calls: Call[] = [];
-  const mounted: MountedCrm = {
-    ...{ host, calls, errors: [], questions: [], stored: [] },
-    ...{ fail: { next: null, read: null }, answer: { value: true }, delays: [] },
-    disk: { crm: options.crm ?? sample() },
-    view: undefined as never,
-  };
+  const mounted = emptyMount(host, calls, options.crm ?? sample());
   const gesture = async (name: string, ...args: unknown[]) => {
     calls.push([name, ...args]);
     const { next } = mounted.fail;
@@ -80,6 +102,7 @@ export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> 
         await gesture("changeCrmStages", crm, change);
         return [];
       },
+      ...moreBackend(gesture),
     },
     confirm: async (question) => {
       mounted.questions.push(question);
@@ -90,6 +113,7 @@ export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> 
       load: () => options.tab ?? null,
       store: (tab) => void mounted.stored.push(tab),
     },
+    ...listsDeps(mounted, options),
   });
   host.append(mounted.view.element);
   if (options.load !== false) await mounted.view.reload();

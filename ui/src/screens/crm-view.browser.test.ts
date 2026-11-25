@@ -11,7 +11,7 @@ import {
 } from "../../test-support/crm-view-fixture";
 import "../theme.css";
 import "../style.css";
-import { EMPTY_TEXT, SOON_TEXT } from "./crm-view";
+import { EMPTY_TEXT } from "./crm-view";
 
 const names = (selector: string) =>
   [...document.querySelectorAll(selector)].map((element) => element.textContent);
@@ -59,18 +59,21 @@ describe("CRM : onglets", () => {
     expect(tabNamed("Kanban").getAttribute("aria-selected")).toBe("true");
   });
 
-  it("montre « Bientôt » dans les onglets Personnes, Entreprises et Projets, sans filtres", async () => {
+  it("montre les listes Personnes, Entreprises et Projets, sans la rangée de filtres du Kanban", async () => {
     await mountCrm();
-    for (const tab of ["Personnes", "Entreprises", "Projets"]) {
+    for (const [tab, list] of [
+      ["Personnes", ".crm-people"],
+      ["Entreprises", ".crm-companies"],
+      ["Projets", ".crm-projects"],
+    ] as const) {
       tabNamed(tab).click();
-      expect(text(document, ".crm-soon")).toBe(SOON_TEXT);
+      expect(document.querySelector(list)).not.toBeNull();
       expect(document.querySelector(".crm-board")).toBeNull();
       expect((document.querySelector(".crm-filters") as HTMLElement).hidden).toBe(true);
     }
-    expect(SOON_TEXT).toBe("Bientôt");
     tabNamed("Kanban").click();
     expect((document.querySelector(".crm-filters") as HTMLElement).hidden).toBe(false);
-    expect(document.querySelector(".crm-soon")).toBeNull();
+    expect(document.querySelector(".crm-list")).toBeNull();
   });
 
   it("change d'onglet avant la première lecture sans rien dessiner, puis dessine ce qui est choisi", async () => {

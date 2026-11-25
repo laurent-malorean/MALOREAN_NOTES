@@ -7,6 +7,7 @@ import type { OpenNoteLink } from "../editor/links/note-links";
 import { lineStart } from "../state/research-notebook";
 import { renderBacklinks } from "./backlinks-view";
 import { type CanvasDeps, type CanvasPane, createCanvasPane } from "./canvas-pane";
+import { createFichePane, type FichePane } from "./crm-fiche-pane";
 import { type CrmDeps, type CrmPane, createCrmPane } from "./crm-pane";
 import { createMindMapPane, type MindMapBackend, type MindMapPane } from "./mind-map-pane";
 import type { ColumnParts } from "./columns-view";
@@ -96,6 +97,13 @@ export interface Pane {
   destroy(): void;
 }
 
+/** Le CRM et les fiches d'entreprise et de personne d'une colonne ; sans CRM, ils restent du texte (fiches 0060 et 0063). */
+function crmPanes(element: HTMLElement, deps: CrmDeps | undefined, events: PaneEvents) {
+  if (deps === undefined) return { crm: null, fiche: null };
+  const options = { deps, error: events.error, openNote: events.openNote };
+  return { crm: createCrmPane(element, options), fiche: createFichePane(element, options) };
+}
+
 /** Ce qui commence la cible d'un lien vers une entrée du cahier montré : `#2026-11-20-09h42`. */
 const ANCHOR_MARK = "#";
 
@@ -106,6 +114,7 @@ class NotePane implements Pane, Viewer {
   private readonly map: MindMapPane | null;
   private readonly canvas: CanvasPane | null;
   private readonly crm: CrmPane | null;
+  private readonly fiche: FichePane | null;
 
   constructor(
     private readonly parts: ColumnParts,
@@ -138,9 +147,7 @@ class NotePane implements Pane, Viewer {
           resolveImage: options.resolveImage,
         })
       : null;
-    this.crm = options.crm
-      ? createCrmPane(parts.element, { deps: options.crm, error: events.error })
-      : null;
+    ({ crm: this.crm, fiche: this.fiche } = crmPanes(parts.element, options.crm, events));
     this.editor = createEditor(
       parts.element,
       (content, changes) => shared.typed(this, changes, content),
@@ -189,6 +196,7 @@ class NotePane implements Pane, Viewer {
       await this.canvas?.sync(this.shown);
       await this.map?.sync(this.shown, this.editor.content());
       await this.crm?.sync(this.shown, this.editor.content());
+      await this.fiche?.sync(this.shown, this.editor.content());
     } catch (error) {
       this.options.events.error(error);
     }
@@ -213,6 +221,7 @@ class NotePane implements Pane, Viewer {
   async followCrm(changed: readonly string[]): Promise<void> {
     try {
       await this.crm?.refresh(changed);
+      await this.fiche?.refresh(changed);
     } catch (error) {
       this.options.events.error(error);
     }
@@ -252,6 +261,7 @@ class NotePane implements Pane, Viewer {
     this.map?.destroy();
     this.canvas?.destroy();
     this.crm?.destroy();
+    this.fiche?.destroy();
     this.editor.destroy();
   }
 

@@ -5,6 +5,7 @@
 import type { ColumnItem, CrmActionItem, CrmItem } from "../src/bridge";
 import { addDays } from "../src/state/crm-days";
 import { fakeCrmGestures } from "./fake-crm-gestures";
+import { fakeCrmLists, listsOf, withLinks } from "./fake-crm-lists";
 import {
   type Args,
   CLOSED,
@@ -51,7 +52,7 @@ export function actionsOf(state: FakeNotes, path: string): CrmActionItem[] {
   const folder = `${path.replace(/\.md$/, "")}/actions/`;
   return Object.entries(state.notes)
     .filter(([p]) => p.startsWith(folder))
-    .map(([p, n]) => actionOf(p, n.content, stages));
+    .map(([p, n]) => withLinks(actionOf(p, n.content, stages), n.content));
 }
 
 function view(state: FakeNotes, path: string, filters: Args, weekDay: string | null): CrmItem {
@@ -68,8 +69,8 @@ function view(state: FakeNotes, path: string, filters: Args, weekDay: string | n
   const open = shown.filter((a) => a.open);
   return {
     ...{ title: /^# (.+)$/m.exec(note.content)?.[1] ?? "", stages, today: FAKE_TODAY },
-    ...{ closedPage: 10, nodata: { people: [], tally: { open: 0, late: 0, today: 0 } } },
-    ...{ companies: [], people: [], projects: [], actions, tags: [], unreadable: [] },
+    ...{ closedPage: 10, actions, tags: [], unreadable: [] },
+    ...listsOf(state, path, actions),
     columns: columnsOf(actions, shown, stages),
     week: {
       ...{ monday, sunday: addDays(monday, 6) },
@@ -97,5 +98,6 @@ export function fakeCrms(state: FakeNotes, helpers: CrmHelpers): Record<string, 
     read_crm: ({ path, filters, weekDay }: Args) =>
       view(state, path as string, filters as Args, (weekDay as string | null) ?? null),
     ...fakeCrmGestures(state, helpers, (path) => view(state, path, {}, null)),
+    ...fakeCrmLists(state, helpers),
   };
 }

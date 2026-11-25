@@ -10,6 +10,16 @@ const BACKEND_KEYS = [
   "moveCrmAction",
   "changeCrmAction",
   "changeCrmStages",
+  "createCrmPerson",
+  "createCrmCompany",
+  "createCrmProject",
+  "changeCrmProject",
+  "deleteCrmProject",
+  "changeCrmPerson",
+  "deleteCrmPerson",
+  "changeCrmCompany",
+  "deleteCrmCompany",
+  "crmEmailIsKnown",
 ] as const;
 
 /** Le pont a tout ce qu'il faut pour montrer des CRM (ce que n'ont pas les faux ponts de certains tests). */

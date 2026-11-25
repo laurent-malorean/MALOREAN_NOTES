@@ -7,6 +7,16 @@ const backend = {
   moveCrmAction: vi.fn(),
   changeCrmAction: vi.fn(),
   changeCrmStages: vi.fn(),
+  createCrmPerson: vi.fn(),
+  createCrmCompany: vi.fn(),
+  createCrmProject: vi.fn(),
+  changeCrmProject: vi.fn(),
+  deleteCrmProject: vi.fn(),
+  changeCrmPerson: vi.fn(),
+  deleteCrmPerson: vi.fn(),
+  changeCrmCompany: vi.fn(),
+  deleteCrmCompany: vi.fn(),
+  crmEmailIsKnown: vi.fn(),
 };
 
 describe("pont du CRM d'une colonne", () => {

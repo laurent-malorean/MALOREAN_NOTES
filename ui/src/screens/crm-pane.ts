@@ -2,6 +2,8 @@
 // de l'éditeur de texte, sur toute la surface de la colonne. Rust lit et écrit les fichiers ; l'éditeur
 // garde le texte de la note, caché, pour l'historique et le suivi des changements venus d'ailleurs.
 import { isCrmContent, type CrmTab } from "../state/crm";
+import type { ActionHooks } from "./crm-hooks";
+import { storedUnfolded } from "./crm-lists";
 import { type CrmBackend, type CrmView, createCrmView } from "./crm-view";
 
 /** Ce que le CRM d'une colonne demande à Rust et à l'application. */
@@ -9,11 +11,15 @@ export interface CrmDeps {
   readonly backend: CrmBackend;
   /** Pose une question avant un geste qui en change d'autres ; rend vrai si l'utilisateur accepte. */
   readonly confirm: (question: string, confirm: string) => Promise<boolean>;
+  /** Ce que les listes et les fiches demandent à la fenêtre d'une action (fiche 0063) ; sans elle, rien. */
+  readonly hooks?: ActionHooks;
 }
 
 export interface CrmPaneOptions {
   readonly deps: CrmDeps;
   readonly error: (error: unknown) => void;
+  /** Ouvre la note d'une entreprise ou d'une personne dans la colonne (fiche 0063). */
+  readonly openNote?: (path: string) => void;
 }
 
 export interface CrmPane {
@@ -82,9 +88,12 @@ class ColumnCrm implements CrmPane {
 
   private open(path: string): void {
     this.close();
-    const { deps, error } = this.options;
+    const { deps, error, openNote } = this.options;
     this.path = path;
-    this.view = createCrmView({ ...deps, path, error, tab: tabMemory(path) });
+    this.view = createCrmView({
+      ...{ ...deps, path, error, tab: tabMemory(path) },
+      ...{ unfolded: storedUnfolded(path), openFiche: openNote },
+    });
     this.column.append(this.view.element);
     this.column.classList.add("crm-shown");
   }
