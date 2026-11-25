@@ -32,6 +32,8 @@ struct State {
     attachments: BTreeMap<NotePath, Vec<(AttachmentName, Vec<u8>)>>,
     /// Les fichiers de l'espace de travail qui ne sont pas des notes, avec leur contenu.
     files: BTreeMap<(Folder, String), Vec<u8>>,
+    /// Les notes dont l'écriture échoue, pour essayer une écriture ratée.
+    failing: BTreeSet<NotePath>,
     tick: u64,
 }
 
@@ -133,6 +135,17 @@ impl InMemoryNoteStore {
         self
     }
 
+    /// Fait échouer toute écriture de la note `name` ([`StoreError::Unavailable`]), jusqu'à
+    /// [`Self::stop_failing`] ; elle garde alors son ancien texte.
+    pub fn fail_writes_to(&self, name: &NotePath) {
+        self.state().failing.insert(name.clone());
+    }
+
+    /// Plus aucune écriture ne rate.
+    pub fn stop_failing(&self) {
+        self.state().failing.clear();
+    }
+
     fn state(&self) -> MutexGuard<'_, State> {
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
     }
@@ -185,6 +198,9 @@ impl NoteStore for InMemoryNoteStore {
 
     fn write(&self, name: &NotePath, content: &str) -> Result<(), StoreError> {
         let mut state = self.state();
+        if state.failing.contains(name) {
+            return Err(StoreError::Unavailable("disque plein".to_owned()));
+        }
         state.add_folder(name.folder());
         state.tick += 1;
         let modified = Modified(state.tick);

@@ -3,6 +3,7 @@
 mod attachments;
 mod canvas;
 mod create_note;
+mod crm;
 mod export;
 mod folders;
 mod history;
@@ -29,6 +30,7 @@ pub use attachments::{
 };
 pub use canvas::{CreateCanvas, ReadCanvas, SaveCanvas, SavedCanvas};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
+pub use crm::{ApplyGesture, RecoverGestures};
 pub use export::ExportMarkdown;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use history::{

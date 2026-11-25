@@ -12,6 +12,7 @@ mod fake_meaning;
 mod fake_watcher;
 mod fake_writing;
 mod fakes;
+pub mod gestures_contract;
 pub mod history_contract;
 pub mod index_contract;
 pub mod meaning_contract;
