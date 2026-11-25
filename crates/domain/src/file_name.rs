@@ -74,6 +74,18 @@ impl FileName {
         Self(format!("{stem}{CANVAS_EXTENSION}"))
     }
 
+    /// Le nom tiré d'un texte quelconque, en kebab-case ; `sans-titre.md` sans mot utilisable.
+    #[must_use]
+    pub fn from_text(text: &str) -> Self {
+        let stem = kebab_case(text);
+        let stem = if stem.is_empty() {
+            UNTITLED_STEM
+        } else {
+            &stem
+        };
+        Self(format!("{stem}{EXTENSION}"))
+    }
+
     /// Vrai pour le nom d'un canvas (`.canvas`).
     #[must_use]
     pub fn is_canvas(&self) -> bool {
@@ -161,6 +173,18 @@ mod tests {
         FileName::from_title(Title::of(content).as_ref())
             .as_str()
             .to_owned()
+    }
+
+    #[test]
+    fn a_name_comes_from_any_text_in_kebab_case() {
+        let name = |text| FileName::from_text(text).as_str().to_owned();
+        assert_eq!(
+            name("2026-11-24 Demande de devis"),
+            "2026-11-24-demande-de-devis.md"
+        );
+        assert_eq!(name("Acme, S.A."), "acme-s-a.md");
+        assert_eq!(name("  !? "), "sans-titre.md");
+        assert_eq!(name(""), "sans-titre.md");
     }
 
     #[test]
