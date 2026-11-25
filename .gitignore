@@ -22,3 +22,7 @@ _DIST/
 # Un dossier de travail par fonction (git worktree), jamais versionné
 worktrees/
 ui/dist-essai/
+
+# Copies locales d un dépôt privé (jamais commitées)
+data_fake_socio/
+data_fake/SOCIO/
