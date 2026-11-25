@@ -3,15 +3,13 @@
 import type { CrmActionItem, CrmItem } from "../bridge";
 import { shortDay } from "./crm-days";
 import { PALETTE } from "./palette";
+import { type ColorName, tagColor } from "./tag-field";
 
 /** Combien de personnes une carte nomme avant de dire « +N ». */
 export const PEOPLE_SHOWN = 2;
 
 /** Ce qui est écrit à la place de la date d'une action ouverte datée d'aujourd'hui. */
 export const TODAY_BADGE = "À faire aujourd'hui";
-
-/** Un mot de couleur de la palette, par son nom. */
-export type ColorName = (typeof PALETTE)[number];
 
 /** Ce que dit le haut d'une carte : sa date, ou la pastille de retard ou du jour à la place. */
 export type When =
@@ -37,13 +35,6 @@ export interface CardView {
   /** Sa couleur d'action, ou, sans elle, `late` ou `today` pour le fond de sa pastille. */
   readonly color: string | null;
   readonly tone: "late" | "today" | null;
-}
-
-/** La couleur d'une étiquette, d'après son nom : la somme des codes de son nom en minuscules, modulo 10. */
-export function tagColor(tag: string): ColorName {
-  let sum = 0;
-  for (const letter of tag.toLowerCase()) sum += letter.codePointAt(0) as number;
-  return PALETTE[sum % PALETTE.length] as ColorName;
 }
 
 /** « En retard de 3 jours », « En retard de 1 jour » le lendemain. */

@@ -18,6 +18,10 @@ title: string,
  */
 color: string, 
 /**
+ * Ses étiquettes.
+ */
+tags: Array<string>, 
+/**
  * Les références de ses actions ouvertes, la plus en retard d'abord.
  */
 openActions: Array<string>, 

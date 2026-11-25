@@ -64,7 +64,7 @@ pub use recent_notes::ListRecentNotes;
 pub use research_notebook::{AddEntry, CreateResearchNotebook, ListEntries};
 pub use save_note::{SaveNote, SaveOutcome};
 pub use search_notes::{MAX_RESULTS, SearchNotes, SearchResult};
-pub use tags::{ListTaggedNotes, ListTags};
+pub use tags::{ChangeTags, ListTaggedNotes, ListTags, ReadTags};
 pub use trash::{Trash, TrashView};
 pub use workspace::{ManageWorkspaces, OpenedWorkspace};
 pub use writing::{Proposal, ProposeRewriting};

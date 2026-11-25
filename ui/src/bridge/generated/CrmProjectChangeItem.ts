@@ -11,4 +11,8 @@ name: string, } | { "kind": "color",
 /**
  * Le nom de la couleur.
  */
-color: string, };
+color: string, } | { "kind": "tags", 
+/**
+ * Les étiquettes.
+ */
+tags: Array<string>, };

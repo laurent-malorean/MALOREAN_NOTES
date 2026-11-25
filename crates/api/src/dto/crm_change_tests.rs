@@ -499,6 +499,13 @@ fn each_gesture_on_a_project_or_the_stages_becomes_its_change() {
     );
     assert!(ProjectChange::try_from(CrmProjectChangeItem::Color { color: s("x") }).is_err());
     assert_eq!(
+        ProjectChange::try_from(CrmProjectChangeItem::Tags {
+            tags: vec![s("a"), s("b")]
+        })
+        .unwrap(),
+        ProjectChange::Tags(vec![s("a"), s("b")])
+    );
+    assert_eq!(
         StageChange::from(StageChangeItem::Add { name: s("n") }),
         StageChange::Add(s("n"))
     );

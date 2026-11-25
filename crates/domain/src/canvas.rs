@@ -6,6 +6,10 @@ use std::collections::HashSet;
 use std::fmt;
 
 use crate::json::Json;
+use crate::tag::distinct;
+
+/// La propriété de la racine qui garde les étiquettes d'un canvas.
+const TAGS_KEY: &str = "tags";
 
 pub use crate::canvas_write::{Rect, deduce_sides};
 
@@ -260,6 +264,39 @@ impl Canvas {
             }
         }
         Ok(())
+    }
+
+    /// Les étiquettes du canvas : la liste de mots de la propriété `tags` de la racine du fichier
+    /// (`doc/specs/canvas.md`, § 7.4), nettoyée comme celle d'un en-tête ; vide si la propriété
+    /// manque ou n'est pas une liste.
+    #[must_use]
+    pub fn tags(&self) -> Vec<String> {
+        let listed = self.extra.iter().find(|(key, _)| key == TAGS_KEY);
+        let Some((_, Json::Array(items))) = listed else {
+            return Vec::new();
+        };
+        distinct(items.iter().filter_map(|item| match item {
+            Json::String(word) => Some(word.as_str()),
+            _ => None,
+        }))
+    }
+
+    /// Le canvas avec ces étiquettes dans la propriété `tags` de sa racine (à sa place si elle y
+    /// est, après les autres sinon) ; sans étiquette, la propriété est retirée. Toute autre
+    /// propriété est gardée telle quelle.
+    #[must_use]
+    pub fn with_tags(mut self, tags: &[String]) -> Self {
+        let at = self.extra.iter().position(|(key, _)| key == TAGS_KEY);
+        let value = Json::Array(tags.iter().cloned().map(Json::String).collect());
+        match (at, tags.is_empty()) {
+            (Some(at), true) => {
+                self.extra.remove(at);
+            }
+            (Some(at), false) => self.extra[at].1 = value,
+            (None, false) => self.extra.push((TAGS_KEY.to_owned(), value)),
+            (None, true) => {}
+        }
+        self
     }
 
     /// La carte d'identifiant `id`.

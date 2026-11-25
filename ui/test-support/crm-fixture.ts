@@ -84,7 +84,7 @@ export const project = (
   title: string,
   color = "bleu",
 ): CrmItem["projects"][number] => ({
-  ...{ name, title, color, openActions: [], tally: NO_TALLY },
+  ...{ name, title, color, tags: [], openActions: [], tally: NO_TALLY },
 });
 
 /** Un CRM d'exemple, avec une carte dans chaque colonne et de quoi remplir une carte. */

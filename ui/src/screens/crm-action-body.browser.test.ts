@@ -181,7 +181,7 @@ describe("fenêtre d'une action : commentaires", () => {
     m.disk.crm = changedCrm({ tags: ["nouveau"] });
     await m.view.reload();
     await vi.waitFor(() =>
-      expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("nouveau×"),
+      expect(document.querySelector(".tag-chip")?.textContent).toBe("nouveau×"),
     );
     expect(control<HTMLTextAreaElement>("Modifier le commentaire").value).toBe("Brouillon");
   });

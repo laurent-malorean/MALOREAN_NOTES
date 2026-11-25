@@ -14,6 +14,7 @@ Ajouter une observation à un cahier de recherche simplement, sans fenêtre ni c
 - **On ne saisit qu'en bas de la page** : une zone de saisie fait partie de la page du cahier, sous son texte. Elle montre **8 lignes** à la fois (au-delà, elle défile) et accepte un texte libre sur plusieurs lignes.
 - Un seul bouton, **« Ajouter l'entrée »**, sous la zone de saisie. Un message au-dessus dit où l'entrée sera rangée (« elle sera datée au moment de l'ajout et rangée sous « Lundi 23 novembre » »).
 - À l'ajout, l'entrée est **datée du moment de l'ajout** et rangée au bon niveau de titre du cahier : `## année`, `### mois`, `#### jour`, puis `- 09:42 - texte`. Un titre d'année, de mois ou de jour qui n'existe pas encore est créé. Les entrées restent classées de la plus ancienne (en haut) à la plus récente (en bas), comme un cahier papier. La zone de saisie se vide ensuite.
+- **Étiquettes** : comme pour tout contenu, le champ d'étiquettes est sous les onglets de la colonne (étiquettes en pastilles avec « × », champ « Ajouter une étiquette » et « + »). C'est la seule chose modifiable en dehors de la zone de saisie : un geste réécrit seulement `tags` dans l'en-tête, le texte du cahier reste tel quel.
 - **Pas de correction** : aucune entrée ne se modifie, et il n'y a aucun bouton « Corriger ». Une erreur se rectifie par une nouvelle entrée.
 
 ## 2 bis. Repérer les entrées

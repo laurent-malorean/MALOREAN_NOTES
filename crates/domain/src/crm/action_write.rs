@@ -8,7 +8,7 @@ use std::num::NonZeroU32;
 
 use super::action::{
     ActionPerson, CHANNEL_KEY, COLOR_KEY, Channel, DATE_KEY, NOTES_KEY, PEOPLE_KEY, PROJECT_KEY,
-    RANK_KEY, STATUS_KEY, written_tags,
+    RANK_KEY, STATUS_KEY,
 };
 use super::action_body::{Body, rewritten};
 use super::day::Day;
@@ -17,7 +17,7 @@ use super::palette::Color;
 use super::reference::Reference;
 use super::stage::{Stage, Stages, Status, TODO, same};
 use super::under_title::{text, with_text};
-use crate::tag::retagged;
+use crate::tag::{retagged, written_tags};
 
 /// L'action avec ce statut ; le rang s'efface, car la place choisie dans l'ancienne colonne n'a plus
 /// de sens. Le même statut ne change rien : le fichier reste tel qu'il est.

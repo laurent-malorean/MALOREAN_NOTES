@@ -26,7 +26,7 @@ Les mots ci-dessous valent dans le domaine du CRM. Un même mot peut avoir un au
 | Action terminée | Une action « Done » ou « Cancel ». |
 | Projet | Un regroupement d'actions, propre à un CRM : un nom et une couleur. |
 | Couleur d'action | Facultative : l'une des 10 couleurs de la palette (§ 3), sans rapport avec celle de son projet. |
-| Étiquette | Un mot court de l'en-tête (`tags`), comme pour toute note. Une action en a plusieurs. |
+| Étiquette | Un mot court de l'en-tête (`tags`), comme pour toute note. Une action en a plusieurs ; le CRM, une entreprise, une personne et un projet aussi (§ 4.9). |
 | Note liée | Une note de l'espace de travail à laquelle une action renvoie. |
 | Canal | Comment l'échange a eu lieu : appel, e-mail, rendez-vous, courrier, salon, réseau social, autre. |
 | Liste à cocher | Une liste nommée d'éléments à cocher, dans une action. Une action peut en avoir plusieurs. |
@@ -201,6 +201,7 @@ couleur: bleu
 # Refonte du site
 ```
 
+- `tags` : facultatif, comme pour toute fiche (§ 4.9).
 - Le texte sous le titre est gardé tel quel, jamais montré.
 - Une couleur absente ou inconnue se lit comme la première couleur de la palette, sans modifier le fichier ; une couleur n'est écrite que si l'utilisateur en choisit une.
 
@@ -216,6 +217,13 @@ couleur: bleu
 - Pour une action, le CRM réécrit seulement la partie touchée (description, une liste à cocher, les commentaires) ; l'ordre des parties est remis dans l'ordre du § 4.5 au premier enregistrement.
 - Le fichier finit par un seul retour à la ligne.
 - Une action dont `rang` n'a plus de sens (statut changé, § 7.1) perd cette propriété.
+
+### 4.9 Étiquettes
+
+- Le CRM, une entreprise, une personne, une action et un projet peuvent porter `tags` dans leur en-tête, comme toute note (mêmes règles de lecture et de nettoyage : sans doublon, la casse ne compte pas) ; la propriété est facultative et n'est écrite que s'il y a au moins une étiquette.
+- On les change dans le **champ d'étiquettes** de l'application (pastilles avec « × », champ « Ajouter une étiquette » et « + », suggestions des étiquettes de l'espace de travail) : § 8 pour une action, § 9 pour une entreprise et une personne.
+- Changer les étiquettes ne change que la propriété `tags` : les autres propriétés, le texte et les propriétés libres restent identiques octet pour octet (§ 4.8).
+- Les étiquettes d'une entreprise, d'une personne et d'un projet servent au filtre par étiquette de l'application ; le filtre du Kanban (§ 7.1) ne porte que sur celles des actions.
 
 ## 5. Règles des fiches
 
@@ -334,6 +342,7 @@ Un CRM sans fiche affiche, au centre, en couleur atténuée : « Ajoutez une pre
 - « Nouveau projet » (le nom ; la couleur est celle du § 5.4, modifiable), puis la liste : pastille de couleur, nom, nombre d'actions ouvertes et en retard.
 - Un projet se déplie sur ses actions ouvertes, la plus en retard d'abord. Un clic sur ses compteurs (« Voir les actions de … ») ouvre le Kanban filtré sur lui seul.
 - On y renomme, change la couleur (les couleurs déjà prises sont grisées, mais choisissables) et supprime un projet.
+- **Sous la ligne de chaque projet** (plié ou déplié), le **champ d'étiquettes** de l'application (§ 4.9) : ses étiquettes en pastilles avec « × », un champ « Ajouter une étiquette » avec « + ». Il propose les étiquettes des actions du CRM et celles des autres projets, sans celles du projet. Un geste ne change que `tags` dans la fiche du projet ; le texte tapé et non validé est gardé quand l'écran se redessine.
 
 ### 7.6 Une action dans une liste
 
@@ -353,7 +362,7 @@ Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de larg
 4. **Couleur** : une pastille par couleur de la palette et « Sans couleur ».
 5. **Titre** : une ligne.
 6. **Description** : Markdown, en saisie de texte.
-7. **Étiquettes** : un champ « Ajouter une étiquette » (Entrée pour la suivante ; il propose celles du CRM ; « × » pour retirer).
+7. **Étiquettes** : le champ d'étiquettes de l'application : les étiquettes en pastilles à leur couleur avec « × » pour retirer, un champ « Ajouter une étiquette » (Entrée pour la suivante) et un « + » qui ajoute le texte tapé ; il propose celles du CRM que l'action n'a pas.
 8. **Notes liées** : les notes liées, chacune cliquable (un clic l'ouvre dans la colonne active) avec « × » pour la délier ; « + Lier une note » ouvre la recherche de notes de l'application. Un lien vers une note absente est montré comme dans une note.
 9. **Listes à cocher** : plusieurs, chacune avec son nom, ses éléments à cocher et son avancement en pourcentage ; ajout, renommage, suppression d'une liste, ajout, modification, suppression et coche d'un élément.
 10. **Commentaires** : le plus récent d'abord ; on ajoute, modifie et supprime un commentaire. Une adresse internet écrite dans un commentaire (seule, entre `<` `>` ou en `[texte](adresse)`) s'affiche en lien cliquable, ouvert dans le navigateur. Pas de commentaires sur une action en cours de création.
@@ -367,6 +376,8 @@ Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de larg
 ## 9. Fiches entreprise et personne
 
 Une fiche d'entreprise ou de personne s'ouvre dans un onglet d'une colonne d'édition, comme une note, à la place de l'éditeur de texte.
+
+Comme tout contenu, elle a, sous les onglets de sa colonne, le **champ d'étiquettes** de l'application (§ 4.9) : ses étiquettes en pastilles avec « × », un champ « Ajouter une étiquette » avec « + » et les suggestions de l'espace de travail. Il en va de même du CRM lui-même.
 
 ### 9.1 Fiche entreprise
 

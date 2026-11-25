@@ -271,3 +271,83 @@ describe("onglet Projets : supprimer", () => {
     expect(callsTo(m, "deleteCrmProject")).toEqual([]);
   });
 });
+
+describe("onglet Projets : étiquettes", () => {
+  const tagged = () => {
+    const data = listsSample();
+    data.tags = ["salon", "urgent"];
+    data.projects = data.projects.map((p) =>
+      p.name === "refonte" ? { ...p, tags: ["client", "2027"] } : p,
+    );
+    return data;
+  };
+  const chips = (name: string) =>
+    [...item(name).querySelectorAll(".tag-chip")].map((chip) => chip.textContent);
+  const add = (name: string) => item(name).querySelector(".tag-input") as HTMLInputElement;
+
+  it("montre sous la ligne de chaque projet le champ d'étiquettes, avec ses étiquettes", async () => {
+    await open({ crm: tagged() });
+    expect(chips("refonte")).toEqual(["client×", "2027×"]);
+    expect(chips("salon")).toEqual([]);
+    const row = item("refonte").querySelector(".crm-project-row") as HTMLElement;
+    expect(row.nextElementSibling?.className).toBe("tag-field");
+    expect(add("salon").getAttribute("aria-label")).toBe("Ajouter une étiquette");
+    expect(item("salon").querySelector(".tag-add")?.textContent).toBe("+");
+  });
+
+  it("propose celles des actions et des autres projets du CRM, sans celles du projet", async () => {
+    await open({ crm: tagged() });
+    const options = (name: string) =>
+      [...item(name).querySelectorAll("datalist option")].map(
+        (o) => (o as HTMLOptionElement).value,
+      );
+    expect(options("refonte")).toEqual(["salon", "urgent"]);
+    expect(options("salon")).toEqual(["salon", "urgent", "client", "2027"]);
+  });
+
+  it("ajoute une étiquette à Entrée : un geste du projet, avec la liste complète", async () => {
+    const m = await open({ crm: tagged() });
+    type(add("refonte"), " vip ");
+    press(add("refonte"), "Enter");
+    await settle();
+    expect(callsTo(m, "changeCrmProject")).toEqual([
+      [
+        "changeCrmProject",
+        "clients.md",
+        "refonte",
+        { kind: "tags", tags: ["client", "2027", "vip"] },
+      ],
+    ]);
+  });
+
+  it("ajoute au clic sur le « + » et retire par la croix", async () => {
+    const m = await open({ crm: tagged() });
+    type(add("salon"), "salon");
+    (item("salon").querySelector(".tag-add") as HTMLElement).click();
+    buttonNamed("Retirer l'étiquette client").click();
+    await settle();
+    expect(callsTo(m, "changeCrmProject")).toEqual([
+      ["changeCrmProject", "clients.md", "salon", { kind: "tags", tags: ["salon"] }],
+      ["changeCrmProject", "clients.md", "refonte", { kind: "tags", tags: ["2027"] }],
+    ]);
+  });
+
+  it("garde le texte tapé dans le champ d'un projet quand l'écran se redessine, et rend le curseur", async () => {
+    await open({ crm: tagged() });
+    add("salon").focus();
+    type(add("salon"), "vi");
+    (item("refonte").querySelector(".crm-unfold") as HTMLElement).click();
+    expect(add("salon").value).toBe("vi");
+    expect(document.activeElement).toBe(add("salon"));
+    expect(add("refonte").value).toBe("");
+  });
+
+  it("dit pourquoi Rust refuse le geste", async () => {
+    const m = await open({ crm: tagged() });
+    m.fail.next = "Cette fiche n'existe plus.";
+    type(add("salon"), "vip");
+    press(add("salon"), "Enter");
+    await settle();
+    expect(m.errors).toHaveLength(1);
+  });
+});

@@ -5,6 +5,8 @@ use std::collections::BTreeMap;
 use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::is_combining_mark;
 
+use crate::FileName;
+use crate::canvas::{Canvas, CanvasError};
 use crate::front_matter::{self, split};
 
 const TAGS_KEY: &str = "tags";
@@ -33,6 +35,11 @@ pub fn tags(content: &str) -> Vec<String> {
         None if without_comment(value).trim().is_empty() => lines.map_while(list_item).collect(),
         None => without_comment(value).split(',').collect(),
     };
+    distinct(words)
+}
+
+/// Les mots nettoyés (guillemets et `#` de tête retirés), sans les vides ni les répétés, dans leur ordre.
+pub(crate) fn distinct<'a>(words: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut found: Vec<String> = Vec::new();
     for word in words.into_iter().map(cleaned) {
         if !word.is_empty() && !found.iter().any(|tag| tag == word) {
@@ -40,6 +47,51 @@ pub fn tags(content: &str) -> Vec<String> {
         }
     }
     found
+}
+
+/// Les étiquettes telles que l'application les écrit : nettoyées, sans doublon (majuscules et
+/// accents ignorés) ; celles qui changeraient le sens de la liste sont laissées de côté.
+#[must_use]
+pub fn written_tags(tags: &[String]) -> Vec<String> {
+    let mut written: Vec<String> = Vec::new();
+    for tag in tags.iter().filter_map(|tag| writable_tag(tag)) {
+        if !written.iter().any(|known| same_tag(known, &tag)) {
+            written.push(tag);
+        }
+    }
+    written
+}
+
+/// Les étiquettes d'un fichier de l'espace de travail : la propriété `tags` de la racine pour un
+/// canvas, la clé `tags` de l'en-tête pour une note ; aucune pour un canvas illisible.
+#[must_use]
+pub fn file_tags(name: &FileName, content: &str) -> Vec<String> {
+    if name.is_canvas() {
+        Canvas::parse(content)
+            .map(|canvas| canvas.tags())
+            .unwrap_or_default()
+    } else {
+        tags(content)
+    }
+}
+
+/// Le fichier avec `new_tags` pour étiquettes, le reste inchangé : voir [`retagged`] pour une
+/// note, [`Canvas::with_tags`] pour un canvas.
+///
+/// # Errors
+///
+/// [`CanvasError`] si le fichier est un canvas dont le contenu n'est pas valide : rien n'est écrit
+/// à sa place.
+pub fn file_retagged(
+    name: &FileName,
+    content: &str,
+    new_tags: &[String],
+) -> Result<String, CanvasError> {
+    if name.is_canvas() {
+        Ok(Canvas::parse(content)?.with_tags(new_tags).to_text())
+    } else {
+        Ok(retagged(content, new_tags))
+    }
 }
 
 /// Les signes qu'une étiquette écrite par l'application ne peut pas contenir : ils changeraient
@@ -301,5 +353,51 @@ mod tests {
             retagged("---\npinned: true\n---\n# T", &[]),
             "---\npinned: true\n---\n# T"
         );
+    }
+
+    #[test]
+    fn written_tags_are_cleaned_and_without_repeats_whatever_the_case_and_accents() {
+        assert_eq!(
+            written_tags(&list(&[
+                " #Été ", "a,b", "", "ete", "Salon", "salon", "vip"
+            ])),
+            ["Été", "Salon", "vip"]
+        );
+        assert!(written_tags(&[]).is_empty());
+    }
+
+    const CANVAS: &str = "{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"tags\":[\"a\"]\n}";
+
+    fn name(text: &str) -> FileName {
+        FileName::parse(text).unwrap()
+    }
+
+    #[test]
+    fn the_tags_of_a_file_come_from_its_header_or_from_the_root_of_a_canvas() {
+        assert_eq!(
+            file_tags(&name("a.md"), "---\ntags: [x, y]\n---\n# T"),
+            ["x", "y"]
+        );
+        assert_eq!(file_tags(&name("a.canvas"), CANVAS), ["a"]);
+        assert_eq!(
+            file_tags(&name("a.md"), CANVAS),
+            Vec::<String>::new(),
+            "un fichier Markdown n'est lu que par son en-tête"
+        );
+        assert!(file_tags(&name("a.canvas"), "pas du JSON").is_empty());
+    }
+
+    #[test]
+    fn a_file_is_retagged_in_its_header_or_at_the_root_of_a_canvas() {
+        assert_eq!(
+            file_retagged(&name("a.md"), "# T", &list(&["a"])).unwrap(),
+            "---\ntags: [a]\n---\n# T"
+        );
+        assert_eq!(
+            file_retagged(&name("a.canvas"), CANVAS, &list(&["b", "c"])).unwrap(),
+            "{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"tags\":[\"b\",\"c\"]\n}"
+        );
+        let error = file_retagged(&name("a.canvas"), "pas du JSON", &list(&["a"])).unwrap_err();
+        assert!(error.to_string().contains("canvas"));
     }
 }

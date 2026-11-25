@@ -4,7 +4,6 @@ import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./ca
 import { type CrmHostBackend, createCrmHost, hasCrmBackend } from "./crm-host";
 import { linkChooser } from "./link-chooser";
 import type { LinkPickerBackend } from "./link-picker";
-import type * as Bridge from "../bridge";
 import { imageAddress } from "../editor/image-address";
 import { linkEntry } from "../screens/link-entry";
 import type { ColumnParts } from "../screens/columns-view";
@@ -14,11 +13,17 @@ import {
   type Pane,
   type PaneBackend,
   type PaneEvents,
+  type PaneTags,
   type RelatedNotes,
 } from "../screens/note-pane";
 import type { Layout } from "../screens/layout";
 import type { SharedNotes } from "../screens/shared-notes";
 import { folderOf } from "../state/folders";
+import type * as Bridge from "../bridge";
+import type { Workspace } from "./workspace";
+
+/** Ce que le champ d'étiquettes d'une colonne demande à Rust. */
+type TagsBackend = Pick<typeof Bridge, "noteTags" | "changeNoteTags" | "listTags">;
 
 /** Ce que la colonne demande à Rust pour souligner les liens ambigus. */
 type LinkStatusBackend = Pick<typeof Bridge, "resolveLinks">;
@@ -28,7 +33,8 @@ export interface PanesDeps {
     Partial<CanvasHostBackend> &
     Partial<CrmHostBackend> &
     Partial<LinkPickerBackend> &
-    Partial<LinkStatusBackend> & { readonly fileAddress: (path: string) => string };
+    Partial<LinkStatusBackend> &
+    Partial<TagsBackend> & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
   /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
@@ -37,8 +43,8 @@ export interface PanesDeps {
   readonly layout?: Pick<Layout, "picker" | "confirmation">;
   /** Les notes proches de chaque colonne : demandées ou non, et lues par Rust. */
   readonly related?: RelatedNotes;
-  /** Le dossier de l'espace de travail ouvert. */
-  workspacePath(): string;
+  /** L'espace de travail ouvert : son dossier, et ce qui se relit quand les étiquettes d'un contenu changent. */
+  readonly workspace: Pick<Workspace, "path" | "refreshTags" | "refreshList">;
   /** Règle l'éditeur d'une nouvelle colonne comme ceux des autres : mode focus, caractères par page. */
   configure(editor: Editor): void;
 }
@@ -81,6 +87,22 @@ function linksOf({ backend, layout, events }: PanesDeps) {
   return { links: { contents: listLinkable, row, choose, resolve: resolveLinks } };
 }
 
+/** Ce que le champ d'étiquettes d'une colonne demande à l'application ; rien si le pont manque. */
+function tagsOf(deps: PanesDeps): { tags?: PaneTags } {
+  const { backend, workspace, events } = deps;
+  const { noteTags, changeNoteTags, listTags } = backend;
+  if (noteTags === undefined || changeNoteTags === undefined || listTags === undefined) return {};
+  return {
+    tags: {
+      read: noteTags,
+      change: changeNoteTags,
+      suggestions: async () => (await listTags()).map((tag) => tag.name),
+      changed: () =>
+        void Promise.all([workspace.refreshTags(), workspace.refreshList()]).catch(events.error),
+    },
+  };
+}
+
 /** Ce qui pose l'éditeur d'une colonne qui vient d'apparaître. */
 export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
   return (parts) => {
@@ -93,8 +115,9 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       ...canvasOf(deps),
       ...crmOf(deps),
       ...linksOf(deps),
+      ...tagsOf(deps),
       resolveImage: (src, note) =>
-        imageIn(deps.workspacePath(), note, src, deps.backend.fileAddress),
+        imageIn(deps.workspace.path(), note, src, deps.backend.fileAddress),
     });
     deps.configure(pane.editor);
     return pane;

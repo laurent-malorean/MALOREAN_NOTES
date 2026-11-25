@@ -101,6 +101,25 @@ fn tags_and_tagged_notes_are_listed_with_the_argument_names_used_by_the_interfac
 }
 
 #[test]
+fn the_tags_of_a_content_are_read_and_changed_with_the_argument_names_used_by_the_interface() {
+    let window = window(NOTES);
+    let read = call(&window, "note_tags", json!({ "path": "a.md" }));
+    assert_eq!(read, json!(["perso"]));
+    let args = json!({ "path": "b.md", "tags": ["neuf", "perso"] });
+    assert_eq!(
+        call(&window, "change_note_tags", args),
+        json!(["neuf", "perso"])
+    );
+    let tags = call(&window, "list_tags", json!({}));
+    assert_eq!(
+        tags,
+        json!([{ "name": "neuf", "count": 1 }, { "name": "perso", "count": 2 }])
+    );
+    assert!(BRIDGE_SOURCE.contains("\"note_tags\", { path }"));
+    assert!(BRIDGE_SOURCE.contains("\"change_note_tags\", { path, tags }"));
+}
+
+#[test]
 fn recent_notes_are_listed_with_the_argument_names_used_by_the_interface() {
     let window = window(NOTES);
     let args = json!({ "paths": ["b.md", "a.md"] });

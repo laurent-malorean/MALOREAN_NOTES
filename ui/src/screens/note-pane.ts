@@ -12,6 +12,7 @@ import { createFichePane, type FichePane } from "./crm-fiche-pane";
 import { type CrmDeps, type CrmPane, createCrmPane } from "./crm-pane";
 import { createMindMapPane, type MindMapBackend, type MindMapPane } from "./mind-map-pane";
 import type { ColumnParts } from "./columns-view";
+import { createNoteTags, type NoteTags } from "./note-tags";
 import { renderRelatedNotes } from "./related-view";
 import type { SharedNotes, Viewer } from "./shared-notes";
 
@@ -52,6 +53,18 @@ export interface RelatedNotes {
   notes(path: string): Promise<NoteListItem[]>;
 }
 
+/** Ce qu'une colonne demande à Rust pour les étiquettes de son contenu : le champ d'étiquettes. */
+export interface PaneTags {
+  /** Les étiquettes du contenu `path`, lues dans son fichier. */
+  readonly read: (path: string) => Promise<string[]>;
+  /** Donne ces étiquettes au contenu `path` ; rend celles qui sont écrites. */
+  readonly change: (path: string, tags: readonly string[]) => Promise<string[]>;
+  /** Les étiquettes de l'espace de travail, proposées à la saisie. */
+  readonly suggestions: () => Promise<string[]>;
+  /** Les étiquettes d'un contenu ont changé : la liste des étiquettes et celle des notes sont à relire. */
+  readonly changed: () => void;
+}
+
 export interface PaneOptions {
   readonly backend: PaneBackend;
   /** Ce qu'on peut lier, pour le menu des liens sous le curseur ; sans lui, `[[` et `/` n'ouvrent rien. */
@@ -69,6 +82,8 @@ export interface PaneOptions {
   readonly canvas?: CanvasDeps;
   /** Sans lui, un CRM reste du texte (fiche 0060). */
   readonly crm?: CrmDeps;
+  /** Sans elles, aucune barre d'étiquettes n'est montrée sous les onglets. */
+  readonly tags?: PaneTags;
 }
 
 export interface Pane {
@@ -122,6 +137,7 @@ class NotePane implements Pane, Viewer {
   private readonly canvas: CanvasPane | null;
   private readonly crm: CrmPane | null;
   private readonly fiche: FichePane | null;
+  private readonly tags: NoteTags | null;
 
   constructor(
     private readonly parts: ColumnParts,
@@ -155,6 +171,7 @@ class NotePane implements Pane, Viewer {
         })
       : null;
     ({ crm: this.crm, fiche: this.fiche } = crmPanes(parts.element, options.crm, events));
+    this.tags = this.tagBar(parts);
     this.editor = createEditor(
       parts.element,
       (content, changes) => shared.typed(this, changes, content),
@@ -180,6 +197,16 @@ class NotePane implements Pane, Viewer {
     );
   }
 
+  /** La barre d'étiquettes de la colonne ; rien si l'application ne donne pas de quoi les lire. */
+  private tagBar(parts: ColumnParts): NoteTags | null {
+    const { tags, events } = this.options;
+    if (tags === undefined || parts.tags === undefined) return null;
+    return createNoteTags(parts.tags, {
+      ...{ read: tags.read, suggestions: tags.suggestions, error: events.error },
+      change: (path, changed) => this.changeTags(tags, path, changed),
+    });
+  }
+
   note(): string | null {
     return this.shown;
   }
@@ -190,6 +217,7 @@ class NotePane implements Pane, Viewer {
     await this.options.shared.leave(this);
     void this.showBacklinks().catch(this.options.events.error);
     void this.showRelated().catch(this.options.events.error);
+    void this.tags?.show(path);
     if (path === null) {
       this.editor.show("");
       return this.showMap();
@@ -256,12 +284,31 @@ class NotePane implements Pane, Viewer {
   async followDisk(): Promise<void> {
     await this.options.shared.followDisk(this);
     await this.showMap();
+    await this.tags?.refresh(this.shown);
+  }
+
+  /**
+   * Un geste du champ d'étiquettes : ce qui est tapé est enregistré d'abord (le titre a pu changer le
+   * nom de la note), Rust réécrit les étiquettes, puis le texte et l'écran du contenu relisent le fichier.
+   */
+  private async changeTags(
+    tags: PaneTags,
+    path: string,
+    changed: readonly string[],
+  ): Promise<string[]> {
+    await this.flush();
+    const written = await tags.change(this.shown ?? path, changed);
+    await this.options.shared.followDisk(this);
+    await this.showMap();
+    tags.changed();
+    return written;
   }
 
   /** La note vient d'être enregistrée sous ce chemin ; son titre, donc ses liens entrants, ont pu changer. */
   saved(path: string): void {
     this.shown = path;
     void this.showBacklinks().catch(this.options.events.error);
+    void this.tags?.refresh(path);
   }
 
   destroy(): void {
@@ -270,6 +317,7 @@ class NotePane implements Pane, Viewer {
     this.canvas?.destroy();
     this.crm?.destroy();
     this.fiche?.destroy();
+    this.tags?.destroy();
     this.editor.destroy();
   }
 

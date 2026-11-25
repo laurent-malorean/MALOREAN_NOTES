@@ -2,7 +2,7 @@
 // Ma semaine. Le champ de recherche est créé une fois : le redessiner à chaque frappe lui ferait
 // perdre le curseur. Le reste est refait après chaque lecture.
 import type { CompanyChoiceItem, CrmFiltersItem, CrmItem } from "../bridge";
-import { tagColor } from "../state/crm-card";
+import { tagColor } from "../state/tag-field";
 import { actionButton, h } from "./crm-dom";
 
 export const ALL_PEOPLE = "Toutes les personnes";

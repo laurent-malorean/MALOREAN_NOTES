@@ -4,12 +4,13 @@ import type { ConnectionInfo } from "../../bridge";
 import { renderConnectionSettings } from "../../screens/connection-settings";
 import type { Scenario, Trial } from "../runner";
 import { until } from "../wait";
-import { find, findAll, rectOf } from "./env";
+import { find, findAll, type Rect, rectOf } from "./env";
 
 const WAIT = 20_000;
 const PIXEL = 1.5;
 const MIN_HEIGHT = 28;
 const COPY_BUTTONS = 3;
+const CORNER = 40;
 
 const dialog = () => find<HTMLDialogElement>("dialog.settings[open]");
 
@@ -331,8 +332,68 @@ async function folderChoices(trial: Trial): Promise<void> {
   closeSettings(window);
 }
 
+const TABS = ["Affichage", "Écriture", "Claude", "Index", "Brancher une IA"];
+
+/** Les rectangles réels de la fenêtre, de son titre, de la rangée d'onglets et de « Fermer ». */
+function windowBoxes(window: HTMLElement) {
+  const close = findAll<HTMLButtonElement>("button", window).find(
+    (b) => b.textContent === "Fermer",
+  );
+  const part = (element: Element | null | undefined) => (element ? rectOf(element) : null);
+  return {
+    fenêtre: rectOf(window),
+    titre: part(find("h2", window)),
+    onglets: part(find("[role=tablist]", window)),
+    fermer: part(close),
+  };
+}
+
+const sameBox = (a: Rect | null, b: Rect | null) =>
+  a !== null &&
+  b !== null &&
+  (["x", "y", "width", "height"] as const).every((side) => Math.abs(a[side] - b[side]) <= PIXEL);
+
+type Boxes = ReturnType<typeof windowBoxes>;
+
+/** « Fermer » : entièrement dans la fenêtre de l'application, et en bas à droite de la fenêtre des Réglages. */
+function checkClose(trial: Trial, { fermer, fenêtre }: Boxes): void {
+  const inside =
+    fermer !== null &&
+    fermer.x >= 0 &&
+    fermer.y >= 0 &&
+    fermer.x + fermer.width <= globalThis.innerWidth &&
+    fermer.y + fermer.height <= globalThis.innerHeight;
+  trial.check("« Fermer » est entièrement dans la fenêtre de l'application", inside);
+  const corner =
+    fermer !== null &&
+    Math.abs(fermer.x + fermer.width - (fenêtre.x + fenêtre.width)) < CORNER &&
+    Math.abs(fermer.y + fermer.height - (fenêtre.y + fenêtre.height)) < CORNER;
+  trial.check("« Fermer » est en bas à droite de la fenêtre", corner, JSON.stringify(fermer));
+}
+
+/** La fenêtre des Réglages garde la même taille et la même place sur les cinq onglets, « Fermer » dans l'écran. */
+async function fixedSize(trial: Trial): Promise<void> {
+  const window = await openSettings();
+  const first = await showTab(window, TABS[0] as string).then(() => windowBoxes(window));
+  for (const name of TABS) {
+    await showTab(window, name);
+    const boxes = windowBoxes(window);
+    trial.measure(`fenêtre des Réglages, onglet ${name}`, boxes);
+    for (const part of ["fenêtre", "titre", "onglets", "fermer"] as const) {
+      trial.check(
+        `onglet « ${name} » : ${part} à la même place et à la même taille que sur le premier`,
+        sameBox(boxes[part], first[part]),
+        JSON.stringify(boxes[part]),
+      );
+    }
+  }
+  checkClose(trial, first);
+  closeSettings(window);
+}
+
 export const settingsScenarios = (): Scenario[] => [
   { name: "Réglages : onglet Index, barre de progression", run: (t) => indexTab(t) },
   { name: "Réglages : onglet Brancher une IA, boutons Copier", run: (t) => connectionTab(t) },
+  { name: "Réglages : même fenêtre sur les cinq onglets", run: (t) => fixedSize(t) },
   { name: "Réglages : choix de dossier (modèles, journal)", run: (t) => folderChoices(t) },
 ];
