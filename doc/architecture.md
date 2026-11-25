@@ -155,6 +155,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0045-cas-d-usage-de-la-recherche-par-le-sens.md` | Cas d'usage de la recherche par le sens : un index de mots décoré pour tenir les segments à jour, calcul synchrone par lots avec arrêt, mots seuls avec la raison quand le sens manque, modèle choisi dans les préférences |
 | `0046-calcul-du-sens-en-arriere-plan-et-commandes.md` | Calcul du sens en arrière-plan et commandes : un travailleur unique par session, deux événements (`meaning-progress`, `model-download`), huit commandes, une commande de recherche à part, l'outil `search_by_meaning`, index de mots et de sens ouverts ensemble |
 | `0055-un-dossier-pour-le-genere.md` | Un dossier pour le généré : tout ce que les outils fabriquent va dans `build/` à la racine, jamais à côté du code ; `.gitignore` n'a plus qu'une ligne pour cela |
+| `0057-crm-domaine.md` | CRM : le domaine lit et écrit les fiches (CRM, entreprises, personnes, actions, projets) geste par geste, sans perdre ce que l'utilisateur a écrit ; calculs de vue (Kanban, semaine) purs ; module `domain::crm` à part |
 
 ## Construire l'application (`.app`)
 

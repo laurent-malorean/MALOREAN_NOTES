@@ -12,6 +12,7 @@ mod canvas_write;
 pub mod claude;
 pub mod conflict;
 pub mod content_type;
+pub mod crm;
 pub mod diff;
 pub mod export;
 pub mod file_name;
