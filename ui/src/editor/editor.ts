@@ -25,6 +25,7 @@ import { charactersPerPage, statusBar } from "./writing/status-bar";
 import { DEFAULT_SETTINGS } from "../state/settings";
 import type { FormatCommandId } from "../state/commands";
 import { outlinePanel } from "./outline/outline-panel";
+import { linkMenu, type LinkMenuSupport } from "./links/link-menu";
 import { noteLinkAt, noteLinks, type OpenNoteLink } from "./links/note-links";
 import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
@@ -105,6 +106,8 @@ export interface EditorOptions {
   readonly outline?: HTMLElement;
   /** Ouvre la note désignée par un lien `[[titre]]`. */
   readonly openLink?: OpenNoteLink;
+  /** Ce qu'on peut lier : sans lui, `[[` et `/` n'ouvrent pas le menu des liens. */
+  readonly links?: LinkMenuSupport;
   /** Ajoute au cahier de recherche montré l'entrée saisie dans sa zone de saisie ; sans elle, pas de zone. */
   readonly addEntry?: AddEntry;
 }
@@ -277,6 +280,7 @@ export function createEditor(
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
     openLink ? noteLinks(openLink) : [],
+    options.links ? linkMenu(options.links) : [],
     researchNotebook(fromElsewhere, options.addEntry, today),
     history(),
     [listContinuation, firstTitle, findReplace],

@@ -20,6 +20,14 @@ describe("ligne d'un contenu liable", () => {
     expect(entry.icon?.getAttribute("aria-hidden")).toBe("true");
   });
 
+  it("montre « Racine » pour le contenu de la racine dont un autre contenu porte le nom", () => {
+    expect(linkEntry(item({ folder: "", link: "/Plan.canvas" })).detail).toBe("Racine");
+    expect(linkEntry(item({ folder: "", link: "Plan.canvas" })).detail).toBe("");
+    expect(linkEntry(item({ folder: "Travail", link: "Travail/Plan.canvas" })).detail).toBe(
+      "Travail",
+    );
+  });
+
   it("dessine l'icône du type de contenu", () => {
     const paths = (type: LinkableItem["contentType"]) =>
       linkEntry(item({ contentType: type })).icon?.innerHTML;

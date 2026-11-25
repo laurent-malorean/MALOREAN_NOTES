@@ -2,7 +2,9 @@
 import type { Editor } from "../editor/editor";
 import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./canvas-host";
 import { type CrmHostBackend, createCrmHost, hasCrmBackend } from "./crm-host";
+import type { LinkPickerBackend } from "./link-picker";
 import { imageAddress } from "../editor/image-address";
+import { linkEntry } from "../screens/link-entry";
 import type { ColumnParts } from "../screens/columns-view";
 import {
   createPane,
@@ -19,7 +21,8 @@ import { folderOf } from "../state/folders";
 export interface PanesDeps {
   readonly backend: PaneBackend &
     Partial<CanvasHostBackend> &
-    Partial<CrmHostBackend> & { readonly fileAddress: (path: string) => string };
+    Partial<CrmHostBackend> &
+    Partial<LinkPickerBackend> & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
   /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
@@ -61,6 +64,12 @@ function crmOf(deps: PanesDeps) {
   return { crm: createCrmHost({ backend, dialog: layout.confirmation, picker: layout.picker }) };
 }
 
+/** Ce que le menu des liens d'une colonne demande à Rust ; rien si le pont ne sait pas lister ce qu'on peut lier. */
+function linksOf({ backend }: PanesDeps) {
+  const { listLinkable } = backend;
+  return listLinkable ? { links: { contents: listLinkable, row: linkEntry } } : {};
+}
+
 /** Ce qui pose l'éditeur d'une colonne qui vient d'apparaître. */
 export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
   return (parts) => {
@@ -72,6 +81,7 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       related: deps.related,
       ...canvasOf(deps),
       ...crmOf(deps),
+      ...linksOf(deps),
       resolveImage: (src, note) =>
         imageIn(deps.workspacePath(), note, src, deps.backend.fileAddress),
     });
