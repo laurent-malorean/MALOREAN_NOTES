@@ -57,6 +57,10 @@ for (const appearance of ["dark", "light"]) {
     const p = await boxOf(page, plus(page));
     const c = await boxOf(page, chevron(page));
     expect(c.width).toBeGreaterThan(8);
+    // Le dessin lui-même a une surface : un chevron de 0 sur 0 serait invisible.
+    const drawing = await boxOf(page, chevron(page).locator("svg"));
+    expect(drawing.width).toBeGreaterThanOrEqual(8);
+    expect(drawing.height).toBeGreaterThanOrEqual(8);
     expect(c.height).toBeGreaterThan(8);
     expect(c.x).toBeGreaterThanOrEqual(p.x + p.width - 1);
     expect(Math.abs(c.y + c.height / 2 - (p.y + p.height / 2))).toBeLessThanOrEqual(2);

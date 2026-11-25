@@ -114,6 +114,9 @@
   --proposal-height: 50vh;
   --proposal-text-size: 14px;
   --context-menu-note-text-size: 12px;
+  --new-content-chevron-size: 12px;
+  --new-content-chevron-stroke: 2;
+  --new-content-chevron-padding: 0.15rem;
   --context-menu-icon-size: 15px;
   --context-menu-icon-stroke: 1.8;
   --context-menu-icon-gap: 0.5rem;

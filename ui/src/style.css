@@ -211,6 +211,20 @@ button {
 .icon:hover {
   color: var(--text);
 }
+/* Menu de création : le « + » et son chevron, côte à côte */
+.new-content {
+  display: flex;
+  align-items: center;
+}
+.new-content-chevron {
+  padding: 0 var(--new-content-chevron-padding);
+}
+.new-content-chevron svg {
+  display: block;
+  width: var(--new-content-chevron-size);
+  height: var(--new-content-chevron-size);
+  stroke-width: var(--new-content-chevron-stroke);
+}
 .notes-list {
   flex: 1;
   overflow-y: auto;

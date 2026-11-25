@@ -48,6 +48,12 @@ const within = (inner: Rect, outer: Rect) =>
   inner.y >= outer.y &&
   inner.y + inner.height <= outer.y + outer.height;
 
+/** Le rectangle du dessin d'un bouton, ou `null` s'il n'en a pas. */
+function drawnRect(button: Element): Rect | null {
+  const drawing = button.querySelector("svg");
+  return drawing === null ? null : rectOf(drawing);
+}
+
 /** Le chevron, à droite du « + », sur la même ligne, dans l'en-tête de la colonne des notes. */
 function checkChevron(trial: Trial): void {
   const plus = find<HTMLElement>("[data-new]");
@@ -61,6 +67,12 @@ function checkChevron(trial: Trial): void {
     "le chevron est visible, à droite du « + », dans l'en-tête de la colonne des notes",
     c.width > 0 && c.height > 0 && c.x >= p.x + p.width - 1 && sameLine && within(c, h),
     JSON.stringify({ p, c, h }),
+  );
+  const drawn = drawnRect(chevron);
+  trial.check(
+    "le dessin du chevron a une surface (il se voit)",
+    drawn !== null && drawn.width >= 8 && drawn.height >= 8,
+    JSON.stringify(drawn),
   );
   trial.check("le chevron reçoit le pointeur", reachable(chevron), "");
   trial.check(
