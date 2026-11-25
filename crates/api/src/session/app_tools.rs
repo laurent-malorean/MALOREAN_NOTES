@@ -159,10 +159,7 @@ impl Session {
             AppTool::SearchNotes => self.tool_search_notes(arguments),
             AppTool::SearchByMeaning => self.tool_search_by_meaning(arguments),
             AppTool::ListTags => written(&self.list_tags().map_err(|e| e.message)?),
-            AppTool::LinkingNotes => {
-                let path = required(arguments, "path")?;
-                written(&self.list_backlinks(path).map_err(|e| e.message)?)
-            }
+            AppTool::LinkingNotes => self.tool_linking_notes(arguments),
             AppTool::ListTemplates => self.tool_list_templates(scope),
             AppTool::ViewedNote => self.tool_viewed_note(scope),
             AppTool::ShowNote => self.tool_show_note(arguments),
@@ -187,6 +184,9 @@ mod tests;
 
 #[cfg(test)]
 mod changing_tests;
+
+#[cfg(test)]
+mod crm_tests;
 
 #[cfg(test)]
 mod screen_tests;

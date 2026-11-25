@@ -77,6 +77,50 @@ fn a_question_finds_the_notes_by_their_meaning_with_the_section_found() {
     assert_eq!(paths(&result)[..2], ["tarte.md", "cidre.md"]);
 }
 
+const CRM_NOTES: [(&str, &str); 3] = [
+    ("clients.md", "---\ntype: crm\n---\n# Clients"),
+    (
+        "clients/actions/2026-11-24-devis.md",
+        "---\ntype: crm-action\n---\n# Demande de devis\n\nPour trois postes de travail.",
+    ),
+    ("pain.md", "# Pain\n\nfarine levain eau"),
+];
+
+#[test]
+fn a_card_is_found_by_its_meaning_with_its_type_and_the_path_of_its_crm() {
+    let session = computed(&CRM_NOTES);
+    let result = search(&session, json!({ "question": "clients devis" }));
+    assert_eq!(result["meaning_used"], true);
+    assert_eq!(
+        result["notes"][0],
+        json!({ "path": "clients/actions/2026-11-24-devis.md", "title": "Demande de devis",
+                "type": "crm-action", "crm": "clients.md",
+                "excerpt": "Pour trois postes de travail." })
+    );
+    let plain = result["notes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|note| note["path"] == "pain.md")
+        .unwrap();
+    assert!(plain.get("type").is_none() && plain.get("crm").is_none());
+}
+
+#[test]
+fn a_crm_found_by_its_words_alone_has_its_type_and_no_crm_of_its_own() {
+    let session = session_on(&CRM_NOTES, &Arc::new(FakeMeaningModels::default()));
+    let result = search(&session, json!({ "question": "clients" }));
+    assert_eq!(result["meaning_used"], false);
+    let crm = result["notes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|note| note["path"] == "clients.md")
+        .unwrap();
+    assert_eq!(crm["type"], "crm");
+    assert!(crm.get("crm").is_none());
+}
+
 #[test]
 fn without_the_model_the_words_answer_alone_and_the_reason_is_told_to_claude() {
     let session = session_on(&NOTES, &Arc::new(FakeMeaningModels::default()));

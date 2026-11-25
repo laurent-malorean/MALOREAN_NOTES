@@ -2,12 +2,13 @@
 //! écrit pour Claude, avec la raison quand le sens manque.
 
 use application::use_cases::MAX_RESULTS;
+use domain::crm::CrmKind;
 use serde::Serialize;
 use serde_json::Value;
 
 use super::{required, written};
 use crate::session::Session;
-use crate::{MeaningUseItem, SearchResultItem};
+use crate::{ContentTypeItem, MeaningUseItem, SearchResultItem};
 
 /// Combien de notes l'outil rend quand `limit` n'est pas donné.
 const DEFAULT_LIMIT: usize = 10;
@@ -20,6 +21,25 @@ struct MeaningNote {
     /// Le titre de la section trouvée, puis le début de son texte ; pour une note trouvée par ses
     /// mots, le passage autour d'eux.
     excerpt: String,
+    /// Pour le CRM ou une fiche d'un CRM : son type de contenu (`crm`, `crm-action`…).
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    content_type: Option<&'static str>,
+    /// Pour une fiche d'un CRM : le chemin de son CRM.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crm: Option<String>,
+}
+
+/// Le nom du type d'un CRM ou d'une de ses fiches ; rien pour le reste.
+pub(super) fn crm_type_of(content_type: ContentTypeItem) -> Option<&'static str> {
+    let kind = match content_type {
+        ContentTypeItem::Crm => CrmKind::Crm,
+        ContentTypeItem::CrmCompany => CrmKind::Company,
+        ContentTypeItem::CrmPerson => CrmKind::Person,
+        ContentTypeItem::CrmAction => CrmKind::Action,
+        ContentTypeItem::CrmProject => CrmKind::Project,
+        _ => return None,
+    };
+    Some(kind.name())
 }
 
 impl MeaningNote {
@@ -27,6 +47,10 @@ impl MeaningNote {
         Self {
             path: result.path,
             title: result.title,
+            content_type: crm_type_of(result.content_type),
+            crm: result
+                .container
+                .filter(|_| crm_type_of(result.content_type).is_some()),
             excerpt: result
                 .excerpt
                 .iter()

@@ -14,6 +14,7 @@ mod filters;
 mod header;
 pub mod kanban;
 mod kind;
+mod links;
 mod name;
 mod palette;
 pub mod person;
@@ -35,6 +36,7 @@ pub use crm_note::{Crm, read_stages, with_stages};
 pub use day::{Day, DayTime, InvalidDay};
 pub use filters::{CompanyChoice, Filters, crm_tags};
 pub use kind::{CrmKind, Unreadable};
+pub use links::action_links;
 pub use name::{
     Name, NameError, action_file_name, email_is_known, file_name_of, name_order, with_name,
 };
