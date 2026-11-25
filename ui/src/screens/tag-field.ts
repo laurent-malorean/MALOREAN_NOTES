@@ -9,7 +9,7 @@ import "./tag-field.css";
 /** Le nom du champ de saisie, que le clavier et les lecteurs d'écran lisent. */
 export const ADD_TAG = "Ajouter une étiquette";
 /** Le nom du bouton « + », qui valide le texte tapé. */
-export const VALIDATE_TAG = "Ajouter l'étiquette";
+export const VALIDATE_TAG = "Valider l'étiquette";
 /** Le nom du groupe des étiquettes. */
 export const TAGS_LABEL = "Étiquettes";
 /** Le nom du bouton « × » d'une étiquette. */

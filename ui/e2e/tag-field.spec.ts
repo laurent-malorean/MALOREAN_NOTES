@@ -52,7 +52,7 @@ test("une note montre ses étiquettes sous les onglets ; Entrée en ajoute une, 
   await expect(bar(page)).toBeVisible();
   await expect(chips(page)).toHaveText(["perso×", "maison×"]);
   await expect(field(page)).toBeVisible();
-  await expect(bar(page).getByRole("button", { name: "Ajouter l'étiquette" })).toHaveText("+");
+  await expect(bar(page).getByRole("button", { name: "Valider l'étiquette" })).toHaveText("+");
 
   await field(page).fill("vacances");
   await field(page).press("Enter");
@@ -71,11 +71,11 @@ test("une note montre ses étiquettes sous les onglets ; Entrée en ajoute une, 
 
 test("le « + » ajoute le texte tapé, et sans texte donne le curseur au champ", async ({ page }) => {
   await launch(page);
-  await bar(page).getByRole("button", { name: "Ajouter l'étiquette" }).click();
+  await bar(page).getByRole("button", { name: "Valider l'étiquette" }).click();
   await expect(field(page)).toBeFocused();
   await expect(chips(page)).toHaveCount(2);
   await field(page).fill("  vip ");
-  await bar(page).getByRole("button", { name: "Ajouter l'étiquette" }).click();
+  await bar(page).getByRole("button", { name: "Valider l'étiquette" }).click();
   await expect(chips(page)).toHaveText(["perso×", "maison×", "vip×"]);
   expect(await saved(page, "courses.md")).toContain("tags: [perso, maison, vip]");
 });
@@ -229,7 +229,7 @@ test("l'onglet Projets : chaque projet a son champ d'étiquettes, sous sa ligne"
   const project = page.locator('.crm-project[data-project="refonte"]');
   await expect(project.locator(".tag-chip")).toHaveText(["client×"]);
   await project.getByLabel("Ajouter une étiquette").fill("2027");
-  await project.getByRole("button", { name: "Ajouter l'étiquette" }).click();
+  await project.getByRole("button", { name: "Valider l'étiquette" }).click();
   await expect(project.locator(".tag-chip")).toHaveText(["client×", "2027×"]);
   expect(await saved(page, "clients/projets/refonte.md")).toBe(
     "---\ntype: crm-projet\ncouleur: bleu\ntags: [client, 2027]\n---\n# Refonte du site\n",

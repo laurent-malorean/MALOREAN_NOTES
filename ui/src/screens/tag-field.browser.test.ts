@@ -44,9 +44,9 @@ describe("champ d'étiquettes", () => {
     expect(input().getAttribute("aria-label")).toBe("Ajouter une étiquette");
     expect(ADD_TAG).toBe("Ajouter une étiquette");
     expect(input().placeholder).toBe("Ajouter une étiquette");
-    expect(button("Ajouter l'étiquette").textContent).toBe("+");
-    expect(VALIDATE_TAG).toBe("Ajouter l'étiquette");
-    expect(button(VALIDATE_TAG).title).toBe("Ajouter l'étiquette");
+    expect(button("Valider l'étiquette").textContent).toBe("+");
+    expect(VALIDATE_TAG).toBe("Valider l'étiquette");
+    expect(button(VALIDATE_TAG).title).toBe("Valider l'étiquette");
   });
 
   it("montre chaque étiquette en pastille de sa couleur avec « × »", () => {
