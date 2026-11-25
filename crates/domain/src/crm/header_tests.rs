@@ -96,6 +96,26 @@ fn a_list_item_keeps_its_commas_and_brackets_when_quoted() {
 }
 
 #[test]
+fn a_comma_inside_nested_brackets_does_not_split_an_item() {
+    assert_eq!(
+        items_of("k: [[[a, b]], c]", "k"),
+        ["[[a, b]]", "c"].map(str::to_owned).to_vec()
+    );
+    assert_eq!(
+        items_of("k: [[x], [y, z], w]", "k"),
+        ["[x]", "[y, z]", "w"].map(str::to_owned).to_vec()
+    );
+}
+
+#[test]
+fn a_closing_bracket_without_opening_one_does_not_break_the_next_comma() {
+    assert_eq!(
+        items_of("k: [a], b, c]", "k"),
+        ["a]", "b", "c"].map(str::to_owned).to_vec()
+    );
+}
+
+#[test]
 fn a_reference_written_without_quotes_is_a_single_value_not_a_list() {
     assert_eq!(
         items_of("k: [[acme]]", "k"),

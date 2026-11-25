@@ -117,7 +117,6 @@ fn flow_items(inside: &str) -> Vec<&str> {
     for (at, c) in inside.char_indices() {
         match (quote, c) {
             (Some(open), c) if c == open => quote = None,
-            (Some(_), _) => {}
             // Une apostrophe au milieu d'un texte (`l'an`) n'ouvre pas de guillemets.
             (None, c) if QUOTES.contains(&c) && at_item_start => quote = Some(c),
             (None, '[') => depth += 1,

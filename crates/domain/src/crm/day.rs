@@ -424,6 +424,27 @@ mod tests {
     }
 
     #[test]
+    fn days_far_from_the_epoch_go_through_their_count_and_back() {
+        let first = day("0001-01-01").days_since_epoch();
+        let last = day("9999-12-31").days_since_epoch();
+        for count in (first..=last).step_by(997) {
+            let back = Day::from_days_since_epoch(count);
+            assert_eq!(back.days_since_epoch(), count, "{back}");
+        }
+        assert_eq!(Day::from_days_since_epoch(last), day("9999-12-31"));
+        assert_eq!(Day::from_days_since_epoch(first), day("0001-01-01"));
+    }
+
+    #[test]
+    fn centuries_that_are_not_leap_have_no_february_29() {
+        assert_eq!(day("1900-02-28").plus_days(1), day("1900-03-01"));
+        assert_eq!(day("2100-02-28").plus_days(1), day("2100-03-01"));
+        assert_eq!(day("2400-02-28").plus_days(1), day("2400-02-29"));
+        assert_eq!(day("1600-03-01").plus_days(-1), day("1600-02-29"));
+        assert_eq!(day("0400-03-01").plus_days(-366), day("0399-03-01"));
+    }
+
+    #[test]
     fn every_day_of_several_years_goes_through_its_count_and_back() {
         let first = day("1999-12-25").days_since_epoch();
         for count in first..first + 3000 {

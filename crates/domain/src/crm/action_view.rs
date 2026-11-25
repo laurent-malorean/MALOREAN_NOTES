@@ -35,8 +35,8 @@ impl Action {
         let date = self.date.filter(|_| self.is_open())?;
         match date.days_until(today) {
             0 => Some(Urgency::Today),
-            late if late > 0 => Some(Urgency::Late(late)),
-            _ => None,
+            late @ 1.. => Some(Urgency::Late(late)),
+            ..0 => None,
         }
     }
 
