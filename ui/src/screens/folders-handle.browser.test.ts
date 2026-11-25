@@ -152,7 +152,11 @@ describe("poignée de hauteur de la liste des dossiers", () => {
 
   it("sans étiquette, « Récentes » reste visible au-dessus du pied", () => {
     mount(memoryStorage(), 0);
+    const footer = box(layout.foldersFooter).top;
+    drag(-100);
+    expect(box(layout.foldersFooter).top).toBe(footer);
     drag(2000);
+    expect(box(layout.foldersFooter).top).toBe(footer);
     expect(box(layout.recentButton).bottom).toBeLessThanOrEqual(box(layout.foldersFooter).top);
     expect(box(layout.recentButton).height).toBeGreaterThan(0);
   });

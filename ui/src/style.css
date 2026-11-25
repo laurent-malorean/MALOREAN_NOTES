@@ -107,6 +107,10 @@ button {
 .folders.tree-sized > .folders-list {
   flex: 0 1 var(--folders-tree-height);
 }
+/* Sans étiquette, rien ne remplit le bas : le pied reste collé au bas de la liste */
+.folders.tree-sized > .side-panel-footer {
+  margin-top: auto;
+}
 .folders.tree-sized > .tags-list {
   flex: 1 1 0;
   max-height: none;
