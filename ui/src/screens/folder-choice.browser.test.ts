@@ -124,6 +124,22 @@ describe("choix de dossier", () => {
     expect(document.activeElement).toBe(t.select);
   });
 
+  it("accepte un chemin imbriqué : il devient le choix, sous son chemin entier", () => {
+    const t = setup({ current: "Notes" });
+    t.pick(NEW);
+    t.input().value = " Perso/Carnet/";
+    t.key("Enter");
+    expect(t.chosen).toEqual(["Perso/Carnet"]);
+    expect(t.select.value).toBe("Perso/Carnet");
+    expect(t.select.selectedOptions[0]?.text).toBe("Perso/Carnet");
+    expect(t.field().hidden).toBe(true);
+  });
+
+  it("le champ dit qu'il accepte un chemin", () => {
+    const t = setup();
+    expect(t.input().placeholder).toBe("Nom ou chemin (Perso/Carnet)");
+  });
+
   it("le bouton « Créer » valide comme Entrée", () => {
     const t = setup();
     t.pick(NEW);
@@ -137,7 +153,7 @@ describe("choix de dossier", () => {
     const t = setup({ current: "Notes" });
     t.pick(NEW);
     expect(t.error().hidden).toBe(true);
-    for (const bad of ["", "   ", ".caché", "a/b", "x.assets", "node_modules"]) {
+    for (const bad of ["", "   ", ".caché", "a//b", "a/.caché", "x.assets", "a/node_modules"]) {
       t.input().value = bad;
       t.key("Enter");
       expect(t.field().hidden, bad).toBe(false);
@@ -147,7 +163,7 @@ describe("choix de dossier", () => {
     expect(t.chosen).toEqual([]);
     expect(t.select.value).toBe("Notes");
     expect(t.error().textContent).toBe(
-      "Ce nom ne convient pas : ni vide, ni caché (point au début), ni « / ».",
+      "Ce nom ne convient pas : chaque dossier du chemin a un nom, ni caché (point au début), ni « .assets », ni « node_modules ».",
     );
     expect(t.input().getAttribute("aria-describedby")).toBe(t.error().id);
     t.input().value = "Bon";
@@ -180,7 +196,7 @@ describe("choix de dossier", () => {
   it("rouvre le champ à neuf, sans l'erreur d'avant", () => {
     const t = setup();
     t.pick(NEW);
-    t.input().value = "a/b";
+    t.input().value = "a//b";
     t.key("Enter");
     t.key("Escape");
     t.pick(NEW);

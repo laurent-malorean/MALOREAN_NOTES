@@ -251,6 +251,8 @@ Aucun champ n'est supprimé en dehors des valeurs par défaut ci-dessus.
 
 Un lecteur DOIT ignorer les propriétés inconnues sans erreur, et un éditeur DOIT les conserver telles quelles à la réécriture. Les 4 canvas réels n'en contenaient aucune, mais des extensions (plugins) d'Obsidian peuvent en ajouter ; les supprimer casserait leurs fonctions.
 
+**Constaté le 25/11/2026** (Obsidian de l'utilisateur, un canvas ouvert, une carte ajoutée pour forcer l'écriture) : Obsidian réécrit le fichier et **conserve** les propriétés libres à la racine (`tags` : liste de mots, `malorean` : objet), sur une carte (`tags`) et sur une flèche (`note`). Il reformate seulement : clés d'une carte réordonnées, une clé par ligne. MALOREAN Notes range donc les étiquettes d'un canvas dans une propriété `tags` à la racine du fichier (liste de mots, comme l'en-tête d'une note) ; Obsidian ne les montre ni ne les indexe.
+
 ### 7.5 Édition simultanée
 
 Si le fichier est modifié hors d'Obsidian pendant qu'il est ouvert, Obsidian le recharge (constaté) ; une écriture concurrente peut être perdue. Fermer le canvas avant une édition externe massive.

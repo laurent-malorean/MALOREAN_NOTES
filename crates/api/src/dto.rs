@@ -563,6 +563,10 @@ pub struct IndexOverviewItem {
     /// Le nombre de notes que l'index connaît.
     #[ts(type = "number")]
     pub notes: usize,
+    /// Le nombre de notes de l'espace de travail que l'index doit connaître : celles que
+    /// l'indexation relit.
+    #[ts(type = "number")]
+    pub total: usize,
     /// La dernière reconstruction depuis le lancement, en toutes lettres ; rien s'il n'y en a pas eu.
     pub rebuilt: Option<String>,
 }

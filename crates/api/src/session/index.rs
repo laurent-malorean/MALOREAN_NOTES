@@ -33,8 +33,8 @@ impl Session {
         Ok(())
     }
 
-    /// L'état de l'index de mots de l'espace de travail ouvert : ses notes, et sa dernière
-    /// reconstruction depuis le lancement.
+    /// L'état de l'index de mots de l'espace de travail ouvert : ses notes, les notes qu'il doit
+    /// connaître, et sa dernière reconstruction depuis le lancement.
     ///
     /// # Errors
     ///
@@ -48,8 +48,10 @@ impl Session {
             .unwrap_or_else(PoisonError::into_inner)
             .get(opened.name.as_str())
             .map(|moment| Version::at(*moment).label());
+        let status = ReadIndexStatus::new(&*opened.store, &*opened.index);
         Ok(IndexOverviewItem {
-            notes: ReadIndexStatus::new(&*opened.index).indexed_notes()?,
+            notes: status.indexed_notes()?,
+            total: status.notes_to_index()?,
             rebuilt,
         })
     }
@@ -150,11 +152,40 @@ mod tests {
         );
         session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
         let before = session.index_overview().unwrap();
-        assert_eq!((before.notes, before.rebuilt), (2, None));
+        assert_eq!((before.notes, before.total, before.rebuilt), (2, 2, None));
         session.rebuild_index().unwrap();
         let after = session.index_overview().unwrap();
-        assert_eq!(after.notes, 2);
+        assert_eq!((after.notes, after.total), (2, 2));
         assert_eq!(after.rebuilt.as_deref(), Some("16 novembre 2026 à 18:30"));
+    }
+
+    #[test]
+    fn the_overview_counts_the_notes_to_index_apart_from_the_notes_indexed() {
+        let store = Arc::new(InMemoryNoteStore::with_notes(&[
+            ("a.md", "# A"),
+            ("T/b.md", "# B"),
+            ("T/U/c.md", "# C"),
+        ]));
+        let index = Arc::new(MemoryIndex::default());
+        let session = session(&store, Arc::new(SharedIndex(Arc::clone(&index))));
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        index.clear().unwrap();
+        let emptied = session.index_overview().unwrap();
+        assert_eq!((emptied.notes, emptied.total), (0, 3));
+        session.rebuild_index().unwrap();
+        let rebuilt = session.index_overview().unwrap();
+        assert_eq!((rebuilt.notes, rebuilt.total), (3, 3));
+        session.create_note("").unwrap();
+        assert_eq!(session.index_overview().unwrap().total, 4);
+    }
+
+    #[test]
+    fn an_empty_workspace_has_no_note_to_index() {
+        let store = Arc::new(InMemoryNoteStore::default());
+        let session = session(&store, Arc::new(SharedIndex(Arc::default())));
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        let overview = session.index_overview().unwrap();
+        assert_eq!((overview.notes, overview.total), (0, 0));
     }
 
     #[test]

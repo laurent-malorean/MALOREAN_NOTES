@@ -474,6 +474,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   rebuild_index: () => ((indexRebuilt = "23 novembre 2026 à 14:30"), null),
   index_overview: () => ({
     notes: Object.keys(backend.notes).length,
+    total: Object.keys(backend.notes).length,
     rebuilt: indexRebuilt,
   }),
   list_recent_notes: (args) =>

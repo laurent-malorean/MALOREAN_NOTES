@@ -34,15 +34,28 @@ export function folderChoices(
   return missing ? [...entries, { value: current, label: current }] : entries;
 }
 
-/** Le nom tapé pour un nouveau dossier, sans espaces autour ; `null` s'il est refusé. */
-export function newFolderName(typed: string): string | null {
-  const name = typed.trim();
+/** Le nom d'un seul dossier est-il accepté ? (déjà sans espaces autour) */
+function folderNameAccepted(name: string): boolean {
   const lower = name.toLowerCase();
-  const refused =
+  return !(
     name === "" ||
     name.startsWith(".") ||
-    /[/\\\0]/.test(name) ||
+    /[\\\0]/.test(name) ||
     lower.endsWith(ATTACHMENT_SUFFIX) ||
-    lower === DEPENDENCY_FOLDER;
-  return refused ? null : name;
+    lower === DEPENDENCY_FOLDER
+  );
+}
+
+/**
+ * Le chemin tapé pour un nouveau dossier : un nom (« Carnet ») ou des noms séparés par « / »
+ * (« Perso/Carnet »), sans espaces autour des noms ni « / » au début et à la fin ; `null` si l'un
+ * des noms est refusé.
+ */
+export function newFolderPath(typed: string): string | null {
+  const names = typed
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .split("/")
+    .map((name) => name.trim());
+  return names.every(folderNameAccepted) ? names.join("/") : null;
 }

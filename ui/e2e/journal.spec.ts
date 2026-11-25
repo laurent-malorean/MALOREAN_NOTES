@@ -79,6 +79,24 @@ test("Cmd+Maj+J ouvre la note du jour depuis le modèle Journal, dans le dossier
   expect(await dailyNotes(page)).toEqual([]);
 });
 
+test("« Nouveau dossier… » accepte un chemin imbriqué : la note du jour y est créée, au besoin", async ({
+  page,
+}) => {
+  await launch(page);
+  await page.getByRole("button", { name: "Réglages" }).click();
+  const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByRole("tab", { name: "Écriture" }).click();
+  await dialog.getByLabel("Dossier du journal").selectOption({ label: "Nouveau dossier…" });
+  await dialog.getByLabel("Nom du nouveau dossier").fill("Perso/Carnet");
+  await dialog.getByLabel("Nom du nouveau dossier").press("Enter");
+  await expect(dialog.getByLabel("Dossier du journal")).toHaveValue("Perso/Carnet");
+  await dialog.getByLabel("Créer la note du jour au lancement").uncheck();
+  await dialog.getByRole("button", { name: "Fermer" }).click();
+
+  await page.keyboard.press("Meta+Shift+J");
+  await expect.poll(() => savedContent(page, "Perso/Carnet/2026-11-16.md")).not.toBeNull();
+});
+
 test("les deux dossiers des réglages se choisissent dans une liste en arborescence ; « Nouveau dossier… » refuse un nom invalide et Échap l'annule sans fermer les réglages", async ({
   page,
 }) => {
@@ -99,7 +117,7 @@ test("les deux dossiers des réglages se choisissent dans une liste en arboresce
   const journal = dialog.getByLabel("Dossier du journal");
   await journal.selectOption({ label: "Nouveau dossier…" });
   const name = dialog.getByLabel("Nom du nouveau dossier");
-  await name.fill("a/b");
+  await name.fill("a//b");
   await name.press("Enter");
   await expect(dialog.getByText("Ce nom ne convient pas")).toBeVisible();
   await name.press("Escape");
