@@ -11,6 +11,9 @@ use crate::{
     TrashContents,
 };
 
+/// Le nombre de notes que la mise à jour écrit d'un coup dans l'index.
+const REFRESH_BATCH: usize = 50;
+
 /// Met l'index à jour sur l'espace de travail : relit les notes dont la date ou la taille a changé
 /// (et celles qu'il ne connaît pas), oublie celles qui ont disparu ; les autres ne sont pas relues.
 ///
@@ -18,14 +21,7 @@ use crate::{
 ///
 /// L'erreur de l'espace de travail ou de l'index qui a arrêté la mise à jour.
 pub(crate) fn refresh(store: &dyn NoteStore, index: &dyn NoteIndex) -> Result<(), StoreError> {
-    let mut on_disk: HashMap<NotePath, NoteStamp> = HashMap::new();
-    for folder in std::iter::once(Folder::root()).chain(store.folders()?) {
-        let stamps = match store.stamps(&folder) {
-            Err(StoreError::FolderNotFound(_)) => Vec::new(),
-            stamps => stamps?,
-        };
-        on_disk.extend(stamps.into_iter().map(|s| (s.path.clone(), s)));
-    }
+    let on_disk = notes_on_disk(store)?;
     let known: HashMap<NotePath, NoteStamp> = index
         .stamps()?
         .into_iter()
@@ -37,17 +33,44 @@ pub(crate) fn refresh(store: &dyn NoteStore, index: &dyn NoteIndex) -> Result<()
         .cloned()
         .collect();
     index.remove(&gone)?;
-    let mut changed = Vec::new();
-    for (path, stamp) in &on_disk {
-        if known.get(path) != Some(stamp) {
+    let stale: Vec<&NotePath> = on_disk
+        .iter()
+        .filter(|(path, stamp)| known.get(*path) != Some(stamp))
+        .map(|(path, _)| path)
+        .collect();
+    // Par lots : l'index grandit pendant la mise à jour, que l'écran des réglages peut suivre.
+    for batch in stale.chunks(REFRESH_BATCH) {
+        let mut changed = Vec::new();
+        for path in batch {
             match store.read_indexed(path) {
                 Ok(note) => changed.push(note),
                 Err(StoreError::NotFound(_)) => {}
                 Err(error) => return Err(error),
             }
         }
+        index.put(&changed)?;
     }
-    index.put(&changed)
+    Ok(())
+}
+
+/// Le relevé de chaque note de l'espace de travail, tous dossiers parcourus : les notes que
+/// l'index doit connaître.
+///
+/// # Errors
+///
+/// L'erreur de l'espace de travail qui a arrêté le parcours.
+pub(crate) fn notes_on_disk(
+    store: &dyn NoteStore,
+) -> Result<HashMap<NotePath, NoteStamp>, StoreError> {
+    let mut on_disk: HashMap<NotePath, NoteStamp> = HashMap::new();
+    for folder in std::iter::once(Folder::root()).chain(store.folders()?) {
+        let stamps = match store.stamps(&folder) {
+            Err(StoreError::FolderNotFound(_)) => Vec::new(),
+            stamps => stamps?,
+        };
+        on_disk.extend(stamps.into_iter().map(|s| (s.path.clone(), s)));
+    }
+    Ok(on_disk)
 }
 
 /// L'espace de travail ouvert, dont l'index suit chaque écriture, déplacement et mise à la
@@ -229,6 +252,61 @@ mod tests {
     fn sorted(mut notes: Vec<NoteSummary>) -> Vec<NoteSummary> {
         notes.sort_by(|a, b| a.path().cmp(b.path()));
         notes
+    }
+
+    /// Un index en mémoire qui note la taille de chaque écriture qu'on lui fait.
+    #[derive(Debug, Default)]
+    struct Batches {
+        index: MemoryIndex,
+        sizes: std::sync::Mutex<Vec<usize>>,
+    }
+
+    impl crate::NoteIndex for Batches {
+        fn stamps(&self) -> Result<Vec<NoteStamp>, StoreError> {
+            self.index.stamps()
+        }
+        fn put(&self, notes: &[crate::IndexedNote]) -> Result<(), StoreError> {
+            self.sizes.lock().unwrap().push(notes.len());
+            self.index.put(notes)
+        }
+        fn remove(&self, notes: &[NotePath]) -> Result<(), StoreError> {
+            self.index.remove(notes)
+        }
+        fn clear(&self) -> Result<(), StoreError> {
+            self.index.clear()
+        }
+        fn content(&self, note: &NotePath) -> Result<Option<String>, StoreError> {
+            self.index.content(note)
+        }
+        fn notes_in(&self, folder: &Folder) -> Result<Vec<NoteSummary>, StoreError> {
+            self.index.notes_in(folder)
+        }
+        fn all_notes(&self) -> Result<Vec<NoteSummary>, StoreError> {
+            self.index.all_notes()
+        }
+        fn tagged(&self, tag: &str) -> Result<Vec<NoteSummary>, StoreError> {
+            self.index.tagged(tag)
+        }
+        fn search(
+            &self,
+            query: &domain::search::SearchQuery,
+            types: &[domain::ContentType],
+        ) -> Result<Vec<(NoteSummary, String)>, StoreError> {
+            self.index.search(query, types)
+        }
+    }
+
+    #[test]
+    fn a_refresh_writes_the_index_fifty_notes_at_a_time() {
+        let names: Vec<String> = (0..120).map(|n| format!("n{n}.md")).collect();
+        let notes: Vec<(&str, &str)> = names.iter().map(|n| (n.as_str(), "# N")).collect();
+        let files = InMemoryNoteStore::with_notes(&notes);
+        let index = Batches::default();
+        refresh(&files, &index).unwrap();
+        assert_eq!(*index.sizes.lock().unwrap(), [50, 50, 20]);
+        assert_eq!(index.stamps().unwrap().len(), 120);
+        refresh(&files, &index).unwrap();
+        assert_eq!(index.sizes.lock().unwrap().len(), 3);
     }
 
     impl Indexed {

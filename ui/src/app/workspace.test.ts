@@ -53,7 +53,7 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
         { path: `${into}/${path}` }
       ),
       rebuildIndex: async () => (calls.push("reconstruire l'index"), null),
-      indexOverview: async () => ({ notes: 0, rebuilt: null }),
+      indexOverview: async () => ({ notes: 0, total: 0, rebuilt: null }),
     },
     screen,
     columns: columns.open,

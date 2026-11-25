@@ -9,6 +9,11 @@ export type IndexOverviewItem = {
  */
 notes: number, 
 /**
+ * Le nombre de notes de l'espace de travail que l'index doit connaître : celles que
+ * l'indexation relit.
+ */
+total: number, 
+/**
  * La dernière reconstruction depuis le lancement, en toutes lettres ; rien s'il n'y en a pas eu.
  */
 rebuilt: string | null, };

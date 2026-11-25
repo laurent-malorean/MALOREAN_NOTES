@@ -1,6 +1,6 @@
 //! Tenir l'index à jour sur les fichiers de l'espace de travail, seule vérité.
 
-use crate::indexed_store::refresh;
+use crate::indexed_store::{notes_on_disk, refresh};
 use crate::{AppError, NoteIndex, NoteStore};
 
 /// Met l'index à jour sur l'espace de travail : à son ouverture, et après un changement fait
@@ -53,17 +53,28 @@ impl<'a> RebuildIndex<'a> {
     }
 }
 
-/// Lire l'état de l'index de mots : combien de notes il connaît.
+/// Lire l'état de l'index de mots : combien de notes il connaît, et combien il devrait en connaître.
 #[derive(Debug)]
 pub struct ReadIndexStatus<'a> {
+    store: &'a dyn NoteStore,
     index: &'a dyn NoteIndex,
 }
 
 impl<'a> ReadIndexStatus<'a> {
-    /// Le cas d'usage, branché sur l'index de l'espace de travail ouvert.
+    /// Le cas d'usage, branché sur l'espace de travail ouvert et son index.
     #[must_use]
-    pub fn new(index: &'a dyn NoteIndex) -> Self {
-        Self { index }
+    pub fn new(store: &'a dyn NoteStore, index: &'a dyn NoteIndex) -> Self {
+        Self { store, index }
+    }
+
+    /// Le nombre de notes de l'espace de travail qui doivent être indexées : celles que
+    /// l'indexation relit, trouvées par le même parcours des dossiers.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ne répond pas.
+    pub fn notes_to_index(&self) -> Result<usize, AppError> {
+        Ok(notes_on_disk(self.store)?.len())
     }
 
     /// Le nombre de notes que l'index connaît.
@@ -126,8 +137,36 @@ mod tests {
     fn the_status_counts_the_notes_the_index_knows() {
         let store = InMemoryNoteStore::with_notes(&[("a.md", "# A"), ("T/b.md", "# B")]);
         let index = MemoryIndex::default();
-        assert_eq!(ReadIndexStatus::new(&index).indexed_notes().unwrap(), 0);
+        assert_eq!(
+            ReadIndexStatus::new(&store, &index)
+                .indexed_notes()
+                .unwrap(),
+            0
+        );
         RefreshIndex::new(&store, &index).execute().unwrap();
-        assert_eq!(ReadIndexStatus::new(&index).indexed_notes().unwrap(), 2);
+        assert_eq!(
+            ReadIndexStatus::new(&store, &index)
+                .indexed_notes()
+                .unwrap(),
+            2
+        );
+    }
+
+    #[test]
+    fn the_status_counts_the_notes_to_index_whatever_the_index_knows() {
+        let store = InMemoryNoteStore::with_notes(&[("a.md", "# A"), ("T/U/b.md", "# B")])
+            .with_file("T", "image.png", b"png");
+        let index = MemoryIndex::default();
+        let status = ReadIndexStatus::new(&store, &index);
+        assert_eq!(status.notes_to_index().unwrap(), 2);
+        RefreshIndex::new(&store, &index).execute().unwrap();
+        assert_eq!(status.notes_to_index().unwrap(), 2);
+        let empty = InMemoryNoteStore::default();
+        assert_eq!(
+            ReadIndexStatus::new(&empty, &index)
+                .notes_to_index()
+                .unwrap(),
+            0
+        );
     }
 }

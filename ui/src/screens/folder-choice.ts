@@ -1,8 +1,8 @@
 // Choix de dossier : un contrôle déroulant qui montre les dossiers de l'espace de travail en
 // arborescence (« Notes », « ⎿ Travail »…), réutilisé par les réglages qui choisissent un dossier.
 // Selon le réglage : l'entrée « Aucun » en tête, et « Nouveau dossier… » à la fin, qui demande le
-// nom d'un dossier qui n'existe pas encore.
-import { folderChoices, newFolderName } from "../state/folder-choice";
+// nom, ou le chemin (« Perso/Carnet »), d'un dossier qui n'existe pas encore.
+import { folderChoices, newFolderPath } from "../state/folder-choice";
 
 export interface FolderChoiceOptions {
   /** L'identifiant du contrôle ; son aide a le même, suivi de « -help ». */
@@ -26,7 +26,8 @@ const NEW_LABEL = "Nouveau dossier…";
 /** La valeur de « Nouveau dossier… » : un chemin de dossier ne peut pas contenir de caractère nul. */
 const NEW_VALUE = "\0nouveau";
 const NO_FOLDER = "";
-const INVALID_NAME = "Ce nom ne convient pas : ni vide, ni caché (point au début), ni « / ».";
+const INVALID_NAME =
+  "Ce nom ne convient pas : chaque dossier du chemin a un nom, ni caché (point au début), ni « .assets », ni « node_modules ».";
 
 function button(text: string, onClick: () => void): HTMLButtonElement {
   const element = document.createElement("button");
@@ -37,11 +38,11 @@ function button(text: string, onClick: () => void): HTMLButtonElement {
   return element;
 }
 
-/** Le champ du nom d'un nouveau dossier, avec « Créer » et « Annuler » ; masqué jusqu'à ce qu'on le demande. */
+/** Le champ du nom, ou du chemin, d'un nouveau dossier, avec « Créer » et « Annuler » ; masqué jusqu'à ce qu'on le demande. */
 function creationField(done: (name: string | null) => void, id: string) {
   const input = document.createElement("input");
   input.className = "folder-new-input";
-  input.placeholder = "Nom du dossier";
+  input.placeholder = "Nom ou chemin (Perso/Carnet)";
   input.setAttribute("aria-label", "Nom du nouveau dossier");
   input.setAttribute("aria-describedby", `${id}-error`);
   input.spellcheck = false;
@@ -53,10 +54,10 @@ function creationField(done: (name: string | null) => void, id: string) {
   row.className = "folder-new";
   row.hidden = true;
   const validate = () => {
-    const name = newFolderName(input.value);
-    input.setAttribute("aria-invalid", String(name === null));
-    error.hidden = name !== null;
-    if (name !== null) done(name);
+    const path = newFolderPath(input.value);
+    input.setAttribute("aria-invalid", String(path === null));
+    error.hidden = path !== null;
+    if (path !== null) done(path);
   };
   const close = () => done(null);
   // Le champ est dans le formulaire des réglages : Entrée et Échap ne doivent ni l'envoyer ni fermer la fenêtre.

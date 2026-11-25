@@ -20,6 +20,17 @@ describe("barre de progression d'un index", () => {
     expect(element.querySelector(".index-bar-percent")?.textContent).toBe("62 %");
   });
 
+  it("écrit à côté ce qu'on lui donne à la place du pourcentage, et le dit à la lecture d'écran", () => {
+    const element = indexBar("Index des notes", 97, "631 sur 645, 97 %");
+    const track = element.querySelector<HTMLElement>("[role=progressbar]");
+    expect(element.querySelector(".index-bar-percent")?.textContent).toBe("631 sur 645, 97 %");
+    expect([track?.getAttribute("aria-valuenow"), track?.getAttribute("aria-valuetext")]).toEqual([
+      "97",
+      "631 sur 645, 97 %",
+    ]);
+    expect(track?.getAttribute("aria-label")).toBe("Index des notes");
+  });
+
   it("remplit sa piste du pourcentage, en orange sur du gris, aux couleurs de la palette", () => {
     document.body.append(indexBar("Index de sens", 40));
     const track = document.querySelector<HTMLElement>(".index-bar-track");
