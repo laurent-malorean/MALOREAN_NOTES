@@ -109,3 +109,13 @@ fn a_socket_that_cannot_be_opened_says_why() {
     );
     assert_eq!(talk(&home).unwrap(), "clé répond à un\n");
 }
+
+#[test]
+fn the_socket_can_be_shown_in_a_log_with_its_folder() {
+    let home = std::path::Path::new("/Users/moi");
+
+    let shown = format!("{:?}", PermanentSocket::new(home));
+
+    assert!(shown.starts_with("PermanentSocket {"), "{shown}");
+    assert!(shown.contains("/Users/moi/.malorean-notes"), "{shown}");
+}

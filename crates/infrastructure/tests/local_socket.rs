@@ -7,7 +7,7 @@
 )]
 
 use std::fs;
-use std::io::{BufRead, BufReader, Cursor, Write};
+use std::io::{BufRead, BufReader, Cursor, Read, Write};
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 use std::os::unix::net::UnixStream;
 use std::process::Command;
@@ -238,4 +238,28 @@ fn a_socket_that_another_instance_answers_on_is_left_alone() {
     let mut output = Vec::new();
     relay(&first.path(), "clé", Cursor::new("un\n"), &mut output).unwrap();
     assert_eq!(String::from_utf8(output).unwrap(), "clé répond à un\n");
+}
+
+#[test]
+fn a_connection_that_has_finished_is_closed_by_the_application_too() {
+    let parent = TempDir::new().unwrap();
+    let socket = SocketPlace::fixed(parent.path())
+        .unwrap()
+        .serve(answering())
+        .unwrap();
+    let mut connection = UnixStream::connect(socket.path()).unwrap();
+    // Sans cela, une connexion que l'application garderait ouverte ferait échouer le test au lieu de
+    // l'attendre.
+    connection
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    writeln!(connection, "clé\nun").unwrap();
+    connection.shutdown(std::net::Shutdown::Write).unwrap();
+
+    let mut everything = String::new();
+    BufReader::new(connection)
+        .read_to_string(&mut everything)
+        .unwrap();
+
+    assert_eq!(everything, "clé répond à un\n");
 }
