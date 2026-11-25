@@ -99,8 +99,55 @@ button {
 }
 .folders-list {
   flex: 1;
+  min-height: var(--folders-tree-min-height);
   overflow-y: auto;
   padding: 0 0.5rem;
+}
+/* Hauteur réglée (poignée de hauteur) : l'arborescence a la sienne, le bloc du bas prend le reste */
+.folders.tree-sized > .folders-list {
+  flex: 0 1 var(--folders-tree-height);
+}
+.folders.tree-sized > .tags-list {
+  flex: 1 1 0;
+  max-height: none;
+  min-height: var(--folders-tags-min-height);
+}
+/* Poignée de hauteur : la ligne entre l'arborescence et « Récentes », avec son repère centré */
+.folders-handle {
+  position: relative;
+  flex: none;
+  height: var(--folders-handle-height);
+  background: linear-gradient(var(--border), var(--border)) center / 100% 1px no-repeat;
+  cursor: row-resize;
+  touch-action: none;
+}
+.folders-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--folders-grip-width);
+  height: var(--folders-grip-height);
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: var(--muted);
+}
+.folders-handle:hover,
+.folders-handle:focus-visible,
+.folders.resizing-height .folders-handle {
+  background: var(--accent);
+  outline: none;
+}
+.folders-handle:hover::after,
+.folders-handle:focus-visible::after,
+.folders.resizing-height .folders-handle::after {
+  background: var(--on-accent);
+}
+.folders.resizing-height,
+.folders.resizing-height * {
+  cursor: row-resize;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .folder-item {
   display: flex;

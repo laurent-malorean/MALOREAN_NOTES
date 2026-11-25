@@ -12,7 +12,11 @@ export interface Layout {
   readonly workspaceBarName: HTMLElement;
   /** Le titre de la liste des notes : dossier, étiquette, Récentes ou Corbeille. */
   readonly listHeading: HTMLElement;
+  /** La liste des dossiers : le panneau de gauche entier. */
+  readonly folders: HTMLElement;
   readonly foldersList: HTMLElement;
+  /** Le pied de la liste des dossiers : « Corbeille » et « Réglages ». */
+  readonly foldersFooter: HTMLElement;
   /** L'entrée Récentes, entre les dossiers et la liste des étiquettes. */
   readonly recentButton: HTMLButtonElement;
   /** La liste des étiquettes, sous les dossiers. */
@@ -143,7 +147,9 @@ export function createLayout(root: HTMLElement): Layout {
     workspaceBar: find(".workspace-bar"),
     workspaceBarName: find(".workspace-bar-name"),
     listHeading: find(".list-heading"),
+    folders: find(".folders"),
     foldersList: find(".folders-list"),
+    foldersFooter: find(".side-panel-footer"),
     recentButton: find("[data-recent]"),
     tagsList: find(".tags-list"),
     tagFilter: find(".tag-filter"),
