@@ -1,7 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import "../theme.css";
+import "../style.css";
 import type { ConnectionInfo } from "../bridge";
 import {
   CONNECTION_LOADING,
+  COPIED_FOR_MS,
   CONNECTION_PURPOSE,
   type Copyable,
   connectionSettingsGroup,
@@ -19,14 +22,18 @@ const KEY: ConnectionInfo = {
   },
 };
 
-function setup(info: ConnectionInfo | null) {
+function setup(info: ConnectionInfo | null, copied = true) {
   const calls: string[] = [];
   const frame = connectionSettingsGroup();
-  document.body.append(frame);
+  // Comme dans la fenêtre des réglages, dont le style règle la taille des boutons.
+  const host = document.createElement("div");
+  host.className = "settings";
+  host.append(frame);
+  document.body.append(host);
   renderConnectionSettings(frame, info, {
     create: () => calls.push("créer"),
     revoke: () => calls.push("révoquer"),
-    copy: (what: Copyable) => calls.push(`copier ${what}`),
+    copy: (what: Copyable) => (calls.push(`copier ${what}`), Promise.resolve(copied)),
   });
   const buttons = () => [...frame.querySelectorAll("button")];
   const button = (label: string) =>
@@ -98,9 +105,77 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
     expect(t.calls).toEqual(["révoquer"]);
   });
 
+  it("confirme la copie sur le bouton : vert, « ✓ Copié », puis « Copier » au bout de 2 secondes", async () => {
+    vi.useFakeTimers();
+    try {
+      const t = setup(KEY);
+      const copy = t.buttons()[1] as HTMLButtonElement;
+      const title =
+        "Configuration pour Claude (extension VS Code, Claude Code hors de l'application)";
+      copy.click();
+      await vi.advanceTimersByTimeAsync(0);
+      expect([copy.textContent, copy.getAttribute("aria-label"), copy.className]).toEqual([
+        "✓ Copié",
+        `Copié : ${title}`,
+        "tool copied",
+      ]);
+      expect(copy.getAttribute("aria-live")).toBe("polite");
+      expect(t.buttons().map((b) => b.textContent)).toEqual([
+        "Copier",
+        "✓ Copié",
+        "Copier",
+        "Révoquer la clé",
+      ]);
+      await vi.advanceTimersByTimeAsync(COPIED_FOR_MS - 1);
+      expect(copy.textContent).toBe("✓ Copié");
+      await vi.advanceTimersByTimeAsync(1);
+      expect([copy.textContent, copy.getAttribute("aria-label"), copy.className]).toEqual([
+        "Copier",
+        `Copier : ${title}`,
+        "tool",
+      ]);
+      expect(COPIED_FOR_MS).toBe(2000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("ne confirme rien quand la copie n'a pas eu lieu", async () => {
+    const t = setup(KEY, false);
+    const copy = t.buttons()[0] as HTMLButtonElement;
+    copy.click();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect([copy.textContent, copy.className]).toEqual(["Copier", "tool"]);
+  });
+
+  it("a des boutons de taille normale, sous le texte sans le recouvrir, et vert une fois copié", async () => {
+    const t = setup(KEY);
+    const blocks = [...t.frame.querySelectorAll(".connection-copyable")];
+    for (const block of blocks) {
+      const text = block.querySelector(".connection-text")?.getBoundingClientRect();
+      const copy = block.querySelector("button")?.getBoundingClientRect();
+      expect(copy?.height).toBeGreaterThan(28);
+      expect(copy?.top).toBeGreaterThanOrEqual((text?.bottom ?? Infinity) + 4);
+    }
+    const first = t.buttons()[0] as HTMLButtonElement;
+    const normal = getComputedStyle(first).color;
+    first.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const probe = document.createElement("span");
+    probe.style.color = "var(--success)";
+    document.body.append(probe);
+    expect(getComputedStyle(first).color).toBe(getComputedStyle(probe).color);
+    expect(getComputedStyle(first).color).not.toBe(normal);
+  });
+
   it("se redessine à la place du dessin précédent", () => {
     const t = setup(KEY);
-    renderConnectionSettings(t.frame, { key: null }, { create() {}, revoke() {}, copy() {} });
+    renderConnectionSettings(
+      t.frame,
+      { key: null },
+      { create() {}, revoke() {}, copy: () => Promise.resolve(true) },
+    );
     expect(t.frame.querySelectorAll("legend")).toHaveLength(1);
     expect(t.buttons().map((b) => b.textContent)).toEqual(["Créer une clé de branchement"]);
   });

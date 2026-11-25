@@ -45,10 +45,25 @@ describe("réglage du dossier des modèles", () => {
     expect([...select.options].map((o) => [o.value, o.text])).toEqual([
       ["", "Aucun"],
       ["Modèles", "Modèles"],
-      ["Travail/Gabarits", "Travail/Gabarits"],
+      ["Travail/Gabarits", "⎿ Gabarits"],
     ]);
     expect(select.value).toBe("Travail/Gabarits");
     expect(open(null).select.selectedOptions[0]?.text).toBe("Aucun");
+  });
+
+  it("ne propose pas « Nouveau dossier… » : un modèle se range dans un dossier qui existe", () => {
+    expect([...open(null).select.options].map((o) => o.text)).not.toContain("Nouveau dossier…");
+  });
+
+  it("garde dans la liste le dossier choisi qui n'existe plus", () => {
+    const { select } = open("Disparu/Gabarits");
+    expect([...select.options].map((o) => o.value)).toEqual([
+      "",
+      "Modèles",
+      "Travail/Gabarits",
+      "Disparu/Gabarits",
+    ]);
+    expect(select.value).toBe("Disparu/Gabarits");
   });
 
   it("applique le dossier choisi, ou aucun", () => {

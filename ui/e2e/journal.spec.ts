@@ -55,17 +55,20 @@ test("Cmd+Maj+J ouvre la note du jour depuis le modèle Journal, dans le dossier
   const dialog = page.getByRole("dialog", { name: "Réglages" });
   await dialog.getByRole("tab", { name: "Écriture" }).click();
   await dialog.getByLabel("Dossier des modèles").selectOption({ label: "Modèles" });
-  await dialog.getByLabel("Dossier du journal").fill("Perso/Carnet");
-  await dialog.getByLabel("Dossier du journal").press("Tab");
+  // Le dossier du journal se choisit dans la liste : « Nouveau dossier… » en crée un au besoin.
+  await dialog.getByLabel("Dossier du journal").selectOption({ label: "Nouveau dossier…" });
+  await dialog.getByLabel("Nom du nouveau dossier").fill("Carnet");
+  await dialog.getByLabel("Nom du nouveau dossier").press("Enter");
+  await expect(dialog.getByLabel("Dossier du journal")).toHaveValue("Carnet");
   await dialog.getByLabel("Créer la note du jour au lancement").uncheck();
   await dialog.getByRole("button", { name: "Fermer" }).click();
 
   await page.keyboard.press("Meta+Shift+J");
   await expect(tabs(page)).toHaveText(["Courses×", "16 novembre 2026×", "16 novembre 2026×"]);
-  expect(await savedContent(page, "Perso/Carnet/2026-11-16.md")).toBe(
+  expect(await savedContent(page, "Carnet/2026-11-16.md")).toBe(
     "# 16 novembre 2026\n## Humeur à 18:30\n",
   );
-  await expect(page.locator(".folder-item", { hasText: "Perso" })).toBeVisible();
+  await expect(page.locator(".folder-item", { hasText: "Carnet" })).toBeVisible();
 
   await page.keyboard.press("Meta+Shift+J");
   await expect(tabs(page)).toHaveCount(3);
@@ -74,4 +77,33 @@ test("Cmd+Maj+J ouvre la note du jour depuis le modèle Journal, dans le dossier
   await expect(page.locator(".cm-line").first()).toHaveText(/./);
   await expect(tabs(page).first()).toBeVisible();
   expect(await dailyNotes(page)).toEqual([]);
+});
+
+test("les deux dossiers des réglages se choisissent dans une liste en arborescence ; « Nouveau dossier… » refuse un nom invalide et Échap l'annule sans fermer les réglages", async ({
+  page,
+}) => {
+  await launch(page, WORKSPACE, ["Modèles", "Notes", "Notes/Travail"]);
+  await page.getByRole("button", { name: "Réglages" }).click();
+  const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByRole("tab", { name: "Écriture" }).click();
+  const texts = (label: string) => dialog.getByLabel(label).locator("option").allTextContents();
+  expect(await texts("Dossier des modèles")).toEqual([
+    "Aucun",
+    "Journal",
+    "Modèles",
+    "Notes",
+    "⎿ Travail",
+  ]);
+  expect((await texts("Dossier du journal")).at(-1)).toBe("Nouveau dossier…");
+
+  const journal = dialog.getByLabel("Dossier du journal");
+  await journal.selectOption({ label: "Nouveau dossier…" });
+  const name = dialog.getByLabel("Nom du nouveau dossier");
+  await name.fill("a/b");
+  await name.press("Enter");
+  await expect(dialog.getByText("Ce nom ne convient pas")).toBeVisible();
+  await name.press("Escape");
+  await expect(name).toBeHidden();
+  await expect(dialog).toBeVisible();
+  await expect(journal).toHaveValue("Journal");
 });

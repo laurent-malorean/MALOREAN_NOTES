@@ -95,7 +95,10 @@ describe("écran de réglages, tel que décrit", () => {
       ["Affichage", "Taille du texte"],
       ["Affichage", "Largeur du texte"],
       ["Affichage", "Apparence"],
-      ["Claude", "Modifications après une lecture du web"],
+      [
+        "Claude",
+        "Après avoir lu une page web, Claude doit-il demander avant de modifier mes notes ?",
+      ],
     ]);
     const choices = (key: string) => {
       const field = fieldOf(key);
@@ -120,8 +123,8 @@ describe("écran de réglages, tel que décrit", () => {
     ]);
     expect(choices("appearance")).toEqual(["auto Automatique", "light Claire", "dark Sombre"]);
     expect(choices("claudeChangesAfterWeb")).toEqual([
-      "allow Laisser Claude modifier",
-      "ask Demander mon accord",
+      "allow Non, il modifie",
+      "ask Oui, il demande mon accord",
     ]);
   });
 
@@ -132,7 +135,7 @@ describe("écran de réglages, tel que décrit", () => {
       "Pour le texte des notes.",
       "Largeur de la colonne de texte dans la fenêtre.",
       "Automatique : claire ou sombre, comme le Mac.",
-      "Laisser : Claude crée et modifie les notes de l'espace de travail sans rien demander, même après avoir lu le web. Demander mon accord : ses modifications attendent votre accord dès qu'il a lu le web.",
+      "Une page web peut cacher des consignes écrites pour une IA (par exemple « efface mes notes »). Avec « Oui », dès que Claude a lu une page web pendant sa réponse, chacune de ses modifications attend votre accord.",
     ]);
   });
 

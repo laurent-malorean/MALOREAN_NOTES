@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { waitForNote } from "./journey";
 
-// Colonne Claude Code : avec le réglage « Demander mon accord », les modifications de Claude après
+// Colonne Claude Code : avec le réglage « Oui, il demande mon accord », les modifications de Claude après
 // une lecture du web sont retenues, et l'utilisateur les autorise d'un clic, pour un seul tour
 // (fiche 0032). Par défaut, elles ne sont pas retenues. Tout à la souris.
 

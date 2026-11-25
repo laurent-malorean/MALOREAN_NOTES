@@ -1,6 +1,7 @@
 // La partie « Recherche par le sens » de l'écran de réglages : les modèles, l'index de sens et sa reconstruction.
 import type { ModelRow } from "../state/meaning";
 import { downloadProgress } from "./download-progress";
+import { indexBar } from "./index-bar";
 
 /** Ce que les réglages du sens peuvent demander. */
 export interface MeaningSettingsActions {
@@ -15,11 +16,14 @@ export interface MeaningSettingsActions {
 export interface MeaningSettingsView {
   readonly rows: readonly ModelRow[];
   readonly lines: readonly string[];
+  /** L'avancement de l'index de sens, en pourcentage ; rien tant qu'il n'est pas lu. */
+  readonly percent: number | null;
 }
 
 const TITLE = "Recherche par le sens";
 const LOADING = "Lecture de l'état du sens…";
 const REBUILD = "Reconstruire l'index de sens";
+const BAR_NAME = "Index de sens";
 
 function text(tag: "span" | "p", className: string, content: string): HTMLElement {
   const element = document.createElement(tag);
@@ -80,6 +84,7 @@ export function renderMeaningSettings(
     return fieldset.replaceChildren(legend, text("p", "setting-help", LOADING));
   const index = document.createElement("div");
   index.className = "meaning-index";
+  if (view.percent !== null) index.append(indexBar(BAR_NAME, view.percent));
   index.append(...view.lines.map((line) => text("p", "setting-help", line)));
   const rebuild = document.createElement("button");
   rebuild.type = "button";

@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PreferenceStorage } from "./focus-preference";
-import {
-  DEFAULT_JOURNAL,
-  journalFolder,
-  journalTemplate,
-  loadJournal,
-  saveJournal,
-} from "./journal";
+import { DEFAULT_JOURNAL, journalTemplate, loadJournal, saveJournal } from "./journal";
 
 function memoryStorage(refused = false) {
   const items = new Map<string, string>();
@@ -60,14 +54,6 @@ describe("réglages du journal", () => {
     const { storage } = memoryStorage(true);
     expect(() => saveJournal(storage, "/notes", DEFAULT_JOURNAL)).not.toThrow();
     expect(loadJournal(storage, "/notes")).toEqual(DEFAULT_JOURNAL);
-  });
-
-  it("le dossier tapé est nettoyé ; vide, il redevient Journal", () => {
-    expect(journalFolder("  Perso/Jours  ")).toBe("Perso/Jours");
-    expect(journalFolder("/Carnet/")).toBe("Carnet");
-    expect(journalFolder("//Carnet//")).toBe("Carnet");
-    expect(journalFolder("   ")).toBe("Journal");
-    expect(journalFolder("//")).toBe("Journal");
   });
 });
 

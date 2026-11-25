@@ -8,6 +8,7 @@ import {
   downloadHeard,
   downloadStarted,
   indexLines,
+  indexPercent,
   type MeaningState,
   meaningNotice,
   modelMissing,
@@ -222,6 +223,17 @@ describe("réglages du sens", () => {
       "Segments : 411",
       "Segments calculés : 120 sur 411",
     ]);
+  });
+
+  it("chiffre l'avancement de l'index de sens en pourcentage, le calcul en cours d'abord", () => {
+    expect(indexPercent(meaningStarted)).toBeNull();
+    expect(indexPercent(read())).toBe(29);
+    expect(indexPercent(read({ withVector: 411 }))).toBe(100);
+    expect(indexPercent(read({ segments: 0, withVector: 0 }))).toBe(0);
+    const computing = computeHeard(read(), {
+      ...{ kind: "progress", done: 205, total: 411, model: "e5-small" },
+    });
+    expect(indexPercent(computing)).toBe(49);
   });
 
   it("dit que le calcul attend quand le modèle utilisé n'est pas téléchargé", () => {

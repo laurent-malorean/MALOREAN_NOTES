@@ -11,6 +11,7 @@ import type { Env } from "./env";
 import { exportScenarios } from "./export";
 import { noteScenarios } from "./notes";
 import { searchScenarios } from "./search";
+import { settingsScenarios } from "./settings";
 
 export function scenariosFor(env: Env): Scenario[] {
   return [
@@ -20,6 +21,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...crmScenarios(env),
     ...crmTabsScenarios(env),
     ...crmActionScenarios(env),
+    ...settingsScenarios(),
     ...displayToolsScenarios(),
     ...searchScenarios(env),
   ];
