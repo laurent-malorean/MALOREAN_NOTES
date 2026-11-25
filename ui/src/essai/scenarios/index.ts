@@ -29,7 +29,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...newContentMenuScenarios(env),
     ...linkMenuScenarios(env),
     ...tagFieldScenarios(env),
-    ...settingsScenarios(),
+    ...settingsScenarios(env),
     ...displayToolsScenarios(),
     ...workspaceSwitcherScenarios(env),
     ...foldersHeightScenarios(),

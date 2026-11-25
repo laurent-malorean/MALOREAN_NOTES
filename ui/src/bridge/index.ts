@@ -13,6 +13,7 @@ import type { ClaudeEventItem } from "./generated/ClaudeEventItem";
 import type { LimitPeriodItem } from "./generated/LimitPeriodItem";
 import type { UsageWindowItem } from "./generated/UsageWindowItem";
 import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
+import type { AiWorkspaceItem } from "./generated/AiWorkspaceItem";
 import type { ConnectionInfo } from "./generated/ConnectionInfo";
 import type { ConnectionKeyItem } from "./generated/ConnectionKeyItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
@@ -79,6 +80,7 @@ import type { WritingActionItem } from "./generated/WritingActionItem";
 export type {
   ActionKindItem,
   AgentStateItem,
+  AiWorkspaceItem,
   AppMenu,
   AssistantStatus,
   AttachedFile,
@@ -442,6 +444,11 @@ export const stopClaude = () => invoke<null>("stop_claude");
 export const connectionInfo = () => invoke<ConnectionInfo>("connection_info");
 export const createConnectionKey = () => invoke<ConnectionInfo>("create_connection_key");
 export const revokeConnectionKey = () => invoke<null>("revoke_connection_key");
+/** Les espaces de travail et leur case « autorisé pour les IA » (fiche 0074). */
+export const listAiWorkspaces = () => invoke<AiWorkspaceItem[]>("list_ai_workspaces");
+/** Coche ou décoche un espace de travail pour les IA ; rend la liste à jour. */
+export const setWorkspaceAllowed = (name: string, allowed: boolean) =>
+  invoke<AiWorkspaceItem[]>("set_workspace_allowed", { name, allowed });
 export const logOutOfClaude = () => invoke<null>("log_out_of_claude");
 /**
  * Connecte Claude Code à un compte Claude, pour tout le Mac : le navigateur s'ouvre sur la page de

@@ -1,5 +1,6 @@
-// « Brancher une IA » côté application (fiche 0056) : lit la clé de branchement que Rust garde, la
-// crée, la copie et la révoque après confirmation, puis relit son état.
+// « Brancher une IA » côté application (fiches 0056 et 0074) : lit la clé de branchement que Rust garde, la
+// crée, la copie et la révoque après confirmation, puis relit son état ; coche les espaces de travail
+// que les IA peuvent voir.
 import type * as Bridge from "../bridge";
 import {
   type ConnectionHandlers,
@@ -18,7 +19,12 @@ export const REVOCATION: ConfirmationOptions = {
 export interface ConnectAiDeps extends Pick<Messages, "run"> {
   readonly backend: Pick<
     typeof Bridge,
-    "connectionInfo" | "createConnectionKey" | "revokeConnectionKey" | "copyPlainText"
+    | "connectionInfo"
+    | "createConnectionKey"
+    | "revokeConnectionKey"
+    | "copyPlainText"
+    | "listAiWorkspaces"
+    | "setWorkspaceAllowed"
   >;
   /** La fenêtre de confirmation, où l'on demande si l'on révoque la clé. */
   readonly dialog: HTMLDialogElement;
@@ -34,9 +40,15 @@ export function createConnectAi(deps: ConnectAiDeps): ConnectAi {
   const settingsGroups = () => {
     const frame = connectionSettingsGroup();
     let info: Bridge.ConnectionInfo | null = null;
+    let workspaces: Bridge.AiWorkspaceItem[] | null = null;
+    const redraw = () => renderConnectionSettings(frame, info, workspaces, handlers);
     const draw = (next: Bridge.ConnectionInfo | null) => {
       info = next;
-      renderConnectionSettings(frame, info, handlers);
+      redraw();
+    };
+    const drawWorkspaces = (next: Bridge.AiWorkspaceItem[]) => {
+      workspaces = next;
+      redraw();
     };
     const handlers: ConnectionHandlers = {
       create: () => deps.run(backend.createConnectionKey().then(draw)),
@@ -46,6 +58,8 @@ export function createConnectAi(deps: ConnectAiDeps): ConnectAi {
             accepted ? backend.revokeConnectionKey().then(backend.connectionInfo).then(draw) : null,
           ),
         ),
+      allow: (name, allowed) =>
+        deps.run(backend.setWorkspaceAllowed(name, allowed).then(drawWorkspaces)),
       copy: (what) => {
         const key = info?.key;
         if (!key) return Promise.resolve(false);
@@ -61,6 +75,7 @@ export function createConnectAi(deps: ConnectAiDeps): ConnectAi {
     };
     draw(null);
     deps.run(backend.connectionInfo().then(draw));
+    deps.run(backend.listAiWorkspaces().then(drawWorkspaces));
     return [frame];
   };
   return { settingsGroups };

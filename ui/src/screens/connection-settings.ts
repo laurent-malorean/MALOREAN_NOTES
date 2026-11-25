@@ -1,12 +1,19 @@
 // La partie « Brancher une IA » de l'écran de réglages (fiche 0056) : sans clé de branchement, une
 // phrase et un bouton pour en créer une ; avec une clé, sa date, la clé et deux blocs de
 // configuration à copier (Claude, Codex), et « Révoquer la clé ». Tout se fait à la souris.
-import type { ConnectionInfo, ConnectionKeyItem } from "../bridge";
+import type { AiWorkspaceItem, ConnectionInfo, ConnectionKeyItem } from "../bridge";
 
 export const CONNECTION_TITLE = "Brancher une IA";
 export const CONNECTION_LOADING = "Lecture de la clé de branchement…";
 export const CONNECTION_PURPOSE =
   "Donne les outils de MALOREAN Notes à une IA extérieure, comme l'extension Claude de VS Code ou Codex. Aucun port réseau n'est ouvert : l'IA n'est écoutée que tant que l'application est lancée.";
+
+export const WORKSPACES_TITLE = "Espaces de travail ouverts aux IA";
+export const WORKSPACES_HELP =
+  "Les IA branchées ne voient que les espaces de travail cochés ici, par leur nom. Aucun n'est coché au départ : une IA ne voit alors aucun espace de travail.";
+export const WORKSPACES_LOADING = "Lecture des espaces de travail…";
+export const WORKSPACES_EMPTY =
+  "Aucun espace de travail : ajoutez-en un depuis le sélecteur d'espace de travail.";
 
 /** Ce que l'on copie : la clé, ou l'un des deux blocs de configuration. */
 export type Copyable = "key" | "claude" | "codex";
@@ -14,6 +21,8 @@ export type Copyable = "key" | "claude" | "codex";
 export interface ConnectionHandlers {
   create(): void;
   revoke(): void;
+  /** Coche (`allowed`) ou décoche l'espace de travail `name` pour les IA. */
+  allow(name: string, allowed: boolean): void;
   /** Copie ; rend vrai si c'est fait (le bouton le confirme), faux sinon (l'erreur est dite ailleurs). */
   copy(what: Copyable): Promise<boolean>;
 }
@@ -75,6 +84,32 @@ function copyable(
   return block;
 }
 
+/** Une case à cocher par espace de travail : les IA ne voient que les espaces cochés. */
+function workspaceChecks(
+  workspaces: readonly AiWorkspaceItem[] | null,
+  handlers: ConnectionHandlers,
+): HTMLElement {
+  const block = element("div", "allowed-workspaces", "");
+  block.append(element("p", "setting-help allowed-workspaces-title", WORKSPACES_TITLE));
+  block.append(element("p", "setting-help", WORKSPACES_HELP));
+  if (!workspaces) {
+    block.append(element("p", "setting-help", WORKSPACES_LOADING));
+  } else if (workspaces.length === 0) {
+    block.append(element("p", "setting-help", WORKSPACES_EMPTY));
+  }
+  for (const workspace of workspaces ?? []) {
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = workspace.allowed;
+    box.addEventListener("change", () => handlers.allow(workspace.name, box.checked));
+    const label = document.createElement("label");
+    label.className = "allowed-workspace";
+    label.append(box, element("span", "", workspace.name));
+    block.append(label);
+  }
+  return block;
+}
+
 function withKey(key: ConnectionKeyItem, handlers: ConnectionHandlers): HTMLElement[] {
   return [
     element("p", "setting-help", `Clé de branchement créée le ${key.createdOn}.`),
@@ -101,6 +136,7 @@ export function connectionSettingsGroup(): HTMLElement {
 export function renderConnectionSettings(
   fieldset: HTMLElement,
   info: ConnectionInfo | null,
+  workspaces: readonly AiWorkspaceItem[] | null,
   handlers: ConnectionHandlers,
 ): void {
   const legend = document.createElement("legend");
@@ -111,5 +147,5 @@ export function renderConnectionSettings(
     : info.key
       ? withKey(info.key, handlers)
       : [button("Créer une clé de branchement", "Créer une clé de branchement", handlers.create)];
-  fieldset.replaceChildren(legend, purpose, ...body);
+  fieldset.replaceChildren(legend, purpose, workspaceChecks(workspaces, handlers), ...body);
 }

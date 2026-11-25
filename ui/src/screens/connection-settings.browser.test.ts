@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "../theme.css";
 import "../style.css";
-import type { ConnectionInfo } from "../bridge";
+import type { AiWorkspaceItem, ConnectionInfo } from "../bridge";
 import {
   CONNECTION_LOADING,
   COPIED_FOR_MS,
@@ -9,6 +9,10 @@ import {
   type Copyable,
   connectionSettingsGroup,
   renderConnectionSettings,
+  WORKSPACES_EMPTY,
+  WORKSPACES_HELP,
+  WORKSPACES_LOADING,
+  WORKSPACES_TITLE,
 } from "./connection-settings";
 
 afterEach(() => document.body.replaceChildren());
@@ -22,7 +26,16 @@ const KEY: ConnectionInfo = {
   },
 };
 
-function setup(info: ConnectionInfo | null, copied = true) {
+const WORKSPACES: AiWorkspaceItem[] = [
+  { name: "Notes", allowed: false },
+  { name: "Travail", allowed: true },
+];
+
+function setup(
+  info: ConnectionInfo | null,
+  copied = true,
+  workspaces: AiWorkspaceItem[] | null = WORKSPACES,
+) {
   const calls: string[] = [];
   const frame = connectionSettingsGroup();
   // Comme dans la fenêtre des réglages, dont le style règle la taille des boutons.
@@ -30,9 +43,10 @@ function setup(info: ConnectionInfo | null, copied = true) {
   host.className = "settings";
   host.append(frame);
   document.body.append(host);
-  renderConnectionSettings(frame, info, {
+  renderConnectionSettings(frame, info, workspaces, {
     create: () => calls.push("créer"),
     revoke: () => calls.push("révoquer"),
+    allow: (name, allowed) => calls.push(`${allowed ? "autoriser" : "retirer"} ${name}`),
     copy: (what: Copyable) => (calls.push(`copier ${what}`), Promise.resolve(copied)),
   });
   const buttons = () => [...frame.querySelectorAll("button")];
@@ -47,6 +61,8 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
     expect(t.frame.querySelector("legend")?.textContent).toBe("Brancher une IA");
     expect([...t.frame.querySelectorAll("p")].map((p) => p.textContent)).toEqual([
       CONNECTION_PURPOSE,
+      WORKSPACES_TITLE,
+      WORKSPACES_HELP,
       CONNECTION_LOADING,
     ]);
     expect(t.buttons()).toEqual([]);
@@ -64,6 +80,8 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
     const t = setup(KEY);
     expect([...t.frame.querySelectorAll("p")].map((p) => p.textContent)).toEqual([
       CONNECTION_PURPOSE,
+      WORKSPACES_TITLE,
+      WORKSPACES_HELP,
       "Clé de branchement créée le 25 novembre 2026.",
       "Clé de branchement",
       "Configuration pour Claude (extension VS Code, Claude Code hors de l'application)",
@@ -171,12 +189,76 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
 
   it("se redessine à la place du dessin précédent", () => {
     const t = setup(KEY);
-    renderConnectionSettings(
-      t.frame,
-      { key: null },
-      { create() {}, revoke() {}, copy: () => Promise.resolve(true) },
-    );
+    renderConnectionSettings(t.frame, { key: null }, WORKSPACES, {
+      create() {},
+      revoke() {},
+      allow() {},
+      copy: () => Promise.resolve(true),
+    });
     expect(t.frame.querySelectorAll("legend")).toHaveLength(1);
     expect(t.buttons().map((b) => b.textContent)).toEqual(["Créer une clé de branchement"]);
+  });
+
+  describe("espaces de travail ouverts aux IA", () => {
+    const boxes = (t: ReturnType<typeof setup>) =>
+      [...t.frame.querySelectorAll<HTMLLabelElement>(".allowed-workspace")].map((label) => ({
+        name: label.textContent,
+        checked: (label.querySelector("input") as HTMLInputElement).checked,
+        type: (label.querySelector("input") as HTMLInputElement).type,
+      }));
+
+    it("montre une case par espace de travail, cochée seulement pour ceux que l'utilisateur a autorisés", () => {
+      const t = setup({ key: null });
+      expect(boxes(t)).toEqual([
+        { name: "Notes", checked: false, type: "checkbox" },
+        { name: "Travail", checked: true, type: "checkbox" },
+      ]);
+    });
+
+    it("se voit sans clé de branchement comme avec une clé, avant la clé", () => {
+      for (const info of [{ key: null }, KEY, null]) {
+        const t = setup(info);
+        expect(boxes(t)).toHaveLength(2);
+        const block = t.frame.querySelector(".allowed-workspaces") as HTMLElement;
+        expect(block.nextElementSibling?.textContent).not.toBe(WORKSPACES_TITLE);
+        expect(block.previousElementSibling?.textContent).toBe(CONNECTION_PURPOSE);
+      }
+    });
+
+    it("coche et décoche au clic, en disant quel espace et quel état", () => {
+      const t = setup({ key: null });
+      const [notes, travail] = [
+        ...t.frame.querySelectorAll<HTMLInputElement>(".allowed-workspace input"),
+      ];
+      notes?.click();
+      travail?.click();
+      expect(t.calls).toEqual(["autoriser Notes", "retirer Travail"]);
+    });
+
+    it("dit que la lecture est en cours, ou qu'il n'y a aucun espace de travail", () => {
+      const loading = setup({ key: null }, true, null);
+      expect(boxes(loading)).toEqual([]);
+      expect(loading.frame.textContent).toContain(WORKSPACES_LOADING);
+      expect(loading.frame.textContent).not.toContain(WORKSPACES_EMPTY);
+      const empty = setup({ key: null }, true, []);
+      expect(boxes(empty)).toEqual([]);
+      expect(empty.frame.textContent).toContain(WORKSPACES_EMPTY);
+      expect(empty.frame.textContent).not.toContain(WORKSPACES_LOADING);
+    });
+
+    it("explique que les IA ne voient que les espaces cochés, aucun au départ", () => {
+      expect(WORKSPACES_TITLE).toBe("Espaces de travail ouverts aux IA");
+      expect(WORKSPACES_HELP).toContain("ne voient que les espaces de travail cochés");
+      expect(WORKSPACES_HELP).toContain("Aucun n'est coché au départ");
+    });
+
+    it("aligne la case et le nom sur une ligne", () => {
+      const t = setup({ key: null });
+      const label = t.frame.querySelector(".allowed-workspace") as HTMLElement;
+      expect(getComputedStyle(label).display).toBe("flex");
+      const box = label.querySelector("input")?.getBoundingClientRect();
+      const name = label.querySelector("span")?.getBoundingClientRect();
+      expect(box?.right).toBeLessThanOrEqual(name?.left ?? 0);
+    });
   });
 });

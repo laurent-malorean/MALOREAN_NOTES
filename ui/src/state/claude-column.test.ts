@@ -135,6 +135,7 @@ describe("conversation de la colonne Claude Code", () => {
       }) as const;
     const now = play(
       asked,
+      tool("w", "list_workspaces"),
       tool("s", "search_notes"),
       tool("sm", "search_by_meaning"),
       tool("t", "list_tags"),
@@ -165,6 +166,7 @@ describe("conversation de la colonne Claude Code", () => {
       tool("n", null),
     );
     expect(now.entries.slice(1).map((entry) => entry.kind === "action" && entry.label)).toEqual([
+      "Espaces de travail",
       "Recherche dans l’index",
       "Recherche par le sens",
       "Étiquettes",

@@ -2485,6 +2485,23 @@ button.claude-chip:hover {
 .connection-settings > p.setting-help {
   margin: 0 0 1rem;
 }
+.allowed-workspaces {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+}
+.allowed-workspaces .setting-help {
+  margin: 0;
+}
+.allowed-workspaces-title {
+  font-weight: 600;
+}
+.allowed-workspace {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 .connection-copyable {
   display: flex;
   flex-direction: column;
