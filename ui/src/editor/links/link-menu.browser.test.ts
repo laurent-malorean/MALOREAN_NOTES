@@ -29,6 +29,7 @@ function mount(content = "", items: readonly LinkableItem[] = ITEMS) {
   const editor = createEditor(parent, () => {}, {
     links: {
       contents,
+      resolve: async () => [],
       row: (found) => ({ label: found.title, detail: found.folder }),
     },
   });

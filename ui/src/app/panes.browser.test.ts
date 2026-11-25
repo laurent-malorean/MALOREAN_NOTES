@@ -158,7 +158,7 @@ describe("CRM d'une colonne", () => {
 
 describe("menu des liens d'une colonne", () => {
   it("avec un pont qui sait lister ce qu'on peut lier, `[[` ouvre le menu des liens dans l'éditeur", async () => {
-    const fake = fakeBackend({ "a.md": "# A\n" });
+    const fake = fakeBackend({ "a.md": "# A\nvoir [[Courses]]" });
     const shared = createSharedNotes({
       backend: fake.backend,
       events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
@@ -166,8 +166,12 @@ describe("menu des liens d'une colonne", () => {
     const listLinkable = vi.fn(async () => [
       { path: "c.md", title: "Courses", folder: "", contentType: "note" as const, link: "Courses" },
     ]);
+    const resolveLinks = vi.fn(async () => []);
     const make = paneMaker({
-      backend: { ...fake.backend, fileAddress: (path) => path, listLinkable },
+      backend: {
+        ...fake.backend,
+        ...{ fileAddress: (path: string) => path, listLinkable, resolveLinks },
+      },
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
       notebook: { add: vi.fn(async () => true), entries: vi.fn() },
@@ -186,6 +190,8 @@ describe("menu des liens d'une colonne", () => {
     await vi.waitFor(() => expect(document.querySelector(".link-menu-option")).not.toBeNull());
     expect(document.querySelector(".link-menu-label svg")).not.toBeNull();
     expect(listLinkable).toHaveBeenCalledTimes(1);
+    // Les liens ambigus sont demandés à Rust.
+    await vi.waitFor(() => expect(resolveLinks).toHaveBeenCalledWith(["Courses"]));
     pane.destroy();
     document.querySelector(".link-menu")?.remove();
   });

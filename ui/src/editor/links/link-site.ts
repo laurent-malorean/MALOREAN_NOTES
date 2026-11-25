@@ -4,6 +4,7 @@ import type { LinkableItem } from "../../bridge";
 import { writtenLink } from "../../state/link-choice";
 import { writeWebLink } from "../writing/formatting";
 import type { LinkMenuSupport } from "./link-menu";
+import type { LinkStatusSupport } from "./link-status";
 
 /** Le passage de la note qui devient un lien. */
 export interface LinkSite {
@@ -15,8 +16,8 @@ export interface LinkSite {
   insertWeb(): void;
 }
 
-/** Ce que l'éditeur demande à l'application pour les liens : la liste, et le choix du bouton « Lien ». */
-export interface EditorLinks extends LinkMenuSupport {
+/** Ce que l'éditeur demande à l'application pour les liens : la liste, ce que désigne chaque lien écrit, et le choix du bouton « Lien ». */
+export interface EditorLinks extends LinkMenuSupport, LinkStatusSupport {
   /** Le bouton « Lien » : demande ce qu'on lie, puis écrit sur `site` ; sans lui, « Lien » pose un lien vers une page web. */
   readonly choose?: (site: LinkSite) => void;
 }

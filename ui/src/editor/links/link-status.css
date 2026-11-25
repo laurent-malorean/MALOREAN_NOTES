@@ -1,0 +1,7 @@
+/* Un lien ambigu : son nom est porté par plusieurs contenus, il n'en ouvre aucun. */
+.editor .cm-note-link.cm-note-link-ambiguous,
+.editor .cm-note-link-ambiguous {
+  color: var(--warning);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}

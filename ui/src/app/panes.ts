@@ -4,6 +4,7 @@ import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./ca
 import { type CrmHostBackend, createCrmHost, hasCrmBackend } from "./crm-host";
 import { linkChooser } from "./link-chooser";
 import type { LinkPickerBackend } from "./link-picker";
+import type * as Bridge from "../bridge";
 import { imageAddress } from "../editor/image-address";
 import { linkEntry } from "../screens/link-entry";
 import type { ColumnParts } from "../screens/columns-view";
@@ -19,11 +20,15 @@ import type { Layout } from "../screens/layout";
 import type { SharedNotes } from "../screens/shared-notes";
 import { folderOf } from "../state/folders";
 
+/** Ce que la colonne demande à Rust pour souligner les liens ambigus. */
+type LinkStatusBackend = Pick<typeof Bridge, "resolveLinks">;
+
 export interface PanesDeps {
   readonly backend: PaneBackend &
     Partial<CanvasHostBackend> &
     Partial<CrmHostBackend> &
-    Partial<LinkPickerBackend> & { readonly fileAddress: (path: string) => string };
+    Partial<LinkPickerBackend> &
+    Partial<LinkStatusBackend> & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
   /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
@@ -67,13 +72,13 @@ function crmOf(deps: PanesDeps) {
 
 /** Ce que le menu des liens d'une colonne demande à Rust ; rien si le pont ne sait pas lister ce qu'on peut lier. */
 function linksOf({ backend, layout, events }: PanesDeps) {
-  const { listLinkable } = backend;
-  if (listLinkable === undefined) return {};
+  const { listLinkable, resolveLinks } = backend;
+  if (listLinkable === undefined || resolveLinks === undefined) return {};
   const row = linkEntry;
   const choose =
     layout &&
     linkChooser({ backend: { listLinkable }, picker: layout.picker, error: events.error });
-  return { links: { contents: listLinkable, row, choose } };
+  return { links: { contents: listLinkable, row, choose, resolve: resolveLinks } };
 }
 
 /** Ce qui pose l'éditeur d'une colonne qui vient d'apparaître. */

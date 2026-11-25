@@ -26,6 +26,7 @@ import { DEFAULT_SETTINGS } from "../state/settings";
 import type { FormatCommandId } from "../state/commands";
 import { outlinePanel } from "./outline/outline-panel";
 import { linkMenu } from "./links/link-menu";
+import { linkStatus } from "./links/link-status";
 import { type EditorLinks, linkSiteOf } from "./links/link-site";
 import { noteLinkAt, noteLinks, type OpenNoteLink } from "./links/note-links";
 import { insertToday, type Today, todayShortcut } from "./writing/today";
@@ -287,7 +288,7 @@ export function createEditor(
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
     openLink ? noteLinks(openLink) : [],
-    options.links ? linkMenu(options.links) : [],
+    options.links ? [linkMenu(options.links), linkStatus(options.links)] : [],
     researchNotebook(fromElsewhere, options.addEntry, today),
     history(),
     [listContinuation, firstTitle, findReplace],

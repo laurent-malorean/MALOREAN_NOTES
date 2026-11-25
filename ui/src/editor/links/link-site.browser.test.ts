@@ -19,7 +19,12 @@ function mount(content: string, from: number, to = from) {
   const sites: LinkSite[] = [];
   const choose = vi.fn((site: LinkSite) => void sites.push(site));
   const editor = createEditor(parent, () => {}, {
-    links: { contents: async () => [], row: (item) => ({ label: item.title }), choose },
+    links: {
+      contents: async () => [],
+      resolve: async () => [],
+      row: (item) => ({ label: item.title }),
+      choose,
+    },
   });
   editor.show(content);
   const view = EditorView.findFromDOM(parent.querySelector(".cm-editor") as HTMLElement);
