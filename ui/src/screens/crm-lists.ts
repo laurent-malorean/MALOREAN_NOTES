@@ -65,7 +65,7 @@ export interface Lists {
 export function createLists(deps: ListsDeps): Lists {
   const state: ListsState = {
     ...{ people: "", companies: "", adding: null, name: "", renaming: null, palette: null },
-    unfolded: parseUnfolded(deps.memory.load()),
+    ...{ tagDrafts: new Map<string, string>(), unfolded: parseUnfolded(deps.memory.load()) },
   };
   const act: ListsActions = {
     ...deps.act,

@@ -201,6 +201,7 @@ couleur: bleu
 # Refonte du site
 ```
 
+- `tags` : facultatif, comme pour toute fiche (§ 4.9).
 - Le texte sous le titre est gardé tel quel, jamais montré.
 - Une couleur absente ou inconnue se lit comme la première couleur de la palette, sans modifier le fichier ; une couleur n'est écrite que si l'utilisateur en choisit une.
 
@@ -341,6 +342,7 @@ Un CRM sans fiche affiche, au centre, en couleur atténuée : « Ajoutez une pre
 - « Nouveau projet » (le nom ; la couleur est celle du § 5.4, modifiable), puis la liste : pastille de couleur, nom, nombre d'actions ouvertes et en retard.
 - Un projet se déplie sur ses actions ouvertes, la plus en retard d'abord. Un clic sur ses compteurs (« Voir les actions de … ») ouvre le Kanban filtré sur lui seul.
 - On y renomme, change la couleur (les couleurs déjà prises sont grisées, mais choisissables) et supprime un projet.
+- **Sous la ligne de chaque projet** (plié ou déplié), le **champ d'étiquettes** de l'application (§ 4.9) : ses étiquettes en pastilles avec « × », un champ « Ajouter une étiquette » avec « + ». Il propose les étiquettes des actions du CRM et celles des autres projets, sans celles du projet. Un geste ne change que `tags` dans la fiche du projet ; le texte tapé et non validé est gardé quand l'écran se redessine.
 
 ### 7.6 Une action dans une liste
 

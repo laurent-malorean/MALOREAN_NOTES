@@ -150,8 +150,10 @@ describe("champ d'étiquettes", () => {
     expect(kept).toBe("");
   });
 
-  it("nomme son champ de saisie pour que l'appelant lui rende le curseur", () => {
-    expect(mount({ key: "tag" }).input().dataset.field).toBe("tag");
-    expect(mount().input().dataset.field).toBeUndefined();
+  it("donne à son champ de saisie les données de l'appelant, pour qu'il lui rende le curseur", () => {
+    const { input } = mount({ data: { field: "tag", keep: "tags-x" } });
+    expect(input().dataset.field).toBe("tag");
+    expect(input().dataset.keep).toBe("tags-x");
+    expect(Object.keys(mount().input().dataset)).toEqual([]);
   });
 });

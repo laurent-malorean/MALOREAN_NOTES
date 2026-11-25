@@ -2,7 +2,7 @@
 
 use domain::NotePath;
 use domain::crm::action_write::without_project;
-use domain::crm::project::with_color;
+use domain::crm::project::{with_color, with_tags};
 use domain::crm::{Color, CrmKind, Name, Project, Reference, file_name_of, with_name};
 
 use super::files::CrmFiles;
@@ -49,6 +49,8 @@ pub enum ProjectChange {
     Rename(String),
     /// Sa couleur.
     Color(Color),
+    /// Ses étiquettes : nettoyées, sans doublon ; sans étiquette, la propriété est retirée.
+    Tags(Vec<String>),
 }
 
 /// Changer un projet.
@@ -91,6 +93,7 @@ impl<'a> ChangeProject<'a> {
                 with_name(content, &Name::unique(&name, others)?)
             }
             ProjectChange::Color(color) => with_color(content, color),
+            ProjectChange::Tags(tags) => with_tags(content, &tags),
         };
         if written != *content {
             self.store.write(&fiche.path, &written)?;

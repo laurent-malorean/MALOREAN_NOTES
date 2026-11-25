@@ -127,12 +127,59 @@ async function contentScenario(env: Env, trial: Trial, kind: Kind): Promise<void
   );
 }
 
+/** Un projet n'a pas de colonne à lui : son champ est sous sa ligne, dans l'onglet Projets du CRM. */
+async function projectScenario(env: Env, trial: Trial): Promise<void> {
+  const { path } = await env.bridge.createCrm("", "Essai champ projets");
+  const project = await env.bridge.createCrmProject(path, "Refonte");
+  const file = `${path.replace(/\.md$/, "")}/projets/${project}.md`;
+  env.open(path);
+  const tab = await until(
+    "l'onglet Projets",
+    () => findAll<HTMLElement>(".crm-tab").find((t) => t.textContent?.includes("Projets")),
+    WAIT,
+  );
+  tab.click();
+  const input = () => find<HTMLInputElement>(`.crm-project[data-project="${project}"] .tag-input`);
+  await until("le champ du projet", () => input(), WAIT);
+  trial.check(
+    "un projet : le champ et le « + » reçoivent le pointeur",
+    reachable(input()) && reachable(find(`.crm-project[data-project="${project}"] .tag-add`)),
+    "",
+  );
+  const field = input() as HTMLInputElement;
+  field.value = TAG;
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+  field.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+  );
+  const written = await until(
+    "l'étiquette du projet sur le disque",
+    async () => (inHeader(await onDisk(env, file)) ? true : null),
+    WAIT,
+  ).catch(() => null);
+  trial.check(
+    "un projet : ajouter une étiquette l'écrit dans sa fiche",
+    written !== null,
+    (await onDisk(env, file)).slice(0, 160),
+  );
+  find<HTMLButtonElement>(
+    `.crm-project[data-project="${project}"] [aria-label="Retirer l'étiquette ${TAG}"]`,
+  )?.click();
+  const removed = await until(
+    "l'étiquette du projet retirée",
+    async () => (inHeader(await onDisk(env, file)) ? null : true),
+    WAIT,
+  ).catch(() => null);
+  trial.check("un projet : la croix retire l'étiquette de sa fiche", removed !== null, "");
+}
+
 export function tagFieldScenarios(env: Env): Scenario[] {
   return [
     {
       name: "champ d'étiquettes sur chaque contenu",
       run: async (trial) => {
         for (const kind of KINDS) await contentScenario(env, trial, kind);
+        await projectScenario(env, trial);
       },
     },
   ];

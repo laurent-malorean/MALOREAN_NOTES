@@ -13,6 +13,12 @@ const title = (content: string) => /^# (.+)$/m.exec(content)?.[1] ?? "";
 const reference = (text: string | null) => /\[\[(.+?)\]\]/.exec(text ?? "")?.[1] ?? null;
 /** Le texte sous le titre : les notes libres. */
 const notesOf = (content: string) => content.replace(/^[\s\S]*?^# .*$\n?/m, "").trim();
+/** Les étiquettes d'une fiche, sous la forme `tags: [a, b]`. */
+const tagsOf = (content: string) =>
+  (/^\[(.*)\]$/.exec(value(content, "tags") ?? "")?.[1] ?? "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag !== "");
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** Le dossier d'une sorte de fiche d'un CRM : `clients.md` + `personnes` : `clients/personnes/`. */
@@ -74,6 +80,7 @@ export function listsOf(state: FakeNotes, crm: string, actions: CrmActionItem[])
     const mine = actions.filter((a) => a.project === name);
     return {
       ...{ name, title: title(content), color: value(content, "couleur") ?? PALETTE[0] },
+      tags: tagsOf(content),
       openActions: mine
         .filter((a) => a.open)
         .sort(byDate)
@@ -140,12 +147,13 @@ export function fakeCrmLists(state: FakeNotes, helpers: CrmHelpers): Record<stri
         `couleur: ${leastUsed(state, crm as string)}`,
       ]),
     change_crm_project: ({ crm, project, change }: Args) => {
-      const c = change as { kind: string; name?: string; color?: string };
-      write(fichePath(crm as string, "projets", project as string), (t) =>
-        c.kind === "color"
-          ? withKey(t, "couleur", c.color as string)
-          : t.replace(/^# .*$/m, `# ${(c.name as string).trim()}`),
-      );
+      const c = change as { kind: string; name?: string; color?: string; tags?: string[] };
+      write(fichePath(crm as string, "projets", project as string), (t) => {
+        if (c.kind === "color") return withKey(t, "couleur", c.color as string);
+        if (c.kind === "tags")
+          return withKey(t, "tags", c.tags?.length ? `[${c.tags.join(", ")}]` : null);
+        return t.replace(/^# .*$/m, `# ${(c.name as string).trim()}`);
+      });
       return null;
     },
     delete_crm_project: ({ crm, project }: Args) => {

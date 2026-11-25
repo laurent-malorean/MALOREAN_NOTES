@@ -259,6 +259,8 @@ pub struct CrmProjectItem {
     pub title: String,
     /// Sa couleur, un nom de la palette.
     pub color: String,
+    /// Ses étiquettes.
+    pub tags: Vec<String>,
     /// Les références de ses actions ouvertes, la plus en retard d'abord.
     pub open_actions: Vec<String>,
     /// Ses compteurs.
@@ -491,6 +493,7 @@ impl From<ProjectEntry> for CrmProjectItem {
             name: entry.name.as_str().to_owned(),
             title: entry.project.name,
             color: entry.project.color.name().to_owned(),
+            tags: entry.project.tags,
             open_actions: texts(entry.open_actions),
             tally: entry.tally.into(),
         }

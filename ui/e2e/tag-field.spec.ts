@@ -215,3 +215,26 @@ test("la fiche d'une personne a le sien, vide au départ", async ({ page }) => {
     "---\ntype: crm-personne\nentreprise: '[[acme]]'\ntags: [décideur]\n---\n# Jean Dupont\n",
   );
 });
+
+test("l'onglet Projets : chaque projet a son champ d'étiquettes, sous sa ligne", async ({
+  page,
+}) => {
+  const refonte = {
+    content: FICHE("crm-projet", "Refonte du site", "couleur: bleu\ntags: [client]\n"),
+    modified: 5,
+  };
+  await launch(page, { ...NOTES, "clients/projets/refonte.md": refonte });
+  await page.locator(".note-item", { hasText: "Clients" }).click();
+  await page.locator(".crm-tab", { hasText: "Projets" }).click();
+  const project = page.locator('.crm-project[data-project="refonte"]');
+  await expect(project.locator(".tag-chip")).toHaveText(["client×"]);
+  await project.getByLabel("Ajouter une étiquette").fill("2027");
+  await project.getByRole("button", { name: "Ajouter l'étiquette" }).click();
+  await expect(project.locator(".tag-chip")).toHaveText(["client×", "2027×"]);
+  expect(await saved(page, "clients/projets/refonte.md")).toBe(
+    "---\ntype: crm-projet\ncouleur: bleu\ntags: [client, 2027]\n---\n# Refonte du site\n",
+  );
+  await project.getByRole("button", { name: "Retirer l'étiquette client" }).click();
+  await expect(project.locator(".tag-chip")).toHaveText(["2027×"]);
+  expect(await saved(page, "clients/projets/refonte.md")).toContain("tags: [2027]");
+});

@@ -93,7 +93,7 @@ class TagBar implements NoteTags {
         suggestions,
         change: (next) => void this.change(next),
         draft: { get: () => this.draft, set: (text) => void (this.draft = text) },
-        key: FIELD_KEY,
+        data: { field: FIELD_KEY },
       }),
     );
     if (typing) this.bar.querySelector<HTMLInputElement>(`[data-field="${FIELD_KEY}"]`)?.focus();

@@ -38,7 +38,7 @@ export function tagsSection(model: WindowModel, act: WindowActions): HTMLElement
     suggestions: model.crm.tags,
     change: (tags) => act.change({ kind: "tags", tags }),
     draft: { get: () => act.drafts.get(TAG_KEY), set: (text) => act.drafts.set(TAG_KEY, text) },
-    key: TAG_KEY,
+    data: { field: TAG_KEY },
   });
   return section("crm-aw-tags-section", "Étiquettes", field);
 }

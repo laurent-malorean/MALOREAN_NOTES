@@ -14,12 +14,13 @@ Une étiquette ne s'ajoutait ou ne se retirait qu'en éditant la liste `tags:` d
 - **Une barre sous les onglets de chaque colonne** (`screens/note-tags.ts`, élément `tag-bar` de la colonne) montre le champ du contenu montré, quelle que soit son écran (éditeur, carte mentale, canvas, CRM, fiche) : un seul endroit, aucun écran n'a à le redessiner.
 - **Un seul geste côté Rust, pour tout fichier** : `note_tags(path)` lit, `change_note_tags(path, tags)` écrit (cas d'usage `ReadTags` et `ChangeTags`). Pour une note, un cahier, une carte, une fiche du CRM : la clé `tags` de l'en-tête est réécrite (`retagged`), le reste du fichier est gardé octet pour octet. Pour un canvas : la propriété `tags` de la **racine** du fichier JSON Canvas, toutes les autres propriétés gardées (`Canvas::with_tags`) ; Obsidian les garde aussi (`doc/specs/canvas.md` § 7.4). Les étiquettes écrites sont nettoyées comme celles d'une action (`written_tags` : sans doublon, majuscules et accents ignorés, celles qui changeraient le sens de la liste laissées de côté).
 - **Les étiquettes d'un canvas entrent dans l'index** (`file_tags` : le résumé d'un fichier les tire de la racine du canvas), donc la liste des notes, la liste des étiquettes et le filtre par étiquette les voient.
+- **Un projet n'a pas de colonne ni de fiche à lui** : il se montre dans l'onglet Projets du CRM. Son champ d'étiquettes est donc sous sa ligne, dessiné avec le même composant ; il passe par le geste d'un projet que le CRM connaît déjà (`ProjectChange::Tags`, qui réécrit `tags` avec les mêmes règles), le CRM est relu ensuite comme après chaque geste, et la vue du CRM porte les étiquettes de chaque projet (`CrmProjectItem.tags`).
 - **Ordre d'un geste** : ce qui est tapé dans la note est enregistré d'abord (le titre a pu changer son nom), Rust écrit, puis la colonne relit le fichier (`followDisk`) pour que le texte caché de l'éditeur, la carte, le canvas ou la fiche montrent la version écrite ; la liste des étiquettes et la liste des notes sont relues.
 - **La barre se relit** à l'ouverture d'un contenu (étiquettes et suggestions), à chaque enregistrement et à chaque changement venu d'ailleurs (étiquettes seulement) ; elle ne se redessine que si elles changent, la saisie en cours est gardée.
 
 ## Choix écartés
 
-- Un geste par sorte de fiche du CRM (`CompanyChange::Tags`, `PersonChange::Tags`…) : trois chemins de plus à écrire et à tester pour la même écriture d'une liste dans un en-tête.
+- Un geste par sorte de fiche du CRM pour l'entreprise et la personne (`CompanyChange::Tags`, `PersonChange::Tags`) : deux chemins de plus à écrire et à tester pour la même écriture d'une liste dans un en-tête, alors que leur colonne montre déjà le champ.
 - Écrire dans le texte de l'éditeur depuis l'interface : l'interface aurait dû connaître les formes de la liste `tags` (Rust les lit toutes).
 
 ## Conséquences

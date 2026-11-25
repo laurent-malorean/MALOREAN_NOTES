@@ -24,8 +24,8 @@ export interface TagFieldOptions {
   readonly change: (tags: string[]) => void;
   /** Le texte tapé et pas encore validé, gardé quand l'appelant redessine le champ. */
   readonly draft?: { get(): string; set(text: string): void };
-  /** Le nom `data-field` du champ de saisie, par lequel l'appelant lui rend le curseur après un dessin. */
-  readonly key?: string;
+  /** Les données (`data-…`) du champ de saisie, par lesquelles l'appelant lui rend le curseur après un dessin. */
+  readonly data?: Readonly<Record<string, string>>;
 }
 
 let fields = 0;
@@ -53,7 +53,7 @@ function proposals(id: string, suggestions: readonly string[], tags: readonly st
 
 /** Le champ d'étiquettes d'un contenu. */
 export function tagField(options: TagFieldOptions): HTMLElement {
-  const { tags, change, draft, key } = options;
+  const { tags, change, draft, data } = options;
   const id = `tag-field-suggestions-${String(++fields)}`;
   const root = h("div", "tag-field");
   root.setAttribute("role", "group");
@@ -65,7 +65,7 @@ export function tagField(options: TagFieldOptions): HTMLElement {
   input.placeholder = ADD_TAG;
   input.spellcheck = false;
   input.value = draft?.get() ?? "";
-  if (key !== undefined) input.dataset.field = key;
+  Object.assign(input.dataset, data);
   input.addEventListener("input", () => draft?.set(input.value));
   const add = () => {
     const text = input.value;

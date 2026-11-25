@@ -5,6 +5,7 @@ use super::header::{self, Style};
 use super::kind::{CrmKind, Unreadable, read_title};
 use super::name::Name;
 use super::palette::Color;
+use crate::tag::{retagged, tags, written_tags};
 
 /// La clé de l'en-tête qui donne la couleur du projet.
 const COLOR_KEY: &str = "couleur";
@@ -17,6 +18,8 @@ pub struct Project {
     /// Sa couleur : la première de la palette si elle est absente ou inconnue, sans que le fichier
     /// change.
     pub color: Color,
+    /// Ses étiquettes (`tags` de l'en-tête, comme toute note).
+    pub tags: Vec<String>,
 }
 
 impl Project {
@@ -30,7 +33,11 @@ impl Project {
         let color = header::scalar(content, COLOR_KEY)
             .and_then(|written| Color::parse(&written))
             .unwrap_or(Color::FIRST);
-        Ok(Self { name, color })
+        Ok(Self {
+            name,
+            color,
+            tags: tags(content),
+        })
     }
 
     /// Le texte d'un projet neuf, de la couleur que le CRM lui a choisie (la moins utilisée) : elle
@@ -44,6 +51,13 @@ impl Project {
             name.as_str()
         )
     }
+}
+
+/// Le texte du projet avec ces étiquettes, nettoyées comme pour toute note (sans doublon, la casse ne
+/// compte pas) ; sans étiquette, la propriété est retirée. Le reste est inchangé.
+#[must_use]
+pub fn with_tags(content: &str, new_tags: &[String]) -> String {
+    retagged(content, &written_tags(new_tags))
 }
 
 /// Le texte du projet avec cette couleur choisie par l'utilisateur, le reste inchangé.
@@ -69,7 +83,8 @@ mod tests {
             project,
             Project {
                 name: "Refonte du site".to_owned(),
-                color: color("bleu")
+                color: color("bleu"),
+                tags: Vec::new()
             }
         );
     }
@@ -122,5 +137,29 @@ mod tests {
             with_color(&written, color("vert")),
             "---\ntype: crm-projet\ncouleur: vert\n---\n# Refonte\n\nTexte gardé.\n"
         );
+    }
+
+    #[test]
+    fn the_tags_of_a_project_are_read_from_its_header() {
+        let read = |yaml: &str| {
+            Project::parse(&format!("---\ntype: crm-projet\n{yaml}---\n# P\n"))
+                .unwrap()
+                .tags
+        };
+        assert_eq!(read("tags: [client, 2027]\n"), ["client", "2027"]);
+        assert_eq!(read("tags:\n  - client\n"), ["client"]);
+        assert!(read("").is_empty());
+    }
+
+    #[test]
+    fn tagging_a_project_changes_only_that_property_and_keeps_the_text_under_the_title() {
+        let content = "---\ntype: crm-projet\ncouleur: bleu\n---\n# Refonte\n\nTexte gardé.\n";
+        let tags = |words: &[&str]| words.iter().map(|w| (*w).to_owned()).collect::<Vec<_>>();
+        let written = with_tags(content, &tags(&[" #client ", "Client", "a,b", "2027"]));
+        assert_eq!(
+            written,
+            "---\ntype: crm-projet\ncouleur: bleu\ntags: [client, 2027]\n---\n# Refonte\n\nTexte gardé.\n"
+        );
+        assert_eq!(with_tags(&written, &[]), content);
     }
 }
