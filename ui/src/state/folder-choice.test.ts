@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { folderChoices, folderLabel, newFolderName } from "./folder-choice";
+import { folderChoices, folderLabel, newFolderPath } from "./folder-choice";
 
 describe("étiquette d'un dossier dans l'arborescence du choix", () => {
   it("écrit le nom seul à la racine, puis « ⎿ » et un retrait de deux espaces insécables par niveau de plus", () => {
@@ -38,27 +38,48 @@ describe("dossiers proposés par le choix", () => {
   });
 });
 
-describe("nom d'un nouveau dossier", () => {
+describe("chemin d'un nouveau dossier", () => {
   it("accepte un nom, les espaces autour retirés", () => {
-    expect(newFolderName("Carnet")).toBe("Carnet");
-    expect(newFolderName("  Projets perso ")).toBe("Projets perso");
-    expect(newFolderName("a.b")).toBe("a.b");
-    expect(newFolderName("assets")).toBe("assets");
+    expect(newFolderPath("Carnet")).toBe("Carnet");
+    expect(newFolderPath("  Projets perso ")).toBe("Projets perso");
+    expect(newFolderPath("a.b")).toBe("a.b");
+    expect(newFolderPath("assets")).toBe("assets");
   });
 
-  it("refuse ce que Rust refuse : vide, caché, avec un séparateur, de pièces jointes ou de dépendances", () => {
+  it("accepte un chemin imbriqué, dont chaque nom est nettoyé", () => {
+    expect(newFolderPath("Perso/Carnet")).toBe("Perso/Carnet");
+    expect(newFolderPath("A/B/C")).toBe("A/B/C");
+    expect(newFolderPath(" Perso / Carnet ")).toBe("Perso/Carnet");
+  });
+
+  it("retire les « / » du début et de la fin, comme l'ancien champ libre", () => {
+    expect(newFolderPath("/Carnet/")).toBe("Carnet");
+    expect(newFolderPath("//Perso/Carnet//")).toBe("Perso/Carnet");
+  });
+
+  it("refuse un chemin dont un seul nom est refusé : vide, caché, de pièces jointes ou de dépendances", () => {
     for (const bad of [
       "",
       "   ",
+      "/",
+      "//",
+      "a//b",
+      "a/ /b",
       ".git",
-      "a/b",
-      "a\\b",
-      "x\0",
-      "voyage.assets",
+      "a/.cache",
+      ".a/b",
+      "a/voyage.assets",
+      "voyage.assets/a",
       "V.ASSETS",
-      "node_modules",
+      "a/node_modules",
+      "node_modules/a",
       "Node_Modules",
     ])
-      expect(newFolderName(bad), JSON.stringify(bad)).toBeNull();
+      expect(newFolderPath(bad), JSON.stringify(bad)).toBeNull();
+  });
+
+  it("refuse l'antislash et le caractère nul, dans un nom comme dans un chemin", () => {
+    for (const bad of ["a\\b", "a/b\\c", "x\0", "a/x\0"])
+      expect(newFolderPath(bad), JSON.stringify(bad)).toBeNull();
   });
 });

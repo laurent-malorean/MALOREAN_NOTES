@@ -213,7 +213,7 @@ function checkLists(trial: Trial, { window, templates, journal }: Lists): void {
   );
 }
 
-/** « Nouveau dossier… » : le champ sous la liste, un nom refusé, puis un nom accepté et gardé. */
+/** « Nouveau dossier… » : le champ sous la liste, un nom refusé, puis un nom et un chemin imbriqué acceptés et gardés. */
 async function checkNewFolder(trial: Trial, { panel, journal }: Lists): Promise<void> {
   choose(journal, NEW_FOLDER);
   const input = await until(
@@ -226,7 +226,7 @@ async function checkNewFolder(trial: Trial, { panel, journal }: Lists): Promise<
     "le champ du nom est visible sous la liste",
     rectOf(input).width > 0 && rectOf(input).y >= under,
   );
-  input.value = "a/b";
+  input.value = "a//b";
   input.dispatchEvent(
     new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
   );
@@ -238,6 +238,16 @@ async function checkNewFolder(trial: Trial, { panel, journal }: Lists): Promise<
   trial.check(
     "« Nouveau dossier… » enregistre le nouveau dossier comme dossier du journal",
     (stored("malorean.journal:") ?? "").includes('"folder":"Carnet"') && journal.value === "Carnet",
+    String(stored("malorean.journal:")),
+  );
+  choose(journal, NEW_FOLDER);
+  input.value = "A/B";
+  input.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+  );
+  trial.check(
+    "« Nouveau dossier… » accepte un chemin imbriqué (A/B) et le garde tel quel",
+    (stored("malorean.journal:") ?? "").includes('"folder":"A/B"') && journal.value === "A/B",
     String(stored("malorean.journal:")),
   );
 }
