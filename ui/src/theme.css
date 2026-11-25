@@ -142,6 +142,12 @@
 
   /* Fenêtre */
   --folders-width: 200px;
+  /* Hauteur de l'arborescence réglée à la souris : minimums des deux zones, poignée et son repère */
+  --folders-tree-min-height: 9rem;
+  --folders-tags-min-height: 6rem;
+  --folders-handle-height: 7px;
+  --folders-grip-width: 2.5rem;
+  --folders-grip-height: 3px;
   --folder-indent: 0.9rem;
   --folder-icon-size: 15px;
   --folder-icon-stroke: 1.8;
