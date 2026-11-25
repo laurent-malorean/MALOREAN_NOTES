@@ -42,3 +42,18 @@ pub trait SecretMaker: Send + Sync + Debug {
     /// [`StoreError::Unavailable`] si le système ne donne pas d'aléa.
     fn secret(&self) -> Result<String, StoreError>;
 }
+
+/// La prise de branchement : où les IA extérieures joignent l'application. Elle n'existe que tant
+/// qu'une clé de branchement existe ; la session l'ouvre et la ferme, l'adaptateur sait comment.
+pub trait ConnectionSocket: Send + Sync + Debug {
+    /// Ouvre la prise ; rien à faire si elle est déjà ouverte.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si la prise ne peut pas être ouverte.
+    fn open(&self) -> Result<(), StoreError>;
+
+    /// Ferme la prise : les IA branchées sont coupées tout de suite ; rien à faire si elle est
+    /// déjà fermée.
+    fn close(&self);
+}

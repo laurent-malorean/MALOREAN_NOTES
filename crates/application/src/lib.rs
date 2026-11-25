@@ -21,7 +21,7 @@ pub mod workspaces;
 mod writing;
 
 pub use claude::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn};
-pub use connection_ports::{ConnectionKeys, SecretMaker};
+pub use connection_ports::{ConnectionKeys, ConnectionSocket, SecretMaker};
 pub use error::AppError;
 pub use history::{History, HistoryOpener, HistoryPlace};
 pub use indexed_store::IndexedStore;

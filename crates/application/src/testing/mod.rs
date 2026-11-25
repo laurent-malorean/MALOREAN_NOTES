@@ -24,7 +24,7 @@ pub mod writing_contract;
 
 pub use fake_claude::{ClaudeRequest, FakeClaudeCode};
 pub use fake_clipboard::InMemoryClipboard;
-pub use fake_connection::{CountingSecretMaker, InMemoryConnectionKeys};
+pub use fake_connection::{CountingSecretMaker, FakeConnectionSocket, InMemoryConnectionKeys};
 pub use fake_exports::InMemoryExportStore;
 pub use fake_meaning::{FakeEmbedder, FakeMeaningModels};
 pub use fake_watcher::FakeWatcher;
