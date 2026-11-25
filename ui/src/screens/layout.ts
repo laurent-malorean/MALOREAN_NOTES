@@ -1,3 +1,5 @@
+import { buildDisplayTools } from "./editor-tools";
+
 /** Les éléments de la fenêtre, cherchés une seule fois. */
 export interface Layout {
   readonly welcome: HTMLElement;
@@ -17,7 +19,7 @@ export interface Layout {
   readonly noteOrder: HTMLSelectElement;
   readonly newFolderButton: HTMLButtonElement;
   readonly trashButton: HTMLButtonElement;
-  /** Le champ de recherche, dans la bande du haut, entre la barre de mise en forme et les boutons Focus, Plan… */
+  /** Le champ de recherche, dans la bande du haut, à droite des trois blocs : mise en forme, copies, outils d'affichage. */
   readonly searchField: HTMLInputElement;
   /** La fenêtre de recherche : les résultats, en deux colonnes. */
   readonly searchWindow: HTMLDialogElement;
@@ -30,7 +32,7 @@ export interface Layout {
   readonly ideasCompute: HTMLElement;
   readonly notesList: HTMLElement;
   readonly editor: HTMLElement;
-  /** La barre de mise en forme, au centre de la bande du haut, à gauche des boutons Focus, Plan… */
+  /** La barre de mise en forme (deux blocs), à gauche de la bande du haut, suivie du bloc d'outils d'affichage. */
   readonly formatBar: HTMLElement;
   readonly focusButton: HTMLButtonElement;
   readonly typewriterButton: HTMLButtonElement;
@@ -97,16 +99,11 @@ const TEMPLATE = `
       </aside>
       <main class="editor">
         <div class="editor-tools">
-          <div class="format-bar"></div>
-          <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
-          <div class="display-tools">
-            <button class="tool" data-focus title="Mode focus (Cmd+Maj+F)">Focus</button>
-            <button class="tool" data-outline title="Plan de la note (Cmd+Maj+O)" aria-pressed="false">Plan</button>
-            <button class="tool" data-typewriter title="Mode machine à écrire (Cmd+Maj+T)" aria-pressed="false">Machine à écrire</button>
-            <button class="tool" data-side-panels title="Panneaux latéraux : dossiers et notes (Cmd+0)" aria-pressed="true">Panneaux</button>
-            <button class="tool" data-full-screen title="Plein écran (Ctrl+Cmd+F)">Plein écran</button>
-            <button class="tool" data-claude title="Colonne Claude Code (Ctrl+Cmd+L)" aria-pressed="false">Claude</button>
+          <div class="tool-blocks">
+            <div class="format-bar"></div>
+            <div class="display-tools format-group"></div>
           </div>
+          <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
         </div>
         <div class="columns"></div>
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
@@ -135,6 +132,7 @@ const TEMPLATE = `
 
 export function createLayout(root: HTMLElement): Layout {
   root.innerHTML = TEMPLATE;
+  buildDisplayTools(root.querySelector(".display-tools") as HTMLElement);
   const find = <T extends HTMLElement>(selector: string) => root.querySelector(selector) as T;
   return {
     welcome: find(".welcome"),

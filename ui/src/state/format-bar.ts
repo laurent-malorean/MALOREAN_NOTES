@@ -1,5 +1,5 @@
-// Barre de mise en forme : ses boutons, en deux pilules. Leur nom et leur raccourci viennent de
-// la liste des commandes, la même que la palette et la barre des menus.
+// Barre de mise en forme et bloc d'outils d'affichage : leurs boutons, en pilules. Leur raccourci
+// vient de la liste des commandes, la même que la palette et la barre des menus.
 import { COMMANDS, type Command, type CommandId } from "./commands";
 
 /** Les icônes dessinées de la barre : une par bouton. */
@@ -14,7 +14,14 @@ export type FormatIcon =
   | "numbered-list"
   | "date"
   | "markdown"
-  | "copy";
+  | "copy"
+  | "focus"
+  | "outline"
+  | "typewriter"
+  | "panels"
+  | "full-screen"
+  | "full-screen-exit"
+  | "claude";
 
 /** Un bouton de la barre : la commande qu'il lance, et l'icône qu'il montre (jamais de texte). */
 export interface FormatButton {
@@ -52,6 +59,34 @@ export function formatButtonName(id: CommandId): string {
 
 /** La bulle d'aide : le nom de la commande, et son raccourci s'il en a un. */
 export function formatButtonTitle(id: CommandId): string {
-  const { label, shortcut } = command(id);
+  return displayToolTitle(command(id).label, id);
+}
+
+/** Un bouton du bloc d'outils d'affichage : sa clé (`data-<clé>` dans la fenêtre), son nom de départ, sa commande, son icône. */
+export interface DisplayTool {
+  readonly key: string;
+  readonly label: string;
+  readonly command: CommandId;
+  readonly icon: FormatIcon;
+}
+
+/** Le troisième bloc, de gauche à droite : les boutons qui changent l'affichage, jamais le texte de la note. */
+export const DISPLAY_TOOLS: readonly DisplayTool[] = [
+  { key: "focus", label: "Focus", command: "toggle-focus", icon: "focus" },
+  { key: "outline", label: "Plan", command: "toggle-outline", icon: "outline" },
+  {
+    key: "typewriter",
+    label: "Machine à écrire",
+    command: "toggle-typewriter",
+    icon: "typewriter",
+  },
+  { key: "side-panels", label: "Panneaux", command: "toggle-side-panels", icon: "panels" },
+  { key: "full-screen", label: "Plein écran", command: "toggle-full-screen", icon: "full-screen" },
+  { key: "claude", label: "Claude", command: "toggle-claude-column", icon: "claude" },
+];
+
+/** La bulle d'aide d'un bouton d'affichage : son nom du moment, et le raccourci de sa commande. */
+export function displayToolTitle(label: string, id: CommandId): string {
+  const { shortcut } = command(id);
   return shortcut ? `${label} (${shortcut})` : label;
 }

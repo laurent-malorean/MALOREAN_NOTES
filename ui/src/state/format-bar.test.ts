@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { FORMAT_BAR, formatButtonName, formatButtonTitle } from "./format-bar";
+import {
+  DISPLAY_TOOLS,
+  FORMAT_BAR,
+  displayToolTitle,
+  formatButtonName,
+  formatButtonTitle,
+} from "./format-bar";
 
 describe("barre de mise en forme", () => {
   it("range ses boutons en deux pilules, dans l'ordre validé", () => {
@@ -49,5 +55,48 @@ describe("barre de mise en forme", () => {
 
   it("sans raccourci, la bulle d'aide ne donne que le nom", () => {
     expect(formatButtonTitle("open-link")).toBe("Ouvrir le lien");
+  });
+});
+
+describe("bloc d'outils d'affichage", () => {
+  it("range les six boutons dans l'ordre d'avant : Focus, Plan, Machine à écrire, Panneaux, plein écran, Claude", () => {
+    expect(DISPLAY_TOOLS.map((tool) => [tool.key, tool.label])).toEqual([
+      ["focus", "Focus"],
+      ["outline", "Plan"],
+      ["typewriter", "Machine à écrire"],
+      ["side-panels", "Panneaux"],
+      ["full-screen", "Plein écran"],
+      ["claude", "Claude"],
+    ]);
+  });
+
+  it("lance les mêmes commandes qu'avant, avec leurs raccourcis", () => {
+    expect(DISPLAY_TOOLS.map((tool) => tool.command)).toEqual([
+      "toggle-focus",
+      "toggle-outline",
+      "toggle-typewriter",
+      "toggle-side-panels",
+      "toggle-full-screen",
+      "toggle-claude-column",
+    ]);
+  });
+
+  it("donne à chaque bouton sa propre icône, absente des autres boutons de la barre", () => {
+    const icons = DISPLAY_TOOLS.map((tool) => tool.icon);
+    expect(icons).toEqual(["focus", "outline", "typewriter", "panels", "full-screen", "claude"]);
+    const used = [...FORMAT_BAR.flat().map((button) => button.icon), ...icons];
+    expect(new Set(used).size).toBe(used.length);
+  });
+
+  it("la bulle d'aide dit le nom du bouton et le raccourci de sa commande", () => {
+    expect(displayToolTitle("Focus", "toggle-focus")).toBe("Focus (Cmd+Maj+F)");
+    expect(displayToolTitle("Quitter le plein écran", "toggle-full-screen")).toBe(
+      "Quitter le plein écran (Ctrl+Cmd+F)",
+    );
+    expect(displayToolTitle("Claude", "toggle-claude-column")).toBe("Claude (Ctrl+Cmd+L)");
+  });
+
+  it("sans raccourci, la bulle d'aide ne donne que le nom", () => {
+    expect(displayToolTitle("Lien", "open-link")).toBe("Lien");
   });
 });

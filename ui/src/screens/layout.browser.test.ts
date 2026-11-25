@@ -57,15 +57,41 @@ describe("mise en page", () => {
     expect(layout.claudeButton.getAttribute("aria-pressed")).toBe("false");
   });
 
-  it("pose le champ de recherche dans la bande du haut, entre la barre de mise en forme et les boutons Focus, Plan…", () => {
+  it("pose les trois blocs d'icônes puis le champ de recherche sur la bande du haut", () => {
     const root = document.createElement("div");
     document.body.replaceChildren(root);
     const layout = createLayout(root);
     expect(layout.formatBar.className).toBe("format-bar");
-    expect(layout.formatBar.parentElement?.className).toBe("editor-tools");
-    expect(layout.formatBar.nextElementSibling).toBe(layout.searchField);
-    const displayTools = layout.searchField.nextElementSibling as HTMLElement;
-    expect(displayTools.className).toBe("display-tools");
+    const blocks = layout.formatBar.parentElement as HTMLElement;
+    expect(blocks.className).toBe("tool-blocks");
+    expect(blocks.parentElement?.className).toBe("editor-tools");
+    expect([...blocks.children].map((child) => child.className)).toEqual([
+      "format-bar",
+      "display-tools format-group",
+    ]);
+    expect(blocks.nextElementSibling).toBe(layout.searchField);
+    expect(layout.searchField.nextElementSibling).toBeNull();
+    const displayTools = layout.focusButton.parentElement as HTMLElement;
+    expect(displayTools.className).toBe("display-tools format-group");
     expect(displayTools.firstElementChild).toBe(layout.focusButton);
+  });
+
+  it("les six boutons d'affichage sont des icônes, trouvées par leur nom", () => {
+    const root = document.createElement("div");
+    document.body.replaceChildren(root);
+    const layout = createLayout(root);
+    const named = [
+      [layout.focusButton, "Focus"],
+      [layout.outlineButton, "Plan"],
+      [layout.typewriterButton, "Machine à écrire"],
+      [layout.sidePanelsButton, "Panneaux"],
+      [layout.fullScreenButton, "Plein écran"],
+      [layout.claudeButton, "Claude"],
+    ] as const;
+    for (const [button, name] of named) {
+      expect(button.getAttribute("aria-label")).toBe(name);
+      expect(button.textContent).toBe("");
+      expect(button.querySelector("svg")).not.toBeNull();
+    }
   });
 });

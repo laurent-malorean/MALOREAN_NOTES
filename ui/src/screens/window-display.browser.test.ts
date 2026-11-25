@@ -65,11 +65,11 @@ describe("plein écran et panneaux latéraux", () => {
     const { display, window, fullScreenButton, panelsHidden } = setup();
     await display.toggleFullScreen();
     expect(window.calls).toEqual([true]);
-    expect(fullScreenButton.textContent).toBe("Quitter le plein écran");
+    expect(fullScreenButton.getAttribute("aria-label")).toBe("Quitter le plein écran");
     expect(panelsHidden()).toBe(false);
     await display.toggleFullScreen();
     expect(window.calls).toEqual([true, false]);
-    expect(fullScreenButton.textContent).toBe("Plein écran");
+    expect(fullScreenButton.getAttribute("aria-label")).toBe("Plein écran");
   });
 
   it("le bouton bascule le plein écran", async () => {
@@ -98,7 +98,7 @@ describe("plein écran et panneaux latéraux", () => {
     window.fullScreen = true;
     window.resize();
     await settle();
-    expect(fullScreenButton.textContent).toBe("Quitter le plein écran");
+    expect(fullScreenButton.getAttribute("aria-label")).toBe("Quitter le plein écran");
     expect(fullScreenButton.getAttribute("aria-pressed")).toBe("true");
     expect(panelsHidden()).toBe(false);
   });
@@ -108,7 +108,7 @@ describe("plein écran et panneaux latéraux", () => {
     refused.fullScreenButton.click();
     await settle();
     expect(refused.error).toHaveBeenCalledTimes(1);
-    expect(refused.fullScreenButton.textContent).toBe("");
+    expect(refused.fullScreenButton.getAttribute("aria-label")).toBeNull();
     await refused.display.toggleFullScreen().catch(() => undefined);
     expect(refused.display.leaveFullScreen()).toBe(false);
     const mute = setup(fakeWindow({ failAsk: true }));
