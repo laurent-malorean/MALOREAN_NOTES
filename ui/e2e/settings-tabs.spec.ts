@@ -70,4 +70,8 @@ test("l'onglet Index dit l'état de l'index de mots et le reconstruit", async ({
   await expect(page.locator(".status")).toContainText("Index reconstruit");
   // L'index de sens est dans le même onglet.
   await expect(settings.locator(".meaning-settings")).toContainText("Recherche par le sens");
+  const bar = settings.getByRole("progressbar", { name: "Index de sens" });
+  await expect(bar).toBeVisible();
+  await expect(bar).toHaveAttribute("aria-valuenow", /^\d+$/);
+  await expect(settings.locator(".index-bar-percent")).toHaveText(/^\d+ %$/);
 });

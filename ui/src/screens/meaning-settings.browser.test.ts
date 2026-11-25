@@ -11,13 +11,17 @@ const large: ModelRow = {
   ...{ downloaded: false, used: false, downloading: false, progress: null },
 };
 
-function render(rows: readonly ModelRow[], lines: readonly string[] = []) {
+function render(
+  rows: readonly ModelRow[],
+  lines: readonly string[] = [],
+  percent: number | null = null,
+) {
   const fieldset = meaningSettingsFrame();
   document.body.replaceChildren(fieldset);
   const asked: string[] = [];
   renderMeaningSettings(
     fieldset,
-    { rows, lines },
+    { rows, lines, percent },
     {
       choose: (model) => asked.push(`choisir ${model}`),
       download: (model) => asked.push(`télécharger ${model}`),
@@ -136,11 +140,31 @@ describe("réglages de la recherche par le sens", () => {
     expect(asked).toEqual(["reconstruire"]);
   });
 
+  it("montre une barre de progression de l'index de sens, avant ses chiffres, quand l'avancement est lu", () => {
+    const { fieldset } = render([small], ["Segments calculés : 120 sur 411"], 29);
+    const index = fieldset.querySelector(".meaning-index");
+    expect(index?.children[0]?.className).toBe("index-bar");
+    const bar = index?.querySelector("[role=progressbar]");
+    expect([bar?.getAttribute("aria-label"), bar?.getAttribute("aria-valuenow")]).toEqual([
+      "Index de sens",
+      "29",
+    ]);
+    expect(index?.querySelector(".index-bar-percent")?.textContent).toBe("29 %");
+    expect(index?.children[1]?.textContent).toBe("Segments calculés : 120 sur 411");
+  });
+
+  it("n'en montre pas tant que l'avancement n'est pas lu, et la montre vide à 0 %", () => {
+    expect(render([small], [], null).fieldset.querySelector(".index-bar")).toBeNull();
+    expect(render([small], [], 0).fieldset.querySelector(".index-bar-percent")?.textContent).toBe(
+      "0 %",
+    );
+  });
+
   it("remplace ce qu'elle montrait", () => {
     const { fieldset } = render([small, large]);
     renderMeaningSettings(
       fieldset,
-      { rows: [small], lines: [] },
+      { rows: [small], lines: [], percent: null },
       {
         choose() {},
         download() {},
