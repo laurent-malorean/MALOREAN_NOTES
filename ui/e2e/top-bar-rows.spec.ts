@@ -180,3 +180,22 @@ test("à deux lignes, chaque bouton reste visible, nommé en bulle d'aide et cli
     await expect(button).toHaveAttribute("aria-label", /\S/);
   }
 });
+
+test("zone du milieu plus étroite que l'affichage et la recherche à leur minimum : la recherche passe seule sur une troisième ligne, sans déborder", async ({
+  page,
+}) => {
+  await launch(page, 1800);
+  // Bande resserrée à 290 points utiles (l'affichage et la recherche minimale en demandent 310).
+  await page.locator(".editor-tools").evaluate((row) => (row.style.width = "316px"));
+  const s = await strip(page);
+  expect(Math.round(s.inner.width)).toBe(290);
+  expect(s.overflow).toBe(0);
+  expect(Math.abs(s.display.x - s.inner.x)).toBeLessThan(1);
+  expect(s.search.y).toBeGreaterThanOrEqual(s.display.y + s.display.height - 1);
+  expect(Math.abs(s.search.x - s.inner.x)).toBeLessThan(1);
+  expect(Math.abs(right(s.search) - right(s.inner))).toBeLessThan(1);
+  expect(s.search.width).toBeGreaterThanOrEqual(SEARCH_MINIMUM);
+  // Assez large pour la mise en forme et les copies sur une ligne (389 points) : les deux lignes propres.
+  await page.locator(".editor-tools").evaluate((row) => (row.style.width = "430px"));
+  expectTwoRows(await strip(page));
+});

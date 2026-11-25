@@ -760,6 +760,13 @@ button {
     width: 100%;
   }
 }
+/* Plus étroit encore que l'affichage et la recherche à leur minimum (310 points, 19,5 rem) : la
+   recherche passe seule sur une troisième ligne, pleine largeur, plutôt que de déborder. */
+@container editor-tools (max-width: 19.5rem) {
+  .tool-rows > .search-field {
+    grid-column: 1 / -1;
+  }
+}
 .format-bar {
   display: flex;
   flex: 0 1 auto;

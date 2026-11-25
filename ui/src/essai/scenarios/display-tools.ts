@@ -9,6 +9,8 @@ import { type Rect, centreOf, find, findAll, rectOf } from "./env";
 const NAMES = ["Focus", "Plan", "Machine à écrire", "Panneaux", "Plein écran", "Claude"];
 /** La largeur utile à partir de laquelle la bande tient sur une ligne : 44,1 rem. */
 const SWITCH_WIDTH = 44.1 * 16;
+/** La largeur de la mise en forme et des copies côte à côte (première ligne). */
+const FIRST_ROW_WIDTH = 390;
 /** Le minimum du champ de recherche : 6 rem. */
 const SEARCH_MINIMUM = 96;
 const ROOT_REM = 16;
@@ -195,21 +197,43 @@ function checkTwoRows(trial: Trial, when: string): void {
   );
 }
 
-/** La disposition suit la largeur réelle de la zone du milieu : une ligne au-dessus du seuil, deux dessous. */
+/** Zone du milieu plus étroite que la mise en forme et les copies côte à côte : rien ne déborde, la recherche est seule, pleine largeur. */
+function checkNarrowest(trial: Trial, when: string): void {
+  const parts = partsOf();
+  const row = strip();
+  if (parts === null || row === null) return trial.check(`${when} : la bande est présente`, false);
+  const { display, search } = parts;
+  const edge = row.getBoundingClientRect().right - parseFloat(getComputedStyle(row).paddingRight);
+  trial.check(
+    `${when} : rien ne déborde`,
+    row.scrollWidth <= row.clientWidth,
+    String(row.scrollWidth - row.clientWidth),
+  );
+  trial.check(
+    `${when} : la recherche, entière, est sous les icônes d'affichage`,
+    search.y >= display.y + display.height - 1 &&
+      search.width >= SEARCH_MINIMUM - 0.5 &&
+      Math.abs(search.x + search.width - edge) < 1,
+    JSON.stringify([display, search].map((r) => Math.round(r.y))),
+  );
+}
+
+/** La disposition suit la largeur réelle de la zone du milieu : une ligne au-dessus du seuil, deux dessous, sobre en dessous de la place des deux blocs. */
 function checkLayoutFollowsWidth(trial: Trial, when: string): void {
   const row = strip();
   const parts = partsOf();
   if (row === null || parts === null) return trial.check(`${when} : la bande est présente`, false);
   const width = innerWidth(row);
-  const twoRows = parts.display.y > parts.format.y + parts.format.height - 1;
   trial.measure(`largeur de la bande ${when}`, [Math.round(width)]);
+  if (width < FIRST_ROW_WIDTH)
+    return checkNarrowest(trial, `${when} (${Math.round(width)} points)`);
+  const twoRows = parts.display.y > parts.format.y + parts.format.height - 1;
   trial.check(
     `${when} : ${twoRows ? "deux lignes" : "une ligne"} pour ${Math.round(width)} points de bande`,
     twoRows === width < SWITCH_WIDTH,
   );
   if (twoRows) checkTwoRows(trial, when);
   else checkOneRow(trial, when);
-  checkPointer(trial, when);
 }
 
 /** Ouvre la colonne Claude Code, mesure la bande dans la vraie fenêtre, la ferme. */
@@ -224,6 +248,7 @@ async function checkWithClaudeColumn(trial: Trial): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
     trial.check("la colonne Claude Code est ouverte", !column.hidden);
     checkLayoutFollowsWidth(trial, "colonne Claude Code ouverte");
+    checkPointer(trial, "colonne Claude Code ouverte");
     // Bande resserrée comme le ferait une colonne de gauche large : deux lignes, quelle que soit la fenêtre.
     squeezed(SWITCH_WIDTH - 60 + 2 * 0.8 * ROOT_REM, () =>
       checkLayoutFollowsWidth(trial, "colonne Claude Code ouverte, bande étroite"),
