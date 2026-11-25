@@ -9,11 +9,17 @@ export interface CrmDeps {
   readonly backend: CrmBackend;
   /** Pose une question avant un geste qui en change d'autres ; rend vrai si l'utilisateur accepte. */
   readonly confirm: (question: string, confirm: string) => Promise<boolean>;
+  /** Fait choisir une note par la recherche de notes (fenêtre d'une action) ; son titre, `null` si on annule. */
+  readonly chooseNote: () => Promise<string | null>;
 }
 
 export interface CrmPaneOptions {
   readonly deps: CrmDeps;
   readonly error: (error: unknown) => void;
+  /** Ouvre la note de ce titre dans la colonne active. */
+  readonly openNote: (title: string) => void;
+  /** Dit quelque chose à l'utilisateur (« E-mails copiés. »). */
+  readonly notice: (message: string) => void;
 }
 
 export interface CrmPane {
@@ -82,9 +88,9 @@ class ColumnCrm implements CrmPane {
 
   private open(path: string): void {
     this.close();
-    const { deps, error } = this.options;
+    const { deps, error, openNote, notice } = this.options;
     this.path = path;
-    this.view = createCrmView({ ...deps, path, error, tab: tabMemory(path) });
+    this.view = createCrmView({ ...deps, path, error, openNote, notice, tab: tabMemory(path) });
     this.column.append(this.view.element);
     this.column.classList.add("crm-shown");
   }

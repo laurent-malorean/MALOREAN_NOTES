@@ -8,6 +8,12 @@ import { lookupsOf } from "../state/crm-card";
 import { weekAround } from "../state/crm-days";
 import type { Move } from "../state/crm-drop";
 import { type CrmTab, isFiltered, NO_FILTERS, storedTab, TABS, toggled } from "../state/crm";
+import {
+  type ActionWindow,
+  createActionWindow,
+  type Start,
+  type WindowEnvironment,
+} from "./crm-action-window";
 import { type BoardActions, type BoardContext, kanbanBoard } from "./crm-board";
 import { datum, h } from "./crm-dom";
 import { createFiltersBar, type FiltersBar } from "./crm-filters";
@@ -19,7 +25,14 @@ import "./crm.css";
 /** Ce que le CRM d'une colonne demande à Rust, par le pont. */
 export type CrmBackend = Pick<
   typeof Bridge,
-  "readCrm" | "createCrmAction" | "moveCrmAction" | "changeCrmAction" | "changeCrmStages"
+  | "readCrm"
+  | "createCrmAction"
+  | "moveCrmAction"
+  | "changeCrmAction"
+  | "deleteCrmAction"
+  | "changeCrmStages"
+  | "copyPlainText"
+  | "openWebAddress"
 >;
 
 export interface CrmViewDeps {
@@ -31,6 +44,14 @@ export interface CrmViewDeps {
   readonly error: (error: unknown) => void;
   /** L'onglet choisi, gardé sur ce Mac pour ce CRM. */
   readonly tab: { load(): string | null; store(tab: CrmTab): void };
+  /** La fenêtre d'une action : fait choisir une note par la recherche de notes (son titre, `null` si on annule). */
+  readonly chooseNote: () => Promise<string | null>;
+  /** La fenêtre d'une action : ouvre la note de ce titre dans la colonne active. */
+  readonly openNote: (title: string) => void;
+  /** La fenêtre d'une action : dit quelque chose à l'utilisateur (« E-mails copiés. »). */
+  readonly notice: (message: string) => void;
+  /** La fenêtre d'une action : ouvre la fiche d'une personne ; sans elle, pas de lien vers la fiche. */
+  readonly openPerson?: (reference: string) => void;
 }
 
 export interface CrmView {
@@ -61,6 +82,7 @@ class CrmScreen implements CrmView {
   private weekMonday: string | null = null;
   private readonly closedMore = new Map<string, number>();
   private quick: QuickAdd | null = null;
+  private win: ActionWindow | null = null;
   private lastPerson = "";
   private stageEdit: StageEdit | null = null;
   private focusKey: string | null = null;
@@ -89,6 +111,7 @@ class CrmScreen implements CrmView {
 
   destroy(): void {
     this.generation += 1;
+    this.win?.close();
     this.element.remove();
   }
 
@@ -144,6 +167,7 @@ class CrmScreen implements CrmView {
     this.restoreScrolls(scrolls);
     this.restoreFocus(keep);
     this.redrawing = false;
+    this.win?.update(data);
   }
 
   private content(data: CrmItem): HTMLElement[] {
@@ -191,8 +215,33 @@ class CrmScreen implements CrmView {
     return done;
   }
 
+  /** Ouvre la fenêtre d'une action, la précédente fermée d'abord. */
+  private showWindow(start: Start): void {
+    const data = this.data;
+    if (data === null) return;
+    this.win?.close();
+    this.win = createActionWindow(data, start, this.windowEnvironment());
+  }
+
+  private windowEnvironment(): WindowEnvironment {
+    const { backend, path, error } = this.deps;
+    const { confirm, chooseNote, openNote, notice, openPerson } = this.deps;
+    return {
+      ...{ confirm, chooseNote, openNote, notice, error },
+      change: (action, change) => this.gesture(() => backend.changeCrmAction(path, action, change)),
+      create: (draft) => this.gesture(() => backend.createCrmAction(path, draft)),
+      remove: (action) => this.gesture(() => backend.deleteCrmAction(path, action)),
+      openAddress: (url) => void backend.openWebAddress(url).catch(error),
+      copy: async (text) => void (await backend.copyPlainText(text)),
+      ...(openPerson === undefined ? {} : { openPerson }),
+      closed: () => void (this.win = null),
+    };
+  }
+
   private readonly actions: BoardActions = {
+    openAction: (name) => this.showWindow({ kind: "existing", name }),
     openQuick: (key) => this.openQuick(key),
+    details: () => this.openDetails(),
     title: (title) => void (this.quick = this.quick && { ...this.quick, title }),
     person: (person) => {
       this.lastPerson = person;
@@ -230,14 +279,30 @@ class CrmScreen implements CrmView {
     );
   }
 
+  /** « + Ajouter une action » : un jour de Ma semaine, ou un CRM sans personne, ouvre la fenêtre ; une colonne ouvre la ligne d'ajout rapide. */
   private openQuick(key: string): void {
+    const [kind, ...rest] = key.split(":");
+    const where = rest.join(":");
+    if (kind === "day") return this.showWindow({ kind: "new", prefill: { date: where } });
+    if ((this.data as CrmItem).people.length === 0)
+      return this.showWindow({ kind: "new", prefill: { status: where } });
     const known = (this.data as CrmItem).people.some((person) => person.name === this.lastPerson);
     this.quick = { key, title: "", person: known ? this.lastPerson : "" };
     this.focusKey = "quick";
     this.render();
   }
 
-  /** « Entrée » : crée l'action (aujourd'hui ou le jour de la colonne, le statut de la colonne, le projet filtré s'il n'y en a qu'un) ; la ligne reste ouverte pour la suivante. */
+  /** « Plus de détails » : la fenêtre de l'action, avec le titre et la personne déjà remplis ; la ligne se ferme. */
+  private openDetails(): void {
+    const quick = this.quick;
+    if (quick === null) return;
+    this.quick = null;
+    this.render();
+    const status = quick.key.slice(quick.key.indexOf(":") + 1);
+    this.showWindow({ kind: "new", prefill: { title: quick.title, status, person: quick.person } });
+  }
+
+  /** « Entrée » : crée l'action (aujourd'hui, le statut de la colonne, le projet filtré s'il n'y en a qu'un) ; la ligne reste ouverte pour la suivante. */
   private async submitQuick(): Promise<void> {
     const quick = this.quick;
     if (quick === null || quick.title.trim() === "") return;
@@ -253,12 +318,11 @@ class CrmScreen implements CrmView {
   }
 
   private draft(quick: QuickAdd): CrmActionDraftItem {
-    const [kind, ...rest] = quick.key.split(":");
-    const where = rest.join(":");
+    const status = quick.key.slice(quick.key.indexOf(":") + 1);
     const projects = this.filters.projects;
     return {
-      ...{ title: quick.title.trim(), status: kind === "status" ? where : null },
-      ...{ date: kind === "day" ? where : null, people: quick.person === "" ? [] : [quick.person] },
+      ...{ title: quick.title.trim(), status, date: null },
+      people: quick.person === "" ? [] : [quick.person],
       ...{ channel: null, color: null, tags: [], linkedNotes: [], description: "" },
       project: projects.length === 1 ? (projects[0] as string) : null,
     };

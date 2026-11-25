@@ -20,6 +20,10 @@ const action = (title: string, status: string, date: string, rank = "") =>
 const NOTES: Notes = {
   "courses.md": { content: "# Courses\n- lait", modified: 20 },
   "clients.md": { content: "---\ntype: crm\n---\n# Clients\n", modified: 10 },
+  "clients/personnes/marie-durand.md": {
+    content: "---\ntype: crm-personne\n---\n# Marie Durand\n",
+    modified: 5,
+  },
   "clients/actions/2026-11-20-devis.md": {
     content: action("Devis", "TODO", "2026-11-20"),
     modified: 1,

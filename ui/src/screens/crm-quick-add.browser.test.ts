@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { action, crm, sample } from "../../test-support/crm-fixture";
+import { action, crm, person as personNamed, sample } from "../../test-support/crm-fixture";
 import {
   buttonNamed,
   callsTo,
@@ -129,7 +129,7 @@ describe("CRM : ajout rapide", () => {
     person().value = "marie-durand";
     person().dispatchEvent(new Event("change", { bubbles: true }));
     press(title(), "Escape");
-    m.disk.crm = crm({ actions: [action("a")] });
+    m.disk.crm = crm({ people: [personNamed("autre", "Autre")], actions: [action("a")] });
     await m.view.reload();
     open("TODO");
     expect(person().value).toBe("");
@@ -206,16 +206,10 @@ describe("CRM : ajout rapide dans Ma semaine", () => {
     expect(document.querySelector(".crm-column.late .crm-add-action")).toBeNull();
   });
 
-  it("crée l'action à la date du jour de la colonne, sans statut donné (TODO)", async () => {
-    const m = await mountCrm({ tab: "week" });
+  it("ouvre la fenêtre de l'action, sans ligne d'ajout rapide", async () => {
+    await mountCrm({ tab: "week" });
     (dayColumn("2026-11-27").querySelector(".crm-add-action") as HTMLButtonElement).click();
-    type(title(), "Vendredi");
-    enter();
-    await vi.waitFor(() => expect(callsTo(m, "createCrmAction")).toHaveLength(1));
-    expect(callsTo(m, "createCrmAction")[0]?.[2]).toMatchObject({
-      title: "Vendredi",
-      status: null,
-      date: "2026-11-27",
-    });
+    expect(document.querySelector(".crm-aw")).not.toBeNull();
+    expect(document.querySelector(".crm-quick-add")).toBeNull();
   });
 });

@@ -4,6 +4,7 @@
 // date, étapes).
 import type { ColumnItem, CrmActionItem, CrmItem } from "../src/bridge";
 import { addDays } from "../src/state/crm-days";
+import { fakeCrmActionGestures, withActionData } from "./fake-crm-action";
 import { fakeCrmGestures } from "./fake-crm-gestures";
 import {
   type Args,
@@ -84,7 +85,10 @@ function view(state: FakeNotes, path: string, filters: Args, weekDay: string | n
 
 export type { CrmHelpers };
 
-export function fakeCrms(state: FakeNotes, helpers: CrmHelpers): Record<string, Handler> {
+export function fakeCrms(
+  state: FakeNotes & { trash: { notes: FakeNotes["notes"] } },
+  helpers: CrmHelpers,
+): Record<string, Handler> {
   return {
     create_crm: ({ folder = "", title = "" }) => {
       const path = helpers.freeName(folder, helpers.slug(title));
@@ -95,7 +99,12 @@ export function fakeCrms(state: FakeNotes, helpers: CrmHelpers): Record<string, 
       return { path };
     },
     read_crm: ({ path, filters, weekDay }: Args) =>
-      view(state, path as string, filters as Args, (weekDay as string | null) ?? null),
+      withActionData(
+        view(state, path as string, filters as Args, (weekDay as string | null) ?? null),
+        state,
+        path as string,
+      ),
     ...fakeCrmGestures(state, helpers, (path) => view(state, path, {}, null)),
+    ...fakeCrmActionGestures(state, helpers, state.trash, () => `${FAKE_TODAY} 10:32`),
   };
 }

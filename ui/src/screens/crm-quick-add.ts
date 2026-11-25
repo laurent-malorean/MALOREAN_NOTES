@@ -1,5 +1,5 @@
 // L'ajout rapide (fiche 0060, spécification § 7.1) : la ligne qui crée une action avec son seul
-// titre, au pied d'une colonne ouverte du Kanban ou d'un jour de Ma semaine.
+// titre, au pied d'une colonne ouverte du Kanban. « Plus de détails » ouvre la fenêtre de l'action.
 import type { CrmItem } from "../bridge";
 import { actionButton, h } from "./crm-dom";
 
@@ -8,7 +8,7 @@ export const NOBODY = "— Sans personne —";
 
 /** La ligne d'ajout rapide ouverte : où, ce qui est tapé, la personne choisie (`""` : aucune). */
 export interface QuickAdd {
-  /** L'endroit : `status:TODO` ou `day:2026-11-24`. */
+  /** L'endroit : la colonne, `status:TODO`. */
   readonly key: string;
   readonly title: string;
   readonly person: string;
@@ -20,6 +20,8 @@ export interface QuickAddActions {
   readonly person: (reference: string) => void;
   readonly submit: () => void;
   readonly close: () => void;
+  /** « Plus de détails » : la fenêtre de l'action, avec le titre et la personne déjà remplis. */
+  readonly details: () => void;
 }
 
 /** Les personnes du CRM par ordre alphabétique : « Marie Durand · Acme », sans entreprise pour NODATA. */
@@ -51,7 +53,10 @@ function personSelect(crm: CrmItem, chosen: string, change: (value: string) => v
   return select;
 }
 
-/** La ligne ouverte : un champ « Titre de l'action », la liste « Personne ». Entrée crée, Échap ferme. */
+/** Le texte du bouton qui ouvre la fenêtre de l'action. */
+export const DETAILS_TEXT = "Plus de détails";
+
+/** La ligne ouverte : un champ « Titre de l'action », la liste « Personne », « Plus de détails ». Entrée crée, Échap ferme. */
 export function quickAddForm(crm: CrmItem, state: QuickAdd, act: QuickAddActions): HTMLFormElement {
   const form = h("form", "crm-quick-add");
   const title = h("input", "crm-quick-title");
@@ -71,7 +76,9 @@ export function quickAddForm(crm: CrmItem, state: QuickAdd, act: QuickAddActions
     event.preventDefault();
     act.submit();
   });
-  form.append(title, personSelect(crm, state.person, act.person));
+  const details = actionButton("crm-quick-details link", DETAILS_TEXT);
+  details.addEventListener("click", act.details);
+  form.append(title, personSelect(crm, state.person, act.person), details);
   return form;
 }
 
