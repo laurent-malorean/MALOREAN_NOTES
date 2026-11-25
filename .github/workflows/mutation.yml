@@ -1,0 +1,103 @@
+# Test de mutation de tout le Rust, chaque nuit, par groupes parallèles (doc/decisions/0059, qui complète 0050 et 0053).
+# Les groupes (nom, crate, fichiers) sont décrits dans scripts/mutation-groupes.json, source unique ; la première
+# tâche en tire la matrice, chaque groupe joue sa mutation sur sa machine (25 minutes au plus), la dernière tâche
+# résume. Réglage de chaque groupe (scripts/mutation-groupe.sh) : --all-features --jobs 4 --test-workspace=false,
+# coupure des erreurs qui bouclent à 30 s (domaine) ou 90 s (ailleurs), rejeu des dépassements (scripts/mutation-rejeu.sh,
+# fiche 0053). Un survivant fait échouer le groupe (GitHub envoie un e-mail) ; un dépassement persistant avertit.
+name: mutation
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+    inputs:
+      groupe:
+        description: "Un seul groupe (nom dans scripts/mutation-groupes.json) ; vide : tous les groupes"
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  matrice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrice: ${{ steps.matrice.outputs.matrice }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - name: Lire les groupes
+        id: matrice
+        env:
+          GROUPE: ${{ inputs.groupe }}
+        run: |
+          matrice=$(scripts/mutation-groupes.sh matrice "$GROUPE")
+          echo "$matrice"
+          echo "matrice=$matrice" >> "$GITHUB_OUTPUT"
+
+  mutation:
+    name: ${{ matrix.nom }}
+    needs: matrice
+    runs-on: ${{ matrix.machine }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrice.outputs.matrice) }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - name: Installer Rust stable
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Retrouver cargo-mutants
+        id: cache
+        uses: actions/cache/restore@v4.2.0
+        with:
+          path: ~/.cargo/bin/cargo-mutants
+          key: cargo-mutants-27.1.0-${{ runner.os }}-${{ runner.arch }}
+      - name: Installer cargo-mutants
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: cargo install --locked --version 27.1.0 cargo-mutants
+      - name: Garder cargo-mutants
+        # Séparé de la restauration : gardé même si la mutation échoue ensuite (survivant).
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4.2.0
+        with:
+          path: ~/.cargo/bin/cargo-mutants
+          key: cargo-mutants-27.1.0-${{ runner.os }}-${{ runner.arch }}
+      - name: Mutation du groupe
+        # Coupée avant la fin du travail (25 minutes) pour que le bilan soit toujours joint.
+        timeout-minutes: 22
+        env:
+          GROUPE: ${{ matrix.nom }}
+        run: scripts/mutation-groupe.sh "$GROUPE" out
+      - name: Joindre le bilan
+        if: always()
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: mutation-${{ matrix.nom }}
+          path: out/mutants.out
+          if-no-files-found: warn
+
+  resume:
+    needs: [matrice, mutation]
+    if: always() && needs.matrice.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - name: Télécharger les bilans
+        uses: actions/download-artifact@v4.1.8
+        with:
+          pattern: mutation-*
+          path: bilans
+      - name: Summary
+        env:
+          MATRICE: ${{ needs.matrice.outputs.matrice }}
+        run: scripts/mutation-resume.sh bilans "$MATRICE" | tee -a "$GITHUB_STEP_SUMMARY"
