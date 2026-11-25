@@ -198,9 +198,9 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
     await openedWindow();
     expect(field<HTMLInputElement>("title").value).toBe("Demande de devis");
     expect(control<HTMLTextAreaElement>("Description").value).toBe("Pour 3 postes");
-    const tags = [...document.querySelectorAll(".crm-aw-tag")].map((t) => t.textContent);
+    const tags = [...document.querySelectorAll(".tag-chip")].map((t) => t.textContent);
     expect(tags).toEqual(["urgent×", "salon×"]);
-    expect((found(".crm-aw-tag") as HTMLElement).style.getPropertyValue("--label-color")).toBe(
+    expect((found(".tag-chip") as HTMLElement).style.getPropertyValue("--label-color")).toBe(
       "var(--palette-orange)",
     );
     expect(text(".crm-aw-note-link")).toBe("Cahier des charges");
@@ -208,7 +208,8 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
     const suggestions = [...document.querySelectorAll(".crm-aw datalist option")].map(
       (o) => (o as HTMLOptionElement).value,
     );
-    expect(suggestions).toEqual(["salon", "urgent", "vip"]);
+    // « urgent » et « salon » sont déjà sur l'action : seules celles qu'elle n'a pas sont proposées.
+    expect(suggestions).toEqual(["vip"]);
     expect(control<HTMLInputElement>("Ajouter une étiquette").getAttribute("list")).toBe(
       found("datalist")?.id,
     );

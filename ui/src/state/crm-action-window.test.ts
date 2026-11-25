@@ -20,7 +20,6 @@ import {
   PEOPLE_SEPARATOR,
   progress,
   segmentsOf,
-  withTag,
 } from "./crm-action-window";
 
 const data = () => sample();
@@ -214,17 +213,6 @@ describe("commentaires, le plus récent d'abord", () => {
       { index: 0, comment: comments[0] },
     ]);
     expect(newestFirst([])).toEqual([]);
-  });
-});
-
-describe("étiquettes", () => {
-  it("ajoute une étiquette sans espaces autour", () => {
-    expect(withTag(["a"], "  b ")).toEqual(["a", "b"]);
-  });
-
-  it("refuse une étiquette vide ou déjà là, la casse ne comptant pas", () => {
-    expect(withTag(["a"], "   ")).toEqual(["a"]);
-    expect(withTag(["Salon"], "salon")).toEqual(["Salon"]);
   });
 });
 

@@ -17,6 +17,7 @@ import { fakeCanvases } from "./fake-canvas";
 import { fakeCrms } from "./fake-crm";
 import { fakeContentType, fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
 import { fakeEntryResults, fakeNotebook } from "./fake-notebook";
+import { fakeTags } from "./fake-tags";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 import { type FakeWriting, fakeWriting, fakeWritingState } from "./fake-writing";
 
@@ -438,6 +439,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...fakeMindMaps(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeCanvases(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeCrms(backend, { freeName, slug, tick: () => (clock += 1) }),
+  ...fakeTags(backend, { tagsOf, tick: () => (clock += 1) }),
   ...fakeMeaning(backend, {
     ...{ notes: () => backend.notes, listItem, folded },
     folderOf,

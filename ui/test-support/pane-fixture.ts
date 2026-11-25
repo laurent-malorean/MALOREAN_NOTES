@@ -6,7 +6,7 @@ import type { LinkingNoteItem } from "../src/bridge/generated/LinkingNoteItem";
 import type { SaveResult } from "../src/bridge/generated/SaveResult";
 import type { Scheduler } from "../src/state/autosave";
 import type { ColumnParts } from "../src/screens/columns-view";
-import { createPane, type Pane, type PaneBackend } from "../src/screens/note-pane";
+import { createPane, type Pane, type PaneBackend, type PaneTags } from "../src/screens/note-pane";
 import {
   createSharedNotes,
   type SharedNotes,
@@ -21,12 +21,29 @@ type FakePaneBackend = PaneBackend &
     relatedNotes: (path: string) => Promise<NoteListItem[]>;
   };
 
+/** Ce que la fausse application garde pour les colonnes : les notes proches demandées, les étiquettes de chaque contenu (celles du fichier, que les gestes du champ changent). */
+function fakeColumnState() {
+  const tags: Record<string, string[]> = {};
+  const tagCalls: string[] = [];
+  const tagsChanged = { count: 0 };
+  const paneTags: PaneTags = {
+    read: (path) => (tagCalls.push(`lire ${path}`), Promise.resolve(tags[path] ?? [])),
+    change: (path, changed) => {
+      tagCalls.push(`changer ${path} ${changed.join(",")}`);
+      tags[path] = [...changed];
+      return Promise.resolve([...changed]);
+    },
+    suggestions: () => Promise.resolve(["perso", "voyage"]),
+    changed: () => void (tagsChanged.count += 1),
+  };
+  return { tags, tagCalls, tagsChanged, paneTags, relatedShown: { on: false } };
+}
+
 /** Un espace de travail en mémoire : chaque note, son contenu ; l'empreinte est le contenu même. */
 export function fakeBackend(notes: Record<string, string>) {
   const calls: string[] = [];
   const backlinks: Record<string, LinkingNoteItem[]> = {};
   const related: Record<string, NoteListItem[]> = {};
-  /** Une réponse retenue jusqu'à ce que sa porte s'ouvre : « lire a.md », « liens a.md ». */
   const gates: Record<string, Promise<void>> = {};
   const backend: FakePaneBackend = {
     fail: false,
@@ -77,13 +94,13 @@ export function fakeBackend(notes: Record<string, string>) {
     await gates[`${call} ${path}`];
     return lists[path] ?? [];
   };
-  /** Retient la réponse `call` ; rend de quoi la laisser passer. */
+  /** Retient la réponse `call` (« lire a.md », « liens a.md ») jusqu'à ce que sa porte s'ouvre ; rend de quoi la laisser passer. */
   const hold = (call: string) => {
     let open = () => {};
     gates[call] = new Promise((resolve) => (open = resolve));
     return open;
   };
-  return { backend, calls, notes, backlinks, related, relatedShown: { on: false }, hold };
+  return { backend, calls, notes, backlinks, related, hold, ...fakeColumnState() };
 }
 
 /** Un minuteur qu'on déclenche à la main. */
@@ -107,11 +124,12 @@ function column(
 ) {
   const { backend } = fake;
   const element = document.createElement("section");
+  const tags = document.createElement("div");
   const backlinks = document.createElement("nav");
   const related = document.createElement("nav");
-  element.append(backlinks, related);
+  element.append(tags, backlinks, related);
   document.body.append(element);
-  const parts: ColumnParts = { element, backlinks, related };
+  const parts: ColumnParts = { element, tags, backlinks, related };
   const images: string[] = [];
   const pane: Pane = createPane(parts, {
     backend,
@@ -122,6 +140,7 @@ function column(
       error: (error) => errors.push((error as Error).message),
     },
     related: { enabled: () => fake.relatedShown.on, notes: backend.relatedNotes },
+    tags: fake.paneTags,
     resolveImage: (src, note) => {
       images.push(`${note ?? "aucune"} ${src}`);
       return src;

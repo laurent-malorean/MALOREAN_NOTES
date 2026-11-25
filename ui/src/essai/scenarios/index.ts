@@ -13,6 +13,7 @@ import { newContentMenuScenarios } from "./new-content-menu";
 import { noteScenarios } from "./notes";
 import { searchScenarios } from "./search";
 import { settingsScenarios } from "./settings";
+import { tagFieldScenarios } from "./tag-field";
 import { workspaceSwitcherScenarios } from "./workspace-switcher";
 
 export function scenariosFor(env: Env): Scenario[] {
@@ -24,6 +25,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...crmTabsScenarios(env),
     ...crmActionScenarios(env),
     ...newContentMenuScenarios(env),
+    ...tagFieldScenarios(env),
     ...settingsScenarios(),
     ...displayToolsScenarios(),
     ...workspaceSwitcherScenarios(env),

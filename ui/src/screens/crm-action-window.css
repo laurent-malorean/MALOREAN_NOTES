@@ -132,20 +132,6 @@
 .crm-aw-remove:hover {
   color: var(--danger);
 }
-.crm-aw-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.crm-aw-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-.crm-aw-tag .crm-aw-remove {
-  margin-left: 2px;
-}
 
 /* Couleur : une pastille par couleur de la palette */
 .crm-aw-colors {

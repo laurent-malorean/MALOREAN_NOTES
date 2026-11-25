@@ -39,7 +39,7 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     expect(
       document.querySelector('.crm-aw-swatch[aria-pressed="true"]')?.getAttribute("aria-label"),
     ).toBe("rouge");
-    expect(document.querySelectorAll(".crm-aw-tag")).toHaveLength(1);
+    expect(document.querySelectorAll(".tag-chip")).toHaveLength(1);
     expect(document.querySelectorAll(".crm-aw-note")).toHaveLength(0);
   });
 
@@ -68,10 +68,10 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     area.dispatchEvent(new Event("input", { bubbles: true }));
     await changedElsewhere(m, { tags: ["vip"] });
     await tick();
-    expect(document.querySelectorAll(".crm-aw-tag")).toHaveLength(2);
-    expect(document.querySelectorAll(".crm-aw-tag")[0]?.textContent).toBe("urgent×");
+    expect(document.querySelectorAll(".tag-chip")).toHaveLength(2);
+    expect(document.querySelectorAll(".tag-chip")[0]?.textContent).toBe("urgent×");
     area.blur();
-    await vi.waitFor(() => expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("vip×"));
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
     expect(control<HTMLTextAreaElement>("Ajouter un commentaire").value).toBe("À moitié écrit");
   });
 
@@ -79,7 +79,7 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     const m = await openedWindow();
     control<HTMLSelectElement>("Statut").focus();
     await changedElsewhere(m, { tags: ["vip"] });
-    await vi.waitFor(() => expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("vip×"));
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
   });
 
   it("attend la fin d'un clic en cours avant de redessiner, pour ne pas perdre le clic", async () => {
@@ -87,9 +87,9 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     found(".crm-aw-body")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
     await changedElsewhere(m, { tags: ["vip"] });
     await tick();
-    expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("urgent×");
+    expect(document.querySelector(".tag-chip")?.textContent).toBe("urgent×");
     document.dispatchEvent(new PointerEvent("pointerup"));
-    await vi.waitFor(() => expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("vip×"));
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
   });
 
   it("une mise à jour annulée par le pointeur s'applique aussi", async () => {
@@ -97,7 +97,7 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     found(".crm-aw-body")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
     await changedElsewhere(m, { tags: ["vip"] });
     document.dispatchEvent(new PointerEvent("pointercancel"));
-    await vi.waitFor(() => expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("vip×"));
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
   });
 
   it("ne se redessine pas quand la lecture ne change rien à ce qu'elle montre", async () => {
@@ -131,7 +131,7 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     const m = await openedWindow();
     control<HTMLSelectElement>("Statut").focus();
     await changedElsewhere(m, { tags: ["vip"] });
-    await vi.waitFor(() => expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("vip×"));
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
     expect(document.activeElement).toBe(control("Statut"));
   });
 
@@ -144,7 +144,7 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     add.setSelectionRange(2, 4);
     await changedElsewhere(m, { tags: ["vip"] });
     add.blur();
-    await vi.waitFor(() => expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("vip×"));
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
     expect(control<HTMLInputElement>("Ajouter une étiquette").value).toBe("abcdef");
   });
 
@@ -156,7 +156,7 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     const before = body.scrollTop;
     expect(before).toBeGreaterThan(0);
     await changedElsewhere(m, { tags: ["vip"] });
-    await vi.waitFor(() => expect(document.querySelector(".crm-aw-tag")?.textContent).toBe("vip×"));
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
     expect((found(".crm-aw-body") as HTMLElement).scrollTop).toBe(before);
   });
 });

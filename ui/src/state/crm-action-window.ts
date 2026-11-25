@@ -146,13 +146,6 @@ export function newestFirst(
   return comments.map((comment, index) => ({ index, comment })).reverse();
 }
 
-/** La liste avec l'étiquette `tag` en plus ; refusée si elle est vide ou déjà là (la casse ne compte pas). */
-export function withTag(tags: readonly string[], tag: string): string[] {
-  const name = tag.trim();
-  const taken = tags.some((t) => t.toLowerCase() === name.toLowerCase());
-  return name === "" || taken ? [...tags] : [...tags, name];
-}
-
 /** Un morceau d'un commentaire : du texte, ou une adresse internet avec le texte qui la montre. */
 export type Segment =
   | { readonly kind: "text"; readonly text: string }

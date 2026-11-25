@@ -1059,6 +1059,14 @@ button {
   display: flex;
   flex-direction: column;
 }
+/* Les étiquettes du contenu montré, sous les onglets */
+.tag-bar {
+  padding: 0.35rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.tag-bar[hidden] {
+  display: none;
+}
 .column-header {
   display: flex;
   align-items: center;

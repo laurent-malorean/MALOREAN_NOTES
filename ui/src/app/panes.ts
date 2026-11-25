@@ -10,16 +10,23 @@ import {
   type Pane,
   type PaneBackend,
   type PaneEvents,
+  type PaneTags,
   type RelatedNotes,
 } from "../screens/note-pane";
 import type { Layout } from "../screens/layout";
 import type { SharedNotes } from "../screens/shared-notes";
 import { folderOf } from "../state/folders";
+import type * as Bridge from "../bridge";
+import type { Workspace } from "./workspace";
+
+/** Ce que le champ d'étiquettes d'une colonne demande à Rust. */
+type TagsBackend = Pick<typeof Bridge, "noteTags" | "changeNoteTags" | "listTags">;
 
 export interface PanesDeps {
   readonly backend: PaneBackend &
     Partial<CanvasHostBackend> &
-    Partial<CrmHostBackend> & { readonly fileAddress: (path: string) => string };
+    Partial<CrmHostBackend> &
+    Partial<TagsBackend> & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
   /** Ce que fait une colonne d'un cahier de recherche : son « + », ses liens vers une entrée. */
@@ -28,8 +35,8 @@ export interface PanesDeps {
   readonly layout?: Pick<Layout, "picker" | "confirmation">;
   /** Les notes proches de chaque colonne : demandées ou non, et lues par Rust. */
   readonly related?: RelatedNotes;
-  /** Le dossier de l'espace de travail ouvert. */
-  workspacePath(): string;
+  /** L'espace de travail ouvert : son dossier, et ce qui se relit quand les étiquettes d'un contenu changent. */
+  readonly workspace: Pick<Workspace, "path" | "refreshTags" | "refreshList">;
   /** Règle l'éditeur d'une nouvelle colonne comme ceux des autres : mode focus, caractères par page. */
   configure(editor: Editor): void;
 }
@@ -61,6 +68,22 @@ function crmOf(deps: PanesDeps) {
   return { crm: createCrmHost({ backend, dialog: layout.confirmation, picker: layout.picker }) };
 }
 
+/** Ce que le champ d'étiquettes d'une colonne demande à l'application ; rien si le pont manque. */
+function tagsOf(deps: PanesDeps): { tags?: PaneTags } {
+  const { backend, workspace, events } = deps;
+  const { noteTags, changeNoteTags, listTags } = backend;
+  if (noteTags === undefined || changeNoteTags === undefined || listTags === undefined) return {};
+  return {
+    tags: {
+      read: noteTags,
+      change: changeNoteTags,
+      suggestions: async () => (await listTags()).map((tag) => tag.name),
+      changed: () =>
+        void Promise.all([workspace.refreshTags(), workspace.refreshList()]).catch(events.error),
+    },
+  };
+}
+
 /** Ce qui pose l'éditeur d'une colonne qui vient d'apparaître. */
 export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
   return (parts) => {
@@ -72,8 +95,9 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       related: deps.related,
       ...canvasOf(deps),
       ...crmOf(deps),
+      ...tagsOf(deps),
       resolveImage: (src, note) =>
-        imageIn(deps.workspacePath(), note, src, deps.backend.fileAddress),
+        imageIn(deps.workspace.path(), note, src, deps.backend.fileAddress),
     });
     deps.configure(pane.editor);
     return pane;
