@@ -20,10 +20,10 @@ Les mots ci-dessous valent dans le domaine du CRM. Un même mot peut avoir un au
 | Carte | Une action, telle qu'elle se montre dans une colonne du Kanban ou de Ma semaine. Ne se dit que dans le CRM : à ne pas confondre avec la carte du canvas ni avec la carte mentale. |
 | Kanban | L'onglet du CRM qui montre ses actions en colonnes, une par statut. Ce n'est pas un type de note. |
 | Colonne du Kanban | Un statut du CRM. À ne pas confondre avec la colonne d'édition de la fenêtre. |
-| Statut | Ce qui place une action dans une colonne. Trois sont fixes : « À faire » (toujours la première), « Fait » et « Annulé » (les deux dernières). Entre « À faire » et « Fait », les étapes du CRM. |
-| Étape | Une colonne du Kanban entre « À faire » et « Fait », propre à un CRM. « En cours » et « En attente » tant que le CRM n'a pas choisi les siennes. |
-| Action ouverte | Une action « À faire » ou dans une étape. |
-| Action terminée | Une action « Fait » ou « Annulé ». |
+| Statut | Ce qui place une action dans une colonne. Trois sont fixes : « TODO » (toujours la première), « Done » et « Cancel » (les deux dernières). Entre « TODO » et « Done », les étapes du CRM. |
+| Étape | Une colonne du Kanban entre « TODO » et « Done », propre à un CRM. « Progress » et « WaitingFor » tant que le CRM n'a pas choisi les siennes. |
+| Action ouverte | Une action « TODO » ou dans une étape. |
+| Action terminée | Une action « Done » ou « Cancel ». |
 | Projet | Un regroupement d'actions, propre à un CRM : un nom et une couleur. |
 | Couleur d'action | Facultative : l'une des 10 couleurs de la palette (§ 3), sans rapport avec celle de son projet. |
 | Étiquette | Un mot court de l'en-tête (`tags`), comme pour toute note. Une action en a plusieurs. |
@@ -98,13 +98,13 @@ clients/actions/2026-11-24-demande-de-devis.md  type: crm-action
 ```markdown
 ---
 type: crm
-etapes: [En cours, En attente]
+etapes: [Progress, WaitingFor]
 ---
 # Clients
 ```
 
 - `type: crm` dit que la note est un CRM. Seule compte la première propriété `type:` au premier niveau de l'en-tête.
-- `etapes` est la liste ordonnée des étapes. Absente : « En cours » puis « En attente ». Une liste vide : aucune étape (le Kanban a trois colonnes). Elle se change dans le CRM (§ 5.5).
+- `etapes` est la liste ordonnée des étapes. Absente : « Progress » puis « WaitingFor ». Une liste vide : aucune étape (le Kanban a trois colonnes). Elle se change dans le CRM (§ 5.5).
 - Le titre est le premier titre `#`, comme toute note. Le CRM ne modifie jamais le texte sous le titre ; il ne l'affiche pas.
 
 ### 4.3 Une entreprise
@@ -153,7 +153,7 @@ Notes libres sur la personne.
 ---
 type: crm-action
 personnes: ['[[jean-dupont]] · [[acme]]', '[[marie-durand]]']
-statut: En cours
+statut: Progress
 date: '2026-11-24'
 canal: e-mail
 projet: '[[refonte-du-site]]'
@@ -236,7 +236,7 @@ couleur: bleu
 - Elle a **zéro, une ou plusieurs personnes**. Sans personne, elle n'apparaît sur la fiche d'aucune personne, seulement dans le Kanban, Ma semaine, les projets, la recherche et la fiche des notes liées.
 - On **donne** ou on **retire** une personne depuis la fenêtre de l'action. La personne donnée entre avec son entreprise de ce moment (NODATA si elle n'en a pas).
 - **Entreprises d'une action** : celles de ses personnes au moment où elles ont été données. Une action sans personne est dans NODATA.
-- Statut à la création : celui de la colonne où on l'ajoute, « À faire » sinon.
+- Statut à la création : celui de la colonne où on l'ajoute, « TODO » sinon.
 - Date à la création : aujourd'hui, modifiable.
 - On modifie et supprime toute action ; la suppression demande confirmation et envoie l'action à la corbeille, avec ses pièces jointes (restaurable comme une note).
 
@@ -249,14 +249,14 @@ couleur: bleu
 
 ### 5.5 Statuts et étapes
 
-- Statuts fixes : « À faire » (première colonne), « Fait » et « Annulé » (dernières). Entre eux, les étapes du CRM dans leur ordre.
-- On passe librement d'un statut à n'importe quel autre. « Annulé » n'exige pas de motif (la description sert si besoin).
-- **Une action dont le statut n'est pas une colonne du CRM** (fichier écrit à la main, étape retirée entre-temps) reste visible, rangée dans la colonne « À faire », sans que son fichier change.
+- Statuts fixes : « TODO » (première colonne), « Done » et « Cancel » (dernières). Entre eux, les étapes du CRM dans leur ordre.
+- On passe librement d'un statut à n'importe quel autre. « Cancel » n'exige pas de motif (la description sert si besoin).
+- **Une action dont le statut n'est pas une colonne du CRM** (fichier écrit à la main, étape retirée entre-temps) reste visible, rangée dans la colonne « TODO », sans que son fichier change.
 - Le statut se lit sans compter majuscules ni accents ; il s'écrit comme la colonne.
-- **Changer les étapes** : « + Ajouter une étape » (avant « Fait »), renommer, retirer, réordonner (§ 7.1). Une étape :
+- **Changer les étapes** : « + Ajouter une étape » (avant « Done »), renommer, retirer, réordonner (§ 7.1). Une étape :
   - ne porte ni le nom d'une colonne fixe, ni celui d'une autre étape (sans compter majuscules ni accents) ;
   - tient sur une ligne et fait 40 caractères au plus ;
-  - renommée, garde ses actions et leur rang ; retirée, renvoie ses actions en « À faire » (leur rang s'efface) ; un nom déjà pris par une autre étape se change en deux fois.
+  - renommée, garde ses actions et leur rang ; retirée, renvoie ses actions en « TODO » (leur rang s'efface) ; un nom déjà pris par une autre étape se change en deux fois.
 - Le changement touche plusieurs fichiers : tous ensemble, ou aucun. Interrompu en route, il est terminé au lancement suivant.
 
 ## 6. Créer un CRM
@@ -279,9 +279,9 @@ Un CRM sans fiche affiche, au centre, en couleur atténuée : « Ajoutez une pre
 
 ### 7.1 Kanban
 
-- **Colonnes** : « À faire », les étapes, « Fait », « Annulé ». Chaque en-tête montre le nom, le nombre de cartes de la colonne, puis, en rouge, le nombre de cartes en retard s'il y en a.
+- **Colonnes** : « TODO », les étapes, « Done », « Cancel ». Chaque en-tête montre le nom, le nombre de cartes de la colonne, puis, en rouge, le nombre de cartes en retard s'il y en a.
 - **Largeur d'une colonne** : 272 points ; quand la fenêtre a de la place, les colonnes s'élargissent pour la remplir, jusqu'à deux fois cette largeur (544 points). Trop de colonnes pour tenir : elles restent à 272 points et l'écran défile.
-- **Ordre dans une colonne ouverte** : les cartes **classées** (qui ont un rang) d'abord, dans l'ordre de leur rang, puis les autres par date, la plus ancienne d'abord. Une colonne terminée (« Fait », « Annulé ») : de la plus récente à la plus ancienne ; elle montre les **10 plus récentes** et, au pied, « Afficher 10 de plus (N restantes) ».
+- **Ordre dans une colonne ouverte** : les cartes **classées** (qui ont un rang) d'abord, dans l'ordre de leur rang, puis les autres par date, la plus ancienne d'abord. Une colonne terminée (« Done », « Cancel ») : de la plus récente à la plus ancienne ; elle montre les **10 plus récentes** et, au pied, « Afficher 10 de plus (N restantes) ».
 - **Une carte montre**, de haut en bas :
   - la date, ou la pastille de retard ou du jour (voir plus bas) à sa place ;
   - son projet, en étiquette à la couleur du projet (rien sans projet) ;
@@ -296,11 +296,11 @@ Un CRM sans fiche affiche, au centre, en couleur atténuée : « Ajoutez une pre
 - **Glisser une carte** dans une autre colonne change son statut ; elle prend la place où elle est lâchée.
 - **Ordre à la main** : lâcher une carte entre deux autres d'une colonne ouverte la place là ; hors des cartes, tout en bas. L'ordre est écrit dans le `rang` de chaque carte de la colonne. Changer le statut d'une action (fenêtre, glisser, Claude) efface son rang. Pendant un **filtre**, la carte lâchée change de colonne mais n'est pas placée : des cartes cachées rendraient la place fausse. Une colonne terminée ne se range pas à la main.
 - **Étapes, depuis le Kanban** :
-  - « + Ajouter une étape » (avant « Fait ») ouvre un champ « Nom de l'étape » : Entrée la crée, Échap annule ;
+  - « + Ajouter une étape » (avant « Done ») ouvre un champ « Nom de l'étape » : Entrée la crée, Échap annule ;
   - cliquer le nom d'une étape le modifie (ses actions la suivent) ;
-  - « × » la retire (une confirmation dit que ses actions repartent en « À faire » s'il y en a) ;
+  - « × » la retire (une confirmation dit que ses actions repartent en « TODO » s'il y en a) ;
   - glisser son en-tête la déplace.
-  « À faire », « Fait » et « Annulé » n'ont ni « × », ni renommage, ni glissement. Un nom refusé (§ 5.5) s'affiche en message d'erreur.
+  « TODO », « Done » et « Cancel » n'ont ni « × », ni renommage, ni glissement. Un nom refusé (§ 5.5) s'affiche en message d'erreur.
 - **Ajout rapide** : « + Ajouter une action » au pied de chaque colonne ouverte ouvre une ligne : un champ « Titre de l'action », une liste « Personne » (chaque personne avec son entreprise : « Marie Durand · Acme » ; « — Sans personne — » en tête, choisi d'office la première fois, puis la dernière choisie) et « Plus de détails ».
   - **Entrée** crée l'action (aujourd'hui, statut de la colonne, le projet filtré s'il n'y en a qu'un) et la ligne reste ouverte pour la suivante ; **Échap** la ferme ; un titre vide ne crée rien ; un titre en cours de saisie est gardé quand l'écran se redessine.
   - « Plus de détails » ouvre la fenêtre de l'action avec le titre et la personne déjà remplis.
@@ -317,7 +317,7 @@ Un CRM sans fiche affiche, au centre, en couleur atténuée : « Ajoutez une pre
 - Les actions **ouvertes** du CRM, rangées par jour. **Huit colonnes** : « En retard » à gauche (les actions ouvertes datées d'avant le lundi affiché, la plus ancienne d'abord), puis lundi à dimanche, les sept toujours visibles même vides, aujourd'hui mis en évidence. Les cartes sont celles du Kanban ; un clic ouvre la fenêtre de l'action.
 - Des flèches « ‹ » et « › » : semaine précédente et suivante ; « Aujourd'hui » revient à la semaine en cours. Le titre dit les dates (« Semaine du 23 nov. au 29 nov. »). La semaine commence le lundi.
 - **Glisser une carte** sur un jour change sa **date** ; elle est reçue n'importe où sur la colonne du jour (en-tête, bas, jour vide) ; on ne dépose pas dans « En retard ».
-- « + Ajouter une action » au pied de chaque jour : la fenêtre s'ouvre avec la date de ce jour et le statut « À faire ».
+- « + Ajouter une action » au pied de chaque jour : la fenêtre s'ouvre avec la date de ce jour et le statut « TODO ».
 
 ### 7.3 Personnes
 
@@ -427,10 +427,3 @@ Une fiche supprimée part à la corbeille et se restaure comme une note (avec se
 - Plusieurs utilisateurs, droits, mise à jour en direct entre utilisateurs.
 - Voir une fiche en texte dans l'éditeur (elle reste modifiable dans Obsidian ou par Claude).
 - Fonction dédiée aux données personnelles (RGPD) : une demande d'effacement se traite par la suppression habituelle.
-
-## 15. Points à confirmer (à retirer une fois tranchés)
-
-- Noms français des statuts : « À faire », « En cours », « En attente », « Fait », « Annulé » (à la place de TODO, Progress, WaitingFor, Done, Cancel).
-- Le nom d'une personne est un seul champ (« Prénom Nom »), non deux.
-- Les dossiers des fiches (`clients/actions/`…) se montrent dans la liste des dossiers comme tous les autres.
-- Une fiche s'ouvre dans sa vue ; son texte brut n'est pas ouvrable dans l'application (« Ouvrir la page de l'action » du dépôt d'origine n'existe pas ici).
