@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-25
 - **Statut** : acceptée
+- **Complétée par** la fiche 0072 (deux lignes propres quand la place manque ; remplace le troisième point ci-dessous).
 - **Complète** la fiche 0038 (barre de mise en forme : mêmes icônes, mêmes pilules) et la fiche 0054 (essai de l'application réelle).
 
 ## Contexte
