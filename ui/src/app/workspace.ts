@@ -34,7 +34,7 @@ export interface WorkspaceDeps {
     | "listTaggedNotes"
     | "listTags"
     | "createNote"
-    | "resolveLink"
+    | "resolveLinks"
     | "moveNote"
     | "rebuildIndex"
     | "indexOverview"
@@ -149,8 +149,15 @@ async function createNote(deps: WorkspaceDeps, folder?: string) {
 
 async function followLink(deps: WorkspaceDeps, title: string, inNewTab: boolean) {
   await deps.columns.activePane().flush();
-  const path = await deps.backend.resolveLink(title);
-  if (path === null) return deps.show(`Aucune note ne porte le titre « ${title} ».`, "info");
+  const [resolution] = await deps.backend.resolveLinks([title]);
+  if (resolution?.kind === "ambiguous")
+    return deps.show(
+      `Plusieurs contenus portent le nom « ${title} » : écrivez le dossier devant, [[Dossier/${title}]].`,
+      "info",
+    );
+  if (resolution?.kind !== "found")
+    return deps.show(`Aucune note ne porte le titre « ${title} ».`, "info");
+  const { path } = resolution;
   await (inNewTab ? deps.columns.openNote(path) : deps.columns.followNote(path));
 }
 

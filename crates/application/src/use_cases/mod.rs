@@ -9,6 +9,7 @@ mod export;
 mod folders;
 mod history;
 mod index;
+mod link_choices;
 mod list_notes;
 mod meaning;
 mod mind_map;
@@ -46,6 +47,7 @@ pub use history::{
     RestoreVersion,
 };
 pub use index::{ReadIndexStatus, RebuildIndex, RefreshIndex};
+pub use link_choices::{LinkChoices, LinkableContent};
 pub use list_notes::{ListAllNotes, ListNotes};
 pub use meaning::{
     BATCH_SIZE, ChooseModel, ComputeListener, ComputeMeaning, ComputeOutcome, ComputeProgress,

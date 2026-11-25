@@ -90,12 +90,14 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     ]);
   });
 
-  it("suit un lien entre notes par son titre, et liste les liens entrants d'une note", async () => {
-    const calls = recordCalls(null);
-    expect(await bridge.resolveLink("Courses")).toBeNull();
+  it("suit un lien par son nom, liste ce qu'on peut lier et les liens entrants d'une note", async () => {
+    const calls = recordCalls([]);
+    expect(await bridge.resolveLinks(["Courses", "Plan.canvas"])).toEqual([]);
+    await bridge.listLinkable();
     await bridge.listBacklinks("courses.md");
     expect(calls).toEqual([
-      { command: "resolve_link", args: { title: "Courses" } },
+      { command: "resolve_links", args: { targets: ["Courses", "Plan.canvas"] } },
+      { command: "list_linkable", args: {} },
       { command: "list_backlinks", args: { path: "courses.md" } },
     ]);
   });

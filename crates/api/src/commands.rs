@@ -25,6 +25,7 @@ pub mod connection;
 pub mod crm;
 pub mod export;
 pub mod history;
+pub mod links;
 pub mod meaning;
 pub mod menu;
 pub mod mind_map;
@@ -70,20 +71,6 @@ pub async fn search_notes(
 ) -> Result<Vec<SearchResultItem>, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.search_notes(&query, order)).await
-}
-
-/// Le chemin de la note qu'un lien `[[titre]]` désigne, ou rien.
-///
-/// # Errors
-///
-/// Le message de l'erreur, prêt à afficher : voir la méthode correspondante de [`Session`].
-#[tauri::command]
-pub async fn resolve_link(
-    session: SharedSession<'_>,
-    title: String,
-) -> Result<Option<String>, ApiError> {
-    let session = Arc::clone(&session);
-    in_background(move || session.resolve_link(&title)).await
 }
 
 /// Toutes les notes de l'espace de travail, pour l'ouverture rapide.
@@ -498,7 +485,8 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         workspaces::remove_workspace,
         list_notes,
         search_notes,
-        resolve_link,
+        links::resolve_links,
+        links::list_linkable,
         list_backlinks,
         list_all_notes,
         list_tagged_notes,

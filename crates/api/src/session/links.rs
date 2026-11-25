@@ -1,24 +1,42 @@
 //! Les liens entre notes de l'espace de travail ouvert, vus depuis l'interface.
 
-use application::use_cases::NoteLinks;
+use application::use_cases::{LinkChoices, NoteLinks};
 use domain::NotePath;
 
 use super::Session;
-use crate::{ApiError, LinkingNoteItem};
+use crate::{ApiError, LinkResolutionItem, LinkableItem, LinkingNoteItem};
 
 impl Session {
-    /// Le chemin de la note qu'un lien `[[title]]` désigne, ou rien si aucune note ne porte
-    /// ce titre.
+    /// Tout ce qu'un lien peut désigner, le plus récemment modifié en premier, chacun avec le
+    /// lien à écrire pour le désigner.
     ///
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
     /// espace de travail ouvert.
-    pub fn resolve_link(&self, title: &str) -> Result<Option<String>, ApiError> {
-        let store = self.store()?;
-        Ok(NoteLinks::new(&*store)
-            .resolve(title)?
-            .map(|path| path.to_path()))
+    pub fn list_linkable(&self) -> Result<Vec<LinkableItem>, ApiError> {
+        let index = self.index()?;
+        Ok(LinkChoices::new(&*index)
+            .contents()?
+            .into_iter()
+            .map(LinkableItem::from)
+            .collect())
+    }
+
+    /// Ce que désigne chacune des cibles de liens `targets` (`titre`, `nom.canvas`,
+    /// `Dossier/titre`), dans le même ordre.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; espace de travail illisible, aucun
+    /// espace de travail ouvert.
+    pub fn resolve_links(&self, targets: &[String]) -> Result<Vec<LinkResolutionItem>, ApiError> {
+        let index = self.index()?;
+        Ok(LinkChoices::new(&*index)
+            .resolve(targets)?
+            .into_iter()
+            .map(LinkResolutionItem::from)
+            .collect())
     }
 
     /// Les liens entrants de la note reçue de l'interface, la plus récente en premier.
@@ -66,14 +84,67 @@ mod tests {
         session
     }
 
+    fn targets(texts: &[&str]) -> Vec<String> {
+        texts.iter().map(|text| (*text).to_owned()).collect()
+    }
+
     #[test]
-    fn a_link_leads_to_the_path_of_the_note_with_that_title() {
-        let session = opened(&[("Cuisine/crepes.md", "# Crêpes")]);
+    fn each_link_leads_to_a_path_to_several_or_to_none() {
+        let session = opened(&[
+            ("Cuisine/crepes.md", "# Crêpes"),
+            ("a.md", "# Courses"),
+            ("b.md", "# Courses"),
+            ("Plan.canvas", "{}"),
+        ]);
+        let resolved = session
+            .resolve_links(&targets(&["crepes", "Courses", "Galettes", "Plan.canvas"]))
+            .unwrap();
+        assert_eq!(resolved.len(), 4);
         assert_eq!(
-            session.resolve_link("crepes").unwrap().as_deref(),
-            Some("Cuisine/crepes.md")
+            resolved[0],
+            LinkResolutionItem::Found {
+                path: "Cuisine/crepes.md".into()
+            }
         );
-        assert_eq!(session.resolve_link("Galettes").unwrap(), None);
+        assert!(
+            matches!(&resolved[1], LinkResolutionItem::Ambiguous { paths } if paths.len() == 2)
+        );
+        assert_eq!(resolved[2], LinkResolutionItem::Missing);
+        assert_eq!(
+            resolved[3],
+            LinkResolutionItem::Found {
+                path: "Plan.canvas".into()
+            }
+        );
+    }
+
+    #[test]
+    fn everything_a_link_can_designate_comes_with_the_link_to_write() {
+        let session = opened(&[
+            ("Cuisine/crepes.md", "# Crêpes"),
+            ("Plan du projet.canvas", "{}"),
+        ]);
+        let mut linkable = session.list_linkable().unwrap();
+        linkable.sort_by(|a, b| a.path.cmp(&b.path));
+        assert_eq!(
+            linkable,
+            [
+                LinkableItem {
+                    path: "Cuisine/crepes.md".into(),
+                    title: "Crêpes".into(),
+                    folder: "Cuisine".into(),
+                    content_type: ContentTypeItem::Note,
+                    link: "Crêpes".into(),
+                },
+                LinkableItem {
+                    path: "Plan du projet.canvas".into(),
+                    title: "Plan du projet".into(),
+                    folder: String::new(),
+                    content_type: ContentTypeItem::Canvas,
+                    link: "Plan du projet.canvas".into(),
+                },
+            ]
+        );
     }
 
     #[test]
@@ -141,7 +212,8 @@ mod tests {
             Arc::new(FakePreferences::default()),
             Arc::new(FixedClock::default()),
         );
-        assert!(closed.resolve_link("x").is_err());
+        assert!(closed.resolve_links(&targets(&["x"])).is_err());
+        assert!(closed.list_linkable().is_err());
         assert!(closed.list_backlinks("a.md").is_err());
     }
 }
