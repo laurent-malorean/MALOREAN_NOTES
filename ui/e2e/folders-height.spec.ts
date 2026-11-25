@@ -68,7 +68,8 @@ test("la poignée s'éclaire au survol et montre le curseur vertical ; on la tir
 
   await page.reload();
   await expect(page.locator(".folder-item").first()).toBeVisible();
-  expect(await height(tree(page))).toBe(first - 100);
+  // La hauteur gardée est arrondie au pixel.
+  expect(await height(tree(page))).toBeCloseTo(first - 100, 0);
 });
 
 test("ni trop bas ni trop haut ; un double-clic rend la hauteur par défaut", async ({ page }) => {
