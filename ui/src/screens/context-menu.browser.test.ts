@@ -114,6 +114,181 @@ describe("menu contextuel", () => {
     expect(entries()).toEqual(["Deux"]);
   });
 
+  it("un menu ouvert « au-dessus » a son bord bas au point donné, et au moins la largeur demandée", () => {
+    showContextMenu(
+      40,
+      300,
+      [
+        { label: "Un", run: () => {} },
+        { label: "Deux", run: () => {} },
+      ],
+      undefined,
+      { above: true, minWidth: 260 },
+    );
+    const box = (menu() as HTMLElement).getBoundingClientRect();
+    expect(box.bottom).toBe(300);
+    expect(box.left).toBe(40);
+    expect(box.width).toBeGreaterThanOrEqual(260);
+  });
+
+  it("un menu « au-dessus » trop haut pour la fenêtre se cale en haut, entier à l'écran", () => {
+    const many = Array.from({ length: 80 }, (_, at) => ({ label: `Choix ${at}`, run: () => {} }));
+    showContextMenu(0, 20, many, undefined, { above: true });
+    expect((menu() as HTMLElement).getBoundingClientRect().top).toBe(0);
+  });
+
+  it("un menu sans option s'ouvre en dessous du point donné", () => {
+    showContextMenu(10, 50, [{ label: "Un", run: () => {} }], undefined, {});
+    expect((menu() as HTMLElement).getBoundingClientRect().top).toBe(50);
+  });
+
+  it("un choix coché avec un nom d'état le dit aux lecteurs d'écran", () => {
+    showContextMenu(0, 0, [{ label: "Notes", checked: true, stateName: "ouvert", run: () => {} }]);
+    const open = document.querySelector<HTMLElement>(".context-menu button");
+    expect(open?.querySelector(".context-menu-check")?.textContent).toBe("✓");
+    expect(open?.querySelector(".context-menu-check")?.getAttribute("aria-hidden")).toBe("true");
+    expect(open?.querySelector(".context-menu-state")?.textContent).toBe(" ouvert");
+    expect(open?.getAttribute("aria-checked")).toBe("true");
+    expect(open?.classList.contains("checked")).toBe(false);
+  });
+
+  it("les autres choix du menu s'alignent sur le nom, sans coche ni nom d'état", () => {
+    showContextMenu(0, 0, [
+      { label: "Notes", checked: true, stateName: "ouvert", run: () => {} },
+      { label: "Travail", run: () => {} },
+      { label: "Ajouter…", separatorBefore: true, run: () => {} },
+    ]);
+    const [, other, add] = [...document.querySelectorAll<HTMLElement>(".context-menu button")];
+    expect(other?.querySelector(".context-menu-check")?.textContent).toBe("");
+    expect(other?.querySelector(".context-menu-state")).toBeNull();
+    expect(add?.querySelector(".context-menu-check")?.textContent).toBe("");
+    expect(add?.classList.contains("separated")).toBe(true);
+  });
+
+  it("sans nom d'état, aucune colonne de coche n'est réservée", () => {
+    showContextMenu(0, 0, [{ label: "Un", checked: true, run: () => {} }]);
+    expect(document.querySelector(".context-menu-check")).toBeNull();
+    expect(document.querySelector(".context-menu button")?.classList.contains("checked")).toBe(
+      true,
+    );
+  });
+
+  const key = (name: string) =>
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: name, cancelable: true }));
+  const focused = () => document.activeElement?.textContent;
+
+  it("les flèches parcourent les choix, en boucle, et sautent les choix grisés", () => {
+    showContextMenu(0, 0, [
+      { label: "Un", run: () => {} },
+      { label: "Deux", disabled: true, run: () => {} },
+      { label: "Trois", run: () => {} },
+    ]);
+    key("ArrowDown");
+    expect(focused()).toBe("Un");
+    key("ArrowDown");
+    expect(focused()).toBe("Trois");
+    key("ArrowDown");
+    expect(focused()).toBe("Un");
+    key("ArrowUp");
+    expect(focused()).toBe("Trois");
+    key("ArrowUp");
+    expect(focused()).toBe("Un");
+  });
+
+  it("flèche haut sans choix visé : le dernier ; Début et Fin vont aux extrémités", () => {
+    showContextMenu(0, 0, [
+      { label: "Un", run: () => {} },
+      { label: "Deux", run: () => {} },
+      { label: "Trois", run: () => {} },
+    ]);
+    key("ArrowUp");
+    expect(focused()).toBe("Trois");
+    key("Home");
+    expect(focused()).toBe("Un");
+    key("End");
+    expect(focused()).toBe("Trois");
+  });
+
+  it("les flèches ne défilent pas la page ; une autre touche n'y touche pas", () => {
+    showContextMenu(0, 0, [{ label: "Un", run: () => {} }]);
+    const down = new KeyboardEvent("keydown", { key: "ArrowDown", cancelable: true });
+    document.dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+    const other = new KeyboardEvent("keydown", { key: "a", cancelable: true });
+    document.dispatchEvent(other);
+    expect(other.defaultPrevented).toBe(false);
+  });
+
+  it("un menu sans choix possible ignore les flèches", () => {
+    showContextMenu(0, 0, [{ label: "Un", disabled: true, run: () => {} }]);
+    key("ArrowDown");
+    expect(menu()).not.toBeNull();
+    expect(menu()?.contains(document.activeElement)).toBe(false);
+  });
+
+  it("à l'ouverture avec le focus, le choix coché le reçoit ; sinon le premier", () => {
+    showContextMenu(
+      0,
+      0,
+      [
+        { label: "Un", run: () => {} },
+        { label: "Deux", checked: true, run: () => {} },
+      ],
+      undefined,
+      { focus: true },
+    );
+    expect(focused()).toBe("Deux");
+    showContextMenu(0, 0, [{ label: "Un", run: () => {} }], undefined, { focus: true });
+    expect(focused()).toBe("Un");
+  });
+
+  it("sans l'option, l'ouverture ne prend pas le focus", () => {
+    const opener = document.createElement("button");
+    document.body.append(opener);
+    opener.focus();
+    showContextMenu(0, 0, [{ label: "Un", run: () => {} }]);
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("Entrée sur le choix visé le fait (le bouton reçoit le clic) et ferme le menu", () => {
+    const chosen: string[] = [];
+    showContextMenu(0, 0, [{ label: "Un", run: () => chosen.push("un") }], undefined, {
+      focus: true,
+    });
+    (document.activeElement as HTMLElement).click();
+    expect(chosen).toEqual(["un"]);
+    expect(menu()).toBeNull();
+  });
+
+  it("fermé avec le focus, le menu le rend au bouton qui l'avait ouvert", () => {
+    const opener = document.createElement("button");
+    document.body.append(opener);
+    opener.focus();
+    showContextMenu(0, 0, [{ label: "Un", run: () => {} }], undefined, { focus: true });
+    expect(document.activeElement).not.toBe(opener);
+    key("Escape");
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("le bouton désigné comme ouvreur reprend le focus, même s'il ne l'avait pas", () => {
+    const opener = document.createElement("button");
+    document.body.append(opener);
+    showContextMenu(0, 0, [{ label: "Un", run: () => {} }], undefined, { focus: true, opener });
+    key("Escape");
+    expect(document.activeElement).toBe(opener);
+  });
+
+  it("fermé par un clic ailleurs, le menu ne reprend pas le focus", () => {
+    const opener = document.createElement("button");
+    const other = document.createElement("input");
+    document.body.append(opener, other);
+    opener.focus();
+    showContextMenu(0, 0, [{ label: "Un", run: () => {} }], undefined, { focus: true });
+    other.focus();
+    document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    expect(document.activeElement).toBe(other);
+  });
+
   it("cesse d'écouter le clavier et la souris une fois fermé", () => {
     const removed = vi.spyOn(document, "removeEventListener");
     showContextMenu(0, 0, [{ label: "Un", run: () => {} }]);

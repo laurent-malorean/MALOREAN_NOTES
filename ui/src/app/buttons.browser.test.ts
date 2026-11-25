@@ -11,7 +11,6 @@ function setup() {
   connectButtons(layout, {
     workspaces: {
       add: async () => void log.push("ajouter un espace de travail"),
-      choose: async () => void log.push("changer d'espace de travail"),
       menu: async () => {
         log.push("menu des espaces de travail");
         return [];
@@ -32,14 +31,12 @@ describe("boutons de la fenêtre", () => {
   it("chaque bouton lance son action", async () => {
     const { layout, log } = setup();
     layout.addButton.click();
-    layout.switchButton.click();
     layout.newNoteButton.click();
     layout.trashButton.click();
     layout.newFolderButton.click();
     await settle();
     expect(log).toEqual([
       "ajouter un espace de travail",
-      "changer d'espace de travail",
       "nouvelle note",
       "corbeille",
       "nouveau dossier",
@@ -53,6 +50,13 @@ describe("boutons de la fenêtre", () => {
     layout.searchField.dispatchEvent(new Event("input"));
     await settle();
     expect(log).toEqual(["menu des espaces de travail", "chercher rome"]);
+  });
+
+  it("la barre du pied des dossiers ouvre le même menu des espaces de travail", async () => {
+    const { layout, log } = setup();
+    layout.workspaceBar.click();
+    await settle();
+    expect(log).toEqual(["menu des espaces de travail"]);
   });
 
   it("la croix de la fenêtre de recherche la ferme", () => {

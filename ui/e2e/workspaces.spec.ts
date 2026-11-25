@@ -25,6 +25,7 @@ async function launch(page: Page) {
 }
 
 const switcher = (page: Page) => page.locator(".workspace-switcher");
+const bar = (page: Page) => page.locator(".workspace-bar");
 const titles = (page: Page) => page.locator(".note-title");
 const menuEntries = (page: Page) => page.locator(".context-menu button");
 const tabs = (page: Page) => page.getByRole("tab");
@@ -58,7 +59,7 @@ test("ajouter un espace de travail : choisir un dossier, le nommer ; ce qui est 
   await switcher(page).click();
   await expect(menuEntries(page)).toHaveText([
     "Notes",
-    "✓ Bureau",
+    "✓Bureau ouvert",
     "Ajouter un espace de travail…",
     "Renommer l'espace de travail…",
     "Retirer « Notes » de la liste…",
@@ -87,10 +88,63 @@ test("passer d'un espace à l'autre, au clavier aussi, retrouve les colonnes de 
   await expect(switcher(page)).toHaveText("Notes");
   await expect(tabTitles(page)).toHaveText(["Courses", "Idée"]);
   await expect(tabs(page).filter({ hasText: "Idée" })).toHaveAttribute("aria-selected", "true");
-  await page.locator("[data-switch]").click();
-  await page.locator(".picker-option").filter({ hasText: "Travail" }).click();
+  await bar(page).click();
+  await page
+    .locator(".context-menu")
+    .getByRole("menuitem", { name: "Travail", exact: true })
+    .click();
   await expect(switcher(page)).toHaveText("Travail");
   await expect(tabs(page).filter({ hasText: "Budget" })).toHaveAttribute("aria-selected", "true");
+});
+
+test("la barre du pied des dossiers montre l'espace ouvert et ouvre au-dessus d'elle le menu des espaces", async ({
+  page,
+}) => {
+  await launch(page);
+  await addTravail(page, "Bureau");
+  await expect(bar(page)).toHaveText("Bureau");
+  await expect(bar(page)).toHaveAccessibleName("Espace de travail : Bureau");
+  const bounds = async (selector: string) =>
+    (await page.locator(selector).boundingBox()) as {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+  const settings = await bounds("[data-settings]");
+  const barBox = await bounds(".workspace-bar");
+  const folders = await bounds(".folders");
+  expect(barBox.y).toBeGreaterThan(settings.y + settings.height - 1);
+  expect(barBox.x).toBeGreaterThanOrEqual(folders.x);
+  expect(barBox.x + barBox.width).toBeLessThanOrEqual(folders.x + folders.width + 1);
+  await bar(page).click();
+  const menu = await bounds(".context-menu");
+  expect(menu.y + menu.height).toBeLessThanOrEqual(barBox.y);
+  expect(menu.y).toBeGreaterThanOrEqual(0);
+  await expect(menuEntries(page)).toHaveText([
+    "Notes",
+    "✓Bureau ouvert",
+    "Ajouter un espace de travail…",
+    "Renommer l'espace de travail…",
+    "Retirer « Notes » de la liste…",
+  ]);
+  await expect(page.getByRole("menuitemcheckbox", { name: "Bureau ouvert" })).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(page.getByRole("menuitem", { name: "Notes", exact: true })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(bar(page)).toHaveText("Notes");
+  await expect(titles(page).first()).toHaveText("Courses");
+  await bar(page).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".context-menu")).toHaveCount(0);
+  await expect(bar(page)).toBeFocused();
+});
+
+test("l'ancienne ligne « Changer d'espace de travail » du bas de la liste des notes a disparu", async ({
+  page,
+}) => {
+  await launch(page);
+  await expect(page.locator(".notes-panel")).not.toContainText("Changer d'espace de travail");
 });
 
 test("renommer l'espace ouvert ne change que son nom, et un nom pris est refusé", async ({
@@ -134,7 +188,7 @@ test("retirer un espace l'oublie sans toucher à ses notes ; un dossier déjà p
   await page.getByRole("button", { name: "Retirer" }).click();
   await switcher(page).click();
   await expect(menuEntries(page)).toHaveText([
-    "✓ Travail",
+    "✓Travail ouvert",
     "Ajouter un espace de travail…",
     "Renommer l'espace de travail…",
   ]);
@@ -162,5 +216,5 @@ test("au relancement, la liste revient et l'espace ouvert en dernier est rouvert
   await expect(titles(page)).toHaveText(["Réunion", "Budget"]);
   await switcher(page).click();
   await expect(menuEntries(page).first()).toHaveText("Notes");
-  await expect(menuEntries(page).nth(1)).toHaveText("✓ Bureau");
+  await expect(menuEntries(page).nth(1)).toHaveText("✓Bureau ouvert");
 });

@@ -132,11 +132,37 @@ describe("espaces de travail", () => {
     const t = setup();
     const entries = await t.workspaces.menu();
     expect(entries.map((entry) => entry.label)).toEqual([
-      "✓ Notes",
+      "Notes",
       "Travail",
       "Ajouter un espace de travail…",
       "Renommer l'espace de travail…",
       "Retirer « Travail » de la liste…",
+    ]);
+    expect(entries.map((entry) => entry.checked)).toEqual([
+      true,
+      false,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    expect(entries.map((entry) => entry.stateName)).toEqual([
+      "ouvert",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  it("un séparateur précède l'ajout d'un espace de travail, et lui seul", async () => {
+    const t = setup();
+    const entries = await t.workspaces.menu();
+    expect(entries.map((entry) => entry.separatorBefore === true)).toEqual([
+      false,
+      false,
+      true,
+      false,
+      false,
     ]);
   });
 

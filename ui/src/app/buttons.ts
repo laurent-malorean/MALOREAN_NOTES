@@ -6,7 +6,7 @@ import { connectWorkspaceSwitcher } from "../screens/workspace-switcher";
 import type { Workspaces } from "./workspaces";
 
 export interface ButtonsDeps {
-  readonly workspaces: Pick<Workspaces, "add" | "choose" | "menu">;
+  readonly workspaces: Pick<Workspaces, "add" | "menu">;
   readonly workspace: { createNote(): Promise<void> };
   readonly search: { type(query: string): void };
   readonly trash: { show(): Promise<void> };
@@ -20,8 +20,8 @@ export interface ButtonsDeps {
 type ButtonsLayout = Pick<
   Layout,
   | "addButton"
-  | "switchButton"
   | "workspaceSwitcher"
+  | "workspaceBar"
   | "newNoteButton"
   | "searchField"
   | "searchWindow"
@@ -34,8 +34,8 @@ type ButtonsLayout = Pick<
 export function connectButtons(layout: ButtonsLayout, deps: ButtonsDeps): void {
   const { workspaces, run } = deps;
   layout.addButton.addEventListener("click", () => run(workspaces.add()));
-  layout.switchButton.addEventListener("click", () => run(workspaces.choose()));
   connectWorkspaceSwitcher(layout.workspaceSwitcher, workspaces.menu, deps.error);
+  connectWorkspaceSwitcher(layout.workspaceBar, workspaces.menu, deps.error, "above");
   layout.newNoteButton.addEventListener("click", () => run(deps.workspace.createNote()));
   connectSearchField(layout.searchField, deps.search.type);
   connectSearchWindow(layout, deps.actions.closeSearch);

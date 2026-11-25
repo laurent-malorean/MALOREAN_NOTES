@@ -201,6 +201,41 @@ button {
 .workspace-switcher:hover {
   background: color-mix(in srgb, var(--selected) 50%, transparent);
 }
+/* Le sélecteur du pied des dossiers : une barre, chevrons haut et bas puis le nom de l'espace ouvert */
+.workspace-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem 1rem;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--workspace-bar-text-size);
+  text-align: left;
+}
+.workspace-bar:hover {
+  background: color-mix(in srgb, var(--selected) 50%, transparent);
+}
+.workspace-bar-chevrons {
+  flex: none;
+  width: 0.8rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.workspace-bar-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .icon {
   background: none;
   border: 0;
@@ -415,6 +450,24 @@ button {
 }
 .context-menu button:hover:enabled {
   background: var(--selected);
+}
+.context-menu button:focus-visible {
+  background: var(--selected);
+  outline: none;
+}
+.context-menu-check {
+  display: inline-block;
+  width: 1.2em;
+  color: var(--muted);
+}
+/* Dit aux lecteurs d'écran ce que la coche montre (« ouvert »), sans rien montrer à l'écran. */
+.context-menu-state {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .context-menu button:disabled {
   color: var(--muted);
