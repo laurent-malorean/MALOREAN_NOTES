@@ -155,6 +155,7 @@ function tabs(panels: readonly HTMLElement[][], storage: PreferenceStorage): HTM
   list.append(...buttons);
   body.append(...sections);
   const element = document.createElement("div");
+  element.className = "settings-tabbed";
   element.append(list, body);
   return element;
 }

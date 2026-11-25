@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { page } from "vitest/browser";
 import { DEFAULT_SETTINGS, type Settings } from "../state/settings";
 import { openSettings } from "./settings-view";
 import "../theme.css";
@@ -296,5 +297,64 @@ describe("écran de réglages", () => {
     );
     expect(dialog.querySelectorAll("input")).toHaveLength(1);
     expect(dialog.querySelector("input")?.value).toBe("3000");
+  });
+
+  describe("taille fixe", () => {
+    const part = (name: string, height: string) => {
+      const fieldset = document.createElement("fieldset");
+      fieldset.innerHTML = `<legend>${name}</legend><div style="height:${height}"></div>`;
+      return fieldset;
+    };
+    const boxes = (dialog: HTMLElement) =>
+      [...dialog.querySelectorAll<HTMLElement>("h2, [role=tablist], footer, button.primary")]
+        .concat(dialog)
+        .map((e) => e.getBoundingClientRect().toJSON());
+
+    function openTall(): HTMLDialogElement {
+      const dialog = document.createElement("dialog");
+      dialog.className = "settings";
+      document.body.replaceChildren(dialog);
+      const extra = [part("Index", "6rem"), part("Brancher une IA", "90rem")];
+      openSettings(dialog, DEFAULT_SETTINGS, () => {}, extra, memoryStorage());
+      return dialog;
+    }
+    const tab = (dialog: HTMLElement, index: number) =>
+      dialog.querySelectorAll<HTMLButtonElement>("[role=tab]")[index]?.click();
+
+    beforeAll(() => page.viewport(1280, 1000));
+
+    it("garde la même boîte (fenêtre, titre, onglets, Fermer) sur tous les onglets", () => {
+      const dialog = openTall();
+      tab(dialog, 0);
+      const first = boxes(dialog);
+      for (let index = 1; index < 5; index++) {
+        tab(dialog, index);
+        expect(boxes(dialog)).toEqual(first);
+      }
+      const window = dialog.getBoundingClientRect();
+      expect(window.height).toBe(880);
+      expect(window.width).toBe(736);
+    });
+
+    it("fait défiler dans la zone de contenu un onglet plus long que la fenêtre", () => {
+      const dialog = openTall();
+      tab(dialog, 4);
+      const panel = dialog.querySelector<HTMLElement>(".settings-panel:not([hidden])");
+      if (!panel) throw new Error("panneau introuvable");
+      expect(panel.scrollHeight).toBeGreaterThan(panel.clientHeight);
+      expect(getComputedStyle(panel).overflowY).toBe("auto");
+      expect(dialog.scrollHeight).toBeLessThanOrEqual(dialog.clientHeight);
+    });
+
+    it("se réduit avec la fenêtre de l'application, sans sortir de l'écran", async () => {
+      await page.viewport(1280, 400);
+      const dialog = openTall();
+      const window = dialog.getBoundingClientRect();
+      const close = dialog.querySelector("button.primary")?.getBoundingClientRect();
+      expect(window.height).toBe(400 - 64);
+      expect(window.top).toBeGreaterThanOrEqual(0);
+      expect(close?.bottom).toBeLessThanOrEqual(window.bottom);
+      await page.viewport(1280, 1000);
+    });
   });
 });
