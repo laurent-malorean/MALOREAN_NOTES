@@ -2,7 +2,10 @@
 import type { Editor } from "../editor/editor";
 import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./canvas-host";
 import { type CrmHostBackend, createCrmHost, hasCrmBackend } from "./crm-host";
+import { linkChooser } from "./link-chooser";
+import type { LinkPickerBackend } from "./link-picker";
 import { imageAddress } from "../editor/image-address";
+import { linkEntry } from "../screens/link-entry";
 import type { ColumnParts } from "../screens/columns-view";
 import {
   createPane,
@@ -22,10 +25,15 @@ import type { Workspace } from "./workspace";
 /** Ce que le champ d'étiquettes d'une colonne demande à Rust. */
 type TagsBackend = Pick<typeof Bridge, "noteTags" | "changeNoteTags" | "listTags">;
 
+/** Ce que la colonne demande à Rust pour souligner les liens ambigus. */
+type LinkStatusBackend = Pick<typeof Bridge, "resolveLinks">;
+
 export interface PanesDeps {
   readonly backend: PaneBackend &
     Partial<CanvasHostBackend> &
     Partial<CrmHostBackend> &
+    Partial<LinkPickerBackend> &
+    Partial<LinkStatusBackend> &
     Partial<TagsBackend> & { readonly fileAddress: (path: string) => string };
   readonly shared: SharedNotes;
   readonly events: PaneEvents;
@@ -68,6 +76,17 @@ function crmOf(deps: PanesDeps) {
   return { crm: createCrmHost({ backend, dialog: layout.confirmation, picker: layout.picker }) };
 }
 
+/** Ce que le menu des liens d'une colonne demande à Rust ; rien si le pont ne sait pas lister ce qu'on peut lier. */
+function linksOf({ backend, layout, events }: PanesDeps) {
+  const { listLinkable, resolveLinks } = backend;
+  if (listLinkable === undefined || resolveLinks === undefined) return {};
+  const row = linkEntry;
+  const choose =
+    layout &&
+    linkChooser({ backend: { listLinkable }, picker: layout.picker, error: events.error });
+  return { links: { contents: listLinkable, row, choose, resolve: resolveLinks } };
+}
+
 /** Ce que le champ d'étiquettes d'une colonne demande à l'application ; rien si le pont manque. */
 function tagsOf(deps: PanesDeps): { tags?: PaneTags } {
   const { backend, workspace, events } = deps;
@@ -95,6 +114,7 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       related: deps.related,
       ...canvasOf(deps),
       ...crmOf(deps),
+      ...linksOf(deps),
       ...tagsOf(deps),
       resolveImage: (src, note) =>
         imageIn(deps.workspace.path(), note, src, deps.backend.fileAddress),

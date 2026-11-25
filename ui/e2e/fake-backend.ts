@@ -14,6 +14,7 @@ import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning";
 import { fakeCanvases } from "./fake-canvas";
+import { fakeLinks } from "./fake-links";
 import { fakeCrms } from "./fake-crm";
 import { fakeContentType, fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
 import { fakeEntryResults, fakeNotebook } from "./fake-notebook";
@@ -324,13 +325,6 @@ const linkedTitles = (content: string) =>
     folded(m[1]?.trim() ?? ""),
   );
 
-function resolveLink(title: string) {
-  const found = Object.entries(backend.notes)
-    .sort(([, a], [, b]) => b.modified - a.modified)
-    .find(([, note]) => folded(titleOf(note.content) ?? "") === folded(title.trim()));
-  return found?.[0] ?? null;
-}
-
 function listBacklinks(path: string) {
   const title = folded(titleOf(backend.notes[path]?.content ?? "") ?? "");
   return Object.entries(backend.notes)
@@ -448,7 +442,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
     new Promise((resolve) =>
       setTimeout(() => resolve(searchNotes(query, order)), backend.searchDuration),
     ),
-  resolve_link: ({ title = "" }) => resolveLink(title),
+  ...fakeLinks({ notes: () => backend.notes, titleOf, folded, folderOf }),
   list_all_notes: () =>
     Object.entries(backend.notes)
       .sort(([, a], [, b]) => b.modified - a.modified)

@@ -25,6 +25,9 @@ import { charactersPerPage, statusBar } from "./writing/status-bar";
 import { DEFAULT_SETTINGS } from "../state/settings";
 import type { FormatCommandId } from "../state/commands";
 import { outlinePanel } from "./outline/outline-panel";
+import { linkMenu } from "./links/link-menu";
+import { linkStatus } from "./links/link-status";
+import { type EditorLinks, linkSiteOf } from "./links/link-site";
 import { noteLinkAt, noteLinks, type OpenNoteLink } from "./links/note-links";
 import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
@@ -105,6 +108,8 @@ export interface EditorOptions {
   readonly outline?: HTMLElement;
   /** Ouvre la note désignée par un lien `[[titre]]`. */
   readonly openLink?: OpenNoteLink;
+  /** Ce qu'on peut lier : sans lui, `[[` et `/` n'ouvrent pas le menu des liens. */
+  readonly links?: EditorLinks;
   /** Ajoute au cahier de recherche montré l'entrée saisie dans sa zone de saisie ; sans elle, pas de zone. */
   readonly addEntry?: AddEntry;
 }
@@ -264,6 +269,12 @@ function revealIn(view: EditorView, query: string): boolean {
   return true;
 }
 
+/** Le bouton « Lien », quand l'application sait demander ce qu'on lie ; sans elle, « Lien » vise une page web. */
+function linkChooser({ links }: EditorOptions): ((view: EditorView) => void) | undefined {
+  const choose = links?.choose;
+  return choose && ((view) => choose(linkSiteOf(view)));
+}
+
 export function createEditor(
   parent: HTMLElement,
   onChange: (content: string, changes: ChangeSet) => void,
@@ -277,11 +288,12 @@ export function createEditor(
     resolveImage ? imageResolver.of(resolveImage) : [],
     attachmentActions ? attachments(attachmentActions) : [],
     openLink ? noteLinks(openLink) : [],
+    options.links ? [linkMenu(options.links), linkStatus(options.links)] : [],
     researchNotebook(fromElsewhere, options.addEntry, today),
     history(),
     [listContinuation, firstTitle, findReplace],
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.
-    formattingShortcuts,
+    formattingShortcuts(linkChooser(options)),
     todayShortcut(today),
     page.extension(),
     statusBar,
@@ -320,7 +332,7 @@ export function createEditor(
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
     openFind: () => void openSearchPanel(view),
     openReplace: () => void openReplacePanel(view),
-    format: (command) => void formatCommand(command)(view),
+    format: (command) => void formatCommand(command, linkChooser(options))(view),
     insertToday: () => void insertToday(today)(view),
     openLinkAtCursor: linkOpener(view, options),
     ...positionParts(view),

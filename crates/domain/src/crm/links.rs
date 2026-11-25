@@ -6,7 +6,7 @@
 use super::action::Action;
 use super::reference::Reference;
 use super::stage::Stages;
-use crate::links::linked_titles;
+use crate::links::linked_targets;
 
 /// Les titres de notes que désigne l'action `content`, dans l'ordre : ses notes liées, les liens
 /// de sa description, ceux de ses commentaires. Rien si le texte n'est pas une action lisible : il
@@ -22,7 +22,7 @@ pub fn action_links(content: &str) -> Option<Vec<String>> {
         .collect();
     let comments = action.body.comments.iter().map(|comment| &comment.text);
     for text in std::iter::once(&action.body.description).chain(comments) {
-        titles.extend(linked_titles(text).into_iter().map(str::to_owned));
+        titles.extend(linked_targets(text).into_iter().map(str::to_owned));
     }
     Some(titles)
 }

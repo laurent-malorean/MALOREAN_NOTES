@@ -9,9 +9,9 @@ use std::sync::Arc;
 
 use api::commands::{WORKSPACE_CHANGED_EVENT, invoke_handler};
 use api::{
-    AttachedFile, LinkingNoteItem, NoteContent, NoteListItem, SaveResult, SavedNote,
-    SearchResultItem, Session, TrashInfo, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
-    WorkspaceNoteItem,
+    AttachedFile, LinkResolutionItem, LinkableItem, LinkingNoteItem, NoteContent, NoteListItem,
+    SaveResult, SavedNote, SearchResultItem, Session, TrashInfo, WorkspaceChanged, WorkspaceInfo,
+    WorkspaceItem, WorkspaceNoteItem,
 };
 use application::testing::{
     FakeOpener, FakePreferences, FakeWatcher, FixedClock, InMemoryNoteStore,
@@ -406,10 +406,22 @@ fn the_interface_follows_links_between_notes_by_title_and_path() {
         ("b.md", "# Lundi\n[[courses]]"),
     ]);
     call(&window, "reopen_last_workspace", json!({})).unwrap();
-    let target: Option<String> = ok(call(&window, "resolve_link", json!({ "title": "Courses" })));
-    assert_eq!(target.as_deref(), Some("courses.md"));
-    let missing: Option<String> = ok(call(&window, "resolve_link", json!({ "title": "Mardi" })));
-    assert_eq!(missing, None);
+    let resolved: Vec<LinkResolutionItem> = ok(call(
+        &window,
+        "resolve_links",
+        json!({ "targets": ["Courses", "Mardi"] }),
+    ));
+    assert_eq!(
+        resolved,
+        [
+            LinkResolutionItem::Found {
+                path: "courses.md".into()
+            },
+            LinkResolutionItem::Missing
+        ]
+    );
+    let linkable: Vec<LinkableItem> = ok(call(&window, "list_linkable", json!({})));
+    assert_eq!(linkable.len(), 2);
     let backlinks: Vec<LinkingNoteItem> = ok(call(
         &window,
         "list_backlinks",

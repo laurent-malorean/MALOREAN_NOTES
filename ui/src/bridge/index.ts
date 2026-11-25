@@ -60,6 +60,8 @@ import type { WorkspaceItem } from "./generated/WorkspaceItem";
 import type { WorkspaceNoteItem } from "./generated/WorkspaceNoteItem";
 import type { IndexOverviewItem } from "./generated/IndexOverviewItem";
 import type { LinkingNoteItem } from "./generated/LinkingNoteItem";
+import type { LinkResolutionItem } from "./generated/LinkResolutionItem";
+import type { LinkableItem } from "./generated/LinkableItem";
 import type { NoteContent } from "./generated/NoteContent";
 import type { NoteListItem } from "./generated/NoteListItem";
 import type { NoteOrderItem } from "./generated/NoteOrderItem";
@@ -131,6 +133,8 @@ export type {
   WorkspaceItem,
   WorkspaceNoteItem,
   LinkingNoteItem,
+  LinkResolutionItem,
+  LinkableItem,
   NoteContent,
   NoteListItem,
   NoteOrderItem,
@@ -196,8 +200,11 @@ export const changeNoteTags = (path: string, tags: readonly string[]) =>
 /** Reconstruit l'index de l'espace de travail ouvert à partir de ses fichiers. */
 export const rebuildIndex = () => invoke<null>("rebuild_index");
 export const indexOverview = () => invoke<IndexOverviewItem>("index_overview");
-/** Le chemin de la note qu'un lien `[[title]]` désigne, ou rien. */
-export const resolveLink = (title: string) => invoke<string | null>("resolve_link", { title });
+/** Ce que désigne chacune des cibles de liens (`titre`, `nom.canvas`, `Dossier/titre`), dans le même ordre. */
+export const resolveLinks = (targets: readonly string[]) =>
+  invoke<LinkResolutionItem[]>("resolve_links", { targets });
+/** Tout ce qu'un lien peut désigner, chacun avec le lien à écrire pour le désigner. */
+export const listLinkable = () => invoke<LinkableItem[]>("list_linkable");
 /** Les liens entrants de la note `path` : les notes qui pointent vers elle. */
 export const listBacklinks = (path: string) =>
   invoke<LinkingNoteItem[]>("list_backlinks", { path });

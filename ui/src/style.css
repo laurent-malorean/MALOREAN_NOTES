@@ -1811,6 +1811,17 @@ button {
 .picker-option[aria-selected="true"] {
   background: var(--selected);
 }
+.picker-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.picker-label svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  color: var(--muted);
+}
 .picker-detail,
 .picker-empty {
   color: var(--muted);

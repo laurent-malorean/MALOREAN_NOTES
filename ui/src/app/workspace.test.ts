@@ -47,7 +47,16 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
       ),
       listTags: async () => (calls.push("étiquettes"), [{ name: "perso", count: 2 }]),
       createNote: async (folder) => (calls.push(`créer dans «${folder}»`), { path: "neuve.md" }),
-      resolveLink: async (title) => (calls.push(`lien ${title}`), title === "A" ? "a.md" : null),
+      resolveLinks: async ([title = ""]) => (
+        calls.push(`lien ${title}`),
+        [
+          title === "A"
+            ? { kind: "found", path: "a.md" }
+            : title === "Double"
+              ? { kind: "ambiguous", paths: ["a.md", "Vieux/a.md"] }
+              : { kind: "missing" },
+        ]
+      ),
       moveNote: async (path, into) => (
         calls.push(`déplacer ${path} ${into}`),
         { path: `${into}/${path}` }
@@ -239,6 +248,16 @@ describe("espace de travail ouvert", () => {
     await t.workspace.followLink("Inconnu", false);
     expect(t.messages).toEqual(["[info] Aucune note ne porte le titre « Inconnu »."]);
     expect(t.columns.log).toEqual(["suivre a.md", "ouvrir a.md"]);
+  });
+
+  it("n'ouvre aucun contenu pour un lien ambigu : il dit comment préciser le dossier", async () => {
+    const t = setup();
+    t.columns.panes.set(t.columns.columns().active, fakePane("b.md", []));
+    await t.workspace.followLink("Double", false);
+    expect(t.messages).toEqual([
+      "[info] Plusieurs contenus portent le nom « Double » : écrivez le dossier devant, [[Dossier/Double]].",
+    ]);
+    expect(t.columns.log).toEqual([]);
   });
 
   it("déplace une note : la liste est relue, ses onglets suivent son nouveau chemin", async () => {

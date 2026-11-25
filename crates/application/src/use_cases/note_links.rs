@@ -1,8 +1,7 @@
-//! Suivre les liens entre notes : ouvrir la note qu'un `[[titre]]` désigne, et trouver les
-//! notes qui pointent vers une note.
+//! Les liens entrants d'un contenu : les notes qui pointent vers lui par un `[[lien]]`.
 
 use domain::crm::action_links;
-use domain::links::{links_to, same_title};
+use domain::links::{LinkIndex, Resolution, linked_targets};
 use domain::title::displayed_title_of_note;
 use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 
@@ -23,17 +22,18 @@ pub struct LinkingNote {
     pub container: Option<NotePath>,
 }
 
-/// Vrai si la note de texte `content` a un lien vers la note de titre `title` : une action du CRM
+/// Vrai si un lien de la note de texte `content` désigne le contenu `path` : une action du CRM
 /// n'en a que par ses notes liées, sa description et ses commentaires (spécification du CRM,
-/// § 12), les autres notes par tout leur texte.
-fn links_title(content: &str, title: &str) -> bool {
+/// § 12), les autres notes par tout leur texte. Un lien ambigu ne désigne aucun contenu.
+fn links_to(content: &str, path: &NotePath, links: &LinkIndex) -> bool {
+    let designates = |target: &str| links.resolve(target) == Resolution::Found(path.clone());
     match action_links(content) {
-        Some(titles) => titles.iter().any(|linked| same_title(linked, title)),
-        None => links_to(content, title),
+        Some(targets) => targets.iter().any(|target| designates(target)),
+        None => linked_targets(content).into_iter().any(designates),
     }
 }
 
-/// Les liens entre les notes de l'espace de travail.
+/// Les liens entrants des notes de l'espace de travail.
 ///
 /// Comme la recherche, chaque demande relit toutes les notes (fiche de décision 0016).
 #[derive(Debug)]
@@ -59,38 +59,23 @@ impl<'a> NoteLinks<'a> {
         Ok(notes)
     }
 
-    /// La note désignée par `[[title]]` : celle qui porte ce titre ; la plus récente si
-    /// plusieurs le portent ; aucune si aucune ne le porte.
-    ///
-    /// # Errors
-    ///
-    /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
-    pub fn resolve(&self, title: &str) -> Result<Option<NotePath>, AppError> {
-        Ok(self
-            .all_notes()?
-            .into_iter()
-            .find(|note| {
-                same_title(
-                    &displayed_title_of_note(&note.content, note.path.name()),
-                    title,
-                )
-            })
-            .map(|note| note.path))
-    }
-
-    /// Les liens entrants de la note `path` : les autres notes dont un lien désigne son titre,
-    /// la plus récente en premier.
+    /// Les liens entrants de la note `path` : les autres notes dont un lien la désigne (par son
+    /// titre, ou son nom de fichier pour un canvas), la plus récente en premier.
     ///
     /// # Errors
     ///
     /// [`AppError::NoteNotFound`] si la note n'existe pas, [`AppError::StorageUnavailable`]
     /// si l'espace de travail ne peut pas être lue.
     pub fn backlinks(&self, path: &NotePath) -> Result<Vec<LinkingNote>, AppError> {
-        let title = displayed_title_of_note(&self.store.read(path)?.content, path.name());
-        Ok(self
-            .all_notes()?
+        self.store.read(path)?;
+        let notes = self.all_notes()?;
+        let links = LinkIndex::new(notes.iter().map(|note| {
+            let title = displayed_title_of_note(&note.content, note.path.name());
+            (note.path.clone(), title)
+        }));
+        Ok(notes
             .into_iter()
-            .filter(|note| note.path != *path && links_title(&note.content, &title))
+            .filter(|note| note.path != *path && links_to(&note.content, path, &links))
             .map(|note| {
                 let summary = NoteSummary::new(note.path.clone(), &note.content, note.modified);
                 LinkingNote {
@@ -114,13 +99,6 @@ mod tests {
         NotePath::parse(text).unwrap()
     }
 
-    fn resolved(store: &InMemoryNoteStore, title: &str) -> Option<String> {
-        NoteLinks::new(store)
-            .resolve(title)
-            .unwrap()
-            .map(|p| p.to_path())
-    }
-
     fn backlinks(store: &InMemoryNoteStore, note: &str) -> Vec<String> {
         NoteLinks::new(store)
             .backlinks(&path(note))
@@ -131,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn a_link_in_a_node_links_the_map_and_a_link_to_a_map_resolves_to_it() {
+    fn a_link_in_a_node_links_the_map() {
         let store = InMemoryNoteStore::with_notes(&[
             (
                 "Idees/carte.md",
@@ -146,10 +124,6 @@ mod tests {
         );
         assert_eq!(backlinks(&store, "autre.md"), ["Idees/carte.md | Ma carte"]);
         assert_eq!(backlinks(&store, "Idees/carte.md"), ["autre.md | Autre"]);
-        assert_eq!(
-            resolved(&store, "ma carte").as_deref(),
-            Some("Idees/carte.md")
-        );
     }
 
     #[test]
@@ -211,31 +185,6 @@ mod tests {
     }
 
     #[test]
-    fn a_link_leads_to_the_note_with_that_title_in_any_folder() {
-        let store = InMemoryNoteStore::with_notes(&[
-            ("a.md", "# Agenda"),
-            ("Cuisine/crepes.md", "# Recette de crêpes\nfarine"),
-        ]);
-        assert_eq!(
-            resolved(&store, "recette de crepes").as_deref(),
-            Some("Cuisine/crepes.md")
-        );
-    }
-
-    #[test]
-    fn the_most_recent_note_wins_when_several_share_the_title() {
-        let store =
-            InMemoryNoteStore::with_notes(&[("a.md", "# Courses"), ("Vieux/b.md", "# Courses")]);
-        assert_eq!(resolved(&store, "Courses").as_deref(), Some("Vieux/b.md"));
-    }
-
-    #[test]
-    fn a_link_to_a_missing_title_leads_nowhere() {
-        let store = InMemoryNoteStore::with_notes(&[("a.md", "# Agenda")]);
-        assert_eq!(resolved(&store, "Courses"), None);
-    }
-
-    #[test]
     fn backlinks_are_the_other_notes_linking_to_the_title_most_recent_first() {
         let store = InMemoryNoteStore::with_notes(&[
             ("courses.md", "# Courses\n[[Courses]] elle-même"),
@@ -256,5 +205,31 @@ mod tests {
             NoteLinks::new(&store).backlinks(&path("absente.md")),
             Err(AppError::NoteNotFound(_))
         ));
+    }
+
+    #[test]
+    fn an_ambiguous_link_points_to_none_of_the_notes_it_could_mean() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("a.md", "# Courses"),
+            ("Vieux/b.md", "# Courses"),
+            ("c.md", "# Lundi\n[[Courses]]"),
+            ("d.md", "# Mardi\n[[Vieux/Courses]]"),
+        ]);
+        assert!(backlinks(&store, "a.md").is_empty());
+        assert_eq!(backlinks(&store, "Vieux/b.md"), ["d.md | Mardi"]);
+    }
+
+    #[test]
+    fn a_canvas_is_linked_by_its_file_name() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("Plan du projet.canvas", "{}"),
+            ("plan.md", "# Plan du projet"),
+            (
+                "a.md",
+                "# Lundi\n[[Plan du projet.canvas]] et [[Plan du projet]]",
+            ),
+        ]);
+        assert_eq!(backlinks(&store, "Plan du projet.canvas"), ["a.md | Lundi"]);
+        assert_eq!(backlinks(&store, "plan.md"), ["a.md | Lundi"]);
     }
 }

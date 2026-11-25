@@ -131,7 +131,7 @@ describe("CRM d'une colonne", () => {
         ...moreBackend(async () => {}),
         copyPlainText: vi.fn(),
         openWebAddress: vi.fn(),
-        listAllNotes: vi.fn(async () => []),
+        listLinkable: vi.fn(async () => []),
       } as never,
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
@@ -240,5 +240,46 @@ describe("CRM d'une colonne", () => {
     tags.querySelector<HTMLButtonElement>(".tag-remove")?.click();
     await vi.waitFor(() => expect(error).toHaveBeenCalledWith(failure));
     pane.destroy();
+  });
+});
+
+describe("menu des liens d'une colonne", () => {
+  it("avec un pont qui sait lister ce qu'on peut lier, `[[` ouvre le menu des liens dans l'éditeur", async () => {
+    const fake = fakeBackend({ "a.md": "# A\nvoir [[Courses]]" });
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
+    });
+    const listLinkable = vi.fn(async () => [
+      { path: "c.md", title: "Courses", folder: "", contentType: "note" as const, link: "Courses" },
+    ]);
+    const resolveLinks = vi.fn(async () => []);
+    const make = paneMaker({
+      backend: {
+        ...fake.backend,
+        ...{ fileAddress: (path: string) => path, listLinkable, resolveLinks },
+      },
+      shared,
+      events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
+      configure: vi.fn(),
+    });
+    const element = document.createElement("section");
+    const backlinks = document.createElement("nav");
+    const related = document.createElement("nav");
+    element.append(backlinks, related);
+    document.body.replaceChildren(element);
+    const pane = make({ element, backlinks, related });
+    await pane.load("a.md");
+    pane.editor.focus();
+    pane.editor.replaceRange(pane.editor.content().length, pane.editor.content().length, "[[");
+    await vi.waitFor(() => expect(document.querySelector(".link-menu-option")).not.toBeNull());
+    expect(document.querySelector(".link-menu-label svg")).not.toBeNull();
+    expect(listLinkable).toHaveBeenCalledTimes(1);
+    // Les liens ambigus sont demandés à Rust.
+    await vi.waitFor(() => expect(resolveLinks).toHaveBeenCalledWith(["Courses"]));
+    pane.destroy();
+    document.querySelector(".link-menu")?.remove();
   });
 });

@@ -53,6 +53,29 @@ const options = (dialog: HTMLElement) =>
 afterEach(() => document.body.replaceChildren());
 
 describe("fenêtre de choix au clavier", () => {
+  it("montre le dessin d'un choix devant son nom, sans changer le nom", () => {
+    const dialog = document.createElement("dialog");
+    document.body.replaceChildren(dialog);
+    openPicker(dialog, {
+      label: "Fruits",
+      placeholder: "Nom du fruit",
+      empty: "Aucun fruit",
+      entries: () => ["Pomme", "Poire"],
+      describe: (name) => ({
+        label: name,
+        icon:
+          name === "Pomme"
+            ? document.createElementNS("http://www.w3.org/2000/svg", "svg")
+            : undefined,
+      }),
+      choose: () => {},
+    });
+    const labels = [...dialog.querySelectorAll(".picker-label")];
+    expect(labels.map((label) => label.textContent)).toEqual(["Pomme", "Poire"]);
+    expect(labels[0]?.firstElementChild?.tagName).toBe("svg");
+    expect(labels[1]?.firstElementChild).toBeNull();
+  });
+
   it("s'ouvre avec le champ prêt à taper et tous les choix, le premier en avant", () => {
     const { dialog, input } = open();
     expect(dialog.open).toBe(true);
