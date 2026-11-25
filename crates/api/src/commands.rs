@@ -21,6 +21,7 @@ pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
 pub mod canvas;
 pub mod claude;
+pub mod crm;
 pub mod export;
 pub mod history;
 pub mod meaning;
@@ -532,6 +533,23 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         canvas::create_canvas,
         canvas::read_canvas,
         canvas::save_canvas,
+        crm::create_crm,
+        crm::read_crm,
+        crm::crm_email_is_known,
+        crm::create_crm_action,
+        crm::change_crm_action,
+        crm::move_crm_action,
+        crm::delete_crm_action,
+        crm::create_crm_person,
+        crm::change_crm_person,
+        crm::delete_crm_person,
+        crm::create_crm_company,
+        crm::change_crm_company,
+        crm::delete_crm_company,
+        crm::create_crm_project,
+        crm::change_crm_project,
+        crm::delete_crm_project,
+        crm::change_crm_stages,
         mind_map::create_mind_map,
         mind_map::read_mind_map,
         mind_map::save_mind_map,

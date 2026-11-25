@@ -6,6 +6,7 @@ pub use meaning::MeaningEvents;
 mod attachments;
 mod canvas;
 mod claude;
+mod crm;
 mod export;
 mod gestures;
 mod history;
@@ -45,7 +46,7 @@ use application::{
 };
 
 use application::use_cases::RecoverGestures;
-use application::{MemoryPendingGesturesOpener, PendingGesturesOpener};
+use application::{MemoryPendingGesturesOpener, PendingGestures, PendingGesturesOpener};
 use domain::search::SearchQuery;
 use domain::title::displayed_title_of_note;
 use domain::{Fingerprint, Folder, FolderName, Moment, NotePath};
@@ -106,6 +107,8 @@ struct OpenWorkspaceState {
     index: Arc<dyn NoteIndex>,
     meaning: Arc<dyn MeaningStore>,
     history: Arc<dyn History>,
+    /// Les gestes du CRM qui changent plusieurs fichiers, gardés le temps de les appliquer.
+    gestures: Arc<dyn PendingGestures>,
     /// Les notes enregistrées par l'application depuis leur dernière version : une version en
     /// est gardée quand on quitte l'application.
     pending: Arc<Mutex<BTreeSet<NotePath>>>,
@@ -333,6 +336,7 @@ impl Session {
             index,
             meaning: Arc::clone(&meaning),
             history,
+            gestures,
             pending: Arc::default(),
         };
         *self

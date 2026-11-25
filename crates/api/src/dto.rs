@@ -6,12 +6,25 @@ use ts_rs::TS;
 mod canvas;
 mod claude;
 mod claude_load;
+mod crm;
+mod crm_change;
 mod meaning;
 mod mind_map;
 mod turn_settings;
 
 pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
+pub use crm::{
+    ActionPersonItem, ChecklistEntryItem, ChecklistItem, ColumnItem, CommentItem, CrmActionItem,
+    CrmCompanyItem, CrmItem, CrmPersonItem, CrmProjectItem, NoDataItem, PassageItem, TallyItem,
+    UrgencyItem, WeekDayItem, WeekItem,
+};
+pub(crate) use crm_change::day as crm_day;
+pub use crm_change::{
+    BodyChangeItem, CompanyChoiceItem, CrmActionChangeItem, CrmActionDraftItem,
+    CrmCompanyChangeItem, CrmFiltersItem, CrmPersonChangeItem, CrmProjectChangeItem, PlacementItem,
+    StageChangeItem,
+};
 pub use meaning::{
     MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,
     ModelOverviewItem,

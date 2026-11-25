@@ -121,3 +121,16 @@ fn a_gesture_that_cannot_be_kept_is_an_error_and_leaves_nothing() {
     assert!(matches!(ended, Err(StoreError::Unavailable(_))));
     assert_eq!(pending.interrupted().unwrap().len(), 1);
 }
+
+#[test]
+fn a_number_whose_temporary_file_is_there_is_not_taken() {
+    let dir = TempDir::new().unwrap();
+    let folder = dir.path().join(".pending-gestures");
+    fs::create_dir(&folder).unwrap();
+    fs::write(folder.join("1.tmp"), "[]").unwrap();
+    fs::write(folder.join("2.tmp"), "[]").unwrap();
+    let pending = FsPendingGestures::new(dir.path());
+    let id = pending.begin(&rewrite("X")).unwrap();
+    assert_eq!(id, GestureId(3));
+    assert_eq!(pending.interrupted().unwrap(), [(id, rewrite("X"))]);
+}

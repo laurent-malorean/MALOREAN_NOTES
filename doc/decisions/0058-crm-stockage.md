@@ -28,6 +28,10 @@ Spécification : `doc/specs/crm.md` (§§ 4, 5, 6, 10, 11, 12). La tranche préc
 - Le Kanban garde toutes les cartes d'une colonne terminée ; l'interface en montre 10 (`closed_page`) puis 10 de plus à chaque clic.
 - Pas de verrou entre deux gestes simultanés sur le même fichier : une seule personne utilise l'application, les commandes sont appelées l'une après l'autre.
 
+## Commandes de l'API (pour la vue Kanban)
+
+`create_crm(folder, title)`, `read_crm(path, filters, weekDay)` (rend `CrmItem` : fiches, `columns`, `week`, compteurs, `tags`, `closedPage`), `crm_email_is_known(crm, email, except)`, `create_crm_action(crm, draft)`, `change_crm_action(crm, action, change)`, `move_crm_action(crm, action, status, placement)`, `delete_crm_action(crm, action)`, `create_crm_person(crm, name, company)`, `change_crm_person`, `delete_crm_person`, `create_crm_company`, `change_crm_company`, `delete_crm_company`, `create_crm_project`, `change_crm_project`, `delete_crm_project`, `change_crm_stages(crm, change)`. Les gestes sont des unions étiquetées par `kind` (types générés dans `ui/src/bridge/generated/`). Le pont `ui/src/bridge/index.ts` n'est pas encore branché : c'est le travail de la tranche de la vue.
+
 ## Conséquences
 
 - La tranche suivante (vue Kanban) appelle les commandes `create_crm`, `read_crm`, `change_crm_action`, `move_crm_action`… et affiche `CrmItem`.
