@@ -261,7 +261,7 @@ Deux garde-fous contre la même panne : un test lance `claude --help` quand il e
 
 ## Mise à jour du 22/11/2026 : le garde-fou du web devient un réglage
 
-Après une recherche sur le web, chaque création ou modification attendait l'accord de l'utilisateur : insupportable pour « cherche, puis crée la note ». Le réglage « Modifications après une lecture du web » (partie « Claude » des réglages) choisit : « Laisser Claude modifier » (**par défaut**, le garde-fou n'est pas posé) ou « Demander mon accord » (le comportement ci-dessus, avec le bouton « Autoriser ses modifications »). Le confinement à l'espace de travail et `--setting-sources ""` ne dépendent pas de ce réglage. Reste à faire : l'outil de l'application qui crée un dossier.
+Après une recherche sur le web, chaque création ou modification attendait l'accord de l'utilisateur : insupportable pour « cherche, puis crée la note ». Le réglage « Après avoir lu une page web, Claude doit-il demander avant de modifier mes notes ? » (partie « Claude » des réglages) choisit : « Non, il modifie » (**par défaut**, le garde-fou n'est pas posé) ou « Oui, il demande mon accord » (le comportement ci-dessus, avec le bouton « Autoriser ses modifications »). Le confinement à l'espace de travail et `--setting-sources ""` ne dépendent pas de ce réglage. Reste à faire : l'outil de l'application qui crée un dossier.
 
 ## Mise à jour du 22/11/2026 : l'application lit ce que `claude` connaît
 

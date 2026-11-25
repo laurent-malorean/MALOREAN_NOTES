@@ -109,12 +109,22 @@ describe("note du jour", () => {
 
   it("le réglage montre et garde les choix de l'espace de travail ouvert", () => {
     const j = setup();
+    j.screen.show(workspaceScreen([], (now) => ({ ...now, folders: ["Notes", "Notes/Travail"] })));
     const [group] = j.journal.settingsGroups();
-    const folder = group?.querySelector<HTMLInputElement>("input[name=journalFolder]");
+    const folder = group?.querySelector<HTMLSelectElement>("select[name=journalFolder]");
     if (!folder) throw new Error("champ introuvable");
     expect(folder.value).toBe("Journal");
-    folder.value = "Carnet";
+    // Les dossiers de l'espace de travail ouvert, plus « Journal », le choix en cours, même absent.
+    expect([...folder.options].map((o) => o.value)).toEqual([
+      ...["Notes", "Notes/Travail", "Journal"],
+      "\0nouveau",
+    ]);
+    folder.value = "\0nouveau";
     folder.dispatchEvent(new Event("change"));
+    const name = group?.querySelector<HTMLInputElement>(".folder-new-input");
+    if (!name) throw new Error("champ du nom introuvable");
+    name.value = "Carnet";
+    name.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", cancelable: true }));
     expect(JSON.parse(j.items.get("malorean.journal:/lib") ?? "")).toEqual({
       folder: "Carnet",
       atLaunch: true,

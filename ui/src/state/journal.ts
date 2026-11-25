@@ -46,11 +46,6 @@ export function saveJournal(
   }
 }
 
-/** Le dossier du journal tel qu'il est tapé, sans espaces ni `/` autour ; vide, le dossier par défaut. */
-export function journalFolder(typed: string): string {
-  return typed.trim().replace(/^\/+|\/+$/g, "") || DEFAULT_JOURNAL.folder;
-}
-
 /** Le modèle de la note du jour : la note titrée « Journal » du dossier des modèles, s'il y en a une. */
 export function journalTemplate(
   notes: readonly WorkspaceNoteItem[],

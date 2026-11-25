@@ -11,7 +11,7 @@ export interface ButtonsDeps {
   readonly screen: NewContentMenuDeps["screen"];
   /** La note depuis un modèle, que le menu de création propose. */
   readonly templates: NewContentMenuDeps["templates"];
-  readonly workspaces: Pick<Workspaces, "add" | "choose" | "menu">;
+  readonly workspaces: Pick<Workspaces, "add" | "menu">;
   readonly workspace: { createNote(): Promise<void> };
   readonly search: { type(query: string): void };
   readonly trash: { show(): Promise<void> };
@@ -25,8 +25,8 @@ export interface ButtonsDeps {
 type ButtonsLayout = Pick<
   Layout,
   | "addButton"
-  | "switchButton"
   | "workspaceSwitcher"
+  | "workspaceBar"
   | "newNoteButton"
   | "newContentButton"
   | "searchField"
@@ -40,8 +40,8 @@ type ButtonsLayout = Pick<
 export function connectButtons(layout: ButtonsLayout, deps: ButtonsDeps): void {
   const { workspaces, run } = deps;
   layout.addButton.addEventListener("click", () => run(workspaces.add()));
-  layout.switchButton.addEventListener("click", () => run(workspaces.choose()));
   connectWorkspaceSwitcher(layout.workspaceSwitcher, workspaces.menu, deps.error);
+  connectWorkspaceSwitcher(layout.workspaceBar, workspaces.menu, deps.error, "above");
   connectNewContentMenu(layout, {
     createNote: () => run(deps.workspace.createNote()),
     entries: () => newContentEntries(deps),

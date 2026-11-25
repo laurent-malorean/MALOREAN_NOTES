@@ -12,6 +12,7 @@ import {
   downloadHeard,
   downloadStarted,
   indexLines,
+  indexPercent,
   type MeaningState,
   meaningStarted,
   modelRows,
@@ -128,7 +129,11 @@ class MeaningApp implements Meaning {
 
   private drawSettings(frame: HTMLElement) {
     const { run } = this.deps;
-    const view = { rows: modelRows(this.state), lines: indexLines(this.state) };
+    const view = {
+      rows: modelRows(this.state),
+      lines: indexLines(this.state),
+      percent: indexPercent(this.state),
+    };
     renderMeaningSettings(frame, view, {
       choose: (model) => run(this.choose(model)),
       download: (model) => run(this.download(model)),

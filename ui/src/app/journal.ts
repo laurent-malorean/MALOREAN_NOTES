@@ -54,10 +54,11 @@ export function createJournal(deps: JournalDeps): Journal {
       if (loadJournal(deps.storage, deps.workspace.path()).atLaunch) await open(deps);
     },
     settingsGroups: () => {
-      if (deps.screen.get().kind !== "workspace") return [];
+      const screen = deps.screen.get();
+      if (screen.kind !== "workspace") return [];
       const workspace = deps.workspace.path();
       return [
-        journalGroup(loadJournal(deps.storage, workspace), (next) =>
+        journalGroup(screen.folders, loadJournal(deps.storage, workspace), (next) =>
           saveJournal(deps.storage, workspace, next),
         ),
       ];

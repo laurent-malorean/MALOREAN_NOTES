@@ -1,5 +1,6 @@
 // Réglages du journal : une partie de l'écran de réglages, propre à l'espace de travail ouvert.
-import { journalFolder, type JournalSettings } from "../state/journal";
+import type { JournalSettings } from "../state/journal";
+import { folderChoiceLine } from "./folder-choice";
 
 /** Une ligne de réglage : son nom, son champ, et son aide s'il en a une. */
 function line(label: HTMLLabelElement, ...parts: HTMLElement[]): HTMLElement {
@@ -10,33 +11,24 @@ function line(label: HTMLLabelElement, ...parts: HTMLElement[]): HTMLElement {
 }
 
 /**
- * La partie « Journal » de l'écran de réglages : le dossier du journal, et la création de la note
+ * La partie « Journal » de l'écran de réglages : le dossier du journal (parmi `folders`, ou un nouveau), et la création de la note
  * du jour au lancement. Chaque changement est passé à `change` dès qu'il est fait.
  */
 export function journalGroup(
+  folders: readonly string[],
   current: JournalSettings,
   change: (next: JournalSettings) => void,
 ): HTMLElement {
   let settings = current;
   const apply = (next: JournalSettings) => ((settings = next), change(next));
 
-  const folder = document.createElement("input");
-  folder.id = "setting-journalFolder";
-  folder.name = "journalFolder";
-  folder.value = settings.folder;
-  folder.addEventListener("change", () => {
-    folder.value = journalFolder(folder.value);
-    apply({ ...settings, folder: folder.value });
+  const folder = folderChoiceLine({
+    ...{ id: "setting-journalFolder", name: "journalFolder", label: "Dossier du journal" },
+    help: "Créé au besoin. La note du jour y est rangée sous sa date, pour « Note du jour ».",
+    ...{ folders, current: settings.folder, creation: true },
+    // Sans entrée « Aucun », le choix est toujours un dossier.
+    choose: (chosen) => apply({ ...settings, folder: chosen as string }),
   });
-  const folderLabel = document.createElement("label");
-  folderLabel.htmlFor = folder.id;
-  folderLabel.textContent = "Dossier du journal";
-  const help = document.createElement("p");
-  help.id = `${folder.id}-help`;
-  help.className = "setting-help";
-  help.textContent =
-    "Créé au besoin. La note du jour y est rangée sous sa date, pour « Note du jour ».";
-  folder.setAttribute("aria-describedby", help.id);
 
   const atLaunch = document.createElement("input");
   atLaunch.type = "checkbox";
@@ -54,6 +46,6 @@ export function journalGroup(
   const fieldset = document.createElement("fieldset");
   const legend = document.createElement("legend");
   legend.textContent = "Journal";
-  fieldset.append(legend, line(folderLabel, folder, help), check);
+  fieldset.append(legend, folder, check);
   return fieldset;
 }

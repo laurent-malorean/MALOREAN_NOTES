@@ -12,20 +12,29 @@ export interface MenuEntry {
   readonly checked?: boolean;
   /** Un séparateur au-dessus de ce choix. */
   readonly separatorBefore?: boolean;
+  /**
+   * Avec `checked` : la coche se montre devant le nom, et ce nom d'état (« ouvert ») la double pour les
+   * lecteurs d'écran ; les autres choix du menu s'alignent sur le nom.
+   */
+  readonly stateName?: string;
   /** Un dessin devant le nom (décoratif). */
   readonly icon?: SVGElement;
   /** Le raccourci du choix, écrit après son nom (décoratif : le nom du choix reste seul lu). */
   readonly shortcut?: string;
 }
 
-/** Comment le menu s'ouvre et se ferme. */
+/** Comment s'ouvre le menu. */
 export interface MenuOptions {
-  /** Ouvert au clavier : le premier choix possible a le focus. */
-  readonly focusFirst?: boolean;
+  /** Le menu s'ouvre au-dessus du point donné (son bord bas est en `y`), pas en dessous. */
+  readonly above?: boolean;
+  /** Largeur minimale du menu, en pixels (celle de la barre qui l'ouvre). */
+  readonly minWidth?: number;
+  /** Le clavier entre dans le menu (le choix coché, sinon le premier) et le rend à sa fermeture. */
+  readonly focus?: boolean;
+  /** Avec `focus` : le bouton qui reprend le focus à la fermeture (sinon celui qui l'avait à l'ouverture). */
+  readonly opener?: HTMLElement;
   /** Appelé à la fermeture, quelle qu'en soit la cause. */
   readonly onClose?: () => void;
-  /** Si le focus était dans le menu quand il se ferme, il revient à cet élément plutôt que de se perdre. */
-  readonly returnFocusTo?: HTMLElement;
 }
 
 let open: { readonly element: HTMLElement; readonly close: () => void } | null = null;
@@ -38,6 +47,23 @@ export function contextMenuOpen(): boolean {
 /** Ferme le menu ouvert, s'il y en a un. */
 export function closeContextMenu(): void {
   open?.close();
+}
+
+/** La colonne de la coche : la coche du choix en vigueur, vide pour les autres. */
+function checkColumn(mark: string): HTMLSpanElement {
+  const column = document.createElement("span");
+  column.className = "context-menu-check";
+  column.setAttribute("aria-hidden", "true");
+  column.textContent = mark;
+  return column;
+}
+
+/** Le nom d'état, lu par les lecteurs d'écran et invisible à l'écran. */
+function stateSpan(name: string): HTMLSpanElement {
+  const span = document.createElement("span");
+  span.className = "context-menu-state";
+  span.textContent = ` ${name}`;
+  return span;
 }
 
 /** Le nom du choix, avec son icône devant et son raccourci après. */
@@ -58,9 +84,11 @@ function extras(button: HTMLButtonElement, entry: MenuEntry): void {
 }
 
 /** Le bouton d'un choix : son nom, sa pastille, sa coche, son séparateur. */
-function entryButton(entry: MenuEntry): HTMLButtonElement {
+function entryButton(entry: MenuEntry, aligned: boolean): HTMLButtonElement {
   const button = document.createElement("button");
   button.setAttribute("role", "menuitem");
+  if (aligned)
+    button.append(checkColumn(entry.checked === true && entry.stateName !== undefined ? "✓" : ""));
   if (entry.swatch !== undefined) {
     const swatch = document.createElement("span");
     swatch.className = "context-menu-swatch";
@@ -72,17 +100,52 @@ function entryButton(entry: MenuEntry): HTMLButtonElement {
   if (entry.checked === true) {
     button.setAttribute("aria-checked", "true");
     button.setAttribute("role", "menuitemcheckbox");
-    button.classList.add("checked");
+    if (entry.stateName === undefined) button.classList.add("checked");
+    else button.append(stateSpan(entry.stateName));
   }
   if (entry.separatorBefore === true) button.classList.add("separated");
   button.disabled = entry.disabled === true;
   return button;
 }
 
+/** Les choix qu'on peut faire (pas les grisés), dans l'ordre. */
+function choices(element: HTMLElement): HTMLButtonElement[] {
+  return [...element.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
+}
+
+/** Déplace le focus : `step` choix plus loin, en boucle ; sans choix visé, le premier (ou le dernier en montant). */
+function moveFocus(element: HTMLElement, step: 1 | -1): void {
+  const list = choices(element);
+  const at = list.findIndex((button) => button === document.activeElement);
+  const next =
+    at === -1 ? (step === 1 ? 0 : list.length - 1) : (at + step + list.length) % list.length;
+  list[next]?.focus();
+}
+
+/** Les touches qui parcourent le menu ; vrai si la touche a été prise. */
+function navigate(element: HTMLElement, key: string): boolean {
+  const list = choices(element);
+  if (key === "ArrowDown") moveFocus(element, 1);
+  else if (key === "ArrowUp") moveFocus(element, -1);
+  else if (key === "Home") list[0]?.focus();
+  else if (key === "End") list[list.length - 1]?.focus();
+  else return false;
+  return true;
+}
+
+/** Place le menu : `x`, `y` est son coin haut-gauche, ou son coin bas-gauche s'il s'ouvre au-dessus ; il reste entier dans la fenêtre. */
+function place(element: HTMLElement, x: number, y: number, above: boolean): void {
+  const box = element.getBoundingClientRect();
+  const overflow = (end: number, room: number) => Math.max(0, end - room);
+  const top = above ? y - box.height : y;
+  element.style.left = `${Math.max(0, x - overflow(box.right, window.innerWidth))}px`;
+  element.style.top = `${Math.max(0, top - overflow(top + box.height, window.innerHeight))}px`;
+}
+
 /**
  * Ouvre un menu à la position `x`, `y` de la fenêtre ; il remplace celui qui serait ouvert. `note`,
- * s'il y en a une, s'écrit sous les choix (pourquoi certains sont grisés). Les flèches ↑ et ↓ passent
- * d'un choix possible à l'autre, en boucle.
+ * s'il y en a une, s'écrit sous les choix (pourquoi certains sont grisés). Les flèches parcourent les
+ * choix, Échap ferme.
  */
 export function showContextMenu(
   x: number,
@@ -97,27 +160,28 @@ export function showContextMenu(
   element.setAttribute("role", "menu");
   element.style.left = `${x}px`;
   element.style.top = `${y}px`;
+  if (options.minWidth !== undefined) element.style.minWidth = `${options.minWidth}px`;
+  const opener = options.focus === true ? (options.opener ?? document.activeElement) : null;
   const onPointer = (event: MouseEvent) => {
     if (!element.contains(event.target as Node)) close();
   };
   const onKey = (event: KeyboardEvent) => {
     if (event.key === "Escape") close();
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      moveFocus(element, event.key === "ArrowDown" ? 1 : -1);
-    }
+    else if (navigate(element, event.key)) event.preventDefault();
   };
   function close() {
-    const focusInside = element.contains(document.activeElement);
+    const active = document.activeElement;
+    const keptFocus = active === document.body || element.contains(active);
     element.remove();
     document.removeEventListener("mousedown", onPointer);
     document.removeEventListener("keydown", onKey);
     open = null;
-    if (focusInside) options.returnFocusTo?.focus();
+    if (keptFocus && opener instanceof HTMLElement) opener.focus();
     options.onClose?.();
   }
+  const aligned = entries.some((entry) => entry.stateName !== undefined);
   for (const entry of entries) {
-    const button = entryButton(entry);
+    const button = entryButton(entry, aligned);
     button.addEventListener("click", () => {
       close();
       entry.run();
@@ -133,21 +197,10 @@ export function showContextMenu(
   document.addEventListener("mousedown", onPointer);
   document.addEventListener("keydown", onKey);
   document.body.append(element);
-  // Un menu long, ouvert près d'un bord de la fenêtre, remonte ou se décale pour rester entier.
-  const box = element.getBoundingClientRect();
-  const overflow = (end: number, room: number) => Math.max(0, end - room);
-  element.style.left = `${Math.max(0, x - overflow(box.right, window.innerWidth))}px`;
-  element.style.top = `${Math.max(0, y - overflow(box.bottom, window.innerHeight))}px`;
+  place(element, x, y, options.above === true);
+  if (options.focus === true) {
+    const list = choices(element);
+    (list.find((button) => button.getAttribute("aria-checked") === "true") ?? list[0])?.focus();
+  }
   open = { element, close };
-  if (options.focusFirst === true) moveFocus(element, 1);
-}
-
-/** Le focus passe au choix possible suivant (`1`) ou précédent (`-1`), en boucle ; au premier ou au dernier si rien n'a le focus. */
-function moveFocus(menu: HTMLElement, step: 1 | -1): void {
-  const choices = [...menu.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
-  if (choices.length === 0) return;
-  const at = choices.indexOf(document.activeElement as HTMLButtonElement);
-  const first = step === 1 ? 0 : choices.length - 1;
-  const next = at < 0 ? first : (at + step + choices.length) % choices.length;
-  choices[next]?.focus();
 }

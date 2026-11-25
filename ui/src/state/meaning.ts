@@ -159,6 +159,14 @@ function chosenModel(state: MeaningState) {
   return overview?.models.find((model) => model.model === overview.chosen) ?? null;
 }
 
+/** L'avancement de l'index de sens, en pourcentage : le calcul en cours, sinon les segments qui ont leur vecteur ; rien sans aperçu. */
+export function indexPercent(state: MeaningState): number | null {
+  const overview = state.overview;
+  if (overview === null) return null;
+  const { done, total } = state.compute ?? { done: overview.withVector, total: overview.segments };
+  return percent(done, total);
+}
+
 /** L'état de l'index de sens, ligne à ligne ; rien sans aperçu. */
 export function indexLines(state: MeaningState): string[] {
   const overview = state.overview;

@@ -42,7 +42,14 @@ test("copie la clé et chaque bloc dans le presse-papiers", async ({ page }) => 
   const copied = () => page.evaluate(() => window.backend.copiedMarkdown);
 
   await panel.getByRole("button", { name: /^Copier : Clé de branchement$/ }).click();
-  await expect(page.locator(".status")).toContainText("Clé de branchement copiée");
+  // Le bouton lui-même confirme (pas de message passager), puis redevient « Copier ».
+  const keyButton = panel.getByRole("button", { name: /^Copié : Clé de branchement$/ });
+  await expect(keyButton).toHaveText("✓ Copié");
+  await expect(page.locator(".status")).not.toContainText("copié");
+  await expect(panel.getByRole("button", { name: /^Copier : Clé de branchement$/ })).toHaveText(
+    "Copier",
+    { timeout: 5000 },
+  );
   await panel.getByRole("button", { name: /^Copier : Configuration pour Claude/ }).click();
   await panel.getByRole("button", { name: "Copier : Configuration pour Codex" }).click();
 

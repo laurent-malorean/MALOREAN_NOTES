@@ -30,9 +30,9 @@ export function connectNewContentMenu(
     const box = plus.getBoundingClientRect();
     chevron.setAttribute("aria-expanded", "true");
     showContextMenu(box.left, box.bottom, actions.entries(), undefined, {
-      focusFirst: viaKeyboard,
-      // Échap au clavier : le focus revient au chevron plutôt que de se perdre.
-      ...(viaKeyboard ? { returnFocusTo: chevron } : {}),
+      // Au clavier, le focus entre dans le menu et revient au chevron à sa fermeture.
+      focus: viaKeyboard,
+      opener: chevron,
       onClose: () => chevron.setAttribute("aria-expanded", "false"),
     });
   };

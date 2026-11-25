@@ -63,7 +63,10 @@ describe("écran de réglages", () => {
     expect(parts).toEqual([
       ["Affichage", ["Police", "Taille du texte", "Largeur du texte", "Apparence"]],
       ["Écriture", ["Caractères par page"]],
-      ["Claude", ["Modifications après une lecture du web"]],
+      [
+        "Claude",
+        ["Après avoir lu une page web, Claude doit-il demander avant de modifier mes notes ?"],
+      ],
     ]);
   });
 

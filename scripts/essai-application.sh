@@ -45,7 +45,7 @@ build_application() {
 # (400 notes). Rien ne vient de l'espace d'exemple du dépôt ni de celui de l'utilisateur.
 prepare_workspaces() {
   local notes=$1/notes search=$1/recherche n
-  mkdir -p "$notes/Fixtures" "$search"
+  mkdir -p "$notes/Fixtures" "$notes/Essai/Sous" "$search"
   cp "$FIXTURES/image.png" "$notes/Fixtures/image.png"
   cp "$FIXTURES/toto.md" "$notes/toto.md"
   for ((n = 1; n <= NOTE_COUNT; n++)); do

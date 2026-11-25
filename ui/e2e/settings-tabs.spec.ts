@@ -30,11 +30,11 @@ test("change d'onglet à la souris et au clavier, et rouvre le dernier onglet ou
   ]);
   await expect(tab("Affichage")).toHaveAttribute("aria-selected", "true");
   await expect(settings.getByRole("combobox", { name: "Police" })).toBeVisible();
-  await expect(settings.getByRole("textbox", { name: "Dossier du journal" })).toBeHidden();
+  await expect(settings.getByRole("combobox", { name: "Dossier du journal" })).toBeHidden();
 
   // À la souris.
   await tab("Écriture").click();
-  await expect(settings.getByRole("textbox", { name: "Dossier du journal" })).toBeVisible();
+  await expect(settings.getByRole("combobox", { name: "Dossier du journal" })).toBeVisible();
   await expect(settings.getByRole("combobox", { name: "Police" })).toBeHidden();
 
   // Au clavier : flèches, Fin, Début ; le focus suit l'onglet.
@@ -42,7 +42,9 @@ test("change d'onglet à la souris et au clavier, et rouvre le dernier onglet ou
   await expect(tab("Claude")).toHaveAttribute("aria-selected", "true");
   await expect(tab("Claude")).toBeFocused();
   await expect(
-    settings.getByRole("combobox", { name: "Modifications après une lecture du web" }),
+    settings.getByRole("combobox", {
+      name: "Après avoir lu une page web, Claude doit-il demander avant de modifier mes notes ?",
+    }),
   ).toBeVisible();
   await page.keyboard.press("End");
   await expect(tab("Brancher une IA")).toHaveAttribute("aria-selected", "true");
@@ -68,4 +70,8 @@ test("l'onglet Index dit l'état de l'index de mots et le reconstruit", async ({
   await expect(page.locator(".status")).toContainText("Index reconstruit");
   // L'index de sens est dans le même onglet.
   await expect(settings.locator(".meaning-settings")).toContainText("Recherche par le sens");
+  const bar = settings.getByRole("progressbar", { name: "Index de sens" });
+  await expect(bar).toBeVisible();
+  await expect(bar).toHaveAttribute("aria-valuenow", /^\d+$/);
+  await expect(settings.locator(".index-bar-percent")).toHaveText(/^\d+ %$/);
 });

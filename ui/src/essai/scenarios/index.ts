@@ -1,6 +1,6 @@
 // Essai de l'application réelle (fiche 0054) : les scénarios, dans l'ordre où ils se jouent. Les cinq premiers
 // partagent l'espace de travail `notes` (le canvas fait par le premier sert aux deux suivants) ; le dernier
-// ouvre l'espace de travail `recherche`.
+// ouvre l'espace de travail `recherche` ; celui du sélecteur d'espace de travail ajoute `essai-bis` avant lui.
 import type { Scenario } from "../runner";
 import { canvasScenariosFor } from "./canvas";
 import { crmScenarios } from "./crm";
@@ -12,6 +12,8 @@ import { exportScenarios } from "./export";
 import { newContentMenuScenarios } from "./new-content-menu";
 import { noteScenarios } from "./notes";
 import { searchScenarios } from "./search";
+import { settingsScenarios } from "./settings";
+import { workspaceSwitcherScenarios } from "./workspace-switcher";
 
 export function scenariosFor(env: Env): Scenario[] {
   return [
@@ -22,7 +24,9 @@ export function scenariosFor(env: Env): Scenario[] {
     ...crmTabsScenarios(env),
     ...crmActionScenarios(env),
     ...newContentMenuScenarios(env),
+    ...settingsScenarios(),
     ...displayToolsScenarios(),
+    ...workspaceSwitcherScenarios(env),
     ...searchScenarios(env),
   ];
 }

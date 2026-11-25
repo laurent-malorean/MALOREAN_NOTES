@@ -6,6 +6,10 @@ export interface Layout {
   readonly mainArea: HTMLElement;
   /** Le sélecteur d'espace de travail : le nom de l'espace ouvert, en tête des dossiers. */
   readonly workspaceSwitcher: HTMLButtonElement;
+  /** Le sélecteur d'espace de travail du pied des dossiers : une barre (chevrons, puis le nom). */
+  readonly workspaceBar: HTMLButtonElement;
+  /** Le nom de l'espace ouvert, dans la barre du pied. */
+  readonly workspaceBarName: HTMLElement;
   /** Le titre de la liste des notes : dossier, étiquette, Récentes ou Corbeille. */
   readonly listHeading: HTMLElement;
   readonly foldersList: HTMLElement;
@@ -49,8 +53,6 @@ export interface Layout {
   readonly status: HTMLElement;
   /** Sur l'accueil : ajouter un premier espace de travail. */
   readonly addButton: HTMLButtonElement;
-  /** Sous la liste des notes : passer à un autre espace de travail. */
-  readonly switchButton: HTMLButtonElement;
   readonly newNoteButton: HTMLButtonElement;
   /** Le chevron à côté du « + » de la liste des notes : il ouvre le menu de création. */
   readonly newContentButton: HTMLButtonElement;
@@ -83,6 +85,12 @@ const TEMPLATE = `
           <button class="trash-item" data-trash>Corbeille</button>
           <button class="trash-item" data-settings title="Réglages (Cmd+,)">Réglages</button>
         </footer>
+        <button class="workspace-bar" aria-haspopup="menu" title="Changer d'espace de travail (Cmd+Maj+E)">
+          <svg class="workspace-bar-chevrons" viewBox="0 0 12 16" aria-hidden="true" focusable="false">
+            <path d="M2.5 6.5 6 3l3.5 3.5M2.5 9.5 6 13l3.5-3.5" />
+          </svg>
+          <span class="workspace-bar-name"></span>
+        </button>
       </aside>
       <aside class="notes-panel">
         <header class="side-panel-header">
@@ -95,7 +103,6 @@ const TEMPLATE = `
         <div class="tag-filter" hidden></div>
         <label class="note-order">Trier par <select aria-label="Trier la liste"></select></label>
         <nav class="notes-list"></nav>
-        <footer class="side-panel-footer"><button class="link" data-switch>Changer d'espace de travail</button></footer>
       </aside>
       <main class="editor">
         <div class="editor-tools">
@@ -138,6 +145,8 @@ export function createLayout(root: HTMLElement): Layout {
     welcome: find(".welcome"),
     mainArea: find(".main-area"),
     workspaceSwitcher: find(".workspace-switcher"),
+    workspaceBar: find(".workspace-bar"),
+    workspaceBarName: find(".workspace-bar-name"),
     listHeading: find(".list-heading"),
     foldersList: find(".folders-list"),
     recentButton: find("[data-recent]"),
@@ -166,7 +175,6 @@ export function createLayout(root: HTMLElement): Layout {
     claudeColumn: find(".claude-column"),
     status: find(".status"),
     addButton: find("[data-add]"),
-    switchButton: find("[data-switch]"),
     newNoteButton: find("[data-new]"),
     newContentButton: find("[data-new-menu]"),
     settingsButton: find("[data-settings]"),

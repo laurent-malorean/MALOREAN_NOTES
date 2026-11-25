@@ -101,10 +101,12 @@ function menuEntries(deps: WorkspacesDeps, list: readonly WorkspaceItem[]): Menu
   const others = list.filter((item) => !item.active);
   return [
     ...list.map((item) => ({
-      label: item.active ? `✓ ${item.name}` : item.name,
+      label: item.name,
+      checked: item.active,
+      stateName: item.active ? "ouvert" : undefined,
       run: () => run(switchTo(deps, item.name)),
     })),
-    { label: "Ajouter un espace de travail…", run: () => run(add(deps)) },
+    { label: "Ajouter un espace de travail…", separatorBefore: true, run: () => run(add(deps)) },
     { label: "Renommer l'espace de travail…", run: () => run(rename(deps)) },
     ...others.map((item) => ({
       label: `Retirer « ${item.name} » de la liste…`,
