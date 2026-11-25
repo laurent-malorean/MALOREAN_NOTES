@@ -102,6 +102,36 @@ pub enum AppError {
     /// Le contenu du canvas n'est pas valide : la raison est lisible (fiche 0052).
     #[error("{0}")]
     InvalidCanvas(#[from] domain::canvas::CanvasError),
+    /// La note n'est pas un CRM (fiche 0058).
+    #[error("cette note n'est pas un CRM")]
+    NotACrm,
+    /// La fiche d'un CRM n'existe plus : le geste est abandonné (fiche 0058).
+    #[error("Cette fiche n'existe plus.")]
+    FicheGone,
+    /// Ce que l'interface donne pour un jour n'est pas un jour ; la raison est lisible.
+    #[error("{0}")]
+    CrmDay(#[from] domain::crm::InvalidDay),
+    /// Le nom d'une fiche est refusé ; la raison est lisible.
+    #[error("{0}")]
+    CrmName(#[from] domain::crm::NameError),
+    /// Une étape est refusée ; la raison est lisible.
+    #[error("{0}")]
+    CrmStage(#[from] domain::crm::StageError),
+    /// Le geste sur le texte d'une action est refusé ; la raison est lisible.
+    #[error("{0}")]
+    CrmBody(#[from] domain::crm::BodyError),
+    /// Ce que l'interface désigne n'est pas une référence de fiche ni de note valable.
+    #[error("« {0} » n'est pas une référence valable")]
+    InvalidReference(String),
+    /// Ce que l'interface donne pour une couleur n'est pas dans la palette.
+    #[error("« {0} » n'est pas une couleur de la palette")]
+    UnknownColor(String),
+    /// Ce que l'interface donne pour un canal n'est pas l'un des sept.
+    #[error("« {0} » n'est pas un canal")]
+    UnknownChannel(String),
+    /// Ce que l'interface donne pour un statut n'est pas une colonne du CRM.
+    #[error("« {0} » n'est pas une colonne de ce CRM")]
+    UnknownStatus(String),
     /// La recherche par le sens a reçu une question vide.
     #[error("la question est vide : écrivez ce que vous cherchez")]
     EmptyQuestion,

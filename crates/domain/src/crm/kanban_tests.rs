@@ -341,3 +341,17 @@ fn a_card_dropped_in_an_empty_column_takes_the_first_place() {
     assert_eq!(ranks.len(), 1);
     assert_eq!(ranks[0].1.get(), 1);
 }
+
+#[test]
+fn actions_are_sorted_most_recent_first_without_date_last() {
+    let actions = [
+        action("a", "date: '2026-11-20'\n"),
+        action("b", ""),
+        action("c", "date: '2026-11-24'\n"),
+        action("d", "date: '2026-11-24'\n"),
+    ];
+    let mut cards: Vec<&Action> = actions.iter().collect();
+    sort_most_recent_first(&mut cards);
+    let names: Vec<&str> = cards.iter().map(|card| card.name.as_str()).collect();
+    assert_eq!(names, ["d", "c", "a", "b"]);
+}

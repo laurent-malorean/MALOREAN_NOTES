@@ -39,6 +39,30 @@ impl Segment {
         }
     }
 
+    /// Les segments de la fiche de CRM titrée `title`, de texte utile `body` : son titre complet
+    /// est celui de son CRM puis le sien (le sien seul si son CRM est inconnu), son texte est coupé
+    /// comme celui d'une note. Une fiche sans texte donne tout de même un segment : son titre.
+    #[must_use]
+    pub fn of_fiche(crm_title: Option<&str>, title: &str, body: &str) -> Vec<Self> {
+        let (note_title, section) = match crm_title {
+            Some(crm) => (crm, Some(title)),
+            None => (title, None),
+        };
+        let mut pieces = cut(body);
+        if pieces.is_empty() {
+            pieces.push(String::new());
+        }
+        pieces
+            .into_iter()
+            .map(|text| Self {
+                note_title: note_title.to_owned(),
+                section: section.map(str::to_owned),
+                text,
+                node: None,
+            })
+            .collect()
+    }
+
     /// Le chemin du nœud de carte mentale que ce segment dit, s'il en dit un.
     #[must_use]
     pub fn node(&self) -> Option<&str> {

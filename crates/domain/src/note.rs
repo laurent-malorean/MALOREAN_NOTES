@@ -1,11 +1,13 @@
 //! Résumé d'une note, tel que l'affiche la liste, et le tri de la liste.
 
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use crate::front_matter::is_pinned;
+use crate::mind_map::searchable_text;
 use crate::tag::{sort_key, tags};
 use crate::title::displayed_title_of_note;
-use crate::{ContentType, NotePath};
+use crate::{ContentType, NotePath, canvas, crm};
 
 /// Date de dernière modification, en millisecondes depuis le 1er janvier 1970.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -61,11 +63,15 @@ pub struct NoteSummary {
 impl NoteSummary {
     /// Le résumé d'une note : son titre affiché, son épinglage, ses étiquettes et son type de
     /// contenu (la propriété `type:` de l'en-tête, fiche 0041) sont tirés de son contenu ; une
-    /// note n'a pas de conteneur.
+    /// note n'a pas de conteneur, sauf une fiche du CRM rangée dans le dossier de sa sorte : son
+    /// CRM est son conteneur (fiche 0058).
     #[must_use]
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
         let title = displayed_title_of_note(content, path.name());
         let content_type = ContentType::of_file(path.name(), content);
+        let container = content_type
+            .crm_kind()
+            .and_then(|kind| kind.container_of(&path));
         Self {
             path,
             title,
@@ -73,7 +79,7 @@ impl NoteSummary {
             pinned: is_pinned(content),
             tags: tags(content),
             content_type,
-            container: None,
+            container,
             node: None,
         }
     }
@@ -119,6 +125,21 @@ impl NoteSummary {
     #[must_use]
     pub fn node(&self) -> Option<&str> {
         self.node.as_deref()
+    }
+
+    /// Ce que la recherche par les mots lit de cette note, de texte `content` : son texte, sauf
+    /// pour une carte mentale (son titre et ses étiquettes ; ses nœuds sont cherchés à part), un
+    /// canvas (les textes qu'il montre, pas son JSON), le CRM et ses fiches (leur texte utile).
+    #[must_use]
+    pub fn searched_text<'a>(&self, content: &'a str) -> Cow<'a, str> {
+        match self.content_type {
+            ContentType::MindMap => Cow::Owned(searchable_text(self)),
+            ContentType::Canvas => Cow::Owned(canvas::indexed_text(&self.title, content)),
+            _ => match crm::searchable_text(self, content) {
+                Some(text) => Cow::Owned(text),
+                None => Cow::Borrowed(content),
+            },
+        }
     }
 
     /// Son type de contenu.
@@ -232,6 +253,47 @@ mod tests {
             assert_eq!(read.content_type(), kind);
             assert_eq!(read.container(), None);
         }
+    }
+
+    #[test]
+    fn a_fiche_of_the_crm_has_its_crm_for_container() {
+        let person = note(
+            "clients/personnes/jean.md",
+            "---\ntype: crm-personne\n---\n# Jean",
+            0,
+        );
+        assert_eq!(person.content_type(), ContentType::CrmPerson);
+        assert_eq!(
+            person.container(),
+            Some(&NotePath::parse("clients.md").unwrap())
+        );
+        let crm = note("clients.md", "---\ntype: crm\n---\n# Clients", 0);
+        assert_eq!(crm.content_type(), ContentType::Crm);
+        assert_eq!(crm.container(), None);
+        let elsewhere = note("autre/jean.md", "---\ntype: crm-personne\n---\n# Jean", 0);
+        assert_eq!(elsewhere.container(), None);
+    }
+
+    #[test]
+    fn the_words_search_reads_the_text_each_kind_of_note_makes_useful() {
+        let text =
+            |path: &str, content: &str| note(path, content, 0).searched_text(content).into_owned();
+        assert_eq!(text("n.md", "# N\n\ncorps"), "# N\n\ncorps");
+        assert_eq!(
+            text(
+                "m.md",
+                "---\ntype: carte-mentale\ntags: [a]\n---\n# M\n\n- Nœud\n"
+            ),
+            "M\na"
+        );
+        assert_eq!(text("p.canvas", "{\"nodes\": []}"), "p\n");
+        assert_eq!(
+            text(
+                "c/projets/p.md",
+                "---\ntype: crm-projet\ncouleur: bleu\n---\n# P\n"
+            ),
+            "P"
+        );
     }
 
     #[test]

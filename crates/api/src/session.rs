@@ -6,10 +6,13 @@ pub use meaning::MeaningEvents;
 mod attachments;
 mod canvas;
 mod claude;
+mod crm;
 mod export;
 mod folders;
+mod gestures;
 mod history;
 mod index;
+mod items;
 mod journal;
 mod links;
 mod meaning;
@@ -34,7 +37,6 @@ use std::sync::{Arc, Mutex, PoisonError, RwLock, mpsc};
 
 use application::use_cases::{
     CreateNote, ListNotes, MoveNote, OpenedWorkspace, PinNote, ReadNote, RefreshIndex, SearchNotes,
-    SearchResult,
 };
 use application::{
     AppError, ClaudeCode, Clipboard, Clock, ExportStore, History, HistoryOpener, IndexOpener,
@@ -43,27 +45,18 @@ use application::{
     WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher, WritingAssistant,
 };
 
-use domain::search::{ExcerptPart, SearchQuery};
+use application::use_cases::RecoverGestures;
+use application::{MemoryPendingGesturesOpener, PendingGestures, PendingGesturesOpener};
+use domain::search::SearchQuery;
 use domain::title::displayed_title_of_note;
-use domain::{Fingerprint, Folder, Moment, NotePath, NoteSummary};
+use domain::{Fingerprint, Folder, Moment, NotePath};
 
+use items::{list_item, search_result_item};
 use meaning_worker::MeaningWorker;
 
 use crate::{
-    ApiError, ExcerptPartItem, NoteContent, NoteListItem, NoteOrderItem, SavedNote,
-    SearchResultItem, WorkspaceInfo,
+    ApiError, NoteContent, NoteListItem, NoteOrderItem, SavedNote, SearchResultItem, WorkspaceInfo,
 };
-
-/// Une ligne de la liste des notes.
-fn list_item(note: &NoteSummary) -> NoteListItem {
-    NoteListItem {
-        path: note.path().to_path(),
-        title: note.title().to_owned(),
-        modified: note.modified().0,
-        pinned: note.is_pinned(),
-        tags: note.tags().to_vec(),
-    }
-}
 
 /// État partagé par les commandes : les adaptateurs et l'espace de travail ouvert.
 #[derive(Debug)]
@@ -73,6 +66,8 @@ pub struct Session {
     clock: Arc<dyn Clock>,
     indexes: Arc<dyn IndexOpener>,
     histories: Arc<dyn HistoryOpener>,
+    /// Les gestes en attente de chaque espace de travail.
+    pending_gestures: Arc<dyn PendingGesturesOpener>,
     workspace: RwLock<Option<OpenWorkspaceState>>,
     watcher: Option<Arc<dyn WorkspaceWatcher>>,
     watching: Mutex<Option<Box<dyn Watching>>>,
@@ -114,6 +109,8 @@ struct OpenWorkspaceState {
     index: Arc<dyn NoteIndex>,
     meaning: Arc<dyn MeaningStore>,
     history: Arc<dyn History>,
+    /// Les gestes du CRM qui changent plusieurs fichiers, gardés le temps de les appliquer.
+    gestures: Arc<dyn PendingGestures>,
     /// Les notes enregistrées par l'application depuis leur dernière version : une version en
     /// est gardée quand on quitte l'application.
     pending: Arc<Mutex<BTreeSet<NotePath>>>,
@@ -138,6 +135,7 @@ impl Session {
             clock,
             indexes: Arc::new(MemoryIndexes),
             histories: Arc::new(MemoryHistories),
+            pending_gestures: Arc::new(MemoryPendingGesturesOpener),
             workspace: RwLock::new(None),
             watcher: None,
             watching: Mutex::new(None),
@@ -275,6 +273,11 @@ impl Session {
             .open_with_meaning(&location)
             .map_err(AppError::from)?;
         let history = self.histories.open(&location).map_err(AppError::from)?;
+        let gestures = self
+            .pending_gestures
+            .open(&location)
+            .map_err(AppError::from)?;
+        RecoverGestures::new(&*opened.store, &*gestures).execute()?;
         RefreshIndex::new(&*opened.store, &*index).execute()?;
         let versioned = Arc::new(VersionedStore::new(opened.store, Arc::clone(&history)));
         let state = OpenWorkspaceState {
@@ -284,6 +287,7 @@ impl Session {
             index,
             meaning: Arc::clone(&meaning),
             history,
+            gestures,
             pending: Arc::default(),
         };
         *self
@@ -324,35 +328,6 @@ impl Session {
     }
 }
 
-fn search_result_item(result: SearchResult) -> SearchResultItem {
-    let excerpt = result
-        .excerpt
-        .parts()
-        .iter()
-        .map(|part| match part {
-            ExcerptPart::Text(text) => ExcerptPartItem {
-                text: text.clone(),
-                matched: false,
-            },
-            ExcerptPart::Match(text) => ExcerptPartItem {
-                text: text.clone(),
-                matched: true,
-            },
-        })
-        .collect();
-    SearchResultItem {
-        path: result.path.to_path(),
-        title: result.title,
-        folder: result.path.folder().to_path(),
-        content_type: result.content_type.into(),
-        container: result.container.as_ref().map(NotePath::to_path),
-        container_title: result.container_title,
-        node: result.node,
-        modified: result.modified.0,
-        excerpt,
-    }
-}
-
 fn note_content(note: StoredNote) -> NoteContent {
     NoteContent {
         path: note.path.to_path(),
@@ -369,7 +344,7 @@ mod tests {
     use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
 
     use super::*;
-    use crate::ContentTypeItem;
+    use crate::{ContentTypeItem, ExcerptPartItem};
 
     const RECENT: NoteOrderItem = NoteOrderItem::Modified;
 

@@ -4,6 +4,7 @@ mod attachments;
 mod canvas;
 mod connection;
 mod create_note;
+mod crm;
 mod export;
 mod folders;
 mod history;
@@ -31,6 +32,13 @@ pub use attachments::{
 pub use canvas::{CreateCanvas, ReadCanvas, SaveCanvas, SavedCanvas};
 pub use connection::{CreateConnectionKey, ReadConnectionKey, RevokeConnectionKey};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
+pub use crm::{
+    ActionChange, ActionDraft, ApplyGesture, ChangeAction, ChangeCompany, ChangePerson,
+    ChangeProject, ChangeStages, CheckEmail, ColumnView, CompanyChange, CompanyEntry, CreateAction,
+    CreateCompany, CreateCrm, CreatePerson, CreateProject, CrmView, DeleteAction, DeleteCompany,
+    DeletePerson, DeleteProject, MoveAction, NoDataEntry, PersonChange, PersonEntry, Placement,
+    ProjectChange, ProjectEntry, ReadCrm, RecoverGestures, StageChange, WeekView,
+};
 pub use export::ExportMarkdown;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
 pub use history::{

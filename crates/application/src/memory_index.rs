@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
-use domain::mind_map::{indexed_node_entries, searchable_text};
+use domain::mind_map::indexed_node_entries;
 use domain::research_notebook::indexed_entries;
 use domain::search::{SearchQuery, search};
 use domain::{ContentType, Folder, NotePath, NoteSummary};
@@ -56,11 +56,7 @@ impl NoteIndex for MemoryIndex {
             let summary = NoteSummary::new(stamp.path.clone(), &note.content, stamp.modified);
             let mut entries = indexed_entries(&summary, &note.content);
             entries.extend(indexed_node_entries(&summary, &note.content));
-            let searchable = match summary.content_type() {
-                ContentType::MindMap => searchable_text(&summary),
-                ContentType::Canvas => domain::canvas::indexed_text(summary.title(), &note.content),
-                _ => note.content.clone(),
-            };
+            let searchable = summary.searched_text(&note.content).into_owned();
             let kept = Known {
                 stamp,
                 summary,

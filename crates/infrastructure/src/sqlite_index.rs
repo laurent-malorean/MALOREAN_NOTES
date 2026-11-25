@@ -2,12 +2,12 @@
 //! de support de l'application, jamais dans l'espace de travail. Un fichier abîmé ou d'un ancien
 //! format est remplacé par un index vide, que la mise à jour remplit à partir des fichiers.
 
+use std::borrow::Cow;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use application::{IndexOpener, IndexedNote, NoteIndex, NoteStamp, StoreError, WorkspaceLocation};
-use domain::mind_map::searchable_text;
 use domain::search::{SearchQuery, folded};
 use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 use rusqlite::{Connection, ErrorCode, OptionalExtension, Row, ToSql, params, params_from_iter};
@@ -20,8 +20,9 @@ mod nodes;
 /// type des notes se nomme « note », et non plus « page » (fiche 0037). 4 : les cahiers de
 /// recherche et leurs entrées (fiche 0041). 6 : les segments des notes et leurs vecteurs de sens
 /// (fiche 0044). 7 : les cartes mentales, nouveau type de contenu (fiche 0050). 8 : leurs nœuds,
-/// cherchés à part, et le nœud de chaque segment.
-pub const FORMAT_VERSION: i32 = 8;
+/// cherchés à part, et le nœud de chaque segment. 9 : le CRM et ses fiches, nouveaux types de
+/// contenu, avec leur CRM pour conteneur (fiche 0058).
+pub const FORMAT_VERSION: i32 = 9;
 const FILE_PREFIX: &str = "index-";
 const FILE_SUFFIX: &str = ".sqlite";
 /// Séparateur des étiquettes d'une note dans sa colonne : une étiquette tient sur une ligne.
@@ -337,10 +338,8 @@ impl NoteIndex for SqliteIndex {
             rows.collect::<rusqlite::Result<Vec<_>>>()
         })?;
         for (note, text) in &mut found {
-            match note.content_type() {
-                ContentType::MindMap => *text = searchable_text(note),
-                ContentType::Canvas => *text = domain::canvas::indexed_text(note.title(), text),
-                _ => {}
+            if let Cow::Owned(searched) = note.searched_text(text) {
+                *text = searched;
             }
         }
         if types.contains(&ContentType::Entry) {
@@ -425,7 +424,7 @@ fn keep(connection: &Connection, note: &IndexedNote) -> rusqlite::Result<()> {
     let id = connection.last_insert_rowid();
     connection.execute(
         "INSERT INTO notes_text (rowid, folded) VALUES (?1, ?2)",
-        params![id, folded(&nodes::searched_text(&summary, &note.content))],
+        params![id, folded(&summary.searched_text(&note.content))],
     )?;
     for tag in summary.tags() {
         connection.execute(

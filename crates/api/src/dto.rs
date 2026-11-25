@@ -7,6 +7,8 @@ mod canvas;
 mod claude;
 mod claude_load;
 mod connection;
+mod crm;
+mod crm_change;
 mod meaning;
 mod mind_map;
 mod turn_settings;
@@ -14,6 +16,17 @@ mod turn_settings;
 pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
 pub use connection::{ConnectionInfo, ConnectionKeyItem};
+pub use crm::{
+    ActionPersonItem, ChecklistEntryItem, ChecklistItem, ColumnItem, CommentItem, CrmActionItem,
+    CrmCompanyItem, CrmItem, CrmPersonItem, CrmProjectItem, NoDataItem, PassageItem, TallyItem,
+    UrgencyItem, WeekDayItem, WeekItem,
+};
+pub(crate) use crm_change::day as crm_day;
+pub use crm_change::{
+    BodyChangeItem, CompanyChoiceItem, CrmActionChangeItem, CrmActionDraftItem,
+    CrmCompanyChangeItem, CrmFiltersItem, CrmPersonChangeItem, CrmProjectChangeItem, PlacementItem,
+    StageChangeItem,
+};
 pub use meaning::{
     MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,
     ModelOverviewItem,
@@ -110,6 +123,16 @@ pub enum ContentTypeItem {
     Entry,
     /// Un nœud d'une carte mentale.
     Node,
+    /// Un CRM.
+    Crm,
+    /// Une entreprise d'un CRM.
+    CrmCompany,
+    /// Une personne d'un CRM.
+    CrmPerson,
+    /// Une action d'un CRM.
+    CrmAction,
+    /// Un projet d'un CRM.
+    CrmProject,
 }
 
 impl From<domain::ContentType> for ContentTypeItem {
@@ -121,6 +144,11 @@ impl From<domain::ContentType> for ContentTypeItem {
             domain::ContentType::Canvas => Self::Canvas,
             domain::ContentType::Entry => Self::Entry,
             domain::ContentType::Node => Self::Node,
+            domain::ContentType::Crm => Self::Crm,
+            domain::ContentType::CrmCompany => Self::CrmCompany,
+            domain::ContentType::CrmPerson => Self::CrmPerson,
+            domain::ContentType::CrmAction => Self::CrmAction,
+            domain::ContentType::CrmProject => Self::CrmProject,
         }
     }
 }

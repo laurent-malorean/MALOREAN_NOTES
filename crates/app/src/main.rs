@@ -12,9 +12,9 @@ use application::{
 };
 use infrastructure::{
     AppToolsRelay, AppleWritingAssistant, CONNECT_OPTION, ClaudeCodeCli, FsConnectionKeys,
-    FsExportStore, FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences,
-    MacClipboard, ModelFolder, PermanentSocket, RELAY_OPTION, SocketPlace, SqliteIndexes,
-    SystemClock, SystemSecretMaker, claude_folders, connect, relay,
+    FsExportStore, FsHistories, FsPendingGesturesOpener, FsWorkspaceOpener, FsWorkspaceWatcher,
+    JsonPreferences, MacClipboard, ModelFolder, PermanentSocket, RELAY_OPTION, SocketPlace,
+    SqliteIndexes, SystemClock, SystemSecretMaker, claude_folders, connect, relay,
 };
 use tauri::{Manager, RunEvent};
 
@@ -163,6 +163,7 @@ fn base_session(
         app.handle().clone(),
     )))
     .with_histories(Arc::new(FsHistories))
+    .with_pending_gestures(Arc::new(FsPendingGesturesOpener))
     .with_watcher(Arc::new(FsWorkspaceWatcher))
     .with_exports(Arc::new(FsExportStore))
     .with_clipboard(Arc::new(MacClipboard::default()))

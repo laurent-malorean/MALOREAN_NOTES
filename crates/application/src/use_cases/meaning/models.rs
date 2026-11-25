@@ -199,8 +199,8 @@ impl<'a> RebuildMeaning<'a> {
             let Some(content) = self.words.content(note.path())? else {
                 continue;
             };
-            self.meaning
-                .replace_segments(note.path(), &note_segments(note.path(), &content))?;
+            let segments = note_segments(self.words, note.path(), &content)?;
+            self.meaning.replace_segments(note.path(), &segments)?;
         }
         Ok(())
     }
@@ -324,7 +324,7 @@ mod tests {
             let content = fixture.words.content(&path(note)).unwrap().unwrap();
             assert_eq!(
                 fixture.meaning.segments_of(&path(note)),
-                note_segments(&path(note), &content)
+                note_segments(&*fixture.words, &path(note), &content).unwrap()
             );
         }
         let small = fixture.meaning.status(MODEL).unwrap();

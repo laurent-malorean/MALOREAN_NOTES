@@ -2,6 +2,7 @@
 //! cahier de recherche, et l'entrée d'un cahier de recherche.
 
 use crate::FileName;
+use crate::crm::CrmKind;
 use crate::front_matter::declared_type;
 
 /// La sorte d'élément que l'index garde.
@@ -23,25 +24,45 @@ pub enum ContentType {
     /// Un nœud d'une carte mentale : il n'a pas de fichier à lui, sa carte est son conteneur
     /// (fiche 0050).
     Node,
+    /// Un CRM, déclaré par `type: crm` (fiche 0057).
+    Crm,
+    /// Une entreprise d'un CRM, déclarée par `type: crm-entreprise` ; son CRM est son conteneur.
+    CrmCompany,
+    /// Une personne d'un CRM, déclarée par `type: crm-personne` ; son CRM est son conteneur.
+    CrmPerson,
+    /// Une action d'un CRM, déclarée par `type: crm-action` ; son CRM est son conteneur.
+    CrmAction,
+    /// Un projet d'un CRM, déclaré par `type: crm-projet` ; son CRM est son conteneur.
+    CrmProject,
 }
 
 impl ContentType {
     /// Tous les types de contenu : ce sur quoi porte une recherche par défaut.
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 11] = [
         Self::Note,
         Self::ResearchNotebook,
         Self::MindMap,
         Self::Canvas,
         Self::Entry,
         Self::Node,
+        Self::Crm,
+        Self::CrmCompany,
+        Self::CrmPerson,
+        Self::CrmAction,
+        Self::CrmProject,
     ];
 
     /// Les types qu'une note (un fichier) peut avoir.
-    pub const FILES: [Self; 4] = [
+    pub const FILES: [Self; 9] = [
         Self::Note,
         Self::ResearchNotebook,
         Self::MindMap,
         Self::Canvas,
+        Self::Crm,
+        Self::CrmCompany,
+        Self::CrmPerson,
+        Self::CrmAction,
+        Self::CrmProject,
     ];
 
     /// Le nom du type, tel que l'écrit la propriété `type:` d'un en-tête et que l'index le
@@ -55,7 +76,20 @@ impl ContentType {
             Self::Canvas => "canvas",
             Self::Entry => "entree",
             Self::Node => "noeud",
+            Self::Crm => CrmKind::Crm.name(),
+            Self::CrmCompany => CrmKind::Company.name(),
+            Self::CrmPerson => CrmKind::Person.name(),
+            Self::CrmAction => CrmKind::Action.name(),
+            Self::CrmProject => CrmKind::Project.name(),
         }
+    }
+
+    /// La sorte de note du CRM que ce type de contenu désigne ; rien pour le reste.
+    #[must_use]
+    pub fn crm_kind(self) -> Option<CrmKind> {
+        CrmKind::ALL
+            .into_iter()
+            .find(|kind| Self::from(*kind) == self)
     }
 
     /// Le type qui porte ce nom, s'il existe.
@@ -91,6 +125,18 @@ impl ContentType {
     }
 }
 
+impl From<CrmKind> for ContentType {
+    fn from(kind: CrmKind) -> Self {
+        match kind {
+            CrmKind::Crm => Self::Crm,
+            CrmKind::Company => Self::CrmCompany,
+            CrmKind::Person => Self::CrmPerson,
+            CrmKind::Action => Self::CrmAction,
+            CrmKind::Project => Self::CrmProject,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -106,7 +152,12 @@ mod tests {
                 "carte-mentale",
                 "canvas",
                 "entree",
-                "noeud"
+                "noeud",
+                "crm",
+                "crm-entreprise",
+                "crm-personne",
+                "crm-action",
+                "crm-projet"
             ]
         );
     }
@@ -121,16 +172,36 @@ mod tests {
     }
 
     #[test]
-    fn only_notes_research_notebooks_mind_maps_and_canvases_are_files() {
+    fn only_notes_notebooks_mind_maps_canvases_and_the_crm_are_files() {
         assert_eq!(
             ContentType::FILES,
             [
                 ContentType::Note,
                 ContentType::ResearchNotebook,
                 ContentType::MindMap,
-                ContentType::Canvas
+                ContentType::Canvas,
+                ContentType::Crm,
+                ContentType::CrmCompany,
+                ContentType::CrmPerson,
+                ContentType::CrmAction,
+                ContentType::CrmProject,
             ]
         );
+    }
+
+    #[test]
+    fn the_crm_and_its_fiches_have_the_type_their_header_declares() {
+        for kind in CrmKind::ALL {
+            let content = format!("---\ntype: {}\n---\n# T\n", kind.name());
+            let content_type = ContentType::of(&content);
+            assert_eq!(content_type, ContentType::from(kind));
+            assert_eq!(content_type.name(), kind.name());
+            assert_eq!(content_type.crm_kind(), Some(kind));
+        }
+        assert_eq!(ContentType::of("---\ntype: crm-\n---\n"), ContentType::Note);
+        assert_eq!(ContentType::Note.crm_kind(), None);
+        assert_eq!(ContentType::MindMap.crm_kind(), None);
+        assert_eq!(ContentType::Node.crm_kind(), None);
     }
 
     #[test]
