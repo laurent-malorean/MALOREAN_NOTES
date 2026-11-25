@@ -343,4 +343,14 @@ describe("fenêtre d'une nouvelle action : le texte tapé n'est pas perdu", () =
       description: "Aussi tapé",
     });
   });
+
+  it("garde le titre tapé quand une personne est ajoutée sans avoir quitté le champ", async () => {
+    await mountCrm({ crm: windowCrm(), tab: "week" });
+    (dayColumn("2026-11-27").querySelector(".crm-add-action") as HTMLButtonElement).click();
+    field<HTMLInputElement>("title").value = "Tapé";
+    field<HTMLTextAreaElement>("description").value = "Aussi tapé";
+    choose(control("+ Ajouter une personne"), "jean-dupont");
+    expect(field<HTMLInputElement>("title").value).toBe("Tapé");
+    expect(field<HTMLTextAreaElement>("description").value).toBe("Aussi tapé");
+  });
 });

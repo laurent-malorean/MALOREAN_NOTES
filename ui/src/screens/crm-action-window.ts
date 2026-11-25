@@ -273,6 +273,8 @@ class Window implements ActionWindow {
   }
 
   private changeDraft(change: CrmActionChangeItem): void {
+    // Ce qui est tapé et pas encore quitté survit au redessin qu'un changement de liste va faire.
+    if (!showsItself(change)) this.commitTyped();
     this.draft = applyChange(this.draft, change, this.crm);
     const model = { crm: this.crm, fields: this.draft, action: null };
     if (showsItself(change)) this.shown = model;
