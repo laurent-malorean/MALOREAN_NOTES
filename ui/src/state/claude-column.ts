@@ -74,6 +74,7 @@ export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   add_attachment: "Pièce jointe",
   add_entry: "Ajout au cahier",
   create_mind_map: "Création d’une carte mentale",
+  create_crm: "Création d’un CRM",
   viewed_note: "Note regardée",
   show_note: "Note montrée",
 };
