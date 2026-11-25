@@ -477,3 +477,66 @@ fn a_mind_map_is_created_like_a_note_with_its_starting_list() {
         "il manque « title »"
     );
 }
+
+#[test]
+fn a_crm_is_created_with_the_name_taken_from_its_title_in_a_folder_made_on_the_way() {
+    let session = opened(&[("Ventes/clients.md", "# Autre")]);
+    let created = done(
+        &session,
+        "create_crm",
+        json!({ "title": "  Clients ", "folder": "Ventes" }),
+    );
+    assert_eq!(created, json!({ "path": "Ventes/clients-2.md" }));
+    assert_eq!(
+        text(&session, "Ventes/clients-2.md"),
+        "---\ntype: crm\n---\n# Clients\n"
+    );
+    let at_root = done(&session, "create_crm", json!({ "title": "Mes clients" }));
+    assert_eq!(at_root, json!({ "path": "mes-clients.md" }));
+    let in_new_folder = done(
+        &session,
+        "create_crm",
+        json!({ "title": "Prospects", "folder": "Ventes/2027" }),
+    );
+    assert_eq!(in_new_folder, json!({ "path": "Ventes/2027/prospects.md" }));
+    assert!(
+        session
+            .list_folders()
+            .unwrap()
+            .contains(&"Ventes/2027".to_owned())
+    );
+}
+
+#[test]
+fn a_crm_without_a_valid_title_or_folder_is_refused_and_nothing_is_written() {
+    let session = opened(&[]);
+    assert_eq!(
+        failed(&session, "create_crm", json!({})),
+        "il manque « title »"
+    );
+    assert_eq!(
+        failed(
+            &session,
+            "create_crm",
+            json!({ "title": "  ", "folder": "Ventes" })
+        ),
+        "il manque « title »"
+    );
+    assert_eq!(
+        failed(
+            &session,
+            "create_crm",
+            json!({ "title": "A\nB", "folder": "Ventes" })
+        ),
+        "Le nom tient sur une seule ligne."
+    );
+    assert_eq!(
+        failed(
+            &session,
+            "create_crm",
+            json!({ "title": "X", "folder": "../x" })
+        ),
+        "nom de dossier invalide : « ../x »"
+    );
+    assert!(session.list_folders().unwrap().is_empty());
+}

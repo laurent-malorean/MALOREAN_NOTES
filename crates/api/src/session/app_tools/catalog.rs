@@ -308,6 +308,25 @@ fn create_mind_map() -> Described {
     )
 }
 
+fn create_crm() -> Described {
+    (
+        "Crée un CRM (une note dont l'en-tête porte `type: crm`) selon les règles de MALOREAN \
+         Notes : titre `# title` en tête, nom du fichier tiré du titre (sans écraser une autre \
+         note), dans `folder` (la racine par défaut ; créé avec ses parents s'il n'existe pas). \
+         Le titre tient sur une ligne et n'est pas vide. Rend son chemin. Ensuite, ses entreprises, \
+         personnes, actions et projets sont des fiches (des notes) rangées dans des dossiers qui \
+         portent le nom du fichier du CRM : vous les lisez et les écrivez avec vos outils de \
+         fichiers, selon la consigne donnée à la présentation du serveur.",
+        input(
+            json!({
+                "title": text("Le titre du CRM."),
+                "folder": folder(),
+            }),
+            &["title"],
+        ),
+    )
+}
+
 fn viewed_note() -> Described {
     (
         "Ce que l'utilisateur regarde dans MALOREAN Notes : la note ouverte dans la colonne \
@@ -350,6 +369,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::AddAttachment => add_attachment(),
         AppTool::AddEntry => add_entry(),
         AppTool::CreateMindMap => create_mind_map(),
+        AppTool::CreateCrm => create_crm(),
         AppTool::ViewedNote => viewed_note(),
         AppTool::ShowNote => show_note(),
     }
@@ -409,7 +429,7 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 23] = [
+        let expected: [(AppTool, &[&str]); 24] = [
             (AppTool::SearchNotes, &[]),
             (AppTool::SearchByMeaning, &["question"]),
             (AppTool::ListTags, &[]),
@@ -431,6 +451,7 @@ mod tests {
             (AppTool::AddAttachment, &["path", "file"]),
             (AppTool::AddEntry, &["path", "text"]),
             (AppTool::CreateMindMap, &["title"]),
+            (AppTool::CreateCrm, &["title"]),
             (AppTool::ViewedNote, &[]),
             (AppTool::ShowNote, path),
         ];

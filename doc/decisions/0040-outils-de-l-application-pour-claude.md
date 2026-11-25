@@ -4,6 +4,7 @@
 - **Statut** : acceptée
 - **Complète** la fiche 0032 (colonne Claude Code) : Claude y reçoit, en plus de ses outils de fichiers et du web, les outils de l'application.
 - **Complétée** par la fiche 0041 (20/11/2026) : l'outil `add_entry` ajoute une entrée à un cahier de recherche.
+- **Complétée** par la fiche 0061 (25/11/2026) : l'outil `create_crm` crée un CRM, la présentation du serveur donne la consigne sur les CRM, la recherche rend les fiches avec leur CRM.
 
 ## Contexte
 

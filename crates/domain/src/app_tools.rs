@@ -57,6 +57,9 @@ pub enum AppTool {
     /// Créer une carte mentale selon les règles : titre, nom du fichier tiré du titre, liste de
     /// départ facultative.
     CreateMindMap,
+    /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
+    /// `doc/specs/crm.md`, § 13).
+    CreateCrm,
     /// Ce que l'utilisateur regarde : la note ouverte dans la colonne active, le texte
     /// sélectionné.
     ViewedNote,
@@ -66,7 +69,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 23] = [
+    pub const ALL: [Self; 24] = [
         Self::SearchNotes,
         Self::SearchByMeaning,
         Self::ListTags,
@@ -88,6 +91,7 @@ impl AppTool {
         Self::AddAttachment,
         Self::AddEntry,
         Self::CreateMindMap,
+        Self::CreateCrm,
         Self::ViewedNote,
         Self::ShowNote,
     ];
@@ -117,6 +121,7 @@ impl AppTool {
             Self::AddAttachment => "add_attachment",
             Self::AddEntry => "add_entry",
             Self::CreateMindMap => "create_mind_map",
+            Self::CreateCrm => "create_crm",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
         }
@@ -171,7 +176,8 @@ impl AppTool {
             | Self::UnpinNote
             | Self::AddAttachment
             | Self::AddEntry
-            | Self::CreateMindMap => true,
+            | Self::CreateMindMap
+            | Self::CreateCrm => true,
         }
     }
 
@@ -182,7 +188,10 @@ impl AppTool {
         match self {
             Self::SearchNotes => Some("query"),
             Self::SearchByMeaning => Some("question"),
-            Self::CreateNote | Self::CreateNoteFromTemplate | Self::CreateMindMap => Some("title"),
+            Self::CreateNote
+            | Self::CreateNoteFromTemplate
+            | Self::CreateMindMap
+            | Self::CreateCrm => Some("title"),
             Self::CreateFolder
             | Self::LinkingNotes
             | Self::ListVersions
@@ -292,7 +301,8 @@ mod tests {
                 "unpin_note",
                 "add_attachment",
                 "add_entry",
-                "create_mind_map"
+                "create_mind_map",
+                "create_crm"
             ]
         );
     }
@@ -324,6 +334,7 @@ mod tests {
                 path,
                 path,
                 path,
+                Some("title"),
                 Some("title"),
                 None,
                 path

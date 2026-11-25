@@ -4,6 +4,7 @@
 
 use application::use_cases::{AttachWorkspaceFile, CreateNote, CreateNoteFromTemplate, ListNotes};
 use domain::app_tools::AppTool;
+use domain::crm::Name;
 use domain::links::same_title;
 use domain::mind_map::with_list;
 use domain::tag::{retagged, same_tag, tags, writable_tag};
@@ -54,6 +55,7 @@ impl Session {
             AppTool::CreateNote => self.tool_create_note(arguments),
             AppTool::CreateFolder => self.tool_create_folder(arguments),
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
+            AppTool::CreateCrm => self.tool_create_crm(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(scope, arguments),
             AppTool::TrashNote => {
                 let trashed = self.trash_note(required(arguments, "path")?);
@@ -136,6 +138,18 @@ impl Session {
         written(&Placed {
             path: created.to_path(),
         })
+    }
+
+    /// Un CRM neuf, titré `title`, dans `folder` (créé avec ses parents) ; rend son chemin. Un
+    /// titre refusé ne crée rien, pas même le dossier.
+    fn tool_create_crm(&self, arguments: &Value) -> Result<String, String> {
+        let title = required(arguments, "title")?;
+        Name::parse(title).map_err(|error| error.to_string())?;
+        let folder =
+            Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
+        self.ensure_folder(&folder.to_path())?;
+        let created = self.create_crm(&folder.to_path(), title).map_err(said)?;
+        written(&created)
     }
 
     /// Une note neuve, titrée `title`, dans `folder` : son texte `text` sous ce titre.
