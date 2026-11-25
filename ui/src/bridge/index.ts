@@ -23,6 +23,7 @@ import type { CanvasCardItem } from "./generated/CanvasCardItem";
 import type { CanvasFileItem } from "./generated/CanvasFileItem";
 import type { CanvasItem } from "./generated/CanvasItem";
 import type { ColumnItem } from "./generated/ColumnItem";
+import type { CompanyChoiceItem } from "./generated/CompanyChoiceItem";
 import type { CrmActionChangeItem } from "./generated/CrmActionChangeItem";
 import type { CrmActionDraftItem } from "./generated/CrmActionDraftItem";
 import type { CrmActionItem } from "./generated/CrmActionItem";
@@ -94,6 +95,7 @@ export type {
   CanvasFileItem,
   CanvasItem,
   ColumnItem,
+  CompanyChoiceItem,
   CrmActionChangeItem,
   CrmActionDraftItem,
   CrmActionItem,

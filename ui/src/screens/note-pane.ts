@@ -7,6 +7,7 @@ import type { OpenNoteLink } from "../editor/links/note-links";
 import { lineStart } from "../state/research-notebook";
 import { renderBacklinks } from "./backlinks-view";
 import { type CanvasDeps, type CanvasPane, createCanvasPane } from "./canvas-pane";
+import { type CrmDeps, type CrmPane, createCrmPane } from "./crm-pane";
 import { createMindMapPane, type MindMapBackend, type MindMapPane } from "./mind-map-pane";
 import type { ColumnParts } from "./columns-view";
 import { renderRelatedNotes } from "./related-view";
@@ -62,6 +63,8 @@ export interface PaneOptions {
   readonly related?: RelatedNotes;
   /** Sans lui, un canvas reste du texte (fiche 0052). */
   readonly canvas?: CanvasDeps;
+  /** Sans lui, un CRM reste du texte (fiche 0060). */
+  readonly crm?: CrmDeps;
 }
 
 export interface Pane {
@@ -81,6 +84,8 @@ export interface Pane {
   revealNode(node: string): void;
   /** Le canvas montré, s'il y en a un (fiche 0052). */
   canvasPane(): CanvasPane | null;
+  /** Des fichiers ont changé hors de l'application : un CRM montré dont l'un est une fiche est relu (fiche 0060). */
+  followCrm(changed: readonly string[]): Promise<void>;
   /** Montre les liens entrants de la note ; une réponse arrivée pour une autre note est ignorée. */
   showBacklinks(): Promise<void>;
   /** Montre les notes proches de la note, ou cache la liste si elle n'est pas demandée. */
@@ -100,6 +105,7 @@ class NotePane implements Pane, Viewer {
   private shown: string | null = null;
   private readonly map: MindMapPane | null;
   private readonly canvas: CanvasPane | null;
+  private readonly crm: CrmPane | null;
 
   constructor(
     private readonly parts: ColumnParts,
@@ -131,6 +137,9 @@ class NotePane implements Pane, Viewer {
           notice: (message) => events.show?.(message, "info"),
           resolveImage: options.resolveImage,
         })
+      : null;
+    this.crm = options.crm
+      ? createCrmPane(parts.element, { deps: options.crm, error: events.error })
       : null;
     this.editor = createEditor(
       parts.element,
@@ -179,6 +188,7 @@ class NotePane implements Pane, Viewer {
     try {
       await this.canvas?.sync(this.shown);
       await this.map?.sync(this.shown, this.editor.content());
+      await this.crm?.sync(this.shown, this.editor.content());
     } catch (error) {
       this.options.events.error(error);
     }
@@ -198,6 +208,14 @@ class NotePane implements Pane, Viewer {
 
   canvasPane(): CanvasPane | null {
     return this.canvas;
+  }
+
+  async followCrm(changed: readonly string[]): Promise<void> {
+    try {
+      await this.crm?.refresh(changed);
+    } catch (error) {
+      this.options.events.error(error);
+    }
   }
 
   async showBacklinks(): Promise<void> {
@@ -233,6 +251,7 @@ class NotePane implements Pane, Viewer {
     void this.options.shared.leave(this).catch(this.options.events.error);
     this.map?.destroy();
     this.canvas?.destroy();
+    this.crm?.destroy();
     this.editor.destroy();
   }
 
