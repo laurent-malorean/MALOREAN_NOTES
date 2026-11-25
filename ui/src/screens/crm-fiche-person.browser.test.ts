@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { company } from "../../test-support/crm-fixture";
 import { listsSample, mountFiche } from "../../test-support/crm-lists-fixture";
 import { press, type } from "../../test-support/crm-view-fixture";
+import { field as windowField } from "../../test-support/crm-window-fixture";
 import "../theme.css";
 import "../style.css";
 
@@ -228,13 +229,14 @@ describe("fiche de personne : ses actions", () => {
   });
 
   it("ouvre la fenêtre de l'action au clic, et celle d'une nouvelle action pour cette personne", async () => {
-    const m = await mountFiche("person", "jean-dupont");
+    await mountFiche("person", "jean-dupont");
     q('.crm-line[data-action="appel"]').click();
+    expect((windowField("title") as HTMLInputElement).value).toBe("Appeler Jean");
     button("Nouvelle action").click();
-    expect(m.hooked).toEqual([
-      ["onOpenAction", "appel", "clients.md"],
-      ["onNewAction", "jean-dupont", "clients.md"],
-    ]);
+    expect(document.querySelectorAll(".crm-aw")).toHaveLength(1);
+    expect(q(".crm-aw-heading").textContent).toBe("Nouvelle action");
+    expect((windowField("title") as HTMLInputElement).value).toBe("");
+    expect(q(".crm-aw-people").textContent).toContain("Jean Dupont");
   });
 });
 

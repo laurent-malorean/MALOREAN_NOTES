@@ -10,6 +10,7 @@ import {
   text,
   type,
 } from "../../test-support/crm-view-fixture";
+import { field } from "../../test-support/crm-window-fixture";
 import "../theme.css";
 import "../style.css";
 import { PEOPLE_COLUMNS } from "./crm-people";
@@ -55,7 +56,7 @@ describe("onglet Personnes : le tableau", () => {
   it("ouvre la fiche de la personne au clic sur son nom", async () => {
     const m = await open();
     (rows()[0]?.querySelector(".crm-name") as HTMLElement).click();
-    expect(m.opened).toEqual(["clients/personnes/jean-dupont.md"]);
+    expect(m.fiches).toEqual(["clients/personnes/jean-dupont.md"]);
   });
 });
 
@@ -119,9 +120,9 @@ describe("onglet Personnes : déplier", () => {
   });
 
   it("ouvre la fenêtre de l'action au clic sur une ligne", async () => {
-    const m = await open({ unfolded: '["people:jean-dupont"]' });
+    await open({ unfolded: '["people:jean-dupont"]' });
     (document.querySelector('.crm-line[data-action="appel"]') as HTMLElement).click();
-    expect(m.hooked).toEqual([["onOpenAction", "appel", "clients.md"]]);
+    expect((field("title") as HTMLInputElement).value).toBe("Appeler Jean");
   });
 });
 

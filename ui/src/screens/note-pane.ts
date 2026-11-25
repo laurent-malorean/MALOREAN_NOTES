@@ -100,7 +100,11 @@ export interface Pane {
 /** Le CRM et les fiches d'entreprise et de personne d'une colonne ; sans CRM, ils restent du texte (fiches 0060 et 0063). */
 function crmPanes(element: HTMLElement, deps: CrmDeps | undefined, events: PaneEvents) {
   if (deps === undefined) return { crm: null, fiche: null };
-  const options = { deps, error: events.error, openNote: events.openNote };
+  const options = {
+    ...{ deps, error: events.error, openFiche: events.openNote },
+    ...{ openNote: (title: string) => events.openLink(title, false) },
+    notice: (message: string) => events.show?.(message),
+  };
   return { crm: createCrmPane(element, options), fiche: createFichePane(element, options) };
 }
 

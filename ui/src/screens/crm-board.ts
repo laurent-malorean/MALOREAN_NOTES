@@ -26,6 +26,7 @@ export interface BoardUi {
 
 export type BoardActions = QuickAddActions &
   StageActions & {
+    readonly openAction: (name: string) => void;
     readonly openQuick: (key: string) => void;
     readonly showMore: (status: string) => void;
     readonly dropCard: (card: string, move: Move) => void;
@@ -56,6 +57,7 @@ export function cardsElement(
     if (action === undefined) continue;
     const card = cardElement(cardView(action, ctx.lookups, ctx.crm.today));
     card.addEventListener("pointerdown", (event) => grab(event, card));
+    card.addEventListener("click", () => ctx.act.openAction(ref));
     list.append(card);
   }
   return list;

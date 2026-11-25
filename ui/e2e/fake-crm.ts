@@ -4,8 +4,9 @@
 // date, étapes).
 import type { ColumnItem, CrmActionItem, CrmItem } from "../src/bridge";
 import { addDays } from "../src/state/crm-days";
+import { fakeCrmActionGestures, withActionData } from "./fake-crm-action";
 import { fakeCrmGestures } from "./fake-crm-gestures";
-import { fakeCrmLists, listsOf, withLinks } from "./fake-crm-lists";
+import { fakeCrmLists } from "./fake-crm-lists";
 import {
   type Args,
   CLOSED,
@@ -52,7 +53,7 @@ export function actionsOf(state: FakeNotes, path: string): CrmActionItem[] {
   const folder = `${path.replace(/\.md$/, "")}/actions/`;
   return Object.entries(state.notes)
     .filter(([p]) => p.startsWith(folder))
-    .map(([p, n]) => withLinks(actionOf(p, n.content, stages), n.content));
+    .map(([p, n]) => actionOf(p, n.content, stages));
 }
 
 function view(state: FakeNotes, path: string, filters: Args, weekDay: string | null): CrmItem {
@@ -69,8 +70,8 @@ function view(state: FakeNotes, path: string, filters: Args, weekDay: string | n
   const open = shown.filter((a) => a.open);
   return {
     ...{ title: /^# (.+)$/m.exec(note.content)?.[1] ?? "", stages, today: FAKE_TODAY },
-    ...{ closedPage: 10, actions, tags: [], unreadable: [] },
-    ...listsOf(state, path, actions),
+    ...{ closedPage: 10, nodata: { people: [], tally: { open: 0, late: 0, today: 0 } } },
+    ...{ companies: [], people: [], projects: [], actions, tags: [], unreadable: [] },
     columns: columnsOf(actions, shown, stages),
     week: {
       ...{ monday, sunday: addDays(monday, 6) },
@@ -85,7 +86,10 @@ function view(state: FakeNotes, path: string, filters: Args, weekDay: string | n
 
 export type { CrmHelpers };
 
-export function fakeCrms(state: FakeNotes, helpers: CrmHelpers): Record<string, Handler> {
+export function fakeCrms(
+  state: FakeNotes & { trash: { notes: FakeNotes["notes"] } },
+  helpers: CrmHelpers,
+): Record<string, Handler> {
   return {
     create_crm: ({ folder = "", title = "" }) => {
       const path = helpers.freeName(folder, helpers.slug(title));
@@ -96,8 +100,13 @@ export function fakeCrms(state: FakeNotes, helpers: CrmHelpers): Record<string, 
       return { path };
     },
     read_crm: ({ path, filters, weekDay }: Args) =>
-      view(state, path as string, filters as Args, (weekDay as string | null) ?? null),
+      withActionData(
+        view(state, path as string, filters as Args, (weekDay as string | null) ?? null),
+        state,
+        path as string,
+      ),
     ...fakeCrmGestures(state, helpers, (path) => view(state, path, {}, null)),
     ...fakeCrmLists(state, helpers),
+    ...fakeCrmActionGestures(state, helpers, state.trash, () => `${FAKE_TODAY} 10:32`),
   };
 }

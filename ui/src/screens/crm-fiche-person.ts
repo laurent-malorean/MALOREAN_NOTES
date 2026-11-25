@@ -47,7 +47,7 @@ function companyRow(ctx: FicheContext, person: CrmPersonItem): HTMLElement {
   else {
     const link = actionButton("crm-name link", title);
     link.addEventListener("click", () =>
-      ctx.act.openNote(crmFichePath(ctx.path, "company", company)),
+      ctx.act.openFiche(crmFichePath(ctx.path, "company", company)),
     );
     row.append(link);
   }
@@ -66,8 +66,7 @@ function group(ctx: FicheContext, title: string, actions: readonly CrmActionItem
   const section = h("section", "crm-fiche-actions");
   section.append(h("h3", "crm-fiche-subheading", `${title} (${String(actions.length)})`));
   const lines = actions.map((a) => actionLine(a, ctx.lookups, ctx.crm.today, "person"));
-  const open = (reference: string) => ctx.act.hooks.onOpenAction(reference, ctx.path);
-  section.append(actionList(lines, open, empty));
+  section.append(actionList(lines, ctx.act.openAction, empty));
   return section;
 }
 
@@ -128,7 +127,7 @@ export function personFiche(ctx: FicheContext, person: CrmPersonItem): HTMLEleme
   );
   const found = personActions(person, ctx.lookups);
   const newAction = actionButton("crm-new-button", "Nouvelle action");
-  newAction.addEventListener("click", () => ctx.act.hooks.onNewAction(person.name, ctx.path));
+  newAction.addEventListener("click", () => ctx.act.newAction(person.name));
   const head = h("div", "crm-fiche-section-head");
   head.append(heading("Actions"), newAction);
   return [

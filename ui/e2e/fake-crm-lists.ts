@@ -31,18 +31,6 @@ function filesOf(state: FakeNotes, crm: string, kind: string) {
     .sort((a, b) => title(a.content).localeCompare(title(b.content), "fr"));
 }
 
-/** Le projet et les personnes d'une action, tirés de son en-tête. */
-export function withLinks(action: CrmActionItem, content: string): CrmActionItem {
-  const line = /^personnes:\s*\[(.*)\]$/m.exec(/^---\n([\s\S]*?)\n---\n/.exec(content)?.[1] ?? "");
-  const people = [...(line?.[1] ?? "").matchAll(/\[\[([^\]]+)\]\](?: · \[\[([^\]]+)\]\])?/g)].map(
-    (m) => ({ person: m[1] as string, company: m[2] ?? null }),
-  );
-  return {
-    ...{ ...action, people, project: reference(value(content, "projet")) },
-    companies: people.map((p) => p.company),
-  };
-}
-
 function tallyOf(actions: readonly CrmActionItem[]): Tally {
   const open = actions.filter((a) => a.open);
   return {

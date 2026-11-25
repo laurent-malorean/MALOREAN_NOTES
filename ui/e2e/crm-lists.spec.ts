@@ -83,6 +83,11 @@ test("Personnes : le tableau, déplier une personne, créer une personne", async
     "20 nov. · TODO · Refonte du site · Devis",
   );
   await shot(page, "personnes");
+  await page.locator(".crm-sub .crm-line").click();
+  await expect(page.locator(".crm-aw-panel")).toBeVisible();
+  await expect(page.locator('.crm-aw [data-field="title"]')).toHaveValue("Devis");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".crm-aw")).toHaveCount(0);
   await create(page, "Nouvelle personne", "Léa Roy");
   await expect(page.locator(".crm-row", { hasText: "Léa Roy" })).toBeVisible();
   const written = await savedContent(page, "clients/personnes/lea-roy.md");

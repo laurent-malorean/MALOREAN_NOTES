@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { listsSample, moreBackend } from "../../test-support/crm-lists-fixture";
+import { field } from "../../test-support/crm-window-fixture";
 import "../theme.css";
 import "../style.css";
 import { createFichePane, SHOWN_CLASS } from "./crm-fiche-pane";
@@ -7,7 +8,7 @@ import { createFichePane, SHOWN_CLASS } from "./crm-fiche-pane";
 const PERSON = "---\ntype: crm-personne\n---\n# Jean Dupont\n";
 const COMPANY = "---\ntype: crm-entreprise\n---\n# Acme\n";
 
-function mount(hooks = true) {
+function mount() {
   const column = document.createElement("section");
   column.className = "column";
   column.style.cssText = "width:1000px;height:600px;display:flex;flex-direction:column";
@@ -15,7 +16,7 @@ function mount(hooks = true) {
   const reads: string[] = [];
   const errors: unknown[] = [];
   const opened: string[] = [];
-  const hooked: unknown[][] = [];
+  const titles: string[] = [];
   const state = { fail: false };
   const backend = {
     ...moreBackend(async () => {}),
@@ -28,16 +29,13 @@ function mount(hooks = true) {
   const deps = {
     backend: backend as never,
     confirm: async () => true,
-    ...(hooks
-      ? { hooks: { onOpenAction: (...a: string[]) => void hooked.push(a), onNewAction: vi.fn() } }
-      : {}),
+    chooseNote: async () => null,
   };
   const pane = createFichePane(column, {
-    deps,
-    error: (e) => errors.push(e),
-    openNote: (p) => opened.push(p),
+    ...{ deps, error: (e: unknown) => errors.push(e), openFiche: (p: string) => opened.push(p) },
+    ...{ openNote: (title: string) => titles.push(title), notice: vi.fn() },
   });
-  return { pane, column, reads, errors, opened, hooked, state };
+  return { pane, column, reads, errors, opened, titles, state };
 }
 
 describe("colonne : une fiche d'entreprise ou de personne", () => {
@@ -96,22 +94,22 @@ describe("colonne : une fiche d'entreprise ou de personne", () => {
     expect(m.errors).toHaveLength(1);
   });
 
-  it("ouvre une autre fiche et la fenêtre d'une action par ce qu'on lui prête, et ne fait rien sans fenêtre", async () => {
+  it("ouvre une autre fiche par un clic sur un nom, et la fenêtre d'une action par un clic sur une ligne", async () => {
     const m = mount();
     await m.pane.sync("clients/entreprises/acme.md", COMPANY);
     (m.column.querySelector(".crm-fiche-person .crm-name") as HTMLElement).click();
     expect(m.opened).toEqual(["clients/personnes/jean-dupont.md"]);
     (m.column.querySelector(".crm-line") as HTMLElement).click();
-    expect(m.hooked).toEqual([["appel", "clients.md"]]);
-    const bare = mount(false);
-    await bare.pane.sync("clients/entreprises/acme.md", COMPANY);
-    expect(() => (bare.column.querySelector(".crm-line") as HTMLElement).click()).not.toThrow();
+    expect(document.querySelectorAll(".crm-aw")).toHaveLength(1);
+    expect(field<HTMLInputElement>("title").value).toBe("Appeler Jean");
   });
 
-  it("détruire la colonne retire la fiche", async () => {
+  it("détruire la colonne retire la fiche et la fenêtre de l'action ouverte", async () => {
     const m = mount();
-    await m.pane.sync("clients/personnes/jean-dupont.md", PERSON);
+    await m.pane.sync("clients/entreprises/acme.md", COMPANY);
+    (m.column.querySelector(".crm-line") as HTMLElement).click();
     m.pane.destroy();
+    expect(document.querySelector(".crm-aw")).toBeNull();
     expect(m.column.querySelector(".crm-fiche")).toBeNull();
     expect(m.column.classList.contains(SHOWN_CLASS)).toBe(false);
   });

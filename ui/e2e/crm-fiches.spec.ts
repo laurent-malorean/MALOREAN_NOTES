@@ -92,6 +92,14 @@ test("fiche de personne : champs, notes, changer d'entreprise", async ({ page })
   await expect(page.locator(".crm-fiche-actions .crm-line")).toHaveText(
     "20 nov. · TODO · Refonte du site · Devis",
   );
+  await page.locator(".crm-fiche-actions .crm-line").click();
+  await expect(page.locator('.crm-aw [data-field="title"]')).toHaveValue("Devis");
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".crm-aw")).toHaveCount(0);
+  await click(page, "Nouvelle action");
+  await expect(page.locator(".crm-aw-heading")).toHaveText("Nouvelle action");
+  await expect(page.locator(".crm-aw-people")).toContainText("Jean Dupont");
+  await page.keyboard.press("Escape");
   await click(page, "Changer d'entreprise");
   await page.locator(".crm-career-form select").selectOption("");
   await click(page, "Valider");

@@ -6,7 +6,7 @@
 
 ## Contexte
 
-Spécification validée : `doc/specs/crm.md`, §§ 7.3 à 7.6 et 9. Les trois onglets qui disaient « Bientôt » deviennent des listes, la ligne d'une action dans une liste est définie une fois, et une note de type `crm-entreprise` ou `crm-personne` s'ouvre dans sa fiche. La fenêtre d'une action (§ 8) est faite ailleurs : les listes et les fiches ne font que lui demander de s'ouvrir.
+Spécification validée : `doc/specs/crm.md`, §§ 7.3 à 7.6 et 9. Les trois onglets qui disaient « Bientôt » deviennent des listes, la ligne d'une action dans une liste est définie une fois, et une note de type `crm-entreprise` ou `crm-personne` s'ouvre dans sa fiche. La fenêtre d'une action (§ 8, fiche 0062) est réutilisée telle quelle.
 
 ## Décision
 
@@ -14,7 +14,7 @@ Spécification validée : `doc/specs/crm.md`, §§ 7.3 à 7.6 et 9. Les trois on
 - **Un contexte prêté par l'écran** : les trois listes (`crm-people.ts`, `crm-companies.ts`, `crm-projects.ts`) et les fiches reçoivent le CRM lu, l'état gardé d'un dessin à l'autre (recherche, nom à créer, nom à changer, palette ouverte) et un petit jeu d'actions (redessiner, geste, confirmation, ouvrir une fiche, ouvrir une action). Les modifications de `crm-view.ts` se limitent à ces branchements ; `CrmBackend` s'enrichit des commandes des listes et des fiches.
 - **Ce qui est déplié est gardé sur ce Mac** (`crm-unfolded:<chemin du CRM>`, une liste JSON de clés), jamais dans le fichier ; une clé qui ne désigne plus rien est sans effet.
 - **Les fiches s'ouvrent comme une note** : un nom cliqué appelle l'ouverture d'une note (`events.openNote`) sur le chemin de la fiche (`clients/personnes/jean.md`). La colonne reconnaît une fiche à son `type:` et à son dossier (`personnes/` ou `entreprises/` sous le dossier du CRM) et la montre à la place de l'éditeur (`crm-fiche-pane.ts`, classe `fiche-shown`) ; ailleurs, la note reste du texte. Le CRM d'une fiche se tire de son chemin ; l'écran le lit en entier (`read_crm`) et y cherche sa fiche, relue à chaque geste et à chaque changement venu d'ailleurs dans le dossier du CRM.
-- **Un seul point de branchement pour la fenêtre d'une action** (`crm-hooks.ts`, `ActionHooks`) : `onOpenAction(reference, crm)` pour un clic sur une ligne d'action, `onNewAction(person, crm)` pour « Nouvelle action » de la fiche d'une personne. Sans fenêtre branchée (`NO_HOOKS`), ils ne font rien. La fenêtre les remplira par `CrmDeps.hooks`.
+- **La fenêtre d'une action est celle de la fiche 0062** : un clic sur une ligne d'action d'une liste l'ouvre par le CRM (`showWindow`) ; la fiche d'une personne ou d'une entreprise, qui n'est pas dans un CRM ouvert, crée la même fenêtre (`createActionWindow`) avec ses propres gestes (`changeCrmAction`, `createCrmAction`, `deleteCrmAction`), relit le CRM après chacun et la met à jour. « Nouvelle action » de la fiche d'une personne l'ouvre avec la personne déjà donnée. Le lien vers la fiche d'une personne de la fenêtre (`openPerson`) ouvre la note de la fiche dans la colonne, depuis le CRM comme depuis une fiche.
 - **Un champ de fiche** s'édite en cliquant sur sa valeur : Entrée ou quitter le champ enregistre, Échap abandonne ; un nom vidé reprend sa valeur, un autre champ vidé est effacé ; les notes s'enregistrent en quittant le champ. Un e-mail déjà connu d'une autre personne est signalé après l'enregistrement, sans bloquer (§ 4.7).
 
 ## Points tranchés là où la spécification ne dit rien
@@ -33,5 +33,4 @@ Spécification validée : `doc/specs/crm.md`, §§ 7.3 à 7.6 et 9. Les trois on
 
 ## Conséquences
 
-- La fenêtre d'une action branche `CrmDeps.hooks` (listes, fiches) et son propre clic sur les cartes.
 - Les parcours (`ui/e2e/crm-lists.spec.ts`, `crm-fiches.spec.ts`) jouent les listes et les fiches sur un faux Rust (`fake-crm-lists.ts`) ; l'essai de l'application réelle joue le scénario des onglets.

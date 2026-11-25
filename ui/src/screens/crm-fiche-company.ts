@@ -25,11 +25,7 @@ const VALUES: Record<string, (company: CrmCompanyItem) => string | null> = {
 /** Les actions d'une personne, en lignes `date · statut · [projet] · titre` : un clic ouvre la fenêtre de l'action. */
 function lines(ctx: FicheContext, actions: readonly CrmActionItem[]): HTMLElement {
   const found = actions.map((a) => actionLine(a, ctx.lookups, ctx.crm.today, "person"));
-  return actionList(
-    found,
-    (reference) => ctx.act.hooks.onOpenAction(reference, ctx.path),
-    "Aucune action.",
-  );
+  return actionList(found, ctx.act.openAction, "Aucune action.");
 }
 
 /** Une personne, avec ses actions et le lien vers sa fiche. */
@@ -40,7 +36,7 @@ function personBlock(
 ): HTMLElement {
   const block = h("section", "crm-fiche-person");
   block.dataset.person = person.name;
-  const open = () => ctx.act.openNote(crmFichePath(ctx.path, "person", person.name));
+  const open = () => ctx.act.openFiche(crmFichePath(ctx.path, "person", person.name));
   const head = h("div", "crm-fiche-person-head");
   const name = actionButton("crm-name link", person.title);
   name.addEventListener("click", open);

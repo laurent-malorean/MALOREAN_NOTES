@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { action, company, person } from "../../test-support/crm-fixture";
 import { listsSample, mountFiche } from "../../test-support/crm-lists-fixture";
 import { press, type } from "../../test-support/crm-view-fixture";
+import { field as windowField } from "../../test-support/crm-window-fixture";
 import "../theme.css";
 import "../style.css";
 import { GONE_TEXT } from "./crm-fiche-view";
@@ -241,9 +242,9 @@ describe("fiche d'entreprise : les personnes", () => {
   });
 
   it("ouvre la fenêtre de l'action au clic sur une ligne", async () => {
-    const m = await mountFiche("company", "acme");
+    await mountFiche("company", "acme");
     q('.crm-line[data-action="relance"]').click();
-    expect(m.hooked).toEqual([["onOpenAction", "relance", "clients.md"]]);
+    expect((windowField("title") as HTMLInputElement).value).toBe("Relancer Paul");
   });
 
   it("dit « Aucune personne. » d'une entreprise sans personne, « Aucune action. » d'une personne sans action", async () => {

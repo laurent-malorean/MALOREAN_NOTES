@@ -6,6 +6,24 @@ import type { FicheBackend } from "../src/screens/crm-fiche-ui";
 import { createFicheView, type FicheView } from "../src/screens/crm-fiche-view";
 import { action, company, crm, person, project } from "./crm-fixture";
 
+/** Les commandes de la fenêtre d'une action, simulées : chacune note son appel puis réussit. */
+function windowBackend(gesture: Gesture) {
+  const done =
+    (name: string) =>
+    async (...args: unknown[]) => {
+      await gesture(name, ...args);
+      return null;
+    };
+  return {
+    ...{ changeCrmAction: done("changeCrmAction"), deleteCrmAction: done("deleteCrmAction") },
+    ...{ copyPlainText: done("copyPlainText"), openWebAddress: done("openWebAddress") },
+    createCrmAction: async (...args: unknown[]) => {
+      await gesture("createCrmAction", ...args);
+      return "nouvelle-action";
+    },
+  };
+}
+
 /** Un appel au pont : son nom puis ses arguments. */
 export type Gesture = (name: string, ...args: unknown[]) => Promise<void>;
 
@@ -127,7 +145,7 @@ export interface MountedFiche {
   errors: unknown[];
   questions: string[];
   opened: string[];
-  hooked: [string, ...unknown[]][];
+  people: string[];
   disk: { crm: CrmItem };
   fail: { next: string | null };
   answer: { value: boolean };
@@ -145,7 +163,7 @@ export async function mountFiche(
   document.body.replaceChildren(host);
   const calls: MountedFiche["calls"] = [];
   const m = {
-    ...{ host, calls, errors: [], questions: [], opened: [], hooked: [] },
+    ...{ host, calls, errors: [], questions: [], opened: [], people: [] },
     ...{ disk: { crm: crmData }, fail: { next: null }, answer: { value: true } },
     view: undefined as never,
   } as MountedFiche;
@@ -157,6 +175,7 @@ export async function mountFiche(
   };
   const backend = {
     ...moreBackend(gesture),
+    ...windowBackend(gesture),
     readCrm: async (...args: unknown[]) => {
       calls.push(["readCrm", ...args]);
       return structuredClone(m.disk.crm);
@@ -168,11 +187,11 @@ export async function mountFiche(
       confirm: async (q) => (m.questions.push(q), m.answer.value),
       error: (e) => m.errors.push(e),
     },
-    openNote: (path) => void m.opened.push(path),
-    hooks: {
-      onOpenAction: (reference, crm) => void m.hooked.push(["onOpenAction", reference, crm]),
-      onNewAction: (person, crm) => void m.hooked.push(["onNewAction", person, crm]),
-    },
+    openFiche: (path) => void m.opened.push(path),
+    chooseNote: async () => null,
+    openNote: () => undefined,
+    notice: () => undefined,
+    openPerson: (reference) => void m.people.push(reference),
   });
   host.append(m.view.element);
   await m.view.reload();

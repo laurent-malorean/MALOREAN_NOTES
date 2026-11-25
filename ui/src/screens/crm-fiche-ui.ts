@@ -4,7 +4,6 @@ import type * as Bridge from "../bridge";
 import type { CrmItem } from "../bridge";
 import type { Lookups } from "../state/crm-card";
 import { actionButton, h } from "./crm-dom";
-import type { ActionHooks } from "./crm-hooks";
 
 /** Ce que les fiches demandent à Rust, par le pont. */
 export type FicheBackend = Pick<
@@ -44,8 +43,11 @@ export interface FicheActions {
   readonly gesture: (run: () => Promise<unknown>) => Promise<boolean>;
   readonly confirm: (question: string, confirm: string) => Promise<boolean>;
   /** Ouvre une autre fiche, dans la colonne. */
-  readonly openNote: (path: string) => void;
-  readonly hooks: ActionHooks;
+  readonly openFiche: (path: string) => void;
+  /** Ouvre la fenêtre de l'action `reference` (§ 8). */
+  readonly openAction: (reference: string) => void;
+  /** Ouvre la fenêtre d'une nouvelle action, la personne déjà donnée (§ 9.2). */
+  readonly newAction: (person: string) => void;
   /** Le dessin est en cours : un champ retiré n'a pas été quitté par l'utilisateur. */
   readonly redrawing: () => boolean;
 }

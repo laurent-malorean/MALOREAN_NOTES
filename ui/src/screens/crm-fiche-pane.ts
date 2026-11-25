@@ -4,13 +4,16 @@
 import { type FicheTarget, ficheTarget } from "../state/crm-fiche";
 import type { CrmDeps } from "./crm-pane";
 import { type FicheView, createFicheView } from "./crm-fiche-view";
-import { NO_HOOKS } from "./crm-hooks";
+import { crmFichePath } from "../state/crm-fiche";
 
 export interface FichePaneOptions {
   readonly deps: CrmDeps;
   readonly error: (error: unknown) => void;
   /** Ouvre une autre fiche, dans la colonne. */
-  readonly openNote: (path: string) => void;
+  readonly openFiche: (path: string) => void;
+  /** La fenêtre d'une action : ouvre une note par son titre, dit quelque chose. */
+  readonly openNote: (title: string) => void;
+  readonly notice: (message: string) => void;
 }
 
 export interface FichePane {
@@ -59,12 +62,13 @@ class ColumnFiche implements FichePane {
 
   private open(path: string, target: FicheTarget): void {
     this.close();
-    const { deps, error, openNote } = this.options;
+    const { deps, error, openNote, notice, openFiche } = this.options;
     this.path = path;
     this.target = target;
     this.view = createFicheView({
-      ...{ backend: deps.backend, confirm: deps.confirm, error, openNote, target },
-      hooks: deps.hooks ?? NO_HOOKS,
+      ...{ backend: deps.backend, confirm: deps.confirm, chooseNote: deps.chooseNote },
+      ...{ error, openNote, notice, openFiche, target },
+      openPerson: (reference) => openFiche(crmFichePath(target.crm, "person", reference)),
     });
     this.column.append(this.view.element);
     this.column.classList.add(SHOWN_CLASS);

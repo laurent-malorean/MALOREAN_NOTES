@@ -1,6 +1,7 @@
+import type { CrmItem } from "../bridge";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sample } from "../../test-support/crm-fixture";
-import { moreBackend } from "../../test-support/crm-lists-fixture";
+import { listsSample, moreBackend } from "../../test-support/crm-lists-fixture";
 import { fakeBackend } from "../../test-support/pane-fixture";
 import { createPane } from "./note-pane";
 import { createSharedNotes } from "./shared-notes";
@@ -13,7 +14,7 @@ const PERSON_NOTE = "---\ntype: crm-personne\n---\n# Jean Dupont\n";
 
 afterEach(() => localStorage.clear());
 
-function mount(withCrm = true, failing = false) {
+function mount(withCrm = true, failing = false, make: () => CrmItem = sample) {
   const element = document.createElement("section");
   element.className = "column";
   element.style.cssText = "width:1400px;height:600px;display:flex;flex-direction:column";
@@ -28,6 +29,7 @@ function mount(withCrm = true, failing = false) {
   const reads: string[] = [];
   const errors: unknown[] = [];
   const opened: string[] = [];
+  const links: string[] = [];
   const ignore = () => {};
   const shared = createSharedNotes({
     backend: fake.backend,
@@ -38,27 +40,34 @@ function mount(withCrm = true, failing = false) {
       readCrm: async (path: string) => {
         reads.push(path);
         if (failing) throw new Error("CRM illisible");
-        return sample();
+        return make();
       },
       createCrmAction: async () => "a",
       moveCrmAction: async () => null,
       changeCrmAction: async () => null,
+      deleteCrmAction: async () => null,
       changeCrmStages: async () => [],
+      copyPlainText: async () => null,
+      openWebAddress: async () => null,
       ...moreBackend(async () => {}),
     },
     confirm: async () => true,
+    chooseNote: async () => null,
   };
   const pane = createPane(
     { element, backlinks, related },
     {
       backend: fake.backend,
       shared,
-      events: { openNote: (p) => opened.push(p), openLink: ignore, error: (e) => errors.push(e) },
+      events: {
+        ...{ openNote: (p) => opened.push(p), error: (e) => errors.push(e) },
+        openLink: (title) => links.push(title),
+      },
       resolveImage: (src) => src,
       ...(withCrm ? { crm } : {}),
     },
   );
-  return { pane, element, reads, errors, opened };
+  return { pane, element, reads, errors, opened, links };
 }
 
 const shown = (element: HTMLElement) => element.classList.contains("crm-shown");
@@ -226,6 +235,15 @@ describe("colonne : une fiche du CRM", () => {
     await vi.waitFor(() => expect(fiche(m.element)).not.toBeNull());
     (m.element.querySelector(".crm-fiche-company .crm-name") as HTMLElement).click();
     expect(m.opened).toEqual(["Clients/prospects/entreprises/acme.md"]);
+  });
+
+  it("ouvre la fiche d'une personne depuis la fenêtre d'une action, par la référence de la personne", async () => {
+    const m = mount(true, false, listsSample);
+    await m.pane.load(FICHE);
+    await vi.waitFor(() => expect(fiche(m.element)).not.toBeNull());
+    (m.element.querySelector(".crm-line") as HTMLElement).click();
+    (document.querySelector(".crm-aw-person-name") as HTMLElement).click();
+    expect(m.opened).toEqual(["Clients/prospects/personnes/jean-dupont.md"]);
   });
 
   it("sans CRM branché, la fiche reste du texte", async () => {

@@ -9,7 +9,7 @@ import { companyFiche } from "./crm-fiche-company";
 import { personFiche } from "./crm-fiche-person";
 import { type FicheContext, newFicheState } from "./crm-fiche-ui";
 import { h } from "./crm-dom";
-import type { ActionHooks } from "./crm-hooks";
+import { type ActionWindow, createActionWindow, type Start } from "./crm-action-window";
 import "./crm-lists.css";
 
 /** Ce que dit la fiche dont le fichier n'existe plus (§ 10). */
@@ -20,8 +20,13 @@ export interface FicheViewDeps {
   readonly target: FicheTarget;
   readonly confirm: (question: string, confirm: string) => Promise<boolean>;
   readonly error: (error: unknown) => void;
-  readonly openNote: (path: string) => void;
-  readonly hooks: ActionHooks;
+  /** Ouvre une autre fiche, dans la colonne. */
+  readonly openFiche: (path: string) => void;
+  /** La fenêtre d'une action : fait choisir une note, ouvre une note par son titre, dit quelque chose, ouvre la fiche d'une personne. */
+  readonly chooseNote: () => Promise<string | null>;
+  readonly openNote: (title: string) => void;
+  readonly notice: (message: string) => void;
+  readonly openPerson: (reference: string) => void;
 }
 
 export interface FicheView {
@@ -36,6 +41,7 @@ class FicheScreen implements FicheView {
   private readonly state = newFicheState();
   private data: Awaited<ReturnType<CrmBackend["readCrm"]>> | null = null;
   private focusKey: string | null = null;
+  private win: ActionWindow | null = null;
   private generation = 0;
   private redrawing = false;
 
@@ -44,6 +50,7 @@ class FicheScreen implements FicheView {
   }
 
   destroy(): void {
+    this.win?.close();
     this.generation += 1;
     this.element.remove();
   }
@@ -84,11 +91,30 @@ class FicheScreen implements FicheView {
         focus: (key) => void (this.focusKey = key),
         gesture: (run) => this.gesture(run),
         confirm: deps.confirm,
-        openNote: deps.openNote,
-        hooks: deps.hooks,
+        openFiche: deps.openFiche,
+        openAction: (name) => this.showWindow({ kind: "existing", name }),
+        newAction: (person) => this.showWindow({ kind: "new", prefill: { person } }),
         redrawing: () => this.redrawing,
       },
     };
+  }
+
+  /** Ouvre la fenêtre d'une action, la précédente fermée d'abord ; elle est la même que celle du CRM (fiche 0062). */
+  private showWindow(start: Start): void {
+    const data = this.data;
+    if (data === null) return;
+    this.win?.close();
+    const { backend, target, error, confirm, chooseNote, openNote, notice, openPerson } = this.deps;
+    const path = target.crm;
+    this.win = createActionWindow(data, start, {
+      ...{ confirm, chooseNote, openNote, notice, error, openPerson },
+      change: (action, change) => this.gesture(() => backend.changeCrmAction(path, action, change)),
+      create: (draft) => this.gesture(() => backend.createCrmAction(path, draft)),
+      remove: (action) => this.gesture(() => backend.deleteCrmAction(path, action)),
+      openAddress: (url) => void backend.openWebAddress(url).catch(error),
+      copy: async (text) => void (await backend.copyPlainText(text)),
+      closed: () => void (this.win = null),
+    });
   }
 
   private content(data: NonNullable<FicheScreen["data"]>): HTMLElement[] {
@@ -109,6 +135,7 @@ class FicheScreen implements FicheView {
     this.element.replaceChildren(...this.content(data));
     this.restoreFocus(keep);
     this.redrawing = false;
+    this.win?.update(data);
   }
 
   /** Le champ qui a le curseur, à retrouver après le dessin : une saisie en cours n'est pas perdue. */

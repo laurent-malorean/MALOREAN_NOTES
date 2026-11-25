@@ -9,6 +9,7 @@ import {
   text,
   type,
 } from "../../test-support/crm-view-fixture";
+import { field } from "../../test-support/crm-window-fixture";
 import "../theme.css";
 import "../style.css";
 
@@ -97,16 +98,16 @@ describe("onglet Entreprises : l'arbre", () => {
   });
 
   it("ouvre la fenêtre de l'action au clic sur une ligne", async () => {
-    const m = await open({ unfolded: '["acme","member:acme:paul-martin"]' });
+    await open({ unfolded: '["acme","member:acme:paul-martin"]' });
     (document.querySelector('.crm-line[data-action="relance"]') as HTMLElement).click();
-    expect(m.hooked).toEqual([["onOpenAction", "relance", "clients.md"]]);
+    expect((field("title") as HTMLInputElement).value).toBe("Relancer Paul");
   });
 
   it("ouvre la fiche d'une entreprise et celle d'une personne au clic sur leur nom", async () => {
     const m = await open({ unfolded: '["acme"]' });
     (company("acme").querySelector(".crm-name") as HTMLElement).click();
     (company("acme").querySelector(".crm-node-person .crm-name") as HTMLElement).click();
-    expect(m.opened).toEqual(["clients/entreprises/acme.md", "clients/personnes/jean-dupont.md"]);
+    expect(m.fiches).toEqual(["clients/entreprises/acme.md", "clients/personnes/jean-dupont.md"]);
   });
 });
 

@@ -10,6 +10,7 @@ import {
   text,
   type,
 } from "../../test-support/crm-view-fixture";
+import { field } from "../../test-support/crm-window-fixture";
 import "../theme.css";
 import "../style.css";
 
@@ -50,7 +51,7 @@ describe("onglet Projets : la liste", () => {
     ).toEqual(["22 nov. · TODO · Jean Dupont · Acme · Demande de devis"]);
     expect(m.kept).toEqual(['["projects:refonte"]']);
     (item("refonte").querySelector(".crm-line") as HTMLElement).click();
-    expect(m.hooked).toEqual([["onOpenAction", "devis", "clients.md"]]);
+    expect((field("title") as HTMLInputElement).value).toBe("Demande de devis");
   });
 
   it("dit « Aucune action ouverte. » d'un projet déplié sans action", async () => {
