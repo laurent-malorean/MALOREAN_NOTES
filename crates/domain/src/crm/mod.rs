@@ -18,6 +18,7 @@ mod palette;
 pub mod person;
 pub mod project;
 mod reference;
+mod search_text;
 mod stage;
 mod tally;
 mod text;
@@ -37,6 +38,7 @@ pub use palette::Color;
 pub use person::{Passage, Person, PersonField};
 pub use project::Project;
 pub use reference::Reference;
+pub use search_text::{fiche_segments, searchable_text};
 pub use stage::{
     CANCEL, DEFAULT_STAGES, DONE, MAX_STAGE_NAME, Stage, StageError, Stages, Status, TODO,
 };

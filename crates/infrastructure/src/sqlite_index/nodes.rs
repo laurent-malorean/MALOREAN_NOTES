@@ -2,9 +2,9 @@
 //! cahier de recherche, chacun avec sa carte pour conteneur.
 
 use application::StoreError;
-use domain::mind_map::{NodePath, indexed_node_entries, node_summary, searchable_text};
+use domain::mind_map::{NodePath, indexed_node_entries, node_summary};
 use domain::search::{SearchQuery, folded};
-use domain::{ContentType, Modified, NoteSummary};
+use domain::{Modified, NoteSummary};
 use rusqlite::{Connection, params, params_from_iter};
 
 use super::{SqliteIndex, note_path, search_filter, unsigned};
@@ -61,15 +61,4 @@ pub(super) fn keep_nodes(
         )?;
     }
     Ok(())
-}
-
-/// Ce que la recherche par les mots lit d'une note : son texte, sauf pour une carte mentale, dont
-/// seuls le titre et les étiquettes comptent (ses nœuds sont cherchés à part), et pour un canvas, les
-/// textes qu'il montre (pas son JSON).
-pub(super) fn searched_text(summary: &NoteSummary, content: &str) -> String {
-    match summary.content_type() {
-        ContentType::MindMap => searchable_text(summary),
-        ContentType::Canvas => domain::canvas::indexed_text(summary.title(), content),
-        _ => content.to_owned(),
-    }
 }

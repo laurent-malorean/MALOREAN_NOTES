@@ -282,3 +282,27 @@ fn an_index_of_the_third_format_or_without_entries_starts_again_with_research_no
         );
     }
 }
+
+/// Le format 8 ne connaissait pas le CRM (fiche 0058) : ses fiches y étaient des notes. Une telle
+/// base repart de zéro, aussitôt remplie à l'ouverture de l'espace de travail.
+#[test]
+fn an_index_of_the_eighth_format_starts_again_with_the_crm_types() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("index.sqlite");
+    let content = "---\ntype: crm-projet\n---\n# P";
+    let index = SqliteIndex::open(&file).unwrap();
+    index.put(&[note("c/projets/p.md", content)]).unwrap();
+    drop(index);
+    let connection = rusqlite::Connection::open(&file).unwrap();
+    connection.pragma_update(None, "user_version", 8).unwrap();
+    drop(connection);
+    let index = SqliteIndex::open(&file).unwrap();
+    assert!(index.stamps().unwrap().is_empty());
+    index.put(&[note("c/projets/p.md", content)]).unwrap();
+    let kept = &index.all_notes().unwrap()[0];
+    assert_eq!(kept.content_type(), ContentType::CrmProject);
+    assert_eq!(
+        kept.container().map(NotePath::to_path),
+        Some("c.md".to_owned())
+    );
+}

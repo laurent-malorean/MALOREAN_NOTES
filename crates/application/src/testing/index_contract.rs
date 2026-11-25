@@ -65,6 +65,7 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     entries_follow_their_notebook_kept_again_removed_or_cleared(&empty_index());
     a_mind_map_is_searched_by_title_and_tags_and_each_node_on_its_own(&empty_index());
     a_canvas_is_searched_by_its_name_and_the_texts_it_shows(&empty_index());
+    the_crm_and_its_fiches_are_kept_with_their_type_container_and_useful_text(&empty_index());
     nodes_follow_their_mind_map_kept_again_removed_or_cleared(&empty_index());
 }
 
@@ -501,4 +502,47 @@ fn a_canvas_is_searched_by_its_name_and_the_texts_it_shows(index: &impl NoteInde
     assert_eq!(found.0.title(), "recettes");
     assert_eq!(found.1, "recettes\nfarine et eau");
     assert!(found_items(index, "farine", &[ContentType::Note]).is_empty());
+}
+
+const CRM: &str = "---\ntype: crm\netapes: [Négo]\ntags: [b2b]\n---\n# Clients\n";
+const CRM_ACTION: &str = "---\ntype: crm-action\nstatut: Négo\ndate: '2026-11-24'\nrang: 2\n---\n# Demande de devis\n\nPour trois postes.\n";
+
+fn the_crm_and_its_fiches_are_kept_with_their_type_container_and_useful_text(
+    index: &impl NoteIndex,
+) {
+    index
+        .put(&[
+            note("clients.md", CRM, 1),
+            note("clients/actions/2026-11-24-devis.md", CRM_ACTION, 2),
+        ])
+        .unwrap();
+    let all = index.all_notes().unwrap();
+    let kind_of = |name: &str| {
+        let summary = all.iter().find(|n| n.path().to_path() == name).unwrap();
+        (
+            summary.content_type(),
+            summary.container().map(NotePath::to_path),
+        )
+    };
+    assert_eq!(kind_of("clients.md"), (ContentType::Crm, None));
+    assert_eq!(
+        kind_of("clients/actions/2026-11-24-devis.md"),
+        (ContentType::CrmAction, Some("clients.md".to_owned()))
+    );
+    only_the_useful_text_of_the_crm_and_its_fiches_is_searched(index);
+}
+
+fn only_the_useful_text_of_the_crm_and_its_fiches_is_searched(index: &impl NoteIndex) {
+    let by = |query: &str, types: &[ContentType]| found_items(index, query, types);
+    let action = by("trois postes", &[ContentType::CrmAction]);
+    assert_eq!(action.len(), 1);
+    assert_eq!(action[0].1, "Demande de devis\nPour trois postes.");
+    // Les propriétés techniques d'une fiche ne sont pas cherchées.
+    assert!(by("statut", &ContentType::ALL).is_empty());
+    assert!(by("2026", &ContentType::ALL).is_empty());
+    // Le CRM se trouve par son titre et ses étiquettes, pas par ses étapes.
+    assert_eq!(by("b2b", &[ContentType::Crm]).len(), 1);
+    assert_eq!(by("clients", &[ContentType::Crm]).len(), 1);
+    assert!(by("négo", &[ContentType::Crm]).is_empty());
+    assert!(by("trois postes", &[ContentType::Note]).is_empty());
 }

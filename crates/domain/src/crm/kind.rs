@@ -5,6 +5,7 @@ use std::fmt;
 
 use crate::front_matter::declared_type;
 use crate::title::Title;
+use crate::{FileName, NotePath};
 
 /// La sorte de note du CRM qu'un en-tête déclare.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -69,6 +70,24 @@ impl CrmKind {
     #[must_use]
     pub fn folder_of(self, crm_stem: &str) -> Option<String> {
         self.folder().map(|folder| format!("{crm_stem}/{folder}"))
+    }
+}
+
+impl CrmKind {
+    /// Le CRM qui contient la fiche de cette sorte rangée à `path` : `clients.md` pour
+    /// `clients/personnes/jean.md`, à côté du dossier `clients`. Rien pour le CRM, ni pour une
+    /// note qui n'est pas dans le dossier de sa sorte, lui-même dans le dossier d'un CRM.
+    #[must_use]
+    pub fn container_of(self, path: &NotePath) -> Option<NotePath> {
+        let folder = self.folder()?;
+        let kind_folder = path.folder();
+        if kind_folder.name()?.as_str() != folder {
+            return None;
+        }
+        let crm_folder = kind_folder.parent()?;
+        let stem = crm_folder.name()?.as_str();
+        let name = FileName::parse(&format!("{stem}.md")).ok()?;
+        Some(NotePath::new(crm_folder.parent()?, name))
     }
 }
 
@@ -165,6 +184,47 @@ mod tests {
         assert_eq!(
             Unreadable::NoTitle.to_string(),
             "Cette fiche n'a pas de titre."
+        );
+    }
+
+    #[test]
+    fn a_fiche_is_contained_by_the_crm_whose_folder_holds_its_kind_folder() {
+        let path = |text: &str| NotePath::parse(text).unwrap();
+        let container = |kind: CrmKind, text: &str| kind.container_of(&path(text));
+        assert_eq!(
+            container(CrmKind::Person, "clients/personnes/jean.md"),
+            Some(path("clients.md"))
+        );
+        assert_eq!(
+            container(CrmKind::Action, "A/B/ventes/actions/2026-11-24-x.md"),
+            Some(path("A/B/ventes.md"))
+        );
+        assert_eq!(
+            container(CrmKind::Company, "c/entreprises/acme.md"),
+            Some(path("c.md"))
+        );
+        assert_eq!(
+            container(CrmKind::Project, "c/projets/p.md"),
+            Some(path("c.md"))
+        );
+    }
+
+    #[test]
+    fn a_note_out_of_the_folder_of_its_kind_has_no_crm() {
+        let path = |text: &str| NotePath::parse(text).unwrap();
+        assert_eq!(
+            CrmKind::Person.container_of(&path("clients/entreprises/jean.md")),
+            None
+        );
+        assert_eq!(
+            CrmKind::Person.container_of(&path("personnes/jean.md")),
+            None
+        );
+        assert_eq!(CrmKind::Person.container_of(&path("jean.md")), None);
+        assert_eq!(CrmKind::Crm.container_of(&path("clients.md")), None);
+        assert_eq!(
+            CrmKind::Crm.container_of(&path("x/personnes/clients.md")),
+            None
         );
     }
 

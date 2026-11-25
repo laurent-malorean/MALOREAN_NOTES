@@ -108,6 +108,16 @@ pub enum ContentTypeItem {
     Entry,
     /// Un nœud d'une carte mentale.
     Node,
+    /// Un CRM.
+    Crm,
+    /// Une entreprise d'un CRM.
+    CrmCompany,
+    /// Une personne d'un CRM.
+    CrmPerson,
+    /// Une action d'un CRM.
+    CrmAction,
+    /// Un projet d'un CRM.
+    CrmProject,
 }
 
 impl From<domain::ContentType> for ContentTypeItem {
@@ -119,6 +129,11 @@ impl From<domain::ContentType> for ContentTypeItem {
             domain::ContentType::Canvas => Self::Canvas,
             domain::ContentType::Entry => Self::Entry,
             domain::ContentType::Node => Self::Node,
+            domain::ContentType::Crm => Self::Crm,
+            domain::ContentType::CrmCompany => Self::CrmCompany,
+            domain::ContentType::CrmPerson => Self::CrmPerson,
+            domain::ContentType::CrmAction => Self::CrmAction,
+            domain::ContentType::CrmProject => Self::CrmProject,
         }
     }
 }

@@ -5,26 +5,49 @@
 
 use std::sync::Arc;
 
+use domain::crm::{CrmKind, fiche_segments};
 use domain::mind_map::{is_mind_map, segments as node_segments};
 use domain::segments::{Segment, segments};
 use domain::title::displayed_title_of_note;
-use domain::{ContentType, Folder, NotePath, NoteSummary};
+use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 
 use crate::{IndexedNote, MeaningIndex, MeaningIndexError, NoteIndex, NoteStamp, StoreError};
 use domain::search::SearchQuery;
 
 /// Les segments de la note `note` de contenu `content` : son titre affiché sert de titre de
-/// note. Un cahier de recherche est segmenté comme une note (ses entrées n'ont pas de segments) ; une carte mentale donne un segment par nœud (fiche 0050) ; un canvas est segmenté sur les textes qu'il montre (fiche 0052).
-#[must_use]
-pub fn note_segments(note: &NotePath, content: &str) -> Vec<Segment> {
+/// note. Un cahier de recherche est segmenté comme une note (ses entrées n'ont pas de segments) ;
+/// une carte mentale donne un segment par nœud (fiche 0050) ; un canvas est segmenté sur les
+/// textes qu'il montre (fiche 0052) ; une fiche du CRM donne un segment, sous le titre de son CRM
+/// que `words` connaît (fiche 0058).
+///
+/// # Errors
+///
+/// [`StoreError::Unavailable`] si `words` ne répond pas.
+pub fn note_segments(
+    words: &dyn NoteIndex,
+    note: &NotePath,
+    content: &str,
+) -> Result<Vec<Segment>, StoreError> {
     let title = displayed_title_of_note(content, note.name());
     if note.name().is_canvas() {
-        return segments(&title, &domain::canvas::searchable_text(content));
+        return Ok(segments(&title, &domain::canvas::searchable_text(content)));
     }
     if is_mind_map(content) {
-        return node_segments(&title, content);
+        return Ok(node_segments(&title, content));
     }
-    segments(&title, content)
+    if CrmKind::of(content).is_some() {
+        let summary = NoteSummary::new(note.clone(), content, Modified(0));
+        let crm_title = match summary.container() {
+            Some(crm) => words
+                .content(crm)?
+                .map(|text| displayed_title_of_note(&text, crm.name())),
+            None => None,
+        };
+        if let Some(found) = fiche_segments(&summary, crm_title.as_deref(), content) {
+            return Ok(found);
+        }
+    }
+    Ok(segments(&title, content))
 }
 
 fn unavailable(error: &MeaningIndexError) -> StoreError {
@@ -55,8 +78,9 @@ impl NoteIndex for SegmentingIndex {
         self.words.put(notes)?;
         for note in notes {
             let path = &note.stamp.path;
+            let segments = note_segments(&*self.words, path, &note.content)?;
             self.meaning
-                .replace_segments(path, &note_segments(path, &note.content))
+                .replace_segments(path, &segments)
                 .map_err(|e| unavailable(&e))?;
         }
         Ok(())
@@ -169,11 +193,12 @@ mod tests {
 
     #[test]
     fn the_title_of_a_note_for_its_segments_is_its_displayed_title() {
-        let titled = note_segments(&path("a.md"), "# Mon titre\n\ntexte");
+        let words = MemoryIndex::default();
+        let titled = note_segments(&words, &path("a.md"), "# Mon titre\n\ntexte").unwrap();
         assert_eq!(titled[0].heading(), "Mon titre");
-        let untitled = note_segments(&path("tarte-aux-pommes.md"), "texte");
+        let untitled = note_segments(&words, &path("tarte-aux-pommes.md"), "texte").unwrap();
         assert_eq!(untitled[0].heading(), "tarte-aux-pommes");
-        let new = note_segments(&path("sans-titre.md"), "texte");
+        let new = note_segments(&words, &path("sans-titre.md"), "texte").unwrap();
         assert_eq!(new[0].heading(), "Sans titre");
     }
 
@@ -342,6 +367,38 @@ mod tests {
         assert!(!kept.is_empty());
         assert!(kept.iter().all(|s| s.heading().starts_with("Levures")));
         assert_eq!(workspace.meaning.notes(), [path("labo.md")]);
+    }
+
+    #[test]
+    fn a_fiche_of_the_crm_gives_a_segment_under_the_title_of_its_crm() {
+        let workspace = workspace(&[
+            (
+                "clients/personnes/jean.md",
+                "---\ntype: crm-personne\nfonction: Chef\n---\n# Jean\n",
+            ),
+            ("clients.md", "---\ntype: crm\n---\n# Clients\n"),
+            (
+                "seule/projets/p.md",
+                "---\ntype: crm-projet\n---\n# Refonte\n",
+            ),
+        ]);
+        let headings = |note: &str| {
+            workspace
+                .meaning
+                .segments_of(&path(note))
+                .iter()
+                .map(|s| (s.heading(), s.text().to_owned()))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            headings("clients/personnes/jean.md"),
+            [("Clients > Jean".to_owned(), "Chef".to_owned())]
+        );
+        assert_eq!(
+            headings("seule/projets/p.md"),
+            [("Refonte".to_owned(), String::new())]
+        );
+        assert!(headings("clients.md").is_empty());
     }
 
     #[test]
