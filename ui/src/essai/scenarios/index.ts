@@ -8,6 +8,7 @@ import { crmTabsScenarios } from "./crm-tabs";
 import { crmActionScenarios } from "./crm-action";
 import type { Env } from "./env";
 import { exportScenarios } from "./export";
+import { newContentMenuScenarios } from "./new-content-menu";
 import { noteScenarios } from "./notes";
 import { searchScenarios } from "./search";
 
@@ -19,6 +20,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...crmScenarios(env),
     ...crmTabsScenarios(env),
     ...crmActionScenarios(env),
+    ...newContentMenuScenarios(env),
     ...searchScenarios(env),
   ];
 }

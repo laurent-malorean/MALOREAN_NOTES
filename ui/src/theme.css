@@ -114,6 +114,10 @@
   --proposal-height: 50vh;
   --proposal-text-size: 14px;
   --context-menu-note-text-size: 12px;
+  --context-menu-icon-size: 15px;
+  --context-menu-icon-stroke: 1.8;
+  --context-menu-icon-gap: 0.5rem;
+  --context-menu-shortcut-gap: 1.5rem;
   --claude-column-width: 340px;
   /* Largeur de la colonne Claude Code réglée à la souris : les colonnes d'édition prennent le reste */
   --claude-column-min-width: 16rem;

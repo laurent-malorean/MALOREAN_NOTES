@@ -50,6 +50,8 @@ export interface Layout {
   /** Sous la liste des notes : passer à un autre espace de travail. */
   readonly switchButton: HTMLButtonElement;
   readonly newNoteButton: HTMLButtonElement;
+  /** Le chevron à côté du « + » de la liste des notes : il ouvre le menu de création. */
+  readonly newContentButton: HTMLButtonElement;
   readonly settingsButton: HTMLButtonElement;
   readonly settings: HTMLDialogElement;
   /** La fenêtre de choix au clavier : ouverture rapide, palette de commandes. */
@@ -83,7 +85,10 @@ const TEMPLATE = `
       <aside class="notes-panel">
         <header class="side-panel-header">
           <span class="list-heading"></span>
-          <button class="icon" data-new title="Nouvelle note">＋</button>
+          <span class="new-content">
+            <button class="icon" data-new title="Nouvelle note (Cmd+N) ; maintenir pour choisir un autre contenu">＋</button>
+            <button class="icon new-content-chevron" data-new-menu aria-label="Nouveau contenu" aria-haspopup="menu" aria-expanded="false" title="Nouveau contenu : note, modèle, cahier, carte mentale, canvas, CRM"></button>
+          </span>
         </header>
         <div class="tag-filter" hidden></div>
         <label class="note-order">Trier par <select aria-label="Trier la liste"></select></label>
@@ -165,6 +170,7 @@ export function createLayout(root: HTMLElement): Layout {
     addButton: find("[data-add]"),
     switchButton: find("[data-switch]"),
     newNoteButton: find("[data-new]"),
+    newContentButton: find("[data-new-menu]"),
     settingsButton: find("[data-settings]"),
     settings: find(".settings"),
     picker: find(".picker"),
