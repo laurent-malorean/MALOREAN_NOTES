@@ -14,6 +14,7 @@ import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning";
 import { fakeCanvases } from "./fake-canvas";
+import { fakeCrms } from "./fake-crm";
 import { fakeContentType, fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
 import { fakeEntryResults, fakeNotebook } from "./fake-notebook";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
@@ -436,6 +437,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...fakeNotebook(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeMindMaps(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeCanvases(backend, { freeName, slug, tick: () => (clock += 1) }),
+  ...fakeCrms(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeMeaning(backend, {
     ...{ notes: () => backend.notes, listItem, folded },
     folderOf,

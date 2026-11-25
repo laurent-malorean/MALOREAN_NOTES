@@ -46,6 +46,7 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "new-research-notebook", label: "Nouveau cahier de recherche…" },
       { command: "new-mind-map", label: "Nouvelle carte mentale…" },
       { command: "new-canvas", label: "Nouveau canvas…" },
+      { command: "new-crm", label: "Nouveau CRM…" },
       { command: "new-folder" },
       "separator",
       { command: "quick-open", label: "Ouverture rapide…" },

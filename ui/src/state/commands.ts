@@ -10,6 +10,7 @@ export type CommandId =
   | "new-research-notebook"
   | "new-mind-map"
   | "new-canvas"
+  | "new-crm"
   | "canvas-fit"
   | "canvas-go-to-group"
   | "canvas-export-image"
@@ -80,6 +81,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "canvas-fit", label: "Canvas : tout voir" },
   { id: "canvas-go-to-group", label: "Canvas : aller à un groupe" },
   { id: "canvas-export-image", label: "Canvas : exporter en image" },
+  { id: "new-crm", label: "Nouveau CRM" },
   { id: "new-folder", label: "Nouveau dossier" },
   { id: "search-workspace", label: "Rechercher dans toutes les notes" },
   { id: "find-in-note", label: "Rechercher dans la note", shortcut: "Cmd+F" },
