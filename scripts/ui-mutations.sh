@@ -14,7 +14,7 @@
 # Scénarios de preuve : scripts/test-ui-mutations.sh.
 set -euo pipefail
 
-readonly MUTATION_FILE=${UI_MUTATION_FILE:-reports/stryker-incremental.json}
+readonly MUTATION_FILE=${UI_MUTATION_FILE:-../build/reports/stryker-incremental.json}
 
 stryker() { npx --no-install stryker run --incremental --incrementalFile "$MUTATION_FILE" "$@"; }
 

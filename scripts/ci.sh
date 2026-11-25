@@ -205,7 +205,7 @@ check_file_length() {
   local too_long
   # worktrees/ : les autres branches, chacune contrôlée par sa propre barrière dans son dossier.
   too_long=$(find . \( -name '*.rs' -o -name '*.ts' \) \
-      -not -path './worktrees/*' -not -path '*/target/*' -not -path '*/node_modules/*' -not -path '*/.vitest/*' -not -path '*/.stryker-tmp/*' -not -path "./${GENERATED_TYPES}/*" \
+      -not -path './worktrees/*' -not -path './build/*' -not -path '*/target/*' -not -path '*/node_modules/*' -not -path "./${GENERATED_TYPES}/*" \
       -exec wc -l {} + \
     | awk -v max="$MAX_FILE_LINES" '$2 != "total" && $1 > max')
   [ -z "$too_long" ] || fail "fichiers trop longs :
@@ -323,14 +323,17 @@ run_in_snapshot() {
   mkdir -p "$SNAPSHOT_DIR"
   [ ! -L "$SNAPSHOT_DIR/ui/node_modules" ] || rm "$SNAPSHOT_DIR/ui/node_modules"
   rsync -a --delete \
-    --exclude=/target --exclude=/ui/.stryker-tmp --exclude=/ui/.vitest \
-    --exclude=/ui/test-results --exclude=/ui/playwright-report --exclude=/ui/coverage \
+    --exclude=/target --exclude=/build \
     --exclude=/_DIST --exclude=/tmp --exclude=/_SECRET --exclude=/CLAUDE.local.md ./ "$SNAPSHOT_DIR/"
+  if [ -f build/reports/stryker-incremental.json ]; then
+    mkdir -p "$SNAPSHOT_DIR/build/reports"
+    cp build/reports/stryker-incremental.json "$SNAPSHOT_DIR/build/reports/"
+  fi
   (cd "$SNAPSHOT_DIR" && MUTATION_DIR="$MUTATION_DIR" CI_IN_SNAPSHOT=1 ./scripts/ci.sh "$@") || status=$?
   if [ "$status" -eq 0 ]; then
-    if [ -f "$SNAPSHOT_DIR/ui/reports/stryker-incremental.json" ]; then
-      mkdir -p ui/reports
-      cp "$SNAPSHOT_DIR/ui/reports/stryker-incremental.json" ui/reports/
+    if [ -f "$SNAPSHOT_DIR/build/reports/stryker-incremental.json" ]; then
+      mkdir -p build/reports
+      cp "$SNAPSHOT_DIR/build/reports/stryker-incremental.json" build/reports/
     fi
     printf '%s' "$validated" > "$VALIDATED_TREE_FILE"
   fi
@@ -346,7 +349,7 @@ verify_validated_tree() {
 
 # Test de mutation de l'interface (scripts/ui-mutations.sh), en mode incrémental : Stryker ne reteste
 # que les mutations dont le code, ou un test qui les couvre, a changé depuis son dernier passage ; les
-# autres reprennent leur résultat, gardé dans ui/reports/stryker-incremental.json (ignoré par git).
+# autres reprennent leur résultat, gardé dans build/reports/stryker-incremental.json (ignoré par git).
 # Sans ce fichier, tout est testé. Si le passage échoue, ses seules survivantes sont retestées : un
 # test ajouté qui tue une mutation « statique » (constante) est ainsi pris en compte. Seuil 100 %.
 # Fichiers que Stryker ne compare pas d'un passage à l'autre : s'ils changent, on reteste tout.

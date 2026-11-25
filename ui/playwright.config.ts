@@ -5,6 +5,7 @@ const PORT = 5174;
 // Parcours utilisateur complets, dans WebKit (le moteur de la fenêtre sur Mac).
 export default defineConfig({
   testDir: "e2e",
+  outputDir: "../build/test-results",
   fullyParallel: true,
   reporter: "list",
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },

@@ -13,8 +13,10 @@ export default defineConfig({
   clearScreen: false,
   define: { __ESSAI__: JSON.stringify(essai) },
   server: { port: 5173, strictPort: true },
-  build: { target: "safari16", outDir: "dist" },
+  // Tout ce que les outils fabriquent va dans build/ à la racine du dépôt, jamais à côté du code (fiche 0055).
+  build: { target: "safari16", outDir: "../build/ui-dist", emptyOutDir: true },
   test: {
+    attachmentsDir: "../build/vitest/attachments",
     projects: [
       {
         extends: true,
@@ -44,6 +46,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: "istanbul",
+      reportsDirectory: "../build/coverage",
       include: ["src/**/*.ts"],
       // L'essai de l'application réelle (index.ts, scenarios/) ne se joue que dans la vraie fenêtre :
       // sa logique (runner, png, conduct, wait) est testée, ses scénarios sont le test.

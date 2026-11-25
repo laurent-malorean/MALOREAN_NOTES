@@ -1,11 +1,3 @@
-dist/
-dist-essai/
 node_modules/
 src/bridge/generated/
-test-results/
-playwright-report/
-coverage/
-reports/
-.stryker-tmp/
-.vitest/
 test-support/essai/

@@ -32,10 +32,10 @@ step() { printf '\n▶ %s\n' "$1"; }
 # jamais touchés. Le code d'essai n'existe que dans cette construction (variable de Vite, fonctionnalité Cargo).
 build_application() {
   step "Interface d'essai"
-  (cd ui && MALOREAN_ESSAI_BUILD=1 npx --no-install vite build --outDir dist-essai --emptyOutDir)
+  (cd ui && MALOREAN_ESSAI_BUILD=1 npx --no-install vite build --outDir ../build/ui-dist-essai --emptyOutDir)
   step "Application d'essai (.app)"
   local config
-  config=$(printf '{"productName":"%s","identifier":"%s","build":{"beforeBuildCommand":"","frontendDist":"../../ui/dist-essai"}}' "$PRODUCT" "$IDENTIFIER")
+  config=$(printf '{"productName":"%s","identifier":"%s","build":{"beforeBuildCommand":"","frontendDist":"../../build/ui-dist-essai"}}' "$PRODUCT" "$IDENTIFIER")
   CARGO_TARGET_DIR=$TARGET ui/node_modules/.bin/tauri build --bundles app --features essai --config "$config"
   APPLICATION="$TARGET/release/bundle/macos/$PRODUCT.app/Contents/MacOS/malorean-notes"
   [ -x "$APPLICATION" ] || fail "application d'essai introuvable : $APPLICATION"

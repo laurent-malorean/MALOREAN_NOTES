@@ -14,9 +14,9 @@
   "concurrency": 4,
   "reporters": ["clear-text", "html"],
   "htmlReporter": {
-    "fileName": "reports/mutation/index.html"
+    "fileName": "../build/reports/mutation/index.html"
   },
-  "tempDirName": ".stryker-tmp",
+  "tempDirName": "../build/stryker-tmp",
   "cleanTempDir": "always",
   "vitest": {
     "configFile": "vitest.stryker.config.ts"
