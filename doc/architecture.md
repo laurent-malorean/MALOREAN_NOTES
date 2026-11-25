@@ -27,9 +27,9 @@ ui/                   interface TypeScript (Vite)
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
 scripts/ci.sh         CI locale : barrière de commit, `--fonction`, `--livraison`, `--echantillon` (fiches 0047 et 0049)
-scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; mutation-rejeu.sh : rejeu des dépassements de délai de la mutation ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-rejeu.sh, test-ci-doc-only.sh
+scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; mutation-rejeu.sh : rejeu des dépassements de délai de la mutation ; mutation-groupes.json, mutation-groupes.sh, mutation-groupe.sh, mutation-resume.sh : mutation par groupes sur GitHub (fiche 0059) ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-rejeu.sh, test-ci-mutation-groupes.sh, test-ci-doc-only.sh
 scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
-.github/workflows/mutation-domaine.yml   mutation de toute la crate `domain` chaque nuit sur GitHub Actions (fiche 0050)
+.github/workflows/mutation.yml   mutation de tout le Rust chaque nuit sur GitHub Actions, par groupes parallèles (fiches 0050 et 0059)
 ```
 
 Sens des dépendances : `api` → `application` → `domain` ; `infrastructure` → `application` → `domain` ; `app` → tout ; `ui/` → commandes de `api` uniquement.
@@ -160,6 +160,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0055-un-dossier-pour-le-genere.md` | Un dossier pour le généré : tout ce que les outils fabriquent va dans `build/` à la racine, jamais à côté du code ; `.gitignore` n'a plus qu'une ligne pour cela |
 | `0056-brancher-une-ia.md` | Brancher une IA : une clé de branchement stable et révocable, une prise locale permanente à chemin fixe tant qu'une clé existe, une commande de branchement (`--brancher`), les mêmes outils que la colonne Claude Code ; aucun port réseau |
 | `0057-crm-domaine.md` | CRM : le domaine lit et écrit les fiches (CRM, entreprises, personnes, actions, projets) geste par geste, sans perdre ce que l'utilisateur a écrit ; calculs de vue (Kanban, semaine) purs ; module `domain::crm` à part |
+| `0059-mutation-par-groupes-sur-github.md` | Toute la mutation du Rust confiée à GitHub, en groupes de mutation parallèles de 10 à 20 minutes ; sur le Mac, fin de tâche = barrière + `--fonction`, sans mutation |
 
 ## Construire l'application (`.app`)
 
