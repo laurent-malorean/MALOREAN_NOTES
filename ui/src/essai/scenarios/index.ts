@@ -3,6 +3,7 @@
 // ouvre l'espace de travail `recherche`.
 import type { Scenario } from "../runner";
 import { canvasScenariosFor } from "./canvas";
+import { crmScenarios } from "./crm";
 import type { Env } from "./env";
 import { exportScenarios } from "./export";
 import { noteScenarios } from "./notes";
@@ -13,6 +14,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...canvasScenariosFor(env),
     ...exportScenarios(env),
     ...noteScenarios(env),
+    ...crmScenarios(env),
     ...searchScenarios(env),
   ];
 }
