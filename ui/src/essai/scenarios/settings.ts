@@ -38,43 +38,100 @@ function closeSettings(window: HTMLElement): void {
     ?.click();
 }
 
-/** La barre d'un index : visible, et remplie à son pourcentage (rectangles réels). */
-function checkBar(trial: Trial, panel: HTMLElement): void {
-  const bar = find<HTMLElement>(".index-bar", panel);
-  const track = find<HTMLElement>("[role=progressbar]", panel);
-  const fill = find<HTMLElement>(".index-bar-fill", panel);
-  const written = find(".index-bar-percent", panel)?.textContent ?? "";
-  trial.check("la barre de l'index de sens est à l'écran", bar !== null && track !== null);
-  if (bar === null || track === null || fill === null) return;
+/** La barre de l'index de ce nom : son cadre `.index-bar`, celui de la piste qui porte ce nom accessible. */
+function barNamed(panel: HTMLElement, name: string): HTMLElement | null {
+  const track = findAll<HTMLElement>("[role=progressbar]", panel).find(
+    (t) => t.getAttribute("aria-label") === name,
+  );
+  return track?.closest<HTMLElement>(".index-bar") ?? null;
+}
+
+/** La barre d'un index : visible, et remplie à son pourcentage (rectangles réels) ; `expected` : ce qu'elle écrit. */
+function checkBar(
+  trial: Trial,
+  panel: HTMLElement,
+  name: string,
+  expected: (written: string, percent: number) => boolean,
+): void {
+  const bar = barNamed(panel, name);
+  const track = bar && find<HTMLElement>("[role=progressbar]", bar);
+  const fill = bar && find<HTMLElement>(".index-bar-fill", bar);
+  trial.check(`la barre « ${name} » est à l'écran`, track !== null && track !== undefined);
+  if (!bar || !track || !fill) return;
+  const written = find(".index-bar-percent", bar)?.textContent ?? "";
   const trackBox = rectOf(track);
   const fillBox = rectOf(fill);
   const percent = Number(track.getAttribute("aria-valuenow"));
-  trial.measure("barreDeSens", { piste: trackBox, remplie: fillBox, écrit: written });
+  trial.measure(`barre ${name}`, { piste: trackBox, remplie: fillBox, écrit: written });
   trial.check(
-    "la piste de la barre a une surface",
+    `la piste de la barre « ${name} » a une surface`,
     trackBox.width > 0 && trackBox.height > 0,
     `${Math.round(trackBox.width)}x${Math.round(trackBox.height)}`,
   );
   trial.check(
-    "la largeur remplie correspond au pourcentage",
+    `la largeur remplie de « ${name} » correspond au pourcentage`,
     Math.abs(fillBox.width - (trackBox.width * percent) / 100) <= PIXEL,
     `${Math.round(fillBox.width)} sur ${Math.round(trackBox.width)} pour ${percent} %`,
   );
-  trial.check("le pourcentage est écrit à côté", written === `${percent} %`, written);
+  trial.check(
+    `le pourcentage de « ${name} » est écrit à côté`,
+    expected(written, percent),
+    written,
+  );
   const probe = document.createElement("span");
   probe.style.color = "var(--palette-orange)";
   document.body.append(probe);
   const orange = getComputedStyle(probe).color;
   probe.remove();
   const colour = getComputedStyle(fill).backgroundColor;
-  trial.check("le remplissage est orange, celui de la palette", colour === orange, colour);
+  trial.check(
+    `le remplissage de « ${name} » est orange, celui de la palette`,
+    colour === orange,
+    colour,
+  );
+}
+
+const SENSE_BAR = "Index de sens";
+const NOTES_BAR = "Index des notes";
+const NOTES_WRITTEN = /^([\d\u202f\u00a0 ]+) sur ([\d\u202f\u00a0 ]+), (\d+) %$/;
+
+/** « 631 sur 645, 97 % » : le pourcentage écrit est celui de la piste, et les notes faites ne dépassent pas le total. */
+function notesWritten(written: string, percent: number): boolean {
+  const found = NOTES_WRITTEN.exec(written);
+  if (found === null) return false;
+  const [done, total] = [found[1], found[2]].map((n) => Number((n ?? "").replace(/\D/g, "")));
+  return Number(found[3]) === percent && (done ?? 0) <= (total ?? 0) && (total ?? 0) > 0;
 }
 
 async function indexTab(trial: Trial): Promise<void> {
   const window = await openSettings();
   const panel = await showTab(window, "Index");
-  await until("la barre de l'index de sens", () => find(".index-bar", panel), WAIT);
-  checkBar(trial, panel);
+  await until("la barre de l'index de sens", () => barNamed(panel, SENSE_BAR), WAIT);
+  await until("la barre de l'index des notes", () => barNamed(panel, NOTES_BAR), WAIT);
+  checkBar(trial, panel, SENSE_BAR, (written, percent) => written === `${percent} %`);
+  checkBar(trial, panel, NOTES_BAR, notesWritten);
+  // Une reconstruction réelle : la barre des notes se redessine et finit pleine, sur le vrai index.
+  findAll<HTMLButtonElement>("button", panel)
+    .find((b) => b.textContent === "Reconstruire l'index")
+    ?.click();
+  await until(
+    "la fin de la reconstruction de l'index des notes",
+    () =>
+      findAll("p", panel).some((p) => {
+        const text = p.textContent ?? "";
+        return text.startsWith("Dernière reconstruction") && !text.includes("aucune");
+      })
+        ? true
+        : null,
+    WAIT,
+  );
+  checkBar(trial, panel, NOTES_BAR, notesWritten);
+  const rebuilt = barNamed(panel, NOTES_BAR)?.querySelector("[role=progressbar]");
+  trial.check(
+    "après la reconstruction, la barre de l'index des notes est pleine",
+    rebuilt?.getAttribute("aria-valuenow") === "100",
+    String(rebuilt?.getAttribute("aria-valuenow")),
+  );
   closeSettings(window);
 }
 

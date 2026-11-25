@@ -64,6 +64,11 @@ test("l'onglet Index dit l'état de l'index de mots et le reconstruit", async ({
   await settings.getByRole("tab", { name: "Index" }).click();
   const index = settings.locator(".index-settings");
   await expect(index).toContainText("2 notes indexées");
+  // L'index des notes a sa barre : ses notes sur le total à indexer, et le pourcentage.
+  const notesBar = index.getByRole("progressbar", { name: "Index des notes" });
+  await expect(notesBar).toBeVisible();
+  await expect(notesBar).toHaveAttribute("aria-valuenow", "100");
+  await expect(index.locator(".index-bar-percent")).toHaveText("2 sur 2, 100 %");
   await expect(index).toContainText("Dernière reconstruction : aucune depuis le lancement");
   await index.getByRole("button", { name: "Reconstruire l'index" }).click();
   await expect(index).toContainText("Dernière reconstruction : 23 novembre 2026 à 14:30");
@@ -73,5 +78,5 @@ test("l'onglet Index dit l'état de l'index de mots et le reconstruit", async ({
   const bar = settings.getByRole("progressbar", { name: "Index de sens" });
   await expect(bar).toBeVisible();
   await expect(bar).toHaveAttribute("aria-valuenow", /^\d+$/);
-  await expect(settings.locator(".index-bar-percent")).toHaveText(/^\d+ %$/);
+  await expect(settings.locator(".meaning-settings .index-bar-percent")).toHaveText(/^\d+ %$/);
 });

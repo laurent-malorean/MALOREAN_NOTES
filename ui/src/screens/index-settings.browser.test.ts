@@ -33,4 +33,29 @@ describe("réglages de l'index de mots", () => {
     expect(frame.querySelector("p")?.textContent).toBe("Lecture de l'état de l'index…");
     expect(frame.querySelector("button")?.textContent).toBe("Reconstruire l'index");
   });
+
+  it("montre la barre orange de l'index des notes avant l'état, avec son pourcentage écrit à côté", () => {
+    const frame = indexSettingsGroup();
+    document.body.append(frame);
+    renderIndexSettings(frame, ["631 notes indexées"], () => {}, {
+      percent: 97,
+      written: "631 sur 645, 97 %",
+    });
+    const bar = frame.querySelector(".index-bar") as HTMLElement;
+    const track = bar.querySelector("[role=progressbar]") as HTMLElement;
+    expect(bar.parentElement).toBe(frame);
+    expect(bar.nextElementSibling?.textContent).toBe("631 notes indexées");
+    expect(track.getAttribute("aria-label")).toBe("Index des notes");
+    expect(track.getAttribute("aria-valuenow")).toBe("97");
+    expect(bar.querySelector(".index-bar-percent")?.textContent).toBe("631 sur 645, 97 %");
+    expect((bar.querySelector(".index-bar-fill") as HTMLElement).style.width).toBe("97%");
+  });
+
+  it("n'a pas de barre sans elle : ni quand le total est inconnu, ni pendant la lecture", () => {
+    const frame = indexSettingsGroup();
+    renderIndexSettings(frame, ["0 note indexée"], () => {}, null);
+    expect(frame.querySelector(".index-bar")).toBeNull();
+    renderIndexSettings(frame, null, () => {});
+    expect(frame.querySelector(".index-bar")).toBeNull();
+  });
 });
