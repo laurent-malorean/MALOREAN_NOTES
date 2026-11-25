@@ -83,8 +83,10 @@ run_mutants() {
   # précédent, à ne pas relire.
   started=$(mktemp)
   # Les copies mutées se construisent lints coupés (.cargo/mutants.toml, `cap_lints`).
+  # Sans dossier de compilation commun : les copies mutées en parallèle le partageraient et leurs résultats
+  # se mélangeraient (faux survivants).
   # shellcheck disable=SC2086
-  $MUTANTS_BIN --all-features --jobs 4 "$@" || status=$?
+  env -u CARGO_TARGET_DIR $MUTANTS_BIN --all-features --jobs 4 "$@" || status=$?
   case "$status" in
     0 | "$MUTANTS_MISSED" | "$MUTANTS_TIMEOUT") ;;
     *) fail "le test de mutation n'a pas pu tourner (code $status)" ;;

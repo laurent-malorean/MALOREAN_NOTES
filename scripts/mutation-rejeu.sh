@@ -29,7 +29,7 @@ cp "$bilan/missed.txt" "$first/missed.txt" 2>/dev/null || : > "$first/missed.txt
 printf '(rejeu : %s dépassements, rejoués une fois avec un délai de %s s au lieu de %s s)\n' "$before" "$new" "$timeout_s"
 status=0
 # shellcheck disable=SC2086
-${MUTANTS_BIN:-cargo mutants} "$@" --timeout "$new" --iterate -o "$dir" || status=$?
+env -u CARGO_TARGET_DIR ${MUTANTS_BIN:-cargo mutants} "$@" --timeout "$new" --iterate -o "$dir" || status=$?
 case "$status" in 0 | 2 | 3) ;; *) echo "✗ rejeu : cargo-mutants a rendu le code $status" >&2; exit 1 ;; esac
 [ -f "$bilan/outcomes.json" ] || { echo "✗ rejeu : aucun bilan après le rejeu" >&2; exit 1; }
 after=$(jq '.timeout' "$bilan/outcomes.json")
