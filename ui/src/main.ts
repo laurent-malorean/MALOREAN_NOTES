@@ -1,6 +1,7 @@
 // Assemblage : crée chaque partie de l'interface et les relie, sans logique (le fonctionnement vit sous app/, doc/code.md).
 import * as bridge from "./bridge";
 import { createClaudeColumn } from "./app/claude-column";
+import { createConnectAi } from "./app/connect-ai";
 import { createOpenColumns } from "./app/columns";
 import { connectAppMenu } from "./app/app-menu";
 import { connectButtons } from "./app/buttons";
@@ -86,9 +87,10 @@ const settings = connectSettings(
   { documentElement: document.documentElement, ...layout },
   {
     ...{ columns, storage: localStorage, systemDark: matchMedia("(prefers-color-scheme: dark)") },
-    groups: () => [templates, journal, workspace, search.meaning],
+    groups: () => [templates, journal, workspace, search.meaning, ai],
   },
 );
+const ai = createConnectAi({ ...messages, backend: bridge, dialog: layout.confirmation });
 const templates = createTemplates({
   ...{ backend: bridge, storage: localStorage, screen, columns, workspace },
   ...{ picker: layout.picker, show: messages.show, run },
@@ -128,11 +130,9 @@ const actions: ScreenActions = screenActions({
   ...{ exporting, history, notebooks, settings, run },
 });
 connectButtons(layout, { ...messages, workspaces, workspace, search, trash, folders, actions });
-const windowDisplay = connectWindowDisplay(layout, {
-  ...{ ...messages, window: bridge, storage: localStorage },
-});
+const win = connectWindowDisplay(layout, { ...messages, window: bridge, storage: localStorage });
 const commands = connectCommands({
-  ...{ backend: bridge, screen, columns, writing, window: windowDisplay, run },
+  ...{ backend: bridge, screen, columns, writing, window: win, run },
   ...{ picker: layout.picker, searchField: layout.searchField, exporting, assistant },
   ...{ workspace, workspaces, templates, journal, folders, trash, settings, tags, recent, history },
   ...{ claude, notebooks, meaning: search.meaning },

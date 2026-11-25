@@ -70,9 +70,16 @@ describe("écran de réglages", () => {
   it("range les parties en onglets : un seul panneau est montré, le premier au départ", () => {
     const { dialog } = open();
     const tabs = [...dialog.querySelectorAll<HTMLElement>("[role=tab]")];
-    expect(tabs.map((t) => t.textContent)).toEqual(["Affichage", "Écriture", "Claude", "Index"]);
+    expect(tabs.map((t) => t.textContent)).toEqual([
+      "Affichage",
+      "Écriture",
+      "Claude",
+      "Index",
+      "Brancher une IA",
+    ]);
     expect(tabs.map((t) => t.getAttribute("aria-selected"))).toEqual([
       "true",
+      "false",
       "false",
       "false",
       "false",
@@ -81,20 +88,20 @@ describe("écran de réglages", () => {
       "Parties des réglages",
     );
     const panels = [...dialog.querySelectorAll<HTMLElement>("[role=tabpanel]")];
-    expect(panels.map((p) => p.hidden)).toEqual([false, true, true, true]);
+    expect(panels.map((p) => p.hidden)).toEqual([false, true, true, true, true]);
     expect(panels[1]?.getAttribute("aria-labelledby")).toBe(tabs[1]?.id);
     expect(tabs[1]?.getAttribute("aria-controls")).toBe(panels[1]?.id);
-    expect(tabs.map((t) => t.tabIndex)).toEqual([0, -1, -1, -1]);
+    expect(tabs.map((t) => t.tabIndex)).toEqual([0, -1, -1, -1, -1]);
   });
 
   it("donne leurs classes à la rangée d'onglets, aux panneaux et aux boutons", () => {
     const { dialog } = open();
     expect(dialog.querySelector("[role=tablist]")?.className).toBe("settings-tabs");
-    expect(dialog.querySelector(".settings-panels")?.querySelectorAll("section")).toHaveLength(4);
+    expect(dialog.querySelector(".settings-panels")?.querySelectorAll("section")).toHaveLength(5);
     const panels = dialog.querySelectorAll("[role=tabpanel]");
-    expect([...panels].map((p) => p.className)).toEqual(Array(4).fill("settings-panel"));
+    expect([...panels].map((p) => p.className)).toEqual(Array(5).fill("settings-panel"));
     const types = [...dialog.querySelectorAll<HTMLButtonElement>("[role=tab]")].map((t) => t.type);
-    expect(types).toEqual(Array(4).fill("button"));
+    expect(types).toEqual(Array(5).fill("button"));
   });
 
   it("ne prend pas le focus à l'ouverture ni au clic sur un onglet", () => {
@@ -139,7 +146,7 @@ describe("écran de réglages", () => {
     const shown = [...first.dialog.querySelectorAll<HTMLElement>("[role=tabpanel]")].map(
       (p) => !p.hidden,
     );
-    expect(shown).toEqual([false, false, false, true]);
+    expect(shown).toEqual([false, false, false, true, false]);
     const second = open(DEFAULT_SETTINGS, storage);
     const selected = second.dialog.querySelector("[role=tab][aria-selected=true]");
     expect(selected?.textContent).toBe("Index");
@@ -154,12 +161,12 @@ describe("écran de réglages", () => {
     expect(tabs[1]?.getAttribute("aria-selected")).toBe("true");
     expect(document.activeElement).toBe(tabs[1]);
     press(tabs[1], "End");
-    expect(tabs[3]?.getAttribute("aria-selected")).toBe("true");
-    press(tabs[3], "ArrowRight");
+    expect(tabs[4]?.getAttribute("aria-selected")).toBe("true");
+    press(tabs[4], "ArrowRight");
     expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
     press(tabs[0], "ArrowLeft");
-    expect(tabs[3]?.getAttribute("aria-selected")).toBe("true");
-    press(tabs[3], "Home");
+    expect(tabs[4]?.getAttribute("aria-selected")).toBe("true");
+    press(tabs[4], "Home");
     expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
     const other = new KeyboardEvent("keydown", { key: "a", bubbles: true, cancelable: true });
     tabs[0]?.dispatchEvent(other);
@@ -176,7 +183,9 @@ describe("écran de réglages", () => {
       fieldset.append(legend);
       return fieldset;
     };
-    const extra = ["Modèles", "Journal", "Index", "Recherche par le sens"].map(part);
+    const extra = ["Modèles", "Journal", "Index", "Recherche par le sens", "Brancher une IA"].map(
+      part,
+    );
     openSettings(dialog, DEFAULT_SETTINGS, () => {}, extra, memoryStorage());
     const panels = [...dialog.querySelectorAll("[role=tabpanel]")].map((p) =>
       [...p.querySelectorAll("legend")].map((l) => l.textContent),
@@ -186,6 +195,7 @@ describe("écran de réglages", () => {
       ["Écriture", "Modèles", "Journal"],
       ["Claude"],
       ["Index", "Recherche par le sens"],
+      ["Brancher une IA"],
     ]);
   });
 

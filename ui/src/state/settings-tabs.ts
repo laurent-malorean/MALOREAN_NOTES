@@ -13,6 +13,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
   { name: "Écriture", groups: ["Écriture", "Modèles", "Journal"] },
   { name: "Claude", groups: ["Claude"] },
   { name: "Index", groups: ["Index", "Recherche par le sens"] },
+  { name: "Brancher une IA", groups: ["Brancher une IA"] },
 ];
 
 const KEY = "malorean.settings-tab";

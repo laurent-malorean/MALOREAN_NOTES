@@ -21,7 +21,13 @@ test("change d'onglet à la souris et au clavier, et rouvre le dernier onglet ou
 }) => {
   const settings = await launch(page);
   const tab = (name: string) => settings.getByRole("tab", { name });
-  await expect(settings.getByRole("tab")).toHaveText(["Affichage", "Écriture", "Claude", "Index"]);
+  await expect(settings.getByRole("tab")).toHaveText([
+    "Affichage",
+    "Écriture",
+    "Claude",
+    "Index",
+    "Brancher une IA",
+  ]);
   await expect(tab("Affichage")).toHaveAttribute("aria-selected", "true");
   await expect(settings.getByRole("combobox", { name: "Police" })).toBeVisible();
   await expect(settings.getByRole("textbox", { name: "Dossier du journal" })).toBeHidden();
@@ -39,16 +45,16 @@ test("change d'onglet à la souris et au clavier, et rouvre le dernier onglet ou
     settings.getByRole("combobox", { name: "Modifications après une lecture du web" }),
   ).toBeVisible();
   await page.keyboard.press("End");
-  await expect(tab("Index")).toHaveAttribute("aria-selected", "true");
+  await expect(tab("Brancher une IA")).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("ArrowRight");
   await expect(tab("Affichage")).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("ArrowLeft");
-  await expect(tab("Index")).toBeFocused();
+  await expect(tab("Brancher une IA")).toBeFocused();
 
   // Le dernier onglet ouvert se rouvre.
   await settings.getByRole("button", { name: "Fermer" }).click();
   await page.getByRole("button", { name: "Réglages" }).click();
-  await expect(tab("Index")).toHaveAttribute("aria-selected", "true");
+  await expect(tab("Brancher une IA")).toHaveAttribute("aria-selected", "true");
 });
 
 test("l'onglet Index dit l'état de l'index de mots et le reconstruit", async ({ page }) => {

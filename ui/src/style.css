@@ -2212,3 +2212,26 @@ button.claude-chip:hover {
   color: var(--muted);
   font-size: var(--claude-detail-text-size);
 }
+
+.connection-settings .tool {
+  align-self: flex-start;
+  margin: 0.3rem 0;
+}
+.connection-copyable {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.4rem 0;
+}
+.connection-text {
+  margin: 0;
+  padding: 0.4rem 0.5rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  user-select: text;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  background: var(--code-block-background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}

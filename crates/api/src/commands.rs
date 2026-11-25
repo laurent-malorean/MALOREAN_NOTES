@@ -21,6 +21,7 @@ pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
 pub mod canvas;
 pub mod claude;
+pub mod connection;
 pub mod export;
 pub mod history;
 pub mod meaning;
@@ -550,6 +551,9 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         writing::assistant_status,
         writing::propose_rewriting,
         claude::answer_view,
+        connection::connection_info,
+        connection::create_connection_key,
+        connection::revoke_connection_key,
         claude::claude_status,
         claude::send_to_claude,
         claude::stop_claude,

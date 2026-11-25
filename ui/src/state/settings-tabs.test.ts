@@ -30,12 +30,13 @@ const broken = {
 };
 
 describe("onglets des réglages", () => {
-  it("sont Affichage, Écriture, Claude puis Index", () => {
+  it("sont Affichage, Écriture, Claude, Index puis Brancher une IA", () => {
     expect(SETTINGS_TABS.map((tab) => tab.name)).toEqual([
       "Affichage",
       "Écriture",
       "Claude",
       "Index",
+      "Brancher une IA",
     ]);
   });
 
@@ -45,6 +46,7 @@ describe("onglets des réglages", () => {
       ["Écriture", "Modèles", "Journal"],
       ["Claude"],
       ["Index", "Recherche par le sens"],
+      ["Brancher une IA"],
     ]);
   });
 
@@ -55,6 +57,7 @@ describe("onglets des réglages", () => {
       "Claude",
       "Modèles",
       "Journal",
+      "Brancher une IA",
       "Index",
       "Recherche par le sens",
     ].map((name) => ({ name }));
@@ -63,12 +66,13 @@ describe("onglets des réglages", () => {
       ["Écriture", "Modèles", "Journal"],
       ["Claude"],
       ["Index", "Recherche par le sens"],
+      ["Brancher une IA"],
     ]);
   });
 
   it("mettent une partie inconnue dans le premier onglet", () => {
     const tabs = placeInTabs([{ name: "Autre" }, { name: "Claude" }]);
-    expect(tabs.map((tab) => tab.length)).toEqual([1, 0, 1, 0]);
+    expect(tabs.map((tab) => tab.length)).toEqual([1, 0, 1, 0, 0]);
   });
 
   it("passent à l'onglet voisin avec les flèches, en faisant le tour", () => {
