@@ -4,6 +4,11 @@ import { emit } from "@tauri-apps/api/event";
 import { mockConvertFileSrc, mockIPC, mockWindows } from "@tauri-apps/api/mocks";
 import { type FakeClaude, fakeClaude, fakeClaudeState } from "./fake-claude";
 import { type AttachArgs, type ExportImageArgs, attachFile, keepImage } from "./fake-attachments";
+import {
+  type FakeConnection,
+  fakeConnectionCommands,
+  fakeConnectionState,
+} from "./fake-connection";
 import { type FakeExports, fakeExport } from "./fake-export";
 import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from "./fake-history";
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
@@ -20,7 +25,7 @@ interface FakeNote {
 }
 
 export interface FakeBackend
-  extends FakeExports, FakeMenu, FakeHistory, FakeWriting, FakeClaude, FakeMeaning {
+  extends FakeExports, FakeMenu, FakeHistory, FakeWriting, FakeClaude, FakeMeaning, FakeConnection {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -76,6 +81,7 @@ const backend: FakeBackend = {
   ...fakeWritingState(params),
   ...fakeClaudeState(params),
   ...fakeMeaningState(params),
+  ...fakeConnectionState(params),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
   readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
@@ -531,6 +537,7 @@ const windowCommands: Record<string, (args: Record<string, unknown>) => unknown>
   "plugin:window|is_fullscreen": () => backend.fullScreen,
   ...fakeMenu(backend),
   ...fakeWriting(backend),
+  ...fakeConnectionCommands(backend),
   ...fakeClaude(backend, (path, content) => backend.changeOutside(path, content)),
 };
 

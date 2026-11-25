@@ -16,7 +16,8 @@ const PROTOCOL_VERSION: &str = "2025-06-18";
 const PARSE_ERROR: i64 = -32700;
 const INVALID_REQUEST: i64 = -32600;
 const METHOD_NOT_FOUND: i64 = -32601;
-/// Code d'erreur de l'application : la demande vient sans la clé du tour en cours.
+/// Code d'erreur de l'application : la demande vient sans une clé valable (celle du tour en cours,
+/// ou la clé de branchement).
 const KEY_REFUSED: i64 = -32001;
 
 /// Ce que l'application dit à Claude de ses outils, à la présentation.
@@ -35,11 +36,12 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
 /// L'issue d'un appel d'outil : le texte rendu à Claude, ou ce qui a empêché l'outil.
 pub(super) type ToolOutcome = Result<String, String>;
 
-/// La réponse à la ligne `line`, s'il en faut une (une notification n'en a pas). `allowed` dit
-/// si la demande vient avec la clé du tour en cours ; `call` joue un outil sur ses arguments.
+/// La réponse à la ligne `line`, s'il en faut une (une notification n'en a pas). `refusal` est
+/// ce que l'on répond quand la demande ne vient pas avec une clé valable (rien si elle en a
+/// une) ; `call` joue un outil sur ses arguments.
 pub(super) fn answer(
     line: &str,
-    allowed: bool,
+    refusal: Option<&str>,
     call: impl FnOnce(AppTool, &Value) -> ToolOutcome,
 ) -> Option<String> {
     let Ok(request) = serde_json::from_str::<Value>(line) else {
@@ -47,13 +49,8 @@ pub(super) fn answer(
     };
     // Une notification n'attend pas de réponse.
     let id = request.get("id")?;
-    if !allowed {
-        return Some(error(
-            id,
-            KEY_REFUSED,
-            "clé refusée : les outils de MALOREAN Notes ne servent que pendant un tour de la \
-             colonne Claude Code",
-        ));
+    if let Some(refusal) = refusal {
+        return Some(error(id, KEY_REFUSED, refusal));
     }
     let params = &request["params"];
     let result = match request["method"].as_str() {
@@ -110,7 +107,7 @@ mod tests {
     }
 
     fn replied_by(line: &str, call: impl FnOnce(AppTool, &Value) -> ToolOutcome) -> Value {
-        serde_json::from_str(&answer(line, true, call).unwrap()).unwrap()
+        serde_json::from_str(&answer(line, None, call).unwrap()).unwrap()
     }
 
     #[test]
@@ -136,7 +133,7 @@ mod tests {
         assert_eq!(
             answer(
                 r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
-                true,
+                None,
                 |_, _| unreachable!()
             ),
             None
@@ -236,7 +233,7 @@ mod tests {
         let reply: Value = serde_json::from_str(
             &answer(
                 r#"{"jsonrpc":"2.0","id":7,"method":"tools/list"}"#,
-                false,
+                Some("pas de clé"),
                 |_, _| unreachable!(),
             )
             .unwrap(),
@@ -244,6 +241,7 @@ mod tests {
         .unwrap();
         assert_eq!(reply["id"], 7);
         assert_eq!(reply["error"]["code"], -32001);
+        assert_eq!(reply["error"]["message"], "pas de clé");
         assert!(reply.get("result").is_none());
     }
 }

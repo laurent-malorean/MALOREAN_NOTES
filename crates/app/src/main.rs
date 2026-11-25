@@ -7,12 +7,14 @@ use std::sync::Arc;
 
 use api::{Session, commands};
 use application::{
-    IndexOpener, NoteIndex, OpenedIndex, SegmentingIndex, StoreError, WorkspaceLocation,
+    ConnectionSocket, IndexOpener, NoteIndex, OpenedIndex, SegmentingIndex, StoreError,
+    WorkspaceLocation,
 };
 use infrastructure::{
-    AppToolsRelay, AppleWritingAssistant, ClaudeCodeCli, FsExportStore, FsHistories,
-    FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, MacClipboard, ModelFolder,
-    RELAY_OPTION, SocketPlace, SqliteIndexes, SystemClock, claude_folders, relay,
+    AppToolsRelay, AppleWritingAssistant, CONNECT_OPTION, ClaudeCodeCli, FsConnectionKeys,
+    FsExportStore, FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences,
+    MacClipboard, ModelFolder, PermanentSocket, RELAY_OPTION, SocketPlace, SqliteIndexes,
+    SystemClock, SystemSecretMaker, claude_folders, connect, relay,
 };
 use tauri::{Manager, RunEvent};
 
@@ -20,6 +22,9 @@ use tauri::{Manager, RunEvent};
 mod essai;
 
 const PREFERENCES_FILE: &str = "preferences.json";
+
+/// Le fichier de la clé de branchement, dans le dossier de configuration (fiche 0056).
+const CONNECTION_KEY_FILE: &str = "connection-key.json";
 
 /// Lancée par Claude Code avec `--relais-mcp <prise> <clé>`, l'application n'est que le relais des
 /// outils de l'application (fiche 0040) : rien d'autre ne démarre, et rien d'autre n'est écrit sur
@@ -38,6 +43,24 @@ fn run_relay(arguments: &[OsString]) -> ! {
         std::io::stdout(),
     );
     std::process::exit(i32::from(relayed.is_err()))
+}
+
+/// Lancée par une IA extérieure avec `--brancher <clé>`, l'application n'est que la commande de
+/// branchement (fiche 0056) : comme le relais, rien d'autre ne démarre ni ne s'écrit sur sa sortie.
+fn run_connect(arguments: &[OsString]) -> ! {
+    let (Some(home), Some(key)) = (
+        env::var_os("HOME"),
+        arguments.get(2).and_then(|key| key.to_str()),
+    ) else {
+        std::process::exit(2)
+    };
+    let connected = connect(
+        Path::new(&home),
+        key,
+        std::io::stdin().lock(),
+        std::io::stdout(),
+    );
+    std::process::exit(i32::from(connected.is_err()))
 }
 
 /// Claude Code, qui offre les outils de l'application par le relais (le programme de
@@ -86,6 +109,38 @@ fn serve_app_tools(app: &tauri::App, place: SocketPlace, session: &Arc<Session>)
     }
 }
 
+/// La session où l'on peut brancher une IA extérieure par `socket` (fiche 0056) : la clé de
+/// branchement est gardée dans le dossier de configuration. Sans prise (pas de dossier personnel),
+/// aucune IA ne peut être branchée.
+fn with_connection(
+    session: Session,
+    app: &tauri::App,
+    socket: Option<&Arc<PermanentSocket>>,
+) -> Result<Session, Box<dyn std::error::Error>> {
+    let Some(socket) = socket else {
+        return Ok(session);
+    };
+    let keys = FsConnectionKeys::new(app.path().app_config_dir()?.join(CONNECTION_KEY_FILE));
+    Ok(session.with_connection(
+        Arc::new(keys),
+        Arc::new(SystemSecretMaker),
+        Arc::clone(socket) as Arc<dyn ConnectionSocket>,
+        env::current_exe()?,
+    ))
+}
+
+/// Fait répondre la prise de branchement par `session`, puis l'ouvre si une clé de branchement
+/// existe ; sans clé, aucune prise n'est ouverte.
+fn open_connection(session: &Arc<Session>, socket: &PermanentSocket) {
+    let answering = Arc::clone(session);
+    socket.answer_with(Arc::new(move |key: &str, line: &str| {
+        answering.answer_connection(key, line)
+    }));
+    if let Err(error) = session.open_connection() {
+        tracing::warn!(error = %error.message, "prise de branchement non ouverte");
+    }
+}
+
 /// La session avec ses stockages : espaces de travail, index de mots et de sens, modèles de sens
 /// (dans le dossier de support de l'application, `models/`), historique, surveillance, exports,
 /// presse-papiers et aide à l'écriture. Sans modèle de sens téléchargé, la recherche se fait par
@@ -114,6 +169,42 @@ fn base_session(
     .with_writing_assistant(Arc::new(AppleWritingAssistant::installed())))
 }
 
+/// Prépare l'application au lancement : préférences, session avec ses stockages, outils de
+/// l'application pour Claude (prise du tour) et pour les IA extérieures (prise de branchement).
+fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    let preferences = JsonPreferences::new(app.path().app_config_dir()?.join(PREFERENCES_FILE));
+    let connection = app
+        .path()
+        .home_dir()
+        .ok()
+        .map(|home| Arc::new(PermanentSocket::new(&home)));
+    let session = with_connection(base_session(app, preferences)?, app, connection.as_ref())?;
+    // La prise locale des outils de l'application : réservée au compte de l'utilisateur,
+    // aucun port réseau (fiche 0040). Sans elle, Claude n'a que ses propres outils.
+    let place = SocketPlace::new()
+        .inspect_err(|error| tracing::warn!(%error, "prise des outils non préparée"))
+        .ok();
+    let home = app.path().home_dir().ok();
+    let claude = claude_code(home.as_deref(), place.as_ref());
+    let screen = commands::claude::TauriScreen(app.handle().clone());
+    let session = Arc::new(
+        session
+            .with_claude(Arc::new(claude))
+            .with_screen(Arc::new(screen)),
+    );
+    if let Some(place) = place {
+        serve_app_tools(app, place, &session);
+    }
+    if let Some(socket) = connection {
+        open_connection(&session, &socket);
+        app.manage(socket);
+    }
+    app.manage(session);
+    #[cfg(feature = "essai")]
+    app.manage(essai::Essai::from_environment());
+    Ok(())
+}
+
 fn main() {
     let arguments: Vec<OsString> = env::args_os().collect();
     if arguments
@@ -121,6 +212,12 @@ fn main() {
         .is_some_and(|option| option == RELAY_OPTION)
     {
         run_relay(&arguments);
+    }
+    if arguments
+        .get(1)
+        .is_some_and(|option| option == CONNECT_OPTION)
+    {
+        run_connect(&arguments);
     }
     tracing_subscriber::fmt::init();
     // Les commandes de l'essai de l'application réelle, seulement dans l'application construite pour
@@ -135,31 +232,7 @@ fn main() {
         .on_menu_event(|app, event| commands::menu::chosen(app, &event))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
-            let preferences =
-                JsonPreferences::new(app.path().app_config_dir()?.join(PREFERENCES_FILE));
-            let session = base_session(app, preferences)?;
-            // La prise locale des outils de l'application : réservée au compte de l'utilisateur,
-            // aucun port réseau (fiche 0040). Sans elle, Claude n'a que ses propres outils.
-            let place = SocketPlace::new()
-                .inspect_err(|error| tracing::warn!(%error, "prise des outils non préparée"))
-                .ok();
-            let home = app.path().home_dir().ok();
-            let claude = claude_code(home.as_deref(), place.as_ref());
-            let screen = commands::claude::TauriScreen(app.handle().clone());
-            let session = Arc::new(
-                session
-                    .with_claude(Arc::new(claude))
-                    .with_screen(Arc::new(screen)),
-            );
-            if let Some(place) = place {
-                serve_app_tools(app, place, &session);
-            }
-            app.manage(session);
-            #[cfg(feature = "essai")]
-            app.manage(essai::Essai::from_environment());
-            Ok(())
-        })
+        .setup(setup)
         .invoke_handler(handler)
         .build(tauri::generate_context!());
     match started {

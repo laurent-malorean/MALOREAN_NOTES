@@ -11,6 +11,7 @@ mod canvas_merge;
 mod canvas_write;
 pub mod claude;
 pub mod conflict;
+pub mod connection_key;
 pub mod content_type;
 pub mod crm;
 pub mod diff;

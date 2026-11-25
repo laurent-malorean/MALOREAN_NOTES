@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
-use super::{ToolsTurn, required, written};
+use super::{ToolsScope, required, written};
 use crate::session::Session;
 
 /// Le temps laissé à l'interface pour dire ce que l'utilisateur regarde.
@@ -57,7 +57,7 @@ impl Session {
 
     /// Ce que l'utilisateur regarde, dans l'espace de travail du tour : la note de la colonne
     /// active (chemin et titre) et le texte sélectionné.
-    pub(super) fn tool_viewed_note(&self, turn: &ToolsTurn) -> Result<String, String> {
+    pub(super) fn tool_viewed_note(&self, scope: &ToolsScope) -> Result<String, String> {
         let screen = self.screen.as_ref().ok_or_else(no_screen)?;
         let request = self.view_requests.fetch_add(1, Ordering::Relaxed);
         let (sender, receiver) = mpsc::channel();
@@ -71,7 +71,7 @@ impl Session {
             .and_then(|path| self.read_note(&path).ok())
             .map(|note| json!({ "path": note.path, "title": note.title }));
         written(&json!({
-            "workspace": turn.workspace.as_str(),
+            "workspace": scope.workspace.as_str(),
             "note": note.unwrap_or(Value::Null),
             "selection": view.selection,
         }))

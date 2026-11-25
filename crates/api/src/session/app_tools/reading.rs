@@ -9,7 +9,7 @@ use domain::{ContentType, Folder, NoteOrder, NotePath, NoteSummary};
 use serde::Serialize;
 use serde_json::Value;
 
-use super::{ToolsTurn, optional, written};
+use super::{ToolsScope, optional, written};
 use crate::session::Session;
 
 /// Une note trouvée, telle que Claude la reçoit.
@@ -167,8 +167,8 @@ impl Session {
     }
 
     /// Les noms des modèles de note : les notes directement dans le dossier des modèles du tour.
-    pub(super) fn tool_list_templates(&self, turn: &ToolsTurn) -> Result<String, String> {
-        let folder = turn.templates.as_ref().ok_or_else(|| {
+    pub(super) fn tool_list_templates(&self, scope: &ToolsScope) -> Result<String, String> {
+        let folder = scope.templates.as_ref().ok_or_else(|| {
             "aucun dossier des modèles n'est choisi : l'utilisateur peut en choisir un dans les \
              réglages de MALOREAN Notes"
                 .to_owned()

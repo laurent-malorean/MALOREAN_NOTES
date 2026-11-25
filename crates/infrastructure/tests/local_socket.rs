@@ -7,11 +7,12 @@
 )]
 
 use std::fs;
-use std::io::{BufRead, BufReader, Cursor, Write};
+use std::io::{BufRead, BufReader, Cursor, Read, Write};
 use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 use std::os::unix::net::UnixStream;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use infrastructure::{LineAnswer, LocalSocket, SocketPlace, relay};
 use tempfile::TempDir;
@@ -123,4 +124,142 @@ fn the_socket_goes_by_default_in_the_temporary_files_of_the_user_with_a_short_pa
     assert!(socket.ends_with("outils.sock"));
     // Le chemin d'une prise Unix tient en 104 octets sur le Mac.
     assert!(socket.as_os_str().len() < 104, "{}", socket.display());
+}
+
+fn answering() -> Arc<LineAnswer> {
+    Arc::new(|key: &str, line: &str| Some(format!("{key} répond à {line}")))
+}
+
+#[test]
+fn a_fixed_place_is_created_reserved_to_the_user_and_kept_when_the_socket_closes() {
+    let parent = TempDir::new().unwrap();
+    let folder = parent.path().join("dedans").join("branchement");
+
+    let socket = SocketPlace::fixed(&folder)
+        .unwrap()
+        .serve(answering())
+        .unwrap();
+
+    let path = socket.path();
+    assert_eq!(path, folder.join("branchement.sock"));
+    assert!(fs::symlink_metadata(&path).unwrap().file_type().is_socket());
+    assert_eq!(
+        fs::symlink_metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert_eq!(
+        fs::metadata(&folder).unwrap().permissions().mode() & 0o777,
+        0o700
+    );
+    drop(socket);
+    assert!(folder.is_dir());
+    assert!(!path.exists());
+}
+
+#[test]
+fn a_fixed_place_that_exists_with_open_rights_is_reserved_again() {
+    let parent = TempDir::new().unwrap();
+    fs::set_permissions(parent.path(), fs::Permissions::from_mode(0o755)).unwrap();
+
+    SocketPlace::fixed(parent.path()).unwrap();
+
+    assert_eq!(
+        fs::metadata(parent.path()).unwrap().permissions().mode() & 0o777,
+        0o700
+    );
+}
+
+#[test]
+fn closing_the_socket_cuts_the_connections_already_open_and_nothing_can_join_it_again() {
+    let parent = TempDir::new().unwrap();
+    let place = SocketPlace::fixed(parent.path()).unwrap();
+    let socket = place.serve(answering()).unwrap();
+    let path = socket.path();
+    let mut open = UnixStream::connect(&path).unwrap();
+    // Une connexion qui ne serait pas coupée ferait échouer le test, au lieu de l'attendre.
+    open.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+    writeln!(open, "clé\nun").unwrap();
+    let mut lines = BufReader::new(open.try_clone().unwrap());
+    let mut first = String::new();
+    lines.read_line(&mut first).unwrap();
+    assert_eq!(first, "clé répond à un\n");
+
+    drop(socket);
+
+    let mut after = String::new();
+    assert_eq!(lines.read_line(&mut after).unwrap(), 0);
+    assert!(UnixStream::connect(&path).is_err());
+}
+
+#[test]
+fn a_socket_can_be_opened_again_in_the_same_place_after_it_closed() {
+    let parent = TempDir::new().unwrap();
+    for _ in 0..2 {
+        let socket = SocketPlace::fixed(parent.path())
+            .unwrap()
+            .serve(answering())
+            .unwrap();
+        let mut output = Vec::new();
+        relay(&socket.path(), "clé", Cursor::new("un\n"), &mut output).unwrap();
+        assert_eq!(String::from_utf8(output).unwrap(), "clé répond à un\n");
+    }
+}
+
+#[test]
+fn a_socket_file_left_by_an_application_that_stopped_badly_is_replaced() {
+    let parent = TempDir::new().unwrap();
+    let stale = parent.path().join("branchement.sock");
+    drop(std::os::unix::net::UnixListener::bind(&stale).unwrap());
+    assert!(stale.exists());
+
+    let socket = SocketPlace::fixed(parent.path())
+        .unwrap()
+        .serve(answering())
+        .unwrap();
+
+    let mut output = Vec::new();
+    relay(&socket.path(), "clé", Cursor::new("un\n"), &mut output).unwrap();
+    assert_eq!(String::from_utf8(output).unwrap(), "clé répond à un\n");
+}
+
+#[test]
+fn a_socket_that_another_instance_answers_on_is_left_alone() {
+    let parent = TempDir::new().unwrap();
+    let first = SocketPlace::fixed(parent.path())
+        .unwrap()
+        .serve(answering())
+        .unwrap();
+
+    let second = SocketPlace::fixed(parent.path())
+        .unwrap()
+        .serve(answering());
+
+    assert_eq!(second.unwrap_err().kind(), std::io::ErrorKind::AddrInUse);
+    let mut output = Vec::new();
+    relay(&first.path(), "clé", Cursor::new("un\n"), &mut output).unwrap();
+    assert_eq!(String::from_utf8(output).unwrap(), "clé répond à un\n");
+}
+
+#[test]
+fn a_connection_that_has_finished_is_closed_by_the_application_too() {
+    let parent = TempDir::new().unwrap();
+    let socket = SocketPlace::fixed(parent.path())
+        .unwrap()
+        .serve(answering())
+        .unwrap();
+    let mut connection = UnixStream::connect(socket.path()).unwrap();
+    // Sans cela, une connexion que l'application garderait ouverte ferait échouer le test au lieu de
+    // l'attendre.
+    connection
+        .set_read_timeout(Some(Duration::from_secs(5)))
+        .unwrap();
+    writeln!(connection, "clé\nun").unwrap();
+    connection.shutdown(std::net::Shutdown::Write).unwrap();
+
+    let mut everything = String::new();
+    BufReader::new(connection)
+        .read_to_string(&mut everything)
+        .unwrap();
+
+    assert_eq!(everything, "clé répond à un\n");
 }

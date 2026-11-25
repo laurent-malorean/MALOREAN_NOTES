@@ -13,6 +13,8 @@ import type { ClaudeEventItem } from "./generated/ClaudeEventItem";
 import type { LimitPeriodItem } from "./generated/LimitPeriodItem";
 import type { UsageWindowItem } from "./generated/UsageWindowItem";
 import type { ClaudeStatusItem } from "./generated/ClaudeStatusItem";
+import type { ConnectionInfo } from "./generated/ConnectionInfo";
+import type { ConnectionKeyItem } from "./generated/ConnectionKeyItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
 import type { EffortItem } from "./generated/EffortItem";
 import type { EntryItem } from "./generated/EntryItem";
@@ -64,6 +66,8 @@ export type {
   ChosenFolder,
   ClaudeEventItem,
   ClaudeStatusItem,
+  ConnectionInfo,
+  ConnectionKeyItem,
   LimitPeriodItem,
   UsageWindowItem,
   ClaudeModelItem,
@@ -341,6 +345,9 @@ export const sendToClaude = (
 /** Arrête le tour en cours (ce que Claude a déjà écrit reste écrit), ou annule la connexion en cours. */
 export const stopClaude = () => invoke<null>("stop_claude");
 /** Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris). */
+export const connectionInfo = () => invoke<ConnectionInfo>("connection_info");
+export const createConnectionKey = () => invoke<ConnectionInfo>("create_connection_key");
+export const revokeConnectionKey = () => invoke<null>("revoke_connection_key");
 export const logOutOfClaude = () => invoke<null>("log_out_of_claude");
 /**
  * Connecte Claude Code à un compte Claude, pour tout le Mac : le navigateur s'ouvre sur la page de

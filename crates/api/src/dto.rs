@@ -6,12 +6,14 @@ use ts_rs::TS;
 mod canvas;
 mod claude;
 mod claude_load;
+mod connection;
 mod meaning;
 mod mind_map;
 mod turn_settings;
 
 pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
+pub use connection::{ConnectionInfo, ConnectionKeyItem};
 pub use meaning::{
     MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,
     ModelOverviewItem,
