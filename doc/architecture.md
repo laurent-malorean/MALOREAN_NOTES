@@ -162,6 +162,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0057-crm-domaine.md` | CRM : le domaine lit et écrit les fiches (CRM, entreprises, personnes, actions, projets) geste par geste, sans perdre ce que l'utilisateur a écrit ; calculs de vue (Kanban, semaine) purs ; module `domain::crm` à part |
 | `0060-crm-vue-kanban.md` | CRM : la vue de base (création, onglets, Kanban, Ma semaine) à la place de l'éditeur ; l'écran affiche la vue de `read_crm` sans règle, glisse aux événements du pointeur, suit les changements venus d'ailleurs |
 | `0061-crm-claude.md` | CRM et Claude : l'outil `create_crm`, la consigne sur les CRM dans la présentation du serveur d'outils, la recherche (mots et sens) qui rend les fiches avec le chemin de leur CRM |
+| `0063-crm-listes-et-fiches.md` | CRM : les listes Personnes, Entreprises et Projets, la ligne d'une action, les fiches d'entreprise et de personne à la place de l'éditeur ; un point de branchement pour la fenêtre d'une action |
 | `0059-mutation-par-groupes-sur-github.md` | Toute la mutation du Rust confiée à GitHub, en groupes de mutation parallèles de 10 à 20 minutes ; sur le Mac, fin de tâche = barrière + `--fonction`, sans mutation |
 
 ## Construire l'application (`.app`)

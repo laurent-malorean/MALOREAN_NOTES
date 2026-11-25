@@ -142,7 +142,7 @@ test("le Kanban montre une colonne par statut, ses cartes et ses compteurs", asy
   await expect(card(page, "Email").locator(".crm-card-when")).toHaveText("À faire aujourd'hui");
   await shot(page, "kanban");
   await page.getByRole("tab", { name: "Personnes" }).click();
-  await expect(page.locator(".crm-soon")).toHaveText("Bientôt");
+  await expect(page.locator(".crm-people")).toBeVisible();
 });
 
 test("l'ajout rapide crée une action dans la colonne et reste ouvert pour la suivante", async ({

@@ -1,7 +1,7 @@
 // Un CRM à l'écran (fiche 0060, spécification § 7) : la barre d'onglets, la rangée de filtres,
 // puis le Kanban ou Ma semaine. Rust lit et écrit les fichiers ; l'écran affiche la vue complète
 // que `read_crm` rend et, à chaque geste, la relit. Les onglets Personnes, Entreprises et Projets
-// ne montrent encore que « Bientôt ».
+// sont les listes de `crm-lists.ts` (fiche 0063).
 import type { CrmActionDraftItem, CrmItem, StageChangeItem } from "../bridge";
 import type * as Bridge from "../bridge";
 import { lookupsOf } from "../state/crm-card";
@@ -17,6 +17,9 @@ import {
 import { type BoardActions, type BoardContext, kanbanBoard } from "./crm-board";
 import { datum, h } from "./crm-dom";
 import { createFiltersBar, type FiltersBar } from "./crm-filters";
+import { createLists, isListTab, type Lists, type UnfoldedMemory } from "./crm-lists";
+import type { FicheBackend } from "./crm-fiche-ui";
+import type { ListsBackend } from "./crm-lists-ui";
 import type { QuickAdd } from "./crm-quick-add";
 import type { StageEdit } from "./crm-stages";
 import { weekView } from "./crm-week";
@@ -33,7 +36,9 @@ export type CrmBackend = Pick<
   | "changeCrmStages"
   | "copyPlainText"
   | "openWebAddress"
->;
+> &
+  ListsBackend &
+  FicheBackend;
 
 export interface CrmViewDeps {
   readonly backend: CrmBackend;
@@ -52,6 +57,10 @@ export interface CrmViewDeps {
   readonly notice: (message: string) => void;
   /** La fenêtre d'une action : ouvre la fiche d'une personne ; sans elle, pas de lien vers la fiche. */
   readonly openPerson?: (reference: string) => void;
+  /** Ouvre la note d'une entreprise ou d'une personne dans la colonne (fiche 0063) ; sans lui, un clic sur un nom ne fait rien. */
+  readonly openFiche?: (path: string) => void;
+  /** Ce qui est déplié dans les listes, gardé sur ce Mac ; sans lui, gardé le temps de l'écran. */
+  readonly unfolded?: UnfoldedMemory;
 }
 
 export interface CrmView {
@@ -65,9 +74,6 @@ export interface CrmView {
 
 /** Ce qui est écrit au centre d'un CRM sans aucune fiche. */
 export const EMPTY_TEXT = "Ajoutez une première action.";
-/** Ce qui est écrit dans un onglet qui n'est pas encore réalisé. */
-export const SOON_TEXT = "Bientôt";
-
 const isEmpty = (crm: CrmItem) =>
   crm.actions.length + crm.people.length + crm.companies.length + crm.projects.length === 0;
 
@@ -83,6 +89,7 @@ class CrmScreen implements CrmView {
   private readonly closedMore = new Map<string, number>();
   private quick: QuickAdd | null = null;
   private win: ActionWindow | null = null;
+  private readonly lists: Lists;
   private lastPerson = "";
   private stageEdit: StageEdit | null = null;
   private focusKey: string | null = null;
@@ -99,6 +106,7 @@ class CrmScreen implements CrmView {
         this.filtered({ ...this.filters, projects: this.projectsAfter(project) }),
       tag: (tag) => this.filtered({ ...this.filters, tags: toggled(this.filters.tags, tag) }),
     });
+    this.lists = this.createLists();
     this.tabsBar.setAttribute("role", "tablist");
     this.tabsBar.setAttribute("aria-label", "Onglets du CRM");
     for (const { id, label } of TABS) this.tabsBar.append(this.tabButton(id, label));
@@ -143,6 +151,34 @@ class CrmScreen implements CrmView {
     this.render();
   }
 
+  private createLists(): Lists {
+    const { deps } = this;
+    const memory = { load: () => null, store: () => undefined };
+    return createLists({
+      path: deps.path,
+      backend: deps.backend,
+      memory: deps.unfolded ?? memory,
+      act: {
+        redraw: () => this.render(),
+        focus: (key) => void (this.focusKey = key),
+        gesture: (run) => this.gesture(run),
+        confirm: deps.confirm,
+        openFiche: (path) => deps.openFiche?.(path),
+        openAction: (name) => this.showWindow({ kind: "existing", name }),
+        showProject: (project) => this.showProject(project),
+        redrawing: () => this.redrawing,
+      },
+    });
+  }
+
+  /** « Voir les actions de … » : le Kanban, filtré sur ce seul projet. */
+  private showProject(project: string): void {
+    this.filters = { ...NO_FILTERS, projects: [project] };
+    this.current = "kanban";
+    this.deps.tab.store("kanban");
+    void this.reload();
+  }
+
   private projectsAfter(project: string | null): string[] {
     return project === null ? [] : toggled(this.filters.projects, project);
   }
@@ -171,8 +207,7 @@ class CrmScreen implements CrmView {
   }
 
   private content(data: CrmItem): HTMLElement[] {
-    if (this.current !== "kanban" && this.current !== "week")
-      return [h("p", "crm-soon", SOON_TEXT)];
+    if (isListTab(this.current)) return [this.lists.render(this.current, data)];
     const ctx = this.context(data);
     const shown =
       this.current === "kanban" ? kanbanBoard(ctx) : weekView(ctx, this.weekNavigation(data));

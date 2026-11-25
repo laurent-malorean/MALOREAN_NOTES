@@ -1,3 +1,4 @@
+import { moreBackend } from "../../test-support/crm-lists-fixture";
 import { describe, expect, it, vi } from "vitest";
 import { crm } from "../../test-support/crm-fixture";
 import { fakeBackend } from "../../test-support/pane-fixture";
@@ -127,6 +128,7 @@ describe("CRM d'une colonne", () => {
         changeCrmAction: vi.fn(),
         deleteCrmAction: vi.fn(),
         changeCrmStages: vi.fn(),
+        ...moreBackend(async () => {}),
         copyPlainText: vi.fn(),
         openWebAddress: vi.fn(),
         listAllNotes: vi.fn(async () => []),

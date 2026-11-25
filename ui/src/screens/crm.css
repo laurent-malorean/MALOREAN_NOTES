@@ -110,10 +110,6 @@
   opacity: 0.7;
   pointer-events: none;
 }
-.crm-soon {
-  margin: auto;
-  color: var(--muted);
-}
 
 /* Le tableau : une colonne par statut, ou par jour */
 .crm-week-view {
