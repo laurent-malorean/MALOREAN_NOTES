@@ -6,12 +6,10 @@ import type {
   CrmActionChangeItem,
   CrmActionDraftItem,
   CrmActionItem,
-  CrmCompanyItem,
   CrmItem,
-  CrmPersonItem,
-  CrmProjectItem,
 } from "../src/bridge";
 import type { BodyChangeItem } from "../src/bridge/generated/BodyChangeItem";
+import { listsOf } from "./fake-crm-lists";
 import {
   type Args,
   type CrmHelpers,
@@ -35,12 +33,10 @@ interface Body {
 
 const LIST_HEADING = "#### Liste à cocher : ";
 const COMMENTS_HEADING = "#### Commentaires";
-const NO_TALLY = { open: 0, late: 0, today: 0 };
 
 const header = (content: string) => /^---\n([\s\S]*?)\n---\n/.exec(content)?.[0] ?? "";
 const afterHeader = (content: string) => content.slice(header(content).length);
 const folderOf = (crm: string, kind: string) => `${crm.replace(/\.md$/, "")}/${kind}/`;
-const nameOf = (path: string) => path.slice(path.lastIndexOf("/") + 1).replace(/\.md$/, "");
 const references = (raw: string | null) => [...(raw ?? "").matchAll(/\[\[([^\]]+)\]\]/g)];
 const quoted = (list: string[]) => `[${list.map((item) => `'${item}'`).join(", ")}]`;
 
@@ -159,34 +155,12 @@ function richAction(path: string, content: string, stages: string[]): CrmActionI
 const filesOf = (state: FakeNotes, crm: string, kind: string) =>
   Object.entries(state.notes).filter(([p]) => p.startsWith(folderOf(crm, kind)));
 
-function listsOf(state: FakeNotes, crm: string) {
-  const companies: CrmCompanyItem[] = filesOf(state, crm, "entreprises").map(([p, n]) => ({
-    ...{ name: nameOf(p), title: titleOf(n.content), site: null, sector: null, address: null },
-    ...{ phone: null, notes: "", people: [], tally: NO_TALLY },
-  }));
-  const people: CrmPersonItem[] = filesOf(state, crm, "personnes").map(([p, n]) => ({
-    ...{ name: nameOf(p), title: titleOf(n.content), role: null, career: [] },
-    company: references(value(n.content, "entreprise"))[0]?.[1] ?? null,
-    ...{ email: value(n.content, "email"), phone: null, linkedin: null, notes: "" },
-    ...{ openActions: [], closedActions: [], tally: NO_TALLY },
-  }));
-  const projects: CrmProjectItem[] = filesOf(state, crm, "projets").map(([p, n]) => ({
-    ...{
-      name: nameOf(p),
-      title: titleOf(n.content),
-      color: value(n.content, "couleur") ?? "rouge",
-    },
-    ...{ openActions: [], tally: NO_TALLY },
-  }));
-  return { companies, people, projects };
-}
-
 /** La vue du CRM avec les fiches et les champs complets des actions, lus dans les fichiers. */
 export function withActionData(view: CrmItem, state: FakeNotes, crm: string): CrmItem {
   const stages = stagesOf(state.notes[crm]?.content ?? "");
   const actions = filesOf(state, crm, "actions").map(([p, n]) => richAction(p, n.content, stages));
   const tags = [...new Set(actions.flatMap((a) => a.tags))].sort();
-  return { ...view, ...listsOf(state, crm), actions, tags };
+  return { ...view, ...listsOf(state, crm, actions), actions, tags };
 }
 
 type Writer<K extends CrmActionChangeItem["kind"]> = (

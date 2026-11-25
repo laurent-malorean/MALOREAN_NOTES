@@ -6,6 +6,7 @@ import type { ColumnItem, CrmActionItem, CrmItem } from "../src/bridge";
 import { addDays } from "../src/state/crm-days";
 import { fakeCrmActionGestures, withActionData } from "./fake-crm-action";
 import { fakeCrmGestures } from "./fake-crm-gestures";
+import { fakeCrmLists } from "./fake-crm-lists";
 import {
   type Args,
   CLOSED,
@@ -105,6 +106,7 @@ export function fakeCrms(
         path as string,
       ),
     ...fakeCrmGestures(state, helpers, (path) => view(state, path, {}, null)),
+    ...fakeCrmLists(state, helpers),
     ...fakeCrmActionGestures(state, helpers, state.trash, () => `${FAKE_TODAY} 10:32`),
   };
 }

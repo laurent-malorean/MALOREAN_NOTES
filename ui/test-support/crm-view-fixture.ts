@@ -5,6 +5,7 @@ import type { CrmActionChangeItem, CrmFiltersItem, CrmItem, StageChangeItem } fr
 import { type CrmBackend, createCrmView, type CrmView } from "../src/screens/crm-view";
 import type { CrmTab } from "../src/state/crm";
 import { sample } from "./crm-fixture";
+import { moreBackend } from "./crm-lists-fixture";
 
 /** Un appel au pont : son nom puis ses arguments. */
 export type Call = readonly [string, ...unknown[]];
@@ -33,6 +34,9 @@ export interface MountedCrm {
   addresses: string[];
   copied: string[];
   people: string[];
+  /** Les chemins des fiches d'entreprise ou de personne ouvertes par un clic sur un nom (fiche 0063), et ce qui est gardé déplié. */
+  fiches: string[];
+  kept: string[];
 }
 
 export interface MountOptions {
@@ -43,6 +47,8 @@ export interface MountOptions {
   load?: boolean;
   /** Vrai : la fenêtre d'une action propose le lien vers la fiche d'une personne. */
   withPersonLink?: boolean;
+  /** Ce qui était gardé déplié dans les listes (texte JSON). */
+  unfolded?: string | null;
 }
 
 /** Le faux pont de Rust : chaque appel est noté, le prochain geste peut échouer, la lecture rend le CRM du « disque ». */
@@ -92,6 +98,7 @@ function fakeBackend(mounted: MountedCrm, calls: Call[]): CrmBackend {
       mounted.addresses.push(address);
       return null;
     },
+    ...moreBackend(gesture),
   };
 }
 
@@ -105,7 +112,7 @@ export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> 
     ...{ host, calls, errors: [], questions: [], stored: [] },
     ...{ fail: { next: null, read: null }, answer: { value: true }, delays: [] },
     ...{ chosenNote: { value: null }, opened: [], notices: [], addresses: [], copied: [] },
-    people: [],
+    ...{ people: [], fiches: [], kept: [] },
     disk: { crm: options.crm ?? sample() },
     view: undefined as never,
   };
@@ -123,6 +130,8 @@ export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> 
       return mounted.answer.value;
     },
     error: (error) => mounted.errors.push(error),
+    openFiche: (path) => void mounted.fiches.push(path),
+    unfolded: { load: () => options.unfolded ?? null, store: (raw) => void mounted.kept.push(raw) },
     tab: {
       load: () => options.tab ?? null,
       store: (tab) => void mounted.stored.push(tab),
