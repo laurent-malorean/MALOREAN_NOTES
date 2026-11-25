@@ -12,7 +12,8 @@ const essai =
 export default defineConfig({
   clearScreen: false,
   define: { __ESSAI__: JSON.stringify(essai) },
-  server: { port: 5173, strictPort: true },
+  // fs.allow : Vitest écrit les captures d'écran d'un test en échec dans build/vitest, hors de ui/.
+  server: { port: 5173, strictPort: true, fs: { allow: [".", "../build/vitest"] } },
   // Tout ce que les outils fabriquent va dans build/ à la racine du dépôt, jamais à côté du code (fiche 0055).
   build: { target: "safari16", outDir: "../build/ui-dist", emptyOutDir: true },
   test: {
