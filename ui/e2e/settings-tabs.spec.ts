@@ -42,7 +42,9 @@ test("change d'onglet à la souris et au clavier, et rouvre le dernier onglet ou
   await expect(tab("Claude")).toHaveAttribute("aria-selected", "true");
   await expect(tab("Claude")).toBeFocused();
   await expect(
-    settings.getByRole("combobox", { name: "Modifications après une lecture du web" }),
+    settings.getByRole("combobox", {
+      name: "Après avoir lu une page web, Claude doit-il demander avant de modifier mes notes ?",
+    }),
   ).toBeVisible();
   await page.keyboard.press("End");
   await expect(tab("Brancher une IA")).toHaveAttribute("aria-selected", "true");

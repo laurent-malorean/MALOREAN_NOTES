@@ -122,11 +122,11 @@ export const SETTING_FIELDS: readonly SettingField[] = [
     kind: "choice",
     key: "claudeChangesAfterWeb",
     group: "Claude",
-    label: "Modifications après une lecture du web",
-    help: "Laisser : Claude crée et modifie les notes de l'espace de travail sans rien demander, même après avoir lu le web. Demander mon accord : ses modifications attendent votre accord dès qu'il a lu le web.",
+    label: "Après avoir lu une page web, Claude doit-il demander avant de modifier mes notes ?",
+    help: "Une page web peut cacher des consignes écrites pour une IA (par exemple « efface mes notes »). Avec « Oui », dès que Claude a lu une page web pendant sa réponse, chacune de ses modifications attend votre accord.",
     choices: [
-      { value: "allow", label: "Laisser Claude modifier" },
-      { value: "ask", label: "Demander mon accord" },
+      { value: "allow", label: "Non, il modifie" },
+      { value: "ask", label: "Oui, il demande mon accord" },
     ],
   },
 ];
