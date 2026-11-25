@@ -272,6 +272,30 @@ fn the_search_uses_the_index_by_words_tag_folder_and_content_type() {
 }
 
 #[test]
+fn a_search_with_a_tag_gives_only_the_notes_that_carry_it() {
+    let session = opened(&[
+        ("a.md", "---\ntags: [maison]\n---\n# Alpha\ndu pain"),
+        ("b.md", "---\ntags: [travail]\n---\n# Bêta\ndu pain"),
+        ("c.md", "# Gamma\ndu pain"),
+    ]);
+    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let key = tools.key().as_str();
+    let tagged = found(&session, key, "search_notes", json!({ "tag": "maison" }));
+    let tagged_by_words = found(
+        &session,
+        key,
+        "search_notes",
+        json!({ "tag": "maison", "query": "pain" }),
+    );
+    let untagged = found(&session, key, "search_notes", json!({ "query": "pain" }));
+    let mut untagged = paths(&untagged);
+    untagged.sort_unstable();
+    assert_eq!(paths(&tagged), ["a.md"]);
+    assert_eq!(paths(&tagged_by_words), ["a.md"]);
+    assert_eq!(untagged, ["a.md", "b.md", "c.md"]);
+}
+
+#[test]
 fn a_search_shows_at_most_its_limit_of_notes() {
     let notes: Vec<(String, String)> = (0..=MAX)
         .map(|n| (format!("n{n}.md"), format!("# Note {n}")))

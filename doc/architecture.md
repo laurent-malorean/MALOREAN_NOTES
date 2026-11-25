@@ -159,6 +159,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0046-calcul-du-sens-en-arriere-plan-et-commandes.md` | Calcul du sens en arrière-plan et commandes : un travailleur unique par session, deux événements (`meaning-progress`, `model-download`), huit commandes, une commande de recherche à part, l'outil `search_by_meaning`, index de mots et de sens ouverts ensemble |
 | `0055-un-dossier-pour-le-genere.md` | Un dossier pour le généré : tout ce que les outils fabriquent va dans `build/` à la racine, jamais à côté du code ; `.gitignore` n'a plus qu'une ligne pour cela |
 | `0056-brancher-une-ia.md` | Brancher une IA : une clé de branchement stable et révocable, une prise locale permanente à chemin fixe tant qu'une clé existe, une commande de branchement (`--brancher`), les mêmes outils que la colonne Claude Code ; aucun port réseau |
+| `0057-crm-domaine.md` | CRM : le domaine lit et écrit les fiches (CRM, entreprises, personnes, actions, projets) geste par geste, sans perdre ce que l'utilisateur a écrit ; calculs de vue (Kanban, semaine) purs ; module `domain::crm` à part |
 
 ## Construire l'application (`.app`)
 

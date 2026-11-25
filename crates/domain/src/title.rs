@@ -108,9 +108,39 @@ pub fn displayed_title_of_note(content: &str, name: &FileName) -> String {
     }
 }
 
+/// Où commence ce qui suit la ligne du titre : juste après son retour à la ligne ; sans titre, au
+/// début du corps, après l'en-tête.
+pub(crate) fn text_start(content: &str) -> usize {
+    let (_, body) = front_matter::split(content);
+    let head = content.len() - body.len();
+    let Some(line) = title_line(body) else {
+        return head;
+    };
+    let end = head + line.start + line.len;
+    let rest = &content[end..];
+    let line_break = ["\r\n", "\n", "\r"]
+        .into_iter()
+        .find(|b| rest.starts_with(b))
+        .map_or(0, str::len);
+    end + line_break
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_text_after_the_title_starts_after_its_line_break() {
+        let after = |content: &str| content[text_start(content)..].to_owned();
+        assert_eq!(after("# T\ntexte"), "texte");
+        assert_eq!(after("# T\r\ntexte"), "texte");
+        assert_eq!(after("# T\n\ntexte"), "\ntexte");
+        assert_eq!(after("---\na: 1\n---\n# T\ntexte"), "texte");
+        assert_eq!(after("avant\n# T\ntexte"), "texte");
+        assert_eq!(after("# T"), "");
+        assert_eq!(after("---\na: 1\n---\nsans titre\n"), "sans titre\n");
+        assert_eq!(after("sans titre"), "sans titre");
+    }
 
     fn displayed(content: &str, name: &str) -> String {
         displayed_title_of_note(content, &FileName::parse(name).unwrap())
