@@ -6,7 +6,16 @@ import type { CrmActionDraftItem, CrmItem } from "../../bridge";
 import { NO_FILTERS } from "../../state/crm";
 import type { Scenario, Trial } from "../runner";
 import { until } from "../wait";
-import { type Env, centreOf, find, findAll, notesFolder, readDisk, rectOf } from "./env";
+import {
+  type Env,
+  centreOf,
+  find,
+  findAll,
+  notesFolder,
+  readDisk,
+  rectOf,
+  shownMessages,
+} from "./env";
 
 const WAIT = 20_000;
 /** La largeur de la fenêtre d'une action, au plus (spécification § 8). */
@@ -107,10 +116,18 @@ async function actionScenario(env: Env, trial: Trial): Promise<void> {
 }
 
 /** Un CRM sans personne : « + Ajouter une action » ouvre la fenêtre, « Enregistrer » crée le fichier. */
+/** Ce que le CRM contient et ce que la fenêtre dit, quand l'action créée n'est pas là. */
+async function whatHappened(env: Env, path: string): Promise<string> {
+  const crm: CrmItem = await env.bridge.readCrm(path, NO_FILTERS, null);
+  const titles = crm.actions.map((a) => a.title).join(", ");
+  return `actions : [${titles}] ; messages : ${shownMessages()}`;
+}
+
 async function creationScenario(env: Env, trial: Trial): Promise<void> {
   const { path } = await env.bridge.createCrm("", "Essai création");
   env.open(path);
-  await until("le Kanban", () => find(".crm-board"), WAIT);
+  // Le CRM d'avant a encore son Kanban : celui-ci est le bon quand il dit qu'il n'a aucune action.
+  await until("le Kanban du nouveau CRM", () => find(".crm-empty"), WAIT);
   const add = find<HTMLButtonElement>('.crm-column[data-status="TODO"] .crm-add-action');
   if (add === null) throw new Error("« + Ajouter une action » absent");
   add.click();
@@ -142,7 +159,7 @@ async function creationScenario(env: Env, trial: Trial): Promise<void> {
   trial.check(
     "« Enregistrer » crée le fichier de l'action sur le disque",
     /statut:\s*TODO/.test(text(file)),
-    text(file).slice(0, 120),
+    text(file).slice(0, 120) || (await whatHappened(env, path)),
   );
   await until("la fenêtre fermée", () => (panel() === null ? true : null), WAIT).catch(() => null);
   trial.check("la fenêtre se ferme une fois l'action créée", panel() === null, "");
