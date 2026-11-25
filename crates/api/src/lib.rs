@@ -11,13 +11,14 @@ mod session;
 pub use dto::{
     ActionKindItem, AgentStateItem, AppMenu, AssistantStatus, AttachedFile, CanvasArrowItem,
     CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem, ChosenFolder, ClaudeEventItem,
-    ClaudeModelItem, ClaudeStatusItem, ContentTypeItem, DifferenceItem, DifferenceKind, EffortItem,
-    EntryItem, ExcerptPartItem, ExportFile, ExportFormatItem, IndexOverviewItem, LinkingNoteItem,
-    MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, MenuEntryItem,
-    MenuRoleItem, MindMapItem, MindNodeItem, ModelDownloadItem, ModelOverviewItem, NoteContent,
-    NoteListItem, NoteOrderItem, PlaceItem, ProposalItem, SaveResult, SavedNote, SearchResultItem,
-    StandardItem, TagItem, TrashInfo, TrashedNoteItem, TurnSettingsItem, VersionItem,
-    WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem, WritingActionItem,
+    ClaudeModelItem, ClaudeStatusItem, ConnectionInfo, ConnectionKeyItem, ContentTypeItem,
+    DifferenceItem, DifferenceKind, EffortItem, EntryItem, ExcerptPartItem, ExportFile,
+    ExportFormatItem, IndexOverviewItem, LinkingNoteItem, MeaningOverviewItem, MeaningProgressItem,
+    MeaningSearchItem, MeaningUseItem, MenuEntryItem, MenuRoleItem, MindMapItem, MindNodeItem,
+    ModelDownloadItem, ModelOverviewItem, NoteContent, NoteListItem, NoteOrderItem, PlaceItem,
+    ProposalItem, SaveResult, SavedNote, SearchResultItem, StandardItem, TagItem, TrashInfo,
+    TrashedNoteItem, TurnSettingsItem, VersionItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
+    WorkspaceNoteItem, WritingActionItem,
 };
 pub use error::ApiError;
 pub use session::{AppScreen, MeaningEvents, Session};

@@ -1,6 +1,7 @@
 //! Brancher une IA, jouée par le protocole sur des faux : la clé, la prise, la révocation et les
 //! outils offerts (fiche 0056).
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use application::testing::{
@@ -33,6 +34,7 @@ fn fixture_with(notes: &[(&str, &str)], open_workspace: bool) -> Fixture {
         keys.clone(),
         Arc::new(CountingSecretMaker::default()),
         socket.clone(),
+        PathBuf::from("/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes"),
     );
     if open_workspace {
         session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
@@ -243,6 +245,7 @@ fn a_key_that_could_not_be_erased_leaves_the_socket_open_and_the_key_valid() {
         Arc::new(Stuck(InMemoryConnectionKeys::default())),
         Arc::new(CountingSecretMaker::default()),
         socket.clone(),
+        PathBuf::from("/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes"),
     );
     let key = session.create_connection_key().unwrap();
 
@@ -390,4 +393,37 @@ fn an_ai_connected_on_a_workspace_that_is_replaced_by_another_follows_the_open_o
     let viewed = call(&session, key.secret(), "list_tags", &json!({}));
 
     assert_eq!(viewed["result"]["isError"], false);
+}
+
+#[test]
+fn without_a_key_the_connection_has_nothing_to_show() {
+    let Fixture { session, .. } = fixture();
+
+    assert_eq!(session.connection_info().unwrap().key, None);
+}
+
+#[test]
+fn with_a_key_the_connection_shows_it_with_its_day_and_the_blocks_to_paste() {
+    let Fixture { session, .. } = fixture();
+    let key = session.create_connection_key().unwrap();
+
+    let shown = session.connection_info().unwrap().key.unwrap();
+
+    assert_eq!(shown.secret, key.secret());
+    assert_eq!(shown.created_on, "16 novembre 2026");
+    let program = "/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes";
+    assert!(shown.claude_config.contains(program));
+    assert!(shown.claude_config.contains(key.secret()));
+    assert!(shown.codex_config.starts_with("[mcp_servers.malorean]\n"));
+    assert!(shown.codex_config.contains(key.secret()));
+}
+
+#[test]
+fn after_a_revocation_the_connection_shows_no_key_again() {
+    let Fixture { session, .. } = fixture();
+    session.create_connection_key().unwrap();
+
+    session.revoke_connection_key().unwrap();
+
+    assert_eq!(session.connection_info().unwrap().key, None);
 }

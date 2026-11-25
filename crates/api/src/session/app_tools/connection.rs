@@ -3,6 +3,7 @@
 //! d'usage que pour la colonne Claude Code ; ce qui change, c'est la clé (stable, révocable) et
 //! l'absence de tour : les outils visent l'espace de travail ouvert au moment de l'appel.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use application::use_cases::{CreateConnectionKey, ReadConnectionKey, RevokeConnectionKey};
@@ -10,37 +11,43 @@ use application::{AppError, ConnectionKeys, ConnectionSocket, SecretMaker};
 use domain::connection_key::ConnectionKey;
 use serde_json::Value;
 
+mod configuration;
+
 use super::{ToolsScope, mcp};
-use crate::{ApiError, Session};
+use crate::{ApiError, ConnectionInfo, ConnectionKeyItem, Session};
 
 /// Ce que l'application répond à une demande sans clé de branchement valable.
 const CONNECTION_KEY_REFUSED: &str = "clé refusée : cette clé de branchement n'existe pas ou a \
      été révoquée";
 
-/// Ce qu'il faut pour brancher une IA : où garder la clé, d'où tirer son secret, et la prise qui
-/// la reçoit.
+/// Ce qu'il faut pour brancher une IA : où garder la clé, d'où tirer son secret, la prise qui la
+/// reçoit, et le programme de l'application, que l'IA lance (la commande de branchement).
 #[derive(Debug, Clone)]
 pub(in crate::session) struct Connection {
     keys: Arc<dyn ConnectionKeys>,
     secrets: Arc<dyn SecretMaker>,
     socket: Arc<dyn ConnectionSocket>,
+    program: PathBuf,
 }
 
 impl Session {
     /// La même session, où l'on peut brancher une IA extérieure : `keys` garde la clé de
     /// branchement, `secrets` en tire le secret, `socket` est la prise qui n'existe que tant que
-    /// la clé existe. Sans cela, aucune IA ne peut être branchée.
+    /// la clé existe, `program` le programme de l'application, que l'IA lance. Sans cela, aucune IA
+    /// ne peut être branchée.
     #[must_use]
     pub fn with_connection(
         mut self,
         keys: Arc<dyn ConnectionKeys>,
         secrets: Arc<dyn SecretMaker>,
         socket: Arc<dyn ConnectionSocket>,
+        program: PathBuf,
     ) -> Self {
         self.connection = Some(Connection {
             keys,
             secrets,
             socket,
+            program,
         });
         self
     }
@@ -59,6 +66,25 @@ impl Session {
     /// de la clé illisible.
     pub fn connection_key(&self) -> Result<Option<ConnectionKey>, ApiError> {
         Ok(ReadConnectionKey::new(&*self.connection()?.keys).execute()?)
+    }
+
+    /// Où en est le branchement : la clé de branchement, s'il y en a une, avec ce qu'il faut coller
+    /// dans Claude et dans Codex pour les brancher.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué : brancher une IA indisponible, fichier
+    /// de la clé illisible.
+    pub fn connection_info(&self) -> Result<ConnectionInfo, ApiError> {
+        let program = &self.connection()?.program;
+        Ok(ConnectionInfo {
+            key: self.connection_key()?.map(|key| ConnectionKeyItem {
+                secret: key.secret().to_owned(),
+                created_on: key.created_on(),
+                claude_config: configuration::claude_config(program, &key),
+                codex_config: configuration::codex_config(program, &key),
+            }),
+        })
     }
 
     /// Crée la clé de branchement et ouvre la prise de branchement ; s'il y a déjà une clé, c'est

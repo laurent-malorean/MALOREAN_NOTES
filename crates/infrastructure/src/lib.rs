@@ -35,7 +35,7 @@ pub use json_preferences::JsonPreferences;
 pub use local_socket::{LineAnswer, LocalSocket, SocketPlace};
 #[cfg(target_os = "macos")]
 pub use mac_clipboard::MacClipboard;
-pub use mcp_relay::{RELAY_OPTION, relay};
+pub use mcp_relay::{CONNECT_OPTION, RELAY_OPTION, connect, relay};
 pub use model_folder::ModelFolder;
 pub use permanent_socket::{PermanentSocket, connection_folder, connection_socket};
 pub use sqlite_index::{FORMAT_VERSION, SqliteIndex, SqliteIndexes};

@@ -11,10 +11,10 @@ use application::{
     WorkspaceLocation,
 };
 use infrastructure::{
-    AppToolsRelay, AppleWritingAssistant, ClaudeCodeCli, FsConnectionKeys, FsExportStore,
-    FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences, MacClipboard, ModelFolder,
-    PermanentSocket, RELAY_OPTION, SocketPlace, SqliteIndexes, SystemClock, SystemSecretMaker,
-    claude_folders, relay,
+    AppToolsRelay, AppleWritingAssistant, CONNECT_OPTION, ClaudeCodeCli, FsConnectionKeys,
+    FsExportStore, FsHistories, FsWorkspaceOpener, FsWorkspaceWatcher, JsonPreferences,
+    MacClipboard, ModelFolder, PermanentSocket, RELAY_OPTION, SocketPlace, SqliteIndexes,
+    SystemClock, SystemSecretMaker, claude_folders, connect, relay,
 };
 use tauri::{Manager, RunEvent};
 
@@ -43,6 +43,24 @@ fn run_relay(arguments: &[OsString]) -> ! {
         std::io::stdout(),
     );
     std::process::exit(i32::from(relayed.is_err()))
+}
+
+/// Lancée par une IA extérieure avec `--brancher <clé>`, l'application n'est que la commande de
+/// branchement (fiche 0056) : comme le relais, rien d'autre ne démarre ni ne s'écrit sur sa sortie.
+fn run_connect(arguments: &[OsString]) -> ! {
+    let (Some(home), Some(key)) = (
+        env::var_os("HOME"),
+        arguments.get(2).and_then(|key| key.to_str()),
+    ) else {
+        std::process::exit(2)
+    };
+    let connected = connect(
+        Path::new(&home),
+        key,
+        std::io::stdin().lock(),
+        std::io::stdout(),
+    );
+    std::process::exit(i32::from(connected.is_err()))
 }
 
 /// Claude Code, qui offre les outils de l'application par le relais (le programme de
@@ -107,6 +125,7 @@ fn with_connection(
         Arc::new(keys),
         Arc::new(SystemSecretMaker),
         Arc::clone(socket) as Arc<dyn ConnectionSocket>,
+        env::current_exe()?,
     ))
 }
 
@@ -193,6 +212,12 @@ fn main() {
         .is_some_and(|option| option == RELAY_OPTION)
     {
         run_relay(&arguments);
+    }
+    if arguments
+        .get(1)
+        .is_some_and(|option| option == CONNECT_OPTION)
+    {
+        run_connect(&arguments);
     }
     tracing_subscriber::fmt::init();
     // Les commandes de l'essai de l'application réelle, seulement dans l'application construite pour
