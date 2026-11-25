@@ -81,3 +81,43 @@ impl ConnectionSocket for FakeConnectionSocket {
         self.open.store(false, Ordering::Relaxed);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_fake_socket_is_closed_until_opened_and_closed_again_by_closing() {
+        let socket = FakeConnectionSocket::default();
+        assert!(!socket.is_open());
+
+        socket.open().unwrap();
+        assert!(socket.is_open());
+
+        socket.close();
+        assert!(!socket.is_open());
+    }
+
+    #[test]
+    fn the_fake_socket_refuses_to_open_when_told_to_and_opens_again_when_not() {
+        let socket = FakeConnectionSocket::default();
+        socket.fail_to_open(true);
+
+        assert_eq!(
+            socket.open(),
+            Err(StoreError::Unavailable("prise refusée".to_owned()))
+        );
+        assert!(!socket.is_open());
+
+        socket.fail_to_open(false);
+        socket.open().unwrap();
+        assert!(socket.is_open());
+    }
+
+    #[test]
+    fn the_counting_secrets_follow_each_other() {
+        let secrets = CountingSecretMaker::default();
+        assert_eq!(secrets.secret().unwrap(), "secret-1");
+        assert_eq!(secrets.secret().unwrap(), "secret-2");
+    }
+}
