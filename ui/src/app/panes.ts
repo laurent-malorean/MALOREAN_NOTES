@@ -2,6 +2,7 @@
 import type { Editor } from "../editor/editor";
 import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./canvas-host";
 import { type CrmHostBackend, createCrmHost, hasCrmBackend } from "./crm-host";
+import { linkChooser } from "./link-chooser";
 import type { LinkPickerBackend } from "./link-picker";
 import { imageAddress } from "../editor/image-address";
 import { linkEntry } from "../screens/link-entry";
@@ -65,9 +66,14 @@ function crmOf(deps: PanesDeps) {
 }
 
 /** Ce que le menu des liens d'une colonne demande à Rust ; rien si le pont ne sait pas lister ce qu'on peut lier. */
-function linksOf({ backend }: PanesDeps) {
+function linksOf({ backend, layout, events }: PanesDeps) {
   const { listLinkable } = backend;
-  return listLinkable ? { links: { contents: listLinkable, row: linkEntry } } : {};
+  if (listLinkable === undefined) return {};
+  const row = linkEntry;
+  const choose =
+    layout &&
+    linkChooser({ backend: { listLinkable }, picker: layout.picker, error: events.error });
+  return { links: { contents: listLinkable, row, choose } };
 }
 
 /** Ce qui pose l'éditeur d'une colonne qui vient d'apparaître. */

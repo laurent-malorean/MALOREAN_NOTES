@@ -3,7 +3,7 @@ import type { AttachmentOrigin, EntryItem, NoteListItem } from "../bridge";
 import type { AttachedFile } from "../bridge/generated/AttachedFile";
 import type { LinkingNoteItem } from "../bridge/generated/LinkingNoteItem";
 import { createEditor, type Editor } from "../editor/editor";
-import type { LinkMenuSupport } from "../editor/links/link-menu";
+import type { EditorLinks } from "../editor/links/link-site";
 import type { OpenNoteLink } from "../editor/links/note-links";
 import { lineStart } from "../state/research-notebook";
 import { renderBacklinks } from "./backlinks-view";
@@ -55,7 +55,7 @@ export interface RelatedNotes {
 export interface PaneOptions {
   readonly backend: PaneBackend;
   /** Ce qu'on peut lier, pour le menu des liens sous le curseur ; sans lui, `[[` et `/` n'ouvrent rien. */
-  readonly links?: LinkMenuSupport;
+  readonly links?: EditorLinks;
   readonly events: PaneEvents;
   /** Les notes montrées par toutes les colonnes : lecture, frappe partagée, enregistrement. */
   readonly shared: SharedNotes;

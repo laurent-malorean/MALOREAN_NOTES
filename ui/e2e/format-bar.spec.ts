@@ -82,8 +82,34 @@ test("Gras, Italique et Lien posent leur syntaxe autour de la sélection, qui re
 
   await selectWord(page, "valise");
   await button(page, "Lien").click();
+  await page.getByRole("option", { name: "Une page web" }).click();
   await expect.poll(() => saved(page)).toContain("[valise](");
   expect((await editorSelection(page)).focused).toBe(true);
+});
+
+test("Lien propose « Une note ou un contenu » et « Une page web » ; le texte sélectionné devient le lien", async ({
+  page,
+}) => {
+  await launch(page);
+  await selectWord(page, "sac");
+  await button(page, "Lien").click();
+  await expect(page.getByRole("dialog").getByRole("option")).toHaveText([
+    "Une note ou un contenu",
+    "Une page web",
+  ]);
+  await page.getByRole("option", { name: "Une note ou un contenu" }).click();
+  await page.getByRole("option", { name: /Courses/ }).click();
+  await expect.poll(() => saved(page)).toContain("[[Courses|sac]]");
+  expect((await editorSelection(page)).focused).toBe(true);
+});
+
+test("Lien fonctionne aussi sans sélection : le lien est écrit au curseur", async ({ page }) => {
+  await launch(page);
+  await page.locator(".cm-content").click();
+  await button(page, "Lien").click();
+  await page.getByRole("option", { name: "Une note ou un contenu" }).click();
+  await page.getByRole("option", { name: /Courses/ }).click();
+  await expect.poll(() => saved(page)).toContain("[[Courses]]");
 });
 
 test("les titres, les listes et la date du jour visent la ligne du curseur, à la souris seule", async ({

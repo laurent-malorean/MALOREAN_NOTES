@@ -30,6 +30,12 @@ export async function chooseLinkable(
         resolve(item);
       },
     });
-    picker.addEventListener("close", () => chosen || resolve(null), { once: true });
+    // Un « close » encore en route de la fenêtre qu'on vient de refermer n'est pas celui-ci.
+    const closed = () => {
+      if (picker.open) return;
+      picker.removeEventListener("close", closed);
+      if (!chosen) resolve(null);
+    };
+    picker.addEventListener("close", closed);
   });
 }

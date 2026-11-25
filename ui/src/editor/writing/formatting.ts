@@ -7,7 +7,7 @@ import {
   type EditorState,
   type TransactionSpec,
 } from "@codemirror/state";
-import { type Command, keymap } from "@codemirror/view";
+import { type Command, type EditorView, keymap } from "@codemirror/view";
 import type { FormatCommandId } from "../../state/commands";
 import { commandKeys } from "./command-keys";
 
@@ -143,19 +143,33 @@ const FORMATTING: Readonly<Record<FormatCommandId, (state: EditorState) => Trans
   "numbered-list": (s) => toggleList(s, "numbered"),
 };
 
-/** La commande de mise en forme, comme une frappe : signalée, annulable, le texte gardé en vue. */
+/** Pose la syntaxe d'un lien vers une page web sur la sélection, comme une frappe. */
+export function writeWebLink(view: EditorView): void {
+  view.dispatch(view.state.update(makeLink(view.state), { scrollIntoView: true }));
+}
+
+/**
+ * La commande de mise en forme, comme une frappe : signalée, annulable, le texte gardé en vue.
+ * « Lien » laisse `chooseLink` demander ce qu'on lie quand l'application le sait (un contenu ou
+ * une page web) ; sans lui, c'est un lien vers une page web.
+ */
 export const formatCommand =
-  (id: FormatCommandId): Command =>
+  (id: FormatCommandId, chooseLink?: (view: EditorView) => void): Command =>
   (view) => {
-    view.dispatch(view.state.update(FORMATTING[id](view.state), { scrollIntoView: true }));
+    if (id === "insert-link" && chooseLink) chooseLink(view);
+    else view.dispatch(view.state.update(FORMATTING[id](view.state), { scrollIntoView: true }));
     return true;
   };
 
 /** Cmd+B gras, Cmd+I italique, Cmd+K lien, Cmd+1 à 3 titres, Cmd+Maj+8 puces, Cmd+Maj+7 numéros. */
-export const formattingShortcuts = keymap.of(
-  commandKeys(
-    Object.fromEntries(
-      (Object.keys(FORMATTING) as FormatCommandId[]).map((id) => [id, formatCommand(id)]),
+export const formattingShortcuts = (chooseLink?: (view: EditorView) => void) =>
+  keymap.of(
+    commandKeys(
+      Object.fromEntries(
+        (Object.keys(FORMATTING) as FormatCommandId[]).map((id) => [
+          id,
+          formatCommand(id, chooseLink),
+        ]),
+      ),
     ),
-  ),
-);
+  );

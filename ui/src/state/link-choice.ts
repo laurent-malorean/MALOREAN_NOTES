@@ -43,3 +43,12 @@ export function writtenLink(item: LinkableItem, shown = ""): string {
   const text = shown.trim();
   return text === "" || text === item.link ? `[[${item.link}]]` : `[[${item.link}|${text}]]`;
 }
+
+/** Ce qu'un lien peut viser : un contenu de l'espace de travail, ou une page web. */
+export type LinkKind = "content" | "web";
+
+/** Les deux choix du bouton « Lien », dans l'ordre. */
+export const LINK_KINDS: readonly { readonly kind: LinkKind; readonly label: string }[] = [
+  { kind: "content", label: "Une note ou un contenu" },
+  { kind: "web", label: "Une page web" },
+];
