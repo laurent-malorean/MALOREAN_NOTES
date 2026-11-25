@@ -4,15 +4,7 @@ import tseslint from "typescript-eslint";
 // Mêmes limites qu'en Rust (doc/code.md).
 export default tseslint.config(
   {
-    ignores: [
-      "dist/",
-      "dist-essai/",
-      "node_modules/",
-      "src/bridge/generated/",
-      "test-results/",
-      "playwright-report/",
-      "coverage/",
-    ],
+    ignores: ["node_modules/", "src/bridge/generated/"],
   },
   js.configs.recommended,
   ...tseslint.configs.strict,

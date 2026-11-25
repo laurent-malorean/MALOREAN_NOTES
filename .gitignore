@@ -3,25 +3,19 @@ tmp/
 CLAUDE.local.md
 .DS_Store
 target/
+# Tout ce que les outils fabriquent (interface construite, couverture, rapports, caches) : un seul dossier
+/build/
 crates/app/binaries/
 node_modules/
-ui/dist/
 todo.md 
 done.md
-ui/test-results/
-ui/playwright-report/
-ui/coverage/
 mutants.out*/
-ui/reports/
-ui/.stryker-tmp/
-ui/.vitest/
 stats.md
 
 
 _DIST/
 # Un dossier de travail par fonction (git worktree), jamais versionné
 worktrees/
-ui/dist-essai/
 
 # Copies locales d un dépôt privé (jamais commitées)
 data_fake_socio/

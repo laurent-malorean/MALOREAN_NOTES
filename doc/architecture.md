@@ -15,6 +15,7 @@ crates/
   infrastructure/     stockage Markdown, historique des versions, index SQLite, fichiers exportés, presse-papiers, assistant d'écriture (assistant Swift du modèle d'Apple, swift/), pilote de Claude Code (outil `claude` installé), prise locale et relais des outils de l'application, système macOS, horloge réelle, journal, moteur de sens (modèle E5 exécuté par `candle`), modèles de sens téléchargés (dossier `models/`) et index de sens (segments et vecteurs, dans le fichier de l'index)
   api/                pont Tauri : commandes et événements, types exportés en TypeScript
   app/                binaire Tauri : assemblage, configuration, permissions, programme annexe (assistant Swift) ; lancé avec `--relais-mcp`, il n'est que le relais des outils de l'application
+build/                tout ce que les outils fabriquent (jamais versionné, un seul dossier, fiche 0055) : ui-dist (interface construite), ui-dist-essai, coverage, reports (mutation de l'interface, résultat incrémental de Stryker), test-results, playwright-report, stryker-tmp, vitest. `ui/` ne contient que le code et ses réglages (et `node_modules/`, que npm impose) ; Rust écrit dans `target/` (Cargo)
 ui/                   interface TypeScript (Vite)
   src/main.ts         assemblage : crée chaque partie et les relie, sans logique
   src/app/            un module par domaine, branché par main.ts : colonnes et onglets,
@@ -153,13 +154,14 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0041-cahier-de-recherche.md` | Cahier de recherche : une note `type: cahier-de-recherche` où Rust seul ajoute des entrées datées (titres d'année, de mois, de jour) ; lecture seule dans l'éditeur, zone de saisie en bas de la page (fiche 0049), pas de correction ; chaque entrée indexée à part avec son cahier pour conteneur (format de l'index 4) ; outil `add_entry` pour Claude |
 | `0045-cas-d-usage-de-la-recherche-par-le-sens.md` | Cas d'usage de la recherche par le sens : un index de mots décoré pour tenir les segments à jour, calcul synchrone par lots avec arrêt, mots seuls avec la raison quand le sens manque, modèle choisi dans les préférences |
 | `0046-calcul-du-sens-en-arriere-plan-et-commandes.md` | Calcul du sens en arrière-plan et commandes : un travailleur unique par session, deux événements (`meaning-progress`, `model-download`), huit commandes, une commande de recherche à part, l'outil `search_by_meaning`, index de mots et de sens ouverts ensemble |
+| `0055-un-dossier-pour-le-genere.md` | Un dossier pour le généré : tout ce que les outils fabriquent va dans `build/` à la racine, jamais à côté du code ; `.gitignore` n'a plus qu'une ligne pour cela |
 
 ## Construire l'application (`.app`)
 
 Deux commandes, depuis la racine du projet (Tauri ne trouve pas sa configuration `crates/app/tauri.conf.json` depuis `ui/`, et sa commande d'interface par défaut cherche un `package.json` au mauvais endroit) :
 
 ```
-(cd ui && npm run build)
+(cd ui && npm run build)   # écrit l'interface dans build/ui-dist
 ui/node_modules/.bin/tauri build --bundles app --config '{"build":{"beforeBuildCommand":""}}'
 ```
 
@@ -167,7 +169,7 @@ Le résultat est `target/release/bundle/macos/MALOREAN Notes.app` (sans `.dmg`, 
 
 ### Construire l'application d'essai
 
-`scripts/essai-application.sh` fait la même construction avec un autre identifiant (`com.malorean.notes.essai`, nom « MALOREAN Notes Essai »), la fonctionnalité Cargo `essai` et l'interface construite avec `MALOREAN_ESSAI_BUILD=1` (dossier `ui/dist-essai`) ; voir la fiche 0054. L'application livrée ne contient ni ce code ni ses commandes.
+`scripts/essai-application.sh` fait la même construction avec un autre identifiant (`com.malorean.notes.essai`, nom « MALOREAN Notes Essai »), la fonctionnalité Cargo `essai` et l'interface construite avec `MALOREAN_ESSAI_BUILD=1` (dossier `build/ui-dist-essai`) ; voir la fiche 0054. L'application livrée ne contient ni ce code ni ses commandes.
 
 ## Décisions ouvertes
 
