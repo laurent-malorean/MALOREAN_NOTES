@@ -1,6 +1,8 @@
 //! Les espaces de travail connus : un nom et un dossier chacun, et celui qui est ouvert.
 //!
 //! Deux espaces de travail n'ont jamais le même nom (majuscules ignorées) ni le même dossier.
+//! Chacun est autorisé ou non pour les IA (décoché au départ) : une IA branchée ne voit et ne vise
+//! que les espaces autorisés (fiche 0074).
 
 use crate::{AppError, WorkspaceLocation};
 
@@ -49,6 +51,9 @@ pub struct Workspace {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Workspaces {
     list: Vec<Workspace>,
+    /// Pour chaque espace de la liste, dans le même ordre : l'utilisateur l'a-t-il autorisé pour
+    /// les IA ? Décoché au départ.
+    allowed: Vec<bool>,
     active: Option<WorkspaceName>,
 }
 
@@ -69,7 +74,12 @@ impl Workspaces {
         let active = active
             .and_then(|name| list.iter().find(|w| w.name.same_as(&name)))
             .map(|w| w.name.clone());
-        Self { list, active }
+        let allowed = vec![false; list.len()];
+        Self {
+            list,
+            allowed,
+            active,
+        }
     }
 
     /// Les espaces de travail, dans l'ordre où on les a ajoutés.
@@ -112,6 +122,7 @@ impl Workspaces {
         self.refuse_taken_name(&workspace.name, None)?;
         self.active = Some(workspace.name.clone());
         self.list.push(workspace);
+        self.allowed.push(false);
         Ok(self)
     }
 
@@ -165,6 +176,78 @@ impl Workspaces {
             return Err(AppError::OpenWorkspaceKept(name.as_str().to_owned()));
         }
         self.list.remove(index);
+        self.allowed.remove(index);
+        Ok(self)
+    }
+
+    /// La même liste, où les espaces qui portent ces noms sont autorisés pour les IA ; un nom
+    /// inconnu est oublié. Sert à relire ce qui a été gardé.
+    #[must_use]
+    pub fn with_allowed(mut self, names: &[WorkspaceName]) -> Self {
+        for (workspace, allowed) in self.list.iter().zip(&mut self.allowed) {
+            *allowed = names.iter().any(|name| name.same_as(&workspace.name));
+        }
+        self
+    }
+
+    /// L'espace de travail `name` est-il autorisé pour les IA ? Faux s'il est inconnu.
+    #[must_use]
+    pub fn is_allowed(&self, name: &WorkspaceName) -> bool {
+        self.list
+            .iter()
+            .zip(&self.allowed)
+            .any(|(workspace, allowed)| *allowed && workspace.name.same_as(name))
+    }
+
+    /// Les espaces de travail autorisés pour les IA, dans l'ordre de la liste.
+    #[must_use]
+    pub fn allowed(&self) -> Vec<&Workspace> {
+        self.list
+            .iter()
+            .zip(&self.allowed)
+            .filter_map(|(workspace, allowed)| allowed.then_some(workspace))
+            .collect()
+    }
+
+    /// L'espace de travail autorisé pour les IA qui porte ce nom. Un nom inconnu et un nom non
+    /// autorisé donnent la même erreur : elle ne dit pas qu'un espace non autorisé existe.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotAllowed`] avec les noms des espaces autorisés.
+    pub fn allowed_named(&self, name: &WorkspaceName) -> Result<&Workspace, AppError> {
+        self.allowed()
+            .into_iter()
+            .find(|workspace| workspace.name.same_as(name))
+            .ok_or_else(|| AppError::WorkspaceNotAllowed {
+                name: name.as_str().to_owned(),
+                allowed: self
+                    .allowed()
+                    .iter()
+                    .map(|workspace| workspace.name.as_str().to_owned())
+                    .collect(),
+            })
+    }
+
+    /// La même liste, l'espace de travail `name` autorisé pour les IA.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotFound`] si aucun ne porte ce nom.
+    pub fn allowing(mut self, name: &WorkspaceName) -> Result<Self, AppError> {
+        let index = self.index_of(name)?;
+        self.allowed[index] = true;
+        Ok(self)
+    }
+
+    /// La même liste, l'espace de travail `name` plus autorisé pour les IA.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotFound`] si aucun ne porte ce nom.
+    pub fn forbidding(mut self, name: &WorkspaceName) -> Result<Self, AppError> {
+        let index = self.index_of(name)?;
+        self.allowed[index] = false;
         Ok(self)
     }
 
@@ -354,5 +437,119 @@ mod tests {
         let workspaces =
             Workspaces::from_saved(vec![workspace("Notes", "/notes")], Some(name("NOTES")));
         assert_eq!(workspaces.active(), Some(&workspace("Notes", "/notes")));
+    }
+
+    #[test]
+    fn no_workspace_is_allowed_at_first() {
+        let workspaces = two();
+        assert!(workspaces.allowed().is_empty());
+        assert!(!workspaces.is_allowed(&name("Notes")));
+        assert!(!workspaces.is_allowed(&name("Perso")));
+    }
+
+    #[test]
+    fn an_allowed_workspace_is_found_ignoring_case_and_listed_in_the_order_of_the_list() {
+        let workspaces = two()
+            .allowing(&name("travail"))
+            .unwrap()
+            .allowing(&name("NOTES"))
+            .unwrap();
+        assert!(workspaces.is_allowed(&name("notes")));
+        assert!(workspaces.is_allowed(&name("TRAVAIL")));
+        let allowed: Vec<_> = workspaces
+            .allowed()
+            .iter()
+            .map(|w| w.name.as_str())
+            .collect();
+        assert_eq!(allowed, ["Notes", "Travail"]);
+    }
+
+    #[test]
+    fn a_forbidden_workspace_is_no_longer_allowed_and_the_others_stay() {
+        let workspaces = two()
+            .allowing(&name("Notes"))
+            .unwrap()
+            .allowing(&name("Travail"))
+            .unwrap()
+            .forbidding(&name("notes"))
+            .unwrap();
+        assert!(!workspaces.is_allowed(&name("Notes")));
+        assert!(workspaces.is_allowed(&name("Travail")));
+    }
+
+    #[test]
+    fn allowing_or_forbidding_an_unknown_workspace_is_refused() {
+        assert_eq!(
+            two().allowing(&name("Perso")),
+            Err(AppError::WorkspaceNotFound("Perso".into()))
+        );
+        assert_eq!(
+            two().forbidding(&name("Perso")),
+            Err(AppError::WorkspaceNotFound("Perso".into()))
+        );
+    }
+
+    #[test]
+    fn an_allowed_workspace_is_found_by_name_and_another_is_refused_with_the_allowed_names() {
+        let workspaces = two().allowing(&name("Travail")).unwrap();
+        assert_eq!(
+            workspaces.allowed_named(&name("travail")),
+            Ok(&workspace("Travail", "/travail"))
+        );
+        let refused = AppError::WorkspaceNotAllowed {
+            name: "Notes".into(),
+            allowed: vec!["Travail".into()],
+        };
+        assert_eq!(workspaces.allowed_named(&name("Notes")), Err(refused));
+        let unknown = AppError::WorkspaceNotAllowed {
+            name: "Perso".into(),
+            allowed: vec!["Travail".into()],
+        };
+        assert_eq!(workspaces.allowed_named(&name("Perso")), Err(unknown));
+    }
+
+    #[test]
+    fn a_workspace_added_after_an_allowed_one_is_not_allowed() {
+        let workspaces = two()
+            .allowing(&name("Notes"))
+            .unwrap()
+            .added(workspace("Perso", "/perso"))
+            .unwrap();
+        assert!(workspaces.is_allowed(&name("Notes")));
+        assert!(!workspaces.is_allowed(&name("Perso")));
+    }
+
+    #[test]
+    fn a_renamed_workspace_keeps_its_box_and_a_removed_one_leaves_the_others_untouched() {
+        let workspaces = two()
+            .allowing(&name("Notes"))
+            .unwrap()
+            .renamed(&name("Notes"), name("Perso"))
+            .unwrap();
+        assert!(workspaces.is_allowed(&name("Perso")));
+        assert!(!workspaces.is_allowed(&name("Notes")));
+        let rest = two()
+            .allowing(&name("Travail"))
+            .unwrap()
+            .allowing(&name("Notes"))
+            .unwrap()
+            .forbidding(&name("Notes"))
+            .unwrap()
+            .removed(&name("Notes"))
+            .unwrap();
+        assert!(rest.is_allowed(&name("Travail")));
+        assert_eq!(rest.allowed().len(), 1);
+    }
+
+    #[test]
+    fn saved_allowed_names_are_marked_ignoring_case_and_unknown_names_are_forgotten() {
+        let workspaces = two().with_allowed(&[name("TRAVAIL"), name("Perso")]);
+        let allowed: Vec<_> = workspaces
+            .allowed()
+            .iter()
+            .map(|w| w.name.as_str())
+            .collect();
+        assert_eq!(allowed, ["Travail"]);
+        assert!(!workspaces.is_allowed(&name("Notes")));
     }
 }

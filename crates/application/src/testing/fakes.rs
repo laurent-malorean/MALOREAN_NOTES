@@ -1,13 +1,13 @@
 //! Faux stockage en mémoire, qui se comporte comme le vrai (voir `contract`).
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use domain::{AttachmentName, FileName, Folder, MeaningModel, Modified, Moment, NotePath};
 
 use crate::{
     AttachmentLocation, Clock, IndexedNote, NoteStamp, NoteStore, Preferences, StoreError,
-    StoredNote, TrashContents, WorkspaceLocation, WorkspaceOpener, Workspaces,
+    StoredNote, TrashContents, Workspaces,
 };
 
 /// Emplacement fictif d'une pièce jointe en mémoire.
@@ -494,26 +494,6 @@ fn stored(name: &NotePath, content: &str, modified: Modified) -> StoredNote {
         path: name.clone(),
         content: content.to_owned(),
         modified,
-    }
-}
-
-/// Ouvre toujours le même espace de travail en mémoire, quel que soit l'emplacement.
-#[derive(Debug)]
-pub struct FakeOpener {
-    store: Arc<InMemoryNoteStore>,
-}
-
-impl FakeOpener {
-    /// Un ouvreur qui rend toujours `store`.
-    #[must_use]
-    pub fn new(store: Arc<InMemoryNoteStore>) -> Self {
-        Self { store }
-    }
-}
-
-impl WorkspaceOpener for FakeOpener {
-    fn open(&self, _location: &WorkspaceLocation) -> Result<Arc<dyn NoteStore>, StoreError> {
-        Ok(self.store.clone())
     }
 }
 

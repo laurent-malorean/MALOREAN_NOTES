@@ -187,3 +187,43 @@ fn choosing_a_model_keeps_the_workspaces_of_an_old_file() {
     );
     assert_eq!(preferences.meaning_model().unwrap(), MeaningModel::Large);
 }
+
+#[test]
+fn a_file_without_the_allowed_field_allows_no_workspace_and_none_is_written_until_one_is_allowed() {
+    let (dir, preferences) = written(
+        r#"{ "workspaces": [{ "name": "Notes", "folder": "/Users/moi/Notes" }], "active": "Notes" }"#,
+    );
+    let workspaces = preferences.workspaces().unwrap();
+    assert!(workspaces.allowed().is_empty());
+
+    preferences.save_workspaces(&workspaces).unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(!text.contains("allowed"), "{text}");
+
+    let name = WorkspaceName::new("Notes").unwrap();
+    preferences
+        .save_workspaces(&workspaces.allowing(&name).unwrap())
+        .unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(text.contains(r#""allowed": true"#), "{text}");
+}
+
+#[test]
+fn an_allowed_workspace_with_an_empty_name_is_skipped_and_choosing_a_model_keeps_the_allowed_ones()
+{
+    let (_dir, preferences) = written(
+        r#"{ "workspaces": [
+            { "name": " ", "folder": "/a", "allowed": true },
+            { "name": "Notes", "folder": "/Users/moi/Notes", "allowed": true },
+            { "name": "Travail", "folder": "/Users/moi/Travail" }
+        ] }"#,
+    );
+    preferences.save_meaning_model(MeaningModel::Large).unwrap();
+    let workspaces = preferences.workspaces().unwrap();
+    let names: Vec<_> = workspaces
+        .allowed()
+        .iter()
+        .map(|w| w.name.as_str().to_owned())
+        .collect();
+    assert_eq!(names, ["Notes"]);
+}

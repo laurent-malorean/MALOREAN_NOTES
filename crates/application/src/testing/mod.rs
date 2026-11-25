@@ -11,6 +11,7 @@ mod fake_clipboard;
 mod fake_connection;
 mod fake_exports;
 mod fake_meaning;
+mod fake_opener;
 mod fake_watcher;
 mod fake_writing;
 mod fakes;
@@ -44,4 +45,5 @@ pub fn indexed(store: &dyn NoteStore) -> MemoryIndex {
     crate::indexed_store::refresh(store, &index).unwrap_or_else(|e| unreachable!("{e:?}"));
     index
 }
-pub use fakes::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
+pub use fake_opener::FakeOpener;
+pub use fakes::{FakePreferences, FixedClock, InMemoryNoteStore};
