@@ -322,3 +322,5 @@ Les mots du projet. Un seul mot par notion, partout (écrans, documents, code, t
 | Jour | `Day` | Une date du calendrier, sans heure, écrite `2026-11-24` ; le jour du Mac est donné par l'horloge, jamais lu par le domaine. |
 | Semaine (CRM) | `Week` | Les sept jours qui commencent un lundi, montrés dans « Ma semaine », avec la colonne « En retard » des actions ouvertes datées d'avant son lundi. |
 | Ajout rapide | `quick-add` (à venir) | La ligne de saisie en bas d'une colonne du Kanban qui crée une action avec son seul titre. |
+| Filtres du Kanban | `Filters`, `CompanyChoice` | La rangée de recherche et de filtres au-dessus des colonnes du Kanban : un mot cherché (titre, description, commentaires), une personne, une entreprise (NODATA comprise), des projets, des étiquettes. Tout s'ajoute : une action n'est montrée que si elle répond à tous ; ils ne changent ni les compteurs des en-têtes ni les autres onglets. |
+| Compteurs | `Tally` | Combien d'actions ouvertes, en retard (en rouge) et à faire aujourd'hui (en orange) compte un ensemble d'actions : une personne, une entreprise, un projet. |

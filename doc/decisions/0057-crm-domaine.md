@@ -16,7 +16,7 @@ Spécification validée : `doc/specs/crm.md`. Un CRM est une note `type: crm` ; 
 - **Le texte d'une action est coupé en parties tel qu'écrit** : seule une partie dont le sens change (description, une liste à cocher, les commentaires) est réécrite ; les autres gardent leur texte. Les lignes qui n'ont pas leur place dans une partie passent à la fin de la description, à la lecture comme à l'écriture.
 - **Les fiches illisibles sont des erreurs typées** (`Unreadable`), jamais des fiches modifiées : le CRM les laisse de côté.
 - **La palette est celle de l'application** : `Color` ne fait que désigner un nom de `mind_map::PALETTE` ; le CRM n'ajoute que les règles de choix (couleur d'étiquette, couleur la moins utilisée).
-- **Les règles de vue sans écran sont dans le domaine** : colonnes du Kanban, ordre des cartes, retard, à faire aujourd'hui, semaine. L'interface les affiche sans les recalculer.
+- **Les règles de vue sans écran sont dans le domaine** : colonnes du Kanban, ordre des cartes, place d'une carte lâchée (`kanban`), retard et à faire aujourd'hui (`Urgency`), filtres (`Filters`), semaine (`Week`), compteurs (`Tally`). L'interface les affiche sans les recalculer.
 
 ## Points tranchés là où la spécification ne dit rien
 
