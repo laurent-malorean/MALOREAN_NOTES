@@ -14,8 +14,14 @@ export type Copyable = "key" | "claude" | "codex";
 export interface ConnectionHandlers {
   create(): void;
   revoke(): void;
-  copy(what: Copyable): void;
+  /** Copie ; rend vrai si c'est fait (le bouton le confirme), faux sinon (l'erreur est dite ailleurs). */
+  copy(what: Copyable): Promise<boolean>;
 }
+
+/** Combien de temps le bouton « Copier » dit « Copié » avant de redevenir « Copier ». */
+export const COPIED_FOR_MS = 2000;
+const COPY = "Copier";
+const COPIED = "✓ Copié";
 
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -36,16 +42,36 @@ function button(text: string, label: string, onClick: () => void): HTMLButtonEle
   return created;
 }
 
+/** Le bouton « Copier » d'un texte : après la copie il passe au vert, « ✓ Copié », puis redevient « Copier ». */
+function copyButton(title: string, copy: () => Promise<boolean>): HTMLButtonElement {
+  const created = button(COPY, `${COPY} : ${title}`, () => {
+    void copy().then((copied) => {
+      if (!copied) return;
+      show(true);
+      setTimeout(() => show(false), COPIED_FOR_MS);
+    });
+  });
+  // Lu à voix haute quand le bouton change de nom.
+  created.setAttribute("aria-live", "polite");
+  const show = (done: boolean) => {
+    created.textContent = done ? COPIED : COPY;
+    created.setAttribute("aria-label", `${done ? "Copié" : COPY} : ${title}`);
+    created.classList.toggle("copied", done);
+  };
+  return created;
+}
+
 /** Un texte à copier, sous son titre, avec son bouton « Copier ». */
-function copyable(title: string, text: string, tag: "code" | "pre", copy: () => void): HTMLElement {
+function copyable(
+  title: string,
+  text: string,
+  tag: "code" | "pre",
+  copy: () => Promise<boolean>,
+): HTMLElement {
   const block = element("div", "connection-copyable", "");
   const body = element(tag, "connection-text", text);
   body.setAttribute("aria-label", title);
-  block.append(
-    element("p", "setting-help", title),
-    body,
-    button("Copier", `Copier : ${title}`, copy),
-  );
+  block.append(element("p", "setting-help", title), body, copyButton(title, copy));
   return block;
 }
 

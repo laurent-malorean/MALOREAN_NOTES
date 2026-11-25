@@ -1206,6 +1206,11 @@ button {
   color: var(--muted);
   margin-bottom: 0.9rem;
 }
+.settings .tool {
+  min-height: 2rem;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+}
 .setting select {
   font: inherit;
   color: var(--text);
@@ -2259,11 +2264,23 @@ button.claude-chip:hover {
   align-self: flex-start;
   margin: 0.3rem 0;
 }
+.connection-settings > p.setting-help {
+  margin: 0 0 1rem;
+}
 .connection-copyable {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  margin: 0.4rem 0;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+}
+.connection-copyable .setting-help {
+  font-weight: 600;
+}
+/* Le bouton qui vient de copier : vert (la couleur « succès » du thème), lisible en clair et en sombre */
+.settings .tool.copied {
+  color: var(--success);
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--bg));
 }
 .connection-text {
   margin: 0;

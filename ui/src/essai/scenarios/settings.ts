@@ -6,6 +6,8 @@ import { find, findAll, rectOf } from "./env";
 
 const WAIT = 20_000;
 const PIXEL = 1.5;
+const MIN_HEIGHT = 28;
+const COPY_BUTTONS = 3;
 
 const dialog = () => find<HTMLDialogElement>("dialog.settings[open]");
 
@@ -74,6 +76,67 @@ async function indexTab(trial: Trial): Promise<void> {
   closeSettings(window);
 }
 
+/** Les boutons « Copier » : à la taille des boutons des Réglages, sous le texte ; un clic les passe au vert, « ✓ Copié ». */
+async function connectionTab(trial: Trial): Promise<void> {
+  const window = await openSettings();
+  const panel = await showTab(window, "Brancher une IA");
+  const create = await until(
+    "le bouton de création de la clé",
+    () =>
+      findAll<HTMLButtonElement>("button", panel).find(
+        (b) => b.textContent === "Créer une clé de branchement",
+      ),
+    WAIT,
+  );
+  create.click();
+  const copies = await until(
+    "les trois boutons « Copier »",
+    () => {
+      const found = findAll<HTMLButtonElement>(".connection-copyable button", panel);
+      return found.length === COPY_BUTTONS ? found : null;
+    },
+    WAIT,
+  );
+  const normal = findAll<HTMLButtonElement>("button", panel).find(
+    (b) => b.textContent === "Révoquer la clé",
+  );
+  const first = copies[0] as HTMLButtonElement;
+  const box = rectOf(first);
+  const text = find(".connection-text", first.parentElement ?? panel);
+  trial.measure("boutonCopier", { bouton: box, texte: text === null ? null : rectOf(text) });
+  trial.check(
+    "le bouton « Copier » est plus haut que 28 points",
+    box.height > MIN_HEIGHT,
+    `${Math.round(box.height)} points`,
+  );
+  trial.check(
+    "le bouton « Copier » a la hauteur des autres boutons des Réglages",
+    normal !== undefined && Math.abs(rectOf(normal).height - box.height) <= PIXEL,
+    `${Math.round(box.height)} contre ${normal === undefined ? "?" : Math.round(rectOf(normal).height)}`,
+  );
+  trial.check(
+    "le bouton ne recouvre pas le texte du bloc",
+    text !== null && box.y >= rectOf(text).y + rectOf(text).height,
+    `bouton à ${Math.round(box.y)}`,
+  );
+  const before = getComputedStyle(first).color;
+  first.click();
+  await until("« ✓ Copié »", () => (first.textContent === "✓ Copié" ? true : null), WAIT);
+  const probe = document.createElement("span");
+  probe.style.color = "var(--success)";
+  document.body.append(probe);
+  const green = getComputedStyle(probe).color;
+  probe.remove();
+  trial.check(
+    "le bouton passe au vert de la palette après la copie",
+    getComputedStyle(first).color === green && before !== green,
+    getComputedStyle(first).color,
+  );
+  await until("« Copier » de nouveau", () => (first.textContent === "Copier" ? true : null), WAIT);
+  closeSettings(window);
+}
+
 export const settingsScenarios = (): Scenario[] => [
   { name: "Réglages : onglet Index, barre de progression", run: (t) => indexTab(t) },
+  { name: "Réglages : onglet Brancher une IA, boutons Copier", run: (t) => connectionTab(t) },
 ];

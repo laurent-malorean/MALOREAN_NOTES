@@ -32,7 +32,6 @@ function setup(initial: ConnectionInfo, options: { failCopy?: boolean } = {}) {
     },
     dialog,
     run: (action) => void action.catch((error) => failures.push(error)),
-    show: (message) => void events.push(`message ${message}`),
   });
   const [frame] = ai.settingsGroups() as [HTMLElement];
   document.body.append(frame);
@@ -62,7 +61,7 @@ describe("« Brancher une IA » côté application", () => {
     expect(t.buttons()).toEqual(["Copier", "Copier", "Copier", "Révoquer la clé"]);
   });
 
-  it("copie la clé et chaque bloc tels quels, et le dit", async () => {
+  it("copie la clé et chaque bloc tels quels, sans message passager : le bouton le dit", async () => {
     const t = setup({ key: KEY });
     await settled();
     for (const label of [
@@ -73,23 +72,18 @@ describe("« Brancher une IA » côté application", () => {
       t.button(label).click();
       await settled();
     }
-    expect(t.events.slice(1)).toEqual([
-      "copié abc123",
-      "message Clé de branchement copiée",
-      "copié bloc claude",
-      "message Configuration pour Claude copiée",
-      "copié bloc codex",
-      "message Configuration pour Codex copiée",
-    ]);
+    expect(t.events.slice(1)).toEqual(["copié abc123", "copié bloc claude", "copié bloc codex"]);
+    expect(t.buttons()).toEqual(["✓ Copié", "✓ Copié", "✓ Copié", "Révoquer la clé"]);
   });
 
-  it("n'annonce pas une copie que le presse-papiers a refusée, et rend son erreur", async () => {
+  it("ne confirme pas une copie que le presse-papiers a refusée, et rend son erreur", async () => {
     const t = setup({ key: KEY }, { failCopy: true });
     await settled();
     t.button("Copier : Clé de branchement").click();
     await settled();
     expect(t.events).toEqual(["état"]);
     expect(t.failures).toHaveLength(1);
+    expect(t.buttons()[0]).toBe("Copier");
   });
 
   it("demande confirmation avant de révoquer, puis redonne le bouton de création", async () => {

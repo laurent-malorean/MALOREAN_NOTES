@@ -15,13 +15,7 @@ export const REVOCATION: ConfirmationOptions = {
   confirm: "Révoquer la clé",
 };
 
-const COPIED = {
-  key: "Clé de branchement copiée",
-  claude: "Configuration pour Claude copiée",
-  codex: "Configuration pour Codex copiée",
-} as const;
-
-export interface ConnectAiDeps extends Pick<Messages, "run" | "show"> {
+export interface ConnectAiDeps extends Pick<Messages, "run"> {
   readonly backend: Pick<
     typeof Bridge,
     "connectionInfo" | "createConnectionKey" | "revokeConnectionKey" | "copyPlainText"
@@ -54,9 +48,15 @@ export function createConnectAi(deps: ConnectAiDeps): ConnectAi {
         ),
       copy: (what) => {
         const key = info?.key;
-        if (!key) return;
+        if (!key) return Promise.resolve(false);
         const text = { key: key.secret, claude: key.claudeConfig, codex: key.codexConfig }[what];
-        deps.run(backend.copyPlainText(text).then(() => deps.show(COPIED[what])));
+        // Le bouton dit « Copié » : plus de message passager. Un échec, lui, est dit comme les autres.
+        const copied = backend.copyPlainText(text);
+        deps.run(copied);
+        return copied.then(
+          () => true,
+          () => false,
+        );
       },
     };
     draw(null);
