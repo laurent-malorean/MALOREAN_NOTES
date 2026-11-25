@@ -199,7 +199,7 @@ fn tools_are_opened_for_one_turn_at_a_time() {
 }
 
 /// Les chemins des notes que rend une recherche.
-fn paths(found: &Value) -> Vec<&str> {
+pub(super) fn paths(found: &Value) -> Vec<&str> {
     found
         .as_array()
         .unwrap()
@@ -324,7 +324,8 @@ fn a_search_by_an_unknown_content_type_or_an_invalid_folder_is_refused() {
             "search_notes",
             json!({ "content_type": "kanban" })
         ),
-        "type de contenu inconnu : « kanban » ; ceux d'une note : « note », « cahier-de-recherche », « carte-mentale »"
+        "type de contenu inconnu : « kanban » ; ceux d'une note : « note », « cahier-de-recherche », « carte-mentale », \
+         « crm », « crm-entreprise », « crm-personne », « crm-action », « crm-projet »"
     );
     assert!(
         refused(

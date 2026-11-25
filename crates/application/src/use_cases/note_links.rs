@@ -1,9 +1,10 @@
 //! Suivre les liens entre notes : ouvrir la note qu'un `[[titre]]` désigne, et trouver les
 //! notes qui pointent vers une note.
 
+use domain::crm::action_links;
 use domain::links::{links_to, same_title};
 use domain::title::displayed_title_of_note;
-use domain::{Folder, Modified, NotePath};
+use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 
 use crate::{AppError, NoteStore, StoredNote};
 
@@ -16,6 +17,20 @@ pub struct LinkingNote {
     pub title: String,
     /// La date de dernière modification.
     pub modified: Modified,
+    /// Son type de contenu : le CRM et ses fiches se distinguent d'une note.
+    pub content_type: ContentType,
+    /// Pour une fiche d'un CRM, le chemin de son CRM.
+    pub container: Option<NotePath>,
+}
+
+/// Vrai si la note de texte `content` a un lien vers la note de titre `title` : une action du CRM
+/// n'en a que par ses notes liées, sa description et ses commentaires (spécification du CRM,
+/// § 12), les autres notes par tout leur texte.
+fn links_title(content: &str, title: &str) -> bool {
+    match action_links(content) {
+        Some(titles) => titles.iter().any(|linked| same_title(linked, title)),
+        None => links_to(content, title),
+    }
 }
 
 /// Les liens entre les notes de l'espace de travail.
@@ -75,11 +90,16 @@ impl<'a> NoteLinks<'a> {
         Ok(self
             .all_notes()?
             .into_iter()
-            .filter(|note| note.path != *path && links_to(&note.content, &title))
-            .map(|note| LinkingNote {
-                title: displayed_title_of_note(&note.content, note.path.name()),
-                path: note.path,
-                modified: note.modified,
+            .filter(|note| note.path != *path && links_title(&note.content, &title))
+            .map(|note| {
+                let summary = NoteSummary::new(note.path.clone(), &note.content, note.modified);
+                LinkingNote {
+                    title: displayed_title_of_note(&note.content, note.path.name()),
+                    content_type: summary.content_type(),
+                    container: summary.container().cloned(),
+                    path: note.path,
+                    modified: note.modified,
+                }
             })
             .collect())
     }
@@ -130,6 +150,64 @@ mod tests {
             resolved(&store, "ma carte").as_deref(),
             Some("Idees/carte.md")
         );
+    }
+
+    #[test]
+    fn an_action_links_the_notes_it_lists_or_quotes_but_not_the_files_it_refers_to() {
+        let store = InMemoryNoteStore::with_notes(&[
+            (
+                "c/actions/2026-11-24-devis.md",
+                "---\ntype: crm-action\npersonnes: ['[[jean-dupont]] · [[acme]]']\nprojet: '[[refonte]]'\nnotes: ['[[Cahier des charges]]']\n---\n# Devis\n\nVoir [[Plan]].\n\n#### Commentaires\n- 2026-11-24 10:32 · Vu [[Compte rendu]].\n",
+            ),
+            ("cahier.md", "# Cahier des charges"),
+            ("plan.md", "# Plan"),
+            ("cr.md", "# Compte rendu"),
+            ("acme.md", "# Acme"),
+            ("refonte.md", "# Refonte"),
+            ("jean.md", "# Jean-Dupont"),
+        ]);
+        for linked in ["cahier.md", "plan.md", "cr.md"] {
+            assert_eq!(
+                backlinks(&store, linked),
+                ["c/actions/2026-11-24-devis.md | Devis"],
+                "{linked}"
+            );
+        }
+        for referred in ["acme.md", "refonte.md", "jean.md"] {
+            assert!(backlinks(&store, referred).is_empty(), "{referred}");
+        }
+    }
+
+    #[test]
+    fn a_linking_note_says_its_type_and_the_crm_of_a_card() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("cahier.md", "# Cahier des charges"),
+            (
+                "c/actions/devis.md",
+                "---\ntype: crm-action\nnotes: ['[[Cahier des charges]]']\n---\n# Devis",
+            ),
+            ("autre.md", "# Autre\n[[Cahier des charges]]"),
+        ]);
+        let linking = NoteLinks::new(&store)
+            .backlinks(&path("cahier.md"))
+            .unwrap();
+        let described: Vec<_> = linking
+            .iter()
+            .map(|note| {
+                (
+                    note.path.to_path(),
+                    note.content_type,
+                    note.container.as_ref().map(NotePath::to_path),
+                )
+            })
+            .collect();
+        assert_eq!(described.len(), 2);
+        assert!(described.contains(&("autre.md".to_owned(), ContentType::Note, None)));
+        assert!(described.contains(&(
+            "c/actions/devis.md".to_owned(),
+            ContentType::CrmAction,
+            Some("c.md".to_owned())
+        )));
     }
 
     #[test]
