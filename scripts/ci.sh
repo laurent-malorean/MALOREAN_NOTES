@@ -17,9 +17,11 @@
 #                            un dépassement qui persiste est un avertissement chiffré ; le rapport dit avant et après.
 #   scripts/ci.sh --echantillon  (à la demande, non bloquant, à lancer en arrière-plan) le même échantillon Rust ;
 #                            les survivants s'écrivent dans la liste de suivi (.git/ci-mutation/suivi.txt), le code de sortie reste 0.
-#   scripts/ci.sh --branche  FIN DE TÂCHE D'UN AGENT (dans son dossier de travail) : mutation de tout le diff Rust de la
-#                            branche depuis main (domaine puis reste), avec rejeu des dépassements ; bloquant : un
-#                            survivant fait échouer, l'agent renforce ses tests et relance jusqu'à zéro survivant.
+#   scripts/ci.sh --branche  (à la demande, NON imposée : la fin de tâche d'un agent est la barrière puis --fonction, sans
+#                            mutation ; la mutation se joue sur GitHub par groupes, fiche 0059) mutation de tout le diff
+#                            Rust de la branche depuis main (domaine puis reste), avec rejeu des dépassements ; bloquant :
+#                            un survivant fait échouer. Longue sur une machine chargée : à réserver aux cas où l'on veut
+#                            le verdict tout de suite, sur le Mac.
 #   scripts/ci.sh --mutation-interface  (à la demande) Stryker de l'interface, incrémental, seuil 100 %.
 #   scripts/ci.sh --tout-le-code  EXCEPTIONNEL (jamais lancé par une règle, plus de 2 heures) : tout, mutation de
 #                            tout le code Rust et de toute l'interface.
@@ -406,6 +408,10 @@ run_barrier() {
     scripts/test-ci-rejeu.sh
     scripts/test-essai-application.sh
   fi
+  if printf '%s\n' "$changed" | grep -q -E '^(scripts/|\.github/workflows/)'; then
+    step "Mutation par groupes : matrice, exhaustivité, travail GitHub (fiche 0059)"
+    scripts/test-ci-mutation-groupes.sh
+  fi
   if [ -f Cargo.toml ] && printf '%s\n' "$changed" | rust_touched; then rust=1; fi
   if [ -f ui/package.json ] && printf '%s\n' "$changed" | grep -q '^ui/'; then ui=1; fi
   if [ "$rust" -eq 1 ] && [ "$ui" -eq 1 ]; then
@@ -537,6 +543,10 @@ else
   if [ -f ui/package.json ]; then check_ui; else printf '\n(pas d interface : contrôles interface sautés)\n'; fi
 fi
 if [ "$MODE" = --tout-le-code ]; then check_mutations; check_ui_mutations complet; fi
+if [ -f Cargo.toml ]; then
+  step "Mutation par groupes : chaque fichier de production dans exactement un groupe (fiche 0059)"
+  scripts/test-ci-mutation-groupes.sh
+fi
 
 if [ -n "$STARTED_TREE" ]; then
   [ "$(tree_hash)" = "$STARTED_TREE" ] \

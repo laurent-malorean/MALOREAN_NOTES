@@ -1,0 +1,353 @@
+{
+  "commentaire": "Source unique des groupes de mutation (doc/decisions/0059). Un groupe : nom, titre, crate, fichiers (motifs cargo-mutants --file, chemins depuis la racine du dépôt, * ne traverse pas les dossiers, ** les traverse). Le groupe « autres » d'une crate (champ autres) mute tout fichier qu'aucun autre groupe de la crate ne nomme (--exclude de leurs motifs) : un fichier neuf n'échappe jamais.",
+  "crates": {
+    "domain": {
+      "delai": 30,
+      "machine": "ubuntu-latest"
+    },
+    "application": {
+      "delai": 90,
+      "machine": "ubuntu-latest"
+    },
+    "infrastructure": {
+      "delai": 90,
+      "machine": "macos-latest"
+    },
+    "api": {
+      "delai": 90,
+      "machine": "macos-latest"
+    }
+  },
+  "groupes": [
+    {
+      "nom": "domaine-notes-texte",
+      "titre": "Domaine : texte des notes (note, titre, en-tête, étiquettes, liens, recherche)",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/note.rs",
+        "crates/domain/src/title.rs",
+        "crates/domain/src/front_matter.rs",
+        "crates/domain/src/tag.rs",
+        "crates/domain/src/links.rs",
+        "crates/domain/src/search.rs"
+      ]
+    },
+    {
+      "nom": "domaine-notes-fichiers",
+      "titre": "Domaine : notes sur le disque (dossiers, noms, enregistrement, conflits, historique, export, journal, modèles)",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/folder.rs",
+        "crates/domain/src/file_name.rs",
+        "crates/domain/src/saving.rs",
+        "crates/domain/src/conflict.rs",
+        "crates/domain/src/history.rs",
+        "crates/domain/src/export.rs",
+        "crates/domain/src/journal.rs",
+        "crates/domain/src/content_type.rs",
+        "crates/domain/src/template.rs",
+        "crates/domain/src/ranking.rs"
+      ]
+    },
+    {
+      "nom": "domaine-sens",
+      "titre": "Domaine : sens et différences entre versions",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/meaning.rs",
+        "crates/domain/src/meaning_vector.rs",
+        "crates/domain/src/segments.rs",
+        "crates/domain/src/diff.rs"
+      ]
+    },
+    {
+      "nom": "domaine-pieces-jointes",
+      "titre": "Domaine : pièces jointes et pages web",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/attachment_name.rs",
+        "crates/domain/src/attachments.rs",
+        "crates/domain/src/web_address.rs"
+      ]
+    },
+    {
+      "nom": "domaine-canvas",
+      "titre": "Domaine : canvas",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/canvas*"
+      ]
+    },
+    {
+      "nom": "domaine-carte-cahier",
+      "titre": "Domaine : carte mentale et cahier de recherche",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/mind_map*",
+        "crates/domain/src/research_notebook*"
+      ]
+    },
+    {
+      "nom": "domaine-claude",
+      "titre": "Domaine : Claude et branchement des IA",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/claude.rs",
+        "crates/domain/src/app_tools.rs",
+        "crates/domain/src/connection_key.rs"
+      ]
+    },
+    {
+      "nom": "domaine-ecriture-json",
+      "titre": "Domaine : aide à l'écriture et JSON",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/writing*",
+        "crates/domain/src/json*"
+      ]
+    },
+    {
+      "nom": "domaine-crm-journee",
+      "titre": "Domaine : CRM, journée, semaine, Kanban et compteurs",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/crm/day.rs",
+        "crates/domain/src/crm/week.rs",
+        "crates/domain/src/crm/kanban.rs",
+        "crates/domain/src/crm/tally.rs",
+        "crates/domain/src/crm/filters.rs"
+      ]
+    },
+    {
+      "nom": "domaine-crm-actions",
+      "titre": "Domaine : CRM, actions et étapes",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/crm/action.rs",
+        "crates/domain/src/crm/action_body.rs",
+        "crates/domain/src/crm/action_view.rs",
+        "crates/domain/src/crm/action_write.rs",
+        "crates/domain/src/crm/stage.rs"
+      ]
+    },
+    {
+      "nom": "domaine-crm-fiches",
+      "titre": "Domaine : CRM, fiches (en-tête, personnes, sociétés, projets, références)",
+      "crate": "domain",
+      "fichiers": [
+        "crates/domain/src/crm/header.rs",
+        "crates/domain/src/crm/person.rs",
+        "crates/domain/src/crm/company.rs",
+        "crates/domain/src/crm/project.rs",
+        "crates/domain/src/crm/crm_note.rs",
+        "crates/domain/src/crm/reference.rs",
+        "crates/domain/src/crm/name.rs",
+        "crates/domain/src/crm/kind.rs",
+        "crates/domain/src/crm/under_title.rs",
+        "crates/domain/src/crm/palette.rs",
+        "crates/domain/src/crm/text.rs"
+      ]
+    },
+    {
+      "nom": "domaine-autres",
+      "titre": "Domaine : tout fichier qu'aucun autre groupe ne nomme",
+      "crate": "domain",
+      "autres": true
+    },
+    {
+      "nom": "application-magasins",
+      "titre": "Application : magasins, index en mémoire, espaces de travail",
+      "crate": "application",
+      "fichiers": [
+        "crates/application/src/indexed_store.rs",
+        "crates/application/src/versioned_store.rs",
+        "crates/application/src/memory_history.rs",
+        "crates/application/src/memory_index.rs",
+        "crates/application/src/memory_meaning_index.rs",
+        "crates/application/src/meaning_index.rs",
+        "crates/application/src/segmenting_index.rs",
+        "crates/application/src/no_meaning_models.rs",
+        "crates/application/src/workspaces.rs",
+        "crates/application/src/ports.rs",
+        "crates/application/src/error.rs",
+        "crates/application/src/claude.rs"
+      ]
+    },
+    {
+      "nom": "application-cas-d-usage",
+      "titre": "Application : cas d'usage",
+      "crate": "application",
+      "fichiers": [
+        "crates/application/src/use_cases/**"
+      ]
+    },
+    {
+      "nom": "application-faux",
+      "titre": "Application : faux en mémoire des tests",
+      "crate": "application",
+      "fichiers": [
+        "crates/application/src/testing/**"
+      ]
+    },
+    {
+      "nom": "application-autres",
+      "titre": "Application : tout fichier qu'aucun autre groupe ne nomme",
+      "crate": "application",
+      "autres": true
+    },
+    {
+      "nom": "infrastructure-notes",
+      "titre": "Infrastructure : fichiers des notes et export",
+      "crate": "infrastructure",
+      "fichiers": [
+        "crates/infrastructure/src/fs_note_store.rs",
+        "crates/infrastructure/src/fs_export_store.rs"
+      ]
+    },
+    {
+      "nom": "infrastructure-index",
+      "titre": "Infrastructure : index SQLite et index de sens",
+      "crate": "infrastructure",
+      "fichiers": [
+        "crates/infrastructure/src/sqlite_index.rs",
+        "crates/infrastructure/src/sqlite_index/**",
+        "crates/infrastructure/src/sqlite_meaning_index.rs"
+      ]
+    },
+    {
+      "nom": "infrastructure-divers",
+      "titre": "Infrastructure : modèles de sens, historique, surveillance et préférences",
+      "crate": "infrastructure",
+      "fichiers": [
+        "crates/infrastructure/src/model_folder.rs",
+        "crates/infrastructure/src/candle_embedder.rs",
+        "crates/infrastructure/src/web_guard*",
+        "crates/infrastructure/src/json_preferences.rs",
+        "crates/infrastructure/src/fs_history.rs",
+        "crates/infrastructure/src/fs_watcher.rs",
+        "crates/infrastructure/src/fs_connection_keys.rs"
+      ]
+    },
+    {
+      "nom": "infrastructure-claude",
+      "titre": "Infrastructure : Claude Code (lancement et flux)",
+      "crate": "infrastructure",
+      "fichiers": [
+        "crates/infrastructure/src/claude_code_cli*",
+        "crates/infrastructure/src/claude_stream*"
+      ]
+    },
+    {
+      "nom": "infrastructure-sockets-systeme",
+      "titre": "Infrastructure : sockets, relais, presse-papiers, écriture Apple, horloge",
+      "crate": "infrastructure",
+      "fichiers": [
+        "crates/infrastructure/src/local_socket.rs",
+        "crates/infrastructure/src/mcp_relay.rs",
+        "crates/infrastructure/src/permanent_socket.rs",
+        "crates/infrastructure/src/mac_clipboard.rs",
+        "crates/infrastructure/src/apple_writing.rs",
+        "crates/infrastructure/src/system_clock.rs"
+      ]
+    },
+    {
+      "nom": "infrastructure-autres",
+      "titre": "Infrastructure : tout fichier qu'aucun autre groupe ne nomme",
+      "crate": "infrastructure",
+      "autres": true
+    },
+    {
+      "nom": "api-outils-lecture",
+      "titre": "API : outils de l'application, lecture et catalogue",
+      "crate": "api",
+      "fichiers": [
+        "crates/api/src/session/app_tools.rs",
+        "crates/api/src/session/app_tools/catalog.rs",
+        "crates/api/src/session/app_tools/mcp.rs",
+        "crates/api/src/session/app_tools/reading.rs",
+        "crates/api/src/session/app_tools/meaning.rs"
+      ]
+    },
+    {
+      "nom": "api-outils-ecran",
+      "titre": "API : outils de l'application, modification et écran",
+      "crate": "api",
+      "fichiers": [
+        "crates/api/src/session/app_tools/changing.rs",
+        "crates/api/src/session/app_tools/screen.rs"
+      ]
+    },
+    {
+      "nom": "api-claude-reglages",
+      "titre": "API : Claude, connexion, réglages et espaces de travail",
+      "crate": "api",
+      "fichiers": [
+        "crates/api/src/session.rs",
+        "crates/api/src/session/claude.rs",
+        "crates/api/src/session/workspace.rs",
+        "crates/api/src/session/app_tools/connection.rs",
+        "crates/api/src/session/app_tools/connection/**",
+        "crates/api/src/commands/claude.rs",
+        "crates/api/src/commands/connection.rs",
+        "crates/api/src/commands/workspaces.rs",
+        "crates/api/src/commands/menu.rs",
+        "crates/api/src/dto/claude*",
+        "crates/api/src/dto/turn_settings.rs"
+      ]
+    },
+    {
+      "nom": "api-commandes",
+      "titre": "API : commandes, erreurs et données échangées",
+      "crate": "api",
+      "fichiers": [
+        "crates/api/src/commands.rs",
+        "crates/api/src/commands/canvas.rs",
+        "crates/api/src/commands/export.rs",
+        "crates/api/src/commands/history.rs",
+        "crates/api/src/commands/meaning.rs",
+        "crates/api/src/commands/mind_map.rs",
+        "crates/api/src/commands/research_notebook.rs",
+        "crates/api/src/commands/writing.rs",
+        "crates/api/src/error.rs",
+        "crates/api/src/pdf.rs",
+        "crates/api/src/dto.rs",
+        "crates/api/src/dto/canvas.rs",
+        "crates/api/src/dto/meaning.rs",
+        "crates/api/src/dto/mind_map.rs"
+      ]
+    },
+    {
+      "nom": "api-session",
+      "titre": "API : session des notes, du sens et de l'historique",
+      "crate": "api",
+      "fichiers": [
+        "crates/api/src/session/attachments.rs",
+        "crates/api/src/session/canvas.rs",
+        "crates/api/src/session/export.rs",
+        "crates/api/src/session/folders.rs",
+        "crates/api/src/session/history.rs",
+        "crates/api/src/session/index.rs",
+        "crates/api/src/session/journal.rs",
+        "crates/api/src/session/links.rs",
+        "crates/api/src/session/meaning.rs",
+        "crates/api/src/session/meaning_worker.rs",
+        "crates/api/src/session/mind_map.rs",
+        "crates/api/src/session/quick_open.rs",
+        "crates/api/src/session/recent_notes.rs",
+        "crates/api/src/session/research_notebook.rs",
+        "crates/api/src/session/saving.rs",
+        "crates/api/src/session/tags.rs",
+        "crates/api/src/session/templates.rs",
+        "crates/api/src/session/trash.rs",
+        "crates/api/src/session/watching.rs",
+        "crates/api/src/session/writing.rs"
+      ]
+    },
+    {
+      "nom": "api-autres",
+      "titre": "API : tout fichier qu'aucun autre groupe ne nomme",
+      "crate": "api",
+      "autres": true
+    }
+  ]
+}
