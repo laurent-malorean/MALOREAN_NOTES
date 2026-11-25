@@ -13,7 +13,7 @@ use super::reference::Reference;
 use super::stage::{Stages, Status};
 use super::text::folded;
 use super::under_title::{text, with_text};
-use crate::tag::{same_tag, tags, writable_tag};
+use crate::tag::{tags, written_tags};
 
 pub(super) const PEOPLE_KEY: &str = "personnes";
 pub(super) const STATUS_KEY: &str = "statut";
@@ -237,17 +237,6 @@ impl Action {
             ),
         ]
     }
-}
-
-/// Les étiquettes telles que l'application les écrit : nettoyées, sans doublon (la casse ne compte pas).
-pub(super) fn written_tags(tags: &[String]) -> Vec<String> {
-    let mut written: Vec<String> = Vec::new();
-    for tag in tags.iter().filter_map(|tag| writable_tag(tag)) {
-        if !written.iter().any(|known| same_tag(known, &tag)) {
-            written.push(tag);
-        }
-    }
-    written
 }
 
 #[cfg(test)]

@@ -61,7 +61,7 @@ describe("fenêtre d'une action : étiquettes", () => {
     choose(control("Statut"), "Done");
     m.disk.crm = changedCrm({ tags: ["urgent"] });
     await m.view.reload();
-    await vi.waitFor(() => expect(document.querySelectorAll(".crm-aw-tag")).toHaveLength(1));
+    await vi.waitFor(() => expect(document.querySelectorAll(".tag-chip")).toHaveLength(1));
     expect(control<HTMLInputElement>("Ajouter une étiquette").value).toBe("vi");
   });
 });
@@ -202,7 +202,7 @@ describe("fenêtre d'une nouvelle action", () => {
     buttonIn("+ Lier une note").click();
     await vi.waitFor(() => expect(document.querySelectorAll(".crm-aw-note")).toHaveLength(1));
     expect(document.querySelectorAll(".crm-aw-person")).toHaveLength(1);
-    expect(document.querySelectorAll(".crm-aw-tag")).toHaveLength(1);
+    expect(document.querySelectorAll(".tag-chip")).toHaveLength(1);
     expect(callsTo(m, "changeCrmAction")).toHaveLength(0);
     expect(callsTo(m, "createCrmAction")).toHaveLength(0);
   });
@@ -256,7 +256,7 @@ describe("fenêtre d'une nouvelle action", () => {
     ]);
     typedIn("Ajouter une étiquette", "vip");
     buttonIn("Retirer l'étiquette vip").click();
-    expect(document.querySelectorAll(".crm-aw-tag")).toHaveLength(0);
+    expect(document.querySelectorAll(".tag-chip")).toHaveLength(0);
   });
 
   it("reste ouverte, avec le message de Rust, quand la création est refusée", async () => {

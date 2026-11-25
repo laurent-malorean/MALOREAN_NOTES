@@ -1,0 +1,54 @@
+/* Le champ d'étiquettes : pastilles à la couleur de l'étiquette, « × », champ d'ajout et « + ». Couleurs et polices viennent du thème. */
+.tag-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+}
+.tag-chip {
+  --label-color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--label-color);
+  border-radius: 999px;
+  padding: 0 0.2rem 0 0.5rem;
+  background: color-mix(in srgb, var(--label-color) 22%, var(--bg));
+  color: var(--text);
+}
+.tag-remove,
+.tag-add {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.3rem;
+  cursor: pointer;
+}
+.tag-remove:hover {
+  color: var(--danger);
+}
+.tag-add {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+.tag-add:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.tag-input {
+  box-sizing: border-box;
+  width: 11rem;
+  max-width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+}

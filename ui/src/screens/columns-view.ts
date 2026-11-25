@@ -9,9 +9,11 @@ import {
 import { trailOf, type TrailStep } from "../state/trail";
 import { renderTabs } from "./tabs-view";
 
-/** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément et la place des liens entrants et des notes proches. */
+/** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément, la place des étiquettes, des liens entrants et des notes proches. */
 export interface ColumnParts {
   readonly element: HTMLElement;
+  /** La barre des étiquettes du contenu montré, sous les onglets ; sans elle, aucune barre n'est montrée. */
+  readonly tags?: HTMLElement;
   readonly backlinks: HTMLElement;
   readonly related: HTMLElement;
 }
@@ -198,6 +200,9 @@ function columnElement(
   split.addEventListener("click", () => handlers.split());
   const trail = trailButtons(id, handlers);
   header.append(trail.group, tabs, split);
+  const tags = document.createElement("div");
+  tags.className = "tag-bar";
+  tags.hidden = true;
   const backlinks = document.createElement("nav");
   backlinks.className = "backlinks";
   backlinks.setAttribute("aria-label", "Liens entrants");
@@ -206,9 +211,9 @@ function columnElement(
   related.className = "backlinks related-notes";
   related.setAttribute("aria-label", "Notes proches");
   related.hidden = true;
-  element.append(header, backlinks, related);
+  element.append(header, tags, backlinks, related);
   return {
-    parts: { element, backlinks, related },
+    parts: { element, tags, backlinks, related },
     trail,
     tabs,
     split,

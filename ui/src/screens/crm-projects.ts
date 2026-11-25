@@ -1,11 +1,13 @@
 // L'onglet Projets (fiche 0063, spécification § 7.5) : « Nouveau projet », puis la liste (pastille de
 // couleur, nom, actions ouvertes et en retard). Un projet se déplie sur ses actions ouvertes, la plus
 // en retard d'abord ; ses compteurs ouvrent le Kanban filtré sur lui. On le renomme, on change sa
-// couleur (les couleurs déjà prises sont grisées, mais choisissables) et on le supprime.
+// couleur (les couleurs déjà prises sont grisées, mais choisissables), on change ses étiquettes (le champ
+// d'étiquettes de l'application, sous sa ligne) et on le supprime.
 import type { CrmProjectItem } from "../bridge";
 import { countText, takenColors } from "../state/crm-lists";
 import { PALETTE } from "../state/palette";
 import { actionButton, h } from "./crm-dom";
+import { tagField } from "./tag-field";
 import {
   actionsOf,
   countElement,
@@ -134,6 +136,28 @@ function projectButtons(ctx: ListsContext, project: CrmProjectItem): HTMLButtonE
   return [rename, remove];
 }
 
+/** Les étiquettes du CRM que le champ d'un projet propose : celles de ses actions et celles de ses projets. */
+const suggestionsOf = (ctx: ListsContext): string[] => [
+  ...new Set([...ctx.crm.tags, ...ctx.crm.projects.flatMap((project) => project.tags)]),
+];
+
+/** Le champ d'étiquettes d'un projet : un geste l'écrit dans la fiche, le CRM est relu ensuite. */
+function tagsOf(ctx: ListsContext, project: CrmProjectItem): HTMLElement {
+  return tagField({
+    tags: project.tags,
+    suggestions: suggestionsOf(ctx),
+    change: (tags) =>
+      void ctx.act.gesture(() =>
+        ctx.backend.changeCrmProject(ctx.path, project.name, { kind: "tags", tags }),
+      ),
+    draft: {
+      get: () => ctx.state.tagDrafts.get(project.name) ?? "",
+      set: (text) => void ctx.state.tagDrafts.set(project.name, text),
+    },
+    data: { keep: `tags:${project.name}` },
+  });
+}
+
 function projectItem(ctx: ListsContext, project: CrmProjectItem): HTMLElement {
   const item = h("li", "crm-project");
   item.dataset.project = project.name;
@@ -150,7 +174,7 @@ function projectItem(ctx: ListsContext, project: CrmProjectItem): HTMLElement {
     counters(ctx, project),
     ...projectButtons(ctx, project),
   );
-  item.append(row);
+  item.append(row, tagsOf(ctx, project));
   if (ctx.state.palette === project.name) item.append(paletteChoice(ctx, project));
   if (ctx.state.unfolded.has(unfoldKey(project)))
     item.append(actionsOf(ctx, project.openActions, "project", "Aucune action ouverte."));

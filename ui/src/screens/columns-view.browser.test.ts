@@ -122,6 +122,20 @@ describe("colonnes à l'écran", () => {
     expect(sections(container)[0]).toBe(created[0]?.parts.element);
   });
 
+  it("chaque colonne offre, sous ses onglets et au-dessus de ses liens entrants, une barre d'étiquettes cachée au départ", () => {
+    const { container, view, created } = mount();
+    view.render(state([1]));
+    const column = sections(container)[0] as HTMLElement;
+    const tags = created[0]?.parts.tags as HTMLElement;
+    expect(tags.className).toBe("tag-bar");
+    expect(tags.hidden).toBe(true);
+    expect(getComputedStyle(tags).display).toBe("none");
+    expect(tags.previousElementSibling).toBe(column.querySelector(".column-header"));
+    expect(tags.nextElementSibling).toBe(column.querySelector(".backlinks"));
+    tags.hidden = false;
+    expect(getComputedStyle(tags).display).toBe("block");
+  });
+
   it("une colonne disparue quitte l'écran, avec son séparateur, et le dit une fois", () => {
     const { container, view, removed } = mount();
     view.render(state([0.4, 0.3, 0.3]));

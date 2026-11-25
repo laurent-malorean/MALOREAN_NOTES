@@ -372,7 +372,7 @@ Ce qui le trouve : les mots de son titre et de son détail. Un clic ouvre la car
 
 **Lien vers une carte** : depuis n'importe quelle note, `[[titre de la carte]]` désigne la carte, avec les mêmes règles qu'un lien vers une note. Un clic sur ce lien ouvre la carte en carte, jamais son fichier en texte. La carte montre la note dans ses liens entrants.
 
-**Étiquettes** : celles de l'en-tête valent pour la carte. Le filtre par étiquette la montre.
+**Étiquettes** : celles de l'en-tête valent pour la carte. Le filtre par étiquette la montre. Sous les onglets de sa colonne, le **champ d'étiquettes** de l'application les montre en pastilles avec « × », avec un champ « Ajouter une étiquette » et un « + » : un geste réécrit seulement `tags` dans l'en-tête, la carte et ses autres propriétés restent tels quels, et la carte relit le fichier.
 
 ## 10. Claude
 

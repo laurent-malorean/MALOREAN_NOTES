@@ -181,6 +181,7 @@ fn a_person_without_company_and_a_project_are_shown_with_their_counts() {
             name: s("refonte"),
             title: s("Refonte"),
             color: s("bleu"),
+            tags: vec![],
             open_actions: vec![s("2026-11-10-demande-de-devis")],
             tally: TallyItem {
                 open: 1,
@@ -188,6 +189,27 @@ fn a_person_without_company_and_a_project_are_shown_with_their_counts() {
                 today: 0
             },
         }]
+    );
+}
+
+#[test]
+fn the_tags_of_a_project_are_changed_by_a_gesture_and_shown_by_the_next_reading() {
+    let session = session();
+    let tags = vec![s("client"), s("2027")];
+    session
+        .change_crm_project(
+            "clients.md",
+            "refonte",
+            crate::CrmProjectChangeItem::Tags { tags: tags.clone() },
+        )
+        .unwrap();
+    assert_eq!(read(&session).projects[0].tags, tags);
+    assert_eq!(
+        session
+            .read_note("clients/projets/refonte.md")
+            .unwrap()
+            .content,
+        "---\ntype: crm-projet\ncouleur: bleu\ntags: [client, 2027]\n---\n# Refonte\n"
     );
 }
 

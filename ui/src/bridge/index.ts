@@ -188,6 +188,11 @@ export const listRecentNotes = (paths: readonly string[]) =>
   invoke<NoteListItem[]>("list_recent_notes", { paths });
 /** Chaque étiquette de l'espace de travail et son nombre de notes, par ordre alphabétique. */
 export const listTags = () => invoke<TagItem[]>("list_tags");
+/** Les étiquettes du contenu `path`, lues dans son fichier (en-tête d'une note, racine d'un canvas). */
+export const noteTags = (path: string) => invoke<string[]>("note_tags", { path });
+/** Donne ces étiquettes au contenu `path`, le reste du fichier inchangé ; rend celles qui sont écrites. */
+export const changeNoteTags = (path: string, tags: readonly string[]) =>
+  invoke<string[]>("change_note_tags", { path, tags });
 /** Reconstruit l'index de l'espace de travail ouvert à partir de ses fichiers. */
 export const rebuildIndex = () => invoke<null>("rebuild_index");
 export const indexOverview = () => invoke<IndexOverviewItem>("index_overview");

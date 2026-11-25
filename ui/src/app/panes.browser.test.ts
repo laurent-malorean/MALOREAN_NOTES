@@ -23,7 +23,7 @@ describe("éditeur d'une colonne", () => {
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
       notebook,
-      workspacePath: () => "/lib",
+      workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
       configure,
     });
     const element = document.createElement("section");
@@ -51,7 +51,7 @@ describe("éditeur d'une colonne", () => {
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
       notebook,
-      workspacePath: () => "/lib",
+      workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
       configure: vi.fn(),
     });
     const element = document.createElement("section");
@@ -94,7 +94,7 @@ describe("canvas d'une colonne", () => {
         picker: document.createElement("dialog"),
         confirmation: document.createElement("dialog"),
       },
-      workspacePath: () => "/lib",
+      workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
       configure: vi.fn(),
     });
     const element = document.createElement("section");
@@ -140,7 +140,7 @@ describe("CRM d'une colonne", () => {
         picker: document.createElement("dialog"),
         confirmation: document.createElement("dialog"),
       },
-      workspacePath: () => "/lib",
+      workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
       configure: vi.fn(),
     });
     const element = document.createElement("section");
@@ -152,6 +152,93 @@ describe("CRM d'une colonne", () => {
     await pane.load("clients.md");
     await expect.poll(() => read.mock.calls.length).toBe(1);
     expect(element.classList.contains("crm-shown")).toBe(true);
+    pane.destroy();
+  });
+
+  it("donne au champ d'étiquettes ce que le pont sait : lire, changer, proposer, et relire les listes", async () => {
+    const fake = fakeBackend({ "a.md": "---\ntags: [perso]\n---\n# A" });
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
+    });
+    const workspace = { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() };
+    const error = vi.fn();
+    const changeNoteTags = vi.fn(async (_path: string, tags: readonly string[]) => [...tags]);
+    const make = paneMaker({
+      backend: {
+        ...fake.backend,
+        fileAddress: (path) => path,
+        noteTags: vi.fn(async () => ["perso"]),
+        changeNoteTags,
+        listTags: vi.fn(async () => [
+          { name: "perso", count: 2 },
+          { name: "voyage", count: 1 },
+        ]),
+      },
+      shared,
+      events: { openNote: vi.fn(), openLink: vi.fn(), error },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      workspace,
+      configure: vi.fn(),
+    });
+    const element = document.createElement("section");
+    const tags = document.createElement("div");
+    document.body.replaceChildren(element);
+    const pane = make({
+      element,
+      tags,
+      backlinks: document.createElement("nav"),
+      related: document.createElement("nav"),
+    });
+    await pane.load("a.md");
+    await vi.waitFor(() => expect(tags.querySelectorAll(".tag-chip")).toHaveLength(1));
+    expect([...tags.querySelectorAll("option")].map((o) => o.value)).toEqual(["voyage"]);
+    tags.querySelector<HTMLButtonElement>(".tag-remove")?.click();
+    await vi.waitFor(() => expect(workspace.refreshTags).toHaveBeenCalledOnce());
+    expect(changeNoteTags).toHaveBeenCalledWith("a.md", []);
+    expect(workspace.refreshList).toHaveBeenCalledOnce();
+    pane.destroy();
+  });
+
+  it("dit l'erreur d'une relecture des listes qui échoue après un changement d'étiquettes", async () => {
+    const fake = fakeBackend({ "a.md": "# A" });
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
+    });
+    const failure = new Error("index illisible");
+    const error = vi.fn();
+    const make = paneMaker({
+      backend: {
+        ...fake.backend,
+        fileAddress: (path) => path,
+        noteTags: vi.fn(async () => ["perso"]),
+        changeNoteTags: vi.fn(async () => []),
+        listTags: vi.fn(async () => []),
+      },
+      shared,
+      events: { openNote: vi.fn(), openLink: vi.fn(), error },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      workspace: {
+        path: () => "/lib",
+        refreshTags: () => Promise.reject(failure),
+        refreshList: vi.fn(),
+      },
+      configure: vi.fn(),
+    });
+    const element = document.createElement("section");
+    const tags = document.createElement("div");
+    document.body.replaceChildren(element);
+    const pane = make({
+      element,
+      tags,
+      backlinks: document.createElement("nav"),
+      related: document.createElement("nav"),
+    });
+    await pane.load("a.md");
+    await vi.waitFor(() => expect(tags.querySelectorAll(".tag-chip")).toHaveLength(1));
+    tags.querySelector<HTMLButtonElement>(".tag-remove")?.click();
+    await vi.waitFor(() => expect(error).toHaveBeenCalledWith(failure));
     pane.destroy();
   });
 });

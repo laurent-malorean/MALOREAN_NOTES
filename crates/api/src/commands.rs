@@ -29,6 +29,7 @@ pub mod meaning;
 pub mod menu;
 pub mod mind_map;
 pub mod research_notebook;
+pub mod tags;
 pub mod workspaces;
 pub mod writing;
 
@@ -503,6 +504,8 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         list_all_notes,
         list_tagged_notes,
         list_tags,
+        tags::note_tags,
+        tags::change_note_tags,
         rebuild_index,
         index_overview,
         list_recent_notes,

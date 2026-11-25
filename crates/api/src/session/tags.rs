@@ -1,6 +1,7 @@
 //! Les étiquettes de l'espace de travail ouvert, vues depuis l'interface.
 
-use application::use_cases::{ListTaggedNotes, ListTags};
+use application::use_cases::{ChangeTags, ListTaggedNotes, ListTags, ReadTags};
+use domain::NotePath;
 
 use super::{Session, list_item};
 use crate::{ApiError, NoteListItem, NoteOrderItem, TagItem};
@@ -36,6 +37,30 @@ impl Session {
             .into_iter()
             .map(|(name, count)| TagItem { name, count })
             .collect())
+    }
+
+    /// Les étiquettes du contenu `path` (une note, un cahier, une carte, un canvas, une fiche du
+    /// CRM), lues dans son fichier : l'en-tête, ou la racine d'un canvas.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, fichier absent ou
+    /// illisible, aucun espace de travail ouvert.
+    pub fn note_tags(&self, path: &str) -> Result<Vec<String>, ApiError> {
+        let store = self.store()?;
+        Ok(ReadTags::new(&*store).execute(&NotePath::parse(path)?)?)
+    }
+
+    /// Donne ces étiquettes au contenu `path`, le reste du fichier inchangé ; rend celles qui sont
+    /// écrites (nettoyées, sans doublon).
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, fichier absent ou
+    /// illisible, canvas invalide, aucun espace de travail ouvert.
+    pub fn change_note_tags(&self, path: &str, tags: &[String]) -> Result<Vec<String>, ApiError> {
+        let store = self.store()?;
+        Ok(ChangeTags::new(&*store).execute(&NotePath::parse(path)?, tags)?)
     }
 }
 
@@ -90,5 +115,38 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn the_tags_of_a_content_are_read_and_changed_in_its_file_and_in_the_index() {
+        let session = session(&[("a.md", "---\ntags: [perso]\n---\n# Alpha")]);
+        assert!(session.note_tags("a.md").is_err());
+        assert!(session.change_note_tags("a.md", &[]).is_err());
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        assert_eq!(session.note_tags("a.md").unwrap(), ["perso"]);
+        let tags = ["perso".to_owned(), "voyage".to_owned()];
+        assert_eq!(session.change_note_tags("a.md", &tags).unwrap(), tags);
+        let written = session.read_note("a.md").unwrap().content;
+        assert_eq!(written, "---\ntags: [perso, voyage]\n---\n# Alpha");
+        let listed = session.list_tags().unwrap();
+        let names: Vec<_> = listed.into_iter().map(|tag| tag.name).collect();
+        assert_eq!(names, ["perso", "voyage"]);
+    }
+
+    #[test]
+    fn the_tags_of_a_canvas_are_those_of_its_root_and_a_bad_path_is_refused() {
+        let session = session(&[("c.canvas", "{\"nodes\":[],\"edges\":[]}")]);
+        session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        let tags = ["idées".to_owned()];
+        assert_eq!(session.change_note_tags("c.canvas", &tags).unwrap(), tags);
+        assert_eq!(session.note_tags("c.canvas").unwrap(), tags);
+        assert!(
+            !session
+                .note_tags("../dehors.md")
+                .unwrap_err()
+                .message
+                .is_empty()
+        );
+        assert!(session.note_tags("absente.md").is_err());
     }
 }

@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 
 use crate::front_matter::is_pinned;
 use crate::mind_map::searchable_text;
-use crate::tag::{sort_key, tags};
+use crate::tag::{file_tags, sort_key};
 use crate::title::displayed_title_of_note;
 use crate::{ContentType, NotePath, canvas, crm};
 
@@ -69,6 +69,7 @@ impl NoteSummary {
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
         let title = displayed_title_of_note(content, path.name());
         let content_type = ContentType::of_file(path.name(), content);
+        let tags = file_tags(path.name(), content);
         let container = content_type
             .crm_kind()
             .and_then(|kind| kind.container_of(&path));
@@ -77,7 +78,7 @@ impl NoteSummary {
             title,
             modified,
             pinned: is_pinned(content),
-            tags: tags(content),
+            tags,
             content_type,
             container,
             node: None,
@@ -222,6 +223,14 @@ mod tests {
             note("A/Idée importée.md", "## Plan", 0).title(),
             "Idée importée"
         );
+    }
+
+    #[test]
+    fn a_canvas_carries_the_tags_of_its_root_a_note_those_of_its_header() {
+        let canvas = "{\"nodes\":[],\"edges\":[],\"tags\":[\"idées\",\"projet\"]}";
+        assert_eq!(note("x.canvas", canvas, 0).tags(), ["idées", "projet"]);
+        assert_eq!(note("x.md", "---\ntags: [a]\n---\n# T", 0).tags(), ["a"]);
+        assert!(note("x.md", canvas, 0).tags().is_empty());
     }
 
     #[test]

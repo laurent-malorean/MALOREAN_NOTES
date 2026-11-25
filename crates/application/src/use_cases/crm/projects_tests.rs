@@ -50,6 +50,21 @@ fn two_projects_never_share_a_name() {
 }
 
 #[test]
+fn the_tags_of_a_project_change_alone_and_leave_the_rest_of_the_file_as_it_is() {
+    let store = workspace();
+    let change = |tags: &[&str]| {
+        let tags = tags.iter().map(|tag| (*tag).to_owned()).collect();
+        ChangeProject::new(&store).execute(&crm(), &reference("refonte"), ProjectChange::Tags(tags))
+    };
+    change(&["client", " 2027 ", "Client"]).unwrap();
+    let tagged = text(&store, REFONTE_PATH);
+    assert!(tagged.contains("tags: [client, 2027]\n"), "{tagged}");
+    assert_eq!(tagged.replace("tags: [client, 2027]\n", ""), REFONTE);
+    change(&[]).unwrap();
+    assert_eq!(text(&store, REFONTE_PATH), REFONTE);
+}
+
+#[test]
 fn a_project_is_renamed_and_recolored_one_property_at_a_time() {
     let store = workspace();
     let change = |change: ProjectChange| {

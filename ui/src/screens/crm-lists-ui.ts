@@ -28,6 +28,8 @@ export interface ListsState {
   renaming: { readonly project: string; readonly value: string } | null;
   /** Le projet dont le choix de couleur est ouvert. */
   palette: string | null;
+  /** Le texte tapé dans le champ d'étiquettes de chaque projet, pas encore validé. */
+  readonly tagDrafts: Map<string, string>;
   /** Ce qui est déplié, gardé sur ce Mac. */
   readonly unfolded: Set<string>;
 }

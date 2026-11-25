@@ -380,3 +380,52 @@ fn the_source_position_counts_in_the_gap_between_centers() {
         (Side::Bottom, Side::Top)
     );
 }
+
+fn words(tags: &[&str]) -> Vec<String> {
+    tags.iter().map(|tag| (*tag).to_owned()).collect()
+}
+
+#[test]
+fn the_tags_of_a_canvas_are_the_tags_property_of_the_root() {
+    let canvas = Canvas::parse("{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"tags\":[\"perso\",\"#idées\",\" \",\"perso\",3,\"loisirs\"]\n}").unwrap();
+    assert_eq!(canvas.tags(), ["perso", "idées", "loisirs"]);
+    assert!(Canvas::default().tags().is_empty());
+    let not_a_list = Canvas::parse(r#"{"nodes":[],"edges":[],"tags":"perso"}"#).unwrap();
+    assert!(not_a_list.tags().is_empty());
+}
+
+#[test]
+fn tagging_a_canvas_writes_the_property_at_the_root_and_keeps_every_other_property() {
+    let text = "{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"malorean\":{\"vue\":1},\n\t\"tags\":[\"a\"],\n\t\"autre\":true\n}";
+    let tagged = Canvas::parse(text)
+        .unwrap()
+        .with_tags(&words(&["b", "c d"]));
+    assert_eq!(
+        tagged.to_text(),
+        "{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"malorean\":{\"vue\":1},\n\t\"tags\":[\"b\",\"c d\"],\n\t\"autre\":true\n}"
+    );
+}
+
+#[test]
+fn a_canvas_without_the_property_gets_it_after_the_others_and_loses_it_without_tags() {
+    let plain = "{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"malorean\":{}\n}";
+    let tagged = Canvas::parse(plain).unwrap().with_tags(&words(&["a"]));
+    assert_eq!(
+        tagged.to_text(),
+        "{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"malorean\":{},\n\t\"tags\":[\"a\"]\n}"
+    );
+    assert_eq!(tagged.with_tags(&[]).to_text(), plain);
+    assert_eq!(
+        Canvas::parse(plain).unwrap().with_tags(&[]).to_text(),
+        plain
+    );
+}
+
+#[test]
+fn a_tags_property_that_is_not_a_list_is_replaced_by_the_list() {
+    let canvas = Canvas::parse(r#"{"nodes":[],"edges":[],"tags":"perso"}"#).unwrap();
+    assert_eq!(
+        canvas.with_tags(&words(&["a"])).to_text(),
+        "{\n\t\"nodes\":[],\n\t\"edges\":[],\n\t\"tags\":[\"a\"]\n}"
+    );
+}

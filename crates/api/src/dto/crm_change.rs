@@ -490,6 +490,11 @@ pub enum CrmProjectChangeItem {
         /// Le nom de la couleur.
         color: String,
     },
+    /// Ses étiquettes.
+    Tags {
+        /// Les étiquettes.
+        tags: Vec<String>,
+    },
 }
 
 impl TryFrom<CrmProjectChangeItem> for ProjectChange {
@@ -499,6 +504,7 @@ impl TryFrom<CrmProjectChangeItem> for ProjectChange {
         Ok(match item {
             CrmProjectChangeItem::Rename { name } => Self::Rename(name),
             CrmProjectChangeItem::Color { color: written } => Self::Color(color(&written)?),
+            CrmProjectChangeItem::Tags { tags } => Self::Tags(tags),
         })
     }
 }

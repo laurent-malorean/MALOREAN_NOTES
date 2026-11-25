@@ -1,32 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { action, crm, sample, TODAY } from "../../test-support/crm-fixture";
-import { cardView, lateText, lookupsOf, PEOPLE_SHOWN, tagColor } from "./crm-card";
+import { cardView, lateText, lookupsOf, PEOPLE_SHOWN } from "./crm-card";
+import { tagColor } from "./tag-field";
 
 const view = (name: string, data = sample()) => {
   const found = data.actions.find((a) => a.name === name);
   if (found === undefined) throw new Error(name);
   return cardView(found, lookupsOf(data), TODAY);
 };
-
-describe("couleur d'une étiquette", () => {
-  it("vient de la somme des codes de son nom en minuscules, modulo 10", () => {
-    // « a » = 97 : 97 mod 10 = 7, la huitième couleur (rose).
-    expect(tagColor("a")).toBe("rose");
-    // « urgent » : 117+114+103+101+110+116 = 661, modulo 10 = 1 (orange).
-    expect(tagColor("urgent")).toBe("orange");
-  });
-
-  it("ne compte pas la casse, et part du rouge", () => {
-    expect(tagColor("URGENT")).toBe(tagColor("urgent"));
-    // « d » = 100 : modulo 10 = 0, la première couleur.
-    expect(tagColor("d")).toBe("rouge");
-  });
-
-  it("compte les codes d'un caractère hors du plan de base comme un seul", () => {
-    // 😀 = 128512 : modulo 10 = 2 (jaune).
-    expect(tagColor("😀")).toBe("jaune");
-  });
-});
 
 describe("pastille de retard", () => {
   it("dit « de 1 jour » le lendemain, « de N jours » ensuite", () => {
