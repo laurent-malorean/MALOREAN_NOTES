@@ -1265,12 +1265,27 @@ button {
 }
 .settings {
   width: min(46rem, 92vw);
+  /* Même hauteur sur tous les onglets (celle de l'onglet le plus haut, « Brancher une IA » avec sa clé),
+     bornée par la fenêtre de l'application : un contenu plus long défile dans la zone de contenu. */
+  height: min(55rem, calc(100vh - 4rem));
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1.2rem 1.4rem;
   background: var(--bg);
   color: var(--text);
   box-shadow: 0 10px 30px var(--shadow);
+}
+.settings[open] {
+  display: flex;
+  flex-direction: column;
+}
+.settings > form,
+.settings-tabbed,
+.settings-panels {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 .settings::backdrop {
   background: var(--shadow);
@@ -1325,6 +1340,7 @@ button {
   flex: 1 1 100%;
 }
 .settings-tabs {
+  flex: none;
   display: flex;
   gap: 0.2rem;
   margin-bottom: 1rem;
@@ -1348,14 +1364,15 @@ button {
   border-bottom-color: var(--accent);
 }
 .settings-panel {
-  min-height: 18rem;
-  max-height: 60vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 .settings-panel[hidden] {
   display: none;
 }
 .settings footer {
+  flex: none;
   margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
