@@ -82,6 +82,8 @@ pub struct Session {
     claude: Option<Arc<dyn ClaudeCode>>,
     /// Les outils de l'application, ouverts pendant un tour de la colonne Claude Code.
     tools_turn: Mutex<Option<app_tools::ToolsTurn>>,
+    /// Ce qui branche une IA extérieure aux outils de l'application (fiche 0056).
+    connection: Option<app_tools::Connection>,
     /// L'interface, pour les outils de l'application qui lui montrent une note ou lui demandent
     /// ce que l'utilisateur regarde.
     screen: Option<Arc<dyn app_tools::AppScreen>>,
@@ -144,6 +146,7 @@ impl Session {
             assistant: None,
             claude: None,
             tools_turn: Mutex::new(None),
+            connection: None,
             screen: None,
             views: Mutex::default(),
             view_requests: AtomicU64::new(0),

@@ -5,11 +5,13 @@
 
 mod catalog;
 mod changing;
+mod connection;
 mod mcp;
 mod meaning;
 mod reading;
 mod screen;
 
+pub(super) use connection::Connection;
 pub use screen::AppScreen;
 pub(super) use screen::View;
 
