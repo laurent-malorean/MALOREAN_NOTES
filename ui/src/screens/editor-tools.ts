@@ -1,8 +1,36 @@
-// Outils posés sur l'éditeur : boutons du mode focus, du mode machine à écrire, du plein écran
-// et des panneaux latéraux.
+// Outils posés sur l'éditeur : le bloc d'icônes du mode focus, du plan, du mode machine à écrire,
+// des panneaux latéraux, du plein écran et de Claude. Un bouton n'a pas de texte : son nom (qui change
+// avec son état) est dans son nom accessible et sa bulle d'aide.
 import type { FocusUnit } from "../editor/focus/focus-range";
 import type { Typewriter } from "../editor/writing/typewriter";
+import type { CommandId } from "../state/commands";
+import { DISPLAY_TOOLS, displayToolTitle } from "../state/format-bar";
 import type { SidePanels } from "../state/side-panels-preference";
+import { formatIcon } from "./format-icons";
+
+/** Donne au bouton son nom du moment : nom accessible, et bulle d'aide avec le raccourci de sa commande. */
+function nameTool(button: HTMLElement, label: string, command: CommandId): void {
+  button.setAttribute("aria-label", label);
+  button.title = displayToolTitle(label, command);
+}
+
+/** Pose dans le bloc les six boutons-icônes, dans l'ordre ; chacun garde le `data-<clé>` que la fenêtre cherche. */
+export function buildDisplayTools(group: HTMLElement): void {
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", "Affichage");
+  group.replaceChildren(
+    ...DISPLAY_TOOLS.map(({ key, label, command, icon }) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "format-button";
+      button.setAttribute(`data-${key}`, "");
+      button.setAttribute("aria-pressed", "false");
+      button.append(formatIcon(icon));
+      nameTool(button, label, command);
+      return button;
+    }),
+  );
+}
 
 const FOCUS_LABELS: Readonly<Record<FocusUnit, string>> = {
   sentence: "Focus : phrase",
@@ -11,13 +39,14 @@ const FOCUS_LABELS: Readonly<Record<FocusUnit, string>> = {
 
 /** Le bouton dit le mode focus en cours. */
 export function showFocusUnit(button: HTMLElement, unit: FocusUnit | null): void {
-  button.textContent = unit ? FOCUS_LABELS[unit] : "Focus";
+  nameTool(button, unit ? FOCUS_LABELS[unit] : "Focus", "toggle-focus");
   button.setAttribute("aria-pressed", String(unit !== null));
 }
 
 /** Le bouton dit si la fenêtre est en plein écran ; la disposition, elle, ne change pas. */
 export function showFullScreen(button: HTMLElement, on: boolean): void {
-  button.textContent = on ? "Quitter le plein écran" : "Plein écran";
+  nameTool(button, on ? "Quitter le plein écran" : "Plein écran", "toggle-full-screen");
+  button.replaceChildren(formatIcon(on ? "full-screen-exit" : "full-screen"));
   button.setAttribute("aria-pressed", String(on));
 }
 

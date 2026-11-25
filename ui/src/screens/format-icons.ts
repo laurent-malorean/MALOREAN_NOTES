@@ -1,6 +1,7 @@
-// Icônes de la barre de mise en forme : traits fins de la couleur du texte, dans le style des
+// Icônes de la barre de mise en forme et du bloc d'outils d'affichage : traits fins de la couleur du texte, dans le style des
 // symboles du Mac. Chaque icône est une liste de tracés dans une grille de 24 sur 24.
 import type { FormatIcon } from "../state/format-bar";
+import { CLAUDE_RAY_COUNT, claudeRay } from "./claude-icon";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
@@ -45,6 +46,27 @@ const PATHS: Record<FormatIcon, readonly string[]> = {
     "M9 9h10a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z",
     "M16 9V6a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3",
   ],
+  focus: [
+    "M12 6a6 6 0 1 0 0 12a6 6 0 1 0 0-12z",
+    "M12 12h.01",
+    "M12 3v3",
+    "M12 18v3",
+    "M3 12h3",
+    "M18 12h3",
+  ],
+  outline: ["M4 6h16", "M9 10.7h11", "M9 15.3h11", "M4 19.5h16"],
+  typewriter: [
+    "M3 8h18a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z",
+    ...["M6 11.5h.01", "M10 11.5h.01", "M14 11.5h.01", "M18 11.5h.01", "M7 15h10"],
+  ],
+  panels: ["M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z", "M10 5v14"],
+  "full-screen": ["M4 9V4h5", "M20 9V4h-5", "M4 15v5h5", "M20 15v5h-5"],
+  "full-screen-exit": ["M9 4v5H4", "M15 4v5h5", "M9 20v-5H4", "M15 20v-5h5"],
+  // Les douze rayons de l'icône de la colonne Claude Code, un tracé par rayon.
+  claude: Array.from({ length: CLAUDE_RAY_COUNT }, (_, index) => {
+    const { from, to } = claudeRay(index);
+    return `M${from[0]} ${from[1]}L${to[0]} ${to[1]}`;
+  }),
 };
 
 /** Dessine l'icône : un SVG décoratif (le nom du bouton vient de sa commande), à trait fin. */

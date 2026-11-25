@@ -30,13 +30,13 @@ function setup(stored: Record<string, string> = {}) {
 describe("outils d'écriture", () => {
   it("le mode focus gardé est remis, puis change à chaque clic, dans toutes les colonnes", () => {
     const t = setup({ "malorean.focus": "sentence" });
-    expect(t.layout.focusButton.textContent).toBe("Focus : phrase");
+    expect(t.layout.focusButton.getAttribute("aria-label")).toBe("Focus : phrase");
     expect(t.first.editor.setFocusMode).toHaveBeenLastCalledWith("sentence");
     t.layout.focusButton.click();
     expect(t.second.editor.setFocusMode).toHaveBeenLastCalledWith("paragraph");
     expect(t.storage.items.get("malorean.focus")).toBe("paragraph");
     t.writing.toggleFocus();
-    expect(t.layout.focusButton.textContent).toBe("Focus");
+    expect(t.layout.focusButton.getAttribute("aria-label")).toBe("Focus");
     expect(t.storage.items.has("malorean.focus")).toBe(false);
   });
 
