@@ -22,7 +22,9 @@ const KEY_REFUSED: i64 = -32001;
 
 /// Ce que l'application dit à Claude de ses outils, à la présentation.
 const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de l'utilisateur, \
-    pour l'espace de travail ouvert. Passez par eux pour chercher (avec l'index de l'application), \
+    pour l'espace de travail ouvert et pour les autres que l'utilisateur a autorisés pour les IA \
+    (`list_workspaces` les donne par leur nom ; chaque autre outil accepte le paramètre \
+    `workspace`, et vise sans lui l'espace ouvert). Passez par eux pour chercher (avec l'index de l'application), \
     pour connaître les étiquettes, les liens entrants, les modèles de note et l'historique des \
     versions, pour créer, renommer, ranger, étiqueter, épingler ou jeter une note selon ses règles, \
     pour savoir quelle note l'utilisateur regarde et lui en montrer une. Pour changer le texte d'une note, utilisez vos propres outils de fichiers (remplacer \
@@ -145,6 +147,19 @@ mod tests {
         assert_eq!(result["instructions"], INSTRUCTIONS);
         let reply = replied(r#"{"jsonrpc":"2.0","id":1,"method":"initialize"}"#);
         assert_eq!(reply["result"]["protocolVersion"], PROTOCOL_VERSION);
+    }
+
+    #[test]
+    fn the_introduction_tells_how_to_choose_a_workspace() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            "`list_workspaces`",
+            "le paramètre `workspace`",
+            "autorisés pour les IA",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
     }
 
     /// La consigne sur les CRM dans la présentation du serveur (spécification du CRM, § 13).

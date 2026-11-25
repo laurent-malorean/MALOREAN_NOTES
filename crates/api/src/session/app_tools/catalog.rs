@@ -41,6 +41,18 @@ fn input(properties: Value, required: &[&str]) -> Value {
 /// Ce que fait un outil, et l'entrée qu'il attend.
 type Described = (&'static str, Value);
 
+fn list_workspaces() -> Described {
+    (
+        "Les espaces de travail que l'utilisateur a autorisés pour les IA (cases à cocher de \
+         l'onglet « Brancher une IA » des Réglages), par leur nom : `name`, et `open` pour celui \
+         qui est ouvert chez l'utilisateur. Aucun autre espace n'est visible. Si la liste est \
+         vide, `message` dit que l'utilisateur doit en cocher un. Les autres outils visent \
+         l'espace ouvert ; pour en viser un autre de cette liste, donnez son nom dans leur \
+         paramètre `workspace`.",
+        input(json!({}), &[]),
+    )
+}
+
 fn search_notes() -> Described {
     (
         "Cherche des notes de l'espace de travail avec l'index de MALOREAN Notes, sans \
@@ -356,6 +368,7 @@ fn show_note() -> Described {
 /// Ce que fait l'outil, et l'entrée qu'il attend.
 fn described(tool: AppTool) -> Described {
     match tool {
+        AppTool::ListWorkspaces => list_workspaces(),
         AppTool::SearchNotes => search_notes(),
         AppTool::SearchByMeaning => search_by_meaning(),
         AppTool::ListTags => list_tags(),
@@ -383,9 +396,21 @@ fn described(tool: AppTool) -> Described {
     }
 }
 
-/// L'outil tel que `tools/list` le donne à Claude.
+/// Le paramètre facultatif qui choisit l'espace de travail d'un outil (fiche 0074).
+fn workspace() -> Value {
+    text(
+        "Le nom d'un espace de travail autorisé pour les IA (voir `list_workspaces`) ; l'espace \
+         ouvert chez l'utilisateur si absent. Un nom inconnu ou non autorisé est refusé.",
+    )
+}
+
+/// L'outil tel que `tools/list` le donne à Claude : tout outil qui vise un espace de travail
+/// accepte le paramètre `workspace`.
 pub(super) fn tool_description(tool: AppTool) -> Value {
-    let (description, input_schema) = described(tool);
+    let (description, mut input_schema) = described(tool);
+    if tool.aims_at_a_workspace() {
+        input_schema["properties"]["workspace"] = workspace();
+    }
     json!({ "name": tool.name(), "description": description, "inputSchema": input_schema })
 }
 
@@ -437,7 +462,8 @@ mod tests {
     #[test]
     fn each_tool_requires_what_it_cannot_work_without() {
         let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 24] = [
+        let expected: [(AppTool, &[&str]); 25] = [
+            (AppTool::ListWorkspaces, &[]),
             (AppTool::SearchNotes, &[]),
             (AppTool::SearchByMeaning, &["question"]),
             (AppTool::ListTags, &[]),
@@ -478,7 +504,7 @@ mod tests {
             .cloned()
             .collect();
         fields.sort();
-        assert_eq!(fields, ["limit", "question"]);
+        assert_eq!(fields, ["limit", "question", "workspace"]);
         let description = described["description"].as_str().unwrap();
         assert!(description.contains("mots exacts"), "{description}");
         assert!(description.contains("`reason`"), "{description}");
@@ -534,6 +560,41 @@ mod tests {
             .cloned()
             .collect();
         fields.sort();
-        assert_eq!(fields, ["content_type", "folder", "query", "tag"]);
+        assert_eq!(
+            fields,
+            ["content_type", "folder", "query", "tag", "workspace"]
+        );
+    }
+
+    #[test]
+    fn every_tool_but_the_list_of_workspaces_takes_an_optional_workspace() {
+        for tool in AppTool::ALL {
+            let schema = checked_schema(tool);
+            let property = &schema["properties"]["workspace"];
+            if tool == AppTool::ListWorkspaces {
+                assert!(property.is_null());
+                continue;
+            }
+            assert_eq!(property["type"], "string", "{tool:?}");
+            let description = property["description"].as_str().unwrap();
+            assert!(description.contains("`list_workspaces`"), "{tool:?}");
+            assert!(!schema["required"].to_string().contains("workspace"));
+        }
+    }
+
+    #[test]
+    fn the_list_of_workspaces_says_that_it_shows_names_and_the_open_one_and_points_to_the_settings()
+    {
+        let described = tool_description(AppTool::ListWorkspaces);
+        let description = described["description"].as_str().unwrap();
+        for expected in [
+            "autorisés pour les IA",
+            "`open`",
+            "« Brancher une IA »",
+            "paramètre `workspace`",
+        ] {
+            assert!(description.contains(expected), "{expected}");
+        }
+        assert_eq!(described["inputSchema"]["properties"], json!({}));
     }
 }

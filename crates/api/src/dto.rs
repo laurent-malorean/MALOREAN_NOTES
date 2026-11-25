@@ -16,7 +16,7 @@ mod turn_settings;
 
 pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
-pub use connection::{ConnectionInfo, ConnectionKeyItem};
+pub use connection::{AiWorkspaceItem, ConnectionInfo, ConnectionKeyItem};
 pub use crm::{
     ActionPersonItem, ChecklistEntryItem, ChecklistItem, ColumnItem, CommentItem, CrmActionItem,
     CrmCompanyItem, CrmItem, CrmPersonItem, CrmProjectItem, NoDataItem, PassageItem, TallyItem,

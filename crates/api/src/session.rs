@@ -22,6 +22,7 @@ mod meaning_worker;
 mod mind_map;
 mod quick_open;
 mod recent_notes;
+mod redirect;
 mod research_notebook;
 mod saving;
 mod tags;
@@ -264,6 +265,20 @@ impl Session {
     fn keep(&self, opened: OpenedWorkspace) -> Result<WorkspaceInfo, ApiError> {
         self.keep_pending_versions();
         let info = workspace::workspace_info(&opened);
+        let state = self.open_state(opened)?;
+        let meaning = Arc::clone(&state.meaning);
+        *self
+            .workspace
+            .write()
+            .unwrap_or_else(PoisonError::into_inner) = Some(state);
+        self.worker.switch(meaning);
+        Ok(info)
+    }
+
+    /// Ce qu'il faut pour travailler dans un espace de travail : son index (de mots et de sens)
+    /// mis à jour sur ses fichiers, son historique, ses gestes en attente repris, ses notes qui
+    /// les suivent. Ne change rien à l'espace ouvert de la session.
+    fn open_state(&self, opened: OpenedWorkspace) -> Result<OpenWorkspaceState, ApiError> {
         let location = opened.workspace.location;
         let OpenedIndex {
             words: index,
@@ -280,22 +295,16 @@ impl Session {
         RecoverGestures::new(&*opened.store, &*gestures).execute()?;
         RefreshIndex::new(&*opened.store, &*index).execute()?;
         let versioned = Arc::new(VersionedStore::new(opened.store, Arc::clone(&history)));
-        let state = OpenWorkspaceState {
+        Ok(OpenWorkspaceState {
             name: opened.workspace.name,
             location,
             store: Arc::new(IndexedStore::new(versioned, Arc::clone(&index))),
             index,
-            meaning: Arc::clone(&meaning),
+            meaning,
             history,
             gestures,
             pending: Arc::default(),
-        };
-        *self
-            .workspace
-            .write()
-            .unwrap_or_else(PoisonError::into_inner) = Some(state);
-        self.worker.switch(meaning);
-        Ok(info)
+        })
     }
 
     /// L'espace de travail `name` s'appelle maintenant `kept` : s'il est ouvert, il garde ce nom.
@@ -310,6 +319,9 @@ impl Session {
     }
 
     fn opened(&self) -> Result<OpenWorkspaceState, ApiError> {
+        if let Some(redirected) = redirect::current() {
+            return Ok(redirected);
+        }
         let workspace = self
             .workspace
             .read()

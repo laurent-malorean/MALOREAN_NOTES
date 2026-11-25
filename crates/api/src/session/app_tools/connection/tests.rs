@@ -38,6 +38,8 @@ fn fixture_with(notes: &[(&str, &str)], open_workspace: bool) -> Fixture {
     );
     if open_workspace {
         session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+        // Une IA branchée ne voit que les espaces que l'utilisateur a cochés (fiche 0074).
+        session.set_workspace_allowed("Notes", true).unwrap();
     }
     Fixture {
         session,
@@ -358,7 +360,8 @@ fn without_a_workspace_the_ai_can_still_list_the_tools_but_a_tool_says_why_it_ca
     assert_eq!(searched["result"]["isError"], true);
     assert_eq!(
         searched["result"]["content"][0]["text"],
-        "aucun espace de travail n'est ouvert"
+        "aucun espace de travail n'est ouvert chez l'utilisateur : nommez-en un avec le \
+         paramètre « workspace » (voir `list_workspaces`)"
     );
 }
 
@@ -388,6 +391,7 @@ fn an_ai_connected_on_a_workspace_that_is_replaced_by_another_follows_the_open_o
     let Fixture { session, .. } = fixture();
     let key = session.create_connection_key().unwrap();
     session.add_workspace("Autre", "/Users/moi/Autre").unwrap();
+    session.set_workspace_allowed("Autre", true).unwrap();
     session.open_workspace("Autre").unwrap();
 
     let viewed = call(&session, key.secret(), "list_tags", &json!({}));

@@ -27,3 +27,14 @@ pub struct ConnectionKeyItem {
     /// Le bloc de configuration pour Codex.
     pub codex_config: String,
 }
+
+/// Un espace de travail de l'utilisateur et sa case « autorisé pour les IA » (fiche 0074).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct AiWorkspaceItem {
+    /// Le nom de l'espace de travail.
+    pub name: String,
+    /// Vrai quand l'utilisateur l'a coché : les IA branchées le voient et peuvent le viser.
+    pub allowed: bool,
+}

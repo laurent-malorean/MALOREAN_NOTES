@@ -13,7 +13,7 @@ use serde_json::Value;
 
 mod configuration;
 
-use super::{ToolsScope, mcp};
+use super::{Fallback, ToolsScope, mcp};
 use crate::{ApiError, ConnectionInfo, ConnectionKeyItem, Session};
 
 /// Ce que l'application répond à une demande sans clé de branchement valable.
@@ -152,19 +152,18 @@ impl Session {
             .is_some_and(|connection| ReadConnectionKey::new(&*connection.keys).accepts(key));
         let refusal = (!accepted).then_some(CONNECTION_KEY_REFUSED);
         mcp::answer(line, refusal, |tool, arguments: &Value| {
-            let scope = self.connected_scope()?;
-            self.call_tool(&scope, tool, arguments)
+            self.call_tool(&Self::connected_scope(), tool, arguments)
         })
     }
 
-    /// Ce que visent les outils d'une IA extérieure : l'espace de travail ouvert à cet instant ;
-    /// le dossier des modèles n'est choisi que par l'interface, pour un tour de la colonne.
-    fn connected_scope(&self) -> Result<ToolsScope, String> {
-        let opened = self.opened().map_err(|error| error.message)?;
-        Ok(ToolsScope {
-            workspace: opened.name,
+    /// Ce que visent les outils d'une IA extérieure sans le paramètre `workspace` : l'espace de
+    /// travail ouvert à cet instant, s'il est autorisé pour les IA (fiche 0074) ; le dossier des
+    /// modèles n'est choisi que par l'interface, pour un tour de la colonne.
+    const fn connected_scope() -> ToolsScope {
+        ToolsScope {
+            fallback: Fallback::Opened,
             templates: None,
-        })
+        }
     }
 }
 

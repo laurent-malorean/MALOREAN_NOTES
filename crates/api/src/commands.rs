@@ -563,6 +563,8 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         connection::connection_info,
         connection::create_connection_key,
         connection::revoke_connection_key,
+        connection::list_ai_workspaces,
+        connection::set_workspace_allowed,
         claude::claude_status,
         claude::send_to_claude,
         claude::stop_claude,

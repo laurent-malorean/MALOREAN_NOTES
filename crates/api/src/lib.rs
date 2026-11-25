@@ -9,9 +9,9 @@ mod pdf;
 mod session;
 
 pub use dto::{
-    ActionKindItem, ActionPersonItem, AgentStateItem, AppMenu, AssistantStatus, AttachedFile,
-    BodyChangeItem, CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem,
-    ChecklistEntryItem, ChecklistItem, ChosenFolder, ClaudeEventItem, ClaudeModelItem,
+    ActionKindItem, ActionPersonItem, AgentStateItem, AiWorkspaceItem, AppMenu, AssistantStatus,
+    AttachedFile, BodyChangeItem, CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem,
+    CanvasItem, ChecklistEntryItem, ChecklistItem, ChosenFolder, ClaudeEventItem, ClaudeModelItem,
     ClaudeStatusItem, ColumnItem, CommentItem, CompanyChoiceItem, ConnectionInfo,
     ConnectionKeyItem, ContentTypeItem, CrmActionChangeItem, CrmActionDraftItem, CrmActionItem,
     CrmCompanyChangeItem, CrmCompanyItem, CrmFiltersItem, CrmItem, CrmPersonChangeItem,
