@@ -2,6 +2,7 @@
 
 mod attachments;
 mod canvas;
+mod connection;
 mod create_note;
 mod export;
 mod folders;
@@ -28,6 +29,7 @@ pub use attachments::{
     OpenLinkTarget,
 };
 pub use canvas::{CreateCanvas, ReadCanvas, SaveCanvas, SavedCanvas};
+pub use connection::{CreateConnectionKey, ReadConnectionKey, RevokeConnectionKey};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
 pub use export::ExportMarkdown;
 pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};

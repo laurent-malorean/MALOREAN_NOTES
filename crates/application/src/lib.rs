@@ -1,6 +1,7 @@
 //! Cas d'usage de MALOREAN Notes. Ne parle au stockage que par les ports.
 
 mod claude;
+mod connection_ports;
 pub mod error;
 mod history;
 mod indexed_store;
@@ -20,6 +21,7 @@ pub mod workspaces;
 mod writing;
 
 pub use claude::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn};
+pub use connection_ports::{ConnectionKeys, SecretMaker};
 pub use error::AppError;
 pub use history::{History, HistoryOpener, HistoryPlace};
 pub use indexed_store::IndexedStore;
