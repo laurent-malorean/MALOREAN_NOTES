@@ -136,7 +136,116 @@ async function connectionTab(trial: Trial): Promise<void> {
   closeSettings(window);
 }
 
+const NEW_FOLDER = "Nouveau dossier…";
+
+/** Ce que le stockage de la vraie fenêtre garde pour ce réglage (une clé par espace de travail). */
+function stored(prefix: string): string | null {
+  const key = Object.keys(localStorage).find((k) => k.startsWith(prefix));
+  return key === undefined ? null : localStorage.getItem(key);
+}
+
+/** Choisit une entrée de la liste, comme un choix dans son menu : la valeur change, puis « change » part. */
+function choose(select: HTMLSelectElement, label: string): void {
+  const option = [...select.options].find((o) => o.text === label);
+  if (!option) throw new Error(`entrée « ${label} » introuvable`);
+  select.value = option.value;
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+const lineOf = (panel: HTMLElement, label: string) =>
+  findAll<HTMLLabelElement>("label", panel).find((l) => l.textContent === label)?.control;
+
+interface Lists {
+  readonly window: HTMLElement;
+  readonly panel: HTMLElement;
+  readonly templates: HTMLSelectElement;
+  readonly journal: HTMLSelectElement;
+}
+
+const texts = (select: HTMLSelectElement) => [...select.options].map((o) => o.text);
+
+/** Les deux listes : ce qu'elles proposent (arborescence, retraits) et leurs rectangles réels. */
+function checkLists(trial: Trial, { window, templates, journal }: Lists): void {
+  trial.measure("entréesModèles", texts(templates));
+  trial.measure("entréesJournal", texts(journal));
+  const nested = texts(templates).indexOf("⎿ Sous");
+  trial.check(
+    "les modèles : « Aucun » en tête, puis l'arborescence avec ses retraits",
+    texts(templates)[0] === "Aucun" && nested > 0 && texts(templates)[nested - 1] === "Essai",
+    texts(templates).join(" | "),
+  );
+  const forJournal = texts(journal);
+  trial.check(
+    "le journal : l'arborescence, « Journal » même absent, « Nouveau dossier… » à la fin",
+    forJournal.includes("Journal") &&
+      forJournal.includes("⎿ Sous") &&
+      forJournal.at(-1) === NEW_FOLDER,
+    forJournal.join(" | "),
+  );
+  const [a, b] = [rectOf(templates), rectOf(journal)];
+  trial.measure("listes", { modèles: a, journal: b });
+  const frame = rectOf(window);
+  const inside = (r: typeof a) => r.x >= frame.x && r.x + r.width <= frame.x + frame.width;
+  trial.check(
+    "les deux listes sont visibles, de même largeur et dans la fenêtre",
+    a.width > 0 && a.height > 0 && Math.abs(a.width - b.width) <= PIXEL && inside(a) && inside(b),
+    `${Math.round(a.width)}x${Math.round(a.height)} / ${Math.round(b.width)}x${Math.round(b.height)}`,
+  );
+}
+
+/** « Nouveau dossier… » : le champ sous la liste, un nom refusé, puis un nom accepté et gardé. */
+async function checkNewFolder(trial: Trial, { panel, journal }: Lists): Promise<void> {
+  choose(journal, NEW_FOLDER);
+  const input = await until(
+    "le champ du nom",
+    () => find<HTMLInputElement>(".folder-new-input", panel),
+    WAIT,
+  );
+  const under = rectOf(journal).y + rectOf(journal).height - PIXEL;
+  trial.check(
+    "le champ du nom est visible sous la liste",
+    rectOf(input).width > 0 && rectOf(input).y >= under,
+  );
+  input.value = "a/b";
+  input.dispatchEvent(
+    new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }),
+  );
+  trial.check("un nom invalide est refusé", find(".setting-error:not([hidden])", panel) !== null);
+  input.value = "Carnet";
+  findAll<HTMLButtonElement>("button", panel)
+    .find((b) => b.textContent === "Créer")
+    ?.click();
+  trial.check(
+    "« Nouveau dossier… » enregistre le nouveau dossier comme dossier du journal",
+    (stored("malorean.journal:") ?? "").includes('"folder":"Carnet"') && journal.value === "Carnet",
+    String(stored("malorean.journal:")),
+  );
+}
+
+/** Le choix de dossier : l'arborescence, le choix gardé, « Nouveau dossier… ». */
+async function folderChoices(trial: Trial): Promise<void> {
+  const window = await openSettings();
+  const panel = await showTab(window, "Écriture");
+  const templates = lineOf(panel, "Dossier des modèles") as HTMLSelectElement | undefined;
+  const journal = lineOf(panel, "Dossier du journal") as HTMLSelectElement | undefined;
+  if (!templates || !journal) throw new Error("liste des dossiers introuvable");
+  const lists = { window, panel, templates, journal };
+  checkLists(trial, lists);
+  choose(templates, "⎿ Sous");
+  const kept = stored("malorean.templates:");
+  trial.check(
+    "choisir un dossier l'enregistre (stockage de la fenêtre)",
+    kept === "Essai/Sous",
+    String(kept),
+  );
+  choose(templates, "Aucun");
+  trial.check("choisir « Aucun » l'efface", stored("malorean.templates:") === null);
+  await checkNewFolder(trial, lists);
+  closeSettings(window);
+}
+
 export const settingsScenarios = (): Scenario[] => [
   { name: "Réglages : onglet Index, barre de progression", run: (t) => indexTab(t) },
   { name: "Réglages : onglet Brancher une IA, boutons Copier", run: (t) => connectionTab(t) },
+  { name: "Réglages : choix de dossier (modèles, journal)", run: (t) => folderChoices(t) },
 ];

@@ -1158,6 +1158,19 @@ button {
 .setting-error[hidden] {
   display: none;
 }
+/* Choix de dossier : le champ du nom d'un nouveau dossier, sous la liste */
+.folder-new {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.folder-new[hidden] {
+  display: none;
+}
+.folder-new .setting-error {
+  flex: 1 1 100%;
+}
 .settings-tabs {
   display: flex;
   gap: 0.2rem;
@@ -1212,6 +1225,7 @@ button {
   font-size: 0.85rem;
 }
 .setting select {
+  max-width: 100%;
   font: inherit;
   color: var(--text);
   background: var(--side-panel);

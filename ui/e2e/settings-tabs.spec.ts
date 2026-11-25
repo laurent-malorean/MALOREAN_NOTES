@@ -30,11 +30,11 @@ test("change d'onglet à la souris et au clavier, et rouvre le dernier onglet ou
   ]);
   await expect(tab("Affichage")).toHaveAttribute("aria-selected", "true");
   await expect(settings.getByRole("combobox", { name: "Police" })).toBeVisible();
-  await expect(settings.getByRole("textbox", { name: "Dossier du journal" })).toBeHidden();
+  await expect(settings.getByRole("combobox", { name: "Dossier du journal" })).toBeHidden();
 
   // À la souris.
   await tab("Écriture").click();
-  await expect(settings.getByRole("textbox", { name: "Dossier du journal" })).toBeVisible();
+  await expect(settings.getByRole("combobox", { name: "Dossier du journal" })).toBeVisible();
   await expect(settings.getByRole("combobox", { name: "Police" })).toBeHidden();
 
   // Au clavier : flèches, Fin, Début ; le focus suit l'onglet.
