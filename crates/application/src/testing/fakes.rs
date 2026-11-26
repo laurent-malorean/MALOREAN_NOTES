@@ -473,9 +473,12 @@ impl InMemoryNoteStore {
             .cloned()
             .collect();
         for note in notes {
+            let path = NotePath::new(note.folder().moved(from, to), note.name().clone());
             if let Some(value) = state.notes.remove(&note) {
-                let path = NotePath::new(note.folder().moved(from, to), note.name().clone());
-                state.notes.insert(path, value);
+                state.notes.insert(path.clone(), value);
+            }
+            if let Some(attachments) = state.attachments.remove(&note) {
+                state.attachments.insert(path, attachments);
             }
         }
     }

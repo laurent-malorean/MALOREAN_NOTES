@@ -108,6 +108,18 @@ fn list_tags() -> Described {
     )
 }
 
+fn list_folders() -> Described {
+    (
+        "L'arbre des dossiers de l'espace de travail : `folders`, les chemins de tous les \
+         dossiers depuis la racine de l'espace (`Animaux`, `Animaux/Chiens`), dans l'ordre de \
+         l'arbre de MALOREAN Notes (chaque dossier suivi de ses sous-dossiers, par ordre \
+         alphabétique), sans la racine ; un dossier vide y est aussi. Les dossiers cachés, les \
+         dossiers de pièces jointes (`….assets`), `node_modules` et la corbeille n'en font pas \
+         partie. Les notes d'un dossier se listent avec `search_notes` (paramètre `folder`).",
+        input(json!({}), &[]),
+    )
+}
+
 fn linking_notes() -> Described {
     (
         "Les liens entrants d'une note : les notes dont un lien `[[titre]]` la désigne ; une \
@@ -194,6 +206,61 @@ fn create_folder() -> Described {
             }),
             &["path"],
         ),
+    )
+}
+
+/// Le chemin d'un dossier, tel que les outils de dossier l'attendent.
+fn folder_path() -> Value {
+    text(
+        "Le chemin du dossier depuis la racine de l'espace de travail, séparé par `/` : `Animaux/Chiens`.",
+    )
+}
+
+fn rename_folder() -> Described {
+    (
+        "Renomme un dossier : il reste à sa place, avec tout ce qu'il contient (notes, sous-dossiers, \
+         pièces jointes, historique des versions ; l'index de recherche suit). Les liens \
+         `[[Dossier/titre]]` qui l'écrivent ne sont pas réécrits, comme dans l'application : le \
+         dossier n'y est qu'une précision, le lien reste valable tant que le titre est unique. \
+         Refusé, sans rien changer, avec le message de l'application : nom vide, caché (commence \
+         par `.`), terminé par `.assets`, `node_modules`, contenant `/` ou `\\` ; nom déjà pris par \
+         un dossier voisin ; dossier introuvable ; la racine de l'espace (chemin vide). Rend le \
+         nouveau chemin du dossier.",
+        input(
+            json!({
+                "path": folder_path(),
+                "name": text("Le nouveau nom du dossier, sans `/` : `Chiens de chasse`."),
+            }),
+            &["path", "name"],
+        ),
+    )
+}
+
+fn move_folder() -> Described {
+    (
+        "Déplace un dossier dans un autre, avec tout ce qu'il contient (notes, sous-dossiers, pièces \
+         jointes, historique des versions ; l'index de recherche suit). Il garde son nom. Les liens \
+         `[[Dossier/titre]]` ne sont pas réécrits (voir `rename_folder`). Refusé, sans rien \
+         changer : dossier introuvable ou dossier d'arrivée introuvable ; dossier d'arrivée qui \
+         est le dossier lui-même ou l'un de ses sous-dossiers ; un dossier du même nom déjà dans \
+         le dossier d'arrivée ; la racine de l'espace. Rend le nouveau chemin du dossier.",
+        input(
+            json!({
+                "path": folder_path(),
+                "folder": text("Le dossier d'arrivée depuis la racine de l'espace de travail ; `` pour la racine."),
+            }),
+            &["path", "folder"],
+        ),
+    )
+}
+
+fn trash_folder() -> Described {
+    (
+        "Met un dossier, avec tout ce qu'il contient (notes, sous-dossiers, pièces jointes, \
+         historique), à la corbeille de MALOREAN Notes, à son chemin d'origine (`Nom 2` s'il y est \
+         déjà) : jamais effacé, l'utilisateur peut le restaurer. Refusé : dossier introuvable ; la \
+         racine de l'espace (chemin vide). Rend `trashed`, son chemin dans la corbeille.",
+        input(json!({ "path": folder_path() }), &["path"]),
     )
 }
 
@@ -421,6 +488,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::SearchNotes => search_notes(),
         AppTool::SearchByMeaning => search_by_meaning(),
         AppTool::ListTags => list_tags(),
+        AppTool::ListFolders => list_folders(),
         AppTool::LinkingNotes => linking_notes(),
         AppTool::ReadNote => read_note(),
         AppTool::ListTemplates => list_templates(),
@@ -428,6 +496,9 @@ fn described(tool: AppTool) -> Described {
         AppTool::ReadVersion => read_version(),
         AppTool::CreateNote => create_note(),
         AppTool::CreateFolder => create_folder(),
+        AppTool::RenameFolder => rename_folder(),
+        AppTool::MoveFolder => move_folder(),
+        AppTool::TrashFolder => trash_folder(),
         AppTool::CreateNoteFromTemplate => create_note_from_template(),
         AppTool::TrashNote => trash_note(),
         AppTool::RenameNote => rename_note(),

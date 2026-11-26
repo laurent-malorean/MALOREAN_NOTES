@@ -33,14 +33,16 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     à puces (une puce `- ` par nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour \
     son détail, ` <!-- couleur: nom -->` au bout pour sa couleur) ; n'y écrivez que des puces et des \
     lignes de détail, et ne touchez jamais à la propriété `racines` de son en-tête. Les notes sont désignées par leur chemin depuis l'espace de travail \
-    (`dossier/nom.md`). \
+    (`dossier/nom.md`). Les dossiers aussi (`dossier/sous-dossier`) : `list_folders` donne l'arbre, \
+    `create_folder`, `rename_folder`, `move_folder` et `trash_folder` en créent, renomment, déplacent et \
+    mettent à la corbeille un avec tout son contenu. \
     Un CRM (`type: crm`, créé par `create_crm`) est une note ; ses fiches sont des notes rangées \
     dans des dossiers qui portent le nom de son fichier, un par sorte de fiche : pour `clients.md`, \
     `clients/entreprises/`, `clients/personnes/`, `clients/projets/`, `clients/actions/`. Leurs \
     types : `type: crm-entreprise`, `type: crm-personne`, `type: crm-projet`, `type: crm-action`. \
     Une fiche en désigne une autre par `[[nom-de-fichier]]`, sans dossier ni extension ; le nom du \
     fichier est le nom en kebab-case (pour une action, sa date puis son titre : \
-    `2026-11-24-demande-de-devis.md`) ; ne renommez jamais le fichier d'une fiche. Une action a, \
+    `2026-11-24-demande-de-devis.md`) ; ne renommez jamais le fichier d'une fiche, ni ne renommez, déplacez ou jetez les dossiers de fiches d'un CRM. Une action a, \
     dans son en-tête, `statut`, `date` (`2026-11-24`), `canal`, `projet`, `couleur`, `tags`, \
     `notes`, `personnes` (chaque personne avec son entreprise du moment : \
     `'[[jean-dupont]] · [[acme]]'`) et `rang` ; sous son titre `# …`, sa description, puis ses \
@@ -147,6 +149,23 @@ mod tests {
         assert_eq!(result["instructions"], INSTRUCTIONS);
         let reply = replied(r#"{"jsonrpc":"2.0","id":1,"method":"initialize"}"#);
         assert_eq!(reply["result"]["protocolVersion"], PROTOCOL_VERSION);
+    }
+
+    #[test]
+    fn the_introduction_names_the_tools_that_see_and_change_the_folders() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            "`list_folders`",
+            "`create_folder`",
+            "`rename_folder`",
+            "`move_folder`",
+            "`trash_folder`",
+            "corbeille",
+            "dossiers de fiches d'un CRM",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
     }
 
     #[test]

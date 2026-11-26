@@ -53,6 +53,9 @@ impl Session {
         match tool {
             AppTool::CreateNote => self.tool_create_note(arguments),
             AppTool::CreateFolder => self.tool_create_folder(arguments),
+            AppTool::RenameFolder | AppTool::MoveFolder | AppTool::TrashFolder => {
+                self.call_folder_tool(tool, arguments)
+            }
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
             AppTool::CreateCrm => self.tool_create_crm(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(arguments),

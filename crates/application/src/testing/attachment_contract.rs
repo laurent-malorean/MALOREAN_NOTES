@@ -37,8 +37,26 @@ pub fn attachment_contract<S: NoteStore>(empty_store: impl Fn() -> S) {
     an_attachment_never_overwrites_another(&empty_store());
     a_missing_attachment_cannot_be_located(&empty_store());
     attachments_follow_a_renamed_or_moved_note(&empty_store());
+    attachments_follow_a_moved_folder(&empty_store());
     notes_of_the_same_name_in_two_folders_keep_their_own_attachments(&empty_store());
     a_missing_file_of_the_workspace_is_not_found(&empty_store());
+}
+
+fn attachments_follow_a_moved_folder(store: &impl NoteStore) {
+    store.create_folder(&Folder::parse("a").unwrap()).unwrap();
+    store.create_folder(&Folder::parse("a/b").unwrap()).unwrap();
+    store.write(&note("a/b/n.md"), "# N").unwrap();
+    store
+        .write_attachment(&note("a/b/n.md"), &attachment("vue.png"), b"PNG")
+        .unwrap();
+    store
+        .move_folder(&Folder::parse("a").unwrap(), &Folder::parse("c").unwrap())
+        .unwrap();
+    assert_eq!(names(store, "c/b/n.md"), ["vue.png"]);
+    assert_eq!(
+        store.read_attachment(&note("c/b/n.md"), &attachment("vue.png")),
+        Ok(b"PNG".to_vec())
+    );
 }
 
 fn a_missing_file_of_the_workspace_is_not_found(store: &impl NoteStore) {

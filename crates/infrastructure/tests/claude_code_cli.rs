@@ -180,7 +180,7 @@ impl FakeClaude {
 }
 
 /// Les outils de l'application qui changent une note : le garde-fou du web les retient aussi.
-const CHANGING_APP_TOOLS: &str = "mcp__malorean__create_note|mcp__malorean__create_folder|mcp__malorean__create_note_from_template|mcp__malorean__trash_n\
+const CHANGING_APP_TOOLS: &str = "mcp__malorean__create_note|mcp__malorean__create_folder|mcp__malorean__rename_folder|mcp__malorean__move_folder|mcp__malorean__trash_folder|mcp__malorean__create_note_from_template|mcp__malorean__trash_n\
     ote|mcp__malorean__rename_note|mcp__malorean__move_note|mcp__malorean__restore_version|mcp__malorean__replace_in_note|mcp\
     __malorean__add_tags|mcp__malorean__remove_tags|mcp__malorean__pin_note|mcp__malorean__unp\
     in_note|mcp__malorean__add_attachment|mcp__malorean__add_entry|mcp__malorean__create_mind_map|mcp__malorean__create_crm";
@@ -232,10 +232,10 @@ fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them()
     let arguments = fake.arguments_and_guard().0;
     let (before, mcp) = arguments.split_once("--mcp-config\n").unwrap();
     let (mcp, after) = mcp.split_once('\n').unwrap();
-    let allowed = "WebSearch,WebFetch,mcp__malorean__list_workspaces,mcp__malorean__search_notes,mcp__malorean__search_by_meaning,mcp__malorean__list_tags,\
+    let allowed = "WebSearch,WebFetch,mcp__malorean__list_workspaces,mcp__malorean__search_notes,mcp__malorean__search_by_meaning,mcp__malorean__list_tags,mcp__malorean__list_folders,\
         mcp__malorean__linking_notes,mcp__malorean__read_note,mcp__malorean__list_templates,mcp__malorean__list_versions,\
         mcp__malorean__read_version,mcp__malorean__create_note,\
-        mcp__malorean__create_folder,mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\
+        mcp__malorean__create_folder,mcp__malorean__rename_folder,mcp__malorean__move_folder,mcp__malorean__trash_folder,mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\
         mcp__malorean__rename_note,mcp__malorean__move_note,mcp__malorean__restore_version,mcp__malorean__replace_in_note,\
         mcp__malorean__add_tags,mcp__malorean__remove_tags,mcp__malorean__pin_note,\
         mcp__malorean__unpin_note,mcp__malorean__add_attachment,mcp__malorean__add_entry,\
