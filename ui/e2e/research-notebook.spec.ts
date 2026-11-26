@@ -141,6 +141,13 @@ test("chaque entrée montre son numéro dans la marge ; un clic copie « Titre �
     .evaluateAll((lines) => lines.map((l) => l.getBoundingClientRect().left));
   expect(box && line && box.x + box.width <= line.x).toBe(true);
   expect(box && lefts.every((left) => box.x + box.width <= left)).toBe(true);
+  // Assez grand pour se lire et se viser : la hauteur d'une cible de clic (32 px), le texte du cahier.
+  expect(box && box.height).toBeGreaterThanOrEqual(32);
+  const fonts = await page.evaluate(() => [
+    parseFloat(getComputedStyle(document.querySelector(".entry-number") as Element).fontSize),
+    parseFloat(getComputedStyle(document.querySelector(".cm-line") as Element).fontSize),
+  ]);
+  expect(fonts[0]).toBeGreaterThanOrEqual((fonts[1] ?? 0) - 2);
 
   await numbers.nth(1).focus();
   await page.keyboard.press("Enter");
