@@ -28,6 +28,8 @@ pub enum AppTool {
     LinkingNotes,
     /// Le texte entier d'une note simple, son en-tête à part du corps (fiche 0076).
     ReadNote,
+    /// Lire un canvas comme des données : cartes, flèches, groupes (fiche 0079).
+    ReadCanvas,
     /// Les noms des modèles de note.
     ListTemplates,
     /// Les versions d'une note.
@@ -56,6 +58,26 @@ pub enum AppTool {
     RestoreVersion,
     /// Remplacer un texte par un autre dans le texte d'une note simple (fiche 0075).
     ReplaceInNote,
+    /// Ajouter une carte (texte, fichier ou page web) à un canvas (fiche 0079).
+    AddCanvasCard,
+    /// Changer le texte, l'adresse, le fichier ou la couleur d'une carte de canvas (fiche 0079).
+    ChangeCanvasCard,
+    /// Déplacer une carte de canvas, avec les cartes de son groupe s'il en est un (fiche 0079).
+    MoveCanvasCard,
+    /// Redimensionner une carte de canvas (fiche 0079).
+    ResizeCanvasCard,
+    /// Retirer une carte d'un canvas, avec les flèches qui y touchent (fiche 0079).
+    RemoveCanvasCard,
+    /// Ajouter une flèche entre deux cartes d'un canvas (fiche 0079).
+    AddCanvasArrow,
+    /// Changer le sens, l'étiquette, la couleur ou les extrémités d'une flèche de canvas (fiche 0079).
+    ChangeCanvasArrow,
+    /// Retirer une flèche d'un canvas (fiche 0079).
+    RemoveCanvasArrow,
+    /// Ajouter un groupe à un canvas, vide ou autour de cartes (fiche 0079).
+    AddCanvasGroup,
+    /// Changer le nom ou la couleur d'un groupe de canvas (fiche 0079).
+    ChangeCanvasGroup,
     /// Ajouter des étiquettes dans l'en-tête d'une note.
     AddTags,
     /// Retirer des étiquettes de l'en-tête d'une note.
@@ -84,7 +106,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 31] = [
+    pub const ALL: [Self; 42] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -92,6 +114,7 @@ impl AppTool {
         Self::ListFolders,
         Self::LinkingNotes,
         Self::ReadNote,
+        Self::ReadCanvas,
         Self::ListTemplates,
         Self::ListVersions,
         Self::ReadVersion,
@@ -106,6 +129,16 @@ impl AppTool {
         Self::MoveNote,
         Self::RestoreVersion,
         Self::ReplaceInNote,
+        Self::AddCanvasCard,
+        Self::ChangeCanvasCard,
+        Self::MoveCanvasCard,
+        Self::ResizeCanvasCard,
+        Self::RemoveCanvasCard,
+        Self::AddCanvasArrow,
+        Self::ChangeCanvasArrow,
+        Self::RemoveCanvasArrow,
+        Self::AddCanvasGroup,
+        Self::ChangeCanvasGroup,
         Self::AddTags,
         Self::RemoveTags,
         Self::PinNote,
@@ -129,6 +162,7 @@ impl AppTool {
             Self::ListFolders => "list_folders",
             Self::LinkingNotes => "linking_notes",
             Self::ReadNote => "read_note",
+            Self::ReadCanvas => "read_canvas",
             Self::ListTemplates => "list_templates",
             Self::ListVersions => "list_versions",
             Self::ReadVersion => "read_version",
@@ -143,6 +177,16 @@ impl AppTool {
             Self::MoveNote => "move_note",
             Self::RestoreVersion => "restore_version",
             Self::ReplaceInNote => "replace_in_note",
+            Self::AddCanvasCard => "add_canvas_card",
+            Self::ChangeCanvasCard => "change_canvas_card",
+            Self::MoveCanvasCard => "move_canvas_card",
+            Self::ResizeCanvasCard => "resize_canvas_card",
+            Self::RemoveCanvasCard => "remove_canvas_card",
+            Self::AddCanvasArrow => "add_canvas_arrow",
+            Self::ChangeCanvasArrow => "change_canvas_arrow",
+            Self::RemoveCanvasArrow => "remove_canvas_arrow",
+            Self::AddCanvasGroup => "add_canvas_group",
+            Self::ChangeCanvasGroup => "change_canvas_group",
             Self::AddTags => "add_tags",
             Self::RemoveTags => "remove_tags",
             Self::PinNote => "pin_note",
@@ -190,6 +234,7 @@ impl AppTool {
             | Self::ListFolders
             | Self::LinkingNotes
             | Self::ReadNote
+            | Self::ReadCanvas
             | Self::ListTemplates
             | Self::ListVersions
             | Self::ReadVersion
@@ -206,6 +251,16 @@ impl AppTool {
             | Self::MoveNote
             | Self::RestoreVersion
             | Self::ReplaceInNote
+            | Self::AddCanvasCard
+            | Self::ChangeCanvasCard
+            | Self::MoveCanvasCard
+            | Self::ResizeCanvasCard
+            | Self::RemoveCanvasCard
+            | Self::AddCanvasArrow
+            | Self::ChangeCanvasArrow
+            | Self::RemoveCanvasArrow
+            | Self::AddCanvasGroup
+            | Self::ChangeCanvasGroup
             | Self::AddTags
             | Self::RemoveTags
             | Self::PinNote
@@ -248,6 +303,7 @@ impl AppTool {
             | Self::TrashFolder
             | Self::LinkingNotes
             | Self::ReadNote
+            | Self::ReadCanvas
             | Self::ListVersions
             | Self::ReadVersion
             | Self::TrashNote
@@ -255,6 +311,16 @@ impl AppTool {
             | Self::MoveNote
             | Self::RestoreVersion
             | Self::ReplaceInNote
+            | Self::AddCanvasCard
+            | Self::ChangeCanvasCard
+            | Self::MoveCanvasCard
+            | Self::ResizeCanvasCard
+            | Self::RemoveCanvasCard
+            | Self::AddCanvasArrow
+            | Self::ChangeCanvasArrow
+            | Self::RemoveCanvasArrow
+            | Self::AddCanvasGroup
+            | Self::ChangeCanvasGroup
             | Self::AddTags
             | Self::RemoveTags
             | Self::PinNote
@@ -298,220 +364,5 @@ impl std::fmt::Debug for AppToolsKey {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn only_the_two_tools_that_talk_about_the_screen_use_it() {
-        let using: Vec<_> = AppTool::ALL.iter().filter(|t| t.uses_screen()).collect();
-        assert_eq!(using, [&AppTool::ViewedNote, &AppTool::ShowNote]);
-    }
-
-    #[test]
-    fn every_tool_but_the_list_of_workspaces_aims_at_a_workspace() {
-        let others: Vec<_> = AppTool::ALL
-            .iter()
-            .filter(|t| !t.aims_at_a_workspace())
-            .collect();
-        assert_eq!(others, [&AppTool::ListWorkspaces]);
-    }
-
-    #[test]
-    fn the_list_of_workspaces_reads_without_changing_and_has_no_target() {
-        assert_eq!(AppTool::ListWorkspaces.name(), "list_workspaces");
-        assert_eq!(
-            AppTool::ListWorkspaces.full_name(),
-            "mcp__malorean__list_workspaces"
-        );
-        assert!(!AppTool::ListWorkspaces.changes_notes());
-        assert_eq!(AppTool::ListWorkspaces.target_field(), None);
-        assert_eq!(AppTool::ALL[0], AppTool::ListWorkspaces);
-    }
-
-    #[test]
-    fn each_tool_is_found_by_its_name_and_its_claude_code_name() {
-        for tool in AppTool::ALL {
-            assert_eq!(AppTool::named(tool.name()), Some(tool));
-            assert_eq!(AppTool::of_full_name(&tool.full_name()), Some(tool));
-        }
-        assert_eq!(
-            AppTool::SearchNotes.full_name(),
-            "mcp__malorean__search_notes"
-        );
-        assert_eq!(AppTool::named("rm"), None);
-        assert_eq!(AppTool::SearchByMeaning.name(), "search_by_meaning");
-        assert_eq!(
-            AppTool::SearchByMeaning.full_name(),
-            "mcp__malorean__search_by_meaning"
-        );
-        assert_eq!(AppTool::ALL[2], AppTool::SearchByMeaning);
-    }
-
-    #[test]
-    fn a_tool_of_another_server_or_a_built_in_tool_is_not_an_app_tool() {
-        assert_eq!(AppTool::of_full_name("search_notes"), None);
-        assert_eq!(AppTool::of_full_name("mcp__autre__search_notes"), None);
-        assert_eq!(AppTool::of_full_name("mcp__malorean_search_notes"), None);
-        assert_eq!(AppTool::of_full_name("Read"), None);
-        assert_eq!(AppTool::of_full_name("mcp__malorean__inconnu"), None);
-    }
-
-    #[test]
-    fn tool_names_are_distinct() {
-        let mut names: Vec<_> = AppTool::ALL.iter().map(|tool| tool.name()).collect();
-        names.sort_unstable();
-        names.dedup();
-        assert_eq!(names.len(), AppTool::ALL.len());
-    }
-
-    #[test]
-    fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
-        let changing: Vec<_> = AppTool::ALL
-            .into_iter()
-            .filter(|tool| tool.changes_notes())
-            .map(AppTool::name)
-            .collect();
-        assert_eq!(
-            changing,
-            [
-                "create_note",
-                "create_folder",
-                "rename_folder",
-                "move_folder",
-                "trash_folder",
-                "create_note_from_template",
-                "trash_note",
-                "rename_note",
-                "move_note",
-                "restore_version",
-                "replace_in_note",
-                "add_tags",
-                "remove_tags",
-                "pin_note",
-                "unpin_note",
-                "add_attachment",
-                "add_entry",
-                "create_mind_map",
-                "create_crm"
-            ]
-        );
-    }
-
-    #[test]
-    fn each_tool_says_what_it_targets() {
-        let targets: Vec<_> = AppTool::ALL.map(AppTool::target_field).into();
-        let path = Some("path");
-        assert_eq!(
-            targets,
-            [
-                None,
-                Some("query"),
-                Some("question"),
-                None,
-                None,
-                path,
-                path,
-                None,
-                path,
-                path,
-                Some("title"),
-                path,
-                path,
-                path,
-                path,
-                Some("title"),
-                path,
-                path,
-                path,
-                path,
-                path,
-                path,
-                path,
-                path,
-                path,
-                path,
-                path,
-                Some("title"),
-                Some("title"),
-                None,
-                path
-            ]
-        );
-    }
-
-    #[test]
-    fn reading_a_note_changes_nothing_and_targets_its_path() {
-        let tool = AppTool::ReadNote;
-        assert_eq!(tool.name(), "read_note");
-        assert_eq!(tool.full_name(), "mcp__malorean__read_note");
-        assert_eq!(
-            AppTool::of_full_name("mcp__malorean__read_note"),
-            Some(tool)
-        );
-        assert!(!tool.changes_notes());
-        assert!(tool.aims_at_a_workspace());
-        assert!(!tool.uses_screen());
-        assert_eq!(tool.target_field(), Some("path"));
-        let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
-        assert_eq!(AppTool::ALL[at - 1], AppTool::LinkingNotes);
-    }
-
-    #[test]
-    fn replacing_a_text_changes_a_note_and_targets_its_path() {
-        let tool = AppTool::ReplaceInNote;
-        assert_eq!(tool.name(), "replace_in_note");
-        assert_eq!(tool.full_name(), "mcp__malorean__replace_in_note");
-        assert!(tool.changes_notes());
-        assert!(tool.aims_at_a_workspace());
-        assert!(!tool.uses_screen());
-        assert_eq!(tool.target_field(), Some("path"));
-        let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
-        assert_eq!(AppTool::ALL[at - 1], AppTool::RestoreVersion);
-    }
-
-    #[test]
-    fn the_folder_tools_are_named_ordered_and_guarded_as_their_decision_says() {
-        let names: Vec<_> = AppTool::ALL
-            .into_iter()
-            .filter(|tool| tool.name().ends_with("_folder") || tool.name() == "list_folders")
-            .map(AppTool::name)
-            .collect();
-        assert_eq!(
-            names,
-            [
-                "list_folders",
-                "create_folder",
-                "rename_folder",
-                "move_folder",
-                "trash_folder"
-            ]
-        );
-        assert_eq!(
-            AppTool::TrashFolder.full_name(),
-            "mcp__malorean__trash_folder"
-        );
-        assert_eq!(
-            AppTool::of_full_name("mcp__malorean__rename_folder"),
-            Some(AppTool::RenameFolder)
-        );
-        assert!(!AppTool::ListFolders.changes_notes());
-        assert_eq!(AppTool::ListFolders.target_field(), None);
-        for tool in [
-            AppTool::ListFolders,
-            AppTool::RenameFolder,
-            AppTool::MoveFolder,
-            AppTool::TrashFolder,
-        ] {
-            assert!(tool.aims_at_a_workspace(), "{tool:?}");
-            assert!(!tool.uses_screen(), "{tool:?}");
-        }
-    }
-
-    #[test]
-    fn a_key_is_never_empty_and_never_shown() {
-        assert_eq!(AppToolsKey::new(""), None);
-        let key = AppToolsKey::new("secret").unwrap();
-        assert_eq!(key.as_str(), "secret");
-        assert_eq!(format!("{key:?}"), "AppToolsKey(..)");
-    }
-}
+#[path = "app_tools_tests.rs"]
+mod tests;
