@@ -113,7 +113,7 @@
   --picker-max-height: 50vh;
   --search-field-width: 20rem;
   --search-field-min-width: 6rem;
-  --search-window-top: 3.4rem;
+  --search-window-top: calc(3.4rem + var(--window-bar-height));
   --search-window-width: 60rem;
   --confirmation-width: 26rem;
   --confirmation-text-size: 15px;
@@ -181,6 +181,13 @@
   --notes-panel-width: 280px;
   /* Largeur d'un panneau latéral réglée à la souris : bornes, et bord qu'on tire */
   --side-panel-min-width: 9rem;
+  /* Barre de la fenêtre (en haut, à la place de la barre de titre du Mac) : sa hauteur, la place des trois
+     boutons de fenêtre du Mac à sa gauche (réglée avec `trafficLightPosition`, crates/app/tauri.conf.json),
+     la taille du bouton des panneaux latéraux (28 points au moins) et celle de son icône */
+  --window-bar-height: 38px;
+  --window-bar-inset: 78px;
+  --window-button-size: 30px;
+  --window-button-icon-size: 20px;
   --side-panel-max-width: min(28rem, 30vw);
   --panel-edge-width: 6px;
   --divider-width: 5px;

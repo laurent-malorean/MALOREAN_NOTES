@@ -7,8 +7,8 @@ import { waitForNote } from "./journey";
 // Code ouverte le déclenche aussi.
 
 const SEARCH_MINIMUM = 96;
-/** Les trois blocs, la recherche à son minimum et les écarts entre eux (mesurés : 705 points). */
-const SINGLE_ROW_NEEDS = 705;
+/** Les trois blocs, la recherche à son minimum et les écarts entre eux (mesurés : 672,3 points). */
+const SINGLE_ROW_NEEDS = 672;
 /** Tolérance autour du seuil : le basculement tombe à quelques points de la largeur nécessaire. */
 const MARGIN = 8;
 
@@ -158,7 +158,7 @@ test("à toute largeur de la zone du milieu : une ligne ou deux lignes propres, 
   page,
 }) => {
   await launch(page, 1800);
-  for (const target of [900, 760, 720, 700, 640, 560, 480, 440]) {
+  for (const target of [900, 760, 720, 680, 668, 640, 560, 480, 440]) {
     await giveStripWidth(page, target);
     const s = await strip(page);
     if (target >= SINGLE_ROW_NEEDS) expectOneRow(s);
@@ -173,7 +173,7 @@ test("à deux lignes, chaque bouton reste visible, nommé en bulle d'aide et cli
   await giveStripWidth(page, 560);
   expectTwoRows(await strip(page));
   const buttons = page.locator(".format-bar button, .display-tools button");
-  await expect(buttons).toHaveCount(17);
+  await expect(buttons).toHaveCount(16);
   for (const button of await buttons.all()) {
     await expect(button).toBeInViewport();
     await expect(button).toHaveAttribute("title", /\S/);
@@ -185,10 +185,10 @@ test("zone du milieu plus étroite que l'affichage et la recherche à leur minim
   page,
 }) => {
   await launch(page, 1800);
-  // Bande resserrée à 290 points utiles (l'affichage et la recherche minimale en demandent 310).
-  await page.locator(".editor-tools").evaluate((row) => (row.style.width = "316px"));
+  // Bande resserrée à 270 points utiles (l'affichage et la recherche minimale en demandent 277).
+  await page.locator(".editor-tools").evaluate((row) => (row.style.width = "296px"));
   const s = await strip(page);
-  expect(Math.round(s.inner.width)).toBe(290);
+  expect(Math.round(s.inner.width)).toBe(270);
   expect(s.overflow).toBe(0);
   expect(Math.abs(s.display.x - s.inner.x)).toBeLessThan(1);
   expect(s.search.y).toBeGreaterThanOrEqual(s.display.y + s.display.height - 1);

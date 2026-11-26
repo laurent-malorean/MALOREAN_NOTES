@@ -59,7 +59,6 @@ export const FORMAT_ICON_PATHS: Record<FormatIcon, readonly string[]> = {
     "M3 8h18a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z",
     ...["M6 11.5h.01", "M10 11.5h.01", "M14 11.5h.01", "M18 11.5h.01", "M7 15h10"],
   ],
-  panels: ["M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z", "M10 5v14"],
   "full-screen": ["M4 9V4h5", "M20 9V4h-5", "M4 15v5h5", "M20 15v5h-5"],
   "full-screen-exit": ["M9 4v5H4", "M15 4v5h5", "M9 20v-5H4", "M15 20v-5h5"],
   // Les douze rayons de l'icône de la colonne Claude Code, un tracé par rayon.

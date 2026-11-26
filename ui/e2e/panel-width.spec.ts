@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { dragEdge as drag, edgesOf as edges, widthOf as width } from "./journey";
+import { dragEdge as drag, edgesOf as edges, sidePanelsButton, widthOf as width } from "./journey";
 
 // Largeur des panneaux latéraux : on tire le bord des dossiers ou des notes à la souris, la
 // largeur reste entre son minimum et son maximum, et revient au relancement.
@@ -94,7 +94,7 @@ test("panneaux cachés puis montrés, et en plein écran, la largeur réglée re
 }) => {
   await launch(page);
   await drag(page, foldersEdge(page), 100);
-  const panels = page.getByRole("button", { name: "Panneaux" });
+  const panels = sidePanelsButton(page);
   await panels.click();
   await expect(foldersEdge(page)).toBeHidden();
   expect((await edges(page.locator(".editor"))).left).toBe(0);

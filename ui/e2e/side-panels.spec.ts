@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { sidePanelsButton } from "./journey";
 
 // Panneaux latéraux et plein écran : ce qui reste à l'écran, et où se trouvent les colonnes.
 
@@ -18,7 +19,7 @@ async function launch(page: Page) {
 const folders = (page: Page) => page.locator(".folders");
 const notes = (page: Page) => page.locator(".notes-panel");
 const columns = (page: Page) => page.getByRole("region", { name: "Colonne" });
-const panelsButton = (page: Page) => page.getByRole("button", { name: "Panneaux" });
+const panelsButton = sidePanelsButton;
 const fullScreen = (page: Page) => page.evaluate(() => window.backend.fullScreen);
 
 /** Bords gauche et droit de chaque colonne, arrondis au pixel. */

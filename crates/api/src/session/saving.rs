@@ -1,6 +1,6 @@
 //! Enregistrer une note de l'espace de travail ouvert, sans jamais écraser une version écrite ailleurs.
 
-use application::use_cases::{ReplaceInNote, SaveNote};
+use application::use_cases::{RenameNote, ReplaceInNote, SaveNote};
 use domain::title::displayed_title_of_note;
 use domain::{Fingerprint, NotePath};
 use serde::Serialize;
@@ -49,6 +49,31 @@ impl Session {
             fingerprint: saved.fingerprint.as_str().to_owned(),
             conflict_copy: saved.conflict_copy.as_ref().map(NotePath::to_path),
             tags_changed: saved.tags_changed,
+        })
+    }
+
+    /// Renomme le contenu `path` : il prend le titre `title` et son fichier le suit (fiche 0090).
+    /// Rend son nouveau chemin et son titre ; l'historique, les épingles et l'index suivent.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; titre vide ou déjà pris, fiche de
+    /// CRM, chemin invalide, contenu absent, stockage indisponible, aucun espace de travail ouvert.
+    pub fn rename_note(&self, path: &str, title: &str) -> Result<SaveResult, ApiError> {
+        let opened = self.opened()?;
+        let note = NotePath::parse(path)?;
+        let renamed = RenameNote::new(&*opened.store, &*opened.history, &*self.clock)
+            .execute(&note, title)?;
+        if renamed.path != note {
+            self.saved_since_version(&note, &renamed.path)?;
+        }
+        self.worker.request();
+        Ok(SaveResult {
+            title: displayed_title_of_note(&renamed.content, renamed.path.name()),
+            fingerprint: Fingerprint::of(&renamed.content).as_str().to_owned(),
+            path: renamed.path.to_path(),
+            conflict_copy: None,
+            tags_changed: false,
         })
     }
 
@@ -149,6 +174,40 @@ mod tests {
             session.read_note(copy).unwrap().content,
             "# Alpha\nailleurs"
         );
+    }
+
+    #[test]
+    fn a_renamed_note_takes_its_title_and_file_name_and_is_read_under_them() {
+        let session = opened(&[("a.md", "---\npinned: true\n---\n# Alpha\ntexte")]);
+        let renamed = session.rename_note("a.md", "Mon idée").unwrap();
+        assert_eq!(renamed.path, "mon-idee.md");
+        assert_eq!(renamed.title, "Mon idée");
+        assert_eq!(renamed.conflict_copy, None);
+        assert!(!renamed.tags_changed);
+        let read = session.read_note("mon-idee.md").unwrap();
+        assert_eq!(read.content, "---\npinned: true\n---\n# Mon idée\ntexte");
+        assert_eq!(renamed.fingerprint, read.fingerprint);
+        assert!(session.read_note("a.md").is_err());
+    }
+
+    #[test]
+    fn a_renamed_canvas_shows_its_new_file_name_as_title() {
+        let session = opened(&[("plan.canvas", "{}")]);
+        let renamed = session.rename_note("plan.canvas", "Mon plan").unwrap();
+        assert_eq!(renamed.path, "mon-plan.canvas");
+        assert_eq!(renamed.title, "mon-plan");
+    }
+
+    #[test]
+    fn a_rename_refused_says_why_in_french_and_changes_nothing() {
+        let session = opened(&[("a.md", "# Alpha"), ("idee.md", "# Idée")]);
+        let empty = session.rename_note("a.md", "  ").unwrap_err();
+        assert_eq!(empty.message, "le titre est vide");
+        let taken = session.rename_note("a.md", "Idée").unwrap_err();
+        assert_eq!(taken.message, "une note de ce dossier porte déjà ce titre");
+        assert_eq!(session.read_note("a.md").unwrap().content, "# Alpha");
+        let missing = session.rename_note("../x.md", "Y").unwrap_err();
+        assert!(!missing.message.is_empty());
     }
 
     #[test]

@@ -59,12 +59,11 @@ describe("barre de mise en forme", () => {
 });
 
 describe("bloc d'outils d'affichage", () => {
-  it("range les six boutons dans l'ordre d'avant : Focus, Plan, Machine à écrire, Panneaux, plein écran, Claude", () => {
+  it("range les cinq boutons dans l'ordre d'avant, sans les panneaux latéraux (devenus le bouton de la barre de la fenêtre) : Focus, Plan, Machine à écrire, plein écran, Claude", () => {
     expect(DISPLAY_TOOLS.map((tool) => [tool.key, tool.label])).toEqual([
       ["focus", "Focus"],
       ["outline", "Plan"],
       ["typewriter", "Machine à écrire"],
-      ["side-panels", "Panneaux"],
       ["full-screen", "Plein écran"],
       ["claude", "Claude"],
     ]);
@@ -75,7 +74,6 @@ describe("bloc d'outils d'affichage", () => {
       "toggle-focus",
       "toggle-outline",
       "toggle-typewriter",
-      "toggle-side-panels",
       "toggle-full-screen",
       "toggle-claude-column",
     ]);
@@ -83,7 +81,7 @@ describe("bloc d'outils d'affichage", () => {
 
   it("donne à chaque bouton sa propre icône, absente des autres boutons de la barre", () => {
     const icons = DISPLAY_TOOLS.map((tool) => tool.icon);
-    expect(icons).toEqual(["focus", "outline", "typewriter", "panels", "full-screen", "claude"]);
+    expect(icons).toEqual(["focus", "outline", "typewriter", "full-screen", "claude"]);
     const used = [...FORMAT_BAR.flat().map((button) => button.icon), ...icons];
     expect(new Set(used).size).toBe(used.length);
   });

@@ -216,6 +216,9 @@ export const readNote = (path: string) => invoke<NoteContent>("read_note", { pat
 /** Enregistre une note lue ou enregistrée avec l'empreinte `fingerprint` (voir la fiche 0014). */
 export const saveNote = (path: string, content: string, fingerprint: string) =>
   invoke<SaveResult>("save_note", { path, content, fingerprint });
+/** Renomme le contenu `path` : il prend ce titre et son fichier le suit (fiche 0090). */
+export const renameNote = (path: string, title: string) =>
+  invoke<SaveResult>("rename_note", { path, title });
 export const createNote = (folder: string) => invoke<SavedNote>("create_note", { folder });
 /** Crée une note dans `folder` depuis le modèle `template`, ses variables remplacées par Rust. */
 export const createNoteFromTemplate = (template: string, folder: string) =>
@@ -310,6 +313,8 @@ export const unpinNote = (path: string) => invoke<NoteContent>("unpin_note", { p
 
 /** Place une note dans la corbeille ; rend son chemin dans la corbeille. */
 export const trashNote = (path: string) => invoke<string>("trash_note", { path });
+/** Le nombre de fiches qui partent avec la note à la corbeille (celles de son CRM ; 0 pour une note ordinaire). */
+export const crmFichesInTrash = (path: string) => invoke<number>("crm_fiches_in_trash", { path });
 /** Place un dossier, avec tout ce qu'il contient, dans la corbeille. */
 export const trashFolder = (path: string) => invoke<string>("trash_folder", { path });
 export const listTrash = () => invoke<TrashInfo>("list_trash");

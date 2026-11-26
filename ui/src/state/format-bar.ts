@@ -18,7 +18,6 @@ export type FormatIcon =
   | "focus"
   | "outline"
   | "typewriter"
-  | "panels"
   | "full-screen"
   | "full-screen-exit"
   | "claude";
@@ -80,7 +79,6 @@ export const DISPLAY_TOOLS: readonly DisplayTool[] = [
     command: "toggle-typewriter",
     icon: "typewriter",
   },
-  { key: "side-panels", label: "Panneaux", command: "toggle-side-panels", icon: "panels" },
   { key: "full-screen", label: "Plein écran", command: "toggle-full-screen", icon: "full-screen" },
   { key: "claude", label: "Claude", command: "toggle-claude-column", icon: "claude" },
 ];

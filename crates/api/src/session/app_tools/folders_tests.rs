@@ -53,6 +53,62 @@ fn the_folders_are_listed_by_path_in_the_order_of_the_tree_without_the_root() {
     );
 }
 
+fn with_a_crm() -> Session {
+    opened(&[
+        ("Clients/crm1.md", "---\ntype: crm\n---\n# CRM1\n"),
+        (
+            "Clients/crm1/actions/devis.md",
+            "---\ntype: crm-action\n---\n# Devis\n",
+        ),
+        (
+            "Clients/crm1/personnes/jean.md",
+            "---\ntype: crm-personne\n---\n# Jean\n",
+        ),
+        ("Clients/notes/a.md", "# A"),
+    ])
+}
+
+#[test]
+fn the_folders_of_the_fiches_of_a_crm_are_not_listed() {
+    let session = with_a_crm();
+
+    assert_eq!(
+        call(&session, "list_folders", json!({})),
+        json!({ "folders": ["Clients", "Clients/notes"] })
+    );
+}
+
+#[test]
+fn a_folder_with_an_ordinary_note_is_listed_even_when_named_like_a_crm() {
+    let session = opened(&[
+        ("Clients/crm1.md", "---\ntype: crm\n---\n# CRM1\n"),
+        ("Clients/crm1/ma-note.md", "# Ma note"),
+    ]);
+
+    assert_eq!(
+        call(&session, "list_folders", json!({})),
+        json!({ "folders": ["Clients", "Clients/crm1"] })
+    );
+}
+
+#[test]
+fn asking_for_a_folder_of_the_fiches_of_a_crm_to_exist_changes_nothing_and_does_not_fail() {
+    let session = with_a_crm();
+
+    assert_eq!(
+        call(&session, "create_folder", json!({ "path": "Clients/crm1" })),
+        json!({ "path": "Clients/crm1" })
+    );
+    assert_eq!(
+        call(
+            &session,
+            "create_folder",
+            json!({ "path": "Clients/crm1/archives" })
+        ),
+        json!({ "path": "Clients/crm1/archives" })
+    );
+}
+
 #[test]
 fn a_workspace_without_a_folder_lists_none() {
     let session = opened(&[("a.md", "# A")]);

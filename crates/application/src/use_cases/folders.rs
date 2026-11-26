@@ -1,9 +1,10 @@
 //! Ranger les notes dans des dossiers : les lister, en créer, les renommer, les déplacer.
 
+use domain::crm::without_fiche_folders;
 use domain::folder::sort_for_display;
 use domain::{Folder, FolderName};
 
-use crate::{AppError, NoteStore};
+use crate::{AppError, NoteIndex, NoteStore};
 
 /// Les dossiers de l'espace de travail, dans l'ordre de l'arbre.
 #[derive(Debug)]
@@ -25,6 +26,32 @@ impl<'a> ListFolders<'a> {
     /// [`AppError::StorageUnavailable`] si l'espace de travail ne peut pas être lue.
     pub fn execute(&self) -> Result<Vec<Folder>, AppError> {
         Ok(sort_for_display(self.store.folders()?))
+    }
+}
+
+/// Les dossiers à montrer dans la liste des dossiers : tous, sauf les dossiers des fiches d'un CRM
+/// (fiche 0089). Ils restent sur le disque, et [`ListFolders`] les donne encore.
+#[derive(Debug)]
+pub struct ListShownFolders<'a> {
+    store: &'a dyn NoteStore,
+    index: &'a dyn NoteIndex,
+}
+
+impl<'a> ListShownFolders<'a> {
+    /// Le cas d'usage, branché sur l'espace de travail ouvert et son index.
+    #[must_use]
+    pub fn new(store: &'a dyn NoteStore, index: &'a dyn NoteIndex) -> Self {
+        Self { store, index }
+    }
+
+    /// Les dossiers à montrer, chacun suivi des siens, par ordre alphabétique.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si l'espace de travail ou l'index ne peut pas être lu.
+    pub fn execute(&self) -> Result<Vec<Folder>, AppError> {
+        let folders = ListFolders::new(self.store).execute()?;
+        Ok(without_fiche_folders(folders, &self.index.all_notes()?))
     }
 }
 
@@ -121,7 +148,7 @@ impl<'a> MoveFolder<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testing::InMemoryNoteStore;
+    use crate::testing::{InMemoryNoteStore, indexed};
     use domain::NotePath;
 
     fn folder(path: &str) -> Folder {
@@ -150,6 +177,38 @@ mod tests {
             paths(&ListFolders::new(&store).execute().unwrap()),
             ["perso", "Travail", "Travail/Réunions"]
         );
+    }
+
+    #[test]
+    fn the_folder_of_the_fiches_of_a_crm_is_listed_by_the_store_but_not_shown() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("toto/crm1.md", "---\ntype: crm\n---\n# CRM1\n"),
+            (
+                "toto/crm1/actions/a.md",
+                "---\ntype: crm-action\n---\n# A\n",
+            ),
+            ("toto/autre/x.md", "# X"),
+        ]);
+        assert_eq!(
+            paths(&ListFolders::new(&store).execute().unwrap()),
+            ["toto", "toto/autre", "toto/crm1", "toto/crm1/actions"]
+        );
+        let shown = ListShownFolders::new(&store, &indexed(&store))
+            .execute()
+            .unwrap();
+        assert_eq!(paths(&shown), ["toto", "toto/autre"]);
+    }
+
+    #[test]
+    fn a_folder_that_holds_an_ordinary_note_is_shown_even_when_it_is_named_like_a_crm() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("toto/crm1.md", "---\ntype: crm\n---\n# CRM1\n"),
+            ("toto/crm1/ma-note.md", "# Ma note"),
+        ]);
+        let shown = ListShownFolders::new(&store, &indexed(&store))
+            .execute()
+            .unwrap();
+        assert_eq!(paths(&shown), ["toto", "toto/crm1"]);
     }
 
     #[test]

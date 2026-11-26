@@ -7,6 +7,7 @@ import {
   type TabDrop,
 } from "../state/columns";
 import { trailOf, type TrailStep } from "../state/trail";
+import type { NoteRenaming } from "./note-menu";
 import { renderTabs } from "./tabs-view";
 
 /** Ce qu'une colonne offre à l'éditeur qui s'y pose : son élément, la place des étiquettes, des liens entrants et des notes proches. */
@@ -40,6 +41,8 @@ export interface ColumnsHandlers {
   copyMarkdown(path: string): void;
   /** Ouvrir l'historique de la note d'un onglet (menu de l'onglet). */
   showHistory(path: string): void;
+  /** Renommer la note d'un onglet par son menu ; sans lui, le menu n'a pas « Renommer… ». */
+  readonly renaming?: NoteRenaming;
   /** Un onglet glissé est lâché là. */
   dropTab(tabId: number, drop: TabDrop): void;
   /** Diviser la colonne active. */
@@ -285,6 +288,7 @@ export function createColumnsView(container: HTMLElement, handlers: ColumnsHandl
           copy: handlers.copyNote,
           copyMarkdown: handlers.copyMarkdown,
           history: handlers.showHistory,
+          renaming: handlers.renaming,
           drag: (tabId) => (tabId === null ? dragging.stop() : (moving = tabId)),
         });
         if (index === 0) return [entry.parts.element];

@@ -63,13 +63,13 @@ test("la poignée s'éclaire au survol et montre le curseur vertical ; on la tir
   expect(lit).not.toBe(before);
   expect(await line.evaluate((e) => getComputedStyle(e).cursor)).toBe("row-resize");
 
-  await drag(page, -100);
-  expect(await height(tree(page))).toBe(first - 100);
+  await drag(page, -60);
+  expect(await height(tree(page))).toBe(first - 60);
 
   await page.reload();
   await expect(page.locator(".folder-item").first()).toBeVisible();
   // La hauteur gardée est arrondie au pixel.
-  expect(await height(tree(page))).toBeCloseTo(first - 100, 0);
+  expect(await height(tree(page))).toBeCloseTo(first - 60, 0);
 });
 
 test("ni trop bas ni trop haut ; un double-clic rend la hauteur par défaut", async ({ page }) => {

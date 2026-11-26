@@ -19,15 +19,20 @@ function setup(start: Screen = workspaceScreen()) {
   const list = document.createElement("nav");
   document.body.replaceChildren(list);
   const errors: unknown[] = [];
+  const known = ["projets", "neuf"];
   const folders = createFolders({
     backend: {
-      listFolders: async () => (log.push("dossiers"), ["projets", "neuf"]),
+      listFolders: async () => (log.push("dossiers"), [...known]),
       listNotes: async (folder, order) => (
         log.push(`notes de «${folder}»${order === "modified" ? "" : ` par ${order}`}`),
         [listed(`${folder}/x.md`)]
       ),
       createFolder: async (parent, name) => (log.push(`créer ${parent} ${name}`), name),
-      renameFolder: async (path, name) => (log.push(`renommer ${path} ${name}`), name),
+      renameFolder: async (path, name) => (
+        log.push(`renommer ${path} ${name}`),
+        known.splice(known.indexOf(path), 1, name),
+        name
+      ),
       moveFolder: async (path, into) => (log.push(`déplacer ${path} ${into}`), `${into}/${path}`),
     },
     screen,

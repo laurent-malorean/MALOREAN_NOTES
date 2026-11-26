@@ -30,6 +30,7 @@ describe("mise en page", () => {
       layout.focusButton,
       layout.fullScreenButton,
       layout.sidePanelsButton,
+      layout.windowBar,
       layout.claudeButton,
       layout.claudeColumn,
       layout.status,
@@ -80,7 +81,21 @@ describe("mise en page", () => {
     expect(displayTools.firstElementChild).toBe(layout.focusButton);
   });
 
-  it("les six boutons d'affichage sont des icônes, trouvées par leur nom", () => {
+  it("pose le bouton des panneaux latéraux dans la barre de la fenêtre, avant l'espace de travail", () => {
+    const root = document.createElement("div");
+    document.body.replaceChildren(root);
+    const layout = createLayout(root);
+    expect(layout.windowBar.className).toBe("window-bar");
+    expect(layout.windowBar.hasAttribute("data-tauri-drag-region")).toBe(true);
+    expect(layout.windowBar.contains(layout.sidePanelsButton)).toBe(true);
+    expect(layout.windowBar.nextElementSibling).toBe(layout.welcome);
+    expect(layout.mainArea.contains(layout.sidePanelsButton)).toBe(false);
+    expect(layout.sidePanelsButton.getAttribute("aria-label")).toBe("Panneaux latéraux");
+    // Pas d'espace de travail ouvert : le bouton n'a rien à cacher ni à montrer.
+    expect(layout.sidePanelsButton.hidden).toBe(true);
+  });
+
+  it("les cinq boutons d'affichage sont des icônes, trouvées par leur nom", () => {
     const root = document.createElement("div");
     document.body.replaceChildren(root);
     const layout = createLayout(root);
@@ -88,7 +103,6 @@ describe("mise en page", () => {
       [layout.focusButton, "Focus"],
       [layout.outlineButton, "Plan"],
       [layout.typewriterButton, "Machine à écrire"],
-      [layout.sidePanelsButton, "Panneaux"],
       [layout.fullScreenButton, "Plein écran"],
       [layout.claudeButton, "Claude"],
     ] as const;

@@ -162,6 +162,22 @@ describe("dossiers", () => {
     expect(foldersRefreshed(opened, ["Perso"])).toMatchObject({ folders: ["Perso"] });
   });
 
+  it("garde le dossier affiché tant qu'il est dans la liste des dossiers", () => {
+    const inside = folderSelected(opened, "Travail/Réunions", []);
+    const kept = foldersRefreshed(inside, ["Travail", "Travail/Réunions"]);
+    expect(currentFolder(kept)).toBe("Travail/Réunions");
+  });
+
+  it("retombe sur le plus proche dossier parent quand le dossier affiché n'est plus dans la liste (dossier caché)", () => {
+    const inside = folderSelected(opened, "Clients/crm1/actions", []);
+    expect(currentFolder(foldersRefreshed(inside, ["Clients", "Clients/notes"]))).toBe("Clients");
+    expect(currentFolder(foldersRefreshed(inside, ["Clients", "Clients/crm1"]))).toBe(
+      "Clients/crm1",
+    );
+    expect(currentFolder(foldersRefreshed(inside, ["Autre"]))).toBe("");
+    expect(currentFolder(foldersRefreshed(opened, []))).toBe("");
+  });
+
   it("suit le dossier affiché et la note ouverte quand leur dossier est déplacé", () => {
     const inside = folderSelected(opened, "Travail/Réunions", [note("Travail/Réunions/l.md", 1)]);
     expect(folderMoved(inside, "Travail", "Perso/Travail")).toMatchObject({

@@ -13,6 +13,7 @@ const NOTE_MENU = [
   "Ouvrir à gauche",
   "Ouvrir à droite",
   "Fermer",
+  "Renommer…",
   "Épingler",
   "Exporter…",
   "Imprimer…",

@@ -15,9 +15,11 @@ import { linkMenuScenarios } from "./link-menu";
 import { menuIconsScenarios } from "./menu-icons";
 import { newContentMenuScenarios } from "./new-content-menu";
 import { noteScenarios } from "./notes";
+import { renameScenarios } from "./rename";
 import { searchScenarios } from "./search";
 import { settingsScenarios } from "./settings";
 import { tagFieldScenarios } from "./tag-field";
+import { windowBarScenarios } from "./window-bar";
 import { workspaceSwitcherScenarios } from "./workspace-switcher";
 
 export function scenariosFor(env: Env): Scenario[] {
@@ -32,10 +34,12 @@ export function scenariosFor(env: Env): Scenario[] {
     ...linkMenuScenarios(env),
     ...tagFieldScenarios(env),
     ...settingsScenarios(env),
+    ...windowBarScenarios(),
     ...displayToolsScenarios(),
     ...workspaceSwitcherScenarios(env),
     ...foldersHeightScenarios(),
     ...menuIconsScenarios(),
+    ...renameScenarios(env),
     ...searchScenarios(env),
   ];
 }

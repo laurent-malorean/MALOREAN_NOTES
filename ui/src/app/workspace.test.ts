@@ -26,7 +26,11 @@ const content = (path: string, text: string): NoteContent => ({
   fingerprint: text,
 });
 
-function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted) {
+function setup(
+  start: Screen = workspaceScreen(),
+  columnsStart = columnsStarted,
+  crms: string[] = [],
+) {
   const { screen, shown } = recordedScreen(start);
   const columns = fakeColumns(columnsStart);
   const calls: string[] = [];
@@ -61,6 +65,8 @@ function setup(start: Screen = workspaceScreen(), columnsStart = columnsStarted)
         calls.push(`déplacer ${path} ${into}`),
         { path: `${into}/${path}` }
       ),
+      readNote: async (path) =>
+        content(path, crms.includes(path) ? "---\ntype: crm\n---\n# CRM" : "# Note"),
       rebuildIndex: async () => (calls.push("reconstruire l'index"), null),
       indexOverview: async () => ({ notes: 0, total: 0, rebuilt: null }),
     },
@@ -175,6 +181,15 @@ describe("espace de travail ouvert", () => {
     expect(t.calls.slice(3)).toEqual(["notes de «projets»", "chercher courses"]);
   });
 
+  it("si le dossier affiché n'est plus dans la liste des dossiers, la liste des notes passe à son dossier parent", async () => {
+    const t = setup(workspaceScreen([], (screen) => ({ ...screen, folder: "projets/crm1" })));
+    await t.workspace.refreshFolders();
+    expect(t.calls).toEqual(["dossiers", "étiquettes", "notes de «projets»"]);
+    const now = t.screen.get();
+    expect(now.kind === "workspace" && now.folder).toBe("projets");
+    expect(now.kind === "workspace" && now.notes).toEqual([listed("projetsn.md")]);
+  });
+
   it("avec un filtre par étiquette, la liste relue est celle des notes qui la portent", async () => {
     const t = setup(tagSelected(workspaceScreen(), "perso", []));
     await t.workspace.refreshList();
@@ -267,6 +282,22 @@ describe("espace de travail ouvert", () => {
     expect(t.columns.log).toEqual(["enregistrer a.md", "colonnes"]);
     const tabs = t.columns.columns().list[0]?.tabs.map((tab) => tab.note);
     expect(tabs).toEqual(["projets/a.md", "b.md"]);
+  });
+
+  it("déplacer un CRM déplace aussi les onglets de ses fiches", async () => {
+    const opened = ["c.md", "c/actions/x.md", "cc/y.md"].reduce(noteOpened, columnsStarted);
+    const t = setup(workspaceScreen(), opened, ["c.md"]);
+    await t.workspace.moveNote("c.md", "projets");
+    const tabs = t.columns.columns().list[0]?.tabs.map((tab) => tab.note);
+    expect(tabs).toEqual(["projets/c.md", "projets/c/actions/x.md", "cc/y.md"]);
+  });
+
+  it("une note ordinaire déplacée laisse les onglets d'un dossier du même nom en place", async () => {
+    const opened = ["a.md", "a/x.md"].reduce(noteOpened, columnsStarted);
+    const t = setup(workspaceScreen(), opened);
+    await t.workspace.moveNote("a.md", "projets");
+    const tabs = t.columns.columns().list[0]?.tabs.map((tab) => tab.note);
+    expect(tabs).toEqual(["projets/a.md", "a/x.md"]);
   });
 
   it("une note déplacée reste dans les notes récentes, sous son nouveau chemin", async () => {

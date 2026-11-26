@@ -72,4 +72,69 @@ describe("demande d'un nom", () => {
     await userEvent.keyboard("{Escape}");
     await expect(answer).resolves.toBeNull();
   });
+
+  describe("avec un nom à vérifier", () => {
+    const refusing = (answers: (string | null)[]) => {
+      const asked: string[] = [];
+      const refuse = async (name: string) => {
+        asked.push(name);
+        return answers.shift() ?? null;
+      };
+      return { asked, refuse };
+    };
+
+    it("un nom refusé garde la fenêtre ouverte et dit pourquoi, sous le champ", async () => {
+      const element = dialog();
+      const { asked, refuse } = refusing(["Ce titre existe déjà."]);
+      const answer = askName(element, { ...OPTIONS, refuse });
+      await userEvent.keyboard("{Enter}");
+      await expect
+        .poll(() => element.querySelector(".name-prompt-error")?.textContent)
+        .toBe("Ce titre existe déjà.");
+      expect(asked).toEqual(["Notes"]);
+      expect(element.open).toBe(true);
+      expect(element.querySelector(".name-prompt-error")?.getAttribute("role")).toBe("alert");
+      expect(document.activeElement).toBe(field(element));
+      // Le nom est ensuite accepté : la fenêtre se ferme et rend ce nom.
+      field(element).value = "Autre";
+      await userEvent.keyboard("{Enter}");
+      await expect(answer).resolves.toBe("Autre");
+      expect(asked).toEqual(["Notes", "Autre"]);
+      expect(element.open).toBe(false);
+    });
+
+    it("taper efface le message", async () => {
+      const element = dialog();
+      void askName(element, { ...OPTIONS, refuse: refusing(["Non."]).refuse });
+      await userEvent.keyboard("{Enter}");
+      await expect
+        .poll(() => element.querySelector(".name-prompt-error")?.textContent)
+        .toBe("Non.");
+      await userEvent.keyboard("x");
+      expect(element.querySelector(".name-prompt-error")?.textContent).toBe("");
+    });
+
+    it("un nom accepté ferme la fenêtre sans message", async () => {
+      const element = dialog();
+      const answer = askName(element, { ...OPTIONS, refuse: refusing([null]).refuse });
+      button(element, "Ajouter").click();
+      await expect(answer).resolves.toBe("Notes");
+      expect(element.querySelector(".name-prompt-error")?.textContent).toBe("");
+    });
+
+    it("Annuler ne demande rien à vérifier", async () => {
+      const element = dialog();
+      const { asked, refuse } = refusing([]);
+      const answer = askName(element, { ...OPTIONS, refuse });
+      button(element, "Annuler").click();
+      await expect(answer).resolves.toBeNull();
+      expect(asked).toEqual([]);
+    });
+
+    it("sans vérification, la fenêtre n'a pas d'emplacement de message", () => {
+      const element = dialog();
+      void askName(element, OPTIONS);
+      expect(element.querySelector(".name-prompt-error")).toBeNull();
+    });
+  });
 });

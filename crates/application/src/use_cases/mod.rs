@@ -6,6 +6,7 @@ mod change_canvas;
 mod connection;
 mod create_note;
 mod crm;
+mod crm_fiches;
 mod export;
 mod folders;
 mod history;
@@ -20,6 +21,7 @@ mod pin_note;
 mod read_note;
 mod read_note_text;
 mod recent_notes;
+mod rename_note;
 mod replace_in_note;
 mod research_notebook;
 mod save_note;
@@ -45,7 +47,7 @@ pub use crm::{
     ProjectChange, ProjectEntry, ReadCrm, RecoverGestures, StageChange, WeekView,
 };
 pub use export::ExportMarkdown;
-pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
+pub use folders::{CreateFolder, ListFolders, ListShownFolders, MoveFolder, RenameFolder};
 pub use history::{
     CompareVersion, KeepVersion, KeepVersionsBeforeChange, ListVersions, ReadVersion,
     RestoreVersion,
@@ -66,6 +68,7 @@ pub use pin_note::PinNote;
 pub use read_note::ReadNote;
 pub use read_note_text::{NoteText, ReadNoteText};
 pub use recent_notes::ListRecentNotes;
+pub use rename_note::{RenameNote, RenamedNote};
 pub use replace_in_note::{ReplaceInNote, ReplacedNote};
 pub use research_notebook::{AddEntry, CreateResearchNotebook, ListEntries};
 pub use save_note::{SaveNote, SaveOutcome};

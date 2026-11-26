@@ -203,7 +203,7 @@ La carte est créée dans le dossier cliqué.
 ### 6.1 Ouverture
 
 - Une carte s'ouvre dans un onglet d'une colonne d'édition, comme une note. À la place de l'éditeur de texte, la colonne montre la carte, qui en occupe toute la surface.
-- Le titre est celui de l'onglet. On renomme une carte comme une note.
+- Le titre est celui de l'onglet. On renomme une carte comme une note, par « Renommer… » dans le menu du clic droit de la liste, d'un onglet ou d'un résultat de recherche (décision 0090) : une fenêtre préremplie avec le titre, Entrée valide, le titre `#` change et le nom du fichier suit ; l'en-tête et la liste de la carte ne changent pas.
 - Une carte sans nœud affiche au centre, en couleur atténuée : « Double-cliquez pour ajouter une idée. »
 - À l'ouverture, la vue est cadrée sur toute la carte (§ 6.4).
 

@@ -5,7 +5,6 @@ import {
   showFocusUnit,
   showFullScreen,
   showOutline,
-  showSidePanels,
   showTypewriter,
 } from "./editor-tools";
 
@@ -24,7 +23,7 @@ describe("bloc d'outils d'affichage", () => {
     return group;
   }
 
-  it("est un groupe nommé de six boutons-icônes, dans l'ordre d'avant", () => {
+  it("est un groupe nommé de cinq boutons-icônes, dans l'ordre d'avant", () => {
     const group = build();
     expect(group.getAttribute("role")).toBe("group");
     expect(group.getAttribute("aria-label")).toBe("Affichage");
@@ -32,7 +31,6 @@ describe("bloc d'outils d'affichage", () => {
       "Focus",
       "Plan",
       "Machine à écrire",
-      "Panneaux",
       "Plein écran",
       "Claude",
     ]);
@@ -54,16 +52,15 @@ describe("bloc d'outils d'affichage", () => {
     expect(named(buttons[0] as HTMLElement)).toEqual(["Focus", "Focus (Cmd+Maj+F)", ""]);
     expect(named(buttons[1] as HTMLElement)).toEqual(["Plan", "Plan (Cmd+Maj+O)", ""]);
     expect(named(buttons[2] as HTMLElement)[1]).toBe("Machine à écrire (Cmd+Maj+T)");
-    expect(named(buttons[3] as HTMLElement)[1]).toBe("Panneaux (Cmd+0)");
-    expect(named(buttons[4] as HTMLElement)[1]).toBe("Plein écran (Ctrl+Cmd+F)");
-    expect(named(buttons[5] as HTMLElement)[1]).toBe("Claude (Ctrl+Cmd+L)");
+    expect(named(buttons[3] as HTMLElement)[1]).toBe("Plein écran (Ctrl+Cmd+F)");
+    expect(named(buttons[4] as HTMLElement)[1]).toBe("Claude (Ctrl+Cmd+L)");
   });
 
   it("tous les boutons commencent non actifs, le temps que la fenêtre dise leur état", () => {
     const states = [...build().querySelectorAll("button")].map((b) =>
       b.getAttribute("aria-pressed"),
     );
-    expect(states).toEqual(Array(6).fill("false"));
+    expect(states).toEqual(Array(5).fill("false"));
   });
 
   it("le bouton « Claude » reprend les douze rayons de l'icône de la colonne Claude Code", () => {
@@ -105,19 +102,6 @@ describe("plein écran", () => {
     expect(named(button)).toEqual(["Plein écran", "Plein écran (Ctrl+Cmd+F)", ""]);
     expect(button.getAttribute("aria-pressed")).toBe("false");
     expect(button.innerHTML).toBe(entering);
-  });
-});
-
-describe("panneaux latéraux", () => {
-  it("se cachent ensemble, et le bouton dit s'ils sont montrés", () => {
-    const mainArea = document.createElement("section");
-    const button = document.createElement("button");
-    showSidePanels(mainArea, button, "hidden");
-    expect(mainArea.classList.contains("panels-hidden")).toBe(true);
-    expect(button.getAttribute("aria-pressed")).toBe("false");
-    showSidePanels(mainArea, button, "shown");
-    expect(mainArea.classList.contains("panels-hidden")).toBe(false);
-    expect(button.getAttribute("aria-pressed")).toBe("true");
   });
 });
 

@@ -33,7 +33,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 
 - Espaces de travail : plusieurs, gardés d'un lancement à l'autre ; un sélecteur en tête des dossiers et la palette (Cmd+Maj+E) pour passer de l'un à l'autre, en ajouter, en renommer, en retirer ; chacun retrouve ses colonnes et ses réglages.
 - Fenêtre en trois parties : dossiers, liste des notes, et jusqu'à trois colonnes d'édition à onglets, côte à côte.
-- Créer, renommer, déplacer, supprimer (corbeille) une note ou un dossier.
+- Créer, renommer, déplacer, supprimer (corbeille) une note ou un dossier. Une note, une carte mentale, un cahier de recherche, un canvas et un CRM se renomment par « Renommer… », dans le menu du clic droit de la liste, d'un onglet ou d'un résultat de recherche : une fenêtre demande le nouveau titre (un titre vide ou déjà pris est refusé dans la fenêtre), le nom du fichier le suit, et un CRM emmène le dossier de ses fiches.
 - Éditeur Markdown avec mise en forme en direct ; enregistrement automatique.
 - Mise en forme de la sélection (gras, italique, lien, titres de niveau 1 à 3, liste à puces ou numérotée) et insertion de la date du jour : raccourci, palette, menu Format ou barre de mise en forme (boutons en haut de la fenêtre, au-dessus des onglets, qui gardent la sélection et se grisent sans note ; ses deux derniers boutons copient la note en Markdown ou en texte mis en forme). Tapés dans un autre champ (message à Claude, recherche, nom), ces raccourcis ne touchent jamais la note derrière lui.
 - Ouvrir un lien de la note (vers une autre note, une pièce jointe, une adresse web, ouverte dans le navigateur) : un simple clic sur son texte, comme dans Obsidian (Cmd+clic aussi) ; un clic qui glisse sélectionne sans ouvrir ; pour modifier le texte du lien, clic juste à côté puis flèches. « Ouvrir le lien » (palette, menu Fichier) ouvre celui où se trouve le curseur.
@@ -47,7 +47,7 @@ L'application a sa propre identité : nom, icône et apparence originaux, sans r
 - Étiquettes de l'en-tête montrées sous chaque note ; un clic filtre la liste sur tout l'espace de travail ; liste des étiquettes avec leur nombre de notes.
 - Tri de la liste par date de modification ou par titre, épinglées toujours en tête ; il vaut aussi pour le filtre par étiquette et la recherche, et chaque espace de travail garde le sien.
 - Notes récentes : les 10 dernières notes ouvertes, de tout dossier, montrées par l'entrée « Récentes » comme un dossier et proposées d'abord par l'ouverture rapide ; elles suivent les renommages, perdent les notes jetées, et chaque espace de travail garde les siennes.
-- Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre.
+- Mode focus (phrase ou paragraphe courant mis en avant), mode plein écran, et panneaux latéraux qu'on cache ou montre ensemble (le bouton est dans la barre tout en haut de la fenêtre, à côté des boutons de fenêtre du Mac, toujours visible ; son icône dit l'état ; Cmd+0 aussi).
 - Largeur de la liste des dossiers, de celle des notes et de la colonne Claude Code réglée en tirant leur bord à la souris (le bord gauche pour la colonne Claude Code), entre un minimum et un maximum ; double-clic sur le bord pour la largeur par défaut ; gardée d'un lancement à l'autre. Un nom de dossier ou de note coupé montre son nom complet au survol.
 - Coller une image : elle devient une pièce jointe liée.
 - Modèles de note : une note créée depuis une note du dossier des modèles choisi dans les réglages, la date, l'heure et le titre remplacés.

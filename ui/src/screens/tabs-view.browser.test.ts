@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Column } from "../state/columns";
 import { closeContextMenu } from "./context-menu";
 import { renderTabs, tabLabel } from "./tabs-view";
@@ -154,5 +154,67 @@ describe("onglets d'une colonne", () => {
     tabs[1]?.dispatchEvent(new DragEvent("dragstart", { bubbles: true }));
     tabs[1]?.dispatchEvent(new DragEvent("dragend", { bubbles: true }));
     expect(asked).toEqual(["glisser 2", "glisser null"]);
+  });
+
+  describe("menu avec « Renommer… »", () => {
+    const menuNames = () =>
+      [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].map(
+        (b) => b.textContent,
+      );
+
+    function mountRenaming(available: (note: string) => Promise<boolean>) {
+      const list = document.createElement("div");
+      document.body.replaceChildren(list);
+      const started: string[] = [];
+      renderTabs(list, column, {
+        activate: () => {},
+        close: () => {},
+        place: () => {},
+        drag: () => {},
+        print: () => {},
+        copy: () => {},
+        copyMarkdown: () => {},
+        history: () => {},
+        renaming: { available, start: (note) => started.push(note) },
+      });
+      const tabs = [...list.querySelectorAll<HTMLElement>('[role="tab"]')];
+      const rightClick = (tab: HTMLElement) =>
+        tab.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+      return { tabs, started, rightClick };
+    }
+
+    it("le menu d'un onglet propose « Renommer… » après « Fermer », et la renomme", async () => {
+      const t = mountRenaming(async () => true);
+      t.rightClick(t.tabs[0] as HTMLElement);
+      await vi.waitFor(() => expect(menuNames()).toContain("Renommer…"));
+      expect(menuNames()).toEqual([
+        "Ouvrir dans un nouvel onglet",
+        "Ouvrir à gauche",
+        "Ouvrir à droite",
+        "Fermer",
+        "Renommer…",
+        "Imprimer…",
+        "Copier en texte mis en forme",
+        "Copier en Markdown",
+        "Historique…",
+      ]);
+      [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")][4]?.click();
+      expect(t.started).toEqual(["Travail/reunion.md"]);
+    });
+
+    it("la question est posée pour la note de l'onglet cliqué", async () => {
+      const asked: string[] = [];
+      const t = mountRenaming(async (note) => (asked.push(note), true));
+      t.rightClick(t.tabs[1] as HTMLElement);
+      await vi.waitFor(() => expect(menuNames()).toContain("Renommer…"));
+      expect(asked).toEqual(["Travail/liste-de-noel.md"]);
+    });
+
+    it("pour une fiche de CRM, le menu n'a pas « Renommer… »", async () => {
+      const t = mountRenaming(async () => false);
+      t.rightClick(t.tabs[0] as HTMLElement);
+      await vi.waitFor(() => expect(menuNames()).toContain("Historique…"));
+      expect(menuNames()).not.toContain("Renommer…");
+    });
   });
 });

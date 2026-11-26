@@ -109,3 +109,11 @@ describe("pont vers Rust : le CRM (fiche 0058)", () => {
     ]);
   });
 });
+
+describe("pont vers Rust : la corbeille d'un CRM (fiche 0091)", () => {
+  it("demande combien de fiches partent avec un CRM", async () => {
+    const calls = recordCalls(2);
+    expect(await bridge.crmFichesInTrash("c.md")).toBe(2);
+    expect(calls).toEqual([{ command: "crm_fiches_in_trash", args: { path: "c.md" } }]);
+  });
+});

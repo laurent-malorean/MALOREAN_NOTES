@@ -6,7 +6,7 @@ import type {
   TrashInfo,
   WorkspaceInfo,
 } from "../bridge";
-import { movedPath } from "./folders";
+import { movedPath, parentOf } from "./folders";
 import { foldedMoved, foldToggled, parentsUnfolded } from "./folding";
 import { DEFAULT_ORDER, type NoteOrder } from "./note-order";
 import { initialSelection } from "./selection";
@@ -117,9 +117,16 @@ export function folderRevealed(screen: Screen, path: string): Screen {
     : screen;
 }
 
-/** Le même espace de travail, avec la liste des dossiers relue. */
+/**
+ * Le même espace de travail, avec la liste des dossiers relue. Si le dossier affiché n'y est plus
+ * (un dossier de fiches de CRM n'est jamais montré, un dossier a disparu), c'est son plus proche
+ * dossier parent qui est affiché.
+ */
 export function foldersRefreshed(screen: Screen, folders: readonly string[]): Screen {
-  return screen.kind === "workspace" ? { ...screen, folders } : screen;
+  if (screen.kind !== "workspace") return screen;
+  let folder = screen.folder;
+  while (folder !== "" && !folders.includes(folder)) folder = parentOf(folder);
+  return { ...screen, folders, folder };
 }
 
 /**

@@ -101,6 +101,8 @@ test("les deux dossiers des réglages se choisissent dans une liste en arboresce
   page,
 }) => {
   await launch(page, WORKSPACE, ["Modèles", "Notes", "Notes/Travail"]);
+  // Les listes des réglages se lisent à leur ouverture : on attend que le lancement ait créé le dossier du journal.
+  await expect(page.locator(".folder-item", { hasText: "Journal" })).toBeVisible();
   await page.getByRole("button", { name: "Réglages" }).click();
   const dialog = page.getByRole("dialog", { name: "Réglages" });
   await dialog.getByRole("tab", { name: "Écriture" }).click();

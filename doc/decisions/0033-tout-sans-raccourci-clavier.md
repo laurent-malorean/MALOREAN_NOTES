@@ -18,7 +18,7 @@ Principe demandé par l'utilisateur le 19/11 : « on doit pouvoir tout faire san
 - **Un test l'exige** : toute commande de la liste, avec ou sans raccourci, est dans la barre des menus. Ajouter une commande sans la ranger dans un menu fait échouer les tests.
 - **Mise en forme et date du jour deviennent des commandes** de la palette (`FormatCommandId`, `insert-date`), rangées dans un menu **Format**, entre Édition et Présentation, comme dans les applications de texte du Mac. Elles visent la note de la colonne active et sont grisées sans note. Leurs touches restent les mêmes ; l'éditeur les lit maintenant dans la liste des commandes (`commandKeys`, `editorKey`), si bien qu'un raccourci n'est toujours écrit qu'une fois. Hors de l'éditeur, la page les lit comme les autres raccourcis.
 - **« Ouvrir le lien »** (`open-link`, menu Fichier et palette) ouvre le lien où se trouve le curseur, comme un Cmd+clic dessus : à la souris, on clique dans le lien, puis on choisit la commande. Un lien entre notes passe avant le lien Markdown qui le contiendrait.
-- **Menu d'une note sur les résultats de la recherche** : le clic droit propose « Ouvrir dans un nouvel onglet », « Ouvrir à gauche », « Ouvrir à droite », « Fermer », comme dans la liste des notes.
+- **Menu d'une note sur les résultats de la recherche** : le clic droit propose « Ouvrir dans un nouvel onglet », « Ouvrir à gauche », « Ouvrir à droite », « Fermer » (et « Renommer… », fiche 0090), comme dans la liste des notes.
 - **Fenêtre de choix** : un clic à côté d'elle (sur le fond) la ferme sans rien choisir. Son champ et sa liste la couvrent entièrement ; un clic qui arrive à la fenêtre elle-même vient donc de son fond.
 
 ## Conséquences
