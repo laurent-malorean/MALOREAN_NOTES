@@ -5,14 +5,13 @@ import { journalGroup } from "../screens/journal-setting";
 import { noteOpened } from "../state/columns";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { journalTemplate, loadJournal, saveJournal } from "../state/journal";
-import { loadTemplatesFolder } from "../state/templates-folder";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Workspace } from "./workspace";
 
 export interface JournalDeps {
-  readonly backend: Pick<typeof Bridge, "listAllNotes" | "createDailyNote">;
-  /** Où les réglages du journal et le dossier des modèles de chaque espace de travail sont gardés. */
+  readonly backend: Pick<typeof Bridge, "listAllNotes" | "createDailyNote" | "templatesFolder">;
+  /** Où les réglages du journal de chaque espace de travail sont gardés. */
   readonly storage: PreferenceStorage;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "flushedPath" | "update" | "activePane">;
@@ -29,8 +28,8 @@ export interface Journal {
 }
 
 /** Le modèle du journal, enregistré d'abord s'il est ouvert et modifié ; rien s'il n'y en a pas. */
-async function template(deps: JournalDeps, workspace: string): Promise<string | null> {
-  const folder = loadTemplatesFolder(deps.storage, workspace);
+async function template(deps: JournalDeps): Promise<string | null> {
+  const folder = await deps.backend.templatesFolder();
   const found = folder && journalTemplate(await deps.backend.listAllNotes(), folder);
   return found ? deps.columns.flushedPath(found) : null;
 }
@@ -39,7 +38,7 @@ async function open(deps: JournalDeps) {
   if (deps.screen.get().kind !== "workspace") return;
   const workspace = deps.workspace.path();
   const { folder } = loadJournal(deps.storage, workspace);
-  const created = await deps.backend.createDailyNote(folder, await template(deps, workspace));
+  const created = await deps.backend.createDailyNote(folder, await template(deps));
   // Le journal vient peut-être d'être créé.
   await deps.workspace.refreshFolders();
   await deps.workspace.refreshList();

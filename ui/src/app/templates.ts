@@ -2,23 +2,35 @@
 import type { MessageKind } from "./messages";
 import type * as Bridge from "../bridge";
 import { openPicker } from "../screens/picker";
-import { templatesFolderGroup } from "../screens/templates-setting";
+import { loadingTemplatesFolderGroup } from "../screens/templates-setting";
 import { notePlaced } from "../state/columns";
-import type { PreferenceStorage } from "../state/focus-preference";
 import { matchingNotes } from "../state/quick-open";
 import { currentFolder } from "../state/screen";
-import { loadTemplatesFolder, saveTemplatesFolder, templatesIn } from "../state/templates-folder";
+import {
+  forgetTemplatesFolders,
+  type KeyedStorage,
+  storedTemplatesFolders,
+  templatesIn,
+} from "../state/templates-folder";
 import type { OpenColumns } from "./columns";
 import type { CurrentScreen } from "./current-screen";
 import type { Workspace } from "./workspace";
 
 export interface TemplatesDeps {
-  readonly backend: Pick<typeof Bridge, "listAllNotes" | "createNoteFromTemplate">;
-  /** Où le dossier des modèles de chaque espace de travail est gardé. */
-  readonly storage: PreferenceStorage;
+  readonly backend: Pick<
+    typeof Bridge,
+    | "listAllNotes"
+    | "createNoteFromTemplate"
+    | "templatesFolder"
+    | "setTemplatesFolder"
+    | "importTemplatesFolders"
+    | "errorMessage"
+  >;
+  /** Le stockage de la page, où l'interface gardait le dossier des modèles avant qu'il passe au moteur. */
+  readonly storage: KeyedStorage;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "flushedPath" | "update" | "activePane">;
-  readonly workspace: Pick<Workspace, "path" | "refreshList" | "refreshTags">;
+  readonly workspace: Pick<Workspace, "refreshList" | "refreshTags">;
   /** La fenêtre de choix au clavier. */
   readonly picker: HTMLDialogElement;
   /** Montre un message quelques secondes. */
@@ -31,6 +43,12 @@ export interface Templates {
   newNote(): Promise<void>;
   /** La partie des réglages qui choisit le dossier des modèles ; rien sans espace de travail ouvert. */
   settingsGroups(): HTMLElement[];
+  /**
+   * Au lancement, avant de rouvrir l'espace de travail : passe au moteur les dossiers des modèles
+   * que l'interface gardait autrefois, puis les efface d'ici. Une erreur est dite ; les clés
+   * restent alors pour le prochain lancement. Ne rejette jamais.
+   */
+  migrate(): Promise<void>;
 }
 
 /** La note tirée du modèle, le modèle enregistré d'abord s'il est ouvert et modifié. */
@@ -49,7 +67,7 @@ async function createFrom(deps: TemplatesDeps, template: string) {
 
 async function newNote(deps: TemplatesDeps) {
   if (deps.screen.get().kind !== "workspace") return;
-  const folder = loadTemplatesFolder(deps.storage, deps.workspace.path());
+  const folder = await deps.backend.templatesFolder();
   if (folder === null)
     return deps.show("Aucun dossier des modèles : choisissez-en un dans les réglages.", "info");
   const templates = templatesIn(await deps.backend.listAllNotes(), folder);
@@ -65,18 +83,35 @@ async function newNote(deps: TemplatesDeps) {
   });
 }
 
+/** Reprend ce que l'interface gardait autrefois (fiche 0077), sans jamais empêcher le lancement. */
+async function migrate(deps: TemplatesDeps) {
+  const stored = storedTemplatesFolders(deps.storage);
+  if (stored.length === 0) return;
+  try {
+    await deps.backend.importTemplatesFolders(
+      stored.map(({ location, folder }) => ({ location, folder })),
+    );
+    forgetTemplatesFolders(
+      deps.storage,
+      stored.map(({ key }) => key),
+    );
+  } catch (error) {
+    deps.show(deps.backend.errorMessage(error), "error");
+  }
+}
+
 export function createTemplates(deps: TemplatesDeps): Templates {
   return {
     newNote: () => newNote(deps),
+    migrate: () => migrate(deps),
     settingsGroups: () => {
       const screen = deps.screen.get();
       if (screen.kind !== "workspace") return [];
-      const workspace = deps.workspace.path();
+      const current = deps.backend.templatesFolder();
+      deps.run(current);
       return [
-        templatesFolderGroup(
-          screen.folders,
-          loadTemplatesFolder(deps.storage, workspace),
-          (folder) => saveTemplatesFolder(deps.storage, workspace, folder),
+        loadingTemplatesFolderGroup(screen.folders, current, (folder) =>
+          deps.run(deps.backend.setTemplatesFolder(folder)),
         ),
       ];
     },

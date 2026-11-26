@@ -13,7 +13,6 @@ let log: string[];
 let turns: { resolve: () => void; reject: (error: unknown) => void }[];
 let announce: (event: ClaudeEventItem) => void;
 let workspacePath: string;
-let sentTemplates: (string | null)[];
 let showNote: (path: string) => void;
 
 beforeEach(() => {
@@ -23,14 +22,12 @@ beforeEach(() => {
   layout = createLayout(root);
   log = [];
   turns = [];
-  sentTemplates = [];
   workspacePath = "/Users/moi/Notes";
   column = createClaudeColumn({
     backend: {
       claudeStatus: async () => ({ kind: "ready", email: null, organization: null }),
-      sendToClaude: (message, conversation, _settings, allowed, templates) =>
+      sendToClaude: (message, conversation, _settings, allowed) =>
         new Promise((resolve, reject) => {
-          sentTemplates.push(templates);
           log.push(
             `envoyer ${message} dans ${conversation ?? "une neuve"}${allowed ? " (autorisé)" : ""}`,
           );
@@ -57,14 +54,9 @@ beforeEach(() => {
         nextId: 1,
       }),
     },
-    // Seul l'espace de travail « Autre » a un dossier des modèles.
     storage: {
       getItem: (key) =>
-        key === "malorean.templates:/Users/moi/Autre"
-          ? "Modèles"
-          : key === "malorean.settings"
-            ? JSON.stringify({ claudeChangesAfterWeb: "ask" })
-            : null,
+        key === "malorean.settings" ? JSON.stringify({ claudeChangesAfterWeb: "ask" }) : null,
       setItem: () => {},
       removeItem: () => {},
     },
@@ -221,14 +213,6 @@ describe("onglets de conversation de la colonne Claude Code", () => {
   it("une note montrée par Claude, par un outil de l'application, s'ouvre", () => {
     showNote("Travail/a.md");
     expect(log).toEqual(["ouvrir Travail/a.md"]);
-  });
-
-  it("chaque tour emporte le dossier des modèles de son espace de travail, pour les outils de l'application", async () => {
-    await answeredIn("c1", "Un");
-    workspacePath = "/Users/moi/Autre";
-    column.follow();
-    send("Deux");
-    expect(sentTemplates).toEqual([null, "Modèles"]);
   });
 
   it("les modifications retenues s'autorisent dans la conversation de leur onglet", async () => {

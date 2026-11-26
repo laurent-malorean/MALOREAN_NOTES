@@ -72,6 +72,7 @@ import type { SavedNote } from "./generated/SavedNote";
 import type { ContentTypeItem } from "./generated/ContentTypeItem";
 import type { SearchResultItem } from "./generated/SearchResultItem";
 import type { TagItem } from "./generated/TagItem";
+import type { TemplatesFolderItem } from "./generated/TemplatesFolderItem";
 import type { TrashedNoteItem } from "./generated/TrashedNoteItem";
 import type { TrashInfo } from "./generated/TrashInfo";
 import type { VersionItem } from "./generated/VersionItem";
@@ -146,6 +147,7 @@ export type {
   SavedNote,
   SearchResultItem,
   TagItem,
+  TemplatesFolderItem,
   TrashedNoteItem,
   TrashInfo,
   VersionItem,
@@ -427,17 +429,24 @@ export const claudeStatus = () => invoke<ClaudeStatusItem>("claude_status");
  * de l'onglet de conversation, annoncée par `conversationStarted` ; `null` en commence une neuve),
  * avec le modèle et le niveau d'effort choisis ; se termine avec le tour. Après une lecture du web,
  * ses créations et modifications de notes sont retenues, sauf si `changesAllowed` (l'utilisateur
- * les autorise pour ce tour). Claude a aussi les outils de l'application, avec `templates` (le
- * dossier des modèles de l'espace de travail, ou `null`) pour les modèles de note. Les événements
- * du tour arrivent par `onClaudeEvent`.
+ * les autorise pour ce tour). Claude a aussi les outils de l'application, dont les modèles de note
+ * (le dossier des modèles est celui que garde le moteur, fiche 0077). Les événements du tour
+ * arrivent par `onClaudeEvent`.
  */
 export const sendToClaude = (
   message: string,
   conversation: string | null,
   settings: TurnSettingsItem,
   changesAllowed: boolean,
-  templates: string | null,
-) => invoke<null>("send_to_claude", { message, conversation, settings, changesAllowed, templates });
+) => invoke<null>("send_to_claude", { message, conversation, settings, changesAllowed });
+/** Le dossier des modèles de l'espace de travail ouvert, depuis sa racine ; `null` s'il n'en a pas choisi. */
+export const templatesFolder = () => invoke<string | null>("templates_folder");
+/** Choisit le dossier des modèles de l'espace de travail ouvert ; `null` pour aucun. */
+export const setTemplatesFolder = (folder: string | null) =>
+  invoke<null>("set_templates_folder", { folder });
+/** Reprend les dossiers des modèles que l'interface gardait avant la fiche 0077 ; rend combien d'espaces ont été repris. */
+export const importTemplatesFolders = (chosen: TemplatesFolderItem[]) =>
+  invoke<number>("import_templates_folders", { chosen });
 /** Arrête le tour en cours (ce que Claude a déjà écrit reste écrit), ou annule la connexion en cours. */
 export const stopClaude = () => invoke<null>("stop_claude");
 /** Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris). */

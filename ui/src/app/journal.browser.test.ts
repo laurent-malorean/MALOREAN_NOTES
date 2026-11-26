@@ -16,7 +16,11 @@ const NOTES: WorkspaceNoteItem[] = [
 ];
 const TODAY = "Journal/2026-11-18.md";
 
-function setup(stored: Record<string, string> = {}, open = ["a.md"]) {
+function setup(
+  stored: Record<string, string> = {},
+  open = ["a.md"],
+  templates: string | null = null,
+) {
   const items = new Map(Object.entries(stored));
   const storage = {
     getItem: (key: string) => items.get(key) ?? null,
@@ -31,6 +35,7 @@ function setup(stored: Record<string, string> = {}, open = ["a.md"]) {
   const journal = createJournal({
     backend: {
       listAllNotes: async () => (log.push("toutes les notes"), NOTES),
+      templatesFolder: async () => templates,
       createDailyNote: async (folder, template) => {
         log.push(`note du jour dans ${folder} depuis ${String(template)}`);
         return { path: TODAY };
@@ -60,10 +65,11 @@ describe("note du jour", () => {
   });
 
   it("part du modèle Journal du dossier des modèles, enregistré d'abord, dans le dossier choisi", async () => {
-    const j = setup({
-      "malorean.templates:/lib": "Modèles",
-      "malorean.journal:/lib": JSON.stringify({ folder: "Carnet", atLaunch: true }),
-    });
+    const j = setup(
+      { "malorean.journal:/lib": JSON.stringify({ folder: "Carnet", atLaunch: true }) },
+      ["a.md"],
+      "Modèles",
+    );
     await j.journal.open();
     expect(j.columns.log[0]).toBe("enregistrer Modèles/jour.md");
     expect(j.log.slice(0, 2)).toEqual([
@@ -73,7 +79,7 @@ describe("note du jour", () => {
   });
 
   it("un dossier des modèles sans modèle Journal donne la note avec son seul titre", async () => {
-    const j = setup({ "malorean.templates:/lib": "Travail" });
+    const j = setup({}, ["a.md"], "Travail");
     await j.journal.open();
     expect(j.log.slice(0, 2)).toEqual([
       "toutes les notes",

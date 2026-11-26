@@ -1,13 +1,21 @@
 import { describe, expect, it } from "vitest";
-import type { PreferenceStorage } from "./focus-preference";
-import { loadTemplatesFolder, saveTemplatesFolder, templatesIn } from "./templates-folder";
+import {
+  forgetTemplatesFolders,
+  type KeyedStorage,
+  storedTemplatesFolders,
+  templatesIn,
+} from "./templates-folder";
 
 function memoryStorage(refused = false) {
   const items = new Map<string, string>();
   const check = () => {
     if (refused) throw new Error("stockage refusé");
   };
-  const storage: PreferenceStorage = {
+  const storage: KeyedStorage = {
+    get length() {
+      return (check(), items.size);
+    },
+    key: (index) => (check(), [...items.keys()][index] ?? null),
     getItem: (key) => (check(), items.get(key) ?? null),
     setItem: (key, value) => (check(), void items.set(key, value)),
     removeItem: (key) => (check(), void items.delete(key)),
@@ -15,38 +23,57 @@ function memoryStorage(refused = false) {
   return { storage, items };
 }
 
-describe("dossier des modèles", () => {
-  it("chaque espace de travail garde le sien", () => {
+describe("dossiers des modèles gardés autrefois par l'interface", () => {
+  it("chaque espace de travail a le sien, rangé sous son dossier sur le disque", () => {
     const { storage, items } = memoryStorage();
-    expect(loadTemplatesFolder(storage, "/notes")).toBeNull();
-    saveTemplatesFolder(storage, "/notes", "Modèles");
-    saveTemplatesFolder(storage, "/autres", "Gabarits");
-    expect(loadTemplatesFolder(storage, "/notes")).toBe("Modèles");
-    expect(loadTemplatesFolder(storage, "/autres")).toBe("Gabarits");
-    expect(items.get("malorean.templates:/notes")).toBe("Modèles");
+    items.set("malorean.templates:/Users/moi/Notes", "Modèles");
+    items.set("malorean.templates:/Users/moi/Travail", "Perso/Gabarits");
+    expect(storedTemplatesFolders(storage)).toEqual([
+      {
+        key: "malorean.templates:/Users/moi/Notes",
+        location: "/Users/moi/Notes",
+        folder: "Modèles",
+      },
+      {
+        key: "malorean.templates:/Users/moi/Travail",
+        location: "/Users/moi/Travail",
+        folder: "Perso/Gabarits",
+      },
+    ]);
   });
 
-  it("aucun dossier choisi efface le choix gardé", () => {
+  it("ne retient que les clés des modèles, et pas un choix vide", () => {
     const { storage, items } = memoryStorage();
-    saveTemplatesFolder(storage, "/notes", "Modèles");
-    saveTemplatesFolder(storage, "/notes", null);
-    expect(loadTemplatesFolder(storage, "/notes")).toBeNull();
-    expect(items.size).toBe(0);
+    items.set("malorean.journal:/Users/moi/Notes", '{"folder":"Journal"}');
+    items.set("malorean.templates-autre:/x", "Modèles");
+    items.set("malorean.templates:/Users/moi/Vide", "");
+    items.set("malorean.templates:/Users/moi/Notes", "Modèles");
+    expect(storedTemplatesFolders(storage).map((stored) => stored.location)).toEqual([
+      "/Users/moi/Notes",
+    ]);
   });
 
-  it("un choix vide vaut aucun dossier", () => {
-    const { storage, items } = memoryStorage();
-    items.set("malorean.templates:/notes", "");
-    expect(loadTemplatesFolder(storage, "/notes")).toBeNull();
+  it("rien à reprendre sans clé", () => {
+    expect(storedTemplatesFolders(memoryStorage().storage)).toEqual([]);
   });
 
-  it("un stockage refusé ne garde rien et ne bloque rien", () => {
+  it("oublier efface les clés données et rien d'autre", () => {
+    const { storage, items } = memoryStorage();
+    items.set("malorean.templates:/a", "A");
+    items.set("malorean.templates:/b", "B");
+    items.set("malorean.journal:/a", "{}");
+    forgetTemplatesFolders(storage, ["malorean.templates:/a", "malorean.templates:/b"]);
+    expect([...items.keys()]).toEqual(["malorean.journal:/a"]);
+  });
+
+  it("un stockage refusé ne donne rien et ne bloque rien", () => {
     const { storage } = memoryStorage(true);
-    expect(() => saveTemplatesFolder(storage, "/notes", "Modèles")).not.toThrow();
-    expect(() => saveTemplatesFolder(storage, "/notes", null)).not.toThrow();
-    expect(loadTemplatesFolder(storage, "/notes")).toBeNull();
+    expect(storedTemplatesFolders(storage)).toEqual([]);
+    expect(() => forgetTemplatesFolders(storage, ["malorean.templates:/a"])).not.toThrow();
   });
+});
 
+describe("modèles d'un dossier", () => {
   it("les modèles sont les notes du dossier, pas celles de ses sous-dossiers", () => {
     const notes = [
       { path: "Modèles/a.md", title: "A", folder: "Modèles" },

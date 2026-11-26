@@ -35,7 +35,6 @@ import {
 } from "../state/claude-tabs";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { loadSettings } from "../state/settings";
-import { loadTemplatesFolder } from "../state/templates-folder";
 
 export interface ClaudeColumnDeps {
   readonly backend: Pick<
@@ -156,7 +155,7 @@ const shownTabs = ({ tabs, active }: ConversationTabs) =>
  * dans la conversation de l'onglet ; ses événements et sa fin vont à cet onglet.
  */
 function player(
-  { backend, storage }: Pick<ClaudeColumnDeps, "backend" | "storage">,
+  { backend }: Pick<ClaudeColumnDeps, "backend">,
   tabs: ConversationTabsKeeper,
   bar: InputBar,
   here: () => string,
@@ -170,9 +169,7 @@ function player(
     };
     tabs.started({ ...at, since: Date.now() });
     tabs.changeTab(at, (shown) => tabMessageSent(shown, text, notes));
-    // Le dossier des modèles de l'espace de travail sert aux outils de l'application.
-    const templates = loadTemplatesFolder(storage, here());
-    backend.sendToClaude(message, tab.conversationId, bar.settings(), allowed, templates).then(
+    backend.sendToClaude(message, tab.conversationId, bar.settings(), allowed).then(
       () => ended(null),
       (error: unknown) => ended(backend.errorMessage(error)),
     );
