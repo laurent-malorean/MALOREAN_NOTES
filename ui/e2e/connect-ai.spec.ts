@@ -5,10 +5,11 @@ import { waitForLaunchedNote } from "./journey";
 
 const NOTES = { "courses.md": { content: "# Courses\n\npain", modified: 30 } };
 
-async function launch(page: Page, connection = "none") {
+async function launch(page: Page, connection = "none", theme?: string) {
   const params = new URLSearchParams({ notes: JSON.stringify(NOTES), remembered: "1", connection });
   await page.goto(`/e2e/app.html?${params.toString()}`);
   await waitForLaunchedNote(page, NOTES);
+  if (theme) await page.evaluate((t) => (document.documentElement.dataset.appearance = t), theme);
   await page.getByRole("button", { name: "Réglages" }).click();
   const settings = page.getByRole("dialog", { name: "Réglages" });
   await settings.getByRole("tab", { name: "Brancher une IA" }).click();
@@ -35,6 +36,62 @@ test("sans clé : une phrase et un seul bouton, qui crée la clé et montre les 
   await expect(blocks.nth(1)).toContainText("[mcp_servers.malorean]");
   await expect(blocks.nth(1)).toContainText('args = ["--brancher", "cle-de-branchement-1"]');
 });
+
+for (const theme of ["light", "dark"]) {
+  test(`pour chaque bloc, une phrase dit dans quel fichier le coller, sans déborder (thème ${theme})`, async ({
+    page,
+  }) => {
+    const settings = await launch(page, "key", theme);
+    const panel = settings.locator(".connection-settings");
+    const where = panel.locator(".connection-where");
+    await expect(where).toHaveCount(2);
+
+    // Claude : `.mcp.json`, à la racine du dossier ouvert dans l'éditeur ; le fichier existant reçoit l'entrée.
+    await expect(where.nth(0)).toHaveText(
+      "Collez ce bloc tel quel dans le fichier .mcp.json, à la racine du dossier ouvert dans l'éditeur. Si le fichier existe déjà, ajoutez l'entrée du bloc dans « mcpServers ».",
+    );
+    await expect(where.nth(0).locator("code")).toHaveText([".mcp.json"]);
+    // Codex : `~/.codex/config.toml`.
+    await expect(where.nth(1)).toHaveText(
+      "Collez ce bloc tel quel à la fin du fichier ~/.codex/config.toml.",
+    );
+    await expect(where.nth(1).locator("code")).toHaveText(["~/.codex/config.toml"]);
+
+    // Chaque phrase se trouve sous le titre de son bloc, au-dessus du bloc lui-même.
+    const claude = panel.locator(".connection-copyable").nth(1);
+    await expect(claude.locator("p").first()).toContainText("Configuration pour Claude");
+    await expect(claude.locator("p").nth(1)).toContainText(".mcp.json");
+    await expect(claude.locator("p").nth(1).locator("xpath=following-sibling::*[1]")).toHaveClass(
+      /connection-text/,
+    );
+
+    // Lisible dans les deux thèmes : le texte de la phrase n'a pas la couleur du fond.
+    const colors = await where.nth(0).evaluate((line) => ({
+      text: getComputedStyle(line).color,
+      background: getComputedStyle(line.closest(".settings") ?? document.body).backgroundColor,
+      file: getComputedStyle(line.querySelector("code") as Element).color,
+    }));
+    expect(colors.text).not.toBe(colors.background);
+    expect(colors.file).not.toBe(colors.background);
+
+    // Rien ne déborde de la fenêtre des Réglages : ni la zone de contenu, ni les phrases, ni les blocs.
+    const window = await settings.boundingBox();
+    if (!window) throw new Error("fenêtre des Réglages absente");
+    const items = panel.locator(".connection-where, .connection-text");
+    const count = await items.count();
+    for (let i = 0; i < count; i += 1) {
+      const box = await items.nth(i).boundingBox();
+      if (!box) throw new Error("élément absent de l'écran");
+      expect(box.x).toBeGreaterThanOrEqual(window.x);
+      expect(box.x + box.width).toBeLessThanOrEqual(window.x + window.width);
+    }
+    const overflow = await panel.evaluate((frame) => {
+      const scroller = frame.closest(".settings-panels") ?? frame.parentElement;
+      return (scroller?.scrollWidth ?? 0) - (scroller?.clientWidth ?? 0);
+    });
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+}
 
 test("copie la clé et chaque bloc dans le presse-papiers", async ({ page }) => {
   const settings = await launch(page, "key");
