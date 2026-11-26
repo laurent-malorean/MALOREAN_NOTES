@@ -149,12 +149,12 @@ async function checkFichesFolderHidden(
   );
 }
 
-/** Le fichier d'une action du CRM `path`, sur le disque, à partir de la référence que Rust en donne. */
-async function actionFile(env: Env, path: string, title: string): Promise<Uint8Array | null> {
+/** Le chemin sur le disque du fichier d'une action du CRM `path`, d'après la référence que Rust en donne. */
+async function actionFilePath(env: Env, path: string, title: string): Promise<string> {
   const crm: CrmItem = await env.bridge.readCrm(path, NO_FILTERS, null);
   const name = crm.actions.find((a) => a.title === title)?.name;
-  const stem = path.replace(/\.md$/, "");
-  return name === undefined ? null : readDisk(`${notesFolder(env)}/${stem}/actions/${name}.md`);
+  if (name === undefined) throw new Error(`l'action « ${title} » n'est pas dans le CRM`);
+  return `${notesFolder(env)}/${path.replace(/\.md$/, "")}/actions/${name}.md`;
 }
 
 /** Un CRM part à la corbeille avec ses fiches, sans dossier laissé derrière, et revient avec elles (fiche 0091). */
@@ -163,8 +163,9 @@ async function trashScenario(env: Env, trial: Trial): Promise<void> {
   await env.bridge.createCrmAction(path, draft("Appeler Paul", "TODO"));
   await env.bridge.createCrmAction(path, draft("Écrire à Léa", "Progress"));
   const stem = path.replace(/\.md$/, "");
-  const onDisk = async (relative: string) =>
-    (await readDisk(`${notesFolder(env)}/${relative}`)) !== null;
+  // Le chemin se relève avant la corbeille : un CRM à la corbeille ne se lit plus.
+  const ficheFile = await actionFilePath(env, path, "Appeler Paul");
+  const onDisk = async (file: string) => (await readDisk(file)) !== null;
   trial.check(
     "la confirmation annonce les deux fiches du CRM",
     (await env.bridge.crmFichesInTrash(path)) === 2,
@@ -173,7 +174,7 @@ async function trashScenario(env: Env, trial: Trial): Promise<void> {
   await env.bridge.trashNote(path);
   trial.check(
     "à la corbeille, ni le CRM ni ses fiches ne sont restés sur le disque",
-    !(await onDisk(path)) && (await actionFile(env, path, "Appeler Paul")) === null,
+    !(await onDisk(`${notesFolder(env)}/${path}`)) && !(await onDisk(ficheFile)),
     "",
   );
   const folders = await env.bridge.listFolders();
@@ -196,7 +197,7 @@ async function trashScenario(env: Env, trial: Trial): Promise<void> {
   );
   trial.check(
     "restauré, le fichier d'une action est revenu sur le disque",
-    (await actionFile(env, path, "Appeler Paul")) !== null,
+    await onDisk(ficheFile),
     "",
   );
 }
