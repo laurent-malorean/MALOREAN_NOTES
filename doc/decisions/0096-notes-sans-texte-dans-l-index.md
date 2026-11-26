@@ -1,4 +1,4 @@
-# 0095 : dire combien de notes n'ont pas de texte dans l'index de sens
+# 0096 : dire combien de notes n'ont pas de texte dans l'index de sens
 
 ## Contexte
 
