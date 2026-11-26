@@ -927,15 +927,41 @@ button {
   padding: 0;
 }
 /* Cahier de recherche : une barre à gauche de chaque entrée, sur toute sa hauteur ; l'espace
-   avant l'entrée est en haut de sa première ligne, sans barre. */
+   avant l'entrée est en haut de sa première ligne, sans barre. Elle se dessine en image de fond
+   (jamais par le raccourci `background`, qui effacerait le fond d'un bloc de code) et au même
+   endroit sur toutes les lignes, quel que soit leur contenu (fiche 0096). */
 .editor .cm-line.entry-bar {
   padding-left: var(--entry-bar-indent);
-  background: linear-gradient(var(--entry-bar), var(--entry-bar)) left bottom /
-    var(--entry-bar-width) 100% no-repeat;
+  background-image: linear-gradient(var(--entry-bar), var(--entry-bar));
+  background-position: left bottom;
+  background-size: var(--entry-bar-width) 100%;
+  background-repeat: no-repeat;
 }
 .editor .cm-line.entry-bar-first {
   padding-top: var(--entry-bar-gap);
   background-size: var(--entry-bar-width) calc(100% - var(--entry-bar-gap));
+}
+/* Dans une entrée, la citation et le bloc de code gardent leur retrait propre, en plus de celui de
+   la barre ; le trait de la citation est une seconde image de fond, à droite de la barre. */
+.editor .cm-line.entry-bar.cm-lp-quote {
+  border-left: 0;
+  padding-left: calc(var(--entry-bar-indent) + 1em) !important;
+  background-image:
+    linear-gradient(var(--entry-bar), var(--entry-bar)),
+    linear-gradient(var(--border), var(--border));
+  background-position:
+    left bottom,
+    var(--entry-bar-indent) bottom;
+  background-size: var(--entry-bar-width) 100%;
+}
+.editor .cm-line.entry-bar-first.cm-lp-quote {
+  background-size: var(--entry-bar-width) calc(100% - var(--entry-bar-gap));
+}
+.editor .cm-line.entry-bar.cm-lp-code-block {
+  padding-left: calc(var(--entry-bar-indent) + 1em) !important;
+}
+.editor .cm-line.entry-bar-first.cm-lp-code-block {
+  padding-top: var(--entry-bar-gap) !important;
 }
 /* Numéro d'entrée (fiche 0095) : un rectangle fin dans la marge gauche, en face de la première
    ligne de l'entrée, à gauche de la barre. La marge du cahier est élargie de sa place. */

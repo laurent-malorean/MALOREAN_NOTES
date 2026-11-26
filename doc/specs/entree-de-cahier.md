@@ -19,7 +19,7 @@ Ajouter une observation à un cahier de recherche simplement, sans fenêtre ni c
 
 ## 2 bis. Repérer les entrées
 
-- Chaque entrée du cahier porte, **sur son côté gauche, une barre verticale** : elle couvre toute la hauteur de l'entrée (sa première ligne, ses lignes suivantes, ses paragraphes en retrait et ses sous-puces), pour distinguer d'un coup d'œil une entrée de la suivante.
+- Chaque entrée du cahier porte, **sur son côté gauche, une barre verticale** : elle couvre toute la hauteur de l'entrée (sa première ligne, ses lignes suivantes, ses paragraphes en retrait et ses sous-puces), pour distinguer d'un coup d'œil une entrée de la suivante. **Elle est continue et exactement au même endroit sur toutes les lignes de l'entrée**, quel que soit leur contenu (citation, citation imbriquée, bloc de code, liste, tableau, ligne vide) ; le trait propre à une citation reste visible, à l'intérieur de l'entrée, à droite de la barre, sans la remplacer.
 - Deux entrées successives sont **séparées par un espace net** : leurs deux barres ne se touchent pas.
 - La barre est d'une teinte discrète du thème, lisible en clair comme en sombre.
 - Cela ne concerne que les cahiers de recherche : les listes des autres notes ne changent pas. La barre est un simple affichage, le texte du cahier n'en est pas changé.
