@@ -15,6 +15,9 @@ use serde::{Deserialize, Serialize};
 struct StoredWorkspace {
     name: String,
     folder: String,
+    /// Autorisé pour les IA (fiche 0074) ; absent tant qu'il ne l'est pas.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    allowed: bool,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -44,12 +47,18 @@ impl Stored {
                 });
         }
         let active = self.active.and_then(|name| WorkspaceName::new(&name).ok());
+        let allowed: Vec<WorkspaceName> = self
+            .workspaces
+            .iter()
+            .filter(|w| w.allowed)
+            .filter_map(|w| WorkspaceName::new(&w.name).ok())
+            .collect();
         let list = self
             .workspaces
             .into_iter()
             .filter_map(|w| workspace(&w.name, w.folder))
             .collect();
-        Workspaces::from_saved(list, active)
+        Workspaces::from_saved(list, active).with_allowed(&allowed)
     }
 
     fn of(workspaces: &Workspaces) -> Self {
@@ -61,6 +70,7 @@ impl Stored {
                 .map(|w| StoredWorkspace {
                     name: w.name.as_str().to_owned(),
                     folder: w.location.as_str().to_owned(),
+                    allowed: workspaces.is_allowed(&w.name),
                 })
                 .collect(),
             active: workspaces.active().map(|w| w.name.as_str().to_owned()),

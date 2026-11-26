@@ -109,3 +109,90 @@ fn the_json_the_interface_receives_uses_camel_case_names() {
         ["claudeConfig", "codexConfig", "createdOn", "secret"]
     );
 }
+
+fn call_with(
+    window: &WebviewWindow<MockRuntime>,
+    command: &str,
+    body: Value,
+) -> Result<Value, Value> {
+    let request = InvokeRequest {
+        cmd: command.into(),
+        callback: CallbackFn(0),
+        error: CallbackFn(1),
+        url: "tauri://localhost".parse().unwrap(),
+        body: InvokeBody::Json(body),
+        headers: Default::default(),
+        invoke_key: INVOKE_KEY.to_string(),
+    };
+    get_ipc_response(window, request).map(|body| body.deserialize::<Value>().unwrap())
+}
+
+#[test]
+fn the_interface_lists_the_workspaces_with_their_box_and_checks_one() {
+    let window = window(&Arc::new(FakeConnectionSocket::default()));
+    call_with(
+        &window,
+        "add_workspace",
+        json!({ "name": "Notes", "folder": "/Users/moi/Notes" }),
+    )
+    .unwrap();
+    call_with(
+        &window,
+        "add_workspace",
+        json!({ "name": "Travail", "folder": "/Users/moi/Travail" }),
+    )
+    .unwrap();
+
+    let before = call(&window, "list_ai_workspaces").unwrap();
+    let after = call_with(
+        &window,
+        "set_workspace_allowed",
+        json!({ "name": "Travail", "allowed": true }),
+    )
+    .unwrap();
+
+    assert_eq!(
+        before,
+        json!([{ "name": "Notes", "allowed": false }, { "name": "Travail", "allowed": false }])
+    );
+    assert_eq!(
+        after,
+        json!([{ "name": "Notes", "allowed": false }, { "name": "Travail", "allowed": true }])
+    );
+    assert_eq!(call(&window, "list_ai_workspaces").unwrap(), after);
+}
+
+#[test]
+fn the_interface_unchecks_a_workspace_and_an_unknown_one_is_refused() {
+    let window = window(&Arc::new(FakeConnectionSocket::default()));
+    call_with(
+        &window,
+        "add_workspace",
+        json!({ "name": "Notes", "folder": "/Users/moi/Notes" }),
+    )
+    .unwrap();
+    call_with(
+        &window,
+        "set_workspace_allowed",
+        json!({ "name": "Notes", "allowed": true }),
+    )
+    .unwrap();
+
+    let unchecked = call_with(
+        &window,
+        "set_workspace_allowed",
+        json!({ "name": "Notes", "allowed": false }),
+    )
+    .unwrap();
+    let unknown = call_with(
+        &window,
+        "set_workspace_allowed",
+        json!({ "name": "Perso", "allowed": true }),
+    );
+
+    assert_eq!(unchecked, json!([{ "name": "Notes", "allowed": false }]));
+    assert_eq!(
+        unknown.unwrap_err()["message"],
+        "aucun espace de travail ne s'appelle « Perso »"
+    );
+}

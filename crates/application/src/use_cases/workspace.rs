@@ -116,6 +116,43 @@ impl<'a> ManageWorkspaces<'a> {
         let next = self.list()?.removed(name)?;
         Ok(self.preferences.save_workspaces(&next)?)
     }
+
+    /// Ouvre l'espace de travail `name`, **autorisé pour les IA**, sans en faire l'espace ouvert :
+    /// les préférences ne changent pas, l'espace ouvert en dernier reste celui de l'utilisateur
+    /// (fiche 0074). L'autorisation est relue à chaque appel.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotAllowed`] si aucun espace autorisé ne porte ce nom (inconnu ou non
+    /// autorisé : la même erreur), ou [`AppError::StorageUnavailable`] si son dossier ne s'ouvre
+    /// pas.
+    pub fn open_in_background(&self, name: &WorkspaceName) -> Result<OpenedWorkspace, AppError> {
+        let workspace = self.list()?.allowed_named(name)?.clone();
+        let store = self.opener.open(&workspace.location)?;
+        Ok(OpenedWorkspace { workspace, store })
+    }
+
+    /// Autorise les IA à se servir de l'espace de travail `name` (fiche 0074).
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotFound`], ou [`AppError::StorageUnavailable`] si les préférences ne
+    /// peuvent pas être écrites.
+    pub fn allow(&self, name: &WorkspaceName) -> Result<(), AppError> {
+        let next = self.list()?.allowing(name)?;
+        Ok(self.preferences.save_workspaces(&next)?)
+    }
+
+    /// N'autorise plus les IA à se servir de l'espace de travail `name`.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotFound`], ou [`AppError::StorageUnavailable`] si les préférences ne
+    /// peuvent pas être écrites.
+    pub fn forbid(&self, name: &WorkspaceName) -> Result<(), AppError> {
+        let next = self.list()?.forbidding(name)?;
+        Ok(self.preferences.save_workspaces(&next)?)
+    }
 }
 
 #[cfg(test)]
@@ -280,5 +317,80 @@ mod tests {
             Err(AppError::OpenWorkspaceKept(_))
         ));
         assert_eq!(names(&preferences), ["Travail"]);
+    }
+
+    #[test]
+    fn allowing_and_forbidding_a_workspace_is_remembered_and_leaves_the_rest_alone() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        manage.allow(&name("notes")).unwrap();
+        let workspaces = manage.list().unwrap();
+        assert!(workspaces.is_allowed(&name("Notes")));
+        assert!(!workspaces.is_allowed(&name("Travail")));
+        assert_eq!(active(&preferences), Some("Travail".into()));
+        manage.forbid(&name("Notes")).unwrap();
+        assert!(manage.list().unwrap().allowed().is_empty());
+        assert!(matches!(
+            manage.allow(&name("Perso")),
+            Err(AppError::WorkspaceNotFound(_))
+        ));
+        assert!(matches!(
+            manage.forbid(&name("Perso")),
+            Err(AppError::WorkspaceNotFound(_))
+        ));
+    }
+
+    #[test]
+    fn an_allowed_workspace_opens_in_the_background_without_becoming_the_open_one() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        manage.allow(&name("notes")).unwrap();
+        let before = preferences.workspaces().unwrap();
+        let opened = manage.open_in_background(&name("NOTES")).unwrap();
+        assert_eq!(opened.workspace.name, name("Notes"));
+        assert_eq!(opened.workspace.location, location("/notes"));
+        assert_eq!(preferences.workspaces().unwrap(), before);
+        assert_eq!(active(&preferences), Some("Travail".into()));
+    }
+
+    #[test]
+    fn a_workspace_that_is_not_allowed_or_unknown_does_not_open_in_the_background() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        manage.allow(&name("Travail")).unwrap();
+        for refused in ["Notes", "Perso"] {
+            assert_eq!(
+                manage.open_in_background(&name(refused)).unwrap_err(),
+                AppError::WorkspaceNotAllowed {
+                    name: refused.into(),
+                    allowed: vec!["Travail".into()],
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn an_allowed_workspace_whose_folder_does_not_open_is_an_error() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let workspaces = preferences
+            .workspaces()
+            .unwrap()
+            .added(Workspace {
+                name: name("Absent"),
+                location: location("/absent"),
+            })
+            .unwrap()
+            .allowing(&name("Absent"))
+            .unwrap();
+        preferences.save_workspaces(&workspaces).unwrap();
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        assert!(matches!(
+            manage.open_in_background(&name("Absent")),
+            Err(AppError::StorageUnavailable(_))
+        ));
     }
 }

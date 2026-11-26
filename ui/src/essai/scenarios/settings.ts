@@ -4,7 +4,7 @@ import type { ConnectionInfo } from "../../bridge";
 import { renderConnectionSettings } from "../../screens/connection-settings";
 import type { Scenario, Trial } from "../runner";
 import { until } from "../wait";
-import { find, findAll, type Rect, rectOf } from "./env";
+import { type Env, find, findAll, type Rect, rectOf } from "./env";
 
 const WAIT = 20_000;
 const PIXEL = 1.5;
@@ -155,9 +155,10 @@ async function drawnKeyButtons(panel: HTMLElement): Promise<HTMLButtonElement[]>
       find("button", panel) === null ? null : find<HTMLElement>(".connection-settings", panel),
     WAIT,
   );
-  renderConnectionSettings(frame, FAKE_KEY, {
+  renderConnectionSettings(frame, FAKE_KEY, [], {
     create: () => undefined,
     revoke: () => undefined,
+    allow: () => undefined,
     copy: () => Promise.resolve(true),
   });
   const found = findAll<HTMLButtonElement>(".connection-copyable button", frame);
@@ -391,9 +392,53 @@ async function fixedSize(trial: Trial): Promise<void> {
   closeSettings(window);
 }
 
-export const settingsScenarios = (): Scenario[] => [
+/** Les cases des espaces de travail de l'onglet : les cases lues dans la vraie fenêtre, leur état gardé par le vrai Rust. */
+async function allowedWorkspacesTab(trial: Trial, env: Env): Promise<void> {
+  const window = await openSettings();
+  const panel = await showTab(window, "Brancher une IA");
+  const boxes = () => findAll<HTMLInputElement>(".allowed-workspace input", panel);
+  await until(
+    "les cases des espaces de travail",
+    () => (boxes().length > 0 ? boxes() : null),
+    WAIT,
+  );
+  const names = findAll<HTMLElement>(".allowed-workspace", panel).map((label) => label.textContent);
+  const kept = async () => (await env.bridge.listAiWorkspaces()).map((w) => w.allowed);
+  trial.measure("espaces de travail et cases", { names, cochées: await kept() });
+  trial.check(
+    "une case par espace de travail de l'utilisateur, toutes décochées au départ",
+    boxes().length === names.length && boxes().every((box) => !box.checked),
+    JSON.stringify(names),
+  );
+  trial.check(
+    "les cases de la fenêtre sont celles que Rust garde",
+    (await kept()).length === boxes().length && (await kept()).every((allowed) => !allowed),
+  );
+  const first = boxes()[0] as HTMLInputElement;
+  first.click();
+  await until(
+    "la case cochée gardée par Rust",
+    async () => ((await kept())[0] ? true : null),
+    WAIT,
+  );
+  trial.check("la case reste cochée une fois Rust répondu", boxes()[0]?.checked === true);
+  boxes()[0]?.click();
+  await until(
+    "la case décochée gardée par Rust",
+    async () => ((await kept())[0] ? null : true),
+    WAIT,
+  );
+  trial.check("la case décochée est gardée décochée", boxes()[0]?.checked === false);
+  closeSettings(window);
+}
+
+export const settingsScenarios = (env: Env): Scenario[] => [
   { name: "Réglages : onglet Index, barre de progression", run: (t) => indexTab(t) },
   { name: "Réglages : onglet Brancher une IA, boutons Copier", run: (t) => connectionTab(t) },
+  {
+    name: "Réglages : onglet Brancher une IA, cases des espaces de travail",
+    run: (t) => allowedWorkspacesTab(t, env),
+  },
   { name: "Réglages : même fenêtre sur les cinq onglets", run: (t) => fixedSize(t) },
   { name: "Réglages : choix de dossier (modèles, journal)", run: (t) => folderChoices(t) },
 ];

@@ -232,7 +232,7 @@ fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them()
     let arguments = fake.arguments_and_guard().0;
     let (before, mcp) = arguments.split_once("--mcp-config\n").unwrap();
     let (mcp, after) = mcp.split_once('\n').unwrap();
-    let allowed = "WebSearch,WebFetch,mcp__malorean__search_notes,mcp__malorean__search_by_meaning,mcp__malorean__list_tags,\
+    let allowed = "WebSearch,WebFetch,mcp__malorean__list_workspaces,mcp__malorean__search_notes,mcp__malorean__search_by_meaning,mcp__malorean__list_tags,\
         mcp__malorean__linking_notes,mcp__malorean__list_templates,mcp__malorean__list_versions,\
         mcp__malorean__read_version,mcp__malorean__create_note,\
         mcp__malorean__create_folder,mcp__malorean__create_note_from_template,mcp__malorean__trash_note,\

@@ -6,6 +6,26 @@ use domain::{Folder, NotePath, RefusedAttachment};
 
 use crate::{AssistError, MeaningError, MeaningIndexError, StoreError, Unavailability};
 
+/// Ce que dit l'erreur d'un espace de travail que les IA ne peuvent pas viser.
+fn workspace_not_allowed(name: &str, allowed: &[String]) -> String {
+    if allowed.is_empty() {
+        return format!(
+            "aucun espace de travail autorisé ne s'appelle « {name} » : aucun espace de travail \
+             n'est autorisé pour les IA, l'utilisateur doit en cocher un dans les Réglages, \
+             onglet « Brancher une IA »"
+        );
+    }
+    let names = allowed
+        .iter()
+        .map(|name| format!("« {name} »"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        "aucun espace de travail autorisé ne s'appelle « {name} » ; ceux que les IA peuvent \
+         utiliser : {names}"
+    )
+}
+
 /// Ce qui peut empêcher un cas d'usage d'aboutir.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum AppError {
@@ -66,6 +86,15 @@ pub enum AppError {
     /// Le dossier est déjà celui d'un autre espace de travail, nommé ici.
     #[error("ce dossier est déjà l'espace de travail « {0} »")]
     WorkspaceFolderTaken(String),
+    /// Aucun espace de travail autorisé pour les IA ne porte ce nom : inconnu ou non autorisé,
+    /// l'erreur est la même. `allowed` : les noms des espaces autorisés.
+    #[error("{}", workspace_not_allowed(.name, .allowed))]
+    WorkspaceNotAllowed {
+        /// Le nom demandé.
+        name: String,
+        /// Les noms des espaces autorisés pour les IA.
+        allowed: Vec<String>,
+    },
     /// L'espace de travail ouvert ne se retire pas de la liste.
     #[error("l'espace de travail « {0} » est ouvert : passez à un autre avant de le retirer")]
     OpenWorkspaceKept(String),
@@ -266,6 +295,31 @@ mod tests {
         assert_eq!(
             AppError::OpenWorkspaceKept("Notes".into()).to_string(),
             "l'espace de travail « Notes » est ouvert : passez à un autre avant de le retirer"
+        );
+    }
+
+    #[test]
+    fn a_workspace_not_allowed_lists_the_allowed_names_or_points_to_the_settings() {
+        let one = AppError::WorkspaceNotAllowed {
+            name: "Perso".into(),
+            allowed: vec!["Notes".into()],
+        };
+        assert_eq!(
+            one.to_string(),
+            "aucun espace de travail autorisé ne s'appelle « Perso » ; ceux que les IA peuvent utiliser : « Notes »"
+        );
+        let two = AppError::WorkspaceNotAllowed {
+            name: "Perso".into(),
+            allowed: vec!["Notes".into(), "Travail".into()],
+        };
+        assert!(two.to_string().ends_with("« Notes », « Travail »"));
+        let none = AppError::WorkspaceNotAllowed {
+            name: "Perso".into(),
+            allowed: Vec::new(),
+        };
+        assert_eq!(
+            none.to_string(),
+            "aucun espace de travail autorisé ne s'appelle « Perso » : aucun espace de travail n'est autorisé pour les IA, l'utilisateur doit en cocher un dans les Réglages, onglet « Brancher une IA »"
         );
     }
 

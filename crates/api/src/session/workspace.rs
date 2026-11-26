@@ -7,7 +7,7 @@ use application::use_cases::{ManageWorkspaces, OpenedWorkspace};
 use application::{WorkspaceLocation, WorkspaceName};
 
 use super::Session;
-use crate::{ApiError, ChosenFolder, WorkspaceInfo, WorkspaceItem};
+use crate::{AiWorkspaceItem, ApiError, ChosenFolder, WorkspaceInfo, WorkspaceItem};
 
 impl Session {
     fn manage(&self) -> ManageWorkspaces<'_> {
@@ -41,6 +41,40 @@ impl Session {
                 active: active.as_ref() == Some(&w.name),
             })
             .collect())
+    }
+
+    /// Les espaces de travail, dans l'ordre où on les a ajoutés, chacun avec sa case « autorisé
+    /// pour les IA » (décochée au départ).
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; préférences illisibles.
+    pub fn list_ai_workspaces(&self) -> Result<Vec<AiWorkspaceItem>, ApiError> {
+        let workspaces = self.manage().list()?;
+        Ok(workspaces
+            .list()
+            .iter()
+            .map(|w| AiWorkspaceItem {
+                name: w.name.as_str().to_owned(),
+                allowed: workspaces.is_allowed(&w.name),
+            })
+            .collect())
+    }
+
+    /// Autorise (`allowed`) ou n'autorise plus les IA à se servir de l'espace de travail `name`.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; nom inconnu, préférences impossibles
+    /// à écrire.
+    pub fn set_workspace_allowed(&self, name: &str, allowed: bool) -> Result<(), ApiError> {
+        let name = WorkspaceName::new(name)?;
+        if allowed {
+            self.manage().allow(&name)?;
+        } else {
+            self.manage().forbid(&name)?;
+        }
+        Ok(())
     }
 
     /// Le dossier choisi dans la fenêtre de choix, avec son nom, proposé pour l'espace de
@@ -303,5 +337,53 @@ mod tests {
             error.message,
             "le nom du dossier « /Users/moi/\u{FFFD} » est illisible"
         );
+    }
+
+    #[test]
+    fn the_workspaces_are_listed_with_their_box_unchecked_at_first() {
+        let session = two();
+        let items = session.list_ai_workspaces().unwrap();
+        let listed: Vec<_> = items.iter().map(|w| (w.name.as_str(), w.allowed)).collect();
+        assert_eq!(listed, [("Notes", false), ("Travail", false)]);
+        assert!(session.list_workspaces().is_ok());
+    }
+
+    #[test]
+    fn a_box_is_checked_then_unchecked_without_touching_the_other_or_the_open_workspace() {
+        let session = two();
+        session.set_workspace_allowed("notes", true).unwrap();
+        let checked: Vec<_> = session
+            .list_ai_workspaces()
+            .unwrap()
+            .into_iter()
+            .map(|w| w.allowed)
+            .collect();
+        assert_eq!(checked, [true, false]);
+        assert_eq!(
+            listed(&session),
+            [("Notes".into(), false), ("Travail".into(), true)]
+        );
+        session.set_workspace_allowed("Notes", false).unwrap();
+        assert!(
+            session
+                .list_ai_workspaces()
+                .unwrap()
+                .iter()
+                .all(|w| !w.allowed)
+        );
+    }
+
+    #[test]
+    fn checking_the_box_of_an_unknown_workspace_or_with_an_empty_name_is_refused() {
+        let session = two();
+        assert_eq!(
+            session
+                .set_workspace_allowed("Perso", true)
+                .unwrap_err()
+                .message,
+            "aucun espace de travail ne s'appelle « Perso »"
+        );
+        assert!(session.set_workspace_allowed("Perso", false).is_err());
+        assert!(session.set_workspace_allowed(" ", true).is_err());
     }
 }

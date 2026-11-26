@@ -84,3 +84,33 @@ test("la révocation demande confirmation, puis redonne le bouton de création d
   await panel.getByRole("button", { name: "Créer une clé de branchement" }).click();
   await expect(panel.locator(".connection-text").first()).toHaveText("cle-de-branchement-2");
 });
+
+test("les espaces de travail : une case chacun, décochée au départ, avec ou sans clé, qui se garde", async ({
+  page,
+}) => {
+  const settings = await launch(page);
+  const panel = settings.locator(".connection-settings");
+  const boxes = panel.locator(".allowed-workspace input");
+
+  await expect(panel).toContainText("Espaces de travail ouverts aux IA");
+  await expect(panel.locator(".allowed-workspace")).toHaveText(["Notes"]);
+  await expect(boxes.first()).not.toBeChecked();
+
+  await boxes.first().check();
+  await expect(boxes.first()).toBeChecked();
+  // La clé créée ensuite ne change pas la case.
+  await panel.getByRole("button", { name: "Créer une clé de branchement" }).click();
+  await expect(panel.locator(".connection-text").first()).toHaveText("cle-de-branchement-1");
+  await expect(boxes.first()).toBeChecked();
+
+  // La case est gardée d'un lancement à l'autre.
+  await page.reload();
+  await page.getByRole("button", { name: "Réglages" }).click();
+  await page
+    .getByRole("dialog", { name: "Réglages" })
+    .getByRole("tab", { name: "Brancher une IA" })
+    .click();
+  await expect(panel.locator(".allowed-workspace input").first()).toBeChecked();
+  await panel.locator(".allowed-workspace input").first().uncheck();
+  await expect(panel.locator(".allowed-workspace input").first()).not.toBeChecked();
+});

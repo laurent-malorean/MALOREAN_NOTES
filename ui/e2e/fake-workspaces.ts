@@ -15,6 +15,8 @@ export interface FakeWorkspace {
 interface Saved {
   list: FakeWorkspace[];
   active: string | null;
+  /** Les noms des espaces cochés pour les IA (fiche 0074) ; aucun au départ. */
+  allowed?: string[];
 }
 
 /** La partie de la doublure qui change avec l'espace de travail ouvert. */
@@ -101,6 +103,7 @@ class Workspaces {
     const workspace = this.find(name);
     this.refuseName(newName, workspace);
     if (this.isActive(workspace)) this.saved.active = newName.trim();
+    this.saved.allowed = this.allowed().map((n) => (same(n, workspace.name) ? newName.trim() : n));
     workspace.name = newName.trim();
     this.save();
     return workspace.name;
@@ -113,8 +116,29 @@ class Workspaces {
         message: `l'espace de travail « ${workspace.name} » est ouvert : passez à un autre avant de le retirer`,
       };
     this.saved.list = this.saved.list.filter((w) => w !== workspace);
+    this.saved.allowed = this.allowed().filter((n) => !same(n, workspace.name));
     this.save();
     return null;
+  }
+
+  allowed() {
+    return this.saved.allowed ?? [];
+  }
+
+  /** Les espaces et leur case « autorisé pour les IA ». */
+  aiList() {
+    return this.saved.list.map((w) => ({
+      name: w.name,
+      allowed: this.allowed().some((n) => same(n, w.name)),
+    }));
+  }
+
+  setAllowed(name: string, allowed: boolean) {
+    const workspace = this.find(name);
+    const others = this.allowed().filter((n) => !same(n, workspace.name));
+    this.saved.allowed = allowed ? [...others, workspace.name] : others;
+    this.save();
+    return this.aiList();
   }
 }
 
@@ -142,5 +166,8 @@ export function fakeWorkspaces(
     open_workspace: ({ name = "" }) => workspaces.show(workspaces.find(name)),
     rename_workspace: ({ name = "", newName = "" }) => workspaces.rename(name, newName),
     remove_workspace: ({ name = "" }) => workspaces.remove(name),
+    list_ai_workspaces: () => workspaces.aiList(),
+    set_workspace_allowed: ({ name = "", allowed = "" }) =>
+      workspaces.setAllowed(name, (allowed as unknown) === true),
   };
 }

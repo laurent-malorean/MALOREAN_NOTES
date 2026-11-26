@@ -12,6 +12,9 @@ const MCP_PREFIX: &str = "mcp__";
 /// Un outil de l'application.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AppTool {
+    /// Les espaces de travail que l'utilisateur a autorisés pour les IA, avec celui qui est
+    /// ouvert (fiche 0074).
+    ListWorkspaces,
     /// Chercher des notes avec l'index : plein texte, étiquette, dossier, type de contenu.
     SearchNotes,
     /// Chercher des notes par ce qu'elles disent plutôt que par leurs mots exacts : la recherche
@@ -69,7 +72,8 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 24] = [
+    pub const ALL: [Self; 25] = [
+        Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
         Self::ListTags,
@@ -100,6 +104,7 @@ impl AppTool {
     #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
+            Self::ListWorkspaces => "list_workspaces",
             Self::SearchNotes => "search_notes",
             Self::SearchByMeaning => "search_by_meaning",
             Self::ListTags => "list_tags",
@@ -154,7 +159,8 @@ impl AppTool {
     #[must_use]
     pub const fn changes_notes(self) -> bool {
         match self {
-            Self::SearchNotes
+            Self::ListWorkspaces
+            | Self::SearchNotes
             | Self::SearchByMeaning
             | Self::ListTags
             | Self::LinkingNotes
@@ -179,6 +185,20 @@ impl AppTool {
             | Self::CreateMindMap
             | Self::CreateCrm => true,
         }
+    }
+
+    /// Il parle de l'écran de l'utilisateur (la note qu'il regarde, la note qu'on lui montre) :
+    /// il ne vise que l'espace de travail ouvert, jamais un espace ouvert en arrière-plan.
+    #[must_use]
+    pub const fn uses_screen(self) -> bool {
+        matches!(self, Self::ViewedNote | Self::ShowNote)
+    }
+
+    /// Il lit ou écrit dans un espace de travail : il accepte le paramètre `workspace` (tous sauf
+    /// la liste des espaces, qui parle de tous).
+    #[must_use]
+    pub const fn aims_at_a_workspace(self) -> bool {
+        !matches!(self, Self::ListWorkspaces)
     }
 
     /// Le champ de son entrée qui dit ce qu'il vise (la note, la recherche), montré à côté de
@@ -207,7 +227,7 @@ impl AppTool {
             | Self::AddAttachment
             | Self::AddEntry
             | Self::ShowNote => Some("path"),
-            Self::ListTags | Self::ListTemplates | Self::ViewedNote => None,
+            Self::ListWorkspaces | Self::ListTags | Self::ListTemplates | Self::ViewedNote => None,
         }
     }
 }
@@ -243,6 +263,33 @@ mod tests {
     use super::*;
 
     #[test]
+    fn only_the_two_tools_that_talk_about_the_screen_use_it() {
+        let using: Vec<_> = AppTool::ALL.iter().filter(|t| t.uses_screen()).collect();
+        assert_eq!(using, [&AppTool::ViewedNote, &AppTool::ShowNote]);
+    }
+
+    #[test]
+    fn every_tool_but_the_list_of_workspaces_aims_at_a_workspace() {
+        let others: Vec<_> = AppTool::ALL
+            .iter()
+            .filter(|t| !t.aims_at_a_workspace())
+            .collect();
+        assert_eq!(others, [&AppTool::ListWorkspaces]);
+    }
+
+    #[test]
+    fn the_list_of_workspaces_reads_without_changing_and_has_no_target() {
+        assert_eq!(AppTool::ListWorkspaces.name(), "list_workspaces");
+        assert_eq!(
+            AppTool::ListWorkspaces.full_name(),
+            "mcp__malorean__list_workspaces"
+        );
+        assert!(!AppTool::ListWorkspaces.changes_notes());
+        assert_eq!(AppTool::ListWorkspaces.target_field(), None);
+        assert_eq!(AppTool::ALL[0], AppTool::ListWorkspaces);
+    }
+
+    #[test]
     fn each_tool_is_found_by_its_name_and_its_claude_code_name() {
         for tool in AppTool::ALL {
             assert_eq!(AppTool::named(tool.name()), Some(tool));
@@ -258,7 +305,7 @@ mod tests {
             AppTool::SearchByMeaning.full_name(),
             "mcp__malorean__search_by_meaning"
         );
-        assert_eq!(AppTool::ALL[1], AppTool::SearchByMeaning);
+        assert_eq!(AppTool::ALL[2], AppTool::SearchByMeaning);
     }
 
     #[test]
@@ -314,6 +361,7 @@ mod tests {
         assert_eq!(
             targets,
             [
+                None,
                 Some("query"),
                 Some("question"),
                 None,

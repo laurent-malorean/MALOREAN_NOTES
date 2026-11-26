@@ -10,6 +10,7 @@ mod mcp;
 mod meaning;
 mod reading;
 mod screen;
+mod workspaces;
 
 pub(super) use connection::Connection;
 pub use screen::AppScreen;
@@ -24,13 +25,25 @@ use domain::Folder;
 use domain::app_tools::{AppTool, AppToolsKey};
 use serde_json::Value;
 
+use workspaces::Aim;
+
 use super::Session;
 
-/// Ce que les outils visent : un espace de travail, désigné par son nom, et le dossier des
-/// modèles que l'interface a choisi, s'il l'a fait.
+/// L'espace de travail que vise un outil appelé sans le paramètre `workspace`.
+#[derive(Debug, Clone)]
+pub(super) enum Fallback {
+    /// Celui du tour de la colonne Claude Code, qui doit encore être ouvert.
+    Turn(WorkspaceName),
+    /// Celui qui est ouvert chez l'utilisateur à l'instant de l'appel, s'il est autorisé pour les
+    /// IA (une IA branchée, fiche 0074).
+    Opened,
+}
+
+/// Ce que les outils visent : l'espace de travail par défaut, désigné par son nom, et le dossier
+/// des modèles que l'interface a choisi pour lui, s'il l'a fait.
 #[derive(Debug, Clone)]
 pub(super) struct ToolsScope {
-    workspace: WorkspaceName,
+    fallback: Fallback,
     templates: Option<Folder>,
 }
 
@@ -118,7 +131,7 @@ impl Session {
         *turn = Some(ToolsTurn {
             key: key.clone(),
             scope: ToolsScope {
-                workspace,
+                fallback: Fallback::Turn(workspace),
                 templates,
             },
         });
@@ -143,15 +156,35 @@ impl Session {
         }
     }
 
-    /// Joue un outil, dans l'espace de travail du tour seulement.
+    /// Joue un outil, dans l'espace de travail que vise l'appel (fiche 0074) : celui que nomme
+    /// `workspace` s'il est autorisé pour les IA, sinon celui par défaut du tour ou de l'IA.
     fn call_tool(&self, scope: &ToolsScope, tool: AppTool, arguments: &Value) -> mcp::ToolOutcome {
-        let opened = self.opened().map_err(|error| error.message)?;
-        if !opened.name.same_as(&scope.workspace) {
-            return Err(format!(
-                "l'espace de travail « {} » de ce tour n'est plus ouvert : rien n'a été fait",
-                scope.workspace.as_str()
-            ));
+        if !tool.aims_at_a_workspace() {
+            return self.tool_list_workspaces();
         }
+        match self.aim_of(scope, arguments)? {
+            Aim::Opened => self.play_tool(scope, tool, arguments),
+            Aim::Elsewhere(name) => {
+                if tool.uses_screen() {
+                    return Err(format!(
+                        "« {} » parle de l'écran de l'utilisateur : il ne vise que l'espace de \
+                         travail ouvert chez lui",
+                        tool.name()
+                    ));
+                }
+                // Le dossier des modèles est celui de l'espace du tour : un autre espace n'en a pas
+                // (todo « Les modèles pour une IA branchée »).
+                let scope = ToolsScope {
+                    templates: None,
+                    ..scope.clone()
+                };
+                self.in_background_workspace(&name, || self.play_tool(&scope, tool, arguments))
+            }
+        }
+    }
+
+    /// Joue un outil dans l'espace de travail que `Session::opened` désigne en ce moment.
+    fn play_tool(&self, scope: &ToolsScope, tool: AppTool, arguments: &Value) -> mcp::ToolOutcome {
         if tool.changes_notes() {
             return self.call_changing_tool(scope, tool, arguments);
         }
@@ -161,7 +194,7 @@ impl Session {
             AppTool::ListTags => written(&self.list_tags().map_err(|e| e.message)?),
             AppTool::LinkingNotes => self.tool_linking_notes(arguments),
             AppTool::ListTemplates => self.tool_list_templates(scope),
-            AppTool::ViewedNote => self.tool_viewed_note(scope),
+            AppTool::ViewedNote => self.tool_viewed_note(),
             AppTool::ShowNote => self.tool_show_note(arguments),
             AppTool::ListVersions => {
                 let path = required(arguments, "path")?;
@@ -193,3 +226,6 @@ mod screen_tests;
 
 #[cfg(test)]
 mod meaning_tests;
+
+#[cfg(test)]
+mod workspaces_tests;
