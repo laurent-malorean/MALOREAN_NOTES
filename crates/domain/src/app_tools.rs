@@ -58,6 +58,8 @@ pub enum AppTool {
     RestoreVersion,
     /// Remplacer un texte par un autre dans le texte d'une note simple (fiche 0075).
     ReplaceInNote,
+    /// Créer un canvas vide selon les règles : titre, nom du fichier tiré du titre (fiche 0087).
+    CreateCanvas,
     /// Ajouter une carte (texte, fichier ou page web) à un canvas (fiche 0079).
     AddCanvasCard,
     /// Changer le texte, l'adresse, le fichier ou la couleur d'une carte de canvas (fiche 0079).
@@ -88,6 +90,9 @@ pub enum AppTool {
     UnpinNote,
     /// Joindre à une note un fichier de l'espace de travail (image ou PDF).
     AddAttachment,
+    /// Créer un cahier de recherche selon les règles : titre, nom du fichier tiré du titre ; sans
+    /// entrée (fiche 0087).
+    CreateResearchNotebook,
     /// Ajouter une entrée à la fin d'un cahier de recherche, ou une correction d'une de ses
     /// entrées : jamais rien changer d'autre.
     AddEntry,
@@ -154,7 +159,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 65] = [
+    pub const ALL: [Self; 67] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -177,6 +182,7 @@ impl AppTool {
         Self::MoveNote,
         Self::RestoreVersion,
         Self::ReplaceInNote,
+        Self::CreateCanvas,
         Self::AddCanvasCard,
         Self::ChangeCanvasCard,
         Self::MoveCanvasCard,
@@ -192,6 +198,7 @@ impl AppTool {
         Self::PinNote,
         Self::UnpinNote,
         Self::AddAttachment,
+        Self::CreateResearchNotebook,
         Self::AddEntry,
         Self::CreateMindMap,
         Self::ReadMindMap,
@@ -248,6 +255,7 @@ impl AppTool {
             Self::MoveNote => "move_note",
             Self::RestoreVersion => "restore_version",
             Self::ReplaceInNote => "replace_in_note",
+            Self::CreateCanvas => "create_canvas",
             Self::AddCanvasCard => "add_canvas_card",
             Self::ChangeCanvasCard => "change_canvas_card",
             Self::MoveCanvasCard => "move_canvas_card",
@@ -263,6 +271,7 @@ impl AppTool {
             Self::PinNote => "pin_note",
             Self::UnpinNote => "unpin_note",
             Self::AddAttachment => "add_attachment",
+            Self::CreateResearchNotebook => "create_research_notebook",
             Self::AddEntry => "add_entry",
             Self::CreateMindMap => "create_mind_map",
             Self::ReadMindMap => "read_mind_map",
@@ -398,6 +407,8 @@ impl AppTool {
             Self::CreateNote
             | Self::CreateNoteFromTemplate
             | Self::CreateMindMap
+            | Self::CreateCanvas
+            | Self::CreateResearchNotebook
             | Self::CreateCrm => Some("title"),
             Self::ListWorkspaces
             | Self::ListTags

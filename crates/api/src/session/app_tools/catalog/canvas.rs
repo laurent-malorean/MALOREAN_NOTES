@@ -4,7 +4,7 @@
 use domain::mind_map::PALETTE;
 use serde_json::{Value, json};
 
-use super::{Described, input, text};
+use super::{Described, folder, input, text};
 
 fn canvas_path() -> Value {
     text("Chemin du canvas depuis l'espace de travail : `dossier/nom.canvas`.")
@@ -65,6 +65,24 @@ pub(super) fn read_canvas() -> Described {
          manque (jamais de coupure silencieuse). Refusé si le fichier n'est pas un canvas \
          valide.",
         input(json!({ "path": canvas_path() }), &["path"]),
+    )
+}
+
+pub(super) fn create_canvas() -> Described {
+    (
+        "Crée un canvas vide (un fichier `.canvas`) comme le fait « Nouveau canvas » de MALOREAN \
+         Notes : nom du fichier tiré du titre (sans écraser un autre canvas), dans `folder` (la \
+         racine par défaut ; créé avec ses parents s'il n'existe pas). Le titre n'est pas vide. \
+         Rend son chemin. Ensuite, le canvas se remplit avec `add_canvas_card`, \
+         `add_canvas_arrow` et `add_canvas_group` (jamais en écrivant le fichier à la main), se \
+         lit avec `read_canvas` et se change avec les autres outils du canvas.",
+        input(
+            json!({
+                "title": text("Le titre du canvas, dont le nom du fichier est tiré."),
+                "folder": folder(),
+            }),
+            &["title"],
+        ),
     )
 }
 

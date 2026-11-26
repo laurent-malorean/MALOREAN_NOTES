@@ -120,6 +120,32 @@ fn each_canvas_tool_takes_its_fields_and_the_workspace() {
 }
 
 #[test]
+fn creating_a_canvas_takes_a_title_and_a_folder_and_sends_to_the_tools_that_fill_it() {
+    assert_eq!(
+        fields(AppTool::CreateCanvas),
+        ["folder", "title", "workspace"]
+    );
+    says(
+        AppTool::CreateCanvas,
+        &[
+            "Crée un canvas vide",
+            "nom du fichier tiré du titre",
+            "sans écraser",
+            "créé avec ses parents",
+            "Rend son chemin",
+            "`add_canvas_card`",
+            "`add_canvas_arrow`",
+            "`add_canvas_group`",
+            "`read_canvas`",
+        ],
+    );
+    says(
+        AppTool::CreateNote,
+        &["un canvas se crée avec `create_canvas`"],
+    );
+}
+
+#[test]
 fn reading_a_canvas_tells_what_it_gives_its_limits_and_that_it_is_cut_aloud() {
     says(
         AppTool::ReadCanvas,
