@@ -6,6 +6,7 @@
 - **Complétée** par la fiche 0041 (20/11/2026) : l'outil `add_entry` ajoute une entrée à un cahier de recherche.
 - **Complétée** par la fiche 0061 (25/11/2026) : l'outil `create_crm` crée un CRM, la présentation du serveur donne la consigne sur les CRM, la recherche rend les fiches avec leur CRM.
 - **Remplacée sur le point « partage »** par la fiche 0075 (26/11/2026) : l'outil `replace_in_note` change le texte d'une note simple ; il ne reste plus aux seuls outils de fichiers de l'IA.
+- **Complétée** par la fiche 0078 (26/11/2026) : les outils `list_folders`, `rename_folder`, `move_folder` et `trash_folder` (avec `create_folder`, déjà là) donnent à l'IA l'arbre des dossiers et leurs changements, par les cas d'usage de l'interface.
 
 ## Contexte
 
