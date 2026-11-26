@@ -9,6 +9,8 @@ export interface NoteMenuActions {
   place(placement: Placement): void;
   /** Fermer l'onglet de la note. */
   close(): void;
+  /** Renommer la note ; absent quand elle ne se renomme pas par son menu (une fiche de CRM). */
+  rename?(): void;
 }
 
 /** Le choix « Copier en texte mis en forme », dans le menu d'une note et celui d'un onglet. */
@@ -18,6 +20,31 @@ export const MARKDOWN_COPY_LABEL = "Copier en Markdown";
 /** Le choix « Historique… », qui ouvre l'historique des versions de la note. */
 export const HISTORY_LABEL = "Historique…";
 
+/** Le choix « Renommer… », qui ouvre la fenêtre du nouveau titre de la note. */
+export const RENAME_LABEL = "Renommer…";
+
+/** Ce que demande « Renommer… » à l'application : la note s'y prête-t-elle, puis la renommer. */
+export interface NoteRenaming {
+  available(path: string): Promise<boolean>;
+  start(path: string): void;
+}
+
+/**
+ * Ouvre le menu de la note `path` : `show` reçoit de quoi la renommer si l'application le permet (une
+ * fiche de CRM n'a pas ce choix), sinon rien. Sans `renaming`, `show` est appelé tout de suite.
+ */
+export function withRename(
+  path: string,
+  renaming: NoteRenaming | undefined,
+  show: (rename: (() => void) | undefined) => void,
+): void {
+  if (renaming === undefined) return show(undefined);
+  renaming
+    .available(path)
+    .catch(() => false)
+    .then((offered) => show(offered ? () => renaming.start(path) : undefined));
+}
+
 /** Les choix du menu d'une note, dans l'ordre. */
 export function noteMenu(actions: NoteMenuActions): MenuEntry[] {
   return [
@@ -25,6 +52,9 @@ export function noteMenu(actions: NoteMenuActions): MenuEntry[] {
     { label: "Ouvrir à gauche", icon: "open-left", run: () => actions.place("left") },
     { label: "Ouvrir à droite", icon: "open-right", run: () => actions.place("right") },
     { label: "Fermer", icon: "close", run: () => actions.close() },
+    ...(actions.rename
+      ? [{ label: RENAME_LABEL, icon: "edit" as const, run: () => actions.rename?.() }]
+      : []),
   ];
 }
 

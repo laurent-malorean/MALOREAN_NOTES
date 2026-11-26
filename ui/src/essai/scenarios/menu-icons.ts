@@ -9,8 +9,8 @@ const WAIT = 20_000;
 /** Le plus petit côté d'une icône visible, en pixels. */
 const MIN_ICON = 12;
 
-const NOTE_ENTRIES = 11;
-const TAB_ENTRIES = 8;
+const NOTE_ENTRIES = 12;
+const TAB_ENTRIES = 9;
 /** Le clic droit sur la racine : pas de « Placer dans la corbeille ». */
 const ROOT_FOLDER_ENTRIES = 5;
 

@@ -12,7 +12,9 @@ import { createExport } from "./app/export";
 import { connectExternalChanges } from "./app/external-changes";
 import { createFoldMemory } from "./app/fold-memory";
 import { createFolders } from "./app/folders";
+import { followColumns } from "./app/follow-columns";
 import { createHistory } from "./app/history";
+import { createNoteRenaming } from "./app/renaming";
 import { createJournal } from "./app/journal";
 import { createLayoutMemory } from "./app/layout-memory";
 import { createWorkspace } from "./app/workspace";
@@ -47,16 +49,10 @@ const foldMemory = createFoldMemory(localStorage);
 const screen = createCurrentScreen((s) => (renderScreen(layout, s, actions), foldMemory.save(s)));
 const columns = createOpenColumns({
   ...{ container: layout.columns, outline: layout.outline, screen, newPane: (p) => newPane(p) },
-  changed: (now) => (
-    writing.showTypewriter(),
-    layoutMemory.save(now),
-    recent.visited(now),
-    menu.follow(now),
-    formatBar.follow(now),
-    claude.follow()
-  ),
+  changed: (now) => followColumns(now, { writing, layoutMemory, recent, menu, formatBar, claude }),
   ...{ printNote: (path) => exporting.printNote(path), copyNote: (p) => exporting.copyNote(p) },
   ...{ copyMarkdown: (p) => exporting.copyMarkdown(p), showHistory: (p) => history.show(p) },
+  renaming: { available: (p) => renaming.available(p), start: (p) => renaming.start(p) },
   run,
 });
 const layoutMemory = createLayoutMemory({ backend: bridge, storage: localStorage });
@@ -103,6 +99,9 @@ const exporting = createExport({
   ...{ sheet: layout.printSheet, storage: localStorage, show: messages.show, run },
 });
 const history = createHistory({ ...messages, backend: bridge, columns, layout });
+const renaming = createNoteRenaming({
+  ...{ ...messages, backend: bridge, columns, recent, workspace, dialog: layout.confirmation },
+});
 const assistant = createWritingAssistant({ ...messages, backend: bridge, columns, layout });
 const claude = createClaudeColumn({
   ...{ backend: bridge, layout, workspace, openNote: (path) => actions.open(path) },
@@ -124,7 +123,7 @@ const newPane = paneMaker({
 });
 const actions: ScreenActions = screenActions({
   ...{ backend: bridge, screen, columns, folders, workspace, trash, tags, recent },
-  ...{ exporting, history, notebooks, settings, run },
+  ...{ exporting, history, renaming, notebooks, settings, run },
 });
 connectButtons(layout, {
   ...{ ...messages, workspaces, workspace, search, trash, folders, actions, templates, screen },

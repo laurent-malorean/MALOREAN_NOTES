@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { SearchResultItem } from "../bridge";
 import { renderSearchResults } from "./search-results";
 
@@ -173,5 +173,26 @@ describe("résultats de recherche", () => {
     const container = list();
     renderSearchResults(container, "Notes", null, null, ignore);
     expect(container.querySelector(".search-message")?.textContent).toBe("Recherche…");
+  });
+
+  it("le menu d'une note trouvée propose « Renommer… » quand elle s'y prête", async () => {
+    const container = list();
+    const started: string[] = [];
+    renderSearchResults(container, "Notes", results, null, {
+      ...ignore,
+      renaming: { available: async (path) => path === "courses.md", start: (p) => started.push(p) },
+    });
+    const items = container.querySelectorAll(".search-result");
+    const names = () =>
+      [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].map(
+        (b) => b.textContent,
+      );
+    items[1]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(names()).toContain("Renommer…"));
+    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")][4]?.click();
+    expect(started).toEqual(["courses.md"]);
+    items[0]?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(names()).toContain("Fermer"));
+    expect(names()).not.toContain("Renommer…");
   });
 });

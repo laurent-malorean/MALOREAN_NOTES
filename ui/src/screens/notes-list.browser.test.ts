@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { closeContextMenu } from "./context-menu";
 import { dragged, stopDragging } from "./dragging";
 import { type NoteActions, renderNotesList } from "./notes-list";
@@ -329,5 +329,41 @@ describe("glisser une note", () => {
     drag(item, "dragend");
     expect(dragged()).toBeNull();
     stopDragging();
+  });
+});
+
+describe("renommer une note de la liste", () => {
+  const menuNames = () =>
+    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")].map(
+      (b) => b.textContent,
+    );
+  const rightClick = (target: Element) =>
+    target.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true }));
+
+  it("le clic droit propose « Renommer… » juste après « Fermer », pour la note cliquée", async () => {
+    const container = list();
+    const { actions } = recorded();
+    const started: string[] = [];
+    renderNotesList(container, notes, null, {
+      ...actions,
+      renaming: { available: async () => true, start: (path) => started.push(path) },
+    });
+    rightClick(container.querySelectorAll(".note-item")[1] as Element);
+    await vi.waitFor(() => expect(menuNames()).toContain("Renommer…"));
+    expect(menuNames().slice(3, 6)).toEqual(["Fermer", "Renommer…", "Épingler"]);
+    [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")][4]?.click();
+    expect(started).toEqual(["a.md"]);
+  });
+
+  it("sans « Renommer… » quand la note ne s'y prête pas, le reste du menu est le même", async () => {
+    const container = list();
+    const { actions } = recorded();
+    renderNotesList(container, notes, null, {
+      ...actions,
+      renaming: { available: async () => false, start: () => {} },
+    });
+    rightClick(container.querySelectorAll(".note-item")[1] as Element);
+    await vi.waitFor(() => expect(menuNames()).toContain("Placer dans la corbeille"));
+    expect(menuNames()).not.toContain("Renommer…");
   });
 });

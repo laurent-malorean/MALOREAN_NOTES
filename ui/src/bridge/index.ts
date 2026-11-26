@@ -216,6 +216,9 @@ export const readNote = (path: string) => invoke<NoteContent>("read_note", { pat
 /** Enregistre une note lue ou enregistrée avec l'empreinte `fingerprint` (voir la fiche 0014). */
 export const saveNote = (path: string, content: string, fingerprint: string) =>
   invoke<SaveResult>("save_note", { path, content, fingerprint });
+/** Renomme le contenu `path` : il prend ce titre et son fichier le suit (fiche 0090). */
+export const renameNote = (path: string, title: string) =>
+  invoke<SaveResult>("rename_note", { path, title });
 export const createNote = (folder: string) => invoke<SavedNote>("create_note", { folder });
 /** Crée une note dans `folder` depuis le modèle `template`, ses variables remplacées par Rust. */
 export const createNoteFromTemplate = (template: string, folder: string) =>

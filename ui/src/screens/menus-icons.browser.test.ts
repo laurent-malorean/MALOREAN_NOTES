@@ -1,6 +1,6 @@
 // Tous les menus du clic droit de l'application : chaque choix a son icône (ou sa pastille de couleur)
 // dans la colonne des icônes, alignée sur celle des autres choix du même menu.
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import "../theme.css";
 import "../style.css";
 import "./mind-map.css";
@@ -30,8 +30,11 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-// Des actions qui ne font rien : seuls les menus intéressent ici.
-const nothing = new Proxy({}, { get: () => () => {} }) as never;
+// Des actions qui ne font rien : seuls les menus intéressent ici. Sans `renaming`, le menu s'ouvre tout de suite.
+const nothing = new Proxy(
+  {},
+  { get: (_, key) => (key === "renaming" ? undefined : () => {}) },
+) as never;
 
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
 const nameOf = (button: HTMLElement) =>
@@ -150,6 +153,39 @@ describe("icônes de tous les menus du clic droit", () => {
     renderTabs(list, column, nothing);
     rightClick(list.querySelector('[role="tab"]') as Element);
     expect(buttons()).toHaveLength(8);
+    expect(problems()).toEqual([]);
+  });
+
+  it("clic droit sur une note, un onglet et une note trouvée, avec « Renommer… »", async () => {
+    const renaming = { available: async () => true, start: () => {} };
+    const renamable = new Proxy(
+      {},
+      { get: (_, key) => (key === "renaming" ? renaming : () => {}) },
+    ) as never;
+    const container = document.createElement("div");
+    document.body.append(container);
+    renderNotesList(
+      container,
+      [{ path: "a.md", title: "A", modified: 0, pinned: false, tags: [] }],
+      null,
+      renamable,
+    );
+    rightClick(container.querySelector(".note-item") as Element);
+    await vi.waitFor(() => expect(buttons().map(nameOf)).toContain("Renommer…"));
+    expect(problems()).toEqual([]);
+    closeContextMenu();
+    const list = document.createElement("div");
+    document.body.append(list);
+    const column: Column = {
+      id: 0,
+      tabs: [{ id: 1, note: "a.md", title: "A" }],
+      activeTab: 1,
+      width: 1,
+    };
+    renderTabs(list, column, renamable);
+    rightClick(list.querySelector('[role="tab"]') as Element);
+    await vi.waitFor(() => expect(buttons().map(nameOf)).toContain("Renommer…"));
+    expect(buttons()).toHaveLength(9);
     expect(problems()).toEqual([]);
   });
 

@@ -2,7 +2,14 @@
 import type { Column, Placement, Tab } from "../state/columns";
 import { nameOf } from "../state/folders";
 import { showContextMenu } from "./context-menu";
-import { COPY_LABEL, HISTORY_LABEL, MARKDOWN_COPY_LABEL, noteMenu } from "./note-menu";
+import {
+  COPY_LABEL,
+  HISTORY_LABEL,
+  MARKDOWN_COPY_LABEL,
+  type NoteRenaming,
+  noteMenu,
+  withRename,
+} from "./note-menu";
 
 /** Ce qu'on peut demander depuis la barre d'onglets d'une colonne. */
 export interface TabActions {
@@ -22,6 +29,8 @@ export interface TabActions {
   copyMarkdown(note: string): void;
   /** Ouvrir l'historique des versions de cette note. */
   history(note: string): void;
+  /** Renommer la note de cet onglet par son menu ; sans lui, le menu n'a pas « Renommer… ». */
+  readonly renaming?: NoteRenaming;
 }
 
 const NOTE_EXTENSION = ".md";
@@ -57,10 +66,6 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
   element.addEventListener("click", () => actions.activate(tab.id));
   element.addEventListener("contextmenu", (event) => {
     event.preventDefault();
-    const menu = noteMenu({
-      place: (placement) => actions.place(tab.id, placement),
-      close: () => actions.close(tab.id),
-    });
     const printing = {
       label: "Imprimer…",
       icon: "print" as const,
@@ -77,7 +82,15 @@ function tabElement(tab: Tab, active: boolean, actions: TabActions): HTMLElement
       icon: "history" as const,
       run: () => actions.history(tab.note),
     };
-    showContextMenu(event.clientX, event.clientY, [...menu, printing, copying, markdown, history]);
+    const { clientX, clientY } = event;
+    withRename(tab.note, actions.renaming, (rename) => {
+      const menu = noteMenu({
+        place: (placement) => actions.place(tab.id, placement),
+        close: () => actions.close(tab.id),
+        rename,
+      });
+      showContextMenu(clientX, clientY, [...menu, printing, copying, markdown, history]);
+    });
   });
   element.append(label, close);
   return element;

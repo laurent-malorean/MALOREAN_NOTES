@@ -41,6 +41,15 @@ pub enum AppError {
     /// Une autre note porte déjà ce nom.
     #[error("le nom « {} » est déjà pris", .0.to_path())]
     NameTaken(NotePath),
+    /// Le titre donné pour renommer un contenu est vide (fiche 0090).
+    #[error("le titre est vide")]
+    EmptyTitle,
+    /// Le nom de fichier du nouveau titre est déjà pris dans le dossier (fiche 0090).
+    #[error("une note de ce dossier porte déjà ce titre")]
+    TitleTaken,
+    /// Une fiche de CRM se renomme dans son écran, jamais par le menu d'une note (fiche 0090).
+    #[error("le nom d'une fiche de CRM se change dans son écran")]
+    FicheNamedInItsScreen,
     /// La note n'est pas du texte UTF-8 ; on ne l'ouvre pas, pour ne pas l'abîmer.
     #[error("la note « {} » n'est pas un texte lisible (UTF-8) : elle n'est pas ouverte, pour ne pas l'abîmer", .0.to_path())]
     NoteUnreadable(NotePath),
@@ -271,6 +280,19 @@ mod tests {
 
     fn folder(path: &str) -> Folder {
         Folder::parse(path).unwrap()
+    }
+
+    #[test]
+    fn renaming_errors_say_what_to_change() {
+        assert_eq!(AppError::EmptyTitle.to_string(), "le titre est vide");
+        assert_eq!(
+            AppError::TitleTaken.to_string(),
+            "une note de ce dossier porte déjà ce titre"
+        );
+        assert_eq!(
+            AppError::FicheNamedInItsScreen.to_string(),
+            "le nom d'une fiche de CRM se change dans son écran"
+        );
     }
 
     #[test]
