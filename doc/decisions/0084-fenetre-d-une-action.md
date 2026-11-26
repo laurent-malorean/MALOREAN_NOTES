@@ -21,7 +21,9 @@ calendrier natif minuscule et en anglais, aucune étiquette existante proposée)
   le fichier garde `#### Liste à cocher : nom` pour ne pas casser les CRM existants.
 - **Barre de progression** par checklist (`role="progressbar"`, vert de l'interface), élément coché barré et
   atténué.
-- **Confirmation** avant de supprimer une checklist (même fenêtre que « Placer dans la corbeille »).
+- **Confirmation** avant de supprimer une checklist ou un commentaire (même fenêtre que « Placer dans la corbeille ») ; la
+  question d'un commentaire rappelle son moment et un extrait de son texte. Retirer une personne, une note liée, une
+  étiquette ou un seul élément de checklist reste sans confirmation.
 - **Boutons « + »** (icône `add` du jeu partagé) pour « Ajouter un élément », « Ajouter une checklist »,
   « Lier une note » ; un clic ouvre le champ d'ajout.
 - **Ordre** : titre, statut/date/canal, personnes, projet, couleur, description, **checklists juste sous la

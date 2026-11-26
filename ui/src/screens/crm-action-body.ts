@@ -184,7 +184,7 @@ function commentRow(index: number, comment: CommentItem, act: WindowActions): HT
     "Supprimer",
     `Supprimer le commentaire du ${comment.at}`,
   );
-  remove.addEventListener("click", () => act.body({ kind: "removeComment", comment: index }));
+  remove.addEventListener("click", () => act.removeComment(index, comment));
   const buttons = h("div", "crm-aw-comment-buttons");
   buttons.append(edit, remove);
   row.append(commentText(comment, act), buttons);
