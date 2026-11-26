@@ -10,7 +10,7 @@ La bande du haut (gras, italique, lien, titres, listes, date ; copies ; focus, p
 
 - **Centrée dans la zone de l'éditeur** : le milieu de la bande est le milieu de la zone à droite des colonnes de navigation (et à gauche de la colonne Claude Code si elle est ouverte), pas celui de la fenêtre.
 - **Panneaux cachés** : la zone s'élargit jusqu'au bord gauche de la fenêtre, mais la bande reste au milieu de l'espace à droite des boutons de fenêtre du Mac et du bouton des panneaux (jamais dessous). **Colonne Claude Code ouverte** : la zone rétrécit, la bande se centre dans ce qui reste.
-- **Deux lignes** quand la place manque (règle inchangée) : la première ligne (mise en forme et copies) est centrée ; la seconde (affichage et recherche, qui prend toute la largeur restante) remplit la zone, donc elle est centrée aussi.
+- **Deux lignes** quand la place manque (règle inchangée) : la première ligne (mise en forme et copies) est centrée ; la seconde (affichage et recherche, qui prend toute la largeur restante) remplit la zone, donc elle est centrée aussi. Dans une zone encore plus étroite, l'affichage et la recherche passent chacun sur leur ligne, et l'affichage seul est centré lui aussi.
 - **Rien d'autre ne change** : même ordre des boutons, mêmes groupes, mêmes seuils ; aucun bouton coupé, rien ne déborde, le champ de recherche n'est jamais repoussé hors de l'écran.
 
 ## 3. Vérifié

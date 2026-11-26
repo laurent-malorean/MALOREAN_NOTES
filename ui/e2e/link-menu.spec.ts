@@ -114,3 +114,31 @@ test("Échap ferme le menu sans rien écrire", async ({ page }) => {
   await expect(menu(page)).toBeHidden();
   await expect.poll(() => saved(page)).toContain("[[brou");
 });
+
+test("fenêtre de 1100 × 720 : le menu est posé sous le curseur, entier dans la fenêtre, même si l'écran ne se redessine pas (fenêtre cachée)", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1100, height: 720 });
+  await launch(page);
+  // Une fenêtre cachée ou recouverte ne redessine plus : le menu ne doit pas attendre le prochain dessin pour se placer.
+  await page.evaluate(() => {
+    window.requestAnimationFrame = () => 0;
+  });
+  await typeInNote(page, "[[cour");
+  await expect(menu(page)).toBeVisible();
+  const box = await menu(page).boundingBox();
+  const caret = await page.locator(".cm-line").last().boundingBox();
+  if (!box || !caret) throw new Error("élément absent de l'écran");
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.y).toBeGreaterThanOrEqual(caret.y);
+  expect(box.y + box.height).toBeLessThanOrEqual(720);
+  expect(box.x + box.width).toBeLessThanOrEqual(1100);
+  // Les lignes reçoivent le pointeur : rien ne les recouvre.
+  const first = await options(page).first().boundingBox();
+  if (!first) throw new Error("ligne absente de l'écran");
+  const hit = await page.evaluate(
+    ([x, y]) => document.elementFromPoint(x as number, y as number)?.closest(".link-menu") !== null,
+    [first.x + first.width / 2, first.y + first.height / 2],
+  );
+  expect(hit).toBe(true);
+});

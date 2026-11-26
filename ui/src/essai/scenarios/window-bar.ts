@@ -18,11 +18,43 @@ const WAIT = 5_000;
 
 /** Une bande d'une ligne : une pilule (37,2 points), deux marges de 8 points et la ligne de séparation. */
 const MAXIMUM_HEIGHT = 56;
+/** Deux lignes d'outils : la deuxième ligne ajoute une pilule (37,2 points) et un écart de 6,4 points, soit environ 98 points au total. */
+const TWO_ROWS_MAXIMUM_HEIGHT = 100;
+/** La largeur utile à partir de laquelle les outils tiennent sur une ligne : 42,05 rem (fiches 0072 et 0098). */
+const SINGLE_ROW_WIDTH = 42.05 * 16;
 
 const bar = () => find<HTMLElement>(".window-bar");
 const button = () => find<HTMLButtonElement>('.window-bar button[aria-label="Panneaux latéraux"]');
 const folders = () => find<HTMLElement>(".folders");
 const notes = () => find<HTMLElement>(".notes-panel");
+
+/** La largeur utile des outils (la zone de l'éditeur sans ses marges) : c'est elle qui décide d'une ou de deux lignes. */
+function toolsWidth(): number {
+  const tools = find<HTMLElement>(".editor-tools");
+  if (tools === null) return 0;
+  const style = getComputedStyle(tools);
+  return tools.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+}
+
+/**
+ * La bande tient sur une ligne d'outils quand la zone de l'éditeur a la place (672 points) : sinon deux lignes
+ * (fiche 0072), qui ne dépassent jamais deux lignes d'outils. À 1100 points avec les deux listes montrées, la zone
+ * n'a que 620 points : deux lignes, voulues ; les listes cachées, elle en a plus de 900 : une ligne.
+ */
+function checkHeight(trial: Trial, when: string): void {
+  const strip = bar();
+  if (strip === null) return trial.check(`${when} : la bande existe`, false);
+  const height = rectOf(strip).height;
+  const width = toolsWidth();
+  const oneRow = width >= SINGLE_ROW_WIDTH;
+  trial.check(
+    oneRow
+      ? `${when} : ${Math.round(width)} points utiles, la bande tient sur une ligne d'outils (${MAXIMUM_HEIGHT} points au plus)`
+      : `${when} : ${Math.round(width)} points utiles, la bande tient sur deux lignes d'outils (${TWO_ROWS_MAXIMUM_HEIGHT} points au plus)`,
+    height <= (oneRow ? MAXIMUM_HEIGHT : TWO_ROWS_MAXIMUM_HEIGHT),
+    String(Math.round(height)),
+  );
+}
 
 const shown = (element: HTMLElement | null) =>
   element !== null && rectOf(element).width > 0 && rectOf(element).height > 0;
@@ -67,11 +99,7 @@ function checkBar(trial: Trial): void {
     ),
     `bande jusqu'à ${Math.round(box.y + box.height)}, colonnes à ${Math.round(rectOf(columns).y)}`,
   );
-  trial.check(
-    `la bande tient en ${MAXIMUM_HEIGHT} points au plus sur une ligne d'outils`,
-    box.height <= MAXIMUM_HEIGHT,
-    String(Math.round(box.height)),
-  );
+  checkHeight(trial, "panneaux montrés");
 }
 
 function checkButton(trial: Trial, element: HTMLButtonElement): void {
@@ -126,6 +154,12 @@ async function checkHide(trial: Trial, element: HTMLButtonElement): Promise<void
   trial.check(
     "panneaux cachés, le bouton le dit (non enfoncé, autre icône)",
     after?.getAttribute("aria-pressed") === "false" && after.innerHTML !== iconShown,
+  );
+  // Les listes cachées, la zone de l'éditeur s'élargit : la bande tient sur une ligne d'outils.
+  trial.check(
+    "panneaux cachés, la bande tient sur une ligne d'outils",
+    toolsWidth() >= SINGLE_ROW_WIDTH && rectOf(bar() as HTMLElement).height <= MAXIMUM_HEIGHT,
+    String(Math.round(toolsWidth())),
   );
 }
 

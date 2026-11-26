@@ -14,8 +14,8 @@ const OLD_TOP_OF_COLUMNS = 94.4;
 /** Ce que la bande unique doit gagner en hauteur : une barre de la fenêtre, moins sa ligne de séparation. */
 const MINIMUM_GAIN = 37;
 
-async function launch(page: Page, width = 1400) {
-  await page.setViewportSize({ width, height: 700 });
+async function launch(page: Page, width = 1400, height = 700) {
+  await page.setViewportSize({ width, height });
   const params = new URLSearchParams({
     notes: JSON.stringify({ "voyage.md": { content: "# Voyage\nUn beau départ.", modified: 20 } }),
     folders: "[]",
@@ -224,4 +224,18 @@ test("fenêtre étroite et colonne Claude Code ouverte : le bouton reste visible
   await sidePanelsButton(page).click();
   await expect(folders(page)).toBeHidden();
   await expect(sidePanelsButton(page)).toBeInViewport({ ratio: 1 });
+});
+
+test("fenêtre de 1100 × 720 : deux lignes d'outils panneaux montrés (la zone n'a que 620 points), une ligne panneaux cachés", async ({
+  page,
+}) => {
+  await launch(page, 1100, 720);
+  // Les deux listes (200 et 280 points) laissent 620 points : moins que les 672 qu'il faut pour une ligne (fiche 0072).
+  const tight = await box(bar(page));
+  expect(tight.height).toBeGreaterThan(90);
+  expect(tight.height).toBeLessThanOrEqual(100);
+  // Les listes cachées, la zone de l'éditeur a plus de 900 points : une seule ligne, la bande à sa hauteur d'une ligne.
+  await sidePanelsButton(page).click();
+  await expect.poll(async () => (await box(bar(page))).height).toBeLessThanOrEqual(56);
+  expect((await box(bar(page))).height).toBeCloseTo(54.2, 0);
 });

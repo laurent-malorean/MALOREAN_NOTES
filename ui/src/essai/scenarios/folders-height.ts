@@ -114,6 +114,9 @@ function reopenedGap(stored: number): number {
   try {
     const layout = createLayout(host);
     layout.mainArea.hidden = false;
+    // La bande du haut (première ligne de l'espace de travail, fiche 0098) n'a pas sa place dans une liste montée
+    // à 260 points de large : elle y passerait sur de nombreuses lignes et volerait de la hauteur à la liste.
+    layout.windowBar.style.display = "none";
     connectFoldersHandle(layout, localStorage);
     return heightOf(layout.foldersList) - stored;
   } finally {
