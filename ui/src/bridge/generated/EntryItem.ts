@@ -19,4 +19,8 @@ text: string,
 /**
  * Le numéro de sa première ligne dans le cahier, à partir de 0.
  */
-line: number, };
+line: number, 
+/**
+ * Son numéro d'entrée : sa position dans le cahier, à partir de 1 (`1` pour `0001`).
+ */
+number: number, };

@@ -7,8 +7,14 @@ import { createSharedNotes } from "./shared-notes";
 
 const LINK = "[l'entrée du 16 novembre 2026 à 09:00](#2026-11-16-09h00)";
 const NOTEBOOK = `---\ntype: cahier-de-recherche\n---\n# Levures\n\n- 09:00 - un\n- 10:00 - Correction de ${LINK} : deux\n`;
-const FIRST: EntryItem = { anchor: "2026-11-16-09h00", label: "", text: "un", line: 5 };
-const SECOND: EntryItem = { anchor: "2026-11-16-10h00", label: "", text: "deux", line: 6 };
+const FIRST: EntryItem = { anchor: "2026-11-16-09h00", label: "", text: "un", line: 5, number: 1 };
+const SECOND: EntryItem = {
+  anchor: "2026-11-16-10h00",
+  label: "",
+  text: "deux",
+  line: 6,
+  number: 2,
+};
 const OTHER = "# Autre\n\n\n\n\n\n\nfin";
 
 function mount(notebook?: NotebookActions) {
@@ -48,6 +54,7 @@ describe("colonne : un cahier de recherche", () => {
     const asked: string[] = [];
     const m = mount({
       add: async () => true,
+      copyReference: async () => {},
       entries: async (path) => (asked.push(path), [SECOND, FIRST]),
     });
     await m.pane.load("levures.md");
@@ -58,7 +65,11 @@ describe("colonne : un cahier de recherche", () => {
   });
 
   it("dit qu'une entrée visée n'est pas dans le cahier", async () => {
-    const m = mount({ add: async () => true, entries: async () => [] });
+    const m = mount({
+      add: async () => true,
+      copyReference: async () => {},
+      entries: async () => [],
+    });
     await m.pane.load("levures.md");
     m.followLink();
     await expect
@@ -70,6 +81,7 @@ describe("colonne : un cahier de recherche", () => {
     let answer: (entries: EntryItem[]) => void = () => {};
     const m = mount({
       add: async () => true,
+      copyReference: async () => {},
       entries: () => new Promise((resolve) => (answer = resolve)),
     });
     await m.pane.load("levures.md");
@@ -84,6 +96,7 @@ describe("colonne : un cahier de recherche", () => {
     const added: string[] = [];
     const m = mount({
       add: async (path, text) => (added.push(`${path} : ${text}`), true),
+      copyReference: async () => {},
       entries: async () => [],
     });
     await m.pane.load("levures.md");
@@ -94,11 +107,27 @@ describe("colonne : un cahier de recherche", () => {
     await expect.poll(() => text.value).toBe("");
   });
 
+  it("le numéro d'une entrée copie la référence : le titre du cahier et son numéro", async () => {
+    const copied: string[] = [];
+    const m = mount({
+      add: async () => true,
+      entries: async () => [],
+      copyReference: async (reference) => void copied.push(reference),
+    });
+    await m.pane.load("levures.md");
+    const numbers = [...m.element.querySelectorAll<HTMLButtonElement>(".entry-number")];
+    expect(numbers.map((n) => n.textContent)).toEqual(["0001", "0002"]);
+    numbers[1]?.click();
+    numbers[0]?.click();
+    expect(copied).toEqual(["Levures · 0002", "Levures · 0001"]);
+  });
+
   it("sans action sur les cahiers, le lien est confié à Rust comme les autres", async () => {
     const m = mount();
     await m.pane.load("levures.md");
     m.followLink();
     expect(m.element.querySelector(".notebook-entry")).toBeNull();
+    expect(m.element.querySelector(".entry-number")).toBeNull();
     expect(m.fake.calls).toContain("ouvrir levures.md #2026-11-16-09h00");
   });
 });

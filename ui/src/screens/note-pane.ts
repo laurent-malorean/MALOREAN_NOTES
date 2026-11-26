@@ -5,7 +5,7 @@ import type { LinkingNoteItem } from "../bridge/generated/LinkingNoteItem";
 import { createEditor, type Editor } from "../editor/editor";
 import type { EditorLinks } from "../editor/links/link-site";
 import type { OpenNoteLink } from "../editor/links/note-links";
-import { lineStart } from "../state/research-notebook";
+import { entryReference, lineStart, notebookTitle } from "../state/research-notebook";
 import type { TagSuggestion } from "../state/tag-field";
 import { renderBacklinks } from "./backlinks-view";
 import { type CanvasDeps, type CanvasPane, createCanvasPane } from "./canvas-pane";
@@ -45,6 +45,8 @@ export interface NotebookActions {
   add(path: string, text: string): Promise<boolean>;
   /** Ses entrées, pour montrer celle que vise un lien `#ancre`. */
   entries(path: string): Promise<EntryItem[]>;
+  /** Copier la référence d'une entrée (`Levures · 0007`) : le clic sur son numéro d'entrée. */
+  copyReference(reference: string): Promise<void>;
 }
 
 /** Les notes proches, sous le texte : affichées ou non, et celles d'une note (fiche 0046). */
@@ -194,6 +196,7 @@ class NotePane implements Pane, Viewer {
         links: options.links,
         // La zone de saisie n'apparaît que sur un cahier montré : il y a toujours une note.
         addEntry: notebook && ((text) => notebook.add(this.shown as string, text)),
+        copyReference: notebook && ((number) => this.copyReference(notebook, number)),
       },
     );
   }
@@ -320,6 +323,12 @@ class NotePane implements Pane, Viewer {
     this.fiche?.destroy();
     this.tags?.destroy();
     this.editor.destroy();
+  }
+
+  /** Copie la référence de l'entrée numéro `number` du cahier montré : son titre, puis son numéro. */
+  private copyReference(notebook: NotebookActions, number: number): void {
+    const title = notebookTitle(this.editor.content(), this.shown as string);
+    void notebook.copyReference(entryReference(title, number));
   }
 
   /** Montre en haut de l'écran l'entrée du cahier `path` que désigne l'ancre `anchor`. */

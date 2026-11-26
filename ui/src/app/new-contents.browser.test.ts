@@ -24,7 +24,7 @@ function setup() {
         return { path: "clients.md" };
       },
       createResearchNotebook: async () => ({ path: "cahier.md" }),
-      addEntry: async () => ({ anchor: "", label: "", text: "", line: 0 }),
+      addEntry: async () => ({ anchor: "", label: "", text: "", line: 0, number: 1 }),
     },
     screen: { get: () => ({ kind, folder: "Idees" }) },
     columns: {

@@ -33,7 +33,7 @@ import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
-import { type AddEntry, researchNotebook } from "./research-notebook";
+import { type AddEntry, type CopyReference, researchNotebook } from "./research-notebook";
 import { keptPosition } from "../state/external-change";
 import { firstMatch } from "../state/search-match";
 import type { NotePosition } from "../state/trail";
@@ -112,6 +112,8 @@ export interface EditorOptions {
   readonly links?: EditorLinks;
   /** Ajoute au cahier de recherche montré l'entrée saisie dans sa zone de saisie ; sans elle, pas de zone. */
   readonly addEntry?: AddEntry;
+  /** Copie la référence d'une entrée du cahier montré (clic sur son numéro) ; sans elle, pas de numéro d'entrée. */
+  readonly copyReference?: CopyReference;
 }
 
 /**
@@ -289,7 +291,7 @@ export function createEditor(
     attachmentActions ? attachments(attachmentActions) : [],
     openLink ? noteLinks(openLink) : [],
     options.links ? [linkMenu(options.links), linkStatus(options.links)] : [],
-    researchNotebook(fromElsewhere, options.addEntry, today),
+    researchNotebook(fromElsewhere, options.addEntry, today, options.copyReference),
     history(),
     [listContinuation, firstTitle, findReplace],
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.

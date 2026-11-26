@@ -171,6 +171,9 @@ pub struct EntryItem {
     /// Le numéro de sa première ligne dans le cahier, à partir de 0.
     #[ts(type = "number")]
     pub line: usize,
+    /// Son numéro d'entrée : sa position dans le cahier, à partir de 1 (`1` pour `0001`).
+    #[ts(type = "number")]
+    pub number: usize,
 }
 
 impl From<domain::research_notebook::Entry> for EntryItem {
@@ -180,6 +183,7 @@ impl From<domain::research_notebook::Entry> for EntryItem {
             label: entry.label(),
             text: entry.text().to_owned(),
             line: entry.line(),
+            number: entry.number(),
         }
     }
 }

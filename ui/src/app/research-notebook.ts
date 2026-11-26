@@ -1,4 +1,5 @@
-// Cahiers de recherche (fiche 0041) : en créer un, et y ajouter une entrée par la zone de saisie
+// Cahiers de recherche (fiches 0041 et 0095) : en créer un, copier la référence d'une entrée,
+// et y ajouter une entrée par la zone de saisie
 // en bas de sa page. Rust écrit l'entrée ; les colonnes qui
 // montrent le cahier relisent sa nouvelle version et montrent l'entrée ajoutée.
 import type * as Bridge from "../bridge";
@@ -11,7 +12,7 @@ import type { Messages } from "./messages";
 import type { Workspace } from "./workspace";
 
 export interface ResearchNotebooksDeps extends Pick<Messages, "show" | "error"> {
-  readonly backend: Pick<typeof Bridge, "addEntry" | "createResearchNotebook">;
+  readonly backend: Pick<typeof Bridge, "addEntry" | "copyPlainText" | "createResearchNotebook">;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "current" | "panes" | "activePane" | "openNote">;
   readonly workspace: Pick<Workspace, "refreshList">;
@@ -24,6 +25,8 @@ export interface ResearchNotebooks {
   create(folder?: string): Promise<void>;
   /** Ajoute `text` au cahier `path` (sa zone de saisie) ; dit si c'est fait, l'erreur étant alors affichée. */
   add(path: string, text: string): Promise<boolean>;
+  /** Copie en texte brut la référence d'une entrée (`Levures · 0007`) et le dit ; l'erreur est affichée. */
+  copyReference(reference: string): Promise<void>;
 }
 
 export const NEW_NOTEBOOK = {
@@ -64,6 +67,19 @@ async function add(deps: ResearchNotebooksDeps, path: string, text: string): Pro
   }
 }
 
+async function copyReference(deps: ResearchNotebooksDeps, reference: string): Promise<void> {
+  try {
+    await deps.backend.copyPlainText(reference);
+    deps.show("Référence copiée");
+  } catch (error) {
+    deps.error(error);
+  }
+}
+
 export function createResearchNotebooks(deps: ResearchNotebooksDeps): ResearchNotebooks {
-  return { create: (folder) => create(deps, folder), add: (path, text) => add(deps, path, text) };
+  return {
+    create: (folder) => create(deps, folder),
+    add: (path, text) => add(deps, path, text),
+    copyReference: (reference) => copyReference(deps, reference),
+  };
 }

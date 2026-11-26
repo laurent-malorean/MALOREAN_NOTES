@@ -168,6 +168,21 @@ fn each_entry_is_read_with_its_anchor_label_text_and_line() {
 }
 
 #[test]
+fn each_entry_is_numbered_by_its_position_in_the_notebook_starting_at_one() {
+    let mut content = notebook();
+    assert!(entries(&content).is_empty());
+    for (moment, text) in [
+        (at(2026, 11, 20, 9, 42), "un"),
+        (at(2026, 11, 20, 9, 42), "deux\nsuite"),
+        (at(2026, 12, 1, 18, 5), "trois"),
+    ] {
+        content = added(&content, moment, text);
+    }
+    let numbers: Vec<usize> = entries(&content).iter().map(Entry::number).collect();
+    assert_eq!(numbers, [1, 2, 3]);
+}
+
+#[test]
 fn only_entries_under_a_complete_day_are_read() {
     let content = format!(
         "{HEADER}\n- 09:00 - sans jour\n\n## 2026\n\n### Novembre\n\n- 09:01 - sans jour\n\n\
