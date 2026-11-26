@@ -366,6 +366,7 @@ fn an_entry_is_only_ever_added_at_the_end_of_a_research_notebook() {
         "label": "16 novembre 2026 à 18:30",
         "text": "Levure A\nmousse",
         "line": 11,
+        "number": 1,
     });
     assert_eq!(added, json!({ "path": "levures.md", "entry": entry }));
     done(

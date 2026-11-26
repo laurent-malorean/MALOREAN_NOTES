@@ -11,7 +11,13 @@ import { columnsStarted, noteOpened } from "../state/columns";
 import { welcome } from "../state/screen";
 import { createResearchNotebooks } from "./research-notebook";
 
-const ADDED: EntryItem = { anchor: "2026-11-16-18h30", label: "", text: "un", line: 2 };
+const ADDED: EntryItem = {
+  anchor: "2026-11-16-18h30",
+  label: "",
+  text: "un",
+  line: 2,
+  number: 1,
+};
 
 function setup(open = "a.md") {
   const log: string[] = [];
@@ -31,6 +37,11 @@ function setup(open = "a.md") {
         log.push(`ajouter à ${path} : ${text}`);
         if (text === "refusé") throw new Error("l'entrée est vide");
         return ADDED;
+      },
+      copyPlainText: async (text) => {
+        if (text === "refusé") throw new Error("presse-papiers indisponible");
+        log.push(`copier ${text}`);
+        return null;
       },
       createResearchNotebook: async (folder, title) => {
         log.push(`créer « ${title} » dans « ${folder} »`);
@@ -103,6 +114,19 @@ describe("cahiers de recherche", () => {
     button(s.dialog, "Annuler").click();
     await cancelled;
     expect(s.log).toHaveLength(2);
+  });
+
+  it("copie la référence d'une entrée en texte brut et le dit", async () => {
+    const s = setup();
+    await s.notebooks.copyReference("Levures · 0007");
+    expect(s.log).toEqual(["copier Levures · 0007"]);
+    expect(s.shown).toEqual(["Référence copiée"]);
+  });
+
+  it("une copie refusée est affichée, sans dire « copiée »", async () => {
+    const s = setup();
+    await s.notebooks.copyReference("refusé");
+    expect(s.shown).toEqual(["erreur Error: presse-papiers indisponible"]);
   });
 
   it("rien sans espace de travail ouvert", async () => {

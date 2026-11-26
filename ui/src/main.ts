@@ -118,7 +118,7 @@ const newPane = paneMaker({
     ...{ openNote: (path) => actions.open(path), error: messages.error, show: messages.show },
     openLink: (title, inNewTab) => run(workspace.followLink(title, inNewTab)),
   },
-  notebook: { add: notebooks.add, entries: bridge.listEntries },
+  notebook: { ...notebooks, entries: bridge.listEntries },
   configure: (editor) => (writing.configure(editor), settings.configure(editor)),
 });
 const actions: ScreenActions = screenActions({

@@ -57,6 +57,8 @@ test("un nouveau cahier se crée par le menu Fichier, s'ouvre en lecture seule, 
       "---\ntype: cahier-de-recherche\n---\n# Bières\n\n## 2026\n\n### Novembre\n\n#### Lundi 16\n\n- 18:30 - Houblon A\n  mousse\n",
     );
   await expect(page.locator(".cm-content")).toContainText("Houblon A");
+  // Cahier vide : aucun numéro avant ; l'entrée ajoutée porte le numéro 0001, sans recharger.
+  await expect(page.locator(".entry-number")).toHaveText(["0001"]);
   await expect(text).toHaveValue("");
 });
 
@@ -121,3 +123,27 @@ for (const appearance of ["light", "dark"]) {
     expect(bars).toBe(8);
   });
 }
+
+test("chaque entrée montre son numéro dans la marge ; un clic copie « Titre · numéro » et le dit", async ({
+  page,
+}) => {
+  await launch(page, { ...NOTES, "Labo/levures.md": { content: LONG_NOTEBOOK, modified: 10 } });
+  await page.getByRole("searchbox", { name: "Rechercher" }).fill("levure");
+  await page.locator(".match-results .search-result").first().click();
+  const numbers = page.locator(".entry-number");
+  await expect(numbers).toHaveText(["0001", "0002", "0003"]);
+
+  // Dans la marge : à gauche de la barre de l'entrée, sans recouvrir aucune ligne.
+  const box = await numbers.nth(1).boundingBox();
+  const line = await page.locator(".cm-line.entry-bar-first").nth(1).boundingBox();
+  const lefts = await page
+    .locator(".cm-line")
+    .evaluateAll((lines) => lines.map((l) => l.getBoundingClientRect().left));
+  expect(box && line && box.x + box.width <= line.x).toBe(true);
+  expect(box && lefts.every((left) => box.x + box.width <= left)).toBe(true);
+
+  await numbers.nth(1).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".status")).toContainText("Référence copiée");
+  expect(await page.evaluate(() => window.backend.copiedMarkdown)).toEqual(["Levures · 0002"]);
+});

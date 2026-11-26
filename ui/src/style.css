@@ -937,6 +937,39 @@ button {
   padding-top: var(--entry-bar-gap);
   background-size: var(--entry-bar-width) calc(100% - var(--entry-bar-gap));
 }
+/* Numéro d'entrée (fiche 0095) : un rectangle fin dans la marge gauche, en face de la première
+   ligne de l'entrée, à gauche de la barre. La marge du cahier est élargie de sa place. */
+.editor .cm-content.cm-numbered-entries {
+  padding-left: calc(var(--entry-number-width) + var(--entry-number-gap) + 0.5rem);
+}
+.editor .cm-line.entry-bar-first {
+  position: relative;
+}
+.editor .entry-number {
+  position: absolute;
+  right: calc(100% + var(--entry-number-gap));
+  top: calc(var(--entry-bar-gap) + 0.25em);
+  box-sizing: border-box;
+  min-width: var(--entry-number-width);
+  padding: 0 0.3rem;
+  border: 1px solid var(--entry-number-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  text-align: center;
+  cursor: pointer;
+}
+.editor .entry-number:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.editor .entry-number:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .editor .cm-placeholder {
   color: var(--marker);
 }

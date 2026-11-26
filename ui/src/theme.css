@@ -59,6 +59,10 @@
   --entry-bar-width: 3px;
   --entry-bar-gap: 0.9rem;
   --entry-bar-indent: 0.8rem;
+  /* Numéro d'entrée : un rectangle fin dans la marge gauche, à gauche de la barre */
+  --entry-number-border: color-mix(in srgb, var(--muted) 55%, var(--bg));
+  --entry-number-width: 3rem;
+  --entry-number-gap: 0.6rem;
 
   /* Historique : lignes seulement dans la version, seulement dans la note actuelle */
   --difference-added-background: #dcf0d8;
