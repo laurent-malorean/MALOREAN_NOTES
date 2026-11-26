@@ -189,7 +189,9 @@ fn a_research_notebook_a_mind_map_and_a_canvas_are_refused_untouched() {
         "cette note est de type « carte-mentale » : replace_in_note ne change que le texte des \
          notes simples"
     );
-    assert!(failed(&session, replace("x.canvas", "{}", "[]")).contains("« canvas »"));
+    let canvas = failed(&session, replace("x.canvas", "{}", "[]"));
+    assert!(canvas.starts_with("cette note est un canvas : replace_in_note ne change que"));
+    assert!(canvas.contains("read_canvas") && canvas.contains("add_canvas_card"));
 
     assert_eq!(text(&session, "c.md"), notebook);
     assert_eq!(text(&session, "m.md"), map);

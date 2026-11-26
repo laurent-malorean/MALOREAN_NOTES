@@ -10,11 +10,13 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
-use application::use_cases::ReplaceInNote;
+use application::use_cases::{ChangeCanvas, ReplaceInNote};
 use application::{
     History, NoteStore, StoreError, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher,
 };
 use domain::NotePath;
+use domain::canvas::CardKind;
+use domain::canvas_edit::NewCard;
 use infrastructure::{FsHistory, FsNoteStore, FsWorkspaceWatcher, SystemClock};
 
 /// Le disque du Mac annonce les changements avec un peu de retard.
@@ -150,4 +152,40 @@ fn a_text_replaced_by_the_tool_is_announced_so_that_the_screen_follows() {
         "# Courses\n- pain\n"
     );
     assert_eq!(store.read(&note).unwrap().content, "# Courses\n- lait\n");
+}
+
+/// L'écran suit un canvas changé par une IA (fiche 0079) : le canvas écrit sur le vrai disque est
+/// annoncé à l'interface, qui le relit ; le texte d'avant est gardé à part comme version.
+#[test]
+fn a_canvas_changed_by_the_tools_is_announced_so_that_the_screen_follows() {
+    let folder = tempfile::tempdir().unwrap();
+    let before = "{\n\t\"nodes\":[],\n\t\"edges\":[]\n}";
+    fs::write(folder.path().join("idees.canvas"), before).unwrap();
+    let (_watching, received) = watch(&folder);
+    let store = FsNoteStore::new(folder.path().to_path_buf());
+    let history = FsHistory::new(folder.path().to_path_buf());
+    let canvas = NotePath::parse("idees.canvas").unwrap();
+
+    let changed = ChangeCanvas::new(&store, &history, &SystemClock)
+        .execute(&canvas, |canvas| {
+            canvas.add_card(NewCard {
+                kind: CardKind::Text {
+                    text: "Bonjour".into(),
+                },
+                x: 0,
+                y: 0,
+                width: None,
+                height: None,
+                color: None,
+            })
+        })
+        .unwrap();
+
+    assert!(announces(&received, "idees.canvas"));
+    let written = fs::read_to_string(folder.path().join("idees.canvas")).unwrap();
+    assert_eq!(written, changed.saved.text);
+    assert!(written.contains(&changed.outcome));
+    let versions = history.versions(&canvas).unwrap();
+    assert_eq!(versions.len(), 1);
+    assert_eq!(history.read_version(&canvas, &versions[0]).unwrap(), before);
 }

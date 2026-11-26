@@ -204,6 +204,69 @@ fn a_connected_ai_sees_and_changes_the_folders_with_the_rules_of_the_application
 }
 
 #[test]
+fn a_connected_ai_reads_and_changes_a_canvas_with_the_rules_of_the_application() {
+    let Fixture { session, .. } = fixture_with(
+        &[("idees.canvas", r#"{"nodes":[],"edges":[],"tags":["a"]}"#)],
+        true,
+    );
+    let secret = session.create_connection_key().unwrap();
+    let secret = secret.secret();
+    let text = |reply: &Value| -> Value {
+        assert_eq!(reply["result"]["isError"], false, "{reply}");
+        serde_json::from_str(reply["result"]["content"][0]["text"].as_str().unwrap()).unwrap()
+    };
+
+    let added = call(
+        &session,
+        secret,
+        "add_canvas_card",
+        &json!({ "path": "idees.canvas", "type": "text", "text": "Bonjour", "x": 0, "y": 0, "color": "rouge" }),
+    );
+    let id = text(&added)["card"]["id"].as_str().unwrap().to_owned();
+    let linked = call(
+        &session,
+        secret,
+        "add_canvas_card",
+        &json!({ "path": "idees.canvas", "type": "link", "url": "https://exemple.fr", "x": 400, "y": 0 }),
+    );
+    let other = text(&linked)["card"]["id"].as_str().unwrap().to_owned();
+    let arrow = call(
+        &session,
+        secret,
+        "add_canvas_arrow",
+        &json!({ "path": "idees.canvas", "from": id, "to": other, "label": "voir" }),
+    );
+    let read = call(
+        &session,
+        secret,
+        "read_canvas",
+        &json!({ "path": "idees.canvas" }),
+    );
+    let refused_color = call(
+        &session,
+        secret,
+        "change_canvas_card",
+        &json!({ "path": "idees.canvas", "id": id, "color": "#FF0000" }),
+    );
+
+    assert_eq!(text(&arrow)["arrow"]["sense"], "single");
+    let read = text(&read);
+    assert_eq!(read["card_count"], 2);
+    assert_eq!(read["tags"], json!(["a"]));
+    assert_eq!(read["cards"][0]["text"], "Bonjour");
+    assert_eq!(read["cards"][0]["color"], "rouge");
+    assert_eq!(read["arrows"][0]["label"], "voir");
+    assert_eq!(refused_color["result"]["isError"], true);
+    assert!(
+        refused_color["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("n'est pas une couleur de la palette")
+    );
+    assert_eq!(session.list_versions("idees.canvas").unwrap().len(), 3);
+}
+
+#[test]
 fn the_tools_name_the_workspace_and_say_it_has_no_templates_folder_until_the_user_chooses_one() {
     let Fixture { session, .. } = fixture();
     let key = session.create_connection_key().unwrap();

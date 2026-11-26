@@ -36,6 +36,12 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     (`dossier/nom.md`). Les dossiers aussi (`dossier/sous-dossier`) : `list_folders` donne l'arbre, \
     `create_folder`, `rename_folder`, `move_folder` et `trash_folder` en créent, renomment, déplacent et \
     mettent à la corbeille un avec tout son contenu. \
+    Un canvas (fichier `.canvas`) ne se lit ni ne se change comme une note : `read_canvas` le rend en données \
+    (cartes, flèches, groupes, avec leurs identifiants), et un outil par geste le change : \
+    `add_canvas_card`, `change_canvas_card`, `move_canvas_card`, `resize_canvas_card`, `remove_canvas_card`, \
+    `add_canvas_arrow`, `change_canvas_arrow`, `remove_canvas_arrow`, `add_canvas_group` et `change_canvas_group` ; \
+    une couleur y est un nom de la palette (`rouge`, `bleu`…), jamais un hexadécimal, et chaque changement garde \
+    la version d'avant dans l'historique (`restore_version` l'annule). \
     Un CRM (`type: crm`, créé par `create_crm`) est une note ; ses fiches sont des notes rangées \
     dans des dossiers qui portent le nom de son fichier, un par sorte de fiche : pour `clients.md`, \
     `clients/entreprises/`, `clients/personnes/`, `clients/projets/`, `clients/actions/`. Leurs \
@@ -79,7 +85,9 @@ pub(super) fn answer(
     let result = match request["method"].as_str() {
         Some("initialize") => initialized(params),
         Some("ping") => json!({}),
-        Some("tools/list") => json!({ "tools": AppTool::ALL.map(tool_description) }),
+        Some("tools/list") => {
+            json!({ "tools": AppTool::ALL.iter().map(|tool| tool_description(*tool)).collect::<Vec<_>>() })
+        }
         Some("tools/call") => called(params, call),
         Some(_) => return Some(error(id, METHOD_NOT_FOUND, "méthode inconnue")),
         None => return Some(error(id, INVALID_REQUEST, "demande sans méthode")),
@@ -149,6 +157,30 @@ mod tests {
         assert_eq!(result["instructions"], INSTRUCTIONS);
         let reply = replied(r#"{"jsonrpc":"2.0","id":1,"method":"initialize"}"#);
         assert_eq!(reply["result"]["protocolVersion"], PROTOCOL_VERSION);
+    }
+
+    #[test]
+    fn the_introduction_names_the_tools_that_read_and_change_a_canvas() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            "`.canvas`",
+            "`read_canvas`",
+            "`add_canvas_card`",
+            "`change_canvas_card`",
+            "`move_canvas_card`",
+            "`resize_canvas_card`",
+            "`remove_canvas_card`",
+            "`add_canvas_arrow`",
+            "`change_canvas_arrow`",
+            "`remove_canvas_arrow`",
+            "`add_canvas_group`",
+            "`change_canvas_group`",
+            "nom de la palette",
+            "`restore_version` l'annule",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
     }
 
     #[test]
