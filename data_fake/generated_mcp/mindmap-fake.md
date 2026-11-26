@@ -38,6 +38,7 @@ racines: [{x: 0, y: 0}]
       > - Temps entre deux productions
     - Micro-arrêts <!-- couleur: violet -->
       > - Arrêts courts, souvent non enregistrés
+      > - QSDFGH
     - Ralentissements <!-- couleur: violet -->
       > - Cadence inférieure à la cadence nominale
     - Rebuts et retouches <!-- couleur: violet -->

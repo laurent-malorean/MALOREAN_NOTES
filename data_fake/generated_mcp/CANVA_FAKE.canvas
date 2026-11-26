@@ -72,8 +72,6 @@
 		{"id":"8a059082392c13f2","type":"text","text":"**Bêta fermée**\n- 10 clients\n- Retours hebdomadaires","x":1850,"y":4050,"width":260,"height":120,"color":"#2563eb"},
 		{"id":"7323aee6671541c5","type":"text","text":"**Gestion des bugs**\n- Classification\n- Délais de correction","x":1850,"y":4200,"width":260,"height":120,"color":"#2563eb"},
 		{"id":"111c330772ace9d7","type":"text","text":"**Critères de sortie**\n- Zéro bug bloquant\n- Validation finale","x":1850,"y":4350,"width":260,"height":120,"color":"#2563eb"},
-		{"id":"a39318b677a2b023","type":"text","text":"**Choix de la stack**\n- Langages\n- Frameworks","x":1850,"y":4500,"width":260,"height":120,"color":"5"},
-		{"id":"159c987d4cada183","type":"text","text":"**Découpage en services**\n- 8 services\n- Contrats d'API","x":1850,"y":4650,"width":260,"height":120,"color":"5"},
 		{"id":"a4b7649704b2bff3","type":"text","text":"**Modèle de données**\n- Schéma cible\n- Règles d'intégrité","x":1850,"y":4800,"width":260,"height":120,"color":"5"},
 		{"id":"d172e0909f81db84","type":"text","text":"**Gestion des files**\n- Messages asynchrones\n- Reprises sur erreur","x":1850,"y":4950,"width":260,"height":120,"color":"5"},
 		{"id":"24f8f0be9c19bb87","type":"text","text":"**Revue d'architecture**\n- Comité technique\n- Décisions documentées","x":1850,"y":5100,"width":260,"height":120,"color":"5"},
@@ -222,7 +220,9 @@
 		{"id":"0a3229ac6302d4be","type":"text","text":"**Gestion des décisions**\n- Journal\n- Responsables","x":1850,"y":26700,"width":260,"height":120,"color":"#ec6aa8"},
 		{"id":"9e8b8560898b507e","type":"text","text":"**Retour d'expérience**\n- Atelier\n- Capitalisation","x":1850,"y":26850,"width":260,"height":120,"color":"#ec6aa8"},
 		{"id":"7354d84c01ee6278","type":"text","text":"**Bilan événements**\n- Coût par lead\n- Enseignements","x":3060,"y":11445,"width":260,"height":120,"color":"2"},
-		{"id":"23e1e94f872c43ae","type":"group","x":2440,"y":8865,"width":900,"height":4510,"color":"2","label":"Marketing"}
+		{"id":"23e1e94f872c43ae","type":"group","x":2440,"y":8865,"width":900,"height":4510,"color":"2","label":"Marketing"},
+		{"id":"159c987d4cada183","type":"text","text":"**Découpage en services**\n- 8 services\n- Contrats d'API","x":1850,"y":4650,"width":260,"height":120,"color":"5"},
+		{"id":"a39318b677a2b023","type":"text","text":"**Choix de la stack**\n- Langages\n- Frameworks\n- QSDFGH","x":1850,"y":4500,"width":260,"height":120,"color":"5"}
 	],
 	"edges":[
 		{"id":"7b11d23a90cdba56","fromNode":"9cff3e3084331296","fromSide":"top","toNode":"482a4fcc6de8464f","toSide":"bottom","color":"#2563eb"},
