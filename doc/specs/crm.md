@@ -424,8 +424,8 @@ Une fiche supprimée part à la corbeille et se restaure comme une note (avec se
 ## 13. Claude
 
 - **Outil « créer un CRM »** : il prend le dossier (la racine par défaut) et le titre, crée le fichier selon les règles de nom et rend son chemin. Comme les autres outils qui changent une note, il attend l'accord de l'utilisateur quand Claude a lu le web pendant la réponse.
-- **Lire et modifier** : Claude lit et écrit les fiches avec ses outils de fichiers, comme pour une note. Un CRM ouvert se met à jour en direct.
-- **Consigne donnée à Claude** sur les CRM : le format du § 4 en bref ; ne jamais toucher à `rang` ; pour changer le statut d'une action, donner le nom d'une colonne du CRM ; ne rien supprimer sans que l'utilisateur le demande ; ajouter un commentaire plutôt que réécrire la description pour un compte rendu.
+- **Lire et modifier** : Claude (et toute IA branchée) lit un CRM avec `read_crm` (colonnes du Kanban, personnes, entreprises, projets, étapes, avec les filtres de l'écran) et le change avec quatorze outils, un par objet : créer, changer et supprimer une action, une personne, une entreprise ou un projet, déplacer une action dans une colonne, changer les étapes ; le changement d'une fiche prend une `operation` qui nomme le geste de l'écran (statut et place d'une carte, commentaires, listes à cocher, changement d'entreprise…). Mêmes règles et mêmes messages que l'écran ; une suppression va à la corbeille ; un CRM ouvert se met à jour en direct. Décision 0081.
+- **Consigne donnée à Claude** sur les CRM, dans la présentation des outils : un CRM se lit et se change avec ses outils, jamais en écrivant ses fiches ; une fiche se désigne par sa référence ; pour changer le statut d'une action, donner le nom d'une colonne du CRM ; ne rien supprimer sans qu'on le demande ; ajouter un commentaire plutôt que réécrire la description pour un compte rendu. Le rang d'une carte n'est jamais écrit à la main.
 - **Recherche dans l'index** : elle rend aussi les fiches, avec leur chemin et celui de leur CRM.
 
 ## 14. Hors de cette version
