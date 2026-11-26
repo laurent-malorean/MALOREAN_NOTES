@@ -42,6 +42,12 @@ impl fmt::Display for RefusedReplacement {
                 "cette note est un cahier de recherche : on n'y ajoute que des entrées \
                  (add_entry), son texte ne se remplace jamais",
             ),
+            Self::NotANote(ContentType::MindMap) => f.write_str(
+                "cette note est une carte mentale : replace_in_note ne change que le texte des \
+                 notes simples ; lisez la carte avec read_mind_map et modifiez-la avec \
+                 add_mind_map_child, add_mind_map_sibling, add_mind_map_root, edit_mind_map_node, \
+                 color_mind_map_node, move_mind_map_node ou delete_mind_map_node",
+            ),
             Self::NotANote(kind) => write!(
                 f,
                 "cette note est de type « {} » : replace_in_note ne change que le texte des notes \
@@ -341,8 +347,10 @@ mod tests {
         );
         assert_eq!(
             said(RefusedReplacement::NotANote(ContentType::MindMap)),
-            "cette note est de type « carte-mentale » : replace_in_note ne change que le texte \
-             des notes simples"
+            "cette note est une carte mentale : replace_in_note ne change que le texte des notes \
+             simples ; lisez la carte avec read_mind_map et modifiez-la avec add_mind_map_child, \
+             add_mind_map_sibling, add_mind_map_root, edit_mind_map_node, color_mind_map_node, \
+             move_mind_map_node ou delete_mind_map_node"
         );
         assert_eq!(
             said(RefusedReplacement::EmptyText),

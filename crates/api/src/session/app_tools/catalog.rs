@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use super::catalog_mind_map::{
     add_mind_map_child, add_mind_map_root, add_mind_map_sibling, color_mind_map_node,
-    edit_mind_map_node, read_mind_map,
+    delete_mind_map_node, edit_mind_map_node, move_mind_map_node, read_mind_map,
 };
 
 /// Un champ texte de l'entrée d'un outil, décrit pour Claude.
@@ -341,8 +341,9 @@ fn replace_in_note() -> Described {
          `old_text` introuvable ou vide ou identique à `new_text` ; `old_text` répété (l'erreur \
          donne le nombre d'occurrences et leurs lignes : ajoutez du texte autour pour qu'il \
          n'apparaisse qu'une fois, ou passez `replace_all` à true pour toutes les remplacer) ; la \
-         note est un cahier de recherche (utilisez `add_entry`), une carte mentale, un canvas ou \
-         un CRM. Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
+         note est un cahier de recherche (utilisez `add_entry`), une carte mentale (lisez-la \
+         avec `read_mind_map`, modifiez-la avec `add_mind_map_child` et les autres outils de la \
+         carte mentale), un canvas ou un CRM. Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
          nouveau titre : utilisez ensuite le `path` rendu, et pensez aux notes qui la lient (voir \
          `rename_note`). Rend `path`, `title` et `replacements` (le nombre de remplacements).",
         input(
@@ -435,9 +436,10 @@ fn create_mind_map() -> Described {
          nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour son détail, \
          ` <!-- couleur: rouge -->` au bout d'une puce pour sa couleur (rouge, orange, jaune, \
          vert, turquoise, bleu, violet, rose, marron, ardoise). Rend son chemin. Ensuite, la \
-         carte se lit et s'écrit avec vos outils de fichiers : n'écrivez dans la liste que des \
-         puces et des lignes de détail, et ne touchez jamais à la propriété `racines` de \
-         l'en-tête (elle est tenue par l'application).",
+         carte se lit avec `read_mind_map` et se modifie avec `add_mind_map_child`, \
+         `add_mind_map_sibling`, `add_mind_map_root`, `edit_mind_map_node`, \
+         `color_mind_map_node`, `move_mind_map_node` et `delete_mind_map_node` ; la propriété \
+         `racines` de l'en-tête est tenue par l'application.",
         input(
             json!({
                 "title": text("Le titre de la carte."),
@@ -502,6 +504,8 @@ fn described(tool: AppTool) -> Described {
         AppTool::AddMindMapRoot => add_mind_map_root(),
         AppTool::EditMindMapNode => edit_mind_map_node(),
         AppTool::ColorMindMapNode => color_mind_map_node(),
+        AppTool::MoveMindMapNode => move_mind_map_node(),
+        AppTool::DeleteMindMapNode => delete_mind_map_node(),
         AppTool::ListTemplates => list_templates(),
         AppTool::ListVersions => list_versions(),
         AppTool::ReadVersion => read_version(),

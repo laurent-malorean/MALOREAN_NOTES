@@ -5,7 +5,7 @@
 
 use domain::app_tools::AppTool;
 use domain::mind_map::{MindMap, NodePath, Place};
-use domain::mind_map_editing::{NO_COLOR, new_node};
+use domain::mind_map_editing::{NO_COLOR, NodeDrop, new_node};
 use domain::mind_map_reading::{MAX_READ_MAP_CHARACTERS, OutlineNode, ReadableMindMap};
 use serde::Serialize;
 use serde_json::Value;
@@ -23,6 +23,9 @@ struct TouchedNode {
     /// La couleur donnée (`aucune` si retirée), pour l'outil qui colore.
     #[serde(skip_serializing_if = "Option::is_none")]
     color: Option<String>,
+    /// Le nombre de nœuds supprimés, pour l'outil qui supprime.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    deleted: Option<usize>,
 }
 
 /// La place d'un nœud racine, telle que l'IA la lit.
@@ -151,56 +154,128 @@ impl Session {
         let path = required(arguments, "path")?;
         match tool {
             AppTool::AddMindMapChild | AppTool::AddMindMapSibling => {
-                let at = node_path(arguments, "node")?;
-                let node = new_typed(arguments)?;
-                let title = node.title.clone();
-                let added = self
-                    .edit_mind_map(path, |map| {
-                        if tool == AppTool::AddMindMapChild {
-                            map.add_child(&at, node)
-                        } else {
-                            map.add_sibling(&at, node)
-                        }
-                    })
-                    .map_err(|error| error.message)?;
-                touched(path, &added, title)
+                self.tool_add_node(path, arguments, tool == AppTool::AddMindMapChild)
             }
-            AppTool::AddMindMapRoot => {
-                let place = place_given(arguments)?;
-                let node = new_typed(arguments)?;
-                let title = node.title.clone();
-                let added = self
-                    .edit_mind_map(path, |map| Ok(map.add_root(node, place)))
-                    .map_err(|error| error.message)?;
-                touched(path, &added, title)
-            }
-            AppTool::EditMindMapNode => {
-                let at = node_path(arguments, "node")?;
-                let (title, detail) = (arguments["title"].as_str(), arguments["detail"].as_str());
-                let title = self
-                    .edit_mind_map(path, |map| {
-                        map.change_text(&at, title, detail)?;
-                        Ok(title_at(map, &at))
-                    })
-                    .map_err(|error| error.message)?;
-                touched(path, &at, title)
-            }
-            AppTool::ColorMindMapNode => {
-                let at = node_path(arguments, "node")?;
-                let color = given(arguments, "color")?;
-                let (title, colored) = self
-                    .edit_mind_map(path, |map| {
-                        map.recolor(&at, color)?;
-                        let colored = map.node(&at).and_then(|node| node.color.clone());
-                        Ok((title_at(map, &at), colored))
-                    })
-                    .map_err(|error| error.message)?;
-                let mut touched = touched_node(path, &at, title);
-                touched.color = Some(colored.unwrap_or_else(|| NO_COLOR.to_owned()));
-                written(&touched)
-            }
+            AppTool::AddMindMapRoot => self.tool_add_root(path, arguments),
+            AppTool::EditMindMapNode => self.tool_edit_node(path, arguments),
+            AppTool::ColorMindMapNode => self.tool_color_node(path, arguments),
+            AppTool::MoveMindMapNode => self.tool_move_node(path, arguments),
+            AppTool::DeleteMindMapNode => self.tool_delete_node(path, arguments),
             _ => unreachable!("un outil qui n'est pas un geste de la carte est joué à part"),
         }
+    }
+
+    /// Un nœud ajouté à côté de `node` (frère) ou dessous (dernier enfant).
+    fn tool_add_node(
+        &self,
+        path: &str,
+        arguments: &Value,
+        as_child: bool,
+    ) -> Result<String, String> {
+        let at = node_path(arguments, "node")?;
+        let node = new_typed(arguments)?;
+        let title = node.title.clone();
+        let added = self
+            .edit_mind_map(path, |map| {
+                if as_child {
+                    map.add_child(&at, node)
+                } else {
+                    map.add_sibling(&at, node)
+                }
+            })
+            .map_err(|error| error.message)?;
+        touched(path, &added, title)
+    }
+
+    /// Un nœud racine ajouté à la fin, à la place donnée ou par défaut.
+    fn tool_add_root(&self, path: &str, arguments: &Value) -> Result<String, String> {
+        let place = place_given(arguments)?;
+        let node = new_typed(arguments)?;
+        let title = node.title.clone();
+        let added = self
+            .edit_mind_map(path, |map| Ok(map.add_root(node, place)))
+            .map_err(|error| error.message)?;
+        touched(path, &added, title)
+    }
+
+    /// Le titre et/ou le détail d'un nœud changés.
+    fn tool_edit_node(&self, path: &str, arguments: &Value) -> Result<String, String> {
+        let at = node_path(arguments, "node")?;
+        let (title, detail) = (arguments["title"].as_str(), arguments["detail"].as_str());
+        let title = self
+            .edit_mind_map(path, |map| {
+                map.change_text(&at, title, detail)?;
+                Ok(title_at(map, &at))
+            })
+            .map_err(|error| error.message)?;
+        touched(path, &at, title)
+    }
+
+    /// La couleur d'un nœud changée.
+    fn tool_color_node(&self, path: &str, arguments: &Value) -> Result<String, String> {
+        let at = node_path(arguments, "node")?;
+        let color = given(arguments, "color")?;
+        let (title, colored) = self
+            .edit_mind_map(path, |map| {
+                map.recolor(&at, color)?;
+                let colored = map.node(&at).and_then(|node| node.color.clone());
+                Ok((title_at(map, &at), colored))
+            })
+            .map_err(|error| error.message)?;
+        let mut touched = touched_node(path, &at, title);
+        touched.color = Some(colored.unwrap_or_else(|| NO_COLOR.to_owned()));
+        written(&touched)
+    }
+
+    /// Une branche déplacée.
+    fn tool_move_node(&self, path: &str, arguments: &Value) -> Result<String, String> {
+        let from = node_path(arguments, "node")?;
+        let drop = drop_given(arguments)?;
+        let (moved, title) = self
+            .edit_mind_map(path, |map| {
+                let title = title_at(map, &from);
+                Ok((map.move_branch(&from, drop)?, title))
+            })
+            .map_err(|error| error.message)?;
+        touched(path, &moved, title)
+    }
+
+    /// Une branche supprimée.
+    fn tool_delete_node(&self, path: &str, arguments: &Value) -> Result<String, String> {
+        let at = node_path(arguments, "node")?;
+        let (deleted, title) = self
+            .edit_mind_map(path, |map| {
+                let title = title_at(map, &at);
+                Ok((map.remove(&at)?, title))
+            })
+            .map_err(|error| error.message)?;
+        let mut touched = touched_node(path, &at, title);
+        touched.deleted = Some(deleted);
+        written(&touched)
+    }
+}
+
+/// Où l'IA dépose le nœud : `position` (`child`, `before`, `after` ou `root`), la cible `target`
+/// des trois premiers, la place du dernier.
+fn drop_given(arguments: &Value) -> Result<NodeDrop, String> {
+    let position = required(arguments, "position")?;
+    let place = place_given(arguments)?;
+    if position != "root" && place.is_some() {
+        return Err(
+            "place_x et place_y ne servent qu'avec position root : sur un autre nœud, la place \
+             vient de la cible"
+                .to_owned(),
+        );
+    }
+    match position {
+        "child" => Ok(NodeDrop::Child(node_path(arguments, "target")?)),
+        "before" => Ok(NodeDrop::Before(node_path(arguments, "target")?)),
+        "after" => Ok(NodeDrop::After(node_path(arguments, "target")?)),
+        "root" => Ok(NodeDrop::Root(place)),
+        other => Err(format!(
+            "position inconnue : « {other} » ; `child` (dernier enfant de target), `before` ou \
+             `after` (frère de target, juste au-dessus ou en dessous) ou `root` (nœud racine)"
+        )),
     }
 }
 
@@ -216,6 +291,7 @@ fn touched_node(path: &str, node: &NodePath, title: String) -> TouchedNode {
         node: node.to_string(),
         title,
         color: None,
+        deleted: None,
     }
 }
 

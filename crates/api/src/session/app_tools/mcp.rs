@@ -28,11 +28,13 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     pour connaître les étiquettes, les liens entrants, les modèles de note et l'historique des \
     versions, pour créer, renommer, ranger, étiqueter, épingler ou jeter une note selon ses règles, \
     pour savoir quelle note l'utilisateur regarde et lui en montrer une. Pour lire le texte d'une note simple, utilisez `read_note` ; pour le changer, utilisez `replace_in_note` (un texte exact, recopié de `read_note`, remplacé \
-    par un autre ; refusé s'il apparaît plusieurs fois, sauf `replace_all`). Une carte mentale (`type: carte-mentale`) se crée avec `create_mind_map` ; \
-    ensuite vous la lisez et l'écrivez comme une note : sous son titre `# …`, elle n'a qu'une liste \
-    à puces (une puce `- ` par nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour \
-    son détail, ` <!-- couleur: nom -->` au bout pour sa couleur) ; n'y écrivez que des puces et des \
-    lignes de détail, et ne touchez jamais à la propriété `racines` de son en-tête. Les notes sont désignées par leur chemin depuis l'espace de travail \
+    par un autre ; refusé s'il apparaît plusieurs fois, sauf `replace_all`). Une carte mentale (`type: carte-mentale`) se crée avec `create_mind_map`, se lit en arbre avec `read_mind_map` \
+    (chaque nœud avec son chemin : `0`, `0.1`, `1.0.2`) et se modifie avec `add_mind_map_child`, `add_mind_map_sibling`, \
+    `add_mind_map_root`, `edit_mind_map_node`, `color_mind_map_node` (les couleurs de la palette seulement), \
+    `move_mind_map_node` et `delete_mind_map_node`, qui appliquent les règles de l'écran : ne l'écrivez pas à la \
+    main, et ne touchez jamais à la propriété `racines` de son en-tête (tenue par l'application) ; les chemins \
+    se renumérotent après un ajout, un déplacement ou une suppression : relisez la carte avant de viser un autre \
+    nœud ; `read_note` et `replace_in_note` refusent une carte. Les notes sont désignées par leur chemin depuis l'espace de travail \
     (`dossier/nom.md`). Les dossiers aussi (`dossier/sous-dossier`) : `list_folders` donne l'arbre, \
     `create_folder`, `rename_folder`, `move_folder` et `trash_folder` en créent, renomment, déplacent et \
     mettent à la corbeille un avec tout son contenu. \
@@ -181,6 +183,30 @@ mod tests {
             assert!(text.contains(expected), "{expected}");
         }
         assert!(!text.contains("remplacer un passage"), "{text}");
+    }
+
+    #[test]
+    fn the_introduction_names_the_tools_that_read_and_change_a_mind_map() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            "`create_mind_map`",
+            "`read_mind_map`",
+            "`0.1`, `1.0.2`",
+            "`add_mind_map_child`",
+            "`add_mind_map_sibling`",
+            "`add_mind_map_root`",
+            "`edit_mind_map_node`",
+            "`color_mind_map_node` (les couleurs de la palette seulement)",
+            "`move_mind_map_node`",
+            "`delete_mind_map_node`",
+            "ne touchez jamais à la propriété `racines`",
+            "relisez la carte avant de viser un autre nœud",
+            "`read_note` et `replace_in_note` refusent une carte",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
+        assert!(!text.contains("l'écrivez comme une note"), "{text}");
     }
 
     #[test]

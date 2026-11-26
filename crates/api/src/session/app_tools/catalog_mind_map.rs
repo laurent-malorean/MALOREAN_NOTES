@@ -146,6 +146,53 @@ pub(super) fn color_mind_map_node() -> Described {
     )
 }
 
+pub(super) fn move_mind_map_node() -> Described {
+    (
+        "Déplace un nœud d'une carte mentale avec toute sa branche (le glisser-déposer de \
+         l'écran). `position` dit où : `child` (il devient le dernier enfant de `target`), \
+         `before` ou `after` (il devient le frère de `target`, juste au-dessus ou en dessous) ou \
+         `root` (il devient un nœud racine, posé à `place_x`, `place_y` ; sans eux, à la place \
+         par défaut). Un nœud racine déposé avec `root` est seulement déplacé sur la carte : \
+         `place_x` et `place_y` sont alors exigés. Un nœud racine déposé sur un autre nœud (ou \
+         près de lui) garde sa place s'il reste nœud racine ; il la perd s'il devient enfant. Les \
+         chemins des nœuds changent : relisez la carte avant de viser un autre nœud. Même règles \
+         d'écriture qu'`add_mind_map_child`. Rend `path`, `node` (le nouveau chemin du nœud \
+         déplacé) et `title`. Refusé, sans rien changer : nœud ou cible introuvable, dépôt sur \
+         lui-même ou dans sa propre branche, `position` inconnue, `target` absent, note qui \
+         n'est pas une carte mentale.",
+        input(
+            json!({
+                "path": map_path(),
+                "node": node_param("à déplacer"),
+                "position": text("Où le déposer : `child`, `before`, `after` ou `root`."),
+                "target": node_param("cible (pour `child`, `before` et `after`)"),
+                "place_x": place_param("horizontale"),
+                "place_y": place_param("verticale"),
+            }),
+            &["path", "node", "position"],
+        ),
+    )
+}
+
+pub(super) fn delete_mind_map_node() -> Described {
+    (
+        "Supprime un nœud d'une carte mentale avec toute sa branche (la touche Suppr de l'écran, \
+         qui demande confirmation s'il a des descendants : ici rien ne la demande, soyez sûr). \
+         Le texte d'avant est gardé dans l'historique des versions : l'utilisateur ou \
+         `restore_version` peut le remettre. Les nœuds frères suivants changent de chemin : \
+         relisez la carte avant de viser un autre nœud. Rend `path`, `node` (le chemin qu'avait \
+         le nœud), `title` et `deleted` (le nombre de nœuds supprimés, lui compris). Refusé, sans \
+         rien changer : nœud introuvable, note qui n'est pas une carte mentale.",
+        input(
+            json!({
+                "path": map_path(),
+                "node": node_param("à supprimer, avec sa branche"),
+            }),
+            &["path", "node"],
+        ),
+    )
+}
+
 pub(super) fn read_mind_map() -> Described {
     (
         "Lit une carte mentale (une note dont l'en-tête porte `type: carte-mentale`) en arbre, \

@@ -85,6 +85,10 @@ pub enum AppTool {
     EditMindMapNode,
     /// Changer la couleur d'un nœud d'une carte mentale, parmi la palette (fiche 0080).
     ColorMindMapNode,
+    /// Déplacer un nœud d'une carte mentale, avec sa branche (fiche 0080).
+    MoveMindMapNode,
+    /// Supprimer un nœud d'une carte mentale, avec sa branche (fiche 0080).
+    DeleteMindMapNode,
     /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
     /// `doc/specs/crm.md`, § 13).
     CreateCrm,
@@ -97,7 +101,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 37] = [
+    pub const ALL: [Self; 39] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -132,6 +136,8 @@ impl AppTool {
         Self::AddMindMapRoot,
         Self::EditMindMapNode,
         Self::ColorMindMapNode,
+        Self::MoveMindMapNode,
+        Self::DeleteMindMapNode,
         Self::CreateCrm,
         Self::ViewedNote,
         Self::ShowNote,
@@ -175,6 +181,8 @@ impl AppTool {
             Self::AddMindMapRoot => "add_mind_map_root",
             Self::EditMindMapNode => "edit_mind_map_node",
             Self::ColorMindMapNode => "color_mind_map_node",
+            Self::MoveMindMapNode => "move_mind_map_node",
+            Self::DeleteMindMapNode => "delete_mind_map_node",
             Self::CreateCrm => "create_crm",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
@@ -244,6 +252,8 @@ impl AppTool {
             | Self::AddMindMapRoot
             | Self::EditMindMapNode
             | Self::ColorMindMapNode
+            | Self::MoveMindMapNode
+            | Self::DeleteMindMapNode
             | Self::CreateCrm => true,
         }
     }
@@ -298,6 +308,8 @@ impl AppTool {
             | Self::AddMindMapRoot
             | Self::EditMindMapNode
             | Self::ColorMindMapNode
+            | Self::MoveMindMapNode
+            | Self::DeleteMindMapNode
             | Self::ShowNote => Some("path"),
             Self::ListWorkspaces
             | Self::ListTags
@@ -434,6 +446,8 @@ mod tests {
                 "add_mind_map_root",
                 "edit_mind_map_node",
                 "color_mind_map_node",
+                "move_mind_map_node",
+                "delete_mind_map_node",
                 "create_crm"
             ]
         );
@@ -474,6 +488,8 @@ mod tests {
                 path,
                 path,
                 Some("title"),
+                path,
+                path,
                 path,
                 path,
                 path,

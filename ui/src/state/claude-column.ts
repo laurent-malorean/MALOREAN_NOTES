@@ -87,6 +87,8 @@ export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   add_mind_map_root: "Ajout d’un nœud racine",
   edit_mind_map_node: "Modification d’un nœud",
   color_mind_map_node: "Couleur d’un nœud",
+  move_mind_map_node: "Déplacement d’un nœud",
+  delete_mind_map_node: "Suppression d’un nœud",
   create_crm: "Création d’un CRM",
   viewed_note: "Note regardée",
   show_note: "Note montrée",

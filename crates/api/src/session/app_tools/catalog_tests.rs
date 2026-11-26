@@ -49,7 +49,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 37] = [
+    let expected: [(AppTool, &[&str]); 39] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
@@ -84,6 +84,8 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::AddMindMapRoot, &["path", "title"]),
         (AppTool::EditMindMapNode, &["path", "node"]),
         (AppTool::ColorMindMapNode, &["path", "node", "color"]),
+        (AppTool::MoveMindMapNode, &["path", "node", "position"]),
+        (AppTool::DeleteMindMapNode, &["path", "node"]),
         (AppTool::CreateCrm, &["title"]),
         (AppTool::ViewedNote, &[]),
         (AppTool::ShowNote, path),
@@ -173,7 +175,8 @@ fn replacing_a_text_takes_a_note_two_texts_and_an_option_and_tells_every_refusal
         "nombre d'occurrences et leurs lignes",
         "`replace_all` à true",
         "cahier de recherche (utilisez `add_entry`)",
-        "carte mentale, un canvas ou un CRM",
+        "une carte mentale (lisez-la avec `read_mind_map`, modifiez-la avec `add_mind_map_child`",
+        "un canvas ou un CRM",
         "utilisez ensuite le `path` rendu",
         "`path`, `title` et `replacements`",
         "lisez d'abord la note avec `read_note`",
@@ -372,6 +375,52 @@ fn the_tools_that_change_a_node_say_what_stays_and_what_they_refuse() {
         "l'erreur donne la palette",
     ] {
         assert!(color.contains(phrase), "{phrase}");
+    }
+}
+
+#[test]
+fn the_tools_that_move_or_delete_a_node_name_their_options_and_say_what_they_refuse() {
+    assert_eq!(
+        fields_of(AppTool::MoveMindMapNode),
+        [
+            "node",
+            "path",
+            "place_x",
+            "place_y",
+            "position",
+            "target",
+            "workspace"
+        ]
+    );
+    assert_eq!(
+        fields_of(AppTool::DeleteMindMapNode),
+        ["node", "path", "workspace"]
+    );
+    let moving = tool_description(AppTool::MoveMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "`child`",
+        "`before` ou `after`",
+        "`root`",
+        "seulement déplacé sur la carte",
+        "sa propre branche",
+        "relisez la carte",
+    ] {
+        assert!(moving.contains(phrase), "{phrase}");
+    }
+    let deleting = tool_description(AppTool::DeleteMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "toute sa branche",
+        "rien ne la demande",
+        "historique des versions",
+        "`deleted`",
+    ] {
+        assert!(deleting.contains(phrase), "{phrase}");
     }
 }
 

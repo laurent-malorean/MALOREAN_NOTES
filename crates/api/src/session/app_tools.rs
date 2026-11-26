@@ -243,6 +243,9 @@ mod meaning_tests;
 mod mind_map_editing_tests;
 
 #[cfg(test)]
+mod mind_map_moving_tests;
+
+#[cfg(test)]
 mod mind_map_tests;
 
 #[cfg(test)]

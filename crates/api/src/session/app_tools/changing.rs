@@ -61,7 +61,9 @@ impl Session {
             | AppTool::AddMindMapSibling
             | AppTool::AddMindMapRoot
             | AppTool::EditMindMapNode
-            | AppTool::ColorMindMapNode => self.call_mind_map_tool(tool, arguments),
+            | AppTool::ColorMindMapNode
+            | AppTool::MoveMindMapNode
+            | AppTool::DeleteMindMapNode => self.call_mind_map_tool(tool, arguments),
             AppTool::CreateCrm => self.tool_create_crm(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(arguments),
             AppTool::TrashNote => {
