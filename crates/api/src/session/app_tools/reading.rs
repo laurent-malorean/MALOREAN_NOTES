@@ -13,7 +13,7 @@ use domain::{ContentType, Folder, NoteOrder, NotePath, NoteSummary};
 use serde::Serialize;
 use serde_json::Value;
 
-use super::{ToolsScope, optional, required, written};
+use super::{optional, required, written};
 use crate::session::Session;
 
 /// Une note trouvée, telle que Claude la reçoit.
@@ -270,13 +270,25 @@ impl Session {
         })
     }
 
-    /// Les noms des modèles de note : les notes directement dans le dossier des modèles du tour.
-    pub(super) fn tool_list_templates(&self, scope: &ToolsScope) -> Result<String, String> {
-        let folder = scope.templates.as_ref().ok_or_else(|| {
-            "aucun dossier des modèles n'est choisi : l'utilisateur peut en choisir un dans les \
-             réglages de MALOREAN Notes"
-                .to_owned()
-        })?;
+    /// Le dossier des modèles de l'espace visé, relu dans les préférences (fiche 0077) ; une erreur
+    /// dite à l'IA, avec le nom de l'espace, si l'utilisateur n'en a pas choisi.
+    pub(super) fn chosen_templates_folder(&self) -> Result<Folder, String> {
+        let said = |error: crate::ApiError| error.message;
+        let workspace = self.opened().map_err(said)?.name;
+        self.templates_folder().map_err(said)?.ok_or_else(|| {
+            format!(
+                "aucun dossier des modèles n'est choisi pour l'espace de travail « {} » : \
+                 l'utilisateur peut en choisir un dans les Réglages de MALOREAN Notes, onglet \
+                 « Écriture »",
+                workspace.as_str()
+            )
+        })
+    }
+
+    /// Les noms des modèles de note : les notes directement dans le dossier des modèles de
+    /// l'espace visé.
+    pub(super) fn tool_list_templates(&self) -> Result<String, String> {
+        let folder = &self.chosen_templates_folder()?;
         let index = self.index().map_err(|error| error.message)?;
         let templates = ListNotes::new(&*index)
             .execute(folder, NoteOrder::Title)

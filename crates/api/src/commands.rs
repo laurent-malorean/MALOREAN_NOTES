@@ -31,6 +31,7 @@ pub mod menu;
 pub mod mind_map;
 pub mod research_notebook;
 pub mod tags;
+pub mod templates;
 pub mod workspaces;
 pub mod writing;
 
@@ -560,6 +561,9 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         writing::assistant_status,
         writing::propose_rewriting,
         claude::answer_view,
+        templates::templates_folder,
+        templates::set_templates_folder,
+        templates::import_templates_folders,
         connection::connection_info,
         connection::create_connection_key,
         connection::revoke_connection_key,

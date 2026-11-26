@@ -10,7 +10,7 @@ use super::Session;
 use crate::{AiWorkspaceItem, ApiError, ChosenFolder, WorkspaceInfo, WorkspaceItem};
 
 impl Session {
-    fn manage(&self) -> ManageWorkspaces<'_> {
+    pub(super) fn manage(&self) -> ManageWorkspaces<'_> {
         ManageWorkspaces::new(&*self.opener, &*self.preferences)
     }
 

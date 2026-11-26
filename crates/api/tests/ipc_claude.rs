@@ -337,9 +337,8 @@ fn the_answer_of_the_interface_reaches_the_tool_that_asked_what_the_user_is_look
     });
     let asking = &*session;
     let viewed = std::thread::scope(|scope| {
-        let turn = scope.spawn(|| {
-            session.send_to_claude("Bonjour", None, TurnSettings::default(), None, |_| {})
-        });
+        let turn = scope
+            .spawn(|| session.send_to_claude("Bonjour", None, TurnSettings::default(), |_| {}));
         while claude.tools_keys().is_empty() {
             std::thread::yield_now();
         }

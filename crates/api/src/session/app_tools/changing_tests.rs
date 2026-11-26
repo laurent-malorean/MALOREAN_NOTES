@@ -4,7 +4,6 @@
 use std::sync::Arc;
 
 use application::testing::{FakeOpener, FakePreferences, FixedClock, InMemoryNoteStore};
-use domain::Folder;
 use serde_json::json;
 
 use super::tests::{found, notes_workspace, opened, refused};
@@ -13,14 +12,14 @@ use crate::session::Session;
 /// Joue `tool` avec `arguments` pendant un tour, dans le dossier des modèles `Modèles` ; rend ce
 /// qu'il rend, lu en JSON.
 fn done(session: &Session, tool: &str, arguments: serde_json::Value) -> serde_json::Value {
-    let folder = Folder::parse("Modèles").ok();
-    let tools = session.open_tools(notes_workspace(), folder).unwrap();
+    session.set_templates_folder(Some("Modèles")).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     found(session, tools.key().as_str(), tool, arguments)
 }
 
 /// Joue `tool`, qui échoue ; rend pourquoi.
 fn failed(session: &Session, tool: &str, arguments: serde_json::Value) -> String {
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     refused(session, tools.key().as_str(), tool, arguments)
 }
 
@@ -77,9 +76,7 @@ fn a_note_is_created_from_a_template_named_by_its_title_or_its_file_name() {
         json!({ "template": "reunion", "title": "Bilan" }),
     );
     assert_eq!(by_file, json!({ "path": "bilan.md" }));
-    let tools = session
-        .open_tools(notes_workspace(), Folder::parse("Modèles").ok())
-        .unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     assert_eq!(
         refused(
             &session,
@@ -90,14 +87,15 @@ fn a_note_is_created_from_a_template_named_by_its_title_or_its_file_name() {
         "aucun modèle « Journal » : voyez list_templates"
     );
     drop(tools);
+    session.set_templates_folder(None).unwrap();
     assert_eq!(
         failed(
             &session,
             "create_note_from_template",
             json!({ "template": "reunion", "title": "X" })
         ),
-        "aucun dossier des modèles n'est choisi : l'utilisateur peut en choisir un dans les \
-         réglages de MALOREAN Notes"
+        "aucun dossier des modèles n'est choisi pour l'espace de travail « Notes » : \
+         l'utilisateur peut en choisir un dans les Réglages de MALOREAN Notes, onglet « Écriture »"
     );
 }
 

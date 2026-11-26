@@ -44,7 +44,7 @@ fn computed(notes: &[(&str, &str)]) -> Session {
 }
 
 fn search(session: &Session, arguments: Value) -> Value {
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     found(
         session,
         tools.key().as_str(),
@@ -161,7 +161,7 @@ fn before_the_vectors_are_computed_the_words_answer_alone_and_the_reason_is_told
 #[test]
 fn a_blank_or_missing_question_is_refused() {
     let session = computed(&NOTES);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     for arguments in [
         json!({}),
@@ -206,7 +206,7 @@ fn the_number_of_notes_is_ten_by_default_and_the_limit_when_it_is_given_up_to_a_
 #[test]
 fn an_invalid_limit_is_refused_with_what_is_expected() {
     let session = computed(&NOTES);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     for limit in [json!(0), json!(-1), json!("3"), json!(1.5), json!(true)] {
         assert_eq!(
@@ -225,7 +225,7 @@ fn an_invalid_limit_is_refused_with_what_is_expected() {
 fn the_tool_needs_the_workspace_of_the_turn() {
     let session = computed(&NOTES);
     let tools = session
-        .open_tools(application::WorkspaceName::new("Autre").unwrap(), None)
+        .open_tools(application::WorkspaceName::new("Autre").unwrap())
         .unwrap();
     assert!(
         refused(

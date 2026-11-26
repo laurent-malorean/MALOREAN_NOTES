@@ -10,7 +10,7 @@ use crate::session::Session;
 
 /// Lit la note pendant un tour ; rend ce que l'outil rend, lu en JSON.
 fn read(session: &Session, path: &str) -> Value {
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     found(
         session,
         tools.key().as_str(),
@@ -21,7 +21,7 @@ fn read(session: &Session, path: &str) -> Value {
 
 /// La lecture échoue ; rend pourquoi.
 fn unread(session: &Session, arguments: Value) -> String {
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     refused(session, tools.key().as_str(), "read_note", arguments)
 }
 
@@ -69,7 +69,7 @@ fn the_header_then_the_body_are_the_file_to_copy_a_text_for_replace_in_note() {
     );
     assert_eq!(whole, file);
 
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     found(
         &session,
         tools.key().as_str(),

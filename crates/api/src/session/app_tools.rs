@@ -21,7 +21,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{MutexGuard, PoisonError};
 
 use application::WorkspaceName;
-use domain::Folder;
 use domain::app_tools::{AppTool, AppToolsKey};
 use serde_json::Value;
 
@@ -39,12 +38,10 @@ pub(super) enum Fallback {
     Opened,
 }
 
-/// Ce que les outils visent : l'espace de travail par défaut, désigné par son nom, et le dossier
-/// des modèles que l'interface a choisi pour lui, s'il l'a fait.
+/// Ce que les outils visent : l'espace de travail par défaut, désigné par son nom.
 #[derive(Debug, Clone)]
 pub(super) struct ToolsScope {
     fallback: Fallback,
-    templates: Option<Folder>,
 }
 
 /// Ce que les outils savent du tour en cours : sa clé, et ce qu'il vise.
@@ -116,13 +113,9 @@ impl Session {
             .unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// Ouvre les outils de l'application pour un tour dans l'espace de travail `workspace`, avec
-    /// le dossier des modèles `templates` ; rien si un tour les tient déjà (le tour sera refusé).
-    pub(super) fn open_tools(
-        &self,
-        workspace: WorkspaceName,
-        templates: Option<Folder>,
-    ) -> Option<OpenTools<'_>> {
+    /// Ouvre les outils de l'application pour un tour dans l'espace de travail `workspace` ; rien
+    /// si un tour les tient déjà (le tour sera refusé).
+    pub(super) fn open_tools(&self, workspace: WorkspaceName) -> Option<OpenTools<'_>> {
         let mut turn = self.tools_turn();
         if turn.is_some() {
             return None;
@@ -132,7 +125,6 @@ impl Session {
             key: key.clone(),
             scope: ToolsScope {
                 fallback: Fallback::Turn(workspace),
-                templates,
             },
         });
         Some(OpenTools { session: self, key })
@@ -163,7 +155,7 @@ impl Session {
             return self.tool_list_workspaces();
         }
         match self.aim_of(scope, arguments)? {
-            Aim::Opened => self.play_tool(scope, tool, arguments),
+            Aim::Opened => self.play_tool(tool, arguments),
             Aim::Elsewhere(name) => {
                 if tool.uses_screen() {
                     return Err(format!(
@@ -172,21 +164,15 @@ impl Session {
                         tool.name()
                     ));
                 }
-                // Le dossier des modèles est celui de l'espace du tour : un autre espace n'en a pas
-                // (todo « Les modèles pour une IA branchée »).
-                let scope = ToolsScope {
-                    templates: None,
-                    ..scope.clone()
-                };
-                self.in_background_workspace(&name, || self.play_tool(&scope, tool, arguments))
+                self.in_background_workspace(&name, || self.play_tool(tool, arguments))
             }
         }
     }
 
     /// Joue un outil dans l'espace de travail que `Session::opened` désigne en ce moment.
-    fn play_tool(&self, scope: &ToolsScope, tool: AppTool, arguments: &Value) -> mcp::ToolOutcome {
+    fn play_tool(&self, tool: AppTool, arguments: &Value) -> mcp::ToolOutcome {
         if tool.changes_notes() {
-            return self.call_changing_tool(scope, tool, arguments);
+            return self.call_changing_tool(tool, arguments);
         }
         match tool {
             AppTool::SearchNotes => self.tool_search_notes(arguments),
@@ -194,7 +180,7 @@ impl Session {
             AppTool::ListTags => written(&self.list_tags().map_err(|e| e.message)?),
             AppTool::LinkingNotes => self.tool_linking_notes(arguments),
             AppTool::ReadNote => self.tool_read_note(arguments),
-            AppTool::ListTemplates => self.tool_list_templates(scope),
+            AppTool::ListTemplates => self.tool_list_templates(),
             AppTool::ViewedNote => self.tool_viewed_note(),
             AppTool::ShowNote => self.tool_show_note(arguments),
             AppTool::ListVersions => {
@@ -230,6 +216,9 @@ mod replacing_tests;
 
 #[cfg(test)]
 mod screen_tests;
+
+#[cfg(test)]
+mod templates_tests;
 
 #[cfg(test)]
 mod meaning_tests;
