@@ -48,11 +48,12 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 27] = [
+    let expected: [(AppTool, &[&str]); 31] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
         (AppTool::ListTags, &[]),
+        (AppTool::ListFolders, &[]),
         (AppTool::LinkingNotes, path),
         (AppTool::ReadNote, path),
         (AppTool::ListTemplates, &[]),
@@ -60,6 +61,9 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::ReadVersion, &["path", "version"]),
         (AppTool::CreateNote, &["title"]),
         (AppTool::CreateFolder, path),
+        (AppTool::RenameFolder, &["path", "name"]),
+        (AppTool::MoveFolder, &["path", "folder"]),
+        (AppTool::TrashFolder, path),
         (AppTool::CreateNoteFromTemplate, &["template", "title"]),
         (AppTool::TrashNote, path),
         (AppTool::RenameNote, &["path", "title"]),
@@ -169,6 +173,59 @@ fn replacing_a_text_takes_a_note_two_texts_and_an_option_and_tells_every_refusal
     ] {
         assert!(description.contains(expected), "{expected}");
     }
+}
+
+#[test]
+fn the_folder_tools_tell_the_ai_their_inputs_what_follows_and_what_is_refused() {
+    let fields = |tool: AppTool| -> Vec<String> {
+        let mut fields: Vec<_> = tool_description(tool)["inputSchema"]["properties"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect();
+        fields.sort();
+        fields
+    };
+    assert_eq!(fields(AppTool::ListFolders), ["workspace"]);
+    assert_eq!(fields(AppTool::RenameFolder), ["name", "path", "workspace"]);
+    assert_eq!(fields(AppTool::MoveFolder), ["folder", "path", "workspace"]);
+    assert_eq!(fields(AppTool::TrashFolder), ["path", "workspace"]);
+    let said = |tool: AppTool, expected: &[&str]| {
+        let description = tool_description(tool)["description"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        for expected in expected {
+            assert!(description.contains(expected), "{tool:?}: {expected}");
+        }
+    };
+    said(
+        AppTool::ListFolders,
+        &["`folders`", "node_modules", "corbeille"],
+    );
+    said(
+        AppTool::RenameFolder,
+        &[
+            "historique des versions",
+            "`[[Dossier/titre]]`",
+            "`.assets`",
+            "la racine",
+        ],
+    );
+    said(
+        AppTool::MoveFolder,
+        &[
+            "historique des versions",
+            "lui-même",
+            "du même nom",
+            "la racine",
+        ],
+    );
+    said(
+        AppTool::TrashFolder,
+        &["jamais effacé", "`trashed`", "la racine"],
+    );
 }
 
 #[test]

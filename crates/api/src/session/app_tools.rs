@@ -6,6 +6,7 @@
 mod catalog;
 mod changing;
 mod connection;
+mod folders;
 mod mcp;
 mod meaning;
 mod reading;
@@ -101,6 +102,14 @@ fn optional<'a>(arguments: &'a Value, field: &str) -> Option<&'a str> {
         .filter(|text| !text.trim().is_empty())
 }
 
+/// Le texte d'un argument que l'outil exige, vide permis : la racine d'un espace de travail est
+/// le chemin vide, et un nom vide reçoit le message de l'interface.
+fn given<'a>(arguments: &'a Value, field: &str) -> Result<&'a str, String> {
+    arguments[field]
+        .as_str()
+        .ok_or_else(|| format!("il manque « {field} »"))
+}
+
 /// Ce que rend un outil, écrit pour Claude.
 fn written(value: &impl serde::Serialize) -> Result<String, String> {
     serde_json::to_string(value).map_err(|error| error.to_string())
@@ -178,6 +187,7 @@ impl Session {
             AppTool::SearchNotes => self.tool_search_notes(arguments),
             AppTool::SearchByMeaning => self.tool_search_by_meaning(arguments),
             AppTool::ListTags => written(&self.list_tags().map_err(|e| e.message)?),
+            AppTool::ListFolders => self.tool_list_folders(),
             AppTool::LinkingNotes => self.tool_linking_notes(arguments),
             AppTool::ReadNote => self.tool_read_note(arguments),
             AppTool::ListTemplates => self.tool_list_templates(),
@@ -207,6 +217,9 @@ mod changing_tests;
 
 #[cfg(test)]
 mod crm_tests;
+
+#[cfg(test)]
+mod folders_tests;
 
 #[cfg(test)]
 mod reading_tests;

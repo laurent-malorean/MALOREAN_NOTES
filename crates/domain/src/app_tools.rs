@@ -22,6 +22,8 @@ pub enum AppTool {
     SearchByMeaning,
     /// La liste des étiquettes, avec le nombre de notes de chacune.
     ListTags,
+    /// L'arbre des dossiers d'un espace de travail, par leurs chemins (fiche 0078).
+    ListFolders,
     /// Les notes dont un lien entre notes désigne une note.
     LinkingNotes,
     /// Le texte entier d'une note simple, son en-tête à part du corps (fiche 0076).
@@ -36,6 +38,12 @@ pub enum AppTool {
     CreateNote,
     /// Créer un dossier, avec ceux qui manquent sur son chemin.
     CreateFolder,
+    /// Renommer un dossier, qui reste à sa place avec tout son contenu (fiche 0078).
+    RenameFolder,
+    /// Déplacer un dossier dans un autre, avec tout son contenu (fiche 0078).
+    MoveFolder,
+    /// Mettre un dossier, avec tout son contenu, à la corbeille (fiche 0078).
+    TrashFolder,
     /// Créer une note depuis un modèle de note, nommé, avec un titre.
     CreateNoteFromTemplate,
     /// Mettre une note à la corbeille.
@@ -76,11 +84,12 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 27] = [
+    pub const ALL: [Self; 31] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
         Self::ListTags,
+        Self::ListFolders,
         Self::LinkingNotes,
         Self::ReadNote,
         Self::ListTemplates,
@@ -88,6 +97,9 @@ impl AppTool {
         Self::ReadVersion,
         Self::CreateNote,
         Self::CreateFolder,
+        Self::RenameFolder,
+        Self::MoveFolder,
+        Self::TrashFolder,
         Self::CreateNoteFromTemplate,
         Self::TrashNote,
         Self::RenameNote,
@@ -114,6 +126,7 @@ impl AppTool {
             Self::SearchNotes => "search_notes",
             Self::SearchByMeaning => "search_by_meaning",
             Self::ListTags => "list_tags",
+            Self::ListFolders => "list_folders",
             Self::LinkingNotes => "linking_notes",
             Self::ReadNote => "read_note",
             Self::ListTemplates => "list_templates",
@@ -121,6 +134,9 @@ impl AppTool {
             Self::ReadVersion => "read_version",
             Self::CreateNote => "create_note",
             Self::CreateFolder => "create_folder",
+            Self::RenameFolder => "rename_folder",
+            Self::MoveFolder => "move_folder",
+            Self::TrashFolder => "trash_folder",
             Self::CreateNoteFromTemplate => "create_note_from_template",
             Self::TrashNote => "trash_note",
             Self::RenameNote => "rename_note",
@@ -171,6 +187,7 @@ impl AppTool {
             | Self::SearchNotes
             | Self::SearchByMeaning
             | Self::ListTags
+            | Self::ListFolders
             | Self::LinkingNotes
             | Self::ReadNote
             | Self::ListTemplates
@@ -180,6 +197,9 @@ impl AppTool {
             | Self::ShowNote => false,
             Self::CreateNote
             | Self::CreateFolder
+            | Self::RenameFolder
+            | Self::MoveFolder
+            | Self::TrashFolder
             | Self::CreateNoteFromTemplate
             | Self::TrashNote
             | Self::RenameNote
@@ -223,6 +243,9 @@ impl AppTool {
             | Self::CreateMindMap
             | Self::CreateCrm => Some("title"),
             Self::CreateFolder
+            | Self::RenameFolder
+            | Self::MoveFolder
+            | Self::TrashFolder
             | Self::LinkingNotes
             | Self::ReadNote
             | Self::ListVersions
@@ -239,7 +262,11 @@ impl AppTool {
             | Self::AddAttachment
             | Self::AddEntry
             | Self::ShowNote => Some("path"),
-            Self::ListWorkspaces | Self::ListTags | Self::ListTemplates | Self::ViewedNote => None,
+            Self::ListWorkspaces
+            | Self::ListTags
+            | Self::ListFolders
+            | Self::ListTemplates
+            | Self::ViewedNote => None,
         }
     }
 }
@@ -349,6 +376,9 @@ mod tests {
             [
                 "create_note",
                 "create_folder",
+                "rename_folder",
+                "move_folder",
+                "trash_folder",
                 "create_note_from_template",
                 "trash_note",
                 "rename_note",
@@ -378,12 +408,16 @@ mod tests {
                 Some("query"),
                 Some("question"),
                 None,
+                None,
                 path,
                 path,
                 None,
                 path,
                 path,
                 Some("title"),
+                path,
+                path,
+                path,
                 path,
                 Some("title"),
                 path,
@@ -433,6 +467,44 @@ mod tests {
         assert_eq!(tool.target_field(), Some("path"));
         let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
         assert_eq!(AppTool::ALL[at - 1], AppTool::RestoreVersion);
+    }
+
+    #[test]
+    fn the_folder_tools_are_named_ordered_and_guarded_as_their_decision_says() {
+        let names: Vec<_> = AppTool::ALL
+            .into_iter()
+            .filter(|tool| tool.name().ends_with("_folder") || tool.name() == "list_folders")
+            .map(AppTool::name)
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "list_folders",
+                "create_folder",
+                "rename_folder",
+                "move_folder",
+                "trash_folder"
+            ]
+        );
+        assert_eq!(
+            AppTool::TrashFolder.full_name(),
+            "mcp__malorean__trash_folder"
+        );
+        assert_eq!(
+            AppTool::of_full_name("mcp__malorean__rename_folder"),
+            Some(AppTool::RenameFolder)
+        );
+        assert!(!AppTool::ListFolders.changes_notes());
+        assert_eq!(AppTool::ListFolders.target_field(), None);
+        for tool in [
+            AppTool::ListFolders,
+            AppTool::RenameFolder,
+            AppTool::MoveFolder,
+            AppTool::TrashFolder,
+        ] {
+            assert!(tool.aims_at_a_workspace(), "{tool:?}");
+            assert!(!tool.uses_screen(), "{tool:?}");
+        }
     }
 
     #[test]

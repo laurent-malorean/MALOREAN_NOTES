@@ -156,6 +156,54 @@ fn the_tools_of_the_ai_work_on_the_open_workspace_with_the_rules_of_the_applicat
 }
 
 #[test]
+fn a_connected_ai_sees_and_changes_the_folders_with_the_rules_of_the_application() {
+    let Fixture { session, .. } = fixture_with(&[("Travail/plan.md", "# Plan")], true);
+    let secret = session.create_connection_key().unwrap();
+    let secret = secret.secret();
+    let text = |reply: &Value| -> Value {
+        assert_eq!(reply["result"]["isError"], false, "{reply}");
+        serde_json::from_str(reply["result"]["content"][0]["text"].as_str().unwrap()).unwrap()
+    };
+
+    let renamed = call(
+        &session,
+        secret,
+        "rename_folder",
+        &json!({ "path": "Travail", "name": "Boulot" }),
+    );
+    let listed = call(&session, secret, "list_folders", &json!({}));
+    let refused_name = call(
+        &session,
+        secret,
+        "rename_folder",
+        &json!({ "path": "Boulot", "name": ".cache" }),
+    );
+    let trashed = call(
+        &session,
+        secret,
+        "trash_folder",
+        &json!({ "path": "Boulot" }),
+    );
+
+    assert_eq!(text(&renamed), json!({ "path": "Boulot" }));
+    assert_eq!(text(&listed), json!({ "folders": ["Boulot"] }));
+    assert_eq!(refused_name["result"]["isError"], true);
+    assert_eq!(
+        refused_name["result"]["content"][0]["text"],
+        "nom de dossier invalide : « .cache »"
+    );
+    assert_eq!(text(&trashed), json!({ "trashed": "Boulot" }));
+    assert_eq!(session.list_folders().unwrap(), Vec::<String>::new());
+    assert!(
+        session
+            .list_trash()
+            .unwrap()
+            .folders
+            .contains(&"Boulot".to_owned())
+    );
+}
+
+#[test]
 fn the_tools_name_the_workspace_and_say_it_has_no_templates_folder_until_the_user_chooses_one() {
     let Fixture { session, .. } = fixture();
     let key = session.create_connection_key().unwrap();
