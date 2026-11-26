@@ -929,7 +929,7 @@ button {
 /* Cahier de recherche : une barre à gauche de chaque entrée, sur toute sa hauteur ; l'espace
    avant l'entrée est en haut de sa première ligne, sans barre. Elle se dessine en image de fond
    (jamais par le raccourci `background`, qui effacerait le fond d'un bloc de code) et au même
-   endroit sur toutes les lignes, quel que soit leur contenu (fiche 0096). */
+   endroit sur toutes les lignes, quel que soit leur contenu (fiche 0097). */
 .editor .cm-line.entry-bar {
   padding-left: var(--entry-bar-indent);
   background-image: linear-gradient(var(--entry-bar), var(--entry-bar));

@@ -1,4 +1,4 @@
-# 0096 : la barre d'entrée est continue et au même endroit sur toutes les lignes
+# 0097 : la barre d'entrée est continue et au même endroit sur toutes les lignes
 
 - **Date** : 2026-11-26
 - **Statut** : acceptée, correction d'un défaut signalé par l'utilisateur (capture d'écran)

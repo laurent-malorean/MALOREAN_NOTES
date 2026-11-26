@@ -1,4 +1,4 @@
-// Barre d'entrée d'un cahier de recherche (fiche 0096) : mesurée sur les pixels de la vraie page
+// Barre d'entrée d'un cahier de recherche (fiche 0097) : mesurée sur les pixels de la vraie page
 // (capture WebKit), pour que le test voie ce que voit l'utilisateur et pas seulement le style calculé.
 import { EditorView } from "@codemirror/view";
 import { afterEach, describe, expect, it } from "vitest";
