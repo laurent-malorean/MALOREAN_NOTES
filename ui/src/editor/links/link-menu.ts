@@ -141,6 +141,7 @@ class LinkMenu {
 
   private build(): HTMLElement {
     const popup = element("div", "link-menu");
+    popup.style.visibility = "hidden";
     if (this.open?.trigger.kind === "slash") {
       popup.append(
         Object.assign(element("div", "link-menu-title"), { textContent: SLASH_MENU_TITLE }),
@@ -175,18 +176,23 @@ class LinkMenu {
     return line;
   }
 
-  /** Sous le curseur ; au-dessus s'il n'y a pas assez de place en dessous. Mesuré après la mise à jour de l'éditeur. */
+  /**
+   * Sous le curseur ; au-dessus s'il n'y a pas assez de place en dessous. Posé dès la mise à jour terminée (une
+   * micro-tâche), sans attendre le prochain dessin de l'écran : une fenêtre cachée ou recouverte ne redessine pas
+   * (fiche 0100), et le menu restait alors là où le met la page, en bas à gauche. Tant qu'il n'est pas posé, ou si le
+   * curseur est hors de l'écran, il reste caché.
+   */
   private place(popup: HTMLElement): void {
-    this.view.requestMeasure({
-      read: (view) => view.coordsAtPos(view.state.selection.main.head),
-      write: (caret) => {
-        // Le menu a pu être fermé entre-temps ; un curseur hors de l'écran n'a pas de place.
-        if (caret === null || popup !== this.popup) return;
-        popup.style.left = `${caret.left}px`;
-        const below = caret.bottom + GAP;
-        const fits = below + popup.offsetHeight <= window.innerHeight;
-        popup.style.top = `${fits ? below : Math.max(caret.top - GAP - popup.offsetHeight, 0)}px`;
-      },
+    queueMicrotask(() => {
+      // Le menu a pu être fermé entre-temps.
+      if (popup !== this.popup) return;
+      const caret = this.view.coordsAtPos(this.view.state.selection.main.head);
+      popup.style.visibility = caret === null ? "hidden" : "visible";
+      if (caret === null) return;
+      popup.style.left = `${caret.left}px`;
+      const below = caret.bottom + GAP;
+      const fits = below + popup.offsetHeight <= window.innerHeight;
+      popup.style.top = `${fits ? below : Math.max(caret.top - GAP - popup.offsetHeight, 0)}px`;
     });
   }
 
