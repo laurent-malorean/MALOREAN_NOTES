@@ -10,9 +10,9 @@ use std::fs;
 use std::path::Path;
 
 use application::NoteStore;
-use application::use_cases::{MoveNote, Trash};
+use application::use_cases::{ActionDraft, CreateAction, CreateCrm, MoveNote, ReadCrm, Trash};
 use domain::{Folder, NotePath};
-use infrastructure::FsNoteStore;
+use infrastructure::{FsNoteStore, SystemClock};
 use tempfile::TempDir;
 
 const CRM: &str = "---\ntype: crm\n---\n# CRM1\n";
@@ -133,4 +133,46 @@ fn a_moved_crm_with_an_ordinary_note_in_its_folder_moves_its_fiches_and_their_at
     assert!(on_disk(dir.path(), "Perso/crm1/actions/a.md"));
     assert!(on_disk(dir.path(), "generated_mcp/crm1/ma-note.md"));
     assert!(!on_disk(dir.path(), "generated_mcp/crm1/actions/a.md"));
+}
+
+/// Le parcours de l'essai de l'application réelle : un CRM créé puis garni d'actions par les cas
+/// d'usage, mis à la corbeille, puis restauré, sur le disque.
+#[test]
+fn a_crm_made_by_the_use_cases_goes_to_the_trash_and_comes_back_with_its_actions() {
+    let dir = TempDir::new().unwrap();
+    let store = FsNoteStore::new(dir.path().to_path_buf());
+    let clock = SystemClock;
+    let path = CreateCrm::new(&store)
+        .execute(&Folder::root(), "Essai corbeille")
+        .unwrap();
+    assert_eq!(path, note("essai-corbeille.md"));
+    for title in ["Appeler Paul", "Écrire à Léa"] {
+        let draft = ActionDraft {
+            title: title.to_owned(),
+            ..ActionDraft::default()
+        };
+        CreateAction::new(&store, &clock)
+            .execute(&path, draft)
+            .unwrap();
+    }
+    let titles = |store: &FsNoteStore| {
+        let view = ReadCrm::new(store, &clock)
+            .execute(&path, &domain::crm::Filters::default(), None)
+            .unwrap();
+        view.actions.len()
+    };
+    assert_eq!(titles(&store), 2);
+    let trash = Trash::new(&store);
+    assert_eq!(trash.fiches_with(&path).unwrap(), 2);
+    trash.put_note(&path).unwrap();
+    assert!(!on_disk(dir.path(), "essai-corbeille.md"));
+    assert!(!on_disk(dir.path(), "essai-corbeille"));
+    // Un CRM à la corbeille ne se lit plus : l'essai ne doit pas le relire avant de le restaurer.
+    let message = ReadCrm::new(&store, &clock)
+        .execute(&path, &domain::crm::Filters::default(), None)
+        .unwrap_err()
+        .to_string();
+    assert_eq!(message, "la note « essai-corbeille.md » n'existe pas");
+    trash.restore_note(&path).unwrap();
+    assert_eq!(titles(&store), 2);
 }
