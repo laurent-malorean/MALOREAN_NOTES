@@ -139,6 +139,9 @@ pub enum AppError {
     /// Le contenu du canvas n'est pas valide : la raison est lisible (fiche 0052).
     #[error("{0}")]
     InvalidCanvas(#[from] domain::canvas::CanvasError),
+    /// Le geste d'une IA sur un canvas est refusé ; la raison dit quoi faire (fiche 0079).
+    #[error("{0}")]
+    CanvasEditRefused(#[from] domain::canvas_edit::CanvasEditError),
     /// La note n'est pas un CRM (fiche 0058).
     #[error("cette note n'est pas un CRM")]
     NotACrm,

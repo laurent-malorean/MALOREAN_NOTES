@@ -42,6 +42,13 @@ impl fmt::Display for RefusedReplacement {
                 "cette note est un cahier de recherche : on n'y ajoute que des entrées \
                  (add_entry), son texte ne se remplace jamais",
             ),
+            Self::NotANote(ContentType::Canvas) => f.write_str(
+                "cette note est un canvas : replace_in_note ne change que le texte des notes \
+                 simples ; lisez le canvas avec read_canvas et changez-le avec add_canvas_card, \
+                 change_canvas_card, move_canvas_card, resize_canvas_card, remove_canvas_card, \
+                 add_canvas_arrow, change_canvas_arrow, remove_canvas_arrow, add_canvas_group ou \
+                 change_canvas_group",
+            ),
             Self::NotANote(kind) => write!(
                 f,
                 "cette note est de type « {} » : replace_in_note ne change que le texte des notes \
@@ -329,6 +336,27 @@ mod tests {
             replaced(ContentType::Canvas, "{}", "", "", false),
             Err(RefusedReplacement::NotANote(ContentType::Canvas))
         );
+    }
+
+    #[test]
+    fn a_canvas_is_sent_to_the_canvas_tools() {
+        let said = RefusedReplacement::NotANote(ContentType::Canvas).to_string();
+        for expected in [
+            "cette note est un canvas",
+            "read_canvas",
+            "add_canvas_card",
+            "change_canvas_card",
+            "move_canvas_card",
+            "resize_canvas_card",
+            "remove_canvas_card",
+            "add_canvas_arrow",
+            "change_canvas_arrow",
+            "remove_canvas_arrow",
+            "add_canvas_group",
+            "change_canvas_group",
+        ] {
+            assert!(said.contains(expected), "{expected} : {said}");
+        }
     }
 
     #[test]
