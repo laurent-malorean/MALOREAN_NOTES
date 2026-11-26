@@ -5,7 +5,7 @@ import { CLAUDE_RAY_COUNT, claudeRay } from "./claude-icon";
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
-const PATHS: Record<FormatIcon, readonly string[]> = {
+export const FORMAT_ICON_PATHS: Record<FormatIcon, readonly string[]> = {
   bold: ["M7 5h6a3.5 3.5 0 0 1 0 7H7z", "M7 12h7a3.5 3.5 0 0 1 0 7H7z"],
   italic: ["M10 5h7", "M7 19h7", "M14 5l-4 14"],
   link: [
@@ -80,7 +80,7 @@ export function formatIcon(icon: FormatIcon): SVGSVGElement {
   svg.setAttribute("stroke-width", "1.6");
   svg.setAttribute("stroke-linecap", "round");
   svg.setAttribute("stroke-linejoin", "round");
-  for (const shape of PATHS[icon]) {
+  for (const shape of FORMAT_ICON_PATHS[icon]) {
     const path = document.createElementNS(SVG_NAMESPACE, "path");
     path.setAttribute("d", shape);
     svg.append(path);

@@ -1,4 +1,6 @@
 // Menu contextuel (clic droit) : quelques choix, fermé dès qu'on choisit, clique ailleurs ou tape Échap.
+// Chaque choix a son icône devant son nom, toutes dans une même colonne (vide pour un choix sans icône).
+import { type AppIcon, appIcon } from "./app-icons";
 
 /** Un choix du menu. */
 export interface MenuEntry {
@@ -17,8 +19,8 @@ export interface MenuEntry {
    * lecteurs d'écran ; les autres choix du menu s'alignent sur le nom.
    */
   readonly stateName?: string;
-  /** Un dessin devant le nom (décoratif). */
-  readonly icon?: SVGElement;
+  /** Le dessin du jeu d'icônes de l'application devant le nom (décoratif) ; sans lui, la colonne reste vide. */
+  readonly icon?: AppIcon;
   /** Le raccourci du choix, écrit après son nom (décoratif : le nom du choix reste seul lu). */
   readonly shortcut?: string;
 }
@@ -66,37 +68,48 @@ function stateSpan(name: string): HTMLSpanElement {
   return span;
 }
 
-/** Le nom du choix, avec son icône devant et son raccourci après. */
-function extras(button: HTMLButtonElement, entry: MenuEntry): void {
-  button.classList.add("with-extras");
-  if (entry.icon !== undefined) button.append(entry.icon);
-  const label = document.createElement("span");
-  label.className = "context-menu-label";
-  label.textContent = entry.label;
-  button.append(label);
-  if (entry.shortcut !== undefined) {
-    const shortcut = document.createElement("span");
-    shortcut.className = "context-menu-shortcut";
-    shortcut.setAttribute("aria-hidden", "true");
-    shortcut.textContent = entry.shortcut;
-    button.append(shortcut);
-  }
-}
-
-/** Le bouton d'un choix : son nom, sa pastille, sa coche, son séparateur. */
-function entryButton(entry: MenuEntry, aligned: boolean): HTMLButtonElement {
-  const button = document.createElement("button");
-  button.setAttribute("role", "menuitem");
-  if (aligned)
-    button.append(checkColumn(entry.checked === true && entry.stateName !== undefined ? "✓" : ""));
+/** La colonne des icônes : le dessin du choix, sa pastille, ou rien (la colonne garde alors sa place). */
+function iconColumn(entry: MenuEntry): HTMLSpanElement {
+  const column = document.createElement("span");
+  column.className = "context-menu-icon";
+  column.setAttribute("aria-hidden", "true");
   if (entry.swatch !== undefined) {
     const swatch = document.createElement("span");
     swatch.className = "context-menu-swatch";
     swatch.style.setProperty("--swatch", `var(--palette-${entry.swatch})`);
-    button.append(swatch);
-  }
-  if (entry.icon !== undefined || entry.shortcut !== undefined) extras(button, entry);
-  else button.append(entry.label);
+    column.append(swatch);
+  } else if (entry.icon !== undefined) column.append(appIcon(entry.icon));
+  return column;
+}
+
+/** Le raccourci du choix, écrit après son nom. */
+function shortcutSpan(shortcut: string): HTMLSpanElement {
+  const span = document.createElement("span");
+  span.className = "context-menu-shortcut";
+  span.setAttribute("aria-hidden", "true");
+  span.textContent = shortcut;
+  return span;
+}
+
+/** Ce qui s'aligne d'un choix à l'autre : la colonne de la coche (nom d'état) et celle des icônes. */
+interface Columns {
+  readonly check: boolean;
+  readonly icon: boolean;
+}
+
+/** Le bouton d'un choix : sa coche, son icône ou sa pastille, son nom, son raccourci, son séparateur. */
+function entryButton(entry: MenuEntry, columns: Columns): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.setAttribute("role", "menuitem");
+  button.classList.add("with-extras");
+  if (columns.check)
+    button.append(checkColumn(entry.checked === true && entry.stateName !== undefined ? "✓" : ""));
+  if (columns.icon) button.append(iconColumn(entry));
+  const label = document.createElement("span");
+  label.className = "context-menu-label";
+  label.textContent = entry.label;
+  button.append(label);
+  if (entry.shortcut !== undefined) button.append(shortcutSpan(entry.shortcut));
   if (entry.checked === true) {
     button.setAttribute("aria-checked", "true");
     button.setAttribute("role", "menuitemcheckbox");
@@ -179,9 +192,12 @@ export function showContextMenu(
     if (keptFocus && opener instanceof HTMLElement) opener.focus();
     options.onClose?.();
   }
-  const aligned = entries.some((entry) => entry.stateName !== undefined);
+  const columns = {
+    check: entries.some((entry) => entry.stateName !== undefined),
+    icon: entries.some((entry) => entry.icon !== undefined || entry.swatch !== undefined),
+  };
   for (const entry of entries) {
-    const button = entryButton(entry, aligned);
+    const button = entryButton(entry, columns);
     button.addEventListener("click", () => {
       close();
       entry.run();

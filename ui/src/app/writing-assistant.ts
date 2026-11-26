@@ -5,6 +5,7 @@
 import type { MessageKind } from "./messages";
 import type * as Bridge from "../bridge";
 import type { AssistantStatus, WritingActionItem } from "../bridge";
+import type { AppIcon } from "../screens/app-icons";
 import { showContextMenu } from "../screens/context-menu";
 import type { Layout } from "../screens/layout";
 import type { Pane } from "../screens/note-pane";
@@ -18,6 +19,13 @@ import {
   type WritingActionDef,
 } from "../state/writing-assist";
 import type { OpenColumns } from "./columns";
+
+/** Le dessin de chaque action dans le menu de la sélection. */
+const WRITING_ICONS: Readonly<Record<WritingActionItem, AppIcon>> = {
+  correct: "correct",
+  rephrase: "rewrite",
+  summarize: "lines",
+};
 
 export interface WritingAssistantDeps {
   readonly backend: Pick<typeof Bridge, "assistantStatus" | "proposeRewriting">;
@@ -98,6 +106,7 @@ export function createWritingAssistant(deps: WritingAssistantDeps): WritingAssis
       event.clientY,
       WRITING_ACTIONS.map((action) => ({
         label: action.label,
+        icon: WRITING_ICONS[action.action],
         disabled: !ready,
         run: () => run(pane, action),
       })),

@@ -154,6 +154,18 @@ describe("espaces de travail", () => {
     ]);
   });
 
+  it("chaque choix du menu a son icône : un dossier pour chaque espace, puis ajouter, renommer, retirer", async () => {
+    const t = setup();
+    const entries = await t.workspaces.menu();
+    expect(entries.map((entry) => entry.icon)).toEqual([
+      "workspace",
+      "workspace",
+      "add",
+      "edit",
+      "remove",
+    ]);
+  });
+
   it("un séparateur précède l'ajout d'un espace de travail, et lui seul", async () => {
     const t = setup();
     const entries = await t.workspaces.menu();

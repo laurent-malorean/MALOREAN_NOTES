@@ -1,6 +1,7 @@
 // Essai de l'application réelle (fiche 0054) : les scénarios, dans l'ordre où ils se jouent. Les cinq premiers
 // partagent l'espace de travail `notes` (le canvas fait par le premier sert aux deux suivants) ; le dernier
-// ouvre l'espace de travail `recherche` ; celui du sélecteur d'espace de travail ajoute `essai-bis` avant lui.
+// ouvre l'espace de travail `recherche` ; celui du sélecteur d'espace de travail ajoute `essai-bis` avant lui. Les
+// menus du clic droit (icônes) se jouent juste avant la recherche, sur les notes et l'onglet laissés par les autres.
 import type { Scenario } from "../runner";
 import { canvasScenariosFor } from "./canvas";
 import { crmScenarios } from "./crm";
@@ -11,6 +12,7 @@ import type { Env } from "./env";
 import { exportScenarios } from "./export";
 import { foldersHeightScenarios } from "./folders-height";
 import { linkMenuScenarios } from "./link-menu";
+import { menuIconsScenarios } from "./menu-icons";
 import { newContentMenuScenarios } from "./new-content-menu";
 import { noteScenarios } from "./notes";
 import { searchScenarios } from "./search";
@@ -33,6 +35,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...displayToolsScenarios(),
     ...workspaceSwitcherScenarios(env),
     ...foldersHeightScenarios(),
+    ...menuIconsScenarios(),
     ...searchScenarios(env),
   ];
 }

@@ -231,6 +231,17 @@ describe("menu de la sélection", () => {
     expect(document.querySelector<HTMLElement>(".context-menu")?.style.left).toBe("30px");
   });
 
+  it("chaque choix du menu de la sélection a son icône, dans une colonne alignée", async () => {
+    const t = setup();
+    await t.assistant.status;
+    t.select(7, 20);
+    t.rightClick(t.content);
+    const columns = [...document.querySelectorAll(".context-menu button .context-menu-icon")];
+    expect(columns.map((column) => column.querySelectorAll("svg").length)).toEqual([1, 1, 1]);
+    const paths = columns.map((column) => column.querySelector("path")?.getAttribute("d"));
+    expect(new Set(paths).size).toBe(3);
+  });
+
   it("le choix lance l'action sur la sélection", async () => {
     const t = setup();
     await t.assistant.status;

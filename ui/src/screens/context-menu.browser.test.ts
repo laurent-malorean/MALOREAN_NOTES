@@ -1,15 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import "../theme.css";
+import "../style.css";
+import "./mind-map.css";
 import { closeContextMenu, contextMenuOpen, showContextMenu } from "./context-menu";
 
 const menu = () => document.querySelector<HTMLElement>(".context-menu");
 const entries = () =>
   [...document.querySelectorAll(".context-menu button")].map((b) => b.textContent);
-
-// Sans la feuille de style de l'application, un menu occuperait toute la largeur de la page.
-const style = document.createElement("style");
-style.textContent =
-  ".context-menu { position: fixed; width: 12rem; display: flex; flex-direction: column; }";
-document.head.append(style);
 
 afterEach(() => {
   closeContextMenu();
@@ -306,21 +303,95 @@ describe("menu contextuel", () => {
   });
 
   describe("icône et raccourci", () => {
-    it("montre l'icône devant le nom et le raccourci après, que la parole ne lit pas", () => {
-      const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    it("montre le raccourci après le nom, que la parole ne lit pas", () => {
       showContextMenu(0, 0, [
-        { label: "Note", icon, shortcut: "Cmd+N", run: () => {} },
+        { label: "Note", icon: "note", shortcut: "Cmd+N", run: () => {} },
         { label: "Autre", run: () => {} },
       ]);
       const [first, second] = [...document.querySelectorAll<HTMLElement>(".context-menu button")];
-      expect(first?.firstElementChild).toBe(icon);
-      expect(first?.classList.contains("with-extras")).toBe(true);
       const shortcut = first?.querySelector(".context-menu-shortcut");
       expect(shortcut?.textContent).toBe("Cmd+N");
       expect(shortcut?.getAttribute("aria-hidden")).toBe("true");
       expect(first?.querySelector(".context-menu-label")?.textContent).toBe("Note");
-      expect(second?.classList.contains("with-extras")).toBe(false);
       expect(second?.querySelector(".context-menu-shortcut")).toBeNull();
+    });
+
+    it("montre l'icône dans la première colonne, devant le nom", () => {
+      showContextMenu(0, 0, [{ label: "Note", icon: "note", run: () => {} }]);
+      const column = document.querySelector(".context-menu button")?.firstElementChild;
+      expect(column?.className).toBe("context-menu-icon");
+      expect(column?.getAttribute("aria-hidden")).toBe("true");
+      const drawing = column?.querySelector("svg");
+      expect(drawing?.getAttribute("aria-hidden")).toBe("true");
+      expect(drawing?.querySelectorAll("path").length).toBeGreaterThan(0);
+      expect(column?.nextElementSibling?.className).toBe("context-menu-label");
+    });
+
+    it("le nom du choix reste son seul nom accessible : ni icône ni raccourci n'y entrent", () => {
+      showContextMenu(0, 0, [{ label: "Note", icon: "note", shortcut: "Cmd+N", run: () => {} }]);
+      const names = [...document.querySelectorAll(".context-menu [aria-hidden=true]")].map(
+        (element) => element.tagName.toLowerCase(),
+      );
+      expect(names).toEqual(["span", "svg", "span"]);
+      expect(document.querySelector(".context-menu-label")?.hasAttribute("aria-hidden")).toBe(
+        false,
+      );
+    });
+
+    it("un choix sans icône garde la colonne, vide, au même endroit que les autres", () => {
+      showContextMenu(0, 0, [
+        { label: "Avec", icon: "note", run: () => {} },
+        { label: "Sans", run: () => {} },
+        { label: "Pastille", swatch: "rouge", run: () => {} },
+      ]);
+      const buttons = [...document.querySelectorAll<HTMLElement>(".context-menu button")];
+      const columns = buttons.map((button) => button.querySelector(".context-menu-icon"));
+      expect(columns.every((column) => column !== null)).toBe(true);
+      expect(columns[1]?.childElementCount).toBe(0);
+      expect(columns[2]?.querySelector(".context-menu-swatch")).not.toBeNull();
+      expect(columns[2]?.querySelector("svg")).toBeNull();
+      expect(columns[0]?.querySelector("svg")).not.toBeNull();
+      const lefts = new Set(columns.map((column) => column?.getBoundingClientRect().left));
+      expect(lefts.size).toBe(1);
+      const labels = new Set(
+        buttons.map(
+          (button) => button.querySelector(".context-menu-label")?.getBoundingClientRect().left,
+        ),
+      );
+      expect(labels.size).toBe(1);
+    });
+
+    it("un menu où aucun choix n'a d'icône ne réserve pas de colonne", () => {
+      showContextMenu(0, 0, [{ label: "Un", run: () => {} }]);
+      expect(document.querySelector(".context-menu-icon")).toBeNull();
+    });
+
+    it("avec la colonne de la coche, l'icône vient après la coche et avant le nom", () => {
+      showContextMenu(0, 0, [
+        { label: "Notes", icon: "workspace", checked: true, stateName: "ouvert", run: () => {} },
+      ]);
+      const classes = [...(document.querySelector(".context-menu button")?.children ?? [])].map(
+        (child) => child.className,
+      );
+      expect(classes.slice(0, 3)).toEqual([
+        "context-menu-check",
+        "context-menu-icon",
+        "context-menu-label",
+      ]);
+    });
+
+    it("l'icône d'un choix grisé prend la couleur de son texte", () => {
+      showContextMenu(0, 0, [
+        { label: "Actif", icon: "trash", run: () => {} },
+        { label: "Grisé", icon: "trash", disabled: true, run: () => {} },
+      ]);
+      const [active, disabled] = [
+        ...document.querySelectorAll<HTMLElement>(".context-menu button"),
+      ];
+      for (const button of [active, disabled]) {
+        const icon = button?.querySelector(".context-menu-icon svg") as SVGElement;
+        expect(getComputedStyle(icon).color).toBe(getComputedStyle(button as HTMLElement).color);
+      }
     });
   });
 
