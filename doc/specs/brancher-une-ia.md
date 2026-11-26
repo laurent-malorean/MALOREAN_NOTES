@@ -20,6 +20,11 @@ Aujourd'hui, les outils de l'application (chercher, étiquettes, cahier de reche
   - pour **Claude** (extension VS Code et Claude Code hors de l'application) ;
   - pour **Codex**.
   Chaque bloc contient la commande de branchement et la clé ; il n'y a rien d'autre à chercher ni à taper.
+- **Où coller chaque bloc** : sous le titre de chaque bloc, une phrase dit dans quel fichier le coller, avec le nom du fichier en style code :
+  - Claude : « Collez ce bloc tel quel dans le fichier `.mcp.json`, à la racine du dossier ouvert dans l'éditeur. Si le fichier existe déjà, ajoutez l'entrée du bloc dans « mcpServers ». » (`.mcp.json` est le fichier des serveurs MCP d'un projet pour Claude Code et son extension VS Code) ;
+  - Codex : « Collez ce bloc tel quel à la fin du fichier `~/.codex/config.toml`. » (le fichier de configuration de Codex, où chaque serveur MCP est une section `[mcp_servers.<nom>]`, ce que le bloc est déjà : du TOML valide).
+  La clé seule n'a pas de phrase. Les phrases se lisent en thème clair et sombre et ne font jamais déborder la fenêtre des Réglages, dont la taille reste fixe (le contenu défile).
+- **Le fichier `.mcp.json` ne se commite pas** : il contient la clé de branchement ; le dépôt du projet l'ignore (`.gitignore`).
 - **Avec une clé** : l'onglet montre qu'elle existe, la date de sa création, les blocs à copier et un bouton **« Révoquer la clé »**. La clé reste affichée et copiable tant qu'elle existe.
 - **Révoquer** : le bouton, après confirmation, efface la clé. Les IA déjà branchées sont coupées tout de suite et l'application referme la prise. Le bouton « Créer une clé de branchement » revient ; une nouvelle clé n'a rien à voir avec l'ancienne.
 - **L'application doit tourner** : l'IA extérieure n'est écoutée que tant que l'application est ouverte. Fermée, la commande de branchement répond à l'IA que l'application n'est pas lancée.

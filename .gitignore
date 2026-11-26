@@ -20,3 +20,6 @@ worktrees/
 # Copies locales d un dépôt privé (jamais commitées)
 data_fake_socio/
 data_fake/SOCIO/
+
+# Fichier de branchement des IA (contient la clé de branchement), jamais commité
+.mcp.json

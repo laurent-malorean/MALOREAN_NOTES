@@ -332,7 +332,7 @@ describe("écran de réglages", () => {
         expect(boxes(dialog)).toEqual(first);
       }
       const window = dialog.getBoundingClientRect();
-      expect(window.height).toBe(936); // min(60rem, 100vh - 4rem) à 1000 points de haut
+      expect(window.height).toBe(962); // min(62rem, 100vh - 2rem), bornée par la hauteur par défaut d'un dialogue (100 % - 6 points - 2 em) : 1000 - 38
       expect(window.width).toBe(736);
     });
 
@@ -351,7 +351,7 @@ describe("écran de réglages", () => {
       const dialog = openTall();
       const window = dialog.getBoundingClientRect();
       const close = dialog.querySelector("button.primary")?.getBoundingClientRect();
-      expect(window.height).toBe(400 - 64);
+      expect(window.height).toBe(400 - 38);
       expect(window.top).toBeGreaterThanOrEqual(0);
       expect(close?.bottom).toBeLessThanOrEqual(window.bottom);
       await page.viewport(1280, 1000);
