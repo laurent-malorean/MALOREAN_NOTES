@@ -3,7 +3,8 @@
 // à droite sans se chevaucher ; chaque icône reçoit le pointeur ; quand la place de la zone du milieu manque
 // (colonne Claude Code ouverte, bande resserrée), deux lignes propres : mise en forme et copies, puis affichage et
 // recherche qui prend toute la largeur restante ; rien ne déborde. Chaque ligne est centrée dans la zone de
-// l'éditeur, panneaux cachés ou montrés, colonne Claude Code ouverte ou non (fiche 0092).
+// l'éditeur (à droite de la réserve des boutons de fenêtre du Mac quand les panneaux sont cachés), colonne Claude
+// Code ouverte ou non (fiches 0092 et 0098) ; la bande est unique, aucun bouton ne passe sous la réserve gauche.
 import type { Scenario, Trial } from "../runner";
 import { type Rect, centreOf, find, findAll, rectOf } from "./env";
 
@@ -15,7 +16,6 @@ const FIRST_ROW_WIDTH = 390;
 /** Le minimum du champ de recherche : 6 rem. */
 const SEARCH_MINIMUM = 96;
 const ROOT_REM = 16;
-const PADDING = 2 * 0.8 * ROOT_REM;
 const GAP = 0.4 * ROOT_REM;
 /** Le temps que la fenêtre se remette en page après avoir caché les panneaux. */
 const SETTLE_MS = 300;
@@ -23,6 +23,14 @@ const SETTLE_MS = 300;
 const SAME_ROW = 2;
 
 const strip = () => find<HTMLElement>(".editor-tools");
+
+/** Les marges gauche et droite de la bande des outils : celle de gauche contient la réserve quand les panneaux sont cachés. */
+function padding(): number {
+  const row = strip();
+  if (row === null) return 0;
+  const style = getComputedStyle(row);
+  return parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+}
 const part = (selector: string) => find<HTMLElement>(selector);
 
 interface Parts {
@@ -68,7 +76,7 @@ function pointable(element: HTMLElement | null): boolean {
 const named = (name: string) =>
   find<HTMLButtonElement>(`.display-tools button[aria-label="${name}"]`);
 
-/** Le bouton des panneaux latéraux : dans la barre de la fenêtre, plus dans le bloc d'affichage. */
+/** Le bouton des panneaux latéraux : dans la réserve gauche de la bande du haut, plus dans le bloc d'affichage. */
 const sidePanels = () =>
   find<HTMLButtonElement>('.window-bar button[aria-label="Panneaux latéraux"]');
 
@@ -142,7 +150,7 @@ function squeezed<T>(width: number, measure: () => T): T {
 
 function checkSqueezed(trial: Trial, blocks: number): void {
   // Un point de plus : le seuil de bascule laisse un demi-point de marge sur la largeur nécessaire.
-  const exact = Math.ceil(blocks + GAP + SEARCH_MINIMUM + PADDING) + 1;
+  const exact = Math.ceil(blocks + GAP + SEARCH_MINIMUM + padding()) + 1;
   squeezed(exact, () => {
     const parts = checkOneRow(trial, "recherche au minimum");
     trial.check(
@@ -248,11 +256,14 @@ const CENTRE_TOLERANCE = 1;
 function checkCentred(trial: Trial, when: string): void {
   const parts = partsOf();
   const row = strip();
-  const zone = row?.closest(".editor");
-  if (parts === null || row === null || !zone) {
+  const editor = find<HTMLElement>(".editor");
+  const reserve = find<HTMLElement>(".window-left");
+  if (parts === null || row === null || editor === null || reserve === null) {
     return trial.check(`${when} : la bande et la zone de l'éditeur sont présentes`, false);
   }
-  const area = rectOf(zone);
+  // La zone de l'éditeur, sans la réserve gauche quand elle la recouvre (panneaux cachés).
+  const left = Math.max(rectOf(editor).x, rectOf(reserve).x + rectOf(reserve).width);
+  const area = { x: left, width: rectOf(editor).x + rectOf(editor).width - left };
   const lines: { left: number; right: number; middle: number }[] = [];
   for (const rect of [parts.format, parts.copy, parts.display, parts.search]) {
     const line = lines.find((l) => Math.abs(l.middle - middle(rect)) < SAME_ROW);
@@ -297,7 +308,7 @@ async function checkWithClaudeColumn(trial: Trial): Promise<void> {
     checkCentred(trial, "colonne Claude Code ouverte");
     checkPointer(trial, "colonne Claude Code ouverte");
     // Bande resserrée comme le ferait une colonne de gauche large : deux lignes, quelle que soit la fenêtre.
-    squeezed(SWITCH_WIDTH - 60 + 2 * 0.8 * ROOT_REM, () =>
+    squeezed(SWITCH_WIDTH - 60 + padding(), () =>
       checkLayoutFollowsWidth(trial, "colonne Claude Code ouverte, bande étroite"),
     );
   } finally {

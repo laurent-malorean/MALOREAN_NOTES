@@ -1,12 +1,12 @@
-// Barre de la fenêtre : la bande tout en haut, à la place de la barre de titre du Mac. Elle porte, à
-// droite des trois boutons de fenêtre du Mac, le bouton des panneaux latéraux, toujours visible.
+// Réserve gauche de la bande du haut (fiche 0098) : la place des trois boutons de fenêtre du Mac, puis le
+// bouton des panneaux latéraux, toujours visible, panneaux cachés comme montrés.
 import { formatButtonName, formatButtonTitle } from "../state/format-bar";
 import type { SidePanels } from "../state/side-panels-preference";
 import { appIcon } from "./app-icons";
 
-/** Pose le bouton dans la barre, qu'on saisit pour déplacer la fenêtre (Tauri lit `data-tauri-drag-region`). */
-export function buildWindowBar(bar: HTMLElement): void {
-  bar.setAttribute("data-tauri-drag-region", "");
+/** Pose le bouton dans la réserve, qu'on saisit pour déplacer la fenêtre (Tauri lit `data-tauri-drag-region`). */
+export function buildWindowBar(left: HTMLElement): void {
+  left.setAttribute("data-tauri-drag-region", "");
   const button = document.createElement("button");
   button.type = "button";
   button.className = "window-button";
@@ -14,7 +14,7 @@ export function buildWindowBar(bar: HTMLElement): void {
   button.setAttribute("aria-label", formatButtonName("toggle-side-panels"));
   button.title = formatButtonTitle("toggle-side-panels");
   paint(button, "shown");
-  bar.replaceChildren(button);
+  left.replaceChildren(button);
 }
 
 /** Cache ou montre ensemble les listes des dossiers et des notes ; le bouton en dit l'état par son icône. */

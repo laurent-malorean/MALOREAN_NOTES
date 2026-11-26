@@ -55,10 +55,10 @@ export type MenuIcon =
   | "align-left"
   | "zoom-selection";
 
-/** Les deux dessins du bouton des panneaux latéraux, dans la barre de la fenêtre : panneau plein (montrés), vide (cachés). */
+/** Les deux dessins du bouton des panneaux latéraux, dans la bande du haut : panneau plein (montrés), vide (cachés). */
 export type WindowIcon = "side-panels-shown" | "side-panels-hidden";
 
-/** Tous les dessins du jeu : ceux du menu de création, du chevron, de la barre de la fenêtre et des menus du clic droit. */
+/** Tous les dessins du jeu : ceux du menu de création, du chevron, de la bande du haut et des menus du clic droit. */
 export type AppIcon = NewContentIcon | "chevron" | WindowIcon | MenuIcon;
 
 const SHEET = "M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z";

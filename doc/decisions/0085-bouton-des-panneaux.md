@@ -3,6 +3,7 @@
 - **Date** : 2026-11-26
 - **Statut** : acceptée, demande de l'utilisateur (« pouvoir cacher les 2 colonnes de navigation comme dans Obsidian »)
 - **Complète** les fiches 0018 (panneaux latéraux), 0064 (bloc d'icônes d'affichage) et 0072 (bande du haut sur deux lignes).
+- **Remplacée en partie** par la fiche 0098 : la barre de la fenêtre séparée (point 1, la hauteur de 38 points, et le point 7) n'existe plus ; le bouton, son nom, son icône, Cmd+0 et le glisser de la fenêtre restent, dans la bande du haut unique.
 
 ## Contexte
 

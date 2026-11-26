@@ -93,7 +93,8 @@ test("la fenêtre se réduit : la recherche rétrécit d'abord jusqu'à son mini
   // Largeur qui laisse juste la place des trois blocs et du champ à son minimum (6 rem = 96 px).
   const blocks = wide.display.x + wide.display.width - wide.format.x;
   // Un point de plus : le seuil de bascule (42,05 rem) laisse un demi-point de marge sur la largeur nécessaire.
-  const exact = Math.ceil(blocks + 6.4 + 96 + 2 * 12.8) + 1;
+  // Panneaux cachés : la bande laisse à gauche la réserve des boutons de fenêtre du Mac (116 points) et 12,8 points de marge de chaque côté.
+  const exact = Math.ceil(blocks + 6.4 + 96 + 116 + 2 * 12.8) + 1;
   await page.setViewportSize({ width: exact, height: 700 });
   await expect
     .poll(async () => Math.round((await strip(page)).search.width))

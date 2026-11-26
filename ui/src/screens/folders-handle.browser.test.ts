@@ -21,8 +21,11 @@ function memoryStorage(initial: Record<string, string> = {}) {
 const root = document.createElement("div");
 let layout = createLayout(root);
 
-/** Monte la fenêtre : 30 dossiers, `tags` étiquettes, dans une fenêtre haute de `height` pixels. */
-function mount(storage = memoryStorage(), tags = 6, height = 600) {
+/**
+ * Monte la fenêtre : 30 dossiers, `tags` étiquettes, dans une fenêtre haute de `height` pixels (660 par défaut :
+ * la bande du haut en prend 54, les listes en gardent 600).
+ */
+function mount(storage = memoryStorage(), tags = 6, height = 660) {
   root.style.height = `${height}px`;
   layout = createLayout(root);
   layout.mainArea.hidden = false;

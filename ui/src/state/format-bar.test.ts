@@ -59,7 +59,7 @@ describe("barre de mise en forme", () => {
 });
 
 describe("bloc d'outils d'affichage", () => {
-  it("range les cinq boutons dans l'ordre d'avant, sans les panneaux latéraux (devenus le bouton de la barre de la fenêtre) : Focus, Plan, Machine à écrire, plein écran, Claude", () => {
+  it("range les cinq boutons dans l'ordre d'avant, sans les panneaux latéraux (devenus le bouton de la bande du haut) : Focus, Plan, Machine à écrire, plein écran, Claude", () => {
     expect(DISPLAY_TOOLS.map((tool) => [tool.key, tool.label])).toEqual([
       ["focus", "Focus"],
       ["outline", "Plan"],

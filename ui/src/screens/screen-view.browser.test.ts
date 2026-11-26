@@ -63,7 +63,6 @@ describe("affichage de l'écran", () => {
     const view = layout();
     renderScreen(view, welcome, ignore);
     expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([false, true]);
-    expect(view.sidePanelsButton.hidden).toBe(true);
   });
 
   it("montre l'espace de travail, son nom et ses notes", () => {
@@ -75,7 +74,6 @@ describe("affichage de l'écran", () => {
     );
     renderScreen(view, screen, ignore);
     expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([true, false]);
-    expect(view.sidePanelsButton.hidden).toBe(false);
     expect(view.workspaceSwitcher.textContent).toBe("Notes");
     expect(view.workspaceBarName.textContent).toBe("Notes");
     expect(view.workspaceBar.getAttribute("aria-label")).toBe("Espace de travail : Notes");
@@ -241,7 +239,6 @@ describe("affichage de l'écran", () => {
     renderScreen(view, workspaceOpened(workspace, [], []), ignore);
     renderScreen(view, welcome, ignore);
     expect([view.welcome.hidden, view.mainArea.hidden]).toEqual([false, true]);
-    expect(view.sidePanelsButton.hidden).toBe(true);
   });
 });
 
