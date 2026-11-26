@@ -35,6 +35,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
                 "tags" => "array",
                 "limit" => "integer",
                 "replace_all" => "boolean",
+                "place_x" | "place_y" => "number",
                 _ => "string",
             }));
         assert!(
@@ -48,7 +49,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 32] = [
+    let expected: [(AppTool, &[&str]); 35] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
@@ -78,6 +79,9 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::AddEntry, &["path", "text"]),
         (AppTool::CreateMindMap, &["title"]),
         (AppTool::ReadMindMap, path),
+        (AppTool::AddMindMapChild, &["path", "node", "title"]),
+        (AppTool::AddMindMapSibling, &["path", "node", "title"]),
+        (AppTool::AddMindMapRoot, &["path", "title"]),
         (AppTool::CreateCrm, &["title"]),
         (AppTool::ViewedNote, &[]),
         (AppTool::ShowNote, path),
@@ -286,6 +290,50 @@ fn reading_a_mind_map_takes_a_path_and_tells_the_tree_the_limit_and_the_tools_th
     ] {
         assert!(description.contains(expected), "{expected}");
     }
+}
+
+/// Les champs de l'entrée d'un outil, triés.
+fn fields_of(tool: AppTool) -> Vec<String> {
+    let described = tool_description(tool);
+    let mut fields: Vec<_> = described["inputSchema"]["properties"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    fields.sort();
+    fields
+}
+
+#[test]
+fn the_tools_that_add_a_node_take_its_text_and_say_where_it_goes_and_what_they_give_back() {
+    let node = ["detail", "node", "path", "title", "workspace"];
+    assert_eq!(fields_of(AppTool::AddMindMapChild), node);
+    assert_eq!(fields_of(AppTool::AddMindMapSibling), node);
+    assert_eq!(
+        fields_of(AppTool::AddMindMapRoot),
+        ["detail", "path", "place_x", "place_y", "title", "workspace"]
+    );
+    for (tool, expected) in [
+        (AppTool::AddMindMapChild, "dernier enfant"),
+        (AppTool::AddMindMapSibling, "juste en dessous"),
+        (AppTool::AddMindMapRoot, "à la fin"),
+    ] {
+        let description = tool_description(tool)["description"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        for phrase in [
+            expected,
+            "`node` (le chemin du nœud ajouté)",
+            "Refusé, sans rien changer",
+        ] {
+            assert!(description.contains(phrase), "{tool:?} : {phrase}");
+        }
+    }
+    let place = &tool_description(AppTool::AddMindMapRoot)["inputSchema"]["properties"]["place_x"];
+    assert_eq!(place["type"], "number");
+    assert!(place["description"].as_str().unwrap().contains("ensemble"));
 }
 
 #[test]

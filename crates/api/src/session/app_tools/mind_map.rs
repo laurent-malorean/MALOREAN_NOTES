@@ -3,13 +3,24 @@
 //! `mind_map_editing`) par le cas d'usage de l'interface ; le garde-fou du web retient ceux qui
 //! changent la carte.
 
-use domain::mind_map::NodePath;
+use domain::app_tools::AppTool;
+use domain::mind_map::{NodePath, Place};
+use domain::mind_map_editing::new_node;
 use domain::mind_map_reading::{MAX_READ_MAP_CHARACTERS, OutlineNode, ReadableMindMap};
 use serde::Serialize;
 use serde_json::Value;
 
-use super::{required, written};
+use super::{given, required, written};
 use crate::session::Session;
+
+/// Le nœud qu'un geste vient d'ajouter, de déplacer ou de changer : son chemin dans la carte
+/// (qui peut avoir changé) et son titre.
+#[derive(Debug, Serialize)]
+struct TouchedNode {
+    path: String,
+    node: String,
+    title: String,
+}
 
 /// La place d'un nœud racine, telle que l'IA la lit.
 #[derive(Debug, Serialize)]
@@ -101,8 +112,80 @@ impl Session {
     }
 }
 
-/// Le chemin d'un nœud tel que l'IA l'a écrit.
-#[expect(dead_code, reason = "servira aux outils de geste")]
+/// Le chemin du nœud que l'IA désigne par `field`.
 fn node_path(arguments: &Value, field: &str) -> Result<NodePath, String> {
     NodePath::parse(required(arguments, field)?).map_err(|error| error.to_string())
+}
+
+/// Un nombre facultatif de l'entrée : absent ou nul, rien ; sinon il faut un nombre.
+fn number(arguments: &Value, field: &str) -> Result<Option<f64>, String> {
+    match arguments.get(field) {
+        None | Some(Value::Null) => Ok(None),
+        Some(value) => value
+            .as_f64()
+            .map(Some)
+            .ok_or_else(|| format!("« {field} » doit être un nombre")),
+    }
+}
+
+/// La place d'un nœud racine que l'IA donne (`place_x` et `place_y` vont ensemble), s'il y en a
+/// une.
+fn place_given(arguments: &Value) -> Result<Option<Place>, String> {
+    match (number(arguments, "place_x")?, number(arguments, "place_y")?) {
+        (None, None) => Ok(None),
+        (Some(x), Some(y)) => Ok(Some(Place { x, y })),
+        _ => Err("place_x et place_y vont ensemble : donnez les deux nombres, ou aucun".to_owned()),
+    }
+}
+
+impl Session {
+    /// Joue un outil de la carte mentale qui change la carte (fiche 0080).
+    pub(super) fn call_mind_map_tool(
+        &self,
+        tool: AppTool,
+        arguments: &Value,
+    ) -> Result<String, String> {
+        let path = required(arguments, "path")?;
+        match tool {
+            AppTool::AddMindMapChild | AppTool::AddMindMapSibling => {
+                let at = node_path(arguments, "node")?;
+                let node = new_typed(arguments)?;
+                let title = node.title.clone();
+                let added = self
+                    .edit_mind_map(path, |map| {
+                        if tool == AppTool::AddMindMapChild {
+                            map.add_child(&at, node)
+                        } else {
+                            map.add_sibling(&at, node)
+                        }
+                    })
+                    .map_err(|error| error.message)?;
+                touched(path, &added, title)
+            }
+            AppTool::AddMindMapRoot => {
+                let place = place_given(arguments)?;
+                let node = new_typed(arguments)?;
+                let title = node.title.clone();
+                let added = self
+                    .edit_mind_map(path, |map| Ok(map.add_root(node, place)))
+                    .map_err(|error| error.message)?;
+                touched(path, &added, title)
+            }
+            _ => unreachable!("un outil qui n'est pas un geste de la carte est joué à part"),
+        }
+    }
+}
+
+/// Le nœud neuf que décrivent `title` et `detail` ; un titre vide reçoit le message de l'écran.
+fn new_typed(arguments: &Value) -> Result<domain::mind_map::MindNode, String> {
+    let detail = arguments["detail"].as_str().unwrap_or_default();
+    new_node(given(arguments, "title")?, detail).map_err(|error| error.to_string())
+}
+
+fn touched(path: &str, node: &NodePath, title: String) -> Result<String, String> {
+    written(&TouchedNode {
+        path: path.to_owned(),
+        node: node.to_string(),
+        title,
+    })
 }

@@ -57,6 +57,9 @@ impl Session {
                 self.call_folder_tool(tool, arguments)
             }
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
+            AppTool::AddMindMapChild | AppTool::AddMindMapSibling | AppTool::AddMindMapRoot => {
+                self.call_mind_map_tool(tool, arguments)
+            }
             AppTool::CreateCrm => self.tool_create_crm(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(arguments),
             AppTool::TrashNote => {

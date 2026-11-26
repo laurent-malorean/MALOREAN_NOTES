@@ -75,6 +75,12 @@ pub enum AppTool {
     /// Lire une carte mentale en arbre : chaque nœud avec son chemin, son titre, sa couleur et son
     /// détail (fiche 0080).
     ReadMindMap,
+    /// Ajouter un dernier enfant à un nœud d'une carte mentale (fiche 0080).
+    AddMindMapChild,
+    /// Ajouter un frère juste en dessous d'un nœud d'une carte mentale (fiche 0080).
+    AddMindMapSibling,
+    /// Ajouter un nœud racine à la fin d'une carte mentale (fiche 0080).
+    AddMindMapRoot,
     /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
     /// `doc/specs/crm.md`, § 13).
     CreateCrm,
@@ -87,7 +93,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 32] = [
+    pub const ALL: [Self; 35] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -117,6 +123,9 @@ impl AppTool {
         Self::AddEntry,
         Self::CreateMindMap,
         Self::ReadMindMap,
+        Self::AddMindMapChild,
+        Self::AddMindMapSibling,
+        Self::AddMindMapRoot,
         Self::CreateCrm,
         Self::ViewedNote,
         Self::ShowNote,
@@ -155,6 +164,9 @@ impl AppTool {
             Self::AddEntry => "add_entry",
             Self::CreateMindMap => "create_mind_map",
             Self::ReadMindMap => "read_mind_map",
+            Self::AddMindMapChild => "add_mind_map_child",
+            Self::AddMindMapSibling => "add_mind_map_sibling",
+            Self::AddMindMapRoot => "add_mind_map_root",
             Self::CreateCrm => "create_crm",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
@@ -219,6 +231,9 @@ impl AppTool {
             | Self::AddAttachment
             | Self::AddEntry
             | Self::CreateMindMap
+            | Self::AddMindMapChild
+            | Self::AddMindMapSibling
+            | Self::AddMindMapRoot
             | Self::CreateCrm => true,
         }
     }
@@ -268,6 +283,9 @@ impl AppTool {
             | Self::AddAttachment
             | Self::AddEntry
             | Self::ReadMindMap
+            | Self::AddMindMapChild
+            | Self::AddMindMapSibling
+            | Self::AddMindMapRoot
             | Self::ShowNote => Some("path"),
             Self::ListWorkspaces
             | Self::ListTags
@@ -399,6 +417,9 @@ mod tests {
                 "add_attachment",
                 "add_entry",
                 "create_mind_map",
+                "add_mind_map_child",
+                "add_mind_map_sibling",
+                "add_mind_map_root",
                 "create_crm"
             ]
         );
@@ -439,6 +460,9 @@ mod tests {
                 path,
                 path,
                 Some("title"),
+                path,
+                path,
+                path,
                 path,
                 Some("title"),
                 None,

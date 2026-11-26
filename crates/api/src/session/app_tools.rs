@@ -4,6 +4,7 @@
 //! n'agissent que dans l'espace de travail du tour, désigné par son nom.
 
 mod catalog;
+mod catalog_mind_map;
 mod changing;
 mod connection;
 mod folders;
@@ -237,6 +238,9 @@ mod templates_tests;
 
 #[cfg(test)]
 mod meaning_tests;
+
+#[cfg(test)]
+mod mind_map_editing_tests;
 
 #[cfg(test)]
 mod mind_map_tests;

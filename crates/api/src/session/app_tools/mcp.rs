@@ -79,7 +79,7 @@ pub(super) fn answer(
     let result = match request["method"].as_str() {
         Some("initialize") => initialized(params),
         Some("ping") => json!({}),
-        Some("tools/list") => json!({ "tools": AppTool::ALL.map(tool_description) }),
+        Some("tools/list") => json!({ "tools": AppTool::ALL.map(tool_description).to_vec() }),
         Some("tools/call") => called(params, call),
         Some(_) => return Some(error(id, METHOD_NOT_FOUND, "méthode inconnue")),
         None => return Some(error(id, INVALID_REQUEST, "demande sans méthode")),
