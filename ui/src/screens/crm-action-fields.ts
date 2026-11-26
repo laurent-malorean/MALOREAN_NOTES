@@ -3,9 +3,11 @@
 // par `act.change` ; le texte, qui s'enregistre en quittant le champ, passe par `act.commit`.
 import type { CrmActionChangeItem, CrmActionItem, CrmItem } from "../bridge";
 import type { BodyChangeItem } from "../bridge/generated/BodyChangeItem";
+import type { ChecklistItem } from "../bridge/generated/ChecklistItem";
 import { type ActionFields, CHANNELS, emailsToCopy } from "../state/crm-action-window";
 import { PALETTE } from "../state/palette";
 import { actionButton, h } from "./crm-dom";
+import { dateField } from "./date-picker";
 import { personChoices } from "./crm-quick-add";
 
 /** Ce que la fenêtre montre : les fiches du CRM, les champs, l'action lue (rien pour une nouvelle). */
@@ -15,8 +17,8 @@ export interface WindowModel {
   readonly action: CrmActionItem | null;
 }
 
-/** Les champs de texte dont la valeur s'enregistre en quittant le champ. */
-export type TextField = "title" | "description" | "date";
+/** Les champs de texte dont la valeur s'enregistre en quittant le champ (la date a son sélecteur, qui l'enregistre au choix). */
+export type TextField = "title" | "description";
 
 /** Ce que font les contrôles de la fenêtre, dit par la fenêtre. */
 export interface WindowActions {
@@ -36,6 +38,10 @@ export interface WindowActions {
   readonly linkNote: () => void;
   readonly openNote: (title: string) => void;
   readonly openAddress: (url: string) => void;
+  /** Demande confirmation, puis supprime la checklist `list`, à la place `index` dans l'ordre écrit. */
+  readonly removeChecklist: (index: number, list: ChecklistItem) => void;
+  /** La clé du champ d'ajout ouvert (« Ajouter un élément », « Ajouter une checklist »), `null` s'il n'y en a pas. */
+  readonly adding: { get(): string | null; set(key: string | null): void };
   /** La place du commentaire en cours de modification, dans l'ordre écrit. */
   readonly editing: { get(): number | null; set(index: number | null): void };
 }
@@ -54,7 +60,7 @@ export const COPY_EMAILS = "Copier les e-mails";
 /** Une partie de la fenêtre : un titre, puis ses contrôles. */
 export function section(className: string, label: string | null, ...content: HTMLElement[]) {
   const box = h("section", `crm-aw-section ${className}`);
-  if (label !== null) box.append(h("h3", "crm-aw-label", label));
+  if (label !== null) box.append(h("h3", "crm-aw-section-title", label));
   box.append(...content);
   return box;
 }
@@ -128,12 +134,11 @@ export function statusSection(model: WindowModel, act: WindowActions): HTMLEleme
   const status = selectOf({ label: "Statut", field: "status" }, statuses, fields.status, (value) =>
     act.change({ kind: "status", status: value }),
   );
-  const date = h("input", "crm-aw-date");
-  date.type = "date";
-  date.value = fields.date;
-  date.setAttribute("aria-label", "Date");
-  date.dataset.field = "date";
-  date.addEventListener("change", () => act.commit("date", date));
+  const date = dateField({
+    ...{ value: fields.date, label: "Date", today: crm.today, clearable: false },
+    change: (value) => act.change({ kind: "date", date: value }),
+    data: { field: "date" },
+  });
   const channels = [
     { value: "", label: NO_CHANNEL },
     ...CHANNELS.map((c) => ({ value: c, label: c })),
@@ -145,7 +150,11 @@ export function statusSection(model: WindowModel, act: WindowActions): HTMLEleme
     (value) => act.change({ kind: "channel", channel: value === "" ? null : value }),
   );
   const row = h("div", "crm-aw-row");
-  row.append(labelled("Statut", status), labelled("Date", date), labelled("Canal", channel));
+  row.append(
+    labelled("Statut", status),
+    labelled("Date", date.element),
+    labelled("Canal", channel),
+  );
   return section("crm-aw-status", null, row);
 }
 

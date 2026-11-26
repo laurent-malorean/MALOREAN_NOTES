@@ -33,7 +33,11 @@ function fakeColumnState() {
       tags[path] = [...changed];
       return Promise.resolve([...changed]);
     },
-    suggestions: () => Promise.resolve(["perso", "voyage"]),
+    suggestions: () =>
+      Promise.resolve([
+        { name: "perso", count: 4 },
+        { name: "voyage", count: 1 },
+      ]),
     changed: () => void (tagsChanged.count += 1),
   };
   return { tags, tagCalls, tagsChanged, paneTags, relatedShown: { on: false } };

@@ -3,38 +3,41 @@
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 8px 16px 16px;
+  padding: var(--space-4) var(--space-5) var(--space-5);
 }
 .crm-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 .crm-new-button {
+  min-height: var(--control-height);
   font: inherit;
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.3rem 0.7rem;
+  border-radius: var(--control-radius);
+  padding: 0 var(--space-4);
 }
 .crm-new-button:hover {
   border-color: var(--accent);
 }
 .crm-new-form {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-4);
 }
 .crm-new-name,
 .crm-project-rename,
 .crm-fiche-input {
+  box-sizing: border-box;
+  min-height: var(--control-height);
   font: inherit;
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.3rem 0.5rem;
+  border-radius: var(--control-radius);
+  padding: 0 var(--space-3);
 }
 .crm-list-empty {
   margin: 8px 0;
@@ -97,11 +100,11 @@ button.crm-name:hover {
   font-weight: 600;
   color: var(--muted);
   font-size: 0.85rem;
-  padding: 4px 8px;
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border);
 }
 .crm-table td {
-  padding: 6px 8px;
+  padding: var(--space-3);
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
@@ -131,8 +134,9 @@ button.crm-name:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: var(--space-3);
+  min-height: 40px;
+  padding: var(--space-1) 0;
 }
 .crm-node-row .crm-open-count {
   margin-left: auto;
@@ -147,8 +151,8 @@ button.crm-name:hover {
 }
 .crm-swatch {
   --label-color: var(--accent);
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -173,9 +177,10 @@ button.crm-name:hover {
   font-size: 0.85rem;
   background: none;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--control-radius);
   color: var(--muted);
-  padding: 0.1rem 0.5rem;
+  min-height: var(--target-size);
+  padding: 0 var(--space-3);
 }
 .crm-project-rename-button:hover,
 .crm-project-remove:hover {
@@ -185,13 +190,13 @@ button.crm-name:hover {
 .crm-palette {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 4px 0 8px 2rem;
+  gap: var(--space-2);
+  padding: var(--space-1) 0 var(--space-3) 2rem;
 }
 .crm-palette-color {
   --label-color: var(--accent);
-  width: 1.5rem;
-  height: 1.5rem;
+  width: var(--target-size);
+  height: var(--target-size);
   padding: 0;
   border: 2px solid transparent;
   border-radius: 50%;
@@ -213,8 +218,9 @@ button.crm-name:hover {
   color: var(--text);
   background: none;
   border: 0;
-  border-radius: 6px;
-  padding: 3px 6px;
+  border-radius: var(--control-radius);
+  min-height: var(--target-size);
+  padding: var(--space-1) var(--space-2);
 }
 .crm-line:hover {
   background: var(--side-panel);
@@ -250,12 +256,19 @@ button.crm-name:hover {
 .crm-fiche {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-4);
   overflow-y: auto;
-  padding: 16px 24px 32px;
+  padding: var(--space-5) var(--space-6) var(--space-6);
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
+  font-size: var(--ui-text-size);
+  line-height: var(--ui-line-height);
+}
+.crm-fiche .link,
+.crm-list .link {
+  min-height: var(--target-size);
+  padding: 0 var(--space-2);
 }
 .crm-fiche-value.crm-fiche-title,
 .crm-fiche-title {
@@ -264,7 +277,7 @@ button.crm-name:hover {
   font-weight: 600;
 }
 .crm-fiche-heading {
-  margin: 12px 0 4px;
+  margin: var(--space-3) 0 var(--space-1);
   font-size: 1.1rem;
 }
 .crm-fiche-subheading {
@@ -279,9 +292,9 @@ button.crm-name:hover {
 }
 .crm-fiche-field {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-3);
 }
 .crm-fiche-label {
   width: 7rem;
@@ -292,8 +305,9 @@ button.crm-name:hover {
   color: var(--text);
   background: none;
   border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 0.15rem 0.4rem;
+  border-radius: var(--control-radius);
+  min-height: var(--target-size);
+  padding: 0 var(--space-2);
   text-align: left;
 }
 .crm-fiche-value:hover {
@@ -307,12 +321,12 @@ button.crm-name:hover {
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.4rem 0.5rem;
+  border-radius: var(--control-radius);
+  padding: var(--space-2) var(--space-3);
   resize: vertical;
 }
 .crm-fiche-person {
-  padding: 4px 0 8px;
+  padding: var(--space-2) 0 var(--space-3);
   border-bottom: 1px solid var(--border);
 }
 .crm-fiche-person-head {
@@ -347,13 +361,14 @@ button.crm-name:hover {
 }
 .crm-fiche-delete {
   align-self: flex-start;
-  margin-top: 16px;
+  margin-top: var(--space-4);
+  min-height: var(--control-height);
   font: inherit;
   color: var(--palette-rouge);
   background: none;
   border: 1px solid var(--palette-rouge);
-  border-radius: 6px;
-  padding: 0.3rem 0.8rem;
+  border-radius: var(--control-radius);
+  padding: 0 var(--space-4);
 }
 .crm-fiche-gone {
   margin: auto;

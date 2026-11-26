@@ -230,7 +230,7 @@ fn the_search_uses_the_index_by_words_tag_folder_and_content_type() {
     assert_eq!(
         *alpha,
         json!({ "path": "a.md", "title": "Alpha", "folder": "", "tags": ["maison"],
-                "excerpt": "# Alpha du pain frais" })
+                "excerpt": "# Alpha du pain frais", "matches": 1 })
     );
     let in_folder = found(
         &session,

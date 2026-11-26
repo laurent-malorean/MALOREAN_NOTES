@@ -183,7 +183,7 @@ describe("CRM d'une colonne", () => {
     });
     const element = document.createElement("section");
     const tags = document.createElement("div");
-    document.body.replaceChildren(element);
+    document.body.replaceChildren(element, tags);
     const pane = make({
       element,
       tags,
@@ -192,7 +192,10 @@ describe("CRM d'une colonne", () => {
     });
     await pane.load("a.md");
     await vi.waitFor(() => expect(tags.querySelectorAll(".tag-chip")).toHaveLength(1));
-    expect([...tags.querySelectorAll("option")].map((o) => o.value)).toEqual(["voyage"]);
+    (tags.querySelector(".tag-input") as HTMLInputElement).focus();
+    expect([...tags.querySelectorAll(".tag-suggestion")].map((o) => o.textContent)).toEqual([
+      "voyage1 note",
+    ]);
     tags.querySelector<HTMLButtonElement>(".tag-remove")?.click();
     await vi.waitFor(() => expect(workspace.refreshTags).toHaveBeenCalledOnce());
     expect(changeNoteTags).toHaveBeenCalledWith("a.md", []);

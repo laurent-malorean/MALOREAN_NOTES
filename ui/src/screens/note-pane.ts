@@ -6,6 +6,7 @@ import { createEditor, type Editor } from "../editor/editor";
 import type { EditorLinks } from "../editor/links/link-site";
 import type { OpenNoteLink } from "../editor/links/note-links";
 import { lineStart } from "../state/research-notebook";
+import type { TagSuggestion } from "../state/tag-field";
 import { renderBacklinks } from "./backlinks-view";
 import { type CanvasDeps, type CanvasPane, createCanvasPane } from "./canvas-pane";
 import { createFichePane, type FichePane } from "./crm-fiche-pane";
@@ -60,7 +61,7 @@ export interface PaneTags {
   /** Donne ces étiquettes au contenu `path` ; rend celles qui sont écrites. */
   readonly change: (path: string, tags: readonly string[]) => Promise<string[]>;
   /** Les étiquettes de l'espace de travail, proposées à la saisie. */
-  readonly suggestions: () => Promise<string[]>;
+  readonly suggestions: () => Promise<TagSuggestion[]>;
   /** Les étiquettes d'un contenu ont changé : la liste des étiquettes et celle des notes sont à relire. */
   readonly changed: () => void;
 }

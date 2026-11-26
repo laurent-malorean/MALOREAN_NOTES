@@ -4,6 +4,7 @@ import type { CrmPersonItem } from "../bridge";
 import { NODATA } from "../state/crm-lists";
 import { actionButton, h } from "./crm-dom";
 import type { FicheContext } from "./crm-fiche-ui";
+import { dateField } from "./date-picker";
 
 /** La liste des entreprises : NODATA en tête, puis celles du CRM. */
 function companySelect(ctx: FicheContext, chosen: string): HTMLSelectElement {
@@ -27,13 +28,17 @@ export function companyForm(ctx: FicheContext, person: CrmPersonItem): HTMLEleme
   const form = h("form", "crm-career-form");
   const changing = ctx.state.changing as { company: string; day: string };
   const select = companySelect(ctx, changing.company);
-  const day = h("input", "crm-fiche-input");
-  day.type = "date";
-  day.setAttribute("aria-label", "Jour du changement");
-  day.value = changing.day;
-  const keep = () => void (ctx.state.changing = { company: select.value, day: day.value });
+  let chosen = changing.day;
+  const day = dateField({
+    ...{ value: chosen, label: "Jour du changement", today: ctx.crm.today, clearable: false },
+    className: "crm-fiche-input",
+    change: (date) => {
+      chosen = date;
+      keep();
+    },
+  });
+  const keep = () => void (ctx.state.changing = { company: select.value, day: chosen });
   select.addEventListener("change", keep);
-  day.addEventListener("input", keep);
   const cancel = actionButton("crm-new-button", "Annuler");
   cancel.addEventListener("click", () => {
     ctx.state.changing = null;
@@ -43,14 +48,14 @@ export function companyForm(ctx: FicheContext, person: CrmPersonItem): HTMLEleme
   confirm.type = "submit";
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    if (day.value === "") return;
+    if (chosen === "") return;
     const company = select.value === "" ? null : select.value;
     void ctx.act
       .gesture(() =>
         ctx.backend.changeCrmPerson(ctx.path, person.name, {
           kind: "company",
           company,
-          day: day.value,
+          day: chosen,
         }),
       )
       .then((done) => {
@@ -58,6 +63,6 @@ export function companyForm(ctx: FicheContext, person: CrmPersonItem): HTMLEleme
         ctx.act.redraw();
       });
   });
-  form.append(select, day, confirm, cancel);
+  form.append(select, day.element, confirm, cancel);
   return form;
 }

@@ -3,6 +3,7 @@
 // s'enregistre à chaque geste (Rust écrit, l'écran relit) ; une nouvelle garde un brouillon et ne
 // s'écrit qu'à « Enregistrer ». La mise à jour venue d'ailleurs attend la fin d'une saisie (§ 10).
 import type { CrmActionChangeItem, CrmActionDraftItem, CrmItem } from "../bridge";
+import type { ChecklistItem } from "../bridge/generated/ChecklistItem";
 import {
   type ActionFields,
   applyChange,
@@ -11,6 +12,7 @@ import {
   emailsToCopy,
   fieldsOf,
   type Prefill,
+  removeChecklistQuestion,
 } from "../state/crm-action-window";
 import { checklistsSection, commentsSection } from "./crm-action-body";
 import {
@@ -104,6 +106,7 @@ class Window implements ActionWindow {
   private shown: WindowModel;
   private pending: WindowModel | null = null;
   private editingComment: number | null = null;
+  private adding: string | null = null;
   private pointerDown = false;
   private open = true;
   private saving = false;
@@ -207,9 +210,11 @@ class Window implements ActionWindow {
   private render(model: WindowModel): void {
     const keep = this.keptFocus();
     const scroll = this.body.scrollTop;
-    const sections = [peopleSection, statusSection, projectSection, colorSection, titleSection];
-    const more = [descriptionSection, tagsSection, linkedNotesSection];
-    if (model.action !== null) more.push(checklistsSection, commentsSection);
+    const sections = [titleSection, statusSection, peopleSection, projectSection, colorSection];
+    const more = [descriptionSection];
+    if (model.action !== null) more.push(checklistsSection);
+    more.push(tagsSection, linkedNotesSection);
+    if (model.action !== null) more.push(commentsSection);
     this.body.replaceChildren(...[...sections, ...more].map((make) => make(model, this.actions)));
     this.shown = model;
     this.pending = null;
@@ -225,8 +230,8 @@ class Window implements ActionWindow {
     const text = active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement;
     return {
       field,
-      start: text && active.type !== "date" ? active.selectionStart : null,
-      end: text && active.type !== "date" ? active.selectionEnd : null,
+      start: text ? active.selectionStart : null,
+      end: text ? active.selectionEnd : null,
     };
   }
 
@@ -239,10 +244,11 @@ class Window implements ActionWindow {
       (target as HTMLInputElement).setSelectionRange(keep.start, keep.end);
   }
 
-  /** Un champ de texte a le curseur : une saisie est en cours. */
+  /** Un champ de texte a le curseur : une saisie est en cours. Un champ d'ajout (`data-draft`) garde son texte à part : il ne retient pas le dessin, sinon la liste qu'on vient d'ajouter n'apparaîtrait qu'en quittant le champ. */
   private typing(): boolean {
     const active = document.activeElement;
     if (!(active instanceof HTMLElement) || !this.root.contains(active)) return false;
+    if (active.dataset.draft !== undefined) return false;
     return (
       active instanceof HTMLTextAreaElement ||
       (active instanceof HTMLInputElement && active.type !== "checkbox")
@@ -290,20 +296,20 @@ class Window implements ActionWindow {
       return;
     }
     const value = input.value.trim();
-    const mayBeEmpty = field === "title" && this.name === null;
-    input.value = value === "" && !mayBeEmpty ? fields[field] : value;
-    if (input.value === fields[field]) return;
-    if (field === "title") this.change({ kind: "title", title: input.value });
-    else this.change({ kind: "date", date: input.value });
+    const mayBeEmpty = this.name === null;
+    input.value = value === "" && !mayBeEmpty ? fields.title : value;
+    if (input.value !== fields.title) this.change({ kind: "title", title: input.value });
   }
 
   /** Ce qui est tapé et pas encore enregistré, pris dans les champs. */
   private commitTyped(): void {
-    const fields: TextField[] = ["title", "description", "date"];
+    const fields: TextField[] = ["title", "description"];
     for (const field of fields) {
       const input = this.body.querySelector<HTMLInputElement>(`[data-field="${field}"]`);
       if (input !== null) this.commit(field, input);
     }
+    // Une date écrite et pas encore validée : le sélecteur la prend (ou la refuse) comme en quittant le champ.
+    this.body.querySelector('[data-field="date"]')?.dispatchEvent(new Event("change"));
   }
 
   private async save(): Promise<void> {
@@ -321,6 +327,14 @@ class Window implements ActionWindow {
     const question = `Placer « ${this.shown.fields.title} » dans la corbeille ?`;
     if (!(await this.env.confirm(question, "Placer dans la corbeille"))) return;
     if ((await this.env.remove(name)) && this.open) this.dispose();
+  }
+
+  /** Supprime la checklist après confirmation ; si elle a bougé entre-temps (changement venu d'ailleurs), rien n'est supprimé. */
+  private async removeChecklist(index: number, list: ChecklistItem): Promise<void> {
+    const confirmed = await this.env.confirm(removeChecklistQuestion(list), DELETE_TEXT);
+    const current = this.shown.action?.checklists[index];
+    if (!confirmed || current?.name !== list.name) return;
+    this.change({ kind: "body", change: { kind: "removeChecklist", list: index } });
   }
 
   private async linkNote(): Promise<void> {
@@ -341,6 +355,13 @@ class Window implements ActionWindow {
     }
   }
 
+  /** Ouvre le champ d'ajout `key` (le curseur y est mis), ou ferme celui qui est ouvert. */
+  private openAdding(key: string | null): void {
+    this.adding = key;
+    this.render(this.shown);
+    if (key !== null) this.body.querySelector<HTMLElement>(`[data-field="${key}"]`)?.focus();
+  }
+
   private makeActions(): WindowActions {
     return {
       change: (change) => this.change(change),
@@ -357,6 +378,11 @@ class Window implements ActionWindow {
       copyEmails: () => void this.copyEmails(),
       openPerson: this.env.openPerson,
       linkNote: () => void this.linkNote(),
+      removeChecklist: (index, list) => void this.removeChecklist(index, list),
+      adding: {
+        get: () => this.adding,
+        set: (key) => this.openAdding(key),
+      },
       openNote: (title) => this.env.openNote(title),
       openAddress: (url) => this.env.openAddress(url),
       editing: {

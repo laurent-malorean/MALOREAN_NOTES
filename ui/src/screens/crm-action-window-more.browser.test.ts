@@ -83,16 +83,16 @@ describe("fenêtre d'une action : notes liées", () => {
   it("lie la note choisie par la recherche de notes ; annuler ou choisir une note déjà liée ne fait rien", async () => {
     const m = await openedWindow();
     m.chosenNote.value = "Plan de la salle";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await waitForGesture(m, 1);
     expect(sent(m)[0]).toEqual({
       kind: "linkedNotes",
       notes: ["Cahier des charges", "Plan de la salle"],
     });
     m.chosenNote.value = null;
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     m.chosenNote.value = "Cahier des charges";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await tick();
     expect(sent(m)).toHaveLength(1);
   });
@@ -175,7 +175,7 @@ describe("fenêtre d'une nouvelle action", () => {
     await openForDay();
     expect(found(".crm-aw-heading")?.textContent).toBe(NEW_TITLE);
     expect(NEW_TITLE).toBe("Nouvelle action");
-    expect(control<HTMLInputElement>("Date").value).toBe("2026-11-27");
+    expect(control<HTMLInputElement>("Date").value).toBe("27/11/2026");
     expect(control<HTMLSelectElement>("Statut").value).toBe("TODO");
     expect(field<HTMLInputElement>("title").value).toBe("");
     expect(buttonIn(SAVE_TEXT)).not.toBeUndefined();
@@ -194,12 +194,12 @@ describe("fenêtre d'une nouvelle action", () => {
     choose(control("Statut"), "Progress");
     choose(control("Canal"), "appel");
     choose(control("Projet"), "salon");
-    commit(control("Date"), "2026-12-01");
+    commit(control("Date"), "01/12/2026");
     (document.querySelector('.crm-aw-swatch[aria-label="bleu"]') as HTMLElement).click();
     choose(control("+ Ajouter une personne"), "jean-dupont");
     typedIn("Ajouter une étiquette", "vip");
     m.chosenNote.value = "Plan";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await vi.waitFor(() => expect(document.querySelectorAll(".crm-aw-note")).toHaveLength(1));
     expect(document.querySelectorAll(".crm-aw-person")).toHaveLength(1);
     expect(document.querySelectorAll(".tag-chip")).toHaveLength(1);
@@ -214,12 +214,12 @@ describe("fenêtre d'une nouvelle action", () => {
     choose(control("Statut"), "Progress");
     choose(control("Canal"), "appel");
     choose(control("Projet"), "salon");
-    commit(control("Date"), "2026-12-01");
+    commit(control("Date"), "01/12/2026");
     (document.querySelector('.crm-aw-swatch[aria-label="bleu"]') as HTMLElement).click();
     choose(control("+ Ajouter une personne"), "jean-dupont");
     typedIn("Ajouter une étiquette", "vip");
     m.chosenNote.value = "Plan";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await vi.waitFor(() => expect(document.querySelectorAll(".crm-aw-note")).toHaveLength(1));
     buttonIn("Enregistrer").click();
     await vi.waitFor(() => expect(callsTo(m, "createCrmAction")).toHaveLength(1));
@@ -283,7 +283,7 @@ describe("fenêtre d'une nouvelle action", () => {
     commit(field("title"), "   ");
     expect(field<HTMLInputElement>("title").value).toBe("");
     commit(control("Date"), "");
-    expect(control<HTMLInputElement>("Date").value).toBe("2026-11-27");
+    expect(control<HTMLInputElement>("Date").value).toBe("27/11/2026");
   });
 });
 
@@ -300,7 +300,7 @@ describe("« + Ajouter une action » d'une colonne du Kanban", () => {
     (column("Progress").querySelector(".crm-add-action") as HTMLButtonElement).click();
     expect(document.querySelector(".crm-quick-add")).toBeNull();
     expect(control<HTMLSelectElement>("Statut").value).toBe("Progress");
-    expect(control<HTMLInputElement>("Date").value).toBe("2026-11-25");
+    expect(control<HTMLInputElement>("Date").value).toBe("25/11/2026");
   });
 
   it("« Plus de détails » ouvre la fenêtre avec le titre, la personne et le statut de la colonne, et ferme la ligne", async () => {
@@ -316,7 +316,7 @@ describe("« + Ajouter une action » d'une colonne du Kanban", () => {
     expect([...document.querySelectorAll(".crm-aw-person")].map((p) => p.textContent)).toEqual([
       "Marie Durand×",
     ]);
-    expect(control<HTMLInputElement>("Date").value).toBe("2026-11-25");
+    expect(control<HTMLInputElement>("Date").value).toBe("25/11/2026");
     expect(found(".crm-aw-heading")?.textContent).toBe("Nouvelle action");
   });
 

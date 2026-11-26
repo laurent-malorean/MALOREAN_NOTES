@@ -76,7 +76,7 @@ export const field = <T extends HTMLElement>(name: string): T =>
 export const labels = () =>
   [
     ...document.querySelectorAll(
-      ".crm-aw .crm-aw-section > .crm-aw-label, .crm-aw .crm-aw-field > .crm-aw-label",
+      ".crm-aw .crm-aw-section > .crm-aw-section-title, .crm-aw .crm-aw-field > .crm-aw-label",
     ),
   ].map((e) => e.textContent);
 export const optionTexts = (select: HTMLSelectElement) =>

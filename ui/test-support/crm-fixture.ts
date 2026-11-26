@@ -46,6 +46,13 @@ function weekOf(actions: readonly CrmActionItem[]): WeekItem {
   };
 }
 
+/** Le même CRM avec ces étapes : ce que Rust lirait après un changement des étapes. */
+export const withStages = (base: CrmItem, stages: readonly string[]): CrmItem => ({
+  ...base,
+  stages: [...stages],
+  columns: columnsOf(base.actions, stages),
+});
+
 const NO_TALLY = { open: 0, late: 0, today: 0 };
 
 /** Un CRM lu : ses fiches données, le reste calculé. */
