@@ -31,6 +31,13 @@ impl fmt::Display for RefusedReading {
                 "cette note est une carte mentale : read_note ne lit que les notes simples ; \
                  lisez la carte en arbre avec read_mind_map (le même chemin dans path)",
             ),
+            Self::NotANote(ContentType::Canvas) => f.write_str(
+                "cette note est un canvas : read_note ne lit que les notes simples ; lisez-le avec \
+                 read_canvas, et changez-le avec add_canvas_card, change_canvas_card, \
+                 move_canvas_card, resize_canvas_card, remove_canvas_card, add_canvas_arrow, \
+                 change_canvas_arrow, remove_canvas_arrow, add_canvas_group ou \
+                 change_canvas_group",
+            ),
             Self::NotANote(kind) => write!(
                 f,
                 "cette note est de type « {} » : read_note ne lit que les notes simples ; ce type \
@@ -165,7 +172,6 @@ mod tests {
     #[test]
     fn another_type_is_named_and_said_to_have_no_reading_tool_yet() {
         for (kind, name) in [
-            (ContentType::Canvas, "canvas"),
             (ContentType::Crm, "crm"),
             (ContentType::CrmAction, "crm-action"),
         ] {
@@ -186,6 +192,29 @@ mod tests {
             "cette note est une carte mentale : read_note ne lit que les notes simples ; lisez \
              la carte en arbre avec read_mind_map (le même chemin dans path)"
         );
+    }
+
+    #[test]
+    fn a_canvas_is_sent_to_the_canvas_tools() {
+        let said = RefusedReading::NotANote(ContentType::Canvas).to_string();
+        for expected in [
+            "cette note est un canvas",
+            "read_note ne lit que les notes simples",
+            "read_canvas",
+            "add_canvas_card",
+            "change_canvas_card",
+            "move_canvas_card",
+            "resize_canvas_card",
+            "remove_canvas_card",
+            "add_canvas_arrow",
+            "change_canvas_arrow",
+            "remove_canvas_arrow",
+            "add_canvas_group",
+            "change_canvas_group",
+        ] {
+            assert!(said.contains(expected), "{expected} : {said}");
+        }
+        assert!(!said.contains("pas encore"), "{said}");
     }
 
     fn lines_of(width: usize, count: usize) -> String {

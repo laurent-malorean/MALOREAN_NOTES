@@ -2,6 +2,7 @@
 
 mod attachments;
 mod canvas;
+mod change_canvas;
 mod connection;
 mod create_note;
 mod crm;
@@ -33,6 +34,7 @@ pub use attachments::{
     OpenLinkTarget,
 };
 pub use canvas::{CreateCanvas, ReadCanvas, SaveCanvas, SavedCanvas};
+pub use change_canvas::{ChangeCanvas, ChangedCanvas};
 pub use connection::{CreateConnectionKey, ReadConnectionKey, RevokeConnectionKey};
 pub use create_note::{CreateDailyNote, CreateNote, CreateNoteFromTemplate};
 pub use crm::{

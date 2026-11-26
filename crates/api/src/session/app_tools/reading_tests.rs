@@ -158,7 +158,7 @@ fn a_research_notebook_is_sent_to_add_entry_and_the_search() {
 }
 
 #[test]
-fn a_mind_map_a_canvas_and_a_crm_with_its_cards_are_refused_with_their_type() {
+fn a_mind_map_and_a_crm_with_its_cards_are_refused_with_their_type() {
     let session = opened(&[
         ("m.md", "---\ntype: carte-mentale\n---\n# Idées\n- un\n"),
         ("x.canvas", "{}"),
@@ -170,7 +170,6 @@ fn a_mind_map_a_canvas_and_a_crm_with_its_cards_are_refused_with_their_type() {
     ]);
 
     for (path, kind) in [
-        ("x.canvas", "canvas"),
         ("clients.md", "crm"),
         ("clients/actions/a.md", "crm-action"),
     ] {
@@ -193,6 +192,18 @@ fn a_mind_map_is_refused_with_the_name_of_the_tool_that_reads_it() {
         "cette note est une carte mentale : read_note ne lit que les notes simples ; lisez la \
          carte en arbre avec read_mind_map (le même chemin dans path)"
     );
+}
+
+#[test]
+fn a_canvas_is_sent_to_read_canvas_and_the_tools_that_change_it() {
+    let session = opened(&[("x.canvas", "{}")]);
+
+    let said = unread(&session, json!({ "path": "x.canvas" }));
+
+    assert!(said.starts_with("cette note est un canvas : read_note ne lit que les notes simples"));
+    for tool in ["read_canvas", "add_canvas_card", "change_canvas_group"] {
+        assert!(said.contains(tool), "{tool} : {said}");
+    }
 }
 
 #[test]

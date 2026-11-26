@@ -33,7 +33,8 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
         assert!(kinds.iter().all(|(name, kind)| *kind
             == match *name {
                 "tags" => "array",
-                "limit" => "integer",
+                "limit" | "x" | "y" | "width" | "height" => "integer",
+                "cards" => "array",
                 "replace_all" => "boolean",
                 "place_x" | "place_y" => "number",
                 _ => "string",
@@ -49,7 +50,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 39] = [
+    let expected: [(AppTool, &[&str]); 50] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
@@ -57,6 +58,7 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::ListFolders, &[]),
         (AppTool::LinkingNotes, path),
         (AppTool::ReadNote, path),
+        (AppTool::ReadCanvas, path),
         (AppTool::ListTemplates, &[]),
         (AppTool::ListVersions, path),
         (AppTool::ReadVersion, &["path", "version"]),
@@ -71,6 +73,19 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::MoveNote, &["path", "folder"]),
         (AppTool::RestoreVersion, &["path", "version"]),
         (AppTool::ReplaceInNote, &["path", "old_text", "new_text"]),
+        (AppTool::AddCanvasCard, &["path", "type", "x", "y"]),
+        (AppTool::ChangeCanvasCard, &["path", "id"]),
+        (AppTool::MoveCanvasCard, &["path", "id", "x", "y"]),
+        (
+            AppTool::ResizeCanvasCard,
+            &["path", "id", "width", "height"],
+        ),
+        (AppTool::RemoveCanvasCard, &["path", "id"]),
+        (AppTool::AddCanvasArrow, &["path", "from", "to"]),
+        (AppTool::ChangeCanvasArrow, &["path", "id"]),
+        (AppTool::RemoveCanvasArrow, &["path", "id"]),
+        (AppTool::AddCanvasGroup, path),
+        (AppTool::ChangeCanvasGroup, &["path", "id"]),
         (AppTool::AddTags, &["path", "tags"]),
         (AppTool::RemoveTags, &["path", "tags"]),
         (AppTool::PinNote, path),
@@ -176,7 +191,8 @@ fn replacing_a_text_takes_a_note_two_texts_and_an_option_and_tells_every_refusal
         "`replace_all` à true",
         "cahier de recherche (utilisez `add_entry`)",
         "une carte mentale (lisez-la avec `read_mind_map`, modifiez-la avec `add_mind_map_child`",
-        "un canvas ou un CRM",
+        "un canvas",
+        "utilisez `read_canvas` et les outils du canvas",
         "utilisez ensuite le `path` rendu",
         "`path`, `title` et `replacements`",
         "lisez d'abord la note avec `read_note`",
@@ -258,7 +274,8 @@ fn reading_a_note_takes_a_path_and_tells_the_header_the_limit_and_every_refusal(
         "60 000 caractères",
         "`truncated` vaut alors true et `message` le dit",
         "cahier de recherche (on y ajoute des entrées avec `add_entry`",
-        "une carte mentale (lisez-la avec `read_mind_map`), un canvas",
+        "une carte mentale (lisez-la avec `read_mind_map`), un CRM",
+        "un canvas se lit avec `read_canvas`",
         "introuvable",
     ] {
         assert!(description.contains(expected), "{expected}");

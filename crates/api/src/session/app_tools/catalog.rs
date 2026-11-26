@@ -9,6 +9,8 @@ use super::catalog_mind_map::{
     delete_mind_map_node, edit_mind_map_node, move_mind_map_node, read_mind_map,
 };
 
+mod canvas;
+
 /// Un champ texte de l'entrée d'un outil, décrit pour Claude.
 pub(super) fn text(description: &str) -> Value {
     json!({ "type": "string", "description": description })
@@ -145,8 +147,8 @@ fn read_note() -> Described {
          `truncated` vaut alors true et `message` le dit, la suite ne se lit pas avec cet outil \
          (cherchez-la avec `search_notes`). Refusé, avec une erreur qui dit quoi faire, pour un \
          cahier de recherche (on y ajoute des entrées avec `add_entry` ; `search_notes` retrouve \
-         ses entrées), une carte mentale (lisez-la avec `read_mind_map`), un canvas, un CRM ou une \
-         fiche de CRM, une note introuvable.",
+         ses entrées), une carte mentale (lisez-la avec `read_mind_map`), un CRM ou une fiche de \
+         CRM, une note introuvable ; un canvas se lit avec `read_canvas`.",
         input(json!({ "path": note_path() }), &["path"]),
     )
 }
@@ -343,7 +345,8 @@ fn replace_in_note() -> Described {
          n'apparaisse qu'une fois, ou passez `replace_all` à true pour toutes les remplacer) ; la \
          note est un cahier de recherche (utilisez `add_entry`), une carte mentale (lisez-la \
          avec `read_mind_map`, modifiez-la avec `add_mind_map_child` et les autres outils de la \
-         carte mentale), un canvas ou un CRM. Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
+         carte mentale), un canvas (utilisez `read_canvas` et les outils du canvas) ou un CRM. \
+         Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
          nouveau titre : utilisez ensuite le `path` rendu, et pensez aux notes qui la lient (voir \
          `rename_note`). Rend `path`, `title` et `replacements` (le nombre de remplacements).",
         input(
@@ -506,6 +509,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::ColorMindMapNode => color_mind_map_node(),
         AppTool::MoveMindMapNode => move_mind_map_node(),
         AppTool::DeleteMindMapNode => delete_mind_map_node(),
+        AppTool::ReadCanvas => canvas::read_canvas(),
         AppTool::ListTemplates => list_templates(),
         AppTool::ListVersions => list_versions(),
         AppTool::ReadVersion => read_version(),
@@ -520,6 +524,16 @@ fn described(tool: AppTool) -> Described {
         AppTool::MoveNote => move_note(),
         AppTool::RestoreVersion => restore_version(),
         AppTool::ReplaceInNote => replace_in_note(),
+        AppTool::AddCanvasCard => canvas::add_canvas_card(),
+        AppTool::ChangeCanvasCard => canvas::change_canvas_card(),
+        AppTool::MoveCanvasCard => canvas::move_canvas_card(),
+        AppTool::ResizeCanvasCard => canvas::resize_canvas_card(),
+        AppTool::RemoveCanvasCard => canvas::remove_canvas_card(),
+        AppTool::AddCanvasArrow => canvas::add_canvas_arrow(),
+        AppTool::ChangeCanvasArrow => canvas::change_canvas_arrow(),
+        AppTool::RemoveCanvasArrow => canvas::remove_canvas_arrow(),
+        AppTool::AddCanvasGroup => canvas::add_canvas_group(),
+        AppTool::ChangeCanvasGroup => canvas::change_canvas_group(),
         AppTool::AddTags => add_tags(),
         AppTool::RemoveTags => remove_tags(),
         AppTool::PinNote => pin_note(),

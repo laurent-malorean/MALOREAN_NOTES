@@ -28,6 +28,11 @@ struct Placed {
     path: String,
 }
 
+/// Ce que rend l'outil des étiquettes : le chemin et les étiquettes de la note.
+fn written_tags(path: &str, tags: &[String]) -> Result<String, String> {
+    written(&json!({ "path": path, "tags": tags }))
+}
+
 /// Les étiquettes reçues de Claude, telles que l'application les écrit.
 fn tags_given(arguments: &Value) -> Result<Vec<String>, String> {
     let given = arguments["tags"]
@@ -85,6 +90,16 @@ impl Session {
                 written(&json!({ "path": restored.path }))
             }
             AppTool::ReplaceInNote => self.tool_replace_in_note(arguments),
+            AppTool::AddCanvasCard
+            | AppTool::ChangeCanvasCard
+            | AppTool::MoveCanvasCard
+            | AppTool::ResizeCanvasCard
+            | AppTool::RemoveCanvasCard
+            | AppTool::AddCanvasArrow
+            | AppTool::ChangeCanvasArrow
+            | AppTool::RemoveCanvasArrow
+            | AppTool::AddCanvasGroup
+            | AppTool::ChangeCanvasGroup => self.call_canvas_tool(tool, arguments),
             AppTool::AddTags => self.tool_change_tags(arguments, true),
             AppTool::RemoveTags => self.tool_change_tags(arguments, false),
             AppTool::PinNote => {
@@ -257,6 +272,11 @@ impl Session {
     ) -> Result<String, String> {
         let path = required(arguments, "path")?;
         let given = tags_given(arguments)?;
+        // Un canvas n'a pas d'en-tête : ses étiquettes sont la propriété `tags` de la racine du
+        // fichier, que lisent et écrivent les cas d'usage du champ d'étiquettes (fiche 0079).
+        if NotePath::parse(path).is_ok_and(|note| note.name().is_canvas()) {
+            return self.change_canvas_tags(path, &given, adding);
+        }
         let read = self.read_note(path).map_err(|error| error.message)?;
         let mut kept = tags(&read.content);
         if adding {
@@ -273,7 +293,31 @@ impl Session {
             self.save_note(path, &content, &read.fingerprint)
                 .map_err(|error| error.message)?;
         }
-        written(&json!({ "path": path, "tags": kept }))
+        written_tags(path, &kept)
+    }
+
+    /// Ajoute ou retire des étiquettes de la propriété `tags` de la racine d'un canvas, sans toucher
+    /// au reste du fichier.
+    fn change_canvas_tags(
+        &self,
+        path: &str,
+        given: &[String],
+        adding: bool,
+    ) -> Result<String, String> {
+        let mut kept = self.note_tags(path).map_err(|error| error.message)?;
+        if adding {
+            for tag in given {
+                if !kept.iter().any(|known| same_tag(known, tag)) {
+                    kept.push(tag.clone());
+                }
+            }
+        } else {
+            kept.retain(|known| !given.iter().any(|tag| same_tag(known, tag)));
+        }
+        let written = self
+            .change_note_tags(path, &kept)
+            .map_err(|error| error.message)?;
+        written_tags(path, &written)
     }
 
     /// Copie un fichier de l'espace de travail (image ou PDF) dans le dossier de pièces jointes

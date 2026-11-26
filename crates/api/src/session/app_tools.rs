@@ -3,6 +3,8 @@
 //! en cours est refusée. Les outils passent par les cas d'usage, comme l'interface, et
 //! n'agissent que dans l'espace de travail du tour, désigné par son nom.
 
+mod canvas;
+mod canvas_changing;
 mod catalog;
 mod catalog_mind_map;
 mod changing;
@@ -193,6 +195,7 @@ impl Session {
             AppTool::LinkingNotes => self.tool_linking_notes(arguments),
             AppTool::ReadNote => self.tool_read_note(arguments),
             AppTool::ReadMindMap => self.tool_read_mind_map(arguments),
+            AppTool::ReadCanvas => self.tool_read_canvas(arguments),
             AppTool::ListTemplates => self.tool_list_templates(),
             AppTool::ViewedNote => self.tool_viewed_note(),
             AppTool::ShowNote => self.tool_show_note(arguments),
@@ -214,6 +217,18 @@ impl Session {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod canvas_catalog_tests;
+
+#[cfg(test)]
+mod canvas_changing_tests;
+
+#[cfg(test)]
+mod canvas_reading_tests;
+
+#[cfg(test)]
+mod canvas_tags_tests;
 
 #[cfg(test)]
 mod changing_tests;
