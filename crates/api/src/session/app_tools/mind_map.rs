@@ -4,8 +4,8 @@
 //! changent la carte.
 
 use domain::app_tools::AppTool;
-use domain::mind_map::{NodePath, Place};
-use domain::mind_map_editing::new_node;
+use domain::mind_map::{MindMap, NodePath, Place};
+use domain::mind_map_editing::{NO_COLOR, new_node};
 use domain::mind_map_reading::{MAX_READ_MAP_CHARACTERS, OutlineNode, ReadableMindMap};
 use serde::Serialize;
 use serde_json::Value;
@@ -20,6 +20,9 @@ struct TouchedNode {
     path: String,
     node: String,
     title: String,
+    /// La couleur donnée (`aucune` si retirée), pour l'outil qui colore.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    color: Option<String>,
 }
 
 /// La place d'un nœud racine, telle que l'IA la lit.
@@ -171,6 +174,31 @@ impl Session {
                     .map_err(|error| error.message)?;
                 touched(path, &added, title)
             }
+            AppTool::EditMindMapNode => {
+                let at = node_path(arguments, "node")?;
+                let (title, detail) = (arguments["title"].as_str(), arguments["detail"].as_str());
+                let title = self
+                    .edit_mind_map(path, |map| {
+                        map.change_text(&at, title, detail)?;
+                        Ok(title_at(map, &at))
+                    })
+                    .map_err(|error| error.message)?;
+                touched(path, &at, title)
+            }
+            AppTool::ColorMindMapNode => {
+                let at = node_path(arguments, "node")?;
+                let color = given(arguments, "color")?;
+                let (title, colored) = self
+                    .edit_mind_map(path, |map| {
+                        map.recolor(&at, color)?;
+                        let colored = map.node(&at).and_then(|node| node.color.clone());
+                        Ok((title_at(map, &at), colored))
+                    })
+                    .map_err(|error| error.message)?;
+                let mut touched = touched_node(path, &at, title);
+                touched.color = Some(colored.unwrap_or_else(|| NO_COLOR.to_owned()));
+                written(&touched)
+            }
             _ => unreachable!("un outil qui n'est pas un geste de la carte est joué à part"),
         }
     }
@@ -182,10 +210,22 @@ fn new_typed(arguments: &Value) -> Result<domain::mind_map::MindNode, String> {
     new_node(given(arguments, "title")?, detail).map_err(|error| error.to_string())
 }
 
-fn touched(path: &str, node: &NodePath, title: String) -> Result<String, String> {
-    written(&TouchedNode {
+fn touched_node(path: &str, node: &NodePath, title: String) -> TouchedNode {
+    TouchedNode {
         path: path.to_owned(),
         node: node.to_string(),
         title,
-    })
+        color: None,
+    }
+}
+
+fn touched(path: &str, node: &NodePath, title: String) -> Result<String, String> {
+    written(&touched_node(path, node, title))
+}
+
+/// Le titre du nœud à ce chemin.
+fn title_at(map: &MindMap, path: &NodePath) -> String {
+    map.node(path)
+        .map(|node| node.title.clone())
+        .unwrap_or_default()
 }

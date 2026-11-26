@@ -5,7 +5,8 @@ use domain::app_tools::AppTool;
 use serde_json::{Value, json};
 
 use super::catalog_mind_map::{
-    add_mind_map_child, add_mind_map_root, add_mind_map_sibling, read_mind_map,
+    add_mind_map_child, add_mind_map_root, add_mind_map_sibling, color_mind_map_node,
+    edit_mind_map_node, read_mind_map,
 };
 
 /// Un champ texte de l'entrée d'un outil, décrit pour Claude.
@@ -499,6 +500,8 @@ fn described(tool: AppTool) -> Described {
         AppTool::AddMindMapChild => add_mind_map_child(),
         AppTool::AddMindMapSibling => add_mind_map_sibling(),
         AppTool::AddMindMapRoot => add_mind_map_root(),
+        AppTool::EditMindMapNode => edit_mind_map_node(),
+        AppTool::ColorMindMapNode => color_mind_map_node(),
         AppTool::ListTemplates => list_templates(),
         AppTool::ListVersions => list_versions(),
         AppTool::ReadVersion => read_version(),

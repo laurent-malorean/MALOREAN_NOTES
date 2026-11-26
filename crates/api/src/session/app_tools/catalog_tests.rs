@@ -49,7 +49,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 35] = [
+    let expected: [(AppTool, &[&str]); 37] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
@@ -82,6 +82,8 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::AddMindMapChild, &["path", "node", "title"]),
         (AppTool::AddMindMapSibling, &["path", "node", "title"]),
         (AppTool::AddMindMapRoot, &["path", "title"]),
+        (AppTool::EditMindMapNode, &["path", "node"]),
+        (AppTool::ColorMindMapNode, &["path", "node", "color"]),
         (AppTool::CreateCrm, &["title"]),
         (AppTool::ViewedNote, &[]),
         (AppTool::ShowNote, path),
@@ -334,6 +336,43 @@ fn the_tools_that_add_a_node_take_its_text_and_say_where_it_goes_and_what_they_g
     let place = &tool_description(AppTool::AddMindMapRoot)["inputSchema"]["properties"]["place_x"];
     assert_eq!(place["type"], "number");
     assert!(place["description"].as_str().unwrap().contains("ensemble"));
+}
+
+#[test]
+fn the_tools_that_change_a_node_say_what_stays_and_what_they_refuse() {
+    assert_eq!(
+        fields_of(AppTool::EditMindMapNode),
+        ["detail", "node", "path", "title", "workspace"]
+    );
+    assert_eq!(
+        fields_of(AppTool::ColorMindMapNode),
+        ["color", "node", "path", "workspace"]
+    );
+    let edit = tool_description(AppTool::EditMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "reste tel quel",
+        "`detail` vide efface",
+        "ses enfants et sa couleur",
+        "ni `title` ni `detail`",
+    ] {
+        assert!(edit.contains(phrase), "{phrase}");
+    }
+    let color = tool_description(AppTool::ColorMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "10 couleurs de la palette",
+        "ardoise",
+        "`aucune`",
+        "Pas de couleur libre",
+        "l'erreur donne la palette",
+    ] {
+        assert!(color.contains(phrase), "{phrase}");
+    }
 }
 
 #[test]

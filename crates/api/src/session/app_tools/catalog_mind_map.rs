@@ -106,6 +106,46 @@ pub(super) fn add_mind_map_root() -> Described {
     )
 }
 
+pub(super) fn edit_mind_map_node() -> Described {
+    (
+        "Change le titre et/ou le détail d'un nœud d'une carte mentale (la saisie de l'écran, \
+         F2), avec les règles de MALOREAN Notes (voir `add_mind_map_child`). Ce que vous ne \
+         donnez pas reste tel quel ; un `detail` vide efface le détail ; ses enfants et sa \
+         couleur ne bougent pas, et son chemin non plus. Rend `path`, `node` et `title`. \
+         Refusé, sans rien changer : ni `title` ni `detail` donné, titre vide ou sur plusieurs \
+         lignes, nœud introuvable, note qui n'est pas une carte mentale.",
+        input(
+            json!({
+                "path": map_path(),
+                "node": node_param("à changer"),
+                "title": text("Le nouveau titre, sur une seule ligne, non vide ; absent pour le garder."),
+                "detail": text("Le nouveau détail, lignes séparées par des retours à la ligne ; vide pour l'effacer ; absent pour le garder."),
+            }),
+            &["path", "node"],
+        ),
+    )
+}
+
+pub(super) fn color_mind_map_node() -> Described {
+    (
+        "Change la couleur d'un nœud d'une carte mentale (le menu des couleurs de l'écran) : \
+         l'une des 10 couleurs de la palette de l'application (rouge, orange, jaune, vert, \
+         turquoise, bleu, violet, rose, marron, ardoise ; majuscules et espaces ignorés), ou \
+         `aucune` pour retirer la couleur. Pas de couleur libre. Règles d'écriture d'`add_mind_map_child`. \
+         Rend `path`, `node`, `title` et `color` (`aucune` si retirée). Refusé, sans rien \
+         changer : couleur inconnue (l'erreur donne la palette), nœud introuvable, note qui \
+         n'est pas une carte mentale.",
+        input(
+            json!({
+                "path": map_path(),
+                "node": node_param("à colorer"),
+                "color": text("Un nom de la palette : `bleu`, ou `aucune` pour retirer la couleur."),
+            }),
+            &["path", "node", "color"],
+        ),
+    )
+}
+
 pub(super) fn read_mind_map() -> Described {
     (
         "Lit une carte mentale (une note dont l'en-tête porte `type: carte-mentale`) en arbre, \

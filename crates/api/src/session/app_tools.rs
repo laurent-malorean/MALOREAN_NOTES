@@ -246,4 +246,7 @@ mod mind_map_editing_tests;
 mod mind_map_tests;
 
 #[cfg(test)]
+mod mind_map_text_tests;
+
+#[cfg(test)]
 mod workspaces_tests;

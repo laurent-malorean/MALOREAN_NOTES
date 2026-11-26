@@ -81,6 +81,10 @@ pub enum AppTool {
     AddMindMapSibling,
     /// Ajouter un nœud racine à la fin d'une carte mentale (fiche 0080).
     AddMindMapRoot,
+    /// Changer le titre et/ou le détail d'un nœud d'une carte mentale (fiche 0080).
+    EditMindMapNode,
+    /// Changer la couleur d'un nœud d'une carte mentale, parmi la palette (fiche 0080).
+    ColorMindMapNode,
     /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
     /// `doc/specs/crm.md`, § 13).
     CreateCrm,
@@ -93,7 +97,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 35] = [
+    pub const ALL: [Self; 37] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -126,6 +130,8 @@ impl AppTool {
         Self::AddMindMapChild,
         Self::AddMindMapSibling,
         Self::AddMindMapRoot,
+        Self::EditMindMapNode,
+        Self::ColorMindMapNode,
         Self::CreateCrm,
         Self::ViewedNote,
         Self::ShowNote,
@@ -167,6 +173,8 @@ impl AppTool {
             Self::AddMindMapChild => "add_mind_map_child",
             Self::AddMindMapSibling => "add_mind_map_sibling",
             Self::AddMindMapRoot => "add_mind_map_root",
+            Self::EditMindMapNode => "edit_mind_map_node",
+            Self::ColorMindMapNode => "color_mind_map_node",
             Self::CreateCrm => "create_crm",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
@@ -234,6 +242,8 @@ impl AppTool {
             | Self::AddMindMapChild
             | Self::AddMindMapSibling
             | Self::AddMindMapRoot
+            | Self::EditMindMapNode
+            | Self::ColorMindMapNode
             | Self::CreateCrm => true,
         }
     }
@@ -286,6 +296,8 @@ impl AppTool {
             | Self::AddMindMapChild
             | Self::AddMindMapSibling
             | Self::AddMindMapRoot
+            | Self::EditMindMapNode
+            | Self::ColorMindMapNode
             | Self::ShowNote => Some("path"),
             Self::ListWorkspaces
             | Self::ListTags
@@ -420,6 +432,8 @@ mod tests {
                 "add_mind_map_child",
                 "add_mind_map_sibling",
                 "add_mind_map_root",
+                "edit_mind_map_node",
+                "color_mind_map_node",
                 "create_crm"
             ]
         );
@@ -460,6 +474,8 @@ mod tests {
                 path,
                 path,
                 Some("title"),
+                path,
+                path,
                 path,
                 path,
                 path,
