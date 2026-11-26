@@ -515,3 +515,75 @@ fn the_claude_column_still_refuses_a_turn_whose_workspace_is_no_longer_open() {
         "l'espace de travail « Notes » de ce tour n'est plus ouvert : rien n'a été fait"
     );
 }
+
+#[test]
+fn a_text_is_replaced_in_another_workspace_without_touching_the_open_one_or_the_screen() {
+    let world = world();
+    world.allow(&["Notes", "Travail"]);
+    let before = world.preferences.workspaces().unwrap();
+
+    let replaced = world.found(
+        "replace_in_note",
+        json!({ "path": "pain.md", "old_text": "La farine.", "new_text": "Le levain.",
+                "workspace": "notes" }),
+    );
+
+    assert_eq!(
+        replaced,
+        json!({ "path": "pain.md", "title": "Pain", "replacements": 1 })
+    );
+    let text = |store: &InMemoryNoteStore, path: &str| {
+        store.read(&NotePath::parse(path).unwrap()).unwrap().content
+    };
+    assert_eq!(text(&world.notes, "pain.md"), "# Pain\n\nLe levain.");
+    assert_eq!(text(&world.travail, "devis.md"), "# Devis\n\nLe client.");
+    assert_eq!(world.opened_name(), "Travail");
+    assert_eq!(world.preferences.workspaces().unwrap(), before);
+    assert_eq!(world.paths_of(json!({ "query": "client" })), ["devis.md"]);
+    assert_eq!(
+        world.paths_of(json!({ "query": "levain", "workspace": "Notes" })),
+        ["pain.md"]
+    );
+}
+
+#[test]
+fn a_text_is_replaced_in_the_open_workspace_only_if_it_is_allowed() {
+    let world = world();
+    let arguments = json!({ "path": "devis.md", "old_text": "Le client.", "new_text": "Le prix." });
+
+    let error = world.refused("replace_in_note", arguments.clone());
+    assert!(error.contains("onglet « Brancher une IA »"), "{error}");
+    world.allow(&["Travail"]);
+    world.found("replace_in_note", arguments);
+
+    let text = world
+        .travail
+        .read(&NotePath::parse("devis.md").unwrap())
+        .unwrap()
+        .content;
+    assert_eq!(text, "# Devis\n\nLe prix.");
+}
+
+#[test]
+fn replacing_a_text_in_a_workspace_that_is_not_allowed_writes_nothing() {
+    let world = world();
+    world.allow(&["Travail"]);
+
+    let error = world.refused(
+        "replace_in_note",
+        json!({ "path": "pain.md", "old_text": "La farine.", "new_text": "X", "workspace": "Notes" }),
+    );
+
+    assert_eq!(
+        error,
+        "aucun espace de travail autorisé ne s'appelle « Notes » ; ceux que les IA peuvent \
+         utiliser : « Travail »"
+    );
+    assert!(has(&world.notes, "pain.md"));
+    let text = world
+        .notes
+        .read(&NotePath::parse("pain.md").unwrap())
+        .unwrap()
+        .content;
+    assert_eq!(text, "# Pain\n\nLa farine.");
+}

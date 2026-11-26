@@ -28,6 +28,7 @@ pub mod meaning_vector;
 pub mod mind_map;
 pub mod note;
 pub mod ranking;
+pub mod replacing;
 pub mod research_notebook;
 pub mod saving;
 pub mod search;

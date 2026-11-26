@@ -1,6 +1,7 @@
 //! Erreurs des cas d'usage.
 
 use domain::history::Version;
+use domain::replacing::RefusedReplacement;
 use domain::research_notebook::RefusedEntry;
 use domain::{Folder, NotePath, RefusedAttachment};
 
@@ -122,6 +123,9 @@ pub enum AppError {
     /// L'entrée n'est pas ajoutée au cahier de recherche ; la raison est lisible.
     #[error("{0}")]
     EntryRefused(#[from] RefusedEntry),
+    /// Le texte n'est pas remplacé dans la note ; la raison est lisible (fiche 0075).
+    #[error("{0}")]
+    ReplacementRefused(#[from] RefusedReplacement),
     /// La note n'est pas une carte mentale (fiche 0050).
     #[error("cette note n'est pas une carte mentale")]
     NotAMindMap,
