@@ -13,6 +13,7 @@ use domain::{Folder, NoteOrder, NotePath};
 use serde::Serialize;
 use serde_json::{Value, json};
 
+use super::mind_map::edits_a_mind_map;
 use super::{optional, required, written};
 use crate::ApiError;
 use crate::session::Session;
@@ -62,13 +63,7 @@ impl Session {
                 self.call_folder_tool(tool, arguments)
             }
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
-            AppTool::AddMindMapChild
-            | AppTool::AddMindMapSibling
-            | AppTool::AddMindMapRoot
-            | AppTool::EditMindMapNode
-            | AppTool::ColorMindMapNode
-            | AppTool::MoveMindMapNode
-            | AppTool::DeleteMindMapNode => self.call_mind_map_tool(tool, arguments),
+            tool if edits_a_mind_map(tool) => self.call_mind_map_tool(tool, arguments),
             AppTool::CreateCrm => self.tool_create_crm(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(arguments),
             AppTool::TrashNote => {
@@ -81,14 +76,7 @@ impl Session {
                 let into = arguments["folder"].as_str().unwrap_or_default();
                 written(&self.move_note(path, into).map_err(|e| e.message)?)
             }
-            AppTool::RestoreVersion => {
-                let (path, version) = (
-                    required(arguments, "path")?,
-                    required(arguments, "version")?,
-                );
-                let restored = self.restore_version(path, version).map_err(|e| e.message)?;
-                written(&json!({ "path": restored.path }))
-            }
+            AppTool::RestoreVersion => self.tool_restore_version(arguments),
             AppTool::ReplaceInNote => self.tool_replace_in_note(arguments),
             AppTool::AddCanvasCard
             | AppTool::ChangeCanvasCard
@@ -122,6 +110,16 @@ impl Session {
             }
             _ => unreachable!("un outil qui ne change rien est joué à part"),
         }
+    }
+
+    /// Remet dans la note le texte d'une de ses versions.
+    fn tool_restore_version(&self, arguments: &Value) -> Result<String, String> {
+        let (path, version) = (
+            required(arguments, "path")?,
+            required(arguments, "version")?,
+        );
+        let restored = self.restore_version(path, version).map_err(|e| e.message)?;
+        written(&json!({ "path": restored.path }))
     }
 
     /// Le dossier `path`, avec chaque dossier qui manque sur son chemin ; un dossier qui existe

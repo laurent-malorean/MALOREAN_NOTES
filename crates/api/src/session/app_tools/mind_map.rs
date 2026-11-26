@@ -118,6 +118,20 @@ impl Session {
     }
 }
 
+/// L'outil est un geste qui change une carte mentale.
+pub(super) const fn edits_a_mind_map(tool: AppTool) -> bool {
+    matches!(
+        tool,
+        AppTool::AddMindMapChild
+            | AppTool::AddMindMapSibling
+            | AppTool::AddMindMapRoot
+            | AppTool::EditMindMapNode
+            | AppTool::ColorMindMapNode
+            | AppTool::MoveMindMapNode
+            | AppTool::DeleteMindMapNode
+    )
+}
+
 /// Le chemin du nœud que l'IA désigne par `field`.
 fn node_path(arguments: &Value, field: &str) -> Result<NodePath, String> {
     NodePath::parse(required(arguments, field)?).map_err(|error| error.to_string())
