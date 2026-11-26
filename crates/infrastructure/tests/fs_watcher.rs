@@ -10,9 +10,12 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
-use application::{StoreError, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher};
+use application::use_cases::ReplaceInNote;
+use application::{
+    History, NoteStore, StoreError, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher,
+};
 use domain::NotePath;
-use infrastructure::FsWorkspaceWatcher;
+use infrastructure::{FsHistory, FsNoteStore, FsWorkspaceWatcher, SystemClock};
 
 /// Le disque du Mac annonce les changements avec un peu de retard.
 const ARRIVAL: Duration = Duration::from_secs(10);
@@ -117,4 +120,34 @@ fn a_watching_shows_its_kind_in_the_logs() {
     let folder = tempfile::tempdir().unwrap();
     let (watching, _received) = watch(&folder);
     assert_eq!(format!("{watching:?}"), "FsWatching");
+}
+
+/// L'écran suit le remplacement d'un texte par une IA (fiche 0075) : la note écrite sur le vrai
+/// disque est annoncée à l'interface, qui la relit ; la version d'avant est gardée à part.
+#[test]
+fn a_text_replaced_by_the_tool_is_announced_so_that_the_screen_follows() {
+    let folder = tempfile::tempdir().unwrap();
+    fs::write(folder.path().join("courses.md"), "# Courses\n- pain\n").unwrap();
+    let (_watching, received) = watch(&folder);
+    let store = FsNoteStore::new(folder.path().to_path_buf());
+    let history = FsHistory::new(folder.path().to_path_buf());
+    let note = NotePath::parse("courses.md").unwrap();
+
+    let replaced = ReplaceInNote::new(&store, &history, &SystemClock)
+        .execute(&note, "- pain", "- lait", false)
+        .unwrap();
+
+    assert!(announces(&received, "courses.md"));
+    assert_eq!(replaced.path, note);
+    assert_eq!(
+        fs::read_to_string(folder.path().join("courses.md")).unwrap(),
+        "# Courses\n- lait\n"
+    );
+    let versions = history.versions(&note).unwrap();
+    assert_eq!(versions.len(), 1);
+    assert_eq!(
+        history.read_version(&note, &versions[0]).unwrap(),
+        "# Courses\n- pain\n"
+    );
+    assert_eq!(store.read(&note).unwrap().content, "# Courses\n- lait\n");
 }
