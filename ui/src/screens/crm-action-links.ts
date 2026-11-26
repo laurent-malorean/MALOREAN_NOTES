@@ -18,6 +18,7 @@ export function addField(
   input.setAttribute("aria-label", label);
   input.placeholder = label;
   input.dataset.field = key;
+  input.dataset.draft = "";
   input.value = act.drafts.get(key);
   input.addEventListener("input", () => act.drafts.set(key, input.value));
   input.addEventListener("keydown", (event) => {
@@ -38,7 +39,7 @@ export function tagsSection(model: WindowModel, act: WindowActions): HTMLElement
     suggestions: model.crm.tags,
     change: (tags) => act.change({ kind: "tags", tags }),
     draft: { get: () => act.drafts.get(TAG_KEY), set: (text) => act.drafts.set(TAG_KEY, text) },
-    data: { field: TAG_KEY },
+    data: { field: TAG_KEY, draft: "" },
   });
   return section("crm-aw-tags-section", "Étiquettes", field);
 }

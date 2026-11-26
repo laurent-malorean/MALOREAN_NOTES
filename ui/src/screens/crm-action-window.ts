@@ -239,10 +239,11 @@ class Window implements ActionWindow {
       (target as HTMLInputElement).setSelectionRange(keep.start, keep.end);
   }
 
-  /** Un champ de texte a le curseur : une saisie est en cours. */
+  /** Un champ de texte a le curseur : une saisie est en cours. Un champ d'ajout (`data-draft`) garde son texte à part : il ne retient pas le dessin, sinon la liste qu'on vient d'ajouter n'apparaîtrait qu'en quittant le champ. */
   private typing(): boolean {
     const active = document.activeElement;
     if (!(active instanceof HTMLElement) || !this.root.contains(active)) return false;
+    if (active.dataset.draft !== undefined) return false;
     return (
       active instanceof HTMLTextAreaElement ||
       (active instanceof HTMLInputElement && active.type !== "checkbox")

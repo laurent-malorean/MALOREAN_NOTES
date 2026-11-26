@@ -402,3 +402,27 @@ fn a_note_that_is_not_a_crm_is_refused_with_a_readable_message() {
         "Cette fiche n'existe plus."
     );
 }
+
+#[test]
+fn the_stages_changed_by_a_gesture_are_shown_by_the_next_reading() {
+    let session = session();
+    let stages = |s: &Session| read(s).stages;
+    session
+        .change_crm_stages("clients.md", StageChangeItem::Add { name: s("Devis") })
+        .unwrap();
+    assert_eq!(stages(&session), ["Progress", "WaitingFor", "Devis"]);
+    session
+        .change_crm_stages(
+            "clients.md",
+            StageChangeItem::Rename {
+                from: s("Devis"),
+                to: s("Négo"),
+            },
+        )
+        .unwrap();
+    assert_eq!(stages(&session), ["Progress", "WaitingFor", "Négo"]);
+    session
+        .change_crm_stages("clients.md", StageChangeItem::Remove { name: s("Négo") })
+        .unwrap();
+    assert_eq!(stages(&session), ["Progress", "WaitingFor"]);
+}
