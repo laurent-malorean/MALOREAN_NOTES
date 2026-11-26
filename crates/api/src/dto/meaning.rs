@@ -58,6 +58,10 @@ pub struct MeaningOverviewItem {
     /// Les notes qui ont au moins un segment.
     #[ts(type = "number")]
     pub notes: usize,
+    /// Les notes que l'index de mots connaît et qui n'ont aucun segment dans l'index de sens
+    /// (sans texte : vides, ou réduites à un titre) ; 0 sans espace de travail ouvert.
+    #[ts(type = "number")]
+    pub notes_without_text: usize,
     /// Un calcul de vecteurs de sens est en cours.
     pub computing: bool,
 }
@@ -67,6 +71,7 @@ impl MeaningOverviewItem {
         overview: &MeaningOverview,
         downloading: Option<MeaningModel>,
         computing: bool,
+        notes_without_text: usize,
     ) -> Self {
         Self {
             chosen: overview.chosen.name().to_owned(),
@@ -78,6 +83,7 @@ impl MeaningOverviewItem {
             segments: overview.segments,
             with_vector: overview.with_vector,
             notes: overview.notes,
+            notes_without_text,
             computing,
         }
     }
@@ -230,7 +236,7 @@ mod tests {
 
     #[test]
     fn the_overview_names_each_model_and_says_which_is_downloading() {
-        let item = MeaningOverviewItem::of(&overview(), Some(MeaningModel::Large), true);
+        let item = MeaningOverviewItem::of(&overview(), Some(MeaningModel::Large), true, 4);
         assert_eq!(
             serde_json::to_value(&item).unwrap(),
             json!({
@@ -241,10 +247,11 @@ mod tests {
                     { "model": "e5-large", "label": "E5 grand", "downloaded": false,
                       "downloading": true, "size": 20 },
                 ],
-                "segments": 7, "withVector": 3, "notes": 2, "computing": true,
+                "segments": 7, "withVector": 3, "notes": 2, "notesWithoutText": 4,
+                "computing": true,
             })
         );
-        let idle = MeaningOverviewItem::of(&overview(), None, false);
+        let idle = MeaningOverviewItem::of(&overview(), None, false, 0);
         assert!(!idle.computing);
         assert!(idle.models.iter().all(|model| !model.downloading));
     }

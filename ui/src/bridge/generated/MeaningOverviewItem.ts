@@ -27,6 +27,11 @@ withVector: number,
  */
 notes: number, 
 /**
+ * Les notes que l'index de mots connaît et qui n'ont aucun segment dans l'index de sens
+ * (sans texte : vides, ou réduites à un titre) ; 0 sans espace de travail ouvert.
+ */
+notesWithoutText: number, 
+/**
  * Un calcul de vecteurs de sens est en cours.
  */
 computing: boolean, };

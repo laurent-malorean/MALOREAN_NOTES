@@ -68,6 +68,7 @@ fn opening_a_workspace_computes_its_vectors_and_the_overview_tells_it() {
         (overview.segments, overview.with_vector, overview.notes),
         (3, 3, 3)
     );
+    assert_eq!(overview.notes_without_text, 0);
     assert!(!overview.computing);
     assert_eq!(
         recorder.progress(),
@@ -104,6 +105,24 @@ fn opening_a_workspace_computes_its_vectors_and_the_overview_tells_it() {
 }
 
 #[test]
+fn the_overview_counts_the_indexed_notes_that_have_no_text() {
+    let recorder = Arc::new(Recorder::default());
+    let session = session_with(
+        Arc::new(FakeMeaningModels::with(MeaningModel::Small)),
+        Arc::new(InMemoryNoteStore::with_notes(&[
+            ("tarte.md", "# Tarte\n\npommes sucre beurre"),
+            ("titre.md", "# Titre seul"),
+            ("vide.md", ""),
+        ])),
+        &recorder,
+    );
+    session.add_workspace("Notes", "/Users/moi/Notes").unwrap();
+    session.wait_for_meaning();
+    let overview = session.meaning_overview().unwrap();
+    assert_eq!((overview.notes, overview.notes_without_text), (1, 2));
+}
+
+#[test]
 fn the_overview_needs_no_workspace_and_counts_nothing_without_one() {
     let recorder = Arc::new(Recorder::default());
     let session = session_with(
@@ -116,6 +135,7 @@ fn the_overview_needs_no_workspace_and_counts_nothing_without_one() {
         (overview.segments, overview.with_vector, overview.notes),
         (0, 0, 0)
     );
+    assert_eq!(overview.notes_without_text, 0);
     assert!(overview.models[1].downloaded);
     assert!(!overview.models[0].downloaded);
 }

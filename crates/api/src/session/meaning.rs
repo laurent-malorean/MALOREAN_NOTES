@@ -8,8 +8,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, PoisonError};
 
 use application::use_cases::{
-    ChooseModel, DownloadModel, MixedResults, ReadMeaningStatus, RebuildMeaning, RelatedNotes,
-    RemoveModel, SearchWithMeaning,
+    ChooseModel, DownloadModel, MixedResults, ReadIndexStatus, ReadMeaningStatus, RebuildMeaning,
+    RelatedNotes, RemoveModel, SearchWithMeaning,
 };
 use application::{
     AppError, MeaningError, MeaningModels, MeaningStore, MemoryMeaningIndex, ModelState,
@@ -136,7 +136,19 @@ impl Session {
             &overview,
             self.downloading(),
             self.worker.is_computing(),
+            self.notes_without_text(overview.notes)?,
         ))
+    }
+
+    /// Les notes que l'index de mots connaît moins celles de l'index de sens (`with_segments`) :
+    /// celles-là n'ont aucun segment. Les notes pas encore indexées ne comptent pas ; 0 sans
+    /// espace de travail ouvert.
+    fn notes_without_text(&self, with_segments: usize) -> Result<usize, ApiError> {
+        let Ok(opened) = self.opened() else {
+            return Ok(0);
+        };
+        let indexed = ReadIndexStatus::new(&*opened.store, &*opened.index).indexed_notes()?;
+        Ok(indexed.saturating_sub(with_segments))
     }
 
     /// Choisit le modèle de sens (par son nom) ; le calcul de ses vecteurs, s'il est téléchargé,
