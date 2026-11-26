@@ -16,7 +16,8 @@ import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning"
 import { fakeCanvases } from "./fake-canvas";
 import { fakeLinks } from "./fake-links";
 import { fakeCrms } from "./fake-crm";
-import { fakeContentType, fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
+import { searchContentType, searchTitle } from "./fake-search-types";
+import { fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
 import { fakeEntryResults, fakeNotebook } from "./fake-notebook";
 import { fakeRenaming } from "./fake-rename";
 import { fakeTags } from "./fake-tags";
@@ -302,8 +303,8 @@ function searchNotes(query: string, order?: string) {
       return [
         {
           ...found,
-          title: titleOf(note.content) ?? "Sans titre",
-          contentType: fakeContentType(note.content),
+          title: searchTitle(path, titleOf(note.content)),
+          contentType: searchContentType(path, note.content),
           containerTitle: null,
           excerpt: excerpt(note.content),
         },

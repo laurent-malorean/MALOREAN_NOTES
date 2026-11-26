@@ -519,6 +519,20 @@ button {
   color: inherit;
   border-radius: 2px;
 }
+/* Sections de résultats (fiche 0093) : un repère discret, jamais un bouton, sur l'échelle --space-*. */
+.search-section + .search-section {
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+.search-section-title {
+  margin: 0;
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .search-message {
   padding: 0.55rem 0.7rem;
   color: var(--muted);

@@ -106,6 +106,27 @@ function checkColumns(trial: Trial): void {
   );
 }
 
+/** Les résultats de chaque colonne sont rangés en sections (fiche 0093) : titres comptés, Notes en dernier. */
+function checkSections(trial: Trial): void {
+  for (const column of [".match-results", ".ideas-results"]) {
+    const titles = findAll(`${column} .search-section-title`).map((t) => t.textContent ?? "");
+    const results = findAll(`${column} .search-result`).length;
+    const counted = titles.reduce((sum, t) => sum + Number(/\((\d+)\)$/.exec(t)?.[1] ?? 0), 0);
+    trial.measure(`sections ${column}`, titles);
+    if (results === 0) continue;
+    trial.check(
+      `${column} : les résultats sont en sections dont les nombres font le total`,
+      titles.length > 0 && counted === results,
+      `${titles.join(", ")} pour ${results} résultats`,
+    );
+    trial.check(
+      `${column} : la section « Notes » est la dernière`,
+      !titles.some((t) => t.startsWith("Notes")) || (titles.at(-1) ?? "").startsWith("Notes"),
+      titles.join(", "),
+    );
+  }
+}
+
 async function runSearch(env: Env, trial: Trial): Promise<void> {
   await searchWorkspace(env, trial);
   document.documentElement.dataset.appearance = "dark";
@@ -132,6 +153,7 @@ async function runSearch(env: Env, trial: Trial): Promise<void> {
   await until("la réponse de la colonne « idées »", answered, WAIT).catch(() => null);
   checkWindow(trial, win, field);
   checkColumns(trial);
+  checkSections(trial);
 }
 
 export const searchScenarios = (env: Env): Scenario[] => [

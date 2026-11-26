@@ -1,5 +1,6 @@
 import type { SearchResultItem } from "../bridge";
 import { placeLabel } from "../state/content-type";
+import { type ResultSection, resultSections, sectionTitle } from "../state/result-sections";
 import { showContextMenu } from "./context-menu";
 import {
   type NoteOpening,
@@ -60,7 +61,8 @@ function place(folder: string, result: SearchResultItem): HTMLElement {
 }
 
 /**
- * Affiche les notes trouvées (titre, dossier, type de contenu, extrait aux mots surlignés) ; un clic ouvre la note,
+ * Affiche les résultats trouvés en sections (Canvas, Cartes mentales, Cahiers de recherche, CRM, Notes ; fiche 0093),
+ * chacun avec titre, dossier, type de contenu, extrait aux mots surlignés ; un clic ouvre la note,
  * un Cmd+clic l'ouvre dans un nouvel onglet, un clic droit propose le menu d'une note.
  * `null` : aucune réponse encore.
  */
@@ -74,27 +76,60 @@ export function renderSearchResults(
   if (results === null) return container.replaceChildren(message(SEARCHING));
   if (results.length === 0) return container.replaceChildren(message(NOTHING_FOUND));
   container.replaceChildren(
-    ...results.map((result) => {
-      const item = document.createElement("button");
-      item.className = "search-result";
-      item.classList.toggle("selected", result.path === selected);
-      const folder =
-        result.folder === "" ? workspaceName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
-      item.append(line("note-title", result.title), place(folder, result), excerpt(result));
-      openOnClick(item, result.path, actions, result.node);
-      item.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        const { clientX, clientY } = event;
-        withRename(result.path, actions.renaming, (rename) => {
-          const entries = noteMenu({
-            place: (placement) => actions.place(result.path, placement),
-            close: () => actions.closeNote(result.path),
-            rename,
-          });
-          showContextMenu(clientX, clientY, entries);
-        });
-      });
-      return item;
-    }),
+    ...resultSections(results).map((section) =>
+      sectionElement(section, workspaceName, selected, actions),
+    ),
   );
+}
+
+/** Une section : son titre (un repère, ni bouton ni focalisable) puis ses résultats, dans un groupe nommé. */
+function sectionElement(
+  section: ResultSection,
+  workspaceName: string,
+  selected: string | null,
+  actions: SearchResultActions,
+): HTMLElement {
+  const group = document.createElement("div");
+  group.className = "search-section";
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", sectionTitle(section));
+  const title = document.createElement("h3");
+  title.className = "search-section-title";
+  // Le groupe porte déjà le titre : le lecteur d'écran ne le lit pas deux fois.
+  title.setAttribute("aria-hidden", "true");
+  title.textContent = sectionTitle(section);
+  group.append(
+    title,
+    ...section.results.map((result) => resultElement(result, workspaceName, selected, actions)),
+  );
+  return group;
+}
+
+/** Un résultat : titre, dossier, type de contenu, extrait ; ouvre la note, ou propose son menu. */
+function resultElement(
+  result: SearchResultItem,
+  workspaceName: string,
+  selected: string | null,
+  actions: SearchResultActions,
+): HTMLElement {
+  const item = document.createElement("button");
+  item.className = "search-result";
+  item.classList.toggle("selected", result.path === selected);
+  const folder =
+    result.folder === "" ? workspaceName : result.folder.replaceAll("/", FOLDER_SEPARATOR);
+  item.append(line("note-title", result.title), place(folder, result), excerpt(result));
+  openOnClick(item, result.path, actions, result.node);
+  item.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    const { clientX, clientY } = event;
+    withRename(result.path, actions.renaming, (rename) => {
+      const entries = noteMenu({
+        place: (placement) => actions.place(result.path, placement),
+        close: () => actions.closeNote(result.path),
+        rename,
+      });
+      showContextMenu(clientX, clientY, entries);
+    });
+  });
+  return item;
 }
