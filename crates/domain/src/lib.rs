@@ -26,6 +26,8 @@ pub mod links;
 pub mod meaning;
 pub mod meaning_vector;
 pub mod mind_map;
+pub mod mind_map_editing;
+pub mod mind_map_reading;
 pub mod note;
 pub mod ranking;
 pub mod reading;
