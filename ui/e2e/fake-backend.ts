@@ -18,6 +18,7 @@ import { fakeLinks } from "./fake-links";
 import { fakeCrms } from "./fake-crm";
 import { fakeContentType, fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
 import { fakeEntryResults, fakeNotebook } from "./fake-notebook";
+import { fakeRenaming } from "./fake-rename";
 import { fakeTags } from "./fake-tags";
 import { FIRST, fakeWorkspaces } from "./fake-workspaces";
 import { type FakeWriting, fakeWriting, fakeWritingState } from "./fake-writing";
@@ -186,7 +187,10 @@ function listTags() {
 const noteContent = (path: string, content: string) => ({
   path,
   content,
-  title: displayedTitle(content),
+  // Un canvas n'a pas de titre à lui : son titre est son nom de fichier.
+  title: path.endsWith(".canvas")
+    ? path.replace(/^.*\//, "").replace(/\.canvas$/, "")
+    : displayedTitle(content),
   fingerprint: fingerprintOf(content),
 });
 
@@ -434,6 +438,9 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...fakeCanvases(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeCrms(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeTags(backend, { tagsOf, tick: () => (clock += 1) }),
+  ...fakeRenaming(backend, {
+    ...{ titleOf, slug, fingerprint: fingerprintOf, tick: () => (clock += 1) },
+  }),
   ...fakeMeaning(backend, {
     ...{ notes: () => backend.notes, listItem, folded },
     folderOf,

@@ -15,6 +15,7 @@ import { linkMenuScenarios } from "./link-menu";
 import { menuIconsScenarios } from "./menu-icons";
 import { newContentMenuScenarios } from "./new-content-menu";
 import { noteScenarios } from "./notes";
+import { renameScenarios } from "./rename";
 import { searchScenarios } from "./search";
 import { settingsScenarios } from "./settings";
 import { tagFieldScenarios } from "./tag-field";
@@ -38,6 +39,7 @@ export function scenariosFor(env: Env): Scenario[] {
     ...workspaceSwitcherScenarios(env),
     ...foldersHeightScenarios(),
     ...menuIconsScenarios(),
+    ...renameScenarios(env),
     ...searchScenarios(env),
   ];
 }

@@ -129,6 +129,19 @@ describe("pont vers Rust : chaque fonction appelle sa commande", () => {
     ]);
   });
 
+  it("renomme un contenu par son nouveau titre", async () => {
+    const answer = {
+      path: "b.md",
+      title: "B",
+      fingerprint: "f2",
+      conflictCopy: null,
+      tagsChanged: false,
+    };
+    const calls = recordCalls(answer);
+    expect(await bridge.renameNote("a.md", "B")).toEqual(answer);
+    expect(calls).toEqual([{ command: "rename_note", args: { path: "a.md", title: "B" } }]);
+  });
+
   it("crée une note", async () => {
     const calls = recordCalls({ path: "sans-titre.md" });
     await bridge.createNote("Travail");

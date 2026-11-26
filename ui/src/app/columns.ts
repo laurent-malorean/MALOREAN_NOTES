@@ -1,5 +1,6 @@
 // Colonnes et onglets : leur état, l'éditeur de chaque colonne, et ce qui suit chaque changement.
 import { type ColumnParts, type ColumnsHandlers, createColumnsView } from "../screens/columns-view";
+import type { NoteRenaming } from "../screens/note-menu";
 import type { Pane } from "../screens/note-pane";
 import {
   activeNote,
@@ -41,6 +42,8 @@ export interface ColumnsDeps {
   copyMarkdown(path: string): void;
   /** Ouvrir l'historique d'une note (menu d'un onglet). */
   showHistory(path: string): void;
+  /** Renommer une note par le menu de son onglet ; sans lui, le menu n'a pas « Renommer… ». */
+  readonly renaming?: NoteRenaming;
   run(action: Promise<unknown>): void;
 }
 
@@ -139,6 +142,7 @@ function viewHandlers(state: ColumnsState, deps: ColumnsDeps, open: OpenColumns)
     copyNote: (path) => deps.copyNote(path),
     copyMarkdown: (path) => deps.copyMarkdown(path),
     showHistory: (path) => deps.showHistory(path),
+    renaming: deps.renaming,
     dropTab: (tabId, drop) =>
       deps.run(open.changeFlushed(() => tabDropped(state.columns, tabId, drop))),
     split: () => deps.run(open.split()),

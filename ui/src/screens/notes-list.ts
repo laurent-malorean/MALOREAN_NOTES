@@ -1,7 +1,15 @@
 import type { NoteListItem } from "../bridge";
 import type { Placement } from "../state/columns";
-import { showContextMenu } from "./context-menu";
-import { COPY_LABEL, HISTORY_LABEL, MARKDOWN_COPY_LABEL, noteMenu, openOnClick } from "./note-menu";
+import { type MenuEntry, showContextMenu } from "./context-menu";
+import {
+  COPY_LABEL,
+  HISTORY_LABEL,
+  MARKDOWN_COPY_LABEL,
+  type NoteRenaming,
+  noteMenu,
+  openOnClick,
+  withRename,
+} from "./note-menu";
 import { startDragging, stopDragging } from "./dragging";
 import { tagChips } from "./tags-view";
 import { showFullNameWhenTruncated } from "./truncated-name";
@@ -29,6 +37,8 @@ export interface NoteActions {
   readonly copyMarkdown: (path: string) => void;
   /** Ouvrir l'historique des versions de la note. */
   readonly showHistory: (path: string) => void;
+  /** Renommer la note par son menu ; sans lui, le menu n'a pas « Renommer… ». */
+  readonly renaming?: NoteRenaming;
 }
 
 /** Les touches qui placent la note choisie dans la corbeille. */
@@ -44,6 +54,49 @@ function pinMark(): HTMLElement {
   return pin;
 }
 
+/** Les choix du menu d'une note de la liste : le menu d'une note, puis épingler, exporter, copier, historique, corbeille. */
+function menuOf(note: NoteListItem, actions: NoteActions, rename?: () => void): MenuEntry[] {
+  const pinning = note.pinned
+    ? { label: "Désépingler", icon: "unpin" as const, run: () => actions.unpin(note.path) }
+    : { label: "Épingler", icon: "pin" as const, run: () => actions.pin(note.path) };
+  const trashing = {
+    label: "Placer dans la corbeille",
+    icon: "trash" as const,
+    run: () => actions.trash(note.path),
+  };
+  const exporting = {
+    label: "Exporter…",
+    icon: "export" as const,
+    run: () => actions.exportNote(note.path),
+  };
+  const printing = {
+    label: "Imprimer…",
+    icon: "print" as const,
+    run: () => actions.printNote(note.path),
+  };
+  const copying = {
+    label: COPY_LABEL,
+    icon: "copy" as const,
+    run: () => actions.copyNote(note.path),
+  };
+  const markdown = {
+    label: MARKDOWN_COPY_LABEL,
+    icon: "markdown" as const,
+    run: () => actions.copyMarkdown(note.path),
+  };
+  const history = {
+    label: HISTORY_LABEL,
+    icon: "history" as const,
+    run: () => actions.showHistory(note.path),
+  };
+  const placing = noteMenu({
+    place: (placement) => actions.place(note.path, placement),
+    close: () => actions.closeNote(note.path),
+    rename,
+  });
+  return [...placing, pinning, exporting, printing, copying, markdown, history, trashing];
+}
+
 /**
  * Le clic droit propose le menu de la note, puis de l'épingler (ou de la désépingler si elle
  * l'est) et de la placer dans la corbeille ; les touches Effacer et Suppr la placent aussi dans
@@ -52,53 +105,10 @@ function pinMark(): HTMLElement {
 function offerActions(item: HTMLElement, note: NoteListItem, actions: NoteActions) {
   item.addEventListener("contextmenu", (event) => {
     event.preventDefault();
-    const pinning = note.pinned
-      ? { label: "Désépingler", icon: "unpin" as const, run: () => actions.unpin(note.path) }
-      : { label: "Épingler", icon: "pin" as const, run: () => actions.pin(note.path) };
-    const trashing = {
-      label: "Placer dans la corbeille",
-      icon: "trash" as const,
-      run: () => actions.trash(note.path),
-    };
-    const exporting = {
-      label: "Exporter…",
-      icon: "export" as const,
-      run: () => actions.exportNote(note.path),
-    };
-    const printing = {
-      label: "Imprimer…",
-      icon: "print" as const,
-      run: () => actions.printNote(note.path),
-    };
-    const copying = {
-      label: COPY_LABEL,
-      icon: "copy" as const,
-      run: () => actions.copyNote(note.path),
-    };
-    const markdown = {
-      label: MARKDOWN_COPY_LABEL,
-      icon: "markdown" as const,
-      run: () => actions.copyMarkdown(note.path),
-    };
-    const history = {
-      label: HISTORY_LABEL,
-      icon: "history" as const,
-      run: () => actions.showHistory(note.path),
-    };
-    const placing = noteMenu({
-      place: (placement) => actions.place(note.path, placement),
-      close: () => actions.closeNote(note.path),
-    });
-    showContextMenu(event.clientX, event.clientY, [
-      ...placing,
-      pinning,
-      exporting,
-      printing,
-      copying,
-      markdown,
-      history,
-      trashing,
-    ]);
+    const { clientX, clientY } = event;
+    withRename(note.path, actions.renaming, (rename) =>
+      showContextMenu(clientX, clientY, menuOf(note, actions, rename)),
+    );
   });
   item.addEventListener("keydown", (event) => {
     if (!TRASH_KEYS.has(event.key)) return;

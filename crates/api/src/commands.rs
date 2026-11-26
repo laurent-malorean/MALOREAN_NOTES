@@ -29,6 +29,7 @@ pub mod links;
 pub mod meaning;
 pub mod menu;
 pub mod mind_map;
+pub mod renaming;
 pub mod research_notebook;
 pub mod tags;
 pub mod templates;
@@ -500,6 +501,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         list_recent_notes,
         read_note,
         save_note,
+        renaming::rename_note,
         create_note,
         create_note_from_template,
         create_daily_note,

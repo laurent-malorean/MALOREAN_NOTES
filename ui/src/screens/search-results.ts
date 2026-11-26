@@ -1,11 +1,19 @@
 import type { SearchResultItem } from "../bridge";
 import { placeLabel } from "../state/content-type";
 import { showContextMenu } from "./context-menu";
-import { type NoteOpening, noteMenu, openOnClick } from "./note-menu";
+import {
+  type NoteOpening,
+  type NoteRenaming,
+  noteMenu,
+  openOnClick,
+  withRename,
+} from "./note-menu";
 
 /** Ce qu'une note trouvée peut demander : l'ouvrir, ici ou ailleurs, ou fermer son onglet. */
 export interface SearchResultActions extends NoteOpening {
   readonly closeNote: (path: string) => void;
+  /** Renommer la note par son menu ; sans lui, le menu n'a pas « Renommer… ». */
+  readonly renaming?: NoteRenaming;
 }
 
 const NOTHING_FOUND = "Aucune note trouvée";
@@ -76,11 +84,15 @@ export function renderSearchResults(
       openOnClick(item, result.path, actions, result.node);
       item.addEventListener("contextmenu", (event) => {
         event.preventDefault();
-        const entries = noteMenu({
-          place: (placement) => actions.place(result.path, placement),
-          close: () => actions.closeNote(result.path),
+        const { clientX, clientY } = event;
+        withRename(result.path, actions.renaming, (rename) => {
+          const entries = noteMenu({
+            place: (placement) => actions.place(result.path, placement),
+            close: () => actions.closeNote(result.path),
+            rename,
+          });
+          showContextMenu(clientX, clientY, entries);
         });
-        showContextMenu(event.clientX, event.clientY, entries);
       });
       return item;
     }),

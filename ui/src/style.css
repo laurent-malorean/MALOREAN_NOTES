@@ -1632,6 +1632,13 @@ button {
   color: var(--text);
   font: inherit;
 }
+.name-prompt-error {
+  margin: 0.5rem 0 0;
+  color: var(--danger);
+}
+.name-prompt-error:empty {
+  display: none;
+}
 /* Zone de saisie en bas de la page d'un cahier de recherche : message, texte, bouton */
 .editor .notebook-entry {
   padding: 0.6rem 1.2rem 0.8rem;

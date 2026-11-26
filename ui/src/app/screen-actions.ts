@@ -1,6 +1,7 @@
 // Demandes de l'écran : ce que la liste des dossiers, la liste des notes, les étiquettes,
 // Récentes et la corbeille demandent, confié au module de chaque domaine.
 import type * as Bridge from "../bridge";
+import type { NoteRenaming } from "../screens/note-menu";
 import type { ScreenActions } from "../screens/screen-view";
 import { noteClosed, notePlaced } from "../state/columns";
 import { searchedQuery, searchTyped } from "../state/screen";
@@ -34,6 +35,8 @@ export interface ScreenActionsDeps {
   readonly exporting: Exporting;
   /** L'historique d'une note, demandé par son menu dans la liste. */
   readonly history: NoteHistory;
+  /** Renommer une note par son menu, dans la liste et dans les résultats de la recherche. */
+  readonly renaming: NoteRenaming;
   /** Les réglages, que la fenêtre de recherche ouvre sur l'onglet « Index » quand le sens manque. */
   readonly settings: Pick<AppSettings, "openTab">;
   /** Lance l'action ; son échec est montré. */
@@ -68,6 +71,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     recent,
     exporting,
     history,
+    renaming,
     settings,
     run,
   } = deps;
@@ -105,6 +109,7 @@ export function screenActions(deps: ScreenActionsDeps): ScreenActions {
     copyNote: (path) => exporting.copyNote(path),
     copyMarkdown: (path) => exporting.copyMarkdown(path),
     showHistory: (path) => history.show(path),
+    renaming,
     trashFolder: (path) => run(trash.trashFolder(path)),
     restoreNote: (path) => run(trash.restoreNote(path)),
     restoreFolder: (path) => run(trash.restoreFolder(path)),

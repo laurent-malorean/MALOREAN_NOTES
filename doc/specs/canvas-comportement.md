@@ -70,6 +70,8 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 
 ## 8. Menus du clic droit
 
+- **Renommer le canvas** : un canvas n'a pas de titre dans son contenu, son titre est son nom de fichier (sans `.canvas`). « Renommer… » (menu du clic droit d'une note de la liste, d'un onglet ou d'un résultat de recherche, décision 0090) ouvre une fenêtre préremplie avec ce nom ; le titre tapé devient le nom du fichier en kebab-case (« Mon plan » donne `mon-plan.canvas`). Un nom déjà pris dans le dossier, ou vide, est refusé dans la fenêtre. Le contenu du canvas n'est pas touché.
+
 - **Sur le canvas** : ajouter une note, ajouter un média, ajouter une page web, créer un groupe, aller à un groupe (grisé sans groupe).
 - **Sur une carte** : convertir en fichier, changer le fichier, ouvrir le lien externe, modifier, retirer, zoomer sur la sélection ; pour une page web : copier l'adresse, changer l'adresse, recharger la page.
 - **Sur une ligne** : retirer, modifier l'étiquette, suivre la connexion.

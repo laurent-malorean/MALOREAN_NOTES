@@ -26,6 +26,10 @@ function setup(searching: string | null = null) {
     show: (next: { search: { query: string } | null }) =>
       void calls.push(`écran ${next.search === null ? "sans recherche" : next.search.query}`),
   } as unknown as CurrentScreen;
+  const renaming = {
+    available: async () => true,
+    start: (path: string) => void calls.push(`renommer la note ${path}`),
+  };
   const actions = screenActions({
     backend,
     screen,
@@ -69,13 +73,21 @@ function setup(searching: string | null = null) {
       copyMarkdown: (path) => void calls.push(`copier en Markdown ${path}`),
     },
     history: { show: (path) => void calls.push(`historique ${path}`) },
+    renaming,
     settings: { openTab: (name) => void calls.push(`réglages ${name}`) },
     run: (action) => void ran.push(action),
   });
-  return { actions, calls, ran, columns };
+  return { actions, calls, ran, columns, renaming };
 }
 
 describe("demandes de l'écran", () => {
+  it("le menu d'une note de la liste et des résultats renomme par le module du renommage", () => {
+    const t = setup();
+    expect(t.actions.renaming).toBe(t.renaming);
+    t.actions.renaming?.start("a.md");
+    expect(t.calls).toEqual(["renommer la note a.md"]);
+  });
+
   it("une carte mentale trouvée par un nœud s'ouvre sur lui, sans chercher le terme dans le texte", async () => {
     const t = setup("pain");
     t.actions.open("carte.md", "0.1");

@@ -426,3 +426,70 @@ fn the_stages_changed_by_a_gesture_are_shown_by_the_next_reading() {
         .unwrap();
     assert_eq!(stages(&session), ["Progress", "WaitingFor"]);
 }
+
+/// Ce que montre un CRM de ses fiches : le titre et la date du jour mis à part, tout le reste.
+fn fiches_of(view: &CrmItem) -> impl PartialEq + std::fmt::Debug {
+    (
+        (&view.columns, &view.actions, &view.week),
+        (&view.people, &view.companies, &view.projects),
+        (&view.unreadable, &view.stages),
+    )
+}
+
+#[test]
+fn a_renamed_crm_keeps_all_its_fiches_and_shows_the_same_kanban() {
+    let session = session();
+    let before = read(&session);
+    let renamed = session.rename_note("clients.md", "Prospects").unwrap();
+    assert_eq!(
+        (renamed.path.as_str(), renamed.title.as_str()),
+        ("prospects.md", "Prospects")
+    );
+    let after = session
+        .read_crm("prospects.md", CrmFiltersItem::default(), None)
+        .unwrap();
+    assert_eq!(after.title, "Prospects");
+    assert_eq!(fiches_of(&after), fiches_of(&before));
+    assert!(after.unreadable.is_empty());
+}
+
+#[test]
+fn the_fiches_of_a_renamed_crm_are_in_the_folder_of_its_new_name() {
+    let session = session();
+    session.rename_note("clients.md", "Prospects").unwrap();
+    assert!(
+        session
+            .read_note("prospects/actions/2026-11-10-demande-de-devis.md")
+            .is_ok()
+    );
+    assert!(
+        session
+            .read_note("clients/personnes/jean-dupont.md")
+            .is_err()
+    );
+}
+
+#[test]
+fn a_crm_action_stays_changeable_after_its_crm_is_renamed() {
+    let session = session();
+    session.rename_note("clients.md", "Prospects").unwrap();
+    session
+        .delete_crm_action("prospects.md", "2026-11-16-appel")
+        .unwrap();
+    let after = session
+        .read_crm("prospects.md", CrmFiltersItem::default(), None)
+        .unwrap();
+    assert_eq!(after.actions.len(), 2);
+}
+
+#[test]
+fn a_fiche_is_not_renamed_by_the_note_menu() {
+    let session = session();
+    let refused = session
+        .rename_note("clients/entreprises/acme.md", "Autre")
+        .unwrap_err();
+    assert_eq!(
+        refused.message,
+        "le nom d'une fiche de CRM se change dans son écran"
+    );
+}
