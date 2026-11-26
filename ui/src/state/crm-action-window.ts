@@ -146,6 +146,17 @@ export function removeChecklistQuestion(list: ChecklistItem): string {
   return `Supprimer la checklist « ${list.name} »${items} ?`;
 }
 
+/** Le nombre de caractères d'un commentaire rappelé dans la question de suppression. */
+const EXCERPT_LENGTH = 60;
+
+/** La question avant de supprimer un commentaire : son moment et un extrait de son texte (sur une ligne, tronqué par « … »). */
+export function removeCommentQuestion(comment: CommentItem): string {
+  const text = comment.text.replace(/\s+/g, " ").trim();
+  const excerpt =
+    text.length > EXCERPT_LENGTH ? `${text.slice(0, EXCERPT_LENGTH).trimEnd()}…` : text;
+  return `Supprimer le commentaire du ${comment.at} : « ${excerpt} » ?`;
+}
+
 /** Les commentaires du plus récent au plus ancien, chacun avec sa place dans l'ordre écrit (c'est elle que Rust attend). */
 export function newestFirst(
   comments: readonly CommentItem[],

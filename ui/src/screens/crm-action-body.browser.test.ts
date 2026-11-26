@@ -247,15 +247,56 @@ describe("fenêtre d'une action : commentaires", () => {
     expect(control<HTMLTextAreaElement>("Ajouter un commentaire").value).toBe("");
   });
 
-  it("supprime un commentaire, désigné par sa place dans l'ordre écrit", async () => {
+  it("demande confirmation avant de supprimer un commentaire : annuler ne supprime rien", async () => {
+    const m = await openedWindow();
+    m.answer.value = false;
+    buttonIn("Supprimer le commentaire du 2026-11-23 09:00").click();
+    await vi.waitFor(() => expect(m.questions).toHaveLength(1));
+    expect(m.questions).toEqual([
+      "Supprimer le commentaire du 2026-11-23 09:00 : « Premier appel » ?",
+    ]);
+    await tick();
+    expect(sent(m)).toEqual([]);
+    expect(document.querySelectorAll(".crm-aw-comment")).toHaveLength(2);
+  });
+
+  it("supprime un commentaire une fois confirmé, désigné par sa place dans l'ordre écrit", async () => {
     const m = await openedWindow();
     buttonIn("Supprimer le commentaire du 2026-11-24 10:32").click();
+    await waitForGesture(m, 1);
     buttonIn("Supprimer le commentaire du 2026-11-23 09:00").click();
     await waitForGesture(m, 2);
     expect(sent(m)).toEqual([
       body({ kind: "removeComment", comment: 1 }),
       body({ kind: "removeComment", comment: 0 }),
     ]);
+    expect(m.questions[0]).toBe(
+      "Supprimer le commentaire du 2026-11-24 10:32 : « Voir https://acme.fr/devis. Retenter jeudi » ?",
+    );
+  });
+
+  it("ne supprime rien si le commentaire a changé pendant la question", async () => {
+    const m = await openedWindow();
+    let answered = (): void => undefined;
+    m.answer.wait = new Promise<void>((resolve) => (answered = resolve));
+    buttonIn("Supprimer le commentaire du 2026-11-23 09:00").click();
+    m.disk.crm = changedCrm({ comments: [{ at: "2026-11-23 09:00", text: "Appel modifié" }] });
+    await m.view.reload();
+    answered();
+    await tick();
+    expect(sent(m)).toEqual([]);
+  });
+
+  it("ne supprime rien si le commentaire a disparu pendant la question", async () => {
+    const m = await openedWindow();
+    let answered = (): void => undefined;
+    m.answer.wait = new Promise<void>((resolve) => (answered = resolve));
+    buttonIn("Supprimer le commentaire du 2026-11-24 10:32").click();
+    m.disk.crm = changedCrm({ comments: [] });
+    await m.view.reload();
+    answered();
+    await tick();
+    expect(sent(m)).toEqual([]);
   });
 
   it("modifie un commentaire : champ rempli, enregistrer l'envoie, annuler le garde", async () => {
