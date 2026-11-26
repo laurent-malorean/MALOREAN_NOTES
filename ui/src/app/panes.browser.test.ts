@@ -13,7 +13,7 @@ describe("éditeur d'une colonne", () => {
       events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
     });
     const configure = vi.fn();
-    const notebook = { add: vi.fn(async () => true), entries: vi.fn() };
+    const notebook = { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() };
     const addresses: string[] = [];
     const make = paneMaker({
       backend: {
@@ -45,7 +45,7 @@ describe("éditeur d'une colonne", () => {
       backend: fake.backend,
       events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
     });
-    const notebook = { add: vi.fn(async () => true), entries: vi.fn() };
+    const notebook = { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() };
     const make = paneMaker({
       backend: { ...fake.backend, fileAddress: (path) => path },
       shared,
@@ -89,7 +89,7 @@ describe("canvas d'une colonne", () => {
       } as never,
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
-      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() },
       layout: {
         picker: document.createElement("dialog"),
         confirmation: document.createElement("dialog"),
@@ -135,7 +135,7 @@ describe("CRM d'une colonne", () => {
       } as never,
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
-      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() },
       layout: {
         picker: document.createElement("dialog"),
         confirmation: document.createElement("dialog"),
@@ -177,7 +177,7 @@ describe("CRM d'une colonne", () => {
       },
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error },
-      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() },
       workspace,
       configure: vi.fn(),
     });
@@ -221,7 +221,7 @@ describe("CRM d'une colonne", () => {
       },
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error },
-      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() },
       workspace: {
         path: () => "/lib",
         refreshTags: () => Promise.reject(failure),
@@ -264,7 +264,7 @@ describe("menu des liens d'une colonne", () => {
       },
       shared,
       events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
-      notebook: { add: vi.fn(async () => true), entries: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() },
       workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
       configure: vi.fn(),
     });

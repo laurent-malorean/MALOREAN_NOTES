@@ -19,6 +19,7 @@ import {
   newestFirst,
   PEOPLE_SEPARATOR,
   progress,
+  removeCommentQuestion,
   segmentsOf,
 } from "./crm-action-window";
 
@@ -267,5 +268,26 @@ describe("adresses dans un commentaire", () => {
       link("https://x.fr", "https://x.fr"),
       text("\nb"),
     ]);
+  });
+});
+
+describe("question avant de supprimer un commentaire", () => {
+  const ask = (text: string) => removeCommentQuestion({ at: "2026-11-20 09:00", text });
+
+  it("rappelle le moment et le texte", () => {
+    expect(ask("Rappeler lundi")).toBe(
+      "Supprimer le commentaire du 2026-11-20 09:00 : « Rappeler lundi » ?",
+    );
+  });
+
+  it("met sur une seule ligne un texte écrit sur plusieurs", () => {
+    expect(ask("a\n\n  b\tc")).toBe("Supprimer le commentaire du 2026-11-20 09:00 : « a b c » ?");
+  });
+
+  it("garde un texte de 60 caractères entier et tronque au-delà avec « … »", () => {
+    const sixty = "x".repeat(60);
+    expect(ask(sixty)).toContain(`« ${sixty} »`);
+    expect(ask(`${sixty}y`)).toContain(`« ${sixty}… »`);
+    expect(ask(`${"mot ".repeat(15)}fin`)).toContain(`« ${"mot ".repeat(14)}mot… »`);
   });
 });

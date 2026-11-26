@@ -29,7 +29,7 @@ pub(super) fn add_entry() -> Described {
          `type: cahier-de-recherche`, créé par `create_research_notebook`), à l'heure qu'il est, sous les titres d'année, de mois et \
          de jour qui manquent. C'est la seule façon d'écrire dans un cahier : il ne se modifie \
          jamais, ni par cet outil ni par vos outils de fichiers. Une erreur se \
-         rectifie par une nouvelle entrée. Rend l'entrée ajoutée : ancre, moment et texte.",
+         rectifie par une nouvelle entrée. Rend l'entrée ajoutée : ancre, moment, texte et numéro d'entrée (sa position dans le cahier, à partir de 1).",
         input(
             json!({
                 "path": text("Chemin du cahier depuis l'espace de travail : `dossier/nom.md`."),

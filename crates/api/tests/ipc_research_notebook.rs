@@ -93,10 +93,12 @@ fn a_notebook_is_created_then_receives_entries_with_the_argument_names_used_by_t
         "label": "16 novembre 2026 à 18:30",
         "text": "un",
         "line": 11,
+        "number": 1,
     });
     assert_eq!(added(&window, "un"), entry);
     let second = added(&window, "deux");
     assert_eq!(second["anchor"], "2026-11-16-18h30-2");
+    assert_eq!(second["number"], 2);
     let entries = call(&window, "list_entries", json!({ "path": "levures.md" })).unwrap();
     assert_eq!(entries[0], entry);
     assert_eq!(entries.as_array().unwrap().len(), 2);

@@ -4,6 +4,7 @@
 // s'écrit qu'à « Enregistrer ». La mise à jour venue d'ailleurs attend la fin d'une saisie (§ 10).
 import type { CrmActionChangeItem, CrmActionDraftItem, CrmItem } from "../bridge";
 import type { ChecklistItem } from "../bridge/generated/ChecklistItem";
+import type { CommentItem } from "../bridge/generated/CommentItem";
 import {
   type ActionFields,
   applyChange,
@@ -13,6 +14,7 @@ import {
   fieldsOf,
   type Prefill,
   removeChecklistQuestion,
+  removeCommentQuestion,
 } from "../state/crm-action-window";
 import { checklistsSection, commentsSection } from "./crm-action-body";
 import {
@@ -337,6 +339,14 @@ class Window implements ActionWindow {
     this.change({ kind: "body", change: { kind: "removeChecklist", list: index } });
   }
 
+  /** Supprime le commentaire après confirmation ; s'il a changé ou disparu entre-temps (changement venu d'ailleurs), rien n'est supprimé. */
+  private async removeComment(index: number, comment: CommentItem): Promise<void> {
+    const confirmed = await this.env.confirm(removeCommentQuestion(comment), DELETE_TEXT);
+    const current = this.shown.action?.comments[index];
+    if (!confirmed || current?.at !== comment.at || current.text !== comment.text) return;
+    this.change({ kind: "body", change: { kind: "removeComment", comment: index } });
+  }
+
   private async linkNote(): Promise<void> {
     const title = await this.env.chooseNote();
     const notes = this.shown.fields.linkedNotes;
@@ -379,6 +389,7 @@ class Window implements ActionWindow {
       openPerson: this.env.openPerson,
       linkNote: () => void this.linkNote(),
       removeChecklist: (index, list) => void this.removeChecklist(index, list),
+      removeComment: (index, comment) => void this.removeComment(index, comment),
       adding: {
         get: () => this.adding,
         set: (key) => this.openAdding(key),

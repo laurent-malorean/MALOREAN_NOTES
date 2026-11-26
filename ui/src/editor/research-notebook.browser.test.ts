@@ -211,4 +211,135 @@ describe("cahier de recherche dans l'éditeur", () => {
       expect(made.parent.querySelectorAll(".entry-bar-first").length).toBe(2);
     });
   });
+
+  describe("numéro d'entrée", () => {
+    const ENTRIES =
+      "---\ntype: cahier-de-recherche\n---\n# Levures\n\n## 2026\n\n### Novembre\n\n#### Lundi 23\n\n" +
+      "- 09:00 - un\n  suite de un\n  - sous-puce\n- 10:00 - deux\n- 11:00 - trois\n";
+    const numbers = (parent: HTMLElement) => [
+      ...parent.querySelectorAll<HTMLElement>(".entry-number"),
+    ];
+    const shown = (width = 600, copied: number[] = []) => {
+      const made = mount({ copyReference: (number) => copied.push(number) });
+      made.parent.className = "editor";
+      made.parent.style.width = `${width}px`;
+      made.editor.show(ENTRIES);
+      return { ...made, copied };
+    };
+
+    it("montre les numéros 0001, 0002… dans l'ordre, un par entrée, sur la première ligne", () => {
+      const { parent } = shown();
+      expect(numbers(parent).map((n) => n.textContent)).toEqual(["0001", "0002", "0003"]);
+      const firstLines = [...parent.querySelectorAll(".entry-bar-first")];
+      expect(firstLines.map((l) => l.querySelector(".entry-number")?.textContent)).toEqual([
+        "0001",
+        "0002",
+        "0003",
+      ]);
+      expect(parent.querySelectorAll(".entry-bar:not(.entry-bar-first) .entry-number").length).toBe(
+        0,
+      );
+    });
+
+    it("n'en montre aucun dans un cahier vide, une note ordinaire, ni sans moyen de copier", () => {
+      const empty = mount({ copyReference: () => {} });
+      empty.editor.show(NOTEBOOK.replace("- 18:30 - un\n", ""));
+      expect(numbers(empty.parent)).toEqual([]);
+      const note = mount({ copyReference: () => {} });
+      note.editor.show("# Note\n\n- un\n- deux\n");
+      expect(numbers(note.parent)).toEqual([]);
+      const bare = mount();
+      bare.editor.show(ENTRIES);
+      expect(numbers(bare.parent)).toEqual([]);
+      expect(bare.parent.querySelector(".cm-numbered-entries")).toBeNull();
+    });
+
+    it("suit la version relue : l'entrée ajoutée prend le numéro suivant", () => {
+      const { parent, editor } = shown();
+      editor.reload(`${ENTRIES}- 12:00 - quatre\n`);
+      expect(numbers(parent).map((n) => n.textContent)).toEqual(["0001", "0002", "0003", "0004"]);
+    });
+
+    it("écrit un nombre de plus de 4 chiffres en entier, sans recouvrir le texte", async () => {
+      const { parent, editor, view } = shown(300);
+      const many = Array.from({ length: 10000 }, (_, i) => `- 09:00 - n${i}`).join("\n");
+      editor.reload(`${NOTEBOOK.slice(0, NOTEBOOK.indexOf("- 18:30"))}${many}\n`);
+      view.dispatch({ selection: { anchor: view.state.doc.length }, scrollIntoView: true });
+      await expect.poll(() => numbers(parent).at(-1)?.textContent).toBe("10000");
+      const box = (numbers(parent).at(-1) as HTMLElement).getBoundingClientRect();
+      const line = (
+        numbers(parent).at(-1)?.closest(".cm-line") as HTMLElement
+      ).getBoundingClientRect();
+      expect(box.right).toBeLessThanOrEqual(line.left);
+      expect(box.left).toBeGreaterThanOrEqual(parent.getBoundingClientRect().left);
+    });
+
+    it("est un vrai bouton nommé, qui prend le focus au clavier", async () => {
+      const { parent, copied } = shown();
+      const [first, second] = numbers(parent);
+      expect(first?.tagName).toBe("BUTTON");
+      expect((first as HTMLButtonElement).type).toBe("button");
+      expect(first?.getAttribute("aria-label")).toBe("Copier la référence de l'entrée 0001");
+      expect(second?.title).toBe("Copier la référence de l'entrée 0002");
+      (second as HTMLElement).focus();
+      expect(document.activeElement).toBe(second);
+      await userEvent.keyboard("{Enter}");
+      await userEvent.keyboard(" ");
+      expect(copied).toEqual([2, 2]);
+    });
+
+    it("copie la référence de l'entrée au clic, sans toucher au cahier ni au curseur", async () => {
+      const { parent, copied, view, editor } = shown();
+      const before = view.state.selection.main.head;
+      await userEvent.click(numbers(parent)[2] as HTMLElement);
+      await userEvent.click(numbers(parent)[0] as HTMLElement);
+      expect(copied).toEqual([3, 1]);
+      expect(editor.content()).toBe(ENTRIES);
+      expect(view.state.selection.main.head).toBe(before);
+    });
+
+    it("se place dans la marge, en face de la première ligne, sans recouvrir le texte", () => {
+      for (const width of [900, 300]) {
+        const { parent } = shown(width);
+        const lineBoxes = [...parent.querySelectorAll<HTMLElement>(".cm-line")].map((l) =>
+          l.getBoundingClientRect(),
+        );
+        for (const box of numbers(parent)) {
+          const rect = box.getBoundingClientRect();
+          const line = (box.closest(".cm-line") as HTMLElement).getBoundingClientRect();
+          const gap = parseFloat(
+            getComputedStyle(box.closest(".cm-line") as HTMLElement).paddingTop,
+          );
+          expect(rect.right).toBeLessThanOrEqual(line.left);
+          expect(rect.left).toBeGreaterThanOrEqual(parent.getBoundingClientRect().left);
+          expect(rect.top).toBeGreaterThanOrEqual(line.top + gap - 1);
+          expect(rect.bottom).toBeLessThanOrEqual(line.top + gap + 1.65 * 18 + 1);
+          for (const other of lineBoxes) expect(rect.right).toBeLessThanOrEqual(other.left);
+        }
+      }
+    });
+
+    it("ne décale pas le texte d'une entrée à l'autre, ni la barre", () => {
+      const { parent } = shown();
+      const firsts = [...parent.querySelectorAll<HTMLElement>(".entry-bar-first")];
+      const lefts = firsts.map((l) => l.getBoundingClientRect().left);
+      expect(new Set(lefts).size).toBe(1);
+      const text = parent.querySelector(".entry-bar:not(.entry-bar-first)") as HTMLElement;
+      expect(text.getBoundingClientRect().left).toBe(lefts[0]);
+    });
+
+    it("prend les couleurs du thème, clair et sombre", () => {
+      const { parent } = shown();
+      const box = numbers(parent)[0] as HTMLElement;
+      const style = getComputedStyle(box);
+      expect(style.borderTopWidth).toBe("1px");
+      const light = style.borderTopColor;
+      document.documentElement.setAttribute("data-appearance", "dark");
+      try {
+        expect(getComputedStyle(box).borderTopColor).not.toBe(light);
+      } finally {
+        document.documentElement.removeAttribute("data-appearance");
+      }
+    });
+  });
 });

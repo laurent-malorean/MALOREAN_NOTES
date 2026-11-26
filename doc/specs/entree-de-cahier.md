@@ -24,6 +24,26 @@ Ajouter une observation à un cahier de recherche simplement, sans fenêtre ni c
 - La barre est d'une teinte discrète du thème, lisible en clair comme en sombre.
 - Cela ne concerne que les cahiers de recherche : les listes des autres notes ne changent pas. La barre est un simple affichage, le texte du cahier n'en est pas changé.
 
+## 2 ter. Numéroter les entrées (26/11)
+
+But : citer facilement une entrée. Rendu dans la marge gauche, en face de la première ligne de chaque entrée, à côté de la barre :
+
+```
+ ┌──────┐ ┃ • 14:12 — Étape 1 …
+ │ 0001 │ ┃   suite de l'entrée
+ └──────┘ ┃
+ ┌──────┐ ┃ • 15:03 — Étape 2 …
+ │ 0002 │ ┃
+ └──────┘
+```
+
+- Chaque entrée porte un **numéro d'entrée** : sa position dans le cahier, dans l'ordre du fichier. La première est `0001`, la deuxième `0002`, etc. Il s'écrit sur **4 chiffres** ; au-delà de 9999 entrées, le nombre est écrit en entier (`10000`), sans être coupé.
+- Le numéro est dans un **petit rectangle fin**, au contour discret du thème (clair comme sombre), dans la marge à gauche de l'entrée, aligné avec sa première ligne. Le texte ne bouge pas d'une entrée à l'autre ; la marge du cahier est élargie pour que le rectangle ne recouvre jamais le texte, même dans une colonne étroite.
+- Un cahier ne se modifie jamais : le numéro d'une entrée est stable. Rien n'est écrit dans le fichier pour le numéro : il est calculé, donc **les cahiers existants sont numérotés d'office**. Un cahier vide n'affiche aucun numéro ; une entrée ajoutée apparaît avec le numéro suivant, sans recharger.
+- **Le numéro est un bouton** (« Copier la référence de l'entrée 0007 », au clavier comme à la souris). Un clic copie dans le presse-papiers le texte `Titre du cahier · 0007` (titre `#` du cahier, ou à défaut le nom de son fichier) et le message « Référence copiée » le confirme.
+- Hors périmètre : un lien par numéro dans une autre note, une renumérotation, une recherche par numéro.
+- L'outil de l'application pour Claude (« ajouter une entrée ») rend aussi le numéro de l'entrée ajoutée.
+
 ## 3. Ce qui disparaît
 
 - La fenêtre de saisie « Ajouter au cahier », sa liste déroulante de choix du cahier et son bouton « Ajouter ».

@@ -88,10 +88,12 @@ mod tests {
                 label: "16 novembre 2026 à 18:30".into(),
                 text: "un\ndeux".into(),
                 line: 11,
+                number: 1,
             }
         );
         let second = session.add_entry(&created.path, "trois").unwrap();
         assert_eq!(second.anchor, "2026-11-16-18h30-2");
+        assert_eq!(second.number, 2);
         assert_eq!(
             session.list_entries(&created.path).unwrap(),
             [added, second]

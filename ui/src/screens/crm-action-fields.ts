@@ -4,6 +4,7 @@
 import type { CrmActionChangeItem, CrmActionItem, CrmItem } from "../bridge";
 import type { BodyChangeItem } from "../bridge/generated/BodyChangeItem";
 import type { ChecklistItem } from "../bridge/generated/ChecklistItem";
+import type { CommentItem } from "../bridge/generated/CommentItem";
 import { type ActionFields, CHANNELS, emailsToCopy } from "../state/crm-action-window";
 import { PALETTE } from "../state/palette";
 import { actionButton, h } from "./crm-dom";
@@ -40,6 +41,8 @@ export interface WindowActions {
   readonly openAddress: (url: string) => void;
   /** Demande confirmation, puis supprime la checklist `list`, à la place `index` dans l'ordre écrit. */
   readonly removeChecklist: (index: number, list: ChecklistItem) => void;
+  /** Demande confirmation, puis supprime le commentaire `comment`, à la place `index` dans l'ordre écrit. */
+  readonly removeComment: (index: number, comment: CommentItem) => void;
   /** La clé du champ d'ajout ouvert (« Ajouter un élément », « Ajouter une checklist »), `null` s'il n'y en a pas. */
   readonly adding: { get(): string | null; set(key: string | null): void };
   /** La place du commentaire en cours de modification, dans l'ordre écrit. */

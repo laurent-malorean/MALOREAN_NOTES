@@ -73,6 +73,7 @@ pub struct Entry {
     rank: usize,
     text: String,
     line: usize,
+    number: usize,
 }
 
 impl Entry {
@@ -105,6 +106,13 @@ impl Entry {
     #[must_use]
     pub fn line(&self) -> usize {
         self.line
+    }
+
+    /// Son numéro d'entrée : sa position dans le cahier, à partir de 1. Un cahier ne se modifie
+    /// jamais, donc le numéro d'une entrée ne change pas.
+    #[must_use]
+    pub fn number(&self) -> usize {
+        self.number
     }
 }
 
@@ -266,6 +274,7 @@ impl Reading {
             rank,
             text: text.to_owned(),
             line,
+            number: self.entries.len() + 1,
         });
         true
     }
