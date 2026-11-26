@@ -11,8 +11,8 @@ const CENTRE_TOLERANCE = 1;
 /** La bande n'a la place d'une seule ligne qu'à partir de 672 points utiles (fiche 0085). */
 const SINGLE_ROW_NEEDS = 672;
 
-async function launch(page: Page, width: number) {
-  await page.setViewportSize({ width, height: 700 });
+async function launch(page: Page, width: number, height = 700) {
+  await page.setViewportSize({ width, height });
   const params = new URLSearchParams({
     notes: JSON.stringify({ "voyage.md": { content: "# Voyage\nUn beau départ.", modified: 20 } }),
     folders: "[]",
@@ -193,4 +193,16 @@ test("fenêtre étroite, panneaux cachés, colonne Claude Code ouverte : centré
   await expect.poll(async () => (await measure(page)).lines.length).toBeGreaterThanOrEqual(2);
   const m = await measure(page);
   expectCentred(m, m.lines.length);
+});
+
+test("fenêtre de 1100 × 720, panneaux montrés, colonne Claude Code ouverte : chaque ligne est centrée, l'affichage seul sur sa ligne aussi", async ({
+  page,
+}) => {
+  await launch(page, 1100, 720);
+  await claude(page).click();
+  await expect(page.getByRole("region", { name: "Claude Code" })).toBeVisible();
+  // La zone de l'éditeur est plus étroite que l'affichage et la recherche à leur minimum (277 points) :
+  // quatre lignes, la recherche seule sur la dernière, l'affichage seul sur la troisième.
+  await expect.poll(async () => (await measure(page)).lines.length).toBe(4);
+  expectCentred(await measure(page), 4);
 });

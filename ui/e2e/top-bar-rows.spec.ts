@@ -194,7 +194,10 @@ test("zone du milieu plus étroite que l'affichage et la recherche à leur minim
   const s = await strip(page);
   expect(Math.round(s.inner.width)).toBe(270);
   expect(s.overflow).toBe(0);
-  expect(Math.abs(s.display.x - s.inner.x)).toBeLessThan(1);
+  // L'affichage, seul sur sa ligne, est centré (fiche 0100).
+  expect(
+    Math.abs(s.display.x + s.display.width / 2 - (s.inner.x + s.inner.width / 2)),
+  ).toBeLessThan(1);
   expect(s.search.y).toBeGreaterThanOrEqual(s.display.y + s.display.height - 1);
   expect(Math.abs(s.search.x - s.inner.x)).toBeLessThan(1);
   expect(Math.abs(right(s.search) - right(s.inner))).toBeLessThan(1);

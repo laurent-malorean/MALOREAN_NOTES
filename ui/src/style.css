@@ -863,8 +863,13 @@ button {
   }
 }
 /* Plus étroit encore que l'affichage et la recherche à leur minimum (277,2 points, 17,45 rem) : la
-   recherche passe seule sur une troisième ligne, pleine largeur, plutôt que de déborder. */
+   recherche passe seule sur une troisième ligne, pleine largeur, plutôt que de déborder ; l'affichage,
+   seul sur sa ligne, est centré comme les autres lignes (fiche 0100). */
 @container editor-tools (max-width: 17.45rem) {
+  .tool-rows > .display-tools {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
   .tool-rows > .search-field {
     grid-column: 1 / -1;
   }
