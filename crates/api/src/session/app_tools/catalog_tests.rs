@@ -48,7 +48,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 31] = [
+    let expected: [(AppTool, &[&str]); 32] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
@@ -77,6 +77,7 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::AddAttachment, &["path", "file"]),
         (AppTool::AddEntry, &["path", "text"]),
         (AppTool::CreateMindMap, &["title"]),
+        (AppTool::ReadMindMap, path),
         (AppTool::CreateCrm, &["title"]),
         (AppTool::ViewedNote, &[]),
         (AppTool::ShowNote, path),
@@ -248,8 +249,40 @@ fn reading_a_note_takes_a_path_and_tells_the_header_the_limit_and_every_refusal(
         "60 000 caractères",
         "`truncated` vaut alors true et `message` le dit",
         "cahier de recherche (on y ajoute des entrées avec `add_entry`",
-        "une carte mentale, un canvas, un CRM",
+        "une carte mentale (lisez-la avec `read_mind_map`), un canvas",
         "introuvable",
+    ] {
+        assert!(description.contains(expected), "{expected}");
+    }
+}
+
+#[test]
+fn reading_a_mind_map_takes_a_path_and_tells_the_tree_the_limit_and_the_tools_that_change_it() {
+    let described = tool_description(AppTool::ReadMindMap);
+    let mut fields: Vec<_> = described["inputSchema"]["properties"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    fields.sort();
+    assert_eq!(fields, ["path", "workspace"]);
+    let description = described["description"].as_str().unwrap();
+    for expected in [
+        "en arbre, pas en texte de fichier",
+        "`node` (son chemin dans la carte",
+        "`1.0.2`",
+        "`color`",
+        "turquoise",
+        "`detail`",
+        "`children`",
+        "`place`",
+        "50 000 caractères d'arbre",
+        "`truncated` vaut true et `message` le dit",
+        "relisez la carte",
+        "branches pliées",
+        "`add_mind_map_child`",
+        "`delete_mind_map_node`",
     ] {
         assert!(description.contains(expected), "{expected}");
     }

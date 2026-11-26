@@ -2,6 +2,7 @@
 
 use domain::mind_map::{MindMap, is_mind_map, new_mind_map};
 use domain::mind_map_editing::RefusedMindMapEdit;
+use domain::title::displayed_title_of_note;
 use domain::{Folder, NotePath};
 
 use crate::use_cases::{CreateNote, KeepVersion};
@@ -50,11 +51,21 @@ impl<'a> ReadMindMap<'a> {
     /// [`AppError::NotAMindMap`] si la note n'en est pas une ; [`AppError::NoteNotFound`] si elle
     /// n'existe pas ; [`AppError::StorageUnavailable`] si le stockage ne répond pas.
     pub fn execute(&self, path: &NotePath) -> Result<MindMap, AppError> {
+        self.titled(path).map(|(_, map)| map)
+    }
+
+    /// La carte de la note `path`, avec le titre que la note affiche.
+    ///
+    /// # Errors
+    ///
+    /// Les mêmes que [`Self::execute`].
+    pub fn titled(&self, path: &NotePath) -> Result<(String, MindMap), AppError> {
         let content = self.store.read(path)?.content;
         if !is_mind_map(&content) {
             return Err(AppError::NotAMindMap);
         }
-        Ok(MindMap::parse(&content))
+        let title = displayed_title_of_note(&content, path.name());
+        Ok((title, MindMap::parse(&content)))
     }
 }
 
@@ -182,6 +193,18 @@ mod tests {
             store.read(&path("p.md")).unwrap().content,
             "---\ntype: carte-mentale\ntags: [a]\nracines: [{x: 0, y: 0}]\n---\n# Projet\n\n- A\n  - B\n"
         );
+    }
+
+    #[test]
+    fn a_map_is_read_with_its_displayed_title() {
+        let store = InMemoryNoteStore::with_notes(&[
+            ("p.md", "---\ntype: carte-mentale\n---\n# Projet\n\n- A\n"),
+            ("idees.md", "---\ntype: carte-mentale\n---\n\n- A\n"),
+        ]);
+        let (title, map) = ReadMindMap::new(&store).titled(&path("p.md")).unwrap();
+        assert_eq!((title.as_str(), map.roots.len()), ("Projet", 1));
+        let (title, _) = ReadMindMap::new(&store).titled(&path("idees.md")).unwrap();
+        assert_eq!(title, "idees");
     }
 
     #[test]

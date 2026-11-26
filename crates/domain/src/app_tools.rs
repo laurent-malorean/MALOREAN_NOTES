@@ -72,6 +72,9 @@ pub enum AppTool {
     /// Créer une carte mentale selon les règles : titre, nom du fichier tiré du titre, liste de
     /// départ facultative.
     CreateMindMap,
+    /// Lire une carte mentale en arbre : chaque nœud avec son chemin, son titre, sa couleur et son
+    /// détail (fiche 0080).
+    ReadMindMap,
     /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
     /// `doc/specs/crm.md`, § 13).
     CreateCrm,
@@ -84,7 +87,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 31] = [
+    pub const ALL: [Self; 32] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -113,6 +116,7 @@ impl AppTool {
         Self::AddAttachment,
         Self::AddEntry,
         Self::CreateMindMap,
+        Self::ReadMindMap,
         Self::CreateCrm,
         Self::ViewedNote,
         Self::ShowNote,
@@ -150,6 +154,7 @@ impl AppTool {
             Self::AddAttachment => "add_attachment",
             Self::AddEntry => "add_entry",
             Self::CreateMindMap => "create_mind_map",
+            Self::ReadMindMap => "read_mind_map",
             Self::CreateCrm => "create_crm",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
@@ -190,6 +195,7 @@ impl AppTool {
             | Self::ListFolders
             | Self::LinkingNotes
             | Self::ReadNote
+            | Self::ReadMindMap
             | Self::ListTemplates
             | Self::ListVersions
             | Self::ReadVersion
@@ -261,6 +267,7 @@ impl AppTool {
             | Self::UnpinNote
             | Self::AddAttachment
             | Self::AddEntry
+            | Self::ReadMindMap
             | Self::ShowNote => Some("path"),
             Self::ListWorkspaces
             | Self::ListTags
@@ -432,6 +439,7 @@ mod tests {
                 path,
                 path,
                 Some("title"),
+                path,
                 Some("title"),
                 None,
                 path
@@ -454,6 +462,23 @@ mod tests {
         assert_eq!(tool.target_field(), Some("path"));
         let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
         assert_eq!(AppTool::ALL[at - 1], AppTool::LinkingNotes);
+    }
+
+    #[test]
+    fn reading_a_mind_map_changes_nothing_and_targets_its_path() {
+        let tool = AppTool::ReadMindMap;
+        assert_eq!(tool.name(), "read_mind_map");
+        assert_eq!(tool.full_name(), "mcp__malorean__read_mind_map");
+        assert_eq!(
+            AppTool::of_full_name("mcp__malorean__read_mind_map"),
+            Some(tool)
+        );
+        assert!(!tool.changes_notes());
+        assert!(tool.aims_at_a_workspace());
+        assert!(!tool.uses_screen());
+        assert_eq!(tool.target_field(), Some("path"));
+        let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
+        assert_eq!(AppTool::ALL[at - 1], AppTool::CreateMindMap);
     }
 
     #[test]

@@ -170,7 +170,6 @@ fn a_mind_map_a_canvas_and_a_crm_with_its_cards_are_refused_with_their_type() {
     ]);
 
     for (path, kind) in [
-        ("m.md", "carte-mentale"),
         ("x.canvas", "canvas"),
         ("clients.md", "crm"),
         ("clients/actions/a.md", "crm-action"),
@@ -183,6 +182,17 @@ fn a_mind_map_a_canvas_and_a_crm_with_its_cards_are_refused_with_their_type() {
             )
         );
     }
+}
+
+#[test]
+fn a_mind_map_is_refused_with_the_name_of_the_tool_that_reads_it() {
+    let session = opened(&[("m.md", "---\ntype: carte-mentale\n---\n# Idées\n- un\n")]);
+
+    assert_eq!(
+        unread(&session, json!({ "path": "m.md" })),
+        "cette note est une carte mentale : read_note ne lit que les notes simples ; lisez la \
+         carte en arbre avec read_mind_map (le même chemin dans path)"
+    );
 }
 
 #[test]

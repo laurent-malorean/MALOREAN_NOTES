@@ -27,6 +27,10 @@ impl fmt::Display for RefusedReading {
                  on y ajoute une entrée avec add_entry, et ses entrées se retrouvent avec \
                  search_notes ou search_by_meaning",
             ),
+            Self::NotANote(ContentType::MindMap) => f.write_str(
+                "cette note est une carte mentale : read_note ne lit que les notes simples ; \
+                 lisez la carte en arbre avec read_mind_map (le même chemin dans path)",
+            ),
             Self::NotANote(kind) => write!(
                 f,
                 "cette note est de type « {} » : read_note ne lit que les notes simples ; ce type \
@@ -161,7 +165,6 @@ mod tests {
     #[test]
     fn another_type_is_named_and_said_to_have_no_reading_tool_yet() {
         for (kind, name) in [
-            (ContentType::MindMap, "carte-mentale"),
             (ContentType::Canvas, "canvas"),
             (ContentType::Crm, "crm"),
             (ContentType::CrmAction, "crm-action"),
@@ -174,6 +177,15 @@ mod tests {
             );
             assert!(said.contains("pas encore d'outil de lecture"), "{said}");
         }
+    }
+
+    #[test]
+    fn a_mind_map_is_sent_to_the_tool_that_reads_it() {
+        assert_eq!(
+            RefusedReading::NotANote(ContentType::MindMap).to_string(),
+            "cette note est une carte mentale : read_note ne lit que les notes simples ; lisez \
+             la carte en arbre avec read_mind_map (le même chemin dans path)"
+        );
     }
 
     fn lines_of(width: usize, count: usize) -> String {

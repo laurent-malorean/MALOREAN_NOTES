@@ -2,6 +2,7 @@
 //! lire, l'enregistrer (fiche 0050).
 
 use application::use_cases::{CreateMindMap, ReadMindMap, SaveMindMap};
+use domain::mind_map_reading::ReadableMindMap;
 use domain::{Folder, NotePath};
 
 use super::Session;
@@ -33,6 +34,22 @@ impl Session {
         Ok(ReadMindMap::new(&*store)
             .execute(&NotePath::parse(path)?)?
             .into())
+    }
+
+    /// La carte mentale de la note `path` en arbre, avec son titre : ce que l'outil
+    /// `read_mind_map` donne à une IA (fiche 0080).
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; note qui n'est pas une carte,
+    /// chemin invalide, stockage indisponible, aucun espace de travail ouvert.
+    pub(super) fn read_mind_map_outline(
+        &self,
+        path: &str,
+    ) -> Result<(String, ReadableMindMap), ApiError> {
+        let store = self.store()?;
+        let (title, map) = ReadMindMap::new(&*store).titled(&NotePath::parse(path)?)?;
+        Ok((title, map.readable()))
     }
 
     /// Enregistre `map` dans la carte `path`.

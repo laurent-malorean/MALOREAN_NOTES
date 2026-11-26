@@ -140,9 +140,37 @@ fn read_note() -> Described {
          `truncated` vaut alors true et `message` le dit, la suite ne se lit pas avec cet outil \
          (cherchez-la avec `search_notes`). Refusé, avec une erreur qui dit quoi faire, pour un \
          cahier de recherche (on y ajoute des entrées avec `add_entry` ; `search_notes` retrouve \
-         ses entrées), une carte mentale, un canvas, un CRM ou une fiche de CRM, une note \
-         introuvable.",
+         ses entrées), une carte mentale (lisez-la avec `read_mind_map`), un canvas, un CRM ou une \
+         fiche de CRM, une note introuvable.",
         input(json!({ "path": note_path() }), &["path"]),
+    )
+}
+
+/// Le chemin d'une carte mentale, tel que les outils de la carte mentale l'attendent.
+fn map_path() -> Value {
+    text("Chemin de la carte mentale depuis l'espace de travail : `dossier/nom.md`.")
+}
+
+fn read_mind_map() -> Described {
+    (
+        "Lit une carte mentale (une note dont l'en-tête porte `type: carte-mentale`) en arbre, \
+         pas en texte de fichier. Rend `path`, `title`, `roots` (les nœuds racines) et, pour \
+         chaque nœud : `node` (son chemin dans la carte : `0` le premier nœud racine, `0.1` son \
+         deuxième enfant, `1.0.2` : c'est ce chemin que les outils de modification attendent), \
+         `title`, `color` (le nom de sa couleur de la palette : rouge, orange, jaune, vert, \
+         turquoise, bleu, violet, rose, marron ou ardoise ; absent sans couleur), `detail` (son \
+         détail, lignes séparées par des retours à la ligne ; absent sans détail), `children` \
+         (ses enfants, dans l'ordre ; absent pour une feuille) et, pour un nœud racine, `place` \
+         (`x`, `y` : sa position sur la carte). `nodes` et `total_nodes` comptent les nœuds donnés \
+         et ceux de la carte. Au plus 50 000 caractères d'arbre : au-delà, la carte est coupée \
+         dans l'ordre du fichier, `truncated` vaut true et `message` le dit. Les chemins se \
+         renumérotent quand on ajoute, déplace ou supprime un nœud : relisez la carte avant de \
+         viser un autre nœud après un tel changement. Les branches pliées à l'écran n'y sont pas \
+         (elles ne sont pas dans le fichier). Pour la modifier : `add_mind_map_child`, \
+         `add_mind_map_sibling`, `add_mind_map_root`, `edit_mind_map_node`, \
+         `color_mind_map_node`, `move_mind_map_node`, `delete_mind_map_node`. Refusé si la note \
+         n'est pas une carte mentale.",
+        input(json!({ "path": map_path() }), &["path"]),
     )
 }
 
@@ -491,6 +519,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::ListFolders => list_folders(),
         AppTool::LinkingNotes => linking_notes(),
         AppTool::ReadNote => read_note(),
+        AppTool::ReadMindMap => read_mind_map(),
         AppTool::ListTemplates => list_templates(),
         AppTool::ListVersions => list_versions(),
         AppTool::ReadVersion => read_version(),
