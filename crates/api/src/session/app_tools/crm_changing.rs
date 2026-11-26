@@ -275,7 +275,7 @@ fn stage_change(operation: &str, arguments: &Value) -> Result<StageChangeItem, S
         },
         _ => StageChangeItem::Move {
             name: exact(arguments, "name")?.to_owned(),
-            to: place_of(arguments, "position")?,
+            to: place_of(arguments, "index")?,
         },
     })
 }

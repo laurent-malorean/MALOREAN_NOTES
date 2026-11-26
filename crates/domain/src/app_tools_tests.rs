@@ -58,6 +58,7 @@ fn a_tool_of_another_server_or_a_built_in_tool_is_not_an_app_tool() {
 #[test]
 fn tool_names_are_distinct() {
     let mut names: Vec<_> = AppTool::ALL.iter().map(|tool| tool.name()).collect();
+    assert!(names.iter().all(|name| !name.is_empty()));
     names.sort_unstable();
     names.dedup();
     assert_eq!(names.len(), AppTool::ALL.len());
@@ -101,6 +102,13 @@ fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
             "add_attachment",
             "add_entry",
             "create_mind_map",
+            "add_mind_map_child",
+            "add_mind_map_sibling",
+            "add_mind_map_root",
+            "edit_mind_map_node",
+            "color_mind_map_node",
+            "move_mind_map_node",
+            "delete_mind_map_node",
             "create_crm",
             "create_crm_action",
             "change_crm_action",
@@ -125,7 +133,7 @@ fn each_tool_says_what_it_targets() {
     let targets: Vec<_> = AppTool::ALL.map(AppTool::target_field).into();
     let path = Some("path");
     // Avant les outils du CRM : le même nombre d'outils que dans `ALL` jusqu'à `CreateCrm`.
-    const ALL_BEFORE_CRM: usize = 40;
+    const ALL_BEFORE_CRM: usize = 48;
     assert_eq!(
         targets[..ALL_BEFORE_CRM],
         [
@@ -168,6 +176,14 @@ fn each_tool_says_what_it_targets() {
             path,
             path,
             Some("title"),
+            path,
+            path,
+            path,
+            path,
+            path,
+            path,
+            path,
+            path,
             Some("title"),
         ]
     );
@@ -192,6 +208,23 @@ fn reading_a_note_changes_nothing_and_targets_its_path() {
     assert_eq!(tool.target_field(), Some("path"));
     let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
     assert_eq!(AppTool::ALL[at - 1], AppTool::LinkingNotes);
+}
+
+#[test]
+fn reading_a_mind_map_changes_nothing_and_targets_its_path() {
+    let tool = AppTool::ReadMindMap;
+    assert_eq!(tool.name(), "read_mind_map");
+    assert_eq!(tool.full_name(), "mcp__malorean__read_mind_map");
+    assert_eq!(
+        AppTool::of_full_name("mcp__malorean__read_mind_map"),
+        Some(tool)
+    );
+    assert!(!tool.changes_notes());
+    assert!(tool.aims_at_a_workspace());
+    assert!(!tool.uses_screen());
+    assert_eq!(tool.target_field(), Some("path"));
+    let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
+    assert_eq!(AppTool::ALL[at - 1], AppTool::CreateMindMap);
 }
 
 #[test]

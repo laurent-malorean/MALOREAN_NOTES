@@ -476,7 +476,7 @@ fn a_stage_is_added_before_done_renamed_moved_and_removed() {
     assert_eq!(
         stages(
             &session,
-            json!({ "operation": "move", "name": "Revue", "position": 0 })
+            json!({ "operation": "move", "name": "Revue", "index": 0 })
         ),
         json!(["Revue", "Progress", "WaitingFor"])
     );
@@ -546,7 +546,7 @@ fn a_refused_change_of_stages_says_why_and_changes_nothing() {
         ),
         (
             json!({ "operation": "move", "name": "Progress" }),
-            "il manque « position »",
+            "il manque « index »",
         ),
         (
             json!({ "operation": "fusionner" }),

@@ -186,8 +186,10 @@ fn a_research_notebook_a_mind_map_and_a_canvas_are_refused_untouched() {
     );
     assert_eq!(
         failed(&session, replace("m.md", "un", "deux")),
-        "cette note est de type « carte-mentale » : replace_in_note ne change que le texte des \
-         notes simples"
+        "cette note est une carte mentale : replace_in_note ne change que le texte des notes \
+         simples ; lisez la carte avec read_mind_map et modifiez-la avec add_mind_map_child, \
+         add_mind_map_sibling, add_mind_map_root, edit_mind_map_node, color_mind_map_node, \
+         move_mind_map_node ou delete_mind_map_node"
     );
     let canvas = failed(&session, replace("x.canvas", "{}", "[]"));
     assert!(canvas.starts_with("cette note est un canvas : replace_in_note ne change que"));

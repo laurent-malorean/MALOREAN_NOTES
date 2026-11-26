@@ -2,6 +2,7 @@
 //! l'application (action, personne, entreprise, projet, étape, statut, colonne), et l'entrée
 //! qu'ils attendent.
 
+use domain::app_tools::AppTool;
 use domain::mind_map::PALETTE;
 use serde_json::{Value, json};
 
@@ -366,7 +367,7 @@ pub(super) fn change_crm_stages() -> Described {
          par appel, désigné par `operation` : `add` (`name` : une nouvelle étape, avant `Done`), \
          `rename` (`from` le nom actuel, `to` le nouveau ; les actions de l'étape la suivent et \
          gardent leur rang), `remove` (`name` ; ses actions repartent en `TODO`, leur rang \
-         s'efface), `move` (`name` et `position`, à partir de 0 parmi les étapes). Le changement \
+         s'efface), `move` (`name` et `index`, la place à partir de 0 parmi les étapes). Le changement \
          touche plusieurs fichiers : tous ensemble, ou aucun. Un nom d'étape tient sur une ligne, \
          fait 40 caractères au plus, n'est ni `TODO`, `Done` ou `Cancel` ni celui d'une autre \
          étape (majuscules et accents ignorés). Refusé, sans rien changer, avec le message de \
@@ -378,9 +379,32 @@ pub(super) fn change_crm_stages() -> Described {
                 "name": text("Le nom de l'étape (`add`, `remove`, `move`)."),
                 "from": text("Le nom actuel de l'étape (`rename`)."),
                 "to": text("Le nouveau nom de l'étape (`rename`)."),
-                "position": integer("La place de l'étape parmi les étapes, à partir de 0 (`move`)."),
+                "index": integer("La place de l'étape parmi les étapes, à partir de 0 (`move`)."),
             }),
             &["path", "operation"],
         ),
     )
+}
+
+/// Ce que fait l'un des quinze outils du CRM, et l'entrée qu'il attend ; à part de la liste des
+/// autres outils pour que chaque fonction reste courte.
+pub(super) fn described(tool: AppTool) -> Described {
+    match tool {
+        AppTool::ReadCrm => read_crm(),
+        AppTool::CreateCrmAction => create_crm_action(),
+        AppTool::ChangeCrmAction => change_crm_action(),
+        AppTool::MoveCrmAction => move_crm_action(),
+        AppTool::DeleteCrmAction => delete_crm_action(),
+        AppTool::CreateCrmPerson => create_crm_person(),
+        AppTool::ChangeCrmPerson => change_crm_person(),
+        AppTool::DeleteCrmPerson => delete_crm_person(),
+        AppTool::CreateCrmCompany => create_crm_company(),
+        AppTool::ChangeCrmCompany => change_crm_company(),
+        AppTool::DeleteCrmCompany => delete_crm_company(),
+        AppTool::CreateCrmProject => create_crm_project(),
+        AppTool::ChangeCrmProject => change_crm_project(),
+        AppTool::DeleteCrmProject => delete_crm_project(),
+        AppTool::ChangeCrmStages => change_crm_stages(),
+        _ => unreachable!("un outil qui n'est pas du CRM est décrit par le catalogue"),
+    }
 }

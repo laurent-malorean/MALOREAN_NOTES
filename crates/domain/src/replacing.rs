@@ -39,42 +39,7 @@ pub enum RefusedReplacement {
 impl fmt::Display for RefusedReplacement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NotANote(ContentType::ResearchNotebook) => f.write_str(
-                "cette note est un cahier de recherche : on n'y ajoute que des entrées \
-                 (add_entry), son texte ne se remplace jamais",
-            ),
-            Self::NotANote(ContentType::Canvas) => f.write_str(
-                "cette note est un canvas : replace_in_note ne change que le texte des notes \
-                 simples ; lisez le canvas avec read_canvas et changez-le avec add_canvas_card, \
-                 change_canvas_card, move_canvas_card, resize_canvas_card, remove_canvas_card, \
-                 add_canvas_arrow, change_canvas_arrow, remove_canvas_arrow, add_canvas_group ou \
-                 change_canvas_group",
-            ),
-            Self::NotANote(ContentType::Crm) => write!(
-                f,
-                "cette note est un CRM : replace_in_note ne change que le texte des notes simples ; \
-                 lisez-le avec read_crm et changez-le avec {}",
-                crm_changing_tools_said()
-            ),
-            Self::NotANote(
-                kind @ (ContentType::CrmCompany
-                | ContentType::CrmPerson
-                | ContentType::CrmAction
-                | ContentType::CrmProject),
-            ) => write!(
-                f,
-                "cette note est une fiche de CRM, de type « {} » : replace_in_note ne change que le \
-                 texte des notes simples ; lisez le CRM qui la contient avec read_crm (la fiche y a \
-                 sa `ref`) et changez-la avec {}",
-                kind.name(),
-                crm_changing_tools_said()
-            ),
-            Self::NotANote(kind) => write!(
-                f,
-                "cette note est de type « {} » : replace_in_note ne change que le texte des notes \
-                 simples",
-                kind.name()
-            ),
+            Self::NotANote(kind) => f.write_str(&not_a_note(*kind)),
             Self::EmptyText => f.write_str(
                 "le texte à remplacer (old_text) est vide : recopiez à l'identique le texte à \
                  changer",
@@ -100,6 +65,49 @@ impl fmt::Display for RefusedReplacement {
 }
 
 impl std::error::Error for RefusedReplacement {}
+
+/// Pourquoi, et par quels outils, le texte d'un contenu qui n'est pas une note simple ne se
+/// remplace pas.
+fn not_a_note(kind: ContentType) -> String {
+    match kind {
+        ContentType::ResearchNotebook => {
+            "cette note est un cahier de recherche : on n'y ajoute que \
+             des entrées (add_entry), son texte ne se remplace jamais"
+                .to_owned()
+        }
+        ContentType::MindMap => "cette note est une carte mentale : replace_in_note ne change que \
+             le texte des notes simples ; lisez la carte avec read_mind_map et modifiez-la avec \
+             add_mind_map_child, add_mind_map_sibling, add_mind_map_root, edit_mind_map_node, \
+             color_mind_map_node, move_mind_map_node ou delete_mind_map_node"
+            .to_owned(),
+        ContentType::Canvas => "cette note est un canvas : replace_in_note ne change que le texte \
+             des notes simples ; lisez le canvas avec read_canvas et changez-le avec \
+             add_canvas_card, change_canvas_card, move_canvas_card, resize_canvas_card, \
+             remove_canvas_card, add_canvas_arrow, change_canvas_arrow, remove_canvas_arrow, \
+             add_canvas_group ou change_canvas_group"
+            .to_owned(),
+        ContentType::Crm => format!(
+            "cette note est un CRM : replace_in_note ne change que le texte des notes simples ; \
+             lisez-le avec read_crm et changez-le avec {}",
+            crm_changing_tools_said()
+        ),
+        ContentType::CrmCompany
+        | ContentType::CrmPerson
+        | ContentType::CrmAction
+        | ContentType::CrmProject => format!(
+            "cette note est une fiche de CRM, de type « {} » : replace_in_note ne change que le \
+             texte des notes simples ; lisez le CRM qui la contient avec read_crm (la fiche y a \
+             sa `ref`) et changez-la avec {}",
+            kind.name(),
+            crm_changing_tools_said()
+        ),
+        _ => format!(
+            "cette note est de type « {} » : replace_in_note ne change que le texte des notes \
+             simples",
+            kind.name()
+        ),
+    }
+}
 
 /// Les lignes citées, dites en français : `ligne 4`, `lignes 4 et 9`, `lignes 4, 9 et 12`,
 /// `lignes 4, 9, 12, 15, 20 et d'autres` quand il y en a plus que celles citées.
@@ -416,8 +424,10 @@ mod tests {
         );
         assert_eq!(
             said(RefusedReplacement::NotANote(ContentType::MindMap)),
-            "cette note est de type « carte-mentale » : replace_in_note ne change que le texte \
-             des notes simples"
+            "cette note est une carte mentale : replace_in_note ne change que le texte des notes \
+             simples ; lisez la carte avec read_mind_map et modifiez-la avec add_mind_map_child, \
+             add_mind_map_sibling, add_mind_map_root, edit_mind_map_node, color_mind_map_node, \
+             move_mind_map_node ou delete_mind_map_node"
         );
         assert_eq!(
             said(RefusedReplacement::EmptyText),

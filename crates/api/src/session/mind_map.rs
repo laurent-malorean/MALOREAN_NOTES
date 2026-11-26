@@ -1,7 +1,10 @@
 //! Les cartes mentales de l'espace de travail ouvert, vues depuis l'interface : en créer une, la
 //! lire, l'enregistrer (fiche 0050).
 
-use application::use_cases::{CreateMindMap, ReadMindMap, SaveMindMap};
+use application::use_cases::{CreateMindMap, EditMindMap, ReadMindMap, SaveMindMap};
+use domain::mind_map::MindMap;
+use domain::mind_map_editing::RefusedMindMapEdit;
+use domain::mind_map_reading::ReadableMindMap;
 use domain::{Folder, NotePath};
 
 use super::Session;
@@ -33,6 +36,44 @@ impl Session {
         Ok(ReadMindMap::new(&*store)
             .execute(&NotePath::parse(path)?)?
             .into())
+    }
+
+    /// La carte mentale de la note `path` en arbre, avec son titre : ce que l'outil
+    /// `read_mind_map` donne à une IA (fiche 0080).
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; note qui n'est pas une carte,
+    /// chemin invalide, stockage indisponible, aucun espace de travail ouvert.
+    pub(super) fn read_mind_map_outline(
+        &self,
+        path: &str,
+    ) -> Result<(String, ReadableMindMap), ApiError> {
+        let store = self.store()?;
+        let (title, map) = ReadMindMap::new(&*store).titled(&NotePath::parse(path)?)?;
+        Ok((title, map.readable()))
+    }
+
+    /// Joue `gesture` sur la carte mentale `path` avec les règles de l'enregistrement d'une carte
+    /// (fiche 0080) : la version d'avant est gardée, l'index suit, le sens se recalcule ; rien
+    /// n'est écrit si le geste est refusé. Rend ce que le geste rend.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; note qui n'est pas une carte, geste
+    /// refusé, chemin invalide, stockage indisponible, aucun espace de travail ouvert.
+    pub(super) fn edit_mind_map<T>(
+        &self,
+        path: &str,
+        gesture: impl FnOnce(&mut MindMap) -> Result<T, RefusedMindMapEdit>,
+    ) -> Result<T, ApiError> {
+        let opened = self.opened()?;
+        let note = NotePath::parse(path)?;
+        let edited = EditMindMap::new(&*opened.store, &*opened.history, &*self.clock)
+            .execute(&note, gesture)?;
+        self.saved_since_version(&note, &note)?;
+        self.worker.request();
+        Ok(edited.outcome)
     }
 
     /// Enregistre `map` dans la carte `path`.

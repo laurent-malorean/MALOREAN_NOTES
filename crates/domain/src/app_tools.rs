@@ -94,6 +94,23 @@ pub enum AppTool {
     /// Créer une carte mentale selon les règles : titre, nom du fichier tiré du titre, liste de
     /// départ facultative.
     CreateMindMap,
+    /// Lire une carte mentale en arbre : chaque nœud avec son chemin, son titre, sa couleur et son
+    /// détail (fiche 0080).
+    ReadMindMap,
+    /// Ajouter un dernier enfant à un nœud d'une carte mentale (fiche 0080).
+    AddMindMapChild,
+    /// Ajouter un frère juste en dessous d'un nœud d'une carte mentale (fiche 0080).
+    AddMindMapSibling,
+    /// Ajouter un nœud racine à la fin d'une carte mentale (fiche 0080).
+    AddMindMapRoot,
+    /// Changer le titre et/ou le détail d'un nœud d'une carte mentale (fiche 0080).
+    EditMindMapNode,
+    /// Changer la couleur d'un nœud d'une carte mentale, parmi la palette (fiche 0080).
+    ColorMindMapNode,
+    /// Déplacer un nœud d'une carte mentale, avec sa branche (fiche 0080).
+    MoveMindMapNode,
+    /// Supprimer un nœud d'une carte mentale, avec sa branche (fiche 0080).
+    DeleteMindMapNode,
     /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
     /// `doc/specs/crm.md`, § 13).
     CreateCrm,
@@ -137,7 +154,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 57] = [
+    pub const ALL: [Self; 65] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -177,6 +194,14 @@ impl AppTool {
         Self::AddAttachment,
         Self::AddEntry,
         Self::CreateMindMap,
+        Self::ReadMindMap,
+        Self::AddMindMapChild,
+        Self::AddMindMapSibling,
+        Self::AddMindMapRoot,
+        Self::EditMindMapNode,
+        Self::ColorMindMapNode,
+        Self::MoveMindMapNode,
+        Self::DeleteMindMapNode,
         Self::CreateCrm,
         Self::ReadCrm,
         Self::CreateCrmAction,
@@ -240,7 +265,26 @@ impl AppTool {
             Self::AddAttachment => "add_attachment",
             Self::AddEntry => "add_entry",
             Self::CreateMindMap => "create_mind_map",
+            Self::ReadMindMap => "read_mind_map",
+            Self::AddMindMapChild => "add_mind_map_child",
+            Self::AddMindMapSibling => "add_mind_map_sibling",
+            Self::AddMindMapRoot => "add_mind_map_root",
+            Self::EditMindMapNode => "edit_mind_map_node",
+            Self::ColorMindMapNode => "color_mind_map_node",
+            Self::MoveMindMapNode => "move_mind_map_node",
+            Self::DeleteMindMapNode => "delete_mind_map_node",
             Self::CreateCrm => "create_crm",
+            Self::ViewedNote => "viewed_note",
+            Self::ShowNote => "show_note",
+            _ => self.crm_name(),
+        }
+    }
+
+    /// Le nom de l'un des quinze outils du CRM (fiche 0081), à part pour que chaque fonction de
+    /// la liste des outils reste courte ; vide pour un autre outil, dont `name` donne le nom (un
+    /// test vérifie que chaque outil a le sien).
+    const fn crm_name(self) -> &'static str {
+        match self {
             Self::ReadCrm => "read_crm",
             Self::CreateCrmAction => "create_crm_action",
             Self::ChangeCrmAction => "change_crm_action",
@@ -256,8 +300,7 @@ impl AppTool {
             Self::ChangeCrmProject => "change_crm_project",
             Self::DeleteCrmProject => "delete_crm_project",
             Self::ChangeCrmStages => "change_crm_stages",
-            Self::ViewedNote => "viewed_note",
-            Self::ShowNote => "show_note",
+            _ => "",
         }
     }
 
@@ -284,68 +327,28 @@ impl AppTool {
     }
 
     /// Il crée, change, déplace ou jette une note : le garde-fou du web le retient après une
-    /// lecture du web.
+    /// lecture du web. Tout outil qui ne fait pas que lire ou montrer change une note : un outil
+    /// neuf est donc retenu tant qu'on ne l'a pas déclaré en lecture seule.
     #[must_use]
     pub const fn changes_notes(self) -> bool {
-        match self {
+        !matches!(
+            self,
             Self::ListWorkspaces
-            | Self::SearchNotes
-            | Self::SearchByMeaning
-            | Self::ListTags
-            | Self::ListFolders
-            | Self::LinkingNotes
-            | Self::ReadNote
-            | Self::ReadCanvas
-            | Self::ReadCrm
-            | Self::ListTemplates
-            | Self::ListVersions
-            | Self::ReadVersion
-            | Self::ViewedNote
-            | Self::ShowNote => false,
-            Self::CreateNote
-            | Self::CreateFolder
-            | Self::RenameFolder
-            | Self::MoveFolder
-            | Self::TrashFolder
-            | Self::CreateNoteFromTemplate
-            | Self::TrashNote
-            | Self::RenameNote
-            | Self::MoveNote
-            | Self::RestoreVersion
-            | Self::ReplaceInNote
-            | Self::AddCanvasCard
-            | Self::ChangeCanvasCard
-            | Self::MoveCanvasCard
-            | Self::ResizeCanvasCard
-            | Self::RemoveCanvasCard
-            | Self::AddCanvasArrow
-            | Self::ChangeCanvasArrow
-            | Self::RemoveCanvasArrow
-            | Self::AddCanvasGroup
-            | Self::ChangeCanvasGroup
-            | Self::AddTags
-            | Self::RemoveTags
-            | Self::PinNote
-            | Self::UnpinNote
-            | Self::AddAttachment
-            | Self::AddEntry
-            | Self::CreateMindMap
-            | Self::CreateCrm
-            | Self::CreateCrmAction
-            | Self::ChangeCrmAction
-            | Self::MoveCrmAction
-            | Self::DeleteCrmAction
-            | Self::CreateCrmPerson
-            | Self::ChangeCrmPerson
-            | Self::DeleteCrmPerson
-            | Self::CreateCrmCompany
-            | Self::ChangeCrmCompany
-            | Self::DeleteCrmCompany
-            | Self::CreateCrmProject
-            | Self::ChangeCrmProject
-            | Self::DeleteCrmProject
-            | Self::ChangeCrmStages => true,
-        }
+                | Self::SearchNotes
+                | Self::SearchByMeaning
+                | Self::ListTags
+                | Self::ListFolders
+                | Self::LinkingNotes
+                | Self::ReadNote
+                | Self::ReadCanvas
+                | Self::ReadMindMap
+                | Self::ReadCrm
+                | Self::ListTemplates
+                | Self::ListVersions
+                | Self::ReadVersion
+                | Self::ViewedNote
+                | Self::ShowNote
+        )
     }
 
     /// Il change un CRM ou l'une de ses fiches (fiche 0081) : les quatorze outils du CRM, qui
@@ -386,7 +389,7 @@ impl AppTool {
     }
 
     /// Le champ de son entrée qui dit ce qu'il vise (la note, la recherche), montré à côté de
-    /// l'action dans la colonne ; rien s'il ne vise rien.
+    /// l'action dans la colonne ; rien s'il ne vise rien. Le chemin, sauf pour ceux-ci.
     #[must_use]
     pub const fn target_field(self) -> Option<&'static str> {
         match self {
@@ -396,57 +399,12 @@ impl AppTool {
             | Self::CreateNoteFromTemplate
             | Self::CreateMindMap
             | Self::CreateCrm => Some("title"),
-            Self::CreateFolder
-            | Self::RenameFolder
-            | Self::MoveFolder
-            | Self::TrashFolder
-            | Self::LinkingNotes
-            | Self::ReadNote
-            | Self::ReadCanvas
-            | Self::ReadCrm
-            | Self::ListVersions
-            | Self::ReadVersion
-            | Self::TrashNote
-            | Self::RenameNote
-            | Self::MoveNote
-            | Self::RestoreVersion
-            | Self::ReplaceInNote
-            | Self::AddCanvasCard
-            | Self::ChangeCanvasCard
-            | Self::MoveCanvasCard
-            | Self::ResizeCanvasCard
-            | Self::RemoveCanvasCard
-            | Self::AddCanvasArrow
-            | Self::ChangeCanvasArrow
-            | Self::RemoveCanvasArrow
-            | Self::AddCanvasGroup
-            | Self::ChangeCanvasGroup
-            | Self::AddTags
-            | Self::RemoveTags
-            | Self::PinNote
-            | Self::UnpinNote
-            | Self::AddAttachment
-            | Self::AddEntry
-            | Self::CreateCrmAction
-            | Self::ChangeCrmAction
-            | Self::MoveCrmAction
-            | Self::DeleteCrmAction
-            | Self::CreateCrmPerson
-            | Self::ChangeCrmPerson
-            | Self::DeleteCrmPerson
-            | Self::CreateCrmCompany
-            | Self::ChangeCrmCompany
-            | Self::DeleteCrmCompany
-            | Self::CreateCrmProject
-            | Self::ChangeCrmProject
-            | Self::DeleteCrmProject
-            | Self::ChangeCrmStages
-            | Self::ShowNote => Some("path"),
             Self::ListWorkspaces
             | Self::ListTags
             | Self::ListFolders
             | Self::ListTemplates
             | Self::ViewedNote => None,
+            _ => Some("path"),
         }
     }
 }

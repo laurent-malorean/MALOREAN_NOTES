@@ -158,17 +158,6 @@ fn a_research_notebook_is_sent_to_add_entry_and_the_search() {
 }
 
 #[test]
-fn a_mind_map_is_refused_with_its_type() {
-    let session = opened(&[("m.md", "---\ntype: carte-mentale\n---\n# Idées\n- un\n")]);
-
-    assert_eq!(
-        unread(&session, json!({ "path": "m.md" })),
-        "cette note est de type « carte-mentale » : read_note ne lit que les notes simples ; \
-         ce type n'a pas encore d'outil de lecture"
-    );
-}
-
-#[test]
 fn a_crm_and_its_fiches_are_sent_to_read_crm_and_the_tools_that_change_them() {
     let session = opened(&[
         ("clients.md", "---\ntype: crm\n---\n# Clients\n"),
@@ -196,6 +185,17 @@ fn a_crm_and_its_fiches_are_sent_to_read_crm_and_the_tools_that_change_them() {
         }
         assert!(!said.contains("pas encore"), "{said}");
     }
+}
+
+#[test]
+fn a_mind_map_is_refused_with_the_name_of_the_tool_that_reads_it() {
+    let session = opened(&[("m.md", "---\ntype: carte-mentale\n---\n# Idées\n- un\n")]);
+
+    assert_eq!(
+        unread(&session, json!({ "path": "m.md" })),
+        "cette note est une carte mentale : read_note ne lit que les notes simples ; lisez la \
+         carte en arbre avec read_mind_map (le même chemin dans path)"
+    );
 }
 
 #[test]

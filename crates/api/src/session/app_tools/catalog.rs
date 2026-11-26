@@ -4,11 +4,16 @@
 use domain::app_tools::AppTool;
 use serde_json::{Value, json};
 
+use super::catalog_mind_map::{
+    add_mind_map_child, add_mind_map_root, add_mind_map_sibling, color_mind_map_node,
+    delete_mind_map_node, edit_mind_map_node, move_mind_map_node, read_mind_map,
+};
+
 mod canvas;
 mod crm;
 
 /// Un champ texte de l'entrée d'un outil, décrit pour Claude.
-fn text(description: &str) -> Value {
+pub(super) fn text(description: &str) -> Value {
     json!({ "type": "string", "description": description })
 }
 
@@ -37,12 +42,12 @@ fn tag_list() -> Value {
 }
 
 /// L'entrée d'un outil : ses champs, et ceux qu'il exige.
-fn input(properties: Value, required: &[&str]) -> Value {
+pub(super) fn input(properties: Value, required: &[&str]) -> Value {
     json!({ "type": "object", "properties": properties, "required": required })
 }
 
 /// Ce que fait un outil, et l'entrée qu'il attend.
-type Described = (&'static str, Value);
+pub(super) type Described = (&'static str, Value);
 
 fn list_workspaces() -> Described {
     (
@@ -143,8 +148,9 @@ fn read_note() -> Described {
          `truncated` vaut alors true et `message` le dit, la suite ne se lit pas avec cet outil \
          (cherchez-la avec `search_notes`). Refusé, avec une erreur qui dit quoi faire, pour un \
          cahier de recherche (on y ajoute des entrées avec `add_entry` ; `search_notes` retrouve \
-         ses entrées), une carte mentale, un CRM ou une fiche de CRM, une note \
-         introuvable ; un canvas se lit avec `read_canvas`, un CRM et ses fiches avec `read_crm`.",
+         ses entrées), une carte mentale (lisez-la avec `read_mind_map`), un CRM ou une fiche de \
+         CRM, une note introuvable ; un canvas se lit avec `read_canvas`, un CRM et ses fiches \
+         avec `read_crm`.",
         input(json!({ "path": note_path() }), &["path"]),
     )
 }
@@ -339,9 +345,11 @@ fn replace_in_note() -> Described {
          `old_text` introuvable ou vide ou identique à `new_text` ; `old_text` répété (l'erreur \
          donne le nombre d'occurrences et leurs lignes : ajoutez du texte autour pour qu'il \
          n'apparaisse qu'une fois, ou passez `replace_all` à true pour toutes les remplacer) ; la \
-         note est un cahier de recherche (utilisez `add_entry`), une carte mentale, un canvas \
-         (utilisez `read_canvas` et les outils du canvas) ou un CRM ou une fiche de CRM (utilisez \
-         `read_crm` et les outils du CRM). Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
+         note est un cahier de recherche (utilisez `add_entry`), une carte mentale (lisez-la \
+         avec `read_mind_map`, modifiez-la avec `add_mind_map_child` et les autres outils de la \
+         carte mentale), un canvas (utilisez `read_canvas` et les outils du canvas) ou un CRM ou \
+         une fiche de CRM (utilisez `read_crm` et les outils du CRM). \
+         Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
          nouveau titre : utilisez ensuite le `path` rendu, et pensez aux notes qui la lient (voir \
          `rename_note`). Rend `path`, `title` et `replacements` (le nombre de remplacements).",
         input(
@@ -434,9 +442,10 @@ fn create_mind_map() -> Described {
          nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour son détail, \
          ` <!-- couleur: rouge -->` au bout d'une puce pour sa couleur (rouge, orange, jaune, \
          vert, turquoise, bleu, violet, rose, marron, ardoise). Rend son chemin. Ensuite, la \
-         carte se lit et s'écrit avec vos outils de fichiers : n'écrivez dans la liste que des \
-         puces et des lignes de détail, et ne touchez jamais à la propriété `racines` de \
-         l'en-tête (elle est tenue par l'application).",
+         carte se lit avec `read_mind_map` et se modifie avec `add_mind_map_child`, \
+         `add_mind_map_sibling`, `add_mind_map_root`, `edit_mind_map_node`, \
+         `color_mind_map_node`, `move_mind_map_node` et `delete_mind_map_node` ; la propriété \
+         `racines` de l'en-tête est tenue par l'application.",
         input(
             json!({
                 "title": text("Le titre de la carte."),
@@ -494,6 +503,14 @@ fn described(tool: AppTool) -> Described {
         AppTool::ListFolders => list_folders(),
         AppTool::LinkingNotes => linking_notes(),
         AppTool::ReadNote => read_note(),
+        AppTool::ReadMindMap => read_mind_map(),
+        AppTool::AddMindMapChild => add_mind_map_child(),
+        AppTool::AddMindMapSibling => add_mind_map_sibling(),
+        AppTool::AddMindMapRoot => add_mind_map_root(),
+        AppTool::EditMindMapNode => edit_mind_map_node(),
+        AppTool::ColorMindMapNode => color_mind_map_node(),
+        AppTool::MoveMindMapNode => move_mind_map_node(),
+        AppTool::DeleteMindMapNode => delete_mind_map_node(),
         AppTool::ReadCanvas => canvas::read_canvas(),
         AppTool::ListTemplates => list_templates(),
         AppTool::ListVersions => list_versions(),
@@ -527,23 +544,9 @@ fn described(tool: AppTool) -> Described {
         AppTool::AddEntry => add_entry(),
         AppTool::CreateMindMap => create_mind_map(),
         AppTool::CreateCrm => create_crm(),
-        AppTool::ReadCrm => crm::read_crm(),
-        AppTool::CreateCrmAction => crm::create_crm_action(),
-        AppTool::ChangeCrmAction => crm::change_crm_action(),
-        AppTool::MoveCrmAction => crm::move_crm_action(),
-        AppTool::DeleteCrmAction => crm::delete_crm_action(),
-        AppTool::CreateCrmPerson => crm::create_crm_person(),
-        AppTool::ChangeCrmPerson => crm::change_crm_person(),
-        AppTool::DeleteCrmPerson => crm::delete_crm_person(),
-        AppTool::CreateCrmCompany => crm::create_crm_company(),
-        AppTool::ChangeCrmCompany => crm::change_crm_company(),
-        AppTool::DeleteCrmCompany => crm::delete_crm_company(),
-        AppTool::CreateCrmProject => crm::create_crm_project(),
-        AppTool::ChangeCrmProject => crm::change_crm_project(),
-        AppTool::DeleteCrmProject => crm::delete_crm_project(),
-        AppTool::ChangeCrmStages => crm::change_crm_stages(),
         AppTool::ViewedNote => viewed_note(),
         AppTool::ShowNote => show_note(),
+        other => crm::described(other),
     }
 }
 
