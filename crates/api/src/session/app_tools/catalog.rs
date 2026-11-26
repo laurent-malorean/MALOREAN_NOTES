@@ -117,6 +117,23 @@ fn linking_notes() -> Described {
     )
 }
 
+fn read_note() -> Described {
+    (
+        "Le texte entier d'une note simple, pour le lire ou en recopier un texte exact (par \
+         exemple l'`old_text` de `replace_in_note`). Rend `path`, `title`, `header` (l'en-tête, \
+         c'est-à-dire les propriétés, tel qu'il est écrit dans le fichier, lignes `---` \
+         comprises ; vide si la note n'en a pas), `body` (tout le reste ; `header` suivi de `body` \
+         redonne le fichier à l'identique), `characters` (le nombre de caractères du corps entier) \
+         et `truncated`. Un corps de plus de 60 000 caractères est coupé à la fin d'une ligne : \
+         `truncated` vaut alors true et `message` le dit, la suite ne se lit pas avec cet outil \
+         (cherchez-la avec `search_notes`). Refusé, avec une erreur qui dit quoi faire, pour un \
+         cahier de recherche (on y ajoute des entrées avec `add_entry` ; `search_notes` retrouve \
+         ses entrées), une carte mentale, un canvas, un CRM ou une fiche de CRM, une note \
+         introuvable.",
+        input(json!({ "path": note_path() }), &["path"]),
+    )
+}
+
 fn list_templates() -> Described {
     (
         "Les noms des modèles de note (les notes du dossier des modèles choisi par \
@@ -245,7 +262,8 @@ fn replace_in_note() -> Described {
          MALOREAN Notes : le texte d'avant est gardé dans l'historique des versions, l'index de \
          recherche suit, l'en-tête (propriétés) et le reste de la note ne bougent pas. \
          `old_text` est recopié à l'identique (majuscules, accents, espaces, retours à la ligne ; \
-         jamais un motif) et cherché dans tout le fichier, en-tête compris. Pour insérer, \
+         jamais un motif) et cherché dans tout le fichier, en-tête compris : lisez d'abord la \
+         note avec `read_note` pour le recopier exactement. Pour insérer, \
          remplacez une ligne par elle-même suivie du nouveau texte ; pour supprimer, donnez un \
          `new_text` vide. Refusé, sans rien changer, avec une erreur qui dit quoi faire : \
          `old_text` introuvable ou vide ou identique à `new_text` ; `old_text` répété (l'erreur \
@@ -404,6 +422,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::SearchByMeaning => search_by_meaning(),
         AppTool::ListTags => list_tags(),
         AppTool::LinkingNotes => linking_notes(),
+        AppTool::ReadNote => read_note(),
         AppTool::ListTemplates => list_templates(),
         AppTool::ListVersions => list_versions(),
         AppTool::ReadVersion => read_version(),

@@ -24,6 +24,8 @@ pub enum AppTool {
     ListTags,
     /// Les notes dont un lien entre notes désigne une note.
     LinkingNotes,
+    /// Le texte entier d'une note simple, son en-tête à part du corps (fiche 0076).
+    ReadNote,
     /// Les noms des modèles de note.
     ListTemplates,
     /// Les versions d'une note.
@@ -74,12 +76,13 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 26] = [
+    pub const ALL: [Self; 27] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
         Self::ListTags,
         Self::LinkingNotes,
+        Self::ReadNote,
         Self::ListTemplates,
         Self::ListVersions,
         Self::ReadVersion,
@@ -112,6 +115,7 @@ impl AppTool {
             Self::SearchByMeaning => "search_by_meaning",
             Self::ListTags => "list_tags",
             Self::LinkingNotes => "linking_notes",
+            Self::ReadNote => "read_note",
             Self::ListTemplates => "list_templates",
             Self::ListVersions => "list_versions",
             Self::ReadVersion => "read_version",
@@ -168,6 +172,7 @@ impl AppTool {
             | Self::SearchByMeaning
             | Self::ListTags
             | Self::LinkingNotes
+            | Self::ReadNote
             | Self::ListTemplates
             | Self::ListVersions
             | Self::ReadVersion
@@ -219,6 +224,7 @@ impl AppTool {
             | Self::CreateCrm => Some("title"),
             Self::CreateFolder
             | Self::LinkingNotes
+            | Self::ReadNote
             | Self::ListVersions
             | Self::ReadVersion
             | Self::TrashNote
@@ -373,6 +379,7 @@ mod tests {
                 Some("question"),
                 None,
                 path,
+                path,
                 None,
                 path,
                 path,
@@ -396,6 +403,23 @@ mod tests {
                 path
             ]
         );
+    }
+
+    #[test]
+    fn reading_a_note_changes_nothing_and_targets_its_path() {
+        let tool = AppTool::ReadNote;
+        assert_eq!(tool.name(), "read_note");
+        assert_eq!(tool.full_name(), "mcp__malorean__read_note");
+        assert_eq!(
+            AppTool::of_full_name("mcp__malorean__read_note"),
+            Some(tool)
+        );
+        assert!(!tool.changes_notes());
+        assert!(tool.aims_at_a_workspace());
+        assert!(!tool.uses_screen());
+        assert_eq!(tool.target_field(), Some("path"));
+        let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
+        assert_eq!(AppTool::ALL[at - 1], AppTool::LinkingNotes);
     }
 
     #[test]

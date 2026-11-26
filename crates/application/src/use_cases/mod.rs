@@ -62,7 +62,7 @@ pub use move_note::MoveNote;
 pub use note_links::{LinkingNote, NoteLinks};
 pub use pin_note::PinNote;
 pub use read_note::ReadNote;
-pub use read_note_text::ReadNoteText;
+pub use read_note_text::{NoteText, ReadNoteText};
 pub use recent_notes::ListRecentNotes;
 pub use replace_in_note::{ReplaceInNote, ReplacedNote};
 pub use research_notebook::{AddEntry, CreateResearchNotebook, ListEntries};

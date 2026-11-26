@@ -3,8 +3,11 @@
 
 use std::collections::{HashMap, HashSet};
 
-use application::use_cases::{ListAllNotes, ListNotes, ListTaggedNotes, MAX_RESULTS, SearchNotes};
+use application::use_cases::{
+    ListAllNotes, ListNotes, ListTaggedNotes, MAX_RESULTS, ReadNoteText, SearchNotes,
+};
 use domain::crm::CrmKind;
+use domain::reading::MAX_READ_CHARACTERS;
 use domain::search::{ExcerptPart, SearchQuery};
 use domain::{ContentType, Folder, NoteOrder, NotePath, NoteSummary};
 use serde::Serialize;
@@ -47,6 +50,24 @@ struct LinkingNote {
     /// Pour une fiche d'un CRM : le chemin de son CRM.
     #[serde(skip_serializing_if = "Option::is_none")]
     crm: Option<String>,
+}
+
+/// Le texte d'une note simple, tel que Claude le reçoit (fiche 0076) : `header` suivi de `body`
+/// redonne le fichier à l'identique.
+#[derive(Debug, Serialize)]
+struct NoteText {
+    path: String,
+    title: String,
+    /// L'en-tête tel qu'il est écrit, ses lignes `---` comprises ; vide sans en-tête.
+    header: String,
+    body: String,
+    /// Le nombre de caractères du corps entier.
+    characters: usize,
+    /// Le corps a été coupé : sa fin n'est pas dans `body`.
+    truncated: bool,
+    /// Pourquoi et de combien le corps est coupé, dit à Claude ; rien s'il ne l'est pas.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message: Option<String>,
 }
 
 /// Un modèle de note, par son nom (son titre).
@@ -216,6 +237,37 @@ impl Session {
                 })
                 .collect::<Vec<_>>(),
         )
+    }
+
+    /// Le texte entier d'une note simple, son en-tête à part du corps ; le corps est coupé, et la
+    /// réponse le dit, au-delà de [`MAX_READ_CHARACTERS`] caractères (fiche 0076).
+    pub(super) fn tool_read_note(&self, arguments: &Value) -> Result<String, String> {
+        let said = |error: crate::ApiError| error.message;
+        let path = NotePath::parse(required(arguments, "path")?)
+            .map_err(crate::ApiError::from)
+            .map_err(said)?;
+        let store = self.store().map_err(said)?;
+        let read = ReadNoteText::new(&*store)
+            .execute(&path)
+            .map_err(crate::ApiError::from)
+            .map_err(said)?;
+        let (shown, entire) = (read.text.body.chars().count(), read.text.characters);
+        written(&NoteText {
+            path: path.to_path(),
+            title: read.title,
+            header: read.text.header,
+            body: read.text.body,
+            characters: entire,
+            truncated: read.text.truncated,
+            message: read.text.truncated.then(|| {
+                format!(
+                    "le corps de la note est coupé : {shown} caractères sur {entire} sont donnés \
+                     (la limite est de {MAX_READ_CHARACTERS}, coupée à la fin d'une ligne) ; la \
+                     suite ne se lit pas avec cet outil : cherchez-la avec search_notes, qui donne \
+                     des extraits"
+                )
+            }),
+        })
     }
 
     /// Les noms des modèles de note : les notes directement dans le dossier des modèles du tour.

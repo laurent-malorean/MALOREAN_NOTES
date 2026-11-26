@@ -2,9 +2,19 @@
 //! que les IA utilisent pour recopier à l'identique le texte à remplacer de `replace_in_note`.
 
 use domain::reading::{ReadableNote, readable};
+use domain::title::displayed_title_of_note;
 use domain::{ContentType, NotePath};
 
 use crate::{AppError, NoteStore};
+
+/// Le texte lu d'une note simple.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NoteText {
+    /// Le titre affiché de la note.
+    pub title: String,
+    /// Son en-tête et son corps, séparés.
+    pub text: ReadableNote,
+}
 
 /// Lit le texte d'une note simple.
 #[derive(Debug)]
@@ -28,10 +38,13 @@ impl<'a> ReadNoteText<'a> {
     /// carte mentale, canvas, CRM) ; [`AppError::NoteNotFound`] si elle n'existe pas ;
     /// [`AppError::NoteUnreadable`] si elle n'est pas du texte UTF-8 ;
     /// [`AppError::StorageUnavailable`] si le stockage ne répond pas.
-    pub fn execute(&self, note: &NotePath) -> Result<ReadableNote, AppError> {
+    pub fn execute(&self, note: &NotePath) -> Result<NoteText, AppError> {
         let content = self.store.read(note)?.content;
         let kind = ContentType::of_file(note.name(), &content);
-        Ok(readable(kind, &content)?)
+        Ok(NoteText {
+            title: displayed_title_of_note(&content, note.name()),
+            text: readable(kind, &content)?,
+        })
     }
 }
 
@@ -46,7 +59,7 @@ mod tests {
         NotePath::parse(text).unwrap()
     }
 
-    fn read(notes: &[(&str, &str)], note: &str) -> Result<ReadableNote, AppError> {
+    fn read(notes: &[(&str, &str)], note: &str) -> Result<NoteText, AppError> {
         let store = InMemoryNoteStore::with_notes(notes);
         ReadNoteText::new(&store).execute(&path(note))
     }
@@ -58,15 +71,22 @@ mod tests {
             "Travail/a.md",
         )
         .unwrap();
-        assert_eq!(read.header, "---\ntags: [x]\n---\n");
-        assert_eq!(read.body, "# Alpha\ntexte");
-        assert!(!read.truncated);
+        assert_eq!(read.title, "Alpha");
+        assert_eq!(read.text.header, "---\ntags: [x]\n---\n");
+        assert_eq!(read.text.body, "# Alpha\ntexte");
+        assert!(!read.text.truncated);
     }
 
     #[test]
     fn a_note_whose_header_declares_an_unknown_type_is_a_simple_note() {
         let read = read(&[("a.md", "---\ntype: kanban\n---\n# A")], "a.md").unwrap();
-        assert_eq!(read.body, "# A");
+        assert_eq!(read.text.body, "# A");
+    }
+
+    #[test]
+    fn a_note_without_a_title_line_is_titled_by_its_file() {
+        let read = read(&[("Idées/mon-plan.md", "texte seul")], "Idées/mon-plan.md").unwrap();
+        assert_eq!(read.title, "mon-plan");
     }
 
     #[test]

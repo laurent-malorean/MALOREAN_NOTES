@@ -58,6 +58,7 @@ export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   search_by_meaning: "Recherche par le sens",
   list_tags: "Étiquettes",
   linking_notes: "Liens entrants",
+  read_note: "Lecture d’une note",
   list_templates: "Modèles",
   list_versions: "Historique",
   read_version: "Lecture d’une version",

@@ -193,6 +193,7 @@ impl Session {
             AppTool::SearchByMeaning => self.tool_search_by_meaning(arguments),
             AppTool::ListTags => written(&self.list_tags().map_err(|e| e.message)?),
             AppTool::LinkingNotes => self.tool_linking_notes(arguments),
+            AppTool::ReadNote => self.tool_read_note(arguments),
             AppTool::ListTemplates => self.tool_list_templates(scope),
             AppTool::ViewedNote => self.tool_viewed_note(),
             AppTool::ShowNote => self.tool_show_note(arguments),
@@ -220,6 +221,9 @@ mod changing_tests;
 
 #[cfg(test)]
 mod crm_tests;
+
+#[cfg(test)]
+mod reading_tests;
 
 #[cfg(test)]
 mod replacing_tests;

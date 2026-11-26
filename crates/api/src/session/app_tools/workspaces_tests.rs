@@ -36,16 +36,16 @@ impl WorkspaceOpener for Vanishing {
 }
 
 /// « Notes » (`pain.md`) puis « Travail » (`devis.md`), ouvert en dernier ; une IA branchée.
-struct World {
-    session: Session,
-    notes: Arc<InMemoryNoteStore>,
-    travail: Arc<InMemoryNoteStore>,
+pub(super) struct World {
+    pub(super) session: Session,
+    pub(super) notes: Arc<InMemoryNoteStore>,
+    pub(super) travail: Arc<InMemoryNoteStore>,
     preferences: Arc<FakePreferences>,
     gone: Arc<AtomicBool>,
     key: String,
 }
 
-fn world() -> World {
+pub(super) fn world() -> World {
     let notes = Arc::new(InMemoryNoteStore::with_notes(&[(
         "pain.md",
         "# Pain\n\nLa farine.",
@@ -107,19 +107,19 @@ impl World {
         )
     }
 
-    fn found(&self, tool: &str, arguments: Value) -> Value {
+    pub(super) fn found(&self, tool: &str, arguments: Value) -> Value {
         let (text, failed) = self.tool(tool, arguments);
         assert!(!failed, "{text}");
         serde_json::from_str(&text).unwrap()
     }
 
-    fn refused(&self, tool: &str, arguments: Value) -> String {
+    pub(super) fn refused(&self, tool: &str, arguments: Value) -> String {
         let (text, failed) = self.tool(tool, arguments);
         assert!(failed, "{text}");
         text
     }
 
-    fn allow(&self, names: &[&str]) {
+    pub(super) fn allow(&self, names: &[&str]) {
         for name in names {
             self.session.set_workspace_allowed(name, true).unwrap();
         }

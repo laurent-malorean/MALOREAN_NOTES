@@ -1,0 +1,238 @@
+//! L'outil `read_note`, joué par son protocole sur des faux (fiche 0076) : le texte d'une note
+//! simple, en-tête et corps séparés, ses refus dits à l'IA, la limite de taille toujours dite.
+
+use domain::reading::MAX_READ_CHARACTERS;
+use serde_json::{Value, json};
+
+use super::tests::{found, notes_workspace, opened, refused};
+use super::workspaces_tests::world;
+use crate::session::Session;
+
+/// Lit la note pendant un tour ; rend ce que l'outil rend, lu en JSON.
+fn read(session: &Session, path: &str) -> Value {
+    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    found(
+        session,
+        tools.key().as_str(),
+        "read_note",
+        json!({ "path": path }),
+    )
+}
+
+/// La lecture échoue ; rend pourquoi.
+fn unread(session: &Session, arguments: Value) -> String {
+    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    refused(session, tools.key().as_str(), "read_note", arguments)
+}
+
+#[test]
+fn a_simple_note_is_given_whole_with_its_header_apart() {
+    let session = opened(&[(
+        "Travail/pain.md",
+        "---\ntags: [maison]\n---\n# Pain\n\nLa farine.\n",
+    )]);
+
+    let result = read(&session, "Travail/pain.md");
+
+    assert_eq!(
+        result,
+        json!({
+            "path": "Travail/pain.md",
+            "title": "Pain",
+            "header": "---\ntags: [maison]\n---\n",
+            "body": "# Pain\n\nLa farine.\n",
+            "characters": 19,
+            "truncated": false,
+        })
+    );
+}
+
+#[test]
+fn a_note_without_a_header_has_an_empty_one() {
+    let session = opened(&[("a.md", "# Alpha\ntexte")]);
+
+    let result = read(&session, "a.md");
+
+    assert_eq!(result["header"], "");
+    assert_eq!(result["body"], "# Alpha\ntexte");
+}
+
+#[test]
+fn the_header_then_the_body_are_the_file_to_copy_a_text_for_replace_in_note() {
+    let file = "---\ntags: [maison]\n---\n# Pain\n\nLa farine.\nLe sel.\n";
+    let session = opened(&[("a.md", file)]);
+    let result = read(&session, "a.md");
+    let whole = format!(
+        "{}{}",
+        result["header"].as_str().unwrap(),
+        result["body"].as_str().unwrap()
+    );
+    assert_eq!(whole, file);
+
+    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    found(
+        &session,
+        tools.key().as_str(),
+        "replace_in_note",
+        json!({ "path": "a.md", "old_text": "tags: [maison]\n---\n# Pain",
+                "new_text": "tags: [maison, pain]\n---\n# Pain" }),
+    );
+
+    assert!(
+        session
+            .read_note("a.md")
+            .unwrap()
+            .content
+            .starts_with("---\ntags: [maison, pain]\n---\n")
+    );
+}
+
+#[test]
+fn a_note_without_a_title_line_is_titled_by_its_file() {
+    let session = opened(&[("mon-plan.md", "texte seul")]);
+
+    assert_eq!(read(&session, "mon-plan.md")["title"], "mon-plan");
+}
+
+#[test]
+fn a_long_note_is_cut_at_a_whole_line_and_the_answer_says_so() {
+    let line = format!("{}\n", "a".repeat(999));
+    let body = line.repeat(70);
+    let session = opened(&[("long.md", &format!("# Long\n{body}"))]);
+
+    let result = read(&session, "long.md");
+
+    let shown = result["body"].as_str().unwrap();
+    assert!(shown.chars().count() <= MAX_READ_CHARACTERS);
+    assert!(shown.ends_with('\n'));
+    assert!(shown.starts_with("# Long\n"));
+    assert_eq!(result["truncated"], true);
+    assert_eq!(result["characters"], 7 + 70 * 1000);
+    let message = result["message"].as_str().unwrap();
+    let counted = format!("{} caractères sur 70007", shown.chars().count());
+    for expected in [counted.as_str(), "la limite est de 60000", "search_notes"] {
+        assert!(message.contains(expected), "{expected} : {message}");
+    }
+}
+
+#[test]
+fn a_note_that_fits_has_no_message() {
+    let session = opened(&[("a.md", "# A")]);
+
+    assert!(read(&session, "a.md").get("message").is_none());
+}
+
+#[test]
+fn a_missing_or_invalid_path_and_a_missing_note_are_refused() {
+    let session = opened(&[("a.md", "# A")]);
+
+    assert_eq!(unread(&session, json!({})), "il manque « path »");
+    assert_eq!(
+        unread(&session, json!({ "path": " " })),
+        "il manque « path »"
+    );
+    assert_eq!(
+        unread(&session, json!({ "path": "../a.md" })),
+        session.read_note("../a.md").unwrap_err().message
+    );
+    assert_eq!(
+        unread(&session, json!({ "path": "/etc/passwd" })),
+        session.read_note("/etc/passwd").unwrap_err().message
+    );
+    assert_eq!(
+        unread(&session, json!({ "path": "b.md" })),
+        "la note « b.md » n'existe pas"
+    );
+}
+
+#[test]
+fn a_research_notebook_is_sent_to_add_entry_and_the_search() {
+    let session = opened(&[("c.md", "---\ntype: cahier-de-recherche\n---\n# Levures\n")]);
+
+    assert_eq!(
+        unread(&session, json!({ "path": "c.md" })),
+        "cette note est un cahier de recherche : read_note ne lit que les notes simples ; on y \
+         ajoute une entrée avec add_entry, et ses entrées se retrouvent avec search_notes ou \
+         search_by_meaning"
+    );
+}
+
+#[test]
+fn a_mind_map_a_canvas_and_a_crm_with_its_cards_are_refused_with_their_type() {
+    let session = opened(&[
+        ("m.md", "---\ntype: carte-mentale\n---\n# Idées\n- un\n"),
+        ("x.canvas", "{}"),
+        ("clients.md", "---\ntype: crm\n---\n# Clients\n"),
+        (
+            "clients/actions/a.md",
+            "---\ntype: crm-action\n---\n# Appeler\n",
+        ),
+    ]);
+
+    for (path, kind) in [
+        ("m.md", "carte-mentale"),
+        ("x.canvas", "canvas"),
+        ("clients.md", "crm"),
+        ("clients/actions/a.md", "crm-action"),
+    ] {
+        assert_eq!(
+            unread(&session, json!({ "path": path })),
+            format!(
+                "cette note est de type « {kind} » : read_note ne lit que les notes simples ; \
+                 ce type n'a pas encore d'outil de lecture"
+            )
+        );
+    }
+}
+
+#[test]
+fn reading_a_note_writes_nothing_and_keeps_no_version() {
+    let session = opened(&[("a.md", "# A\ntexte")]);
+
+    read(&session, "a.md");
+
+    assert_eq!(session.read_note("a.md").unwrap().content, "# A\ntexte");
+    assert!(session.list_versions("a.md").unwrap().is_empty());
+}
+
+#[test]
+fn a_note_is_read_in_another_workspace_without_changing_the_open_one() {
+    let world = world();
+    world.allow(&["Notes", "Travail"]);
+
+    let result = world.found(
+        "read_note",
+        json!({ "path": "pain.md", "workspace": "notes" }),
+    );
+
+    assert_eq!(result["body"], "# Pain\n\nLa farine.");
+    assert_eq!(result["title"], "Pain");
+    assert_eq!(
+        world.found("read_note", json!({ "path": "devis.md" }))["body"],
+        "# Devis\n\nLe client."
+    );
+    let missing = world.refused(
+        "read_note",
+        json!({ "path": "devis.md", "workspace": "Notes" }),
+    );
+    assert_eq!(missing, "la note « devis.md » n'existe pas");
+}
+
+#[test]
+fn a_note_is_not_read_in_a_workspace_that_is_not_allowed() {
+    let world = world();
+    world.allow(&["Travail"]);
+
+    let error = world.refused(
+        "read_note",
+        json!({ "path": "pain.md", "workspace": "Notes" }),
+    );
+
+    assert_eq!(
+        error,
+        "aucun espace de travail autorisé ne s'appelle « Notes » ; ceux que les IA peuvent \
+         utiliser : « Travail »"
+    );
+    let unallowed = world.refused("read_note", json!({ "path": "pain.md" }));
+    assert!(!unallowed.contains("farine"), "{unallowed}");
+}
