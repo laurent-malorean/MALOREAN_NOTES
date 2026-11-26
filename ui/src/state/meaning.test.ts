@@ -41,6 +41,7 @@ function overview(
     segments: 411,
     withVector: 120,
     notes: 12,
+    notesWithoutText: 0,
     computing: false,
     ...rest,
   };
@@ -223,6 +224,19 @@ describe("réglages du sens", () => {
       "Segments : 411",
       "Segments calculés : 120 sur 411",
     ]);
+  });
+
+  it("dit combien de notes n'ont pas de texte, seulement quand il y en a", () => {
+    expect(indexLines(read({ notes: 56, notesWithoutText: 2 }))[0]).toBe(
+      "Notes : 56 (2 sans texte)",
+    );
+    expect(indexLines(read({ notes: 56, notesWithoutText: 1 }))[0]).toBe(
+      "Notes : 56 (1 sans texte)",
+    );
+    expect(indexLines(read({ notes: 1_200, notesWithoutText: 1_000 }))[0]).toBe(
+      "Notes : 1\u202f200 (1\u202f000 sans texte)",
+    );
+    expect(indexLines(read({ notes: 56, notesWithoutText: 0 }))[0]).toBe("Notes : 56");
   });
 
   it("chiffre l'avancement de l'index de sens en pourcentage, le calcul en cours d'abord", () => {

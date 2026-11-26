@@ -171,8 +171,12 @@ export function indexPercent(state: MeaningState): number | null {
 export function indexLines(state: MeaningState): string[] {
   const overview = state.overview;
   if (overview === null) return [];
+  const withoutText =
+    overview.notesWithoutText > 0
+      ? ` (${number.format(overview.notesWithoutText)} sans texte)`
+      : "";
   const lines = [
-    `Notes : ${number.format(overview.notes)}`,
+    `Notes : ${number.format(overview.notes)}${withoutText}`,
     `Segments : ${number.format(overview.segments)}`,
     `Segments calculés : ${number.format(overview.withVector)} sur ${number.format(overview.segments)}`,
   ];

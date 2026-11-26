@@ -28,6 +28,7 @@ export function overviewOf(patch: Partial<MeaningOverviewItem> = {}): MeaningOve
     segments: 411,
     withVector: 0,
     notes: 12,
+    notesWithoutText: 0,
     computing: false,
     ...patch,
   };

@@ -107,6 +107,14 @@ describe("recherche par le sens : réglages", () => {
     expect(s.text()).toContain("Segments calculés : 100 sur 411");
   });
 
+  it("dit à côté du nombre de notes combien n'ont pas de texte", async () => {
+    const t = setup(overviewOf({ notes: 56, notesWithoutText: 2 }));
+    await vi.waitFor(() => expect(t.calls).toEqual(["aperçu"]));
+    const s = settingsOf(t);
+    await vi.waitFor(() => expect(t.calls).toEqual(["aperçu", "aperçu"]));
+    expect(s.text()).toContain("Notes : 56 (2 sans texte)");
+  });
+
   it("se redessine aux événements, tant qu'elle est à l'écran", async () => {
     const t = setup(withDownloaded(overviewOf(), { "e5-small": true }));
     await vi.waitFor(() => expect(t.calls).toEqual(["aperçu"]));

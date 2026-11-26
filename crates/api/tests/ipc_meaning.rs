@@ -120,7 +120,8 @@ fn the_overview_is_asked_by_name_and_answered_in_camel_case() {
                 { "model": "e5-large", "label": "E5 grand", "downloaded": false,
                   "downloading": false, "size": MeaningModel::Large.total_size() },
             ],
-            "segments": 0, "withVector": 0, "notes": 0, "computing": false,
+            "segments": 0, "withVector": 0, "notes": 0, "notesWithoutText": 0,
+            "computing": false,
         })
     );
     open(&window, &session);
@@ -128,6 +129,7 @@ fn the_overview_is_asked_by_name_and_answered_in_camel_case() {
     assert_eq!(overview["segments"], 3);
     assert_eq!(overview["withVector"], 3);
     assert_eq!(overview["notes"], 3);
+    assert_eq!(overview["notesWithoutText"], 0);
 }
 
 #[test]
