@@ -2,7 +2,8 @@
 // d'icônes (mise en forme, copies, affichage) et le champ de recherche sont sur une seule ligne, rangés de gauche
 // à droite sans se chevaucher ; chaque icône reçoit le pointeur ; quand la place de la zone du milieu manque
 // (colonne Claude Code ouverte, bande resserrée), deux lignes propres : mise en forme et copies, puis affichage et
-// recherche qui prend toute la largeur restante ; rien ne déborde.
+// recherche qui prend toute la largeur restante ; rien ne déborde. Chaque ligne est centrée dans la zone de
+// l'éditeur, panneaux cachés ou montrés, colonne Claude Code ouverte ou non (fiche 0092).
 import type { Scenario, Trial } from "../runner";
 import { type Rect, centreOf, find, findAll, rectOf } from "./env";
 
@@ -240,6 +241,47 @@ function checkLayoutFollowsWidth(trial: Trial, when: string): void {
   else checkOneRow(trial, when);
 }
 
+/** Écart toléré entre le milieu d'une ligne de la bande et celui de la zone de l'éditeur (fiche 0092). */
+const CENTRE_TOLERANCE = 1;
+
+/** Chaque ligne de la bande (ses quatre éléments regroupés par leur milieu vertical) est centrée dans la zone de l'éditeur. */
+function checkCentred(trial: Trial, when: string): void {
+  const parts = partsOf();
+  const row = strip();
+  const zone = row?.closest(".editor");
+  if (parts === null || row === null || !zone) {
+    return trial.check(`${when} : la bande et la zone de l'éditeur sont présentes`, false);
+  }
+  const area = rectOf(zone);
+  const lines: { left: number; right: number; middle: number }[] = [];
+  for (const rect of [parts.format, parts.copy, parts.display, parts.search]) {
+    const line = lines.find((l) => Math.abs(l.middle - middle(rect)) < SAME_ROW);
+    if (line) {
+      line.left = Math.min(line.left, rect.x);
+      line.right = Math.max(line.right, rect.x + rect.width);
+    } else lines.push({ left: rect.x, right: rect.x + rect.width, middle: middle(rect) });
+  }
+  const offsets = lines.map((l) => (l.left + l.right) / 2 - (area.x + area.width / 2));
+  trial.measure(
+    `centrage ${when}`,
+    offsets.map((offset) => Math.round(offset * 100) / 100),
+  );
+  trial.check(
+    `${when} : chaque ligne de la bande est centrée dans la zone de l'éditeur (${lines.length} ligne(s))`,
+    offsets.every((offset) => Math.abs(offset) <= CENTRE_TOLERANCE),
+    JSON.stringify(offsets.map(Math.round)),
+  );
+  trial.check(
+    `${when} : aucun bouton coupé hors de la zone de l'éditeur`,
+    findAll<HTMLElement>(".format-bar button, .display-tools button, .search-field").every(
+      (element) => {
+        const rect = rectOf(element);
+        return rect.x >= area.x - 0.5 && rect.x + rect.width <= area.x + area.width + 0.5;
+      },
+    ),
+  );
+}
+
 /** Ouvre la colonne Claude Code, mesure la bande dans la vraie fenêtre, la ferme. */
 async function checkWithClaudeColumn(trial: Trial): Promise<void> {
   const claude = named("Claude");
@@ -252,6 +294,7 @@ async function checkWithClaudeColumn(trial: Trial): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
     trial.check("la colonne Claude Code est ouverte", !column.hidden);
     checkLayoutFollowsWidth(trial, "colonne Claude Code ouverte");
+    checkCentred(trial, "colonne Claude Code ouverte");
     checkPointer(trial, "colonne Claude Code ouverte");
     // Bande resserrée comme le ferait une colonne de gauche large : deux lignes, quelle que soit la fenêtre.
     squeezed(SWITCH_WIDTH - 60 + 2 * 0.8 * ROOT_REM, () =>
@@ -275,11 +318,17 @@ export function displayToolsScenarios(): Scenario[] {
         try {
           await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
           const parts = checkOneRow(trial, "fenêtre réelle");
+          checkCentred(trial, "fenêtre réelle, panneaux cachés");
           checkPointer(trial, "fenêtre réelle");
           if (parts === null) return;
           checkSqueezed(trial, parts.display.x + parts.display.width - parts.format.x);
         } finally {
           if (hidden) sidePanels()?.click();
+        }
+        if (hidden) {
+          // Panneaux montrés : la zone est plus étroite, la bande reste centrée dans ce qui reste.
+          await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+          checkCentred(trial, "fenêtre réelle, panneaux montrés");
         }
       },
     },

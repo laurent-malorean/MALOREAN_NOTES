@@ -782,11 +782,12 @@ button {
      (colonnes de gauche, colonne Claude Code), pas celle de la fenêtre. */
   container: editor-tools / inline-size;
 }
-/* Une seule ligne tant que la place le permet : mise en forme, copies, affichage, recherche. */
+/* Une seule ligne tant que la place le permet : mise en forme, copies, affichage, recherche. Les
+   blocs sont centrés dans la zone de l'éditeur (fiche 0092), pas collés à son bord droit. */
 .tool-rows {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 0.4rem;
 }
 /* Place insuffisante : deux lignes. En haut la mise en forme et les copies ; dessous l'affichage,
@@ -794,7 +795,8 @@ button {
    vide). Le seuil est la largeur des trois blocs, des écarts et de la recherche à son minimum
    (672,3 points mesurés, depuis que le bouton des panneaux est dans la barre de la fenêtre) ; une
    requête de conteneur n'accepte pas de variable, d'où la valeur en rem (42,05 rem), gardée par le
-   parcours « top-bar-rows ». */
+   parcours « top-bar-rows ». Chaque ligne reste centrée : la première, plus étroite que la zone,
+   est au milieu ; la seconde, dont la recherche prend la largeur restante, la remplit. */
 @container editor-tools (max-width: 42.05rem) {
   .tool-rows {
     display: grid;
@@ -804,7 +806,7 @@ button {
   }
   .tool-rows > .format-bar {
     grid-column: 1 / -1;
-    justify-content: flex-start;
+    justify-content: center;
   }
   .tool-rows > .search-field {
     max-width: none;
@@ -822,7 +824,7 @@ button {
   display: flex;
   flex: 0 1 auto;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 0.4rem;
 }
 /* Une pilule par groupe de boutons : fond discret, coins arrondis, icônes seules. */
