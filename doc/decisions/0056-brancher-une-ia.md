@@ -3,6 +3,7 @@
 - **Date** : 2026-11-25
 - **Statut** : acceptée (spécification : `doc/specs/brancher-une-ia.md`)
 - **Complète** la fiche 0040 (outils de l'application pour Claude : serveur MCP local, relais, prise Unix, clé du tour).
+- **Nom du serveur** : renommé `malorean_notes` le 26/11/2026 (fiche 0082) ; les blocs de configuration portent `malorean_notes` (`mcpServers.malorean_notes`, `[mcp_servers.malorean_notes]`), pas `malorean`.
 
 ## Contexte
 

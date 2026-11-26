@@ -531,7 +531,11 @@ fn with_a_key_the_connection_shows_it_with_its_day_and_the_blocks_to_paste() {
     let program = "/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes";
     assert!(shown.claude_config.contains(program));
     assert!(shown.claude_config.contains(key.secret()));
-    assert!(shown.codex_config.starts_with("[mcp_servers.malorean]\n"));
+    assert!(
+        shown
+            .codex_config
+            .starts_with("[mcp_servers.malorean_notes]\n")
+    );
     assert!(shown.codex_config.contains(key.secret()));
 }
 

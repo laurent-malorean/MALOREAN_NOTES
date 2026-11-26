@@ -23,5 +23,5 @@ Le dossier des modèles de chaque espace de travail était gardé par l'interfac
 
 - Le choix fait dans l'interface avant la mise à jour est retrouvé au premier lancement, sans rien refaire.
 - Une IA branchée peut lister les modèles d'un espace coché et créer une note depuis l'un d'eux ; la colonne Claude Code aussi, sur son espace comme sur un autre coché.
-- Le serveur MCP garde son nom (`malorean`).
+- Le serveur MCP garde son nom (`malorean`) ; renommé `malorean_notes` le 26/11/2026 (fiche 0082).
 - Tests : la règle (choisir, relire, renommer, retirer, ajouter après, noms ignorant la casse, espace inconnu) ; le cas d'usage (choix gardé par espace, reprise sans écraser, sans rien écrire s'il n'y a rien à reprendre) ; le contrat des préférences sur le faux et sur le vrai fichier (champ absent des anciens fichiers, absent tant qu'aucun n'est choisi, dossier invalide oublié, intact quand on choisit un modèle de sens) ; les commandes et leurs JSON ; les outils par le protocole sur des faux, pour la colonne et une IA branchée (dossier de l'espace visé, espace sans dossier, dossier changé entre deux appels, espace non autorisé) ; l'interface (lecture et écriture par les commandes, reprise des clés, erreur dite et clés gardées) ; parcours Playwright et essai de l'application réelle.

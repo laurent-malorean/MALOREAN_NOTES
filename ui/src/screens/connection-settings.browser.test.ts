@@ -26,7 +26,7 @@ const KEY: ConnectionInfo = {
     secret: "abc123",
     createdOn: "25 novembre 2026",
     claudeConfig: '{\n  "mcpServers": {}\n}',
-    codexConfig: "[mcp_servers.malorean]",
+    codexConfig: "[mcp_servers.malorean_notes]",
   },
 };
 
@@ -98,7 +98,7 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
     expect(texts.map((text) => text.textContent)).toEqual([
       "abc123",
       '{\n  "mcpServers": {}\n}',
-      "[mcp_servers.malorean]",
+      "[mcp_servers.malorean_notes]",
     ]);
     expect(t.buttons().map((b) => b.textContent)).toEqual([
       "Copier",

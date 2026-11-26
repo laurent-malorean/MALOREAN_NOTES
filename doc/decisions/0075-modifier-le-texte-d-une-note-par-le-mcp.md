@@ -30,5 +30,5 @@ La fiche 0040 (validée le 19/11) laissait le texte d'une note aux outils de fic
 ## Conséquences
 
 - Une IA branchée peut lire un texte (elle a la recherche et les extraits ; le texte entier d'une note se lit avec `read_note`, fiche 0076) et le changer sans connaître le dossier de l'espace de travail.
-- Le serveur MCP garde son nom (`malorean`).
+- Le serveur MCP garde son nom (`malorean`) ; renommé `malorean_notes` le 26/11/2026 (fiche 0082).
 - Tests : la règle de remplacement (exact, supprimer, insérer, introuvable, vide, identique, répété avec lignes, `replace_all`, chevauchement, types refusés, messages) ; le cas d'usage (version gardée, index, renommage par le titre et liens des pièces jointes, en-tête conservé, refus du cahier) ; l'outil par son protocole sur des faux, pour la colonne et pour une IA branchée avec le paramètre `workspace` (espace ouvert en arrière-plan, espace non autorisé) ; sa description et son schéma ; la liste des outils qui changent une note ; les options de Claude Code (`--allowed-tools`, garde-fou) ; le nom de l'action dans la colonne.

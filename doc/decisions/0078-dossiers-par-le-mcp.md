@@ -26,5 +26,5 @@ Une IA branchée (Codex, extension Claude de VS Code, Claude Code hors de l'appl
 
 - Une IA branchée peut voir l'arborescence d'un espace coché, la réorganiser (créer, renommer, déplacer) et jeter un dossier vers la corbeille sans connaître son dossier sur l'ordinateur.
 - Une IA qui renomme un dossier doit savoir que des liens `[[Dossier/titre]]` peuvent garder l'ancien nom de dossier ; le lien reste valable tant que le titre est unique. Réécrire ces liens serait un changement de l'interface aussi : à décider à part.
-- Le serveur MCP garde son nom (`malorean`).
+- Le serveur MCP garde son nom (`malorean`) ; renommé `malorean_notes` le 26/11/2026 (fiche 0082).
 - Tests : la règle sur les cas d'usage existants (inchangée) ; chaque outil par le protocole MCP sur des faux (liste dans l'ordre de l'arbre, dossiers cachés absents, renommage avec notes et pièces jointes, déplacement, corbeille, noms refusés, racine, dossier absent, nom pris, dossier dans lui-même) ; un autre espace visé par `workspace` et un espace non autorisé ; le catalogue (champs exigés, descriptions) ; la liste des outils qui changent une note ; les options de Claude Code (`--allowed-tools`, garde-fou) ; les libellés de la colonne ; essai de l'application réelle.

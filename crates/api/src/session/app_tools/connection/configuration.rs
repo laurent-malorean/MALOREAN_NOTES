@@ -63,7 +63,7 @@ mod tests {
 
         assert_eq!(
             block,
-            json!({ "mcpServers": { "malorean": {
+            json!({ "mcpServers": { "malorean_notes": {
                 "command": "/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes",
                 "args": ["--brancher", "abc123"],
             } } })
@@ -79,7 +79,7 @@ mod tests {
     fn the_codex_block_is_the_toml_of_one_mcp_server_launched_with_the_key() {
         assert_eq!(
             codex_config(&program(), &key()),
-            "[mcp_servers.malorean]\n\
+            "[mcp_servers.malorean_notes]\n\
              command = \"/Applications/MALOREAN Notes.app/Contents/MacOS/malorean-notes\"\n\
              args = [\"--brancher\", \"abc123\"]"
         );
@@ -91,12 +91,12 @@ mod tests {
 
         assert_eq!(
             codex_config(&odd, &key()),
-            "[mcp_servers.malorean]\ncommand = \"/Users/a\\\"b\\\\c/app\"\n\
+            "[mcp_servers.malorean_notes]\ncommand = \"/Users/a\\\"b\\\\c/app\"\n\
              args = [\"--brancher\", \"abc123\"]"
         );
         let block: Value = serde_json::from_str(&claude_config(&odd, &key())).unwrap();
         assert_eq!(
-            block["mcpServers"]["malorean"]["command"],
+            block["mcpServers"]["malorean_notes"]["command"],
             "/Users/a\"b\\c/app"
         );
     }

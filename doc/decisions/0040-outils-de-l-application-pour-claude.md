@@ -8,6 +8,7 @@
 - **Remplacée sur le point « partage »** par la fiche 0075 (26/11/2026) : l'outil `replace_in_note` change le texte d'une note simple ; il ne reste plus aux seuls outils de fichiers de l'IA.
 - **Complétée** par la fiche 0078 (26/11/2026) : les outils `list_folders`, `rename_folder`, `move_folder` et `trash_folder` (avec `create_folder`, déjà là) donnent à l'IA l'arbre des dossiers et leurs changements, par les cas d'usage de l'interface.
 - **Complétée** par la fiche 0080 (26/11/2026) : la carte mentale se lit en arbre (`read_mind_map`) et se modifie par un outil par geste de l'interface (`add_mind_map_child`, `add_mind_map_sibling`, `add_mind_map_root`, `edit_mind_map_node`, `color_mind_map_node`, `move_mind_map_node`, `delete_mind_map_node`) ; `read_note` et `replace_in_note` la refusent en renvoyant vers eux.
+- **Nom du serveur** : renommé `malorean_notes` le 26/11/2026 (fiche 0082) ; partout où cette fiche écrit `malorean` pour le serveur, lire `malorean_notes` (les outils s'appellent `mcp__malorean_notes__<outil>`).
 
 ## Contexte
 

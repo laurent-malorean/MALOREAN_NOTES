@@ -469,11 +469,11 @@ fn each_tool_of_claude_code_gives_its_kind_of_action_and_its_target() {
 #[test]
 fn a_tool_of_the_application_gives_its_action_and_its_target() {
     assert_eq!(
-        action_of("mcp__malorean__search_notes", r#"{"query":"pain"}"#),
+        action_of("mcp__malorean_notes__search_notes", r#"{"query":"pain"}"#),
         action(ActionKind::AppTool(AppTool::SearchNotes), Some("pain"))
     );
     assert_eq!(
-        action_of("mcp__malorean__list_tags", r#"{"query":"x"}"#),
+        action_of("mcp__malorean_notes__list_tags", r#"{"query":"x"}"#),
         action(ActionKind::AppTool(AppTool::ListTags), None)
     );
     assert_eq!(

@@ -58,6 +58,6 @@ Chaque outil fabrique la requête que l'interface envoie (`CrmActionDraftItem`, 
 ## Conséquences
 
 - Une IA branchée lit un CRM d'un espace coché, crée, déplace, modifie et jette des actions, des personnes, des entreprises et des projets, gère les étapes et les commentaires, étiquette les fiches, sans connaître le dossier de l'espace sur l'ordinateur ni écrire un seul fichier.
-- Le serveur MCP garde son nom (`malorean`).
+- Le serveur MCP garde son nom (`malorean`) ; renommé `malorean_notes` le 26/11/2026 (fiche 0082).
 - Pas d'outil pour : la couleur d'une étiquette (elle se tire de son nom), le rang d'une carte (jamais écrit à la main), Ma semaine (une présentation), l'export, la restauration d'une fiche de la corbeille (celle d'une note, par l'utilisateur).
 - Tests : `KeepingStore` (contrats du stockage, texte d'avant gardé) ; chaque outil par le protocole MCP sur des faux (succès, chaque refus de l'interface, nettoyage des fiches, historique, index, autre espace par `workspace`), le catalogue et les libellés, la liste des outils qui changent, les options de Claude Code, la taille de la réponse la plus lourde, `add_tags` et `remove_tags` sur une fiche ; une IA branchée par la vraie prise locale ; l'annonce de l'écran sur un vrai dossier.

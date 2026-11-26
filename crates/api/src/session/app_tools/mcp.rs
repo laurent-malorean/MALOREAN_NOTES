@@ -149,7 +149,7 @@ mod tests {
         let result = &reply["result"];
         assert_eq!(result["protocolVersion"], "2025-11-25");
         assert_eq!(result["capabilities"], json!({ "tools": {} }));
-        assert_eq!(result["serverInfo"]["name"], "malorean");
+        assert_eq!(result["serverInfo"]["name"], "malorean_notes");
         assert_eq!(result["serverInfo"]["title"], "MALOREAN Notes");
         assert_eq!(result["serverInfo"]["version"], env!("CARGO_PKG_VERSION"));
         assert_eq!(result["instructions"], INSTRUCTIONS);

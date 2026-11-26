@@ -22,5 +22,5 @@ Aucun outil ne rend le texte entier d'une note : il y a les extraits de la reche
 ## Conséquences
 
 - Une IA branchée peut lire une note puis la modifier sans connaître le dossier de l'espace de travail ; la lecture rend des chemins relatifs, jamais un chemin de l'ordinateur.
-- Le serveur MCP garde son nom (`malorean`).
+- Le serveur MCP garde son nom (`malorean`) ; renommé `malorean_notes` le 26/11/2026 (fiche 0082).
 - Tests : la règle (note simple, type refusé par type, en-tête présent, absent, non fermé, fin de ligne sans retour, coupure à la ligne entière, coupure sans retour à la ligne, limite exacte, caractères multi-octets) ; le cas d'usage (note simple, cahier et canvas refusés, introuvable, illisible) ; l'outil par son protocole sur des faux, pour la colonne et pour une IA branchée avec `workspace` (espace ouvert en arrière-plan, espace non autorisé) ; sa description et son schéma ; le nom de l'action dans la colonne ; les options de Claude Code (`--allowed-tools`).

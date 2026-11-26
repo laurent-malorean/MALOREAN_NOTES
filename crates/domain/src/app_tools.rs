@@ -3,8 +3,8 @@
 //! font ; rien de leur transport.
 
 /// Le nom du serveur MCP local de l'application, tel que Claude Code le voit : ses outils
-/// s'appellent `mcp__malorean__<outil>`.
-pub const APP_TOOLS_SERVER: &str = "malorean";
+/// s'appellent `mcp__malorean_notes__<outil>`.
+pub const APP_TOOLS_SERVER: &str = "malorean_notes";
 
 /// Ce que Claude Code met devant le nom d'un outil d'un serveur MCP.
 const MCP_PREFIX: &str = "mcp__";
@@ -310,7 +310,7 @@ impl AppTool {
         Self::ALL.into_iter().find(|tool| tool.name() == name)
     }
 
-    /// Son nom tel que Claude Code le donne : `mcp__malorean__<outil>`.
+    /// Son nom tel que Claude Code le donne : `mcp__malorean_notes__<outil>`.
     #[must_use]
     pub fn full_name(self) -> String {
         format!("{MCP_PREFIX}{APP_TOOLS_SERVER}__{}", self.name())

@@ -23,6 +23,7 @@ Aujourd'hui, les outils de l'application (chercher, étiquettes, cahier de reche
 - **Où coller chaque bloc** : sous le titre de chaque bloc, une phrase dit dans quel fichier le coller, avec le nom du fichier en style code :
   - Claude : « Collez ce bloc tel quel dans le fichier `.mcp.json`, à la racine du dossier ouvert dans l'éditeur. Si le fichier existe déjà, ajoutez l'entrée du bloc dans « mcpServers ». » (`.mcp.json` est le fichier des serveurs MCP d'un projet pour Claude Code et son extension VS Code) ;
   - Codex : « Collez ce bloc tel quel à la fin du fichier `~/.codex/config.toml`. » (le fichier de configuration de Codex, où chaque serveur MCP est une section `[mcp_servers.<nom>]`, ce que le bloc est déjà : du TOML valide).
+  Le serveur y porte le nom `malorean_notes` (entrée `mcpServers.malorean_notes` pour Claude, section `[mcp_servers.malorean_notes]` pour Codex) ; ses outils s'appellent `mcp__malorean_notes__<outil>` dans la liste de l'IA. Renommé le 26/11/2026 (fiche 0082) : un ancien bloc `malorean` doit être recollé.
   La clé seule n'a pas de phrase. Les phrases se lisent en thème clair et sombre et ne font jamais déborder la fenêtre des Réglages, dont la taille reste fixe (le contenu défile).
 - **Le fichier `.mcp.json` ne se commite pas** : il contient la clé de branchement ; le dépôt du projet l'ignore (`.gitignore`).
 - **Avec une clé** : l'onglet montre qu'elle existe, la date de sa création, les blocs à copier et un bouton **« Révoquer la clé »**. La clé reste affichée et copiable tant qu'elle existe.

@@ -41,5 +41,5 @@ Un canvas est un fichier `.canvas` au format JSON Canvas. Une IA branchée (Code
 - Elle ne choisit pas l'arrière-plan d'un groupe, ne convertit pas une carte texte en fichier, n'aligne pas et ne répartit pas des cartes, et ne rend pas d'image du canvas : l'interface offre ces gestes, mais ils ne sont pas dans la demande ; chacun aurait son outil, à décider à part.
 - Elle n'importe pas de média dans un canvas : une carte de fichier vise un fichier déjà dans l'espace de travail.
 - L'ordre d'empilement : une carte neuve passe devant, un groupe neuf derrière. Un déplacement ne change pas l'ordre (dans l'interface, sélectionner une carte la met au premier plan : l'IA ne sélectionne rien).
-- Le serveur MCP garde son nom (`malorean`).
+- Le serveur MCP garde son nom (`malorean`) ; renommé `malorean_notes` le 26/11/2026 (fiche 0082).
 - Tests : le domaine (chaque geste, chaque refus, identifiants, constantes comparées à l'interface) ; le cas d'usage sur des faux (version gardée, fusion, canvas invalide) ; chaque outil par le protocole MCP sur des faux, un autre espace par `workspace`, le catalogue et les libellés, la liste des outils qui changent, les options de Claude Code ; une IA branchée par la vraie prise locale ; l'annonce de l'écran sur un vrai dossier ; les étiquettes d'un canvas.

@@ -26,5 +26,5 @@ Une IA branchée (Codex, extension Claude de VS Code, Claude Code hors de l'appl
 ## Conséquences
 
 - Par défaut, une IA branchée ne voit aucun espace : elle reçoit une liste vide et le renvoi vers l'onglet. Avant cette fiche, elle agissait sur l'espace ouvert ; cocher l'espace rétablit ce comportement.
-- Le serveur MCP garde son nom (`malorean`) ; le renommer est une tâche à part.
+- Le serveur MCP garde son nom (`malorean`) ; renommé `malorean_notes` le 26/11/2026 (fiche 0082).
 - Tests : la règle des espaces autorisés (liste des espaces, renommage, retrait, noms permis, messages) ; les préférences sur le faux et sur le vrai fichier (contrat, ancien fichier sans le champ) ; les commandes (noms et JSON) ; l'outil `list_workspaces` et le paramètre sur les outils, par le protocole sur des faux (deux espaces, stockages distincts) ; l'espace ouvert qui ne change pas ; l'espace décoché en cours de travail ; l'onglet des Réglages (tests d'écran, parcours Playwright) ; l'essai de l'application réelle.

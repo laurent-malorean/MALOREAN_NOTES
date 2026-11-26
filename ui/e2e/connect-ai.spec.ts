@@ -33,7 +33,7 @@ test("sans clé : une phrase et un seul bouton, qui crée la clé et montre les 
   await expect(blocks).toHaveCount(2);
   await expect(blocks.nth(0)).toContainText('"mcpServers"');
   await expect(blocks.nth(0)).toContainText('"--brancher", "cle-de-branchement-1"');
-  await expect(blocks.nth(1)).toContainText("[mcp_servers.malorean]");
+  await expect(blocks.nth(1)).toContainText("[mcp_servers.malorean_notes]");
   await expect(blocks.nth(1)).toContainText('args = ["--brancher", "cle-de-branchement-1"]');
 });
 
@@ -114,7 +114,7 @@ test("copie la clé et chaque bloc dans le presse-papiers", async ({ page }) => 
   const [key, claude, codex] = await copied();
   expect(key).toBe("cle-de-branchement-1");
   expect(claude).toContain('"args": ["--brancher", "cle-de-branchement-1"]');
-  expect(codex).toContain("[mcp_servers.malorean]");
+  expect(codex).toContain("[mcp_servers.malorean_notes]");
 });
 
 test("la révocation demande confirmation, puis redonne le bouton de création d'une clé autre", async ({

@@ -146,7 +146,7 @@ const FAKE_KEY: ConnectionInfo = {
     secret: "cle-d-essai",
     createdOn: "25 novembre 2026",
     claudeConfig: '{\n  "mcpServers": {}\n}',
-    codexConfig: "[mcp_servers.malorean]",
+    codexConfig: "[mcp_servers.malorean_notes]",
   },
 };
 

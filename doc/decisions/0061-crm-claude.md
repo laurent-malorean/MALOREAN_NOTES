@@ -4,6 +4,7 @@
 - **Statut** : acceptée
 - **Complète** les fiches 0040 (outils de l'application pour Claude), 0056 (les mêmes outils pour une IA branchée) et 0058 (index des fiches du CRM).
 - **Complétée** par la fiche 0081 (26/11/2026) : lire et écrire les fiches ne passe plus par des outils de fichiers mais par `read_crm` et quatorze outils de changement ; la consigne sur le format des fiches est remplacée, dans la présentation du serveur, par une consigne sur ces outils.
+- **Nom du serveur** : renommé `malorean_notes` le 26/11/2026 (fiche 0082) ; l'outil s'appelle `mcp__malorean_notes__create_crm`.
 
 ## Contexte
 

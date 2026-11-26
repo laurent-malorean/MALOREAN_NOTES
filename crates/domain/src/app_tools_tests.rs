@@ -20,7 +20,7 @@ fn the_list_of_workspaces_reads_without_changing_and_has_no_target() {
     assert_eq!(AppTool::ListWorkspaces.name(), "list_workspaces");
     assert_eq!(
         AppTool::ListWorkspaces.full_name(),
-        "mcp__malorean__list_workspaces"
+        "mcp__malorean_notes__list_workspaces"
     );
     assert!(!AppTool::ListWorkspaces.changes_notes());
     assert_eq!(AppTool::ListWorkspaces.target_field(), None);
@@ -35,13 +35,13 @@ fn each_tool_is_found_by_its_name_and_its_claude_code_name() {
     }
     assert_eq!(
         AppTool::SearchNotes.full_name(),
-        "mcp__malorean__search_notes"
+        "mcp__malorean_notes__search_notes"
     );
     assert_eq!(AppTool::named("rm"), None);
     assert_eq!(AppTool::SearchByMeaning.name(), "search_by_meaning");
     assert_eq!(
         AppTool::SearchByMeaning.full_name(),
-        "mcp__malorean__search_by_meaning"
+        "mcp__malorean_notes__search_by_meaning"
     );
     assert_eq!(AppTool::ALL[2], AppTool::SearchByMeaning);
 }
@@ -50,9 +50,13 @@ fn each_tool_is_found_by_its_name_and_its_claude_code_name() {
 fn a_tool_of_another_server_or_a_built_in_tool_is_not_an_app_tool() {
     assert_eq!(AppTool::of_full_name("search_notes"), None);
     assert_eq!(AppTool::of_full_name("mcp__autre__search_notes"), None);
-    assert_eq!(AppTool::of_full_name("mcp__malorean_search_notes"), None);
+    assert_eq!(
+        AppTool::of_full_name("mcp__malorean_notes_search_notes"),
+        None
+    );
+    assert_eq!(AppTool::of_full_name("mcp__malorean__search_notes"), None);
     assert_eq!(AppTool::of_full_name("Read"), None);
-    assert_eq!(AppTool::of_full_name("mcp__malorean__inconnu"), None);
+    assert_eq!(AppTool::of_full_name("mcp__malorean_notes__inconnu"), None);
 }
 
 #[test]
@@ -197,9 +201,9 @@ fn each_tool_says_what_it_targets() {
 fn reading_a_note_changes_nothing_and_targets_its_path() {
     let tool = AppTool::ReadNote;
     assert_eq!(tool.name(), "read_note");
-    assert_eq!(tool.full_name(), "mcp__malorean__read_note");
+    assert_eq!(tool.full_name(), "mcp__malorean_notes__read_note");
     assert_eq!(
-        AppTool::of_full_name("mcp__malorean__read_note"),
+        AppTool::of_full_name("mcp__malorean_notes__read_note"),
         Some(tool)
     );
     assert!(!tool.changes_notes());
@@ -214,9 +218,9 @@ fn reading_a_note_changes_nothing_and_targets_its_path() {
 fn reading_a_mind_map_changes_nothing_and_targets_its_path() {
     let tool = AppTool::ReadMindMap;
     assert_eq!(tool.name(), "read_mind_map");
-    assert_eq!(tool.full_name(), "mcp__malorean__read_mind_map");
+    assert_eq!(tool.full_name(), "mcp__malorean_notes__read_mind_map");
     assert_eq!(
-        AppTool::of_full_name("mcp__malorean__read_mind_map"),
+        AppTool::of_full_name("mcp__malorean_notes__read_mind_map"),
         Some(tool)
     );
     assert!(!tool.changes_notes());
@@ -231,7 +235,7 @@ fn reading_a_mind_map_changes_nothing_and_targets_its_path() {
 fn replacing_a_text_changes_a_note_and_targets_its_path() {
     let tool = AppTool::ReplaceInNote;
     assert_eq!(tool.name(), "replace_in_note");
-    assert_eq!(tool.full_name(), "mcp__malorean__replace_in_note");
+    assert_eq!(tool.full_name(), "mcp__malorean_notes__replace_in_note");
     assert!(tool.changes_notes());
     assert!(tool.aims_at_a_workspace());
     assert!(!tool.uses_screen());
@@ -259,10 +263,10 @@ fn the_folder_tools_are_named_ordered_and_guarded_as_their_decision_says() {
     );
     assert_eq!(
         AppTool::TrashFolder.full_name(),
-        "mcp__malorean__trash_folder"
+        "mcp__malorean_notes__trash_folder"
     );
     assert_eq!(
-        AppTool::of_full_name("mcp__malorean__rename_folder"),
+        AppTool::of_full_name("mcp__malorean_notes__rename_folder"),
         Some(AppTool::RenameFolder)
     );
     assert!(!AppTool::ListFolders.changes_notes());
@@ -282,9 +286,9 @@ fn the_folder_tools_are_named_ordered_and_guarded_as_their_decision_says() {
 fn reading_a_canvas_changes_nothing_and_targets_its_path() {
     let tool = AppTool::ReadCanvas;
     assert_eq!(tool.name(), "read_canvas");
-    assert_eq!(tool.full_name(), "mcp__malorean__read_canvas");
+    assert_eq!(tool.full_name(), "mcp__malorean_notes__read_canvas");
     assert_eq!(
-        AppTool::of_full_name("mcp__malorean__read_canvas"),
+        AppTool::of_full_name("mcp__malorean_notes__read_canvas"),
         Some(tool)
     );
     assert!(!tool.changes_notes());
@@ -345,7 +349,7 @@ fn each_tool_that_changes_a_canvas_is_guarded_aims_at_a_workspace_and_targets_it
         assert!(tool.aims_at_a_workspace(), "{name}");
         assert!(!tool.uses_screen(), "{name}");
         assert_eq!(tool.target_field(), Some("path"), "{name}");
-        assert_eq!(tool.full_name(), format!("mcp__malorean__{name}"));
+        assert_eq!(tool.full_name(), format!("mcp__malorean_notes__{name}"));
         assert_eq!(AppTool::of_full_name(&tool.full_name()), Some(tool));
     }
 }
@@ -366,8 +370,11 @@ fn only_the_fourteen_crm_tools_change_a_crm() {
 fn reading_a_crm_changes_nothing_targets_its_path_and_follows_the_creation_of_a_crm() {
     let tool = AppTool::ReadCrm;
     assert_eq!(tool.name(), "read_crm");
-    assert_eq!(tool.full_name(), "mcp__malorean__read_crm");
-    assert_eq!(AppTool::of_full_name("mcp__malorean__read_crm"), Some(tool));
+    assert_eq!(tool.full_name(), "mcp__malorean_notes__read_crm");
+    assert_eq!(
+        AppTool::of_full_name("mcp__malorean_notes__read_crm"),
+        Some(tool)
+    );
     assert!(!tool.changes_notes());
     assert!(tool.aims_at_a_workspace());
     assert!(!tool.uses_screen());
@@ -423,7 +430,7 @@ fn each_tool_that_changes_a_crm_is_guarded_aims_at_a_workspace_and_targets_its_p
         assert!(tool.aims_at_a_workspace(), "{name}");
         assert!(!tool.uses_screen(), "{name}");
         assert_eq!(tool.target_field(), Some("path"), "{name}");
-        assert_eq!(tool.full_name(), format!("mcp__malorean__{name}"));
+        assert_eq!(tool.full_name(), format!("mcp__malorean_notes__{name}"));
         assert_eq!(AppTool::of_full_name(&tool.full_name()), Some(tool));
     }
 }

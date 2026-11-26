@@ -21,8 +21,8 @@ function keyItem(number: number): ConnectionKeyItem {
   return {
     secret,
     createdOn: "25 novembre 2026",
-    claudeConfig: `{\n  "mcpServers": {\n    "malorean": {\n      "command": "${PROGRAM}",\n      "args": ["--brancher", "${secret}"]\n    }\n  }\n}`,
-    codexConfig: `[mcp_servers.malorean]\ncommand = "${PROGRAM}"\nargs = ["--brancher", "${secret}"]`,
+    claudeConfig: `{\n  "mcpServers": {\n    "malorean_notes": {\n      "command": "${PROGRAM}",\n      "args": ["--brancher", "${secret}"]\n    }\n  }\n}`,
+    codexConfig: `[mcp_servers.malorean_notes]\ncommand = "${PROGRAM}"\nargs = ["--brancher", "${secret}"]`,
   };
 }
 
