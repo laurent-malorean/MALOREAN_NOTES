@@ -53,7 +53,7 @@ Ils passent par les cas d'usage, comme l'interface, et rendent ce qu'elle reçoi
 | `list_tags` | Les étiquettes et leur nombre de notes |
 | `linking_notes` | Les liens entrants d'une note |
 | `read_note` | Le texte entier d'une note simple, en-tête et corps séparés, 60 000 caractères de corps au plus (fiche 0076) |
-| `list_templates` | Les noms (titres) des modèles de note : les notes du dossier des modèles, que l'interface passe à chaque tour (il est gardé par l'interface, fiche 0019) |
+| `list_templates` | Les noms (titres) des modèles de note : les notes du dossier des modèles de l'espace visé, relu à chaque appel dans les préférences (fiche 0077) |
 | `list_versions` | Les versions d'une note, la plus récente d'abord |
 | `read_version` | Le texte d'une version |
 | `create_note` | Crée une note : titre `#` en tête, nom du fichier tiré du titre (suffixe si pris), dans un dossier, avec un texte sous le titre |
