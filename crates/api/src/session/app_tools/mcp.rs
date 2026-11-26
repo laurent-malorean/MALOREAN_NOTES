@@ -28,7 +28,7 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     pour connaître les étiquettes, les liens entrants, les modèles de note et l'historique des \
     versions, pour créer, renommer, ranger, étiqueter, épingler ou jeter une note selon ses règles, \
     pour savoir quelle note l'utilisateur regarde et lui en montrer une. Pour lire le texte d'une note simple, utilisez `read_note` ; pour le changer, utilisez `replace_in_note` (un texte exact, recopié de `read_note`, remplacé \
-    par un autre ; refusé s'il apparaît plusieurs fois, sauf `replace_all`). Une carte mentale (`type: carte-mentale`) se crée avec `create_mind_map`, se lit en arbre avec `read_mind_map` \
+    par un autre ; refusé s'il apparaît plusieurs fois, sauf `replace_all`). Un cahier de recherche (`type: cahier-de-recherche`) se crée avec `create_research_notebook` (sans entrée) et on n'y écrit qu'avec `add_entry` (une entrée, à l'heure qu'il est) : `read_note` et `replace_in_note` le refusent. Une carte mentale (`type: carte-mentale`) se crée avec `create_mind_map`, se lit en arbre avec `read_mind_map` \
     (chaque nœud avec son chemin : `0`, `0.1`, `1.0.2`) et se modifie avec `add_mind_map_child`, `add_mind_map_sibling`, \
     `add_mind_map_root`, `edit_mind_map_node`, `color_mind_map_node` (les couleurs de la palette seulement), \
     `move_mind_map_node` et `delete_mind_map_node`, qui appliquent les règles de l'écran : ne l'écrivez pas à la \
@@ -38,7 +38,7 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     (`dossier/nom.md`). Les dossiers aussi (`dossier/sous-dossier`) : `list_folders` donne l'arbre, \
     `create_folder`, `rename_folder`, `move_folder` et `trash_folder` en créent, renomment, déplacent et \
     mettent à la corbeille un avec tout son contenu. \
-    Un canvas (fichier `.canvas`) ne se lit ni ne se change comme une note : `read_canvas` le rend en données \
+    Un canvas (fichier `.canvas`) ne se lit ni ne se change comme une note : `create_canvas` en crée un vide (titre, dossier facultatif), `read_canvas` le rend en données \
     (cartes, flèches, groupes, avec leurs identifiants), et un outil par geste le change : \
     `add_canvas_card`, `change_canvas_card`, `move_canvas_card`, `resize_canvas_card`, `remove_canvas_card`, \
     `add_canvas_arrow`, `change_canvas_arrow`, `remove_canvas_arrow`, `add_canvas_group` et `change_canvas_group` ; \
@@ -163,6 +163,7 @@ mod tests {
         let text = reply["result"]["instructions"].as_str().unwrap();
         for expected in [
             "`.canvas`",
+            "`create_canvas`",
             "`read_canvas`",
             "`add_canvas_card`",
             "`change_canvas_card`",
@@ -176,6 +177,19 @@ mod tests {
             "`change_canvas_group`",
             "nom de la palette",
             "`restore_version` l'annule",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
+    }
+
+    #[test]
+    fn the_introduction_names_the_tools_that_create_a_notebook_and_write_in_it() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            "`create_research_notebook`",
+            "`add_entry`",
+            "`type: cahier-de-recherche`",
         ] {
             assert!(text.contains(expected), "{expected}");
         }

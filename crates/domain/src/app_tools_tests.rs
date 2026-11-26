@@ -68,6 +68,62 @@ fn tool_names_are_distinct() {
     assert_eq!(names.len(), AppTool::ALL.len());
 }
 
+/// Les outils qui changent des notes, dans l'ordre de `ALL`.
+const CHANGING_NOTES: [&str; 52] = [
+    "create_note",
+    "create_folder",
+    "rename_folder",
+    "move_folder",
+    "trash_folder",
+    "create_note_from_template",
+    "trash_note",
+    "rename_note",
+    "move_note",
+    "restore_version",
+    "replace_in_note",
+    "create_canvas",
+    "add_canvas_card",
+    "change_canvas_card",
+    "move_canvas_card",
+    "resize_canvas_card",
+    "remove_canvas_card",
+    "add_canvas_arrow",
+    "change_canvas_arrow",
+    "remove_canvas_arrow",
+    "add_canvas_group",
+    "change_canvas_group",
+    "add_tags",
+    "remove_tags",
+    "pin_note",
+    "unpin_note",
+    "add_attachment",
+    "create_research_notebook",
+    "add_entry",
+    "create_mind_map",
+    "add_mind_map_child",
+    "add_mind_map_sibling",
+    "add_mind_map_root",
+    "edit_mind_map_node",
+    "color_mind_map_node",
+    "move_mind_map_node",
+    "delete_mind_map_node",
+    "create_crm",
+    "create_crm_action",
+    "change_crm_action",
+    "move_crm_action",
+    "delete_crm_action",
+    "create_crm_person",
+    "change_crm_person",
+    "delete_crm_person",
+    "create_crm_company",
+    "change_crm_company",
+    "delete_crm_company",
+    "create_crm_project",
+    "change_crm_project",
+    "delete_crm_project",
+    "change_crm_stages",
+];
+
 #[test]
 fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
     let changing: Vec<_> = AppTool::ALL
@@ -75,61 +131,7 @@ fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
         .filter(|tool| tool.changes_notes())
         .map(AppTool::name)
         .collect();
-    assert_eq!(
-        changing,
-        [
-            "create_note",
-            "create_folder",
-            "rename_folder",
-            "move_folder",
-            "trash_folder",
-            "create_note_from_template",
-            "trash_note",
-            "rename_note",
-            "move_note",
-            "restore_version",
-            "replace_in_note",
-            "add_canvas_card",
-            "change_canvas_card",
-            "move_canvas_card",
-            "resize_canvas_card",
-            "remove_canvas_card",
-            "add_canvas_arrow",
-            "change_canvas_arrow",
-            "remove_canvas_arrow",
-            "add_canvas_group",
-            "change_canvas_group",
-            "add_tags",
-            "remove_tags",
-            "pin_note",
-            "unpin_note",
-            "add_attachment",
-            "add_entry",
-            "create_mind_map",
-            "add_mind_map_child",
-            "add_mind_map_sibling",
-            "add_mind_map_root",
-            "edit_mind_map_node",
-            "color_mind_map_node",
-            "move_mind_map_node",
-            "delete_mind_map_node",
-            "create_crm",
-            "create_crm_action",
-            "change_crm_action",
-            "move_crm_action",
-            "delete_crm_action",
-            "create_crm_person",
-            "change_crm_person",
-            "delete_crm_person",
-            "create_crm_company",
-            "change_crm_company",
-            "delete_crm_company",
-            "create_crm_project",
-            "change_crm_project",
-            "delete_crm_project",
-            "change_crm_stages"
-        ]
-    );
+    assert_eq!(changing, CHANGING_NOTES);
 }
 
 #[test]
@@ -137,7 +139,7 @@ fn each_tool_says_what_it_targets() {
     let targets: Vec<_> = AppTool::ALL.map(AppTool::target_field).into();
     let path = Some("path");
     // Avant les outils du CRM : le même nombre d'outils que dans `ALL` jusqu'à `CreateCrm`.
-    const ALL_BEFORE_CRM: usize = 48;
+    const ALL_BEFORE_CRM: usize = 50;
     assert_eq!(
         targets[..ALL_BEFORE_CRM],
         [
@@ -163,6 +165,7 @@ fn each_tool_says_what_it_targets() {
             path,
             path,
             path,
+            Some("title"),
             path,
             path,
             path,
@@ -178,6 +181,7 @@ fn each_tool_says_what_it_targets() {
             path,
             path,
             path,
+            Some("title"),
             path,
             Some("title"),
             path,
@@ -325,7 +329,7 @@ fn the_ten_tools_that_change_a_canvas_are_named_ordered_and_guarded_as_their_dec
         .iter()
         .position(|t| *t == AppTool::AddCanvasCard)
         .unwrap();
-    assert_eq!(AppTool::ALL[first - 1], AppTool::ReplaceInNote);
+    assert_eq!(AppTool::ALL[first - 1], AppTool::CreateCanvas);
     assert_eq!(AppTool::ALL[first + 10], AppTool::AddTags);
 }
 
@@ -444,4 +448,37 @@ fn the_crm_changing_tools_are_said_in_one_sentence() {
          change_crm_company, delete_crm_company, create_crm_project, change_crm_project, \
          delete_crm_project ou change_crm_stages"
     );
+}
+
+/// Ce que sait de lui un outil de création qui vise un titre : nom, nom de Claude Code, garde-fou
+/// du web, espace de travail, écran, CRM, cible ; rend sa place dans `ALL`.
+fn assert_creating_tool(tool: AppTool, name: &str) -> usize {
+    assert_eq!(tool.name(), name);
+    assert_eq!(tool.full_name(), format!("mcp__malorean_notes__{name}"));
+    assert_eq!(AppTool::of_full_name(&tool.full_name()), Some(tool));
+    assert_eq!(
+        [
+            tool.changes_notes(),
+            tool.aims_at_a_workspace(),
+            tool.uses_screen(),
+            tool.changes_a_crm()
+        ],
+        [true, true, false, false]
+    );
+    assert_eq!(tool.target_field(), Some("title"));
+    AppTool::ALL.iter().position(|t| *t == tool).unwrap()
+}
+
+#[test]
+fn creating_a_canvas_comes_before_the_tools_that_fill_it() {
+    let at = assert_creating_tool(AppTool::CreateCanvas, "create_canvas");
+    assert_eq!(AppTool::ALL[at - 1], AppTool::ReplaceInNote);
+    assert_eq!(AppTool::ALL[at + 1], AppTool::AddCanvasCard);
+}
+
+#[test]
+fn creating_a_research_notebook_comes_before_adding_an_entry() {
+    let at = assert_creating_tool(AppTool::CreateResearchNotebook, "create_research_notebook");
+    assert_eq!(AppTool::ALL[at - 1], AppTool::AddAttachment);
+    assert_eq!(AppTool::ALL[at + 1], AppTool::AddEntry);
 }

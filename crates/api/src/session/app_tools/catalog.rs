@@ -11,6 +11,7 @@ use super::catalog_mind_map::{
 
 mod canvas;
 mod crm;
+mod notebook;
 
 /// Un champ texte de l'entrée d'un outil, décrit pour Claude.
 pub(super) fn text(description: &str) -> Value {
@@ -154,9 +155,9 @@ fn read_note() -> Described {
          et `truncated`. Un corps de plus de 60 000 caractères est coupé à la fin d'une ligne : \
          `truncated` vaut alors true et `message` le dit, la suite ne se lit pas avec cet outil \
          (cherchez-la avec `search_notes`). Refusé, avec une erreur qui dit quoi faire, pour un \
-         cahier de recherche (on y ajoute des entrées avec `add_entry` ; `search_notes` retrouve \
+         cahier de recherche (il se crée avec `create_research_notebook`, on y ajoute des entrées avec `add_entry` ; `search_notes` retrouve \
          ses entrées), une carte mentale (lisez-la avec `read_mind_map`), un CRM ou une fiche de \
-         CRM, une note introuvable ; un canvas se lit avec `read_canvas`, un CRM et ses fiches \
+         CRM, une note introuvable ; un canvas se lit avec `read_canvas` (il se crée avec `create_canvas`), un CRM et ses fiches \
          avec `read_crm`.",
         input(json!({ "path": note_path() }), &["path"]),
     )
@@ -196,7 +197,10 @@ fn create_note() -> Described {
     (
         "Crée une note selon les règles de MALOREAN Notes : titre `# title` en tête, nom du \
          fichier tiré du titre (sans écraser une autre note), dans `folder` (la racine par \
-         défaut ; créé avec ses parents s'il n'existe pas), avec `text` sous le titre. Rend son chemin.",
+         défaut ; créé avec ses parents s'il n'existe pas), avec `text` sous le titre. Rend son chemin. \
+         Une note est du Markdown : un canvas se crée avec `create_canvas`, un cahier de recherche \
+         avec `create_research_notebook`, une carte mentale avec `create_mind_map`, un CRM avec \
+         `create_crm`.",
         input(
             json!({
                 "title": text("Le titre de la note."),
@@ -358,9 +362,9 @@ fn replace_in_note() -> Described {
          `old_text` introuvable ou vide ou identique à `new_text` ; `old_text` répété (l'erreur \
          donne le nombre d'occurrences et leurs lignes : ajoutez du texte autour pour qu'il \
          n'apparaisse qu'une fois, ou passez `replace_all` à true pour toutes les remplacer) ; la \
-         note est un cahier de recherche (utilisez `add_entry`), une carte mentale (lisez-la \
+         note est un cahier de recherche (utilisez `add_entry` ; `create_research_notebook` en crée un), une carte mentale (lisez-la \
          avec `read_mind_map`, modifiez-la avec `add_mind_map_child` et les autres outils de la \
-         carte mentale), un canvas (utilisez `read_canvas` et les outils du canvas) ou un CRM ou \
+         carte mentale), un canvas (utilisez `read_canvas` et les outils du canvas ; `create_canvas` en crée un) ou un CRM ou \
          une fiche de CRM (utilisez `read_crm` et les outils du CRM). \
          Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
          nouveau titre : utilisez ensuite le `path` rendu, et pensez aux notes qui la lient (voir \
@@ -425,23 +429,6 @@ fn add_attachment() -> Described {
                 "file": text("Le fichier à joindre, depuis l'espace de travail : `Documents/plan.pdf`."),
             }),
             &["path", "file"],
-        ),
-    )
-}
-
-fn add_entry() -> Described {
-    (
-        "Ajoute une entrée à la fin d'un cahier de recherche (une note dont l'en-tête porte \
-         `type: cahier-de-recherche`), à l'heure qu'il est, sous les titres d'année, de mois et \
-         de jour qui manquent. C'est la seule façon d'écrire dans un cahier : il ne se modifie \
-         jamais, ni par cet outil ni par vos outils de fichiers. Une erreur se \
-         rectifie par une nouvelle entrée. Rend l'entrée ajoutée : ancre, moment et texte.",
-        input(
-            json!({
-                "path": text("Chemin du cahier depuis l'espace de travail : `dossier/nom.md`."),
-                "text": text("Le texte de l'entrée ; plusieurs lignes permises."),
-            }),
-            &["path", "text"],
         ),
     )
 }
@@ -539,6 +526,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::MoveNote => move_note(),
         AppTool::RestoreVersion => restore_version(),
         AppTool::ReplaceInNote => replace_in_note(),
+        AppTool::CreateCanvas => canvas::create_canvas(),
         AppTool::AddCanvasCard => canvas::add_canvas_card(),
         AppTool::ChangeCanvasCard => canvas::change_canvas_card(),
         AppTool::MoveCanvasCard => canvas::move_canvas_card(),
@@ -554,7 +542,8 @@ fn described(tool: AppTool) -> Described {
         AppTool::PinNote => pin_note(),
         AppTool::UnpinNote => unpin_note(),
         AppTool::AddAttachment => add_attachment(),
-        AppTool::AddEntry => add_entry(),
+        AppTool::CreateResearchNotebook => notebook::create_research_notebook(),
+        AppTool::AddEntry => notebook::add_entry(),
         AppTool::CreateMindMap => create_mind_map(),
         AppTool::CreateCrm => create_crm(),
         AppTool::ViewedNote => viewed_note(),
