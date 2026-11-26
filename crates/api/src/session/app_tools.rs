@@ -222,6 +222,9 @@ mod changing_tests;
 mod crm_tests;
 
 #[cfg(test)]
+mod replacing_tests;
+
+#[cfg(test)]
 mod screen_tests;
 
 #[cfg(test)]

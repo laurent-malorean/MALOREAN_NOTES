@@ -239,6 +239,37 @@ fn restore_version() -> Described {
     )
 }
 
+fn replace_in_note() -> Described {
+    (
+        "Remplace un texte par un autre dans le texte d'une note simple, avec les règles de \
+         MALOREAN Notes : le texte d'avant est gardé dans l'historique des versions, l'index de \
+         recherche suit, l'en-tête (propriétés) et le reste de la note ne bougent pas. \
+         `old_text` est recopié à l'identique (majuscules, accents, espaces, retours à la ligne ; \
+         jamais un motif) et cherché dans tout le fichier, en-tête compris. Pour insérer, \
+         remplacez une ligne par elle-même suivie du nouveau texte ; pour supprimer, donnez un \
+         `new_text` vide. Refusé, sans rien changer, avec une erreur qui dit quoi faire : \
+         `old_text` introuvable ou vide ou identique à `new_text` ; `old_text` répété (l'erreur \
+         donne le nombre d'occurrences et leurs lignes : ajoutez du texte autour pour qu'il \
+         n'apparaisse qu'une fois, ou passez `replace_all` à true pour toutes les remplacer) ; la \
+         note est un cahier de recherche (utilisez `add_entry`), une carte mentale, un canvas ou \
+         un CRM. Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
+         nouveau titre : utilisez ensuite le `path` rendu, et pensez aux notes qui la lient (voir \
+         `rename_note`). Rend `path`, `title` et `replacements` (le nombre de remplacements).",
+        input(
+            json!({
+                "path": note_path(),
+                "old_text": text("Le texte à remplacer, exact, sur une ou plusieurs lignes ; jamais vide."),
+                "new_text": text("Le nouveau texte ; vide pour supprimer `old_text`."),
+                "replace_all": json!({
+                    "type": "boolean",
+                    "description": "true pour remplacer toutes les occurrences de `old_text` ; false (par défaut) refuse un texte qui apparaît plusieurs fois.",
+                }),
+            }),
+            &["path", "old_text", "new_text"],
+        ),
+    )
+}
+
 fn add_tags() -> Described {
     (
         "Ajoute des étiquettes dans l'en-tête d'une note, sans toucher au reste.",
@@ -383,6 +414,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::RenameNote => rename_note(),
         AppTool::MoveNote => move_note(),
         AppTool::RestoreVersion => restore_version(),
+        AppTool::ReplaceInNote => replace_in_note(),
         AppTool::AddTags => add_tags(),
         AppTool::RemoveTags => remove_tags(),
         AppTool::PinNote => pin_note(),
@@ -415,186 +447,5 @@ pub(super) fn tool_description(tool: AppTool) -> Value {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Le schéma de l'entrée de l'outil, vérifié : un objet, chaque champ décrit, chaque champ
-    /// exigé connu.
-    fn checked_schema(tool: AppTool) -> Value {
-        let described = tool_description(tool);
-        assert_eq!(described["name"], tool.name());
-        assert!(!described["description"].as_str().unwrap().is_empty());
-        let schema = described["inputSchema"].clone();
-        assert_eq!(schema["type"], "object");
-        schema
-    }
-
-    #[test]
-    fn each_tool_is_described_by_its_name_and_an_object_schema() {
-        for tool in AppTool::ALL {
-            let schema = checked_schema(tool);
-            let properties = schema["properties"].as_object().unwrap();
-            let unknown = schema["required"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .filter(|field| !properties.contains_key(field.as_str().unwrap()))
-                .count();
-            assert_eq!(unknown, 0, "{tool:?}");
-            let kinds: Vec<_> = properties
-                .iter()
-                .map(|(name, property)| (name.as_str(), property["type"].as_str().unwrap()))
-                .collect();
-            assert!(kinds.iter().all(|(name, kind)| *kind
-                == match *name {
-                    "tags" => "array",
-                    "limit" => "integer",
-                    _ => "string",
-                }));
-            assert!(
-                properties
-                    .values()
-                    .all(|p| !p["description"].as_str().unwrap().is_empty())
-            );
-        }
-    }
-
-    #[test]
-    fn each_tool_requires_what_it_cannot_work_without() {
-        let path: &[&str] = &["path"];
-        let expected: [(AppTool, &[&str]); 25] = [
-            (AppTool::ListWorkspaces, &[]),
-            (AppTool::SearchNotes, &[]),
-            (AppTool::SearchByMeaning, &["question"]),
-            (AppTool::ListTags, &[]),
-            (AppTool::LinkingNotes, path),
-            (AppTool::ListTemplates, &[]),
-            (AppTool::ListVersions, path),
-            (AppTool::ReadVersion, &["path", "version"]),
-            (AppTool::CreateNote, &["title"]),
-            (AppTool::CreateFolder, path),
-            (AppTool::CreateNoteFromTemplate, &["template", "title"]),
-            (AppTool::TrashNote, path),
-            (AppTool::RenameNote, &["path", "title"]),
-            (AppTool::MoveNote, &["path", "folder"]),
-            (AppTool::RestoreVersion, &["path", "version"]),
-            (AppTool::AddTags, &["path", "tags"]),
-            (AppTool::RemoveTags, &["path", "tags"]),
-            (AppTool::PinNote, path),
-            (AppTool::UnpinNote, path),
-            (AppTool::AddAttachment, &["path", "file"]),
-            (AppTool::AddEntry, &["path", "text"]),
-            (AppTool::CreateMindMap, &["title"]),
-            (AppTool::CreateCrm, &["title"]),
-            (AppTool::ViewedNote, &[]),
-            (AppTool::ShowNote, path),
-        ];
-        for (tool, fields) in expected {
-            assert_eq!(checked_schema(tool)["required"], json!(fields), "{tool:?}");
-        }
-    }
-
-    #[test]
-    fn the_search_by_meaning_takes_a_question_and_a_limit_and_tells_when_to_use_it() {
-        let described = tool_description(AppTool::SearchByMeaning);
-        let mut fields: Vec<_> = described["inputSchema"]["properties"]
-            .as_object()
-            .unwrap()
-            .keys()
-            .cloned()
-            .collect();
-        fields.sort();
-        assert_eq!(fields, ["limit", "question", "workspace"]);
-        let description = described["description"].as_str().unwrap();
-        assert!(description.contains("mots exacts"), "{description}");
-        assert!(description.contains("`reason`"), "{description}");
-    }
-
-    #[test]
-    fn the_searches_say_that_they_find_the_crms_and_their_cards_with_the_path_of_their_crm() {
-        for tool in [AppTool::SearchNotes, AppTool::SearchByMeaning] {
-            let description = tool_description(tool)["description"]
-                .as_str()
-                .unwrap()
-                .to_owned();
-            assert!(
-                description.contains("`crm`, le chemin de son CRM"),
-                "{description}"
-            );
-        }
-        let described = tool_description(AppTool::SearchNotes);
-        let description = described["description"].as_str().unwrap();
-        let property = described["inputSchema"]["properties"]["content_type"]["description"]
-            .as_str()
-            .unwrap();
-        for kind in [
-            "crm",
-            "crm-entreprise",
-            "crm-personne",
-            "crm-action",
-            "crm-projet",
-        ] {
-            let named = format!("`{kind}`");
-            assert!(description.contains(&named), "{kind}");
-            assert!(property.contains(&named), "{kind}");
-        }
-    }
-
-    #[test]
-    fn the_linking_notes_tell_that_an_action_links_by_its_notes_and_gives_its_crm() {
-        let description = tool_description(AppTool::LinkingNotes)["description"]
-            .as_str()
-            .unwrap()
-            .to_owned();
-        assert!(description.contains("notes liées, sa description ou un commentaire"));
-        assert!(description.contains("`type` et `crm`"));
-    }
-
-    #[test]
-    fn the_search_takes_words_tag_folder_and_content_type() {
-        let schema = tool_description(AppTool::SearchNotes)["inputSchema"].clone();
-        let mut fields: Vec<_> = schema["properties"]
-            .as_object()
-            .unwrap()
-            .keys()
-            .cloned()
-            .collect();
-        fields.sort();
-        assert_eq!(
-            fields,
-            ["content_type", "folder", "query", "tag", "workspace"]
-        );
-    }
-
-    #[test]
-    fn every_tool_but_the_list_of_workspaces_takes_an_optional_workspace() {
-        for tool in AppTool::ALL {
-            let schema = checked_schema(tool);
-            let property = &schema["properties"]["workspace"];
-            if tool == AppTool::ListWorkspaces {
-                assert!(property.is_null());
-                continue;
-            }
-            assert_eq!(property["type"], "string", "{tool:?}");
-            let description = property["description"].as_str().unwrap();
-            assert!(description.contains("`list_workspaces`"), "{tool:?}");
-            assert!(!schema["required"].to_string().contains("workspace"));
-        }
-    }
-
-    #[test]
-    fn the_list_of_workspaces_says_that_it_shows_names_and_the_open_one_and_points_to_the_settings()
-    {
-        let described = tool_description(AppTool::ListWorkspaces);
-        let description = described["description"].as_str().unwrap();
-        for expected in [
-            "autorisés pour les IA",
-            "`open`",
-            "« Brancher une IA »",
-            "paramètre `workspace`",
-        ] {
-            assert!(description.contains(expected), "{expected}");
-        }
-        assert_eq!(described["inputSchema"]["properties"], json!({}));
-    }
-}
+#[path = "catalog_tests.rs"]
+mod tests;

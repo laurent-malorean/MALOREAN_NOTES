@@ -75,6 +75,7 @@ impl Session {
                 let restored = self.restore_version(path, version).map_err(|e| e.message)?;
                 written(&json!({ "path": restored.path }))
             }
+            AppTool::ReplaceInNote => self.tool_replace_in_note(arguments),
             AppTool::AddTags => self.tool_change_tags(arguments, true),
             AppTool::RemoveTags => self.tool_change_tags(arguments, false),
             AppTool::PinNote => {
@@ -227,6 +228,24 @@ impl Session {
             "path": saved.path,
             "linking_notes_to_update": linking,
         }))
+    }
+
+    /// Remplace un texte par un autre dans une note simple (fiche 0075). `old_text` et `new_text`
+    /// sont pris tels quels, sans retirer les espaces ni les retours à la ligne : `new_text` peut
+    /// être vide (supprimer), `old_text` vide est refusé par la règle du remplacement.
+    pub(super) fn tool_replace_in_note(&self, arguments: &Value) -> Result<String, String> {
+        let path = required(arguments, "path")?;
+        let exact = |field: &str| {
+            arguments[field]
+                .as_str()
+                .ok_or_else(|| format!("il manque « {field} »"))
+        };
+        let (old_text, new_text) = (exact("old_text")?, exact("new_text")?);
+        let replace_all = arguments["replace_all"].as_bool().unwrap_or(false);
+        let replaced = self
+            .replace_in_note(path, old_text, new_text, replace_all)
+            .map_err(said)?;
+        written(&replaced)
     }
 
     /// Ajoute ou retire des étiquettes dans l'en-tête de la note, sans toucher au reste.

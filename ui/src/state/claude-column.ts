@@ -68,6 +68,7 @@ export const APP_TOOL_LABELS: Readonly<Record<string, string>> = {
   rename_note: "Renommage",
   move_note: "Déplacement",
   restore_version: "Restauration d’une version",
+  replace_in_note: "Modification du texte",
   add_tags: "Ajout d’étiquettes",
   remove_tags: "Retrait d’étiquettes",
   pin_note: "Épinglage",

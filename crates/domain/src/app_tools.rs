@@ -44,6 +44,8 @@ pub enum AppTool {
     MoveNote,
     /// Remettre dans une note le texte d'une de ses versions.
     RestoreVersion,
+    /// Remplacer un texte par un autre dans le texte d'une note simple (fiche 0075).
+    ReplaceInNote,
     /// Ajouter des étiquettes dans l'en-tête d'une note.
     AddTags,
     /// Retirer des étiquettes de l'en-tête d'une note.
@@ -72,7 +74,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 25] = [
+    pub const ALL: [Self; 26] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -88,6 +90,7 @@ impl AppTool {
         Self::RenameNote,
         Self::MoveNote,
         Self::RestoreVersion,
+        Self::ReplaceInNote,
         Self::AddTags,
         Self::RemoveTags,
         Self::PinNote,
@@ -119,6 +122,7 @@ impl AppTool {
             Self::RenameNote => "rename_note",
             Self::MoveNote => "move_note",
             Self::RestoreVersion => "restore_version",
+            Self::ReplaceInNote => "replace_in_note",
             Self::AddTags => "add_tags",
             Self::RemoveTags => "remove_tags",
             Self::PinNote => "pin_note",
@@ -176,6 +180,7 @@ impl AppTool {
             | Self::RenameNote
             | Self::MoveNote
             | Self::RestoreVersion
+            | Self::ReplaceInNote
             | Self::AddTags
             | Self::RemoveTags
             | Self::PinNote
@@ -220,6 +225,7 @@ impl AppTool {
             | Self::RenameNote
             | Self::MoveNote
             | Self::RestoreVersion
+            | Self::ReplaceInNote
             | Self::AddTags
             | Self::RemoveTags
             | Self::PinNote
@@ -342,6 +348,7 @@ mod tests {
                 "rename_note",
                 "move_note",
                 "restore_version",
+                "replace_in_note",
                 "add_tags",
                 "remove_tags",
                 "pin_note",
@@ -382,12 +389,26 @@ mod tests {
                 path,
                 path,
                 path,
+                path,
                 Some("title"),
                 Some("title"),
                 None,
                 path
             ]
         );
+    }
+
+    #[test]
+    fn replacing_a_text_changes_a_note_and_targets_its_path() {
+        let tool = AppTool::ReplaceInNote;
+        assert_eq!(tool.name(), "replace_in_note");
+        assert_eq!(tool.full_name(), "mcp__malorean__replace_in_note");
+        assert!(tool.changes_notes());
+        assert!(tool.aims_at_a_workspace());
+        assert!(!tool.uses_screen());
+        assert_eq!(tool.target_field(), Some("path"));
+        let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
+        assert_eq!(AppTool::ALL[at - 1], AppTool::RestoreVersion);
     }
 
     #[test]
