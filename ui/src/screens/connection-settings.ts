@@ -10,7 +10,7 @@ export const CONNECTION_PURPOSE =
 
 export const WORKSPACES_TITLE = "Espaces de travail ouverts aux IA";
 export const WORKSPACES_HELP =
-  "Les IA branchées ne voient que les espaces de travail cochés ici, par leur nom. Aucun n'est coché au départ : une IA ne voit alors aucun espace de travail.";
+  "Les IA branchées ne voient que les espaces cochés ; aucun n'est coché au départ.";
 export const WORKSPACES_LOADING = "Lecture des espaces de travail…";
 export const WORKSPACES_EMPTY =
   "Aucun espace de travail : ajoutez-en un depuis le sélecteur d'espace de travail.";

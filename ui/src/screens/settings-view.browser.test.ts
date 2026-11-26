@@ -332,7 +332,7 @@ describe("écran de réglages", () => {
         expect(boxes(dialog)).toEqual(first);
       }
       const window = dialog.getBoundingClientRect();
-      expect(window.height).toBe(880);
+      expect(window.height).toBe(936); // min(60rem, 100vh - 4rem) à 1000 points de haut
       expect(window.width).toBe(736);
     });
 

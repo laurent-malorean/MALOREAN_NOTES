@@ -248,8 +248,8 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
 
     it("explique que les IA ne voient que les espaces cochés, aucun au départ", () => {
       expect(WORKSPACES_TITLE).toBe("Espaces de travail ouverts aux IA");
-      expect(WORKSPACES_HELP).toContain("ne voient que les espaces de travail cochés");
-      expect(WORKSPACES_HELP).toContain("Aucun n'est coché au départ");
+      expect(WORKSPACES_HELP).toContain("ne voient que les espaces cochés");
+      expect(WORKSPACES_HELP).toContain("aucun n'est coché au départ");
     });
 
     it("aligne la case et le nom sur une ligne", () => {
