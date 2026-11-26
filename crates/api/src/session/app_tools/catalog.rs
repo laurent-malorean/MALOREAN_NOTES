@@ -5,6 +5,7 @@ use domain::app_tools::AppTool;
 use serde_json::{Value, json};
 
 mod canvas;
+mod crm;
 
 /// Un champ texte de l'entrée d'un outil, décrit pour Claude.
 fn text(description: &str) -> Value {
@@ -526,6 +527,7 @@ fn described(tool: AppTool) -> Described {
         AppTool::AddEntry => add_entry(),
         AppTool::CreateMindMap => create_mind_map(),
         AppTool::CreateCrm => create_crm(),
+        AppTool::ReadCrm => crm::read_crm(),
         AppTool::ViewedNote => viewed_note(),
         AppTool::ShowNote => show_note(),
     }

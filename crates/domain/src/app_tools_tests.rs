@@ -153,6 +153,7 @@ fn each_tool_says_what_it_targets() {
             path,
             Some("title"),
             Some("title"),
+            path,
             None,
             path
         ]
@@ -297,4 +298,18 @@ fn each_tool_that_changes_a_canvas_is_guarded_aims_at_a_workspace_and_targets_it
         assert_eq!(tool.full_name(), format!("mcp__malorean__{name}"));
         assert_eq!(AppTool::of_full_name(&tool.full_name()), Some(tool));
     }
+}
+
+#[test]
+fn reading_a_crm_changes_nothing_targets_its_path_and_follows_the_creation_of_a_crm() {
+    let tool = AppTool::ReadCrm;
+    assert_eq!(tool.name(), "read_crm");
+    assert_eq!(tool.full_name(), "mcp__malorean__read_crm");
+    assert_eq!(AppTool::of_full_name("mcp__malorean__read_crm"), Some(tool));
+    assert!(!tool.changes_notes());
+    assert!(tool.aims_at_a_workspace());
+    assert!(!tool.uses_screen());
+    assert_eq!(tool.target_field(), Some("path"));
+    let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
+    assert_eq!(AppTool::ALL[at - 1], AppTool::CreateCrm);
 }

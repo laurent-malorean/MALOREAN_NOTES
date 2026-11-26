@@ -32,7 +32,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
             .collect();
         assert!(kinds.iter().all(|(name, kind)| *kind
             == match *name {
-                "tags" => "array",
+                "tags" | "projects" => "array",
                 "limit" | "x" | "y" | "width" | "height" => "integer",
                 "cards" => "array",
                 "replace_all" => "boolean",
@@ -49,7 +49,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 42] = [
+    let expected: [(AppTool, &[&str]); 43] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
@@ -93,6 +93,7 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::AddEntry, &["path", "text"]),
         (AppTool::CreateMindMap, &["title"]),
         (AppTool::CreateCrm, &["title"]),
+        (AppTool::ReadCrm, path),
         (AppTool::ViewedNote, &[]),
         (AppTool::ShowNote, path),
     ];

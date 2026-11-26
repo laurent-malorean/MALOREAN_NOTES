@@ -8,6 +8,8 @@ mod canvas_changing;
 mod catalog;
 mod changing;
 mod connection;
+mod crm;
+mod crm_budget;
 mod folders;
 mod mcp;
 mod meaning;
@@ -193,6 +195,7 @@ impl Session {
             AppTool::LinkingNotes => self.tool_linking_notes(arguments),
             AppTool::ReadNote => self.tool_read_note(arguments),
             AppTool::ReadCanvas => self.tool_read_canvas(arguments),
+            AppTool::ReadCrm => self.tool_read_crm(arguments),
             AppTool::ListTemplates => self.tool_list_templates(),
             AppTool::ViewedNote => self.tool_viewed_note(),
             AppTool::ShowNote => self.tool_show_note(arguments),
@@ -229,6 +232,15 @@ mod canvas_tags_tests;
 
 #[cfg(test)]
 mod changing_tests;
+
+#[cfg(test)]
+mod crm_catalog_tests;
+
+#[cfg(test)]
+mod crm_limits_tests;
+
+#[cfg(test)]
+mod crm_reading_tests;
 
 #[cfg(test)]
 mod crm_tests;

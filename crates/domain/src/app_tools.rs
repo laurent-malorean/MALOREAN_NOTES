@@ -97,6 +97,9 @@ pub enum AppTool {
     /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
     /// `doc/specs/crm.md`, § 13).
     CreateCrm,
+    /// Lire un CRM comme des données : colonnes du Kanban, personnes, entreprises, projets,
+    /// étapes (fiche 0081).
+    ReadCrm,
     /// Ce que l'utilisateur regarde : la note ouverte dans la colonne active, le texte
     /// sélectionné.
     ViewedNote,
@@ -106,7 +109,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 42] = [
+    pub const ALL: [Self; 43] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -147,6 +150,7 @@ impl AppTool {
         Self::AddEntry,
         Self::CreateMindMap,
         Self::CreateCrm,
+        Self::ReadCrm,
         Self::ViewedNote,
         Self::ShowNote,
     ];
@@ -195,6 +199,7 @@ impl AppTool {
             Self::AddEntry => "add_entry",
             Self::CreateMindMap => "create_mind_map",
             Self::CreateCrm => "create_crm",
+            Self::ReadCrm => "read_crm",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
         }
@@ -235,6 +240,7 @@ impl AppTool {
             | Self::LinkingNotes
             | Self::ReadNote
             | Self::ReadCanvas
+            | Self::ReadCrm
             | Self::ListTemplates
             | Self::ListVersions
             | Self::ReadVersion
@@ -304,6 +310,7 @@ impl AppTool {
             | Self::LinkingNotes
             | Self::ReadNote
             | Self::ReadCanvas
+            | Self::ReadCrm
             | Self::ListVersions
             | Self::ReadVersion
             | Self::TrashNote
