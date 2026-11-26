@@ -298,7 +298,7 @@ describe("cahier de recherche dans l'éditeur", () => {
       expect(view.state.selection.main.head).toBe(before);
     });
 
-    it("se place dans la marge, en face de la première ligne, sans recouvrir le texte", () => {
+    it("se place dans la marge, centré sur la première ligne, sans recouvrir le texte", () => {
       for (const width of [900, 300]) {
         const { parent } = shown(width);
         const lineBoxes = [...parent.querySelectorAll<HTMLElement>(".cm-line")].map((l) =>
@@ -306,17 +306,65 @@ describe("cahier de recherche dans l'éditeur", () => {
         );
         for (const box of numbers(parent)) {
           const rect = box.getBoundingClientRect();
-          const line = (box.closest(".cm-line") as HTMLElement).getBoundingClientRect();
-          const gap = parseFloat(
-            getComputedStyle(box.closest(".cm-line") as HTMLElement).paddingTop,
-          );
+          const lineElement = box.closest(".cm-line") as HTMLElement;
+          const line = lineElement.getBoundingClientRect();
+          const style = getComputedStyle(lineElement);
+          const gap = parseFloat(style.paddingTop);
+          const firstLineMiddle = line.top + gap + parseFloat(style.lineHeight) / 2;
           expect(rect.right).toBeLessThanOrEqual(line.left);
           expect(rect.left).toBeGreaterThanOrEqual(parent.getBoundingClientRect().left);
-          expect(rect.top).toBeGreaterThanOrEqual(line.top + gap - 1);
-          expect(rect.bottom).toBeLessThanOrEqual(line.top + gap + 1.65 * 18 + 1);
+          expect(Math.abs((rect.top + rect.bottom) / 2 - firstLineMiddle)).toBeLessThanOrEqual(1);
           for (const other of lineBoxes) expect(rect.right).toBeLessThanOrEqual(other.left);
         }
       }
+    });
+
+    it("est assez grand pour se lire et se viser : texte du cahier, hauteur d'une cible", () => {
+      const { parent } = shown();
+      const root = getComputedStyle(document.documentElement);
+      const target = parseFloat(root.getPropertyValue("--target-size"));
+      const textSize = parseFloat(
+        getComputedStyle(parent.querySelector(".cm-line") as HTMLElement).fontSize,
+      );
+      for (const box of numbers(parent)) {
+        const style = getComputedStyle(box);
+        const rect = box.getBoundingClientRect();
+        expect(rect.height).toBeGreaterThanOrEqual(target);
+        expect(rect.width).toBeGreaterThanOrEqual(2 * target);
+        expect(parseFloat(style.fontSize)).toBeGreaterThanOrEqual(textSize - 2);
+        expect(style.fontFamily).toContain("mono");
+        expect(parseFloat(style.borderTopLeftRadius)).toBeGreaterThanOrEqual(
+          parseFloat(root.getPropertyValue("--control-radius")),
+        );
+      }
+    });
+
+    it("suit la taille du texte choisie dans les réglages, sans recouvrir le texte ni sortir", () => {
+      document.documentElement.style.setProperty("--text-size", "var(--text-size-larger)");
+      try {
+        const { parent } = shown(300);
+        const box = numbers(parent)[0] as HTMLElement;
+        const line = (box.closest(".cm-line") as HTMLElement).getBoundingClientRect();
+        const rect = box.getBoundingClientRect();
+        expect(parseFloat(getComputedStyle(box).fontSize)).toBe(24);
+        expect(rect.right).toBeLessThanOrEqual(line.left);
+        expect(rect.left).toBeGreaterThanOrEqual(parent.getBoundingClientRect().left);
+      } finally {
+        document.documentElement.style.removeProperty("--text-size");
+      }
+    });
+
+    it("garde un espace entre deux numéros d'entrées voisines, sans pousser les lignes", () => {
+      const { parent } = shown();
+      const [, second, third] = numbers(parent).map((n) => n.getBoundingClientRect());
+      expect(second && third && third.top - second.bottom).toBeGreaterThanOrEqual(4);
+      const firsts = [...parent.querySelectorAll<HTMLElement>(".entry-bar-first")];
+      const [, two, three] = firsts.map((l) => l.getBoundingClientRect());
+      const style = getComputedStyle(firsts[1] as HTMLElement);
+      expect(two && three && three.top - two.top).toBeCloseTo(
+        parseFloat(style.paddingTop) + parseFloat(style.lineHeight),
+        0,
+      );
     });
 
     it("ne décale pas le texte d'une entrée à l'autre, ni la barre", () => {

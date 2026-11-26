@@ -963,10 +963,14 @@ button {
 .editor .cm-line.entry-bar-first.cm-lp-code-block {
   padding-top: var(--entry-bar-gap) !important;
 }
-/* Numéro d'entrée (fiche 0095) : un rectangle fin dans la marge gauche, en face de la première
-   ligne de l'entrée, à gauche de la barre. La marge du cahier est élargie de sa place. */
+/* Numéro d'entrée (fiche 0095) : un bouton dans la marge gauche, à gauche de la barre, centré sur la
+   première ligne de l'entrée, de la taille du texte du cahier et de la hauteur d'une cible de clic.
+   Il est plus haut que la ligne : il déborde dans la marge sans rien repousser (position absolue) ;
+   deux entrées voisines sont au moins à une ligne + l'espace avant l'entrée l'une de l'autre, soit
+   plus que sa hauteur. La marge du cahier est élargie de sa place, y compris d'un cinquième chiffre
+   (0,65 em) : au-delà de 9999 le nombre s'écrit en entier, sans recouvrir le texte. */
 .editor .cm-content.cm-numbered-entries {
-  padding-left: calc(var(--entry-number-width) + var(--entry-number-gap) + 0.5rem);
+  padding-left: calc(var(--entry-number-width) + 0.65em + var(--entry-number-gap));
 }
 .editor .cm-line.entry-bar-first {
   position: relative;
@@ -974,18 +978,22 @@ button {
 .editor .entry-number {
   position: absolute;
   right: calc(100% + var(--entry-number-gap));
-  top: calc(var(--entry-bar-gap) + 0.25em);
+  top: calc(var(--entry-bar-gap) + (var(--line-height) * 1em - var(--target-size)) / 2);
   box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: var(--entry-number-width);
-  padding: 0 0.3rem;
+  height: var(--target-size);
+  padding: 0 var(--space-3);
   border: 1px solid var(--entry-number-border);
-  border-radius: 3px;
+  border-radius: var(--control-radius);
   background: transparent;
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.7rem;
-  line-height: 1.5;
-  text-align: center;
+  font-size: 1em;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 .editor .entry-number:hover {

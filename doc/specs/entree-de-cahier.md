@@ -29,16 +29,16 @@ Ajouter une observation à un cahier de recherche simplement, sans fenêtre ni c
 But : citer facilement une entrée. Rendu dans la marge gauche, en face de la première ligne de chaque entrée, à côté de la barre :
 
 ```
- ┌──────┐ ┃ • 14:12 — Étape 1 …
- │ 0001 │ ┃   suite de l'entrée
- └──────┘ ┃
- ┌──────┐ ┃ • 15:03 — Étape 2 …
- │ 0002 │ ┃
- └──────┘
+ ┌────────┐ ┃ • 14:12 — Étape 1 …
+ │  0001  │ ┃   suite de l'entrée
+ └────────┘ ┃
+ ┌────────┐ ┃ • 15:03 — Étape 2 …
+ │  0002  │ ┃
+ └────────┘
 ```
 
 - Chaque entrée porte un **numéro d'entrée** : sa position dans le cahier, dans l'ordre du fichier. La première est `0001`, la deuxième `0002`, etc. Il s'écrit sur **4 chiffres** ; au-delà de 9999 entrées, le nombre est écrit en entier (`10000`), sans être coupé.
-- Le numéro est dans un **petit rectangle fin**, au contour discret du thème (clair comme sombre), dans la marge à gauche de l'entrée, aligné avec sa première ligne. Le texte ne bouge pas d'une entrée à l'autre ; la marge du cahier est élargie pour que le rectangle ne recouvre jamais le texte, même dans une colonne étroite.
+- Le numéro est dans un **rectangle aux coins arrondis**, au contour lisible du thème (clair comme sombre), dans la marge à gauche de l'entrée, **centré sur sa première ligne**. Il est **assez grand pour se lire et se viser** : chiffres de la même taille que le texte du cahier (18 px par défaut, il suit le réglage de taille du texte), hauteur de 32 px (la cible de clic du projet), largeur de 71 px pour 4 chiffres (avant : 48 × 19 px, texte de 11 px, jugé « bien trop petit »). Plus haut que la ligne, il déborde dans la marge sans repousser les lignes ni créer d'espace entre entrées ; deux numéros voisins restent séparés d'au moins 12 px. Le texte ne bouge pas d'une entrée à l'autre ; la marge du cahier est élargie (92 px) pour que le rectangle ne recouvre jamais le texte, même dans une colonne étroite ou avec un nombre de 5 chiffres. Survol et focus clavier restent marqués (contour de l'accent).
 - Un cahier ne se modifie jamais : le numéro d'une entrée est stable. Rien n'est écrit dans le fichier pour le numéro : il est calculé, donc **les cahiers existants sont numérotés d'office**. Un cahier vide n'affiche aucun numéro ; une entrée ajoutée apparaît avec le numéro suivant, sans recharger.
 - **Le numéro est un bouton** (« Copier la référence de l'entrée 0007 », au clavier comme à la souris). Un clic copie dans le presse-papiers le texte `Titre du cahier · 0007` (titre `#` du cahier, ou à défaut le nom de son fichier) et le message « Référence copiée » le confirme.
 - Hors périmètre : un lien par numéro dans une autre note, une renumérotation, une recherche par numéro.

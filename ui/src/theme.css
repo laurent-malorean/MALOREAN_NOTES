@@ -59,9 +59,10 @@
   --entry-bar-width: 3px;
   --entry-bar-gap: 0.9rem;
   --entry-bar-indent: 0.8rem;
-  /* Numéro d'entrée : un rectangle fin dans la marge gauche, à gauche de la barre */
-  --entry-number-border: color-mix(in srgb, var(--muted) 55%, var(--bg));
-  --entry-number-width: 3rem;
+  /* Numéro d'entrée : un bouton dans la marge gauche, à gauche de la barre ; sa largeur (4 chiffres de
+     chasse fixe, en em du texte du cahier, plus ses retraits et son contour) suit la taille du texte */
+  --entry-number-border: color-mix(in srgb, var(--muted) 70%, var(--bg));
+  --entry-number-width: calc(2.5em + 2 * var(--space-3) + 2px);
   --entry-number-gap: 0.6rem;
 
   /* Historique : lignes seulement dans la version, seulement dans la note actuelle */
