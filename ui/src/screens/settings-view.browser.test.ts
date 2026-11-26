@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
 import { DEFAULT_SETTINGS, type Settings } from "../state/settings";
 import { openSettings } from "./settings-view";
 import "../theme.css";
@@ -356,5 +356,66 @@ describe("écran de réglages", () => {
       expect(close?.bottom).toBeLessThanOrEqual(window.bottom);
       await page.viewport(1280, 1000);
     });
+  });
+});
+
+describe("focus à l'ouverture des réglages", () => {
+  function openOnClaude() {
+    const dialog = document.createElement("dialog");
+    dialog.className = "settings";
+    document.body.replaceChildren(dialog);
+    const storage = memoryStorage({ "malorean.settings-tab": "Claude" });
+    openSettings(dialog, DEFAULT_SETTINGS, () => {}, [], storage);
+    const tabs = [...dialog.querySelectorAll<HTMLElement>("[role=tab]")];
+    return { dialog, tabs, active: tabs[2] as HTMLElement };
+  }
+
+  it("ne met aucun cadre sur un onglet qui n'est pas l'onglet actif", () => {
+    const { dialog, tabs } = openOnClaude();
+    expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
+      "false",
+      "false",
+      "true",
+      "false",
+      "false",
+    ]);
+    expect(tabs.some((tab) => tab === document.activeElement)).toBe(false);
+    expect(document.activeElement).toBe(dialog);
+    expect(tabs.map((tab) => tab.matches(":focus-visible"))).toEqual(tabs.map(() => false));
+    expect(getComputedStyle(dialog).outlineStyle).toBe("none");
+  });
+
+  it("mène le premier Tab à l'onglet actif, puis dans le contenu", async () => {
+    const { dialog, active } = openOnClaude();
+    await userEvent.keyboard("{Tab}");
+    expect(document.activeElement).toBe(active);
+    expect(active.matches(":focus-visible")).toBe(true);
+    await userEvent.keyboard("{Tab}");
+    expect(
+      dialog.querySelector(".settings-panel:not([hidden])")?.contains(document.activeElement),
+    ).toBe(true);
+    await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(document.activeElement).toBe(active);
+  });
+
+  it("change d'onglet aux flèches depuis l'onglet actif, et Échap ferme la fenêtre", async () => {
+    const { dialog, tabs } = openOnClaude();
+    await userEvent.keyboard("{Tab}{ArrowRight}");
+    expect(document.activeElement).toBe(tabs[3]);
+    expect(tabs[3]?.getAttribute("aria-selected")).toBe("true");
+    await userEvent.keyboard("{Escape}");
+    expect(dialog.open).toBe(false);
+  });
+
+  it("garde le bouton Fermer atteignable : dans l'ordre de Tab, il prend le focus et ferme", async () => {
+    // WebKit ne met pas les boutons dans l'ordre de Tab par défaut (réglage de Safari) : on vérifie
+    // donc que rien ne l'en sort (tabIndex négatif, désactivé) et qu'il prend le focus et ferme.
+    const { dialog } = openOnClaude();
+    const close = dialog.querySelector<HTMLButtonElement>("button.primary");
+    expect([close?.tabIndex, close?.disabled]).toEqual([0, false]);
+    close?.focus();
+    expect(document.activeElement).toBe(close);
+    await userEvent.keyboard("{Enter}");
+    expect(dialog.open).toBe(false);
   });
 });

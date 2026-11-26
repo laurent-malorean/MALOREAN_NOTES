@@ -196,4 +196,9 @@ export function openSettings(
   form.append(title, tabs(panels, storage), footer);
   dialog.replaceChildren(form);
   dialog.showModal();
+  // `showModal` donne le focus au premier onglet, qui n'est pas forcément l'onglet actif et se
+  // retrouve entouré d'un cadre : la fenêtre elle-même le prend, sans cadre ; le premier Tab va à
+  // l'onglet actif (les autres sont hors de l'ordre de Tab).
+  dialog.tabIndex = -1;
+  dialog.focus();
 }
