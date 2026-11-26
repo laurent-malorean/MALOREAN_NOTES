@@ -17,6 +17,8 @@ interface Saved {
   active: string | null;
   /** Les noms des espaces cochés pour les IA (fiche 0074) ; aucun au départ. */
   allowed?: string[];
+  /** Le dossier des modèles de chaque espace, par son nom (fiche 0077) ; aucun au départ. */
+  templates?: Record<string, string>;
 }
 
 /** La partie de la doublure qui change avec l'espace de travail ouvert. */
@@ -104,6 +106,9 @@ class Workspaces {
     this.refuseName(newName, workspace);
     if (this.isActive(workspace)) this.saved.active = newName.trim();
     this.saved.allowed = this.allowed().map((n) => (same(n, workspace.name) ? newName.trim() : n));
+    const folder = this.templatesOf(workspace);
+    this.saved.templates = this.others(workspace);
+    if (folder !== null) this.saved.templates[newName.trim()] = folder;
     workspace.name = newName.trim();
     this.save();
     return workspace.name;
@@ -117,8 +122,46 @@ class Workspaces {
       };
     this.saved.list = this.saved.list.filter((w) => w !== workspace);
     this.saved.allowed = this.allowed().filter((n) => !same(n, workspace.name));
+    this.saved.templates = this.others(workspace);
     this.save();
     return null;
+  }
+
+  /** Le dossier des modèles de `workspace`, s'il en a choisi un. */
+  templatesOf(workspace: FakeWorkspace) {
+    const found = Object.entries(this.saved.templates ?? {}).find(([name]) =>
+      same(name, workspace.name),
+    );
+    return found ? found[1] : null;
+  }
+
+  /** Les dossiers des modèles de tous les espaces sauf `workspace`. */
+  private others(workspace: FakeWorkspace) {
+    return Object.fromEntries(
+      Object.entries(this.saved.templates ?? {}).filter(([name]) => !same(name, workspace.name)),
+    );
+  }
+
+  /** Choisit le dossier des modèles de l'espace ouvert ; aucun pour `null`. */
+  chooseTemplates(folder: string | null) {
+    const workspace = this.open ?? this.find(this.saved.active ?? "");
+    this.saved.templates = this.others(workspace);
+    if (folder !== null && folder.trim() !== "") this.saved.templates[workspace.name] = folder;
+    this.save();
+    return null;
+  }
+
+  /** Reprend les dossiers gardés par l'interface : chacun va à l'espace qui a ce dossier, sans écraser. */
+  importTemplates(chosen: { location: string; folder: string }[]) {
+    let imported = 0;
+    for (const { location, folder } of chosen) {
+      const workspace = this.saved.list.find((w) => w.path === location);
+      if (!workspace || this.templatesOf(workspace) !== null || folder.trim() === "") continue;
+      this.saved.templates = { ...this.saved.templates, [workspace.name]: folder };
+      imported += 1;
+    }
+    if (imported > 0) this.save();
+    return imported;
   }
 
   allowed() {
@@ -169,5 +212,11 @@ export function fakeWorkspaces(
     list_ai_workspaces: () => workspaces.aiList(),
     set_workspace_allowed: ({ name = "", allowed = "" }) =>
       workspaces.setAllowed(name, (allowed as unknown) === true),
+    templates_folder: () =>
+      workspaces.templatesOf(workspaces.open ?? workspaces.find(workspaces.saved.active ?? "")),
+    set_templates_folder: ({ folder = null }) =>
+      workspaces.chooseTemplates(folder as unknown as string | null),
+    import_templates_folders: ({ chosen = [] }) =>
+      workspaces.importTemplates(chosen as unknown as { location: string; folder: string }[]),
   };
 }

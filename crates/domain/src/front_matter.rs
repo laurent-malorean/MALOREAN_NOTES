@@ -26,6 +26,14 @@ pub fn split(content: &str) -> (Option<&str>, &str) {
     }
 }
 
+/// Le texte coupé en deux sans rien perdre : l'en-tête tel qu'il est écrit, ses deux lignes `---`
+/// et la fin de la seconde comprises (vide sans en-tête ou si l'en-tête n'est pas fermé), puis le
+/// reste. Les deux parties mises bout à bout redonnent le texte à l'identique.
+#[must_use]
+pub fn split_exact(content: &str) -> (&str, &str) {
+    Header::of(content).map_or(("", content), |header| content.split_at(header.close_end))
+}
+
 /// L'en-tête d'une note, repéré par ses positions dans le texte.
 struct Header<'a> {
     content: &'a str,
@@ -371,5 +379,28 @@ mod tests {
             split("---\r\na: 1\r\n---\r\ntexte"),
             (Some("a: 1"), "texte")
         );
+    }
+
+    #[test]
+    fn the_exact_split_keeps_the_delimiters_and_loses_nothing() {
+        assert_eq!(
+            split_exact("---\ntags: [a]\n---\n# Titre\ntexte"),
+            ("---\ntags: [a]\n---\n", "# Titre\ntexte")
+        );
+        assert_eq!(
+            split_exact("---\r\na: 1\r\n---\r\ntexte"),
+            ("---\r\na: 1\r\n---\r\n", "texte")
+        );
+        assert_eq!(split_exact("---\na: 1\n---"), ("---\na: 1\n---", ""));
+    }
+
+    #[test]
+    fn the_exact_split_of_a_note_without_a_closed_header_is_all_body() {
+        assert_eq!(split_exact("# Titre\ntexte"), ("", "# Titre\ntexte"));
+        assert_eq!(
+            split_exact("---\npinned: true\n# Titre"),
+            ("", "---\npinned: true\n# Titre")
+        );
+        assert_eq!(split_exact(""), ("", ""));
     }
 }

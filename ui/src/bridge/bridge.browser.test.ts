@@ -438,6 +438,23 @@ describe("pont vers Rust : colonne Claude Code", () => {
     expect(calls).toEqual([{ command: "claude_status", args: {} }]);
   });
 
+  it("lit, choisit et reprend le dossier des modèles par le moteur", async () => {
+    const calls = recordCalls("Modèles");
+    expect(await bridge.templatesFolder()).toBe("Modèles");
+    await bridge.setTemplatesFolder("Perso/Modèles");
+    await bridge.setTemplatesFolder(null);
+    await bridge.importTemplatesFolders([{ location: "/Users/moi/Notes", folder: "Gabarits" }]);
+    expect(calls).toEqual([
+      { command: "templates_folder", args: {} },
+      { command: "set_templates_folder", args: { folder: "Perso/Modèles" } },
+      { command: "set_templates_folder", args: { folder: null } },
+      {
+        command: "import_templates_folders",
+        args: { chosen: [{ location: "/Users/moi/Notes", folder: "Gabarits" }] },
+      },
+    ]);
+  });
+
   it("envoie un message dans la conversation de l'onglet, puis arrête le tour", async () => {
     const calls = recordCalls(null);
     await bridge.sendToClaude(
@@ -445,9 +462,8 @@ describe("pont vers Rust : colonne Claude Code", () => {
       "c1",
       { model: "opus", effort: "extraHigh" },
       true,
-      "Modèles",
     );
-    await bridge.sendToClaude("Bonjour", null, { model: null, effort: null }, false, null);
+    await bridge.sendToClaude("Bonjour", null, { model: null, effort: null }, false);
     await bridge.stopClaude();
     expect(calls).toEqual([
       {
@@ -457,7 +473,6 @@ describe("pont vers Rust : colonne Claude Code", () => {
           conversation: "c1",
           settings: { model: "opus", effort: "extraHigh" },
           changesAllowed: true,
-          templates: "Modèles",
         },
       },
       {
@@ -467,7 +482,6 @@ describe("pont vers Rust : colonne Claude Code", () => {
           conversation: null,
           settings: { model: null, effort: null },
           changesAllowed: false,
-          templates: null,
         },
       },
       { command: "stop_claude", args: {} },

@@ -3,6 +3,8 @@
 
 use std::sync::Arc;
 
+use domain::Folder;
+
 use crate::{
     AppError, NoteStore, Preferences, Workspace, WorkspaceLocation, WorkspaceName, WorkspaceOpener,
     Workspaces,
@@ -141,6 +143,65 @@ impl<'a> ManageWorkspaces<'a> {
     pub fn allow(&self, name: &WorkspaceName) -> Result<(), AppError> {
         let next = self.list()?.allowing(name)?;
         Ok(self.preferences.save_workspaces(&next)?)
+    }
+
+    /// Le dossier des modèles de l'espace de travail `name`, s'il en a choisi un (fiche 0077).
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotFound`], ou [`AppError::StorageUnavailable`] si les préférences ne
+    /// peuvent pas être lues.
+    pub fn templates_folder(&self, name: &WorkspaceName) -> Result<Option<Folder>, AppError> {
+        let workspaces = self.list()?;
+        let workspace = workspaces.find(name)?;
+        Ok(workspaces.templates_folder(&workspace.name).cloned())
+    }
+
+    /// Choisit le dossier des modèles de l'espace de travail `name` (aucun pour `None`), gardé
+    /// avec les préférences (fiche 0077).
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotFound`], ou [`AppError::StorageUnavailable`] si les préférences ne
+    /// peuvent pas être écrites.
+    pub fn choose_templates_folder(
+        &self,
+        name: &WorkspaceName,
+        folder: Option<Folder>,
+    ) -> Result<(), AppError> {
+        let next = self.list()?.choosing_templates_folder(name, folder)?;
+        Ok(self.preferences.save_workspaces(&next)?)
+    }
+
+    /// Reprend les dossiers des modèles que l'interface gardait avant la fiche 0077, chacun pour
+    /// l'espace de travail qui a ce dossier (`location`). Un espace qui a déjà son dossier des
+    /// modèles le garde ; un dossier d'un espace inconnu est oublié. Rien n'est écrit s'il n'y a
+    /// rien à reprendre. Rend le nombre d'espaces repris.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si les préférences ne peuvent pas être lues ou écrites.
+    pub fn import_templates_folders(
+        &self,
+        chosen: &[(WorkspaceLocation, Folder)],
+    ) -> Result<usize, AppError> {
+        let mut workspaces = self.list()?;
+        let mut imported = 0;
+        for workspace in workspaces.list().to_vec() {
+            if workspaces.templates_folder(&workspace.name).is_some() {
+                continue;
+            }
+            let Some((_, folder)) = chosen.iter().find(|(at, _)| *at == workspace.location) else {
+                continue;
+            };
+            workspaces =
+                workspaces.choosing_templates_folder(&workspace.name, Some(folder.clone()))?;
+            imported += 1;
+        }
+        if imported > 0 {
+            self.preferences.save_workspaces(&workspaces)?;
+        }
+        Ok(imported)
     }
 
     /// N'autorise plus les IA à se servir de l'espace de travail `name`.
@@ -390,6 +451,122 @@ mod tests {
         let manage = ManageWorkspaces::new(&opener, &preferences);
         assert!(matches!(
             manage.open_in_background(&name("Absent")),
+            Err(AppError::StorageUnavailable(_))
+        ));
+    }
+
+    fn folder(path: &str) -> Folder {
+        Folder::parse(path).unwrap()
+    }
+
+    #[test]
+    fn a_chosen_templates_folder_is_remembered_for_that_workspace_only() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        assert_eq!(manage.templates_folder(&name("notes")).unwrap(), None);
+        manage
+            .choose_templates_folder(&name("NOTES"), Some(folder("Modèles")))
+            .unwrap();
+        assert_eq!(
+            manage.templates_folder(&name("Notes")).unwrap(),
+            Some(folder("Modèles"))
+        );
+        assert_eq!(manage.templates_folder(&name("Travail")).unwrap(), None);
+        assert_eq!(active(&preferences), Some("Travail".into()));
+        manage
+            .choose_templates_folder(&name("Notes"), None)
+            .unwrap();
+        assert_eq!(manage.templates_folder(&name("Notes")).unwrap(), None);
+    }
+
+    #[test]
+    fn the_templates_folder_of_an_unknown_workspace_is_refused() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        let unknown = AppError::WorkspaceNotFound("Perso".into());
+        assert_eq!(
+            manage.templates_folder(&name("Perso")),
+            Err(unknown.clone())
+        );
+        assert_eq!(
+            manage.choose_templates_folder(&name("Perso"), Some(folder("A"))),
+            Err(unknown)
+        );
+    }
+
+    #[test]
+    fn the_folders_the_interface_kept_are_taken_for_the_workspace_that_has_that_folder() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        let imported = manage
+            .import_templates_folders(&[
+                (location("/travail"), folder("Gabarits")),
+                (location("/ailleurs"), folder("X")),
+            ])
+            .unwrap();
+        assert_eq!(imported, 1);
+        assert_eq!(
+            manage.templates_folder(&name("Travail")).unwrap(),
+            Some(folder("Gabarits"))
+        );
+        assert_eq!(manage.templates_folder(&name("Notes")).unwrap(), None);
+    }
+
+    #[test]
+    fn a_workspace_that_already_has_its_templates_folder_keeps_it_when_the_interface_brings_one() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let manage = ManageWorkspaces::new(&opener, &preferences);
+        manage
+            .choose_templates_folder(&name("Notes"), Some(folder("Modèles")))
+            .unwrap();
+        let imported = manage
+            .import_templates_folders(&[(location("/notes"), folder("Vieux"))])
+            .unwrap();
+        assert_eq!(imported, 0);
+        assert_eq!(
+            manage.templates_folder(&name("Notes")).unwrap(),
+            Some(folder("Modèles"))
+        );
+    }
+
+    /// Des préférences qui se lisent mais ne s'écrivent plus.
+    #[derive(Debug)]
+    struct Unwritable(FakePreferences);
+
+    impl Preferences for Unwritable {
+        fn workspaces(&self) -> Result<Workspaces, StoreError> {
+            self.0.workspaces()
+        }
+        fn save_workspaces(&self, _: &Workspaces) -> Result<(), StoreError> {
+            Err(StoreError::Unavailable("lecture seule".into()))
+        }
+        fn meaning_model(&self) -> Result<domain::MeaningModel, StoreError> {
+            self.0.meaning_model()
+        }
+        fn save_meaning_model(&self, model: domain::MeaningModel) -> Result<(), StoreError> {
+            self.0.save_meaning_model(model)
+        }
+    }
+
+    #[test]
+    fn nothing_is_written_when_there_is_nothing_to_take() {
+        let (opener, preferences) = (opener(), FakePreferences::default());
+        two(&opener, &preferences);
+        let unwritable = Unwritable(preferences);
+        let manage = ManageWorkspaces::new(&opener, &unwritable);
+        assert_eq!(manage.import_templates_folders(&[]).unwrap(), 0);
+        assert_eq!(
+            manage
+                .import_templates_folders(&[(location("/ailleurs"), folder("X"))])
+                .unwrap(),
+            0
+        );
+        assert!(matches!(
+            manage.import_templates_folders(&[(location("/notes"), folder("X"))]),
             Err(AppError::StorageUnavailable(_))
         ));
     }

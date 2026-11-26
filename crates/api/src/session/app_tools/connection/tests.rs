@@ -156,7 +156,7 @@ fn the_tools_of_the_ai_work_on_the_open_workspace_with_the_rules_of_the_applicat
 }
 
 #[test]
-fn the_tools_name_the_workspace_and_say_there_is_no_templates_folder_without_a_turn() {
+fn the_tools_name_the_workspace_and_say_it_has_no_templates_folder_until_the_user_chooses_one() {
     let Fixture { session, .. } = fixture();
     let key = session.create_connection_key().unwrap();
 
@@ -167,7 +167,9 @@ fn the_tools_name_the_workspace_and_say_there_is_no_templates_folder_without_a_t
         templates["result"]["content"][0]["text"]
             .as_str()
             .unwrap()
-            .starts_with("aucun dossier des modèles n'est choisi")
+            .starts_with(
+                "aucun dossier des modèles n'est choisi pour l'espace de travail « Notes »"
+            )
     );
 }
 
@@ -331,7 +333,7 @@ fn the_key_of_a_turn_of_the_claude_column_is_not_the_key_of_the_connection_and_t
 {
     let Fixture { session, .. } = fixture();
     let key = session.create_connection_key().unwrap();
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
 
     assert!(refused(&asked(&session, tools.key().as_str(), &listing())));
     let turn_reply: Value = serde_json::from_str(

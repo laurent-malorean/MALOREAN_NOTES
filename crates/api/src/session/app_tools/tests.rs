@@ -97,7 +97,7 @@ fn the_key_of_a_turn_reaches_claude_code_and_opens_the_tools_until_the_end_of_th
     // puis vérifié.
     let (key, during, other, busy, keys, after_busy, after) = thread::scope(|scope| {
         let running = scope.spawn(|| {
-            session.send_to_claude("Bonjour", None, TurnSettings::default(), None, |item| {
+            session.send_to_claude("Bonjour", None, TurnSettings::default(), |item| {
                 sender.send(item).ok();
             })
         });
@@ -107,7 +107,7 @@ fn the_key_of_a_turn_reaches_claude_code_and_opens_the_tools_until_the_end_of_th
         let during = session.answer_app_tools(&key_text, &listing);
         let other = session.answer_app_tools("autre", &listing);
         // Un tour refusé pendant celui-ci ne change pas la clé.
-        let busy = session.send_to_claude("Encore", None, TurnSettings::default(), None, |_| {});
+        let busy = session.send_to_claude("Encore", None, TurnSettings::default(), |_| {});
         let keys = claude.tools_keys().len();
         let after_busy = session.answer_app_tools(&key_text, &listing);
         session.stop_claude();
@@ -134,7 +134,7 @@ fn each_turn_has_its_own_key() {
     let session = session_with(&[], Some(Arc::clone(&claude)));
     for _ in 0..2 {
         session
-            .send_to_claude("Bonjour", None, TurnSettings::default(), None, |_| {})
+            .send_to_claude("Bonjour", None, TurnSettings::default(), |_| {})
             .unwrap();
     }
     let keys = claude.tools_keys();
@@ -143,27 +143,9 @@ fn each_turn_has_its_own_key() {
 }
 
 #[test]
-fn an_invalid_templates_folder_refuses_the_turn() {
-    let claude = Arc::new(FakeClaudeCode::replaying(Vec::new()));
-    let session = session_with(&[], Some(Arc::clone(&claude)));
-    let end = session.send_to_claude(
-        "Bonjour",
-        None,
-        TurnSettings::default(),
-        Some("../x"),
-        |_| {},
-    );
-    assert_eq!(
-        end.unwrap_err().message,
-        "nom de dossier invalide : « ../x »"
-    );
-    assert!(claude.requests().is_empty());
-}
-
-#[test]
 fn the_tools_only_act_in_the_workspace_of_the_turn() {
     let session = opened(&[("a.md", "# A")]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str().to_owned();
     session.add_workspace("Autre", "/Users/moi/Autre").unwrap();
     assert_eq!(
@@ -182,7 +164,7 @@ fn the_tools_need_an_open_workspace() {
         Arc::new(FakePreferences::default()),
         Arc::new(FixedClock::default()),
     );
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     assert_eq!(
         refused(&session, tools.key().as_str(), "list_tags", json!({})),
         "aucun espace de travail n'est ouvert"
@@ -192,10 +174,10 @@ fn the_tools_need_an_open_workspace() {
 #[test]
 fn tools_are_opened_for_one_turn_at_a_time() {
     let session = opened(&[]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
-    assert!(session.open_tools(notes_workspace(), None).is_none());
+    let tools = session.open_tools(notes_workspace()).unwrap();
+    assert!(session.open_tools(notes_workspace()).is_none());
     drop(tools);
-    assert!(session.open_tools(notes_workspace(), None).is_some());
+    assert!(session.open_tools(notes_workspace()).is_some());
 }
 
 /// Les chemins des notes que rend une recherche.
@@ -220,7 +202,7 @@ fn the_search_uses_the_index_by_words_tag_folder_and_content_type() {
              #### Lundi 16\n- 09:42 - du pain\n- 10:00 - du sel",
         ),
     ]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     let by_words = found(&session, key, "search_notes", json!({ "query": "PAIN" }));
     let mut found_paths = paths(&by_words);
@@ -278,7 +260,7 @@ fn a_search_with_a_tag_gives_only_the_notes_that_carry_it() {
         ("b.md", "---\ntags: [travail]\n---\n# Bêta\ndu pain"),
         ("c.md", "# Gamma\ndu pain"),
     ]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     let tagged = found(&session, key, "search_notes", json!({ "tag": "maison" }));
     let tagged_by_words = found(
@@ -305,7 +287,7 @@ fn a_search_shows_at_most_its_limit_of_notes() {
         .map(|(path, text)| (path.as_str(), text.as_str()))
         .collect();
     let session = opened(&borrowed);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let all = found(&session, tools.key().as_str(), "search_notes", json!({}));
     assert_eq!(all.as_array().unwrap().len(), MAX);
 }
@@ -315,7 +297,7 @@ const MAX: usize = application::use_cases::MAX_RESULTS;
 #[test]
 fn a_search_by_an_unknown_content_type_or_an_invalid_folder_is_refused() {
     let session = opened(&[("a.md", "# A")]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     assert_eq!(
         refused(
@@ -348,7 +330,7 @@ fn tags_are_listed_with_their_number_of_notes() {
         ("a.md", "---\ntags: [maison, jardin]\n---\n# A"),
         ("b.md", "---\ntags: [maison]\n---\n# B"),
     ]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     assert_eq!(
         found(&session, tools.key().as_str(), "list_tags", Value::Null),
         json!([{ "name": "jardin", "count": 1 }, { "name": "maison", "count": 2 }])
@@ -361,7 +343,7 @@ fn the_linking_notes_of_a_note_are_given() {
         ("a.md", "# Alpha"),
         ("Travail/b.md", "# Bêta\nvoir [[alpha]]"),
     ]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     assert_eq!(
         found(&session, key, "linking_notes", json!({ "path": "a.md" })),
@@ -378,14 +360,14 @@ fn the_linking_notes_of_a_note_are_given() {
 }
 
 #[test]
-fn template_names_come_from_the_templates_folder_of_the_turn() {
+fn template_names_come_from_the_templates_folder_chosen_for_the_workspace() {
     let session = opened(&[
         ("Modèles/r.md", "# Réunion"),
         ("Modèles/j.md", "# Journal"),
         ("Modèles/Vieux/v.md", "# Vieux"),
         ("a.md", "# A"),
     ]);
-    let without = session.open_tools(notes_workspace(), None).unwrap();
+    let without = session.open_tools(notes_workspace()).unwrap();
     assert_eq!(
         refused(
             &session,
@@ -393,12 +375,12 @@ fn template_names_come_from_the_templates_folder_of_the_turn() {
             "list_templates",
             json!({})
         ),
-        "aucun dossier des modèles n'est choisi : l'utilisateur peut en choisir un dans les \
-         réglages de MALOREAN Notes"
+        "aucun dossier des modèles n'est choisi pour l'espace de travail « Notes » : \
+         l'utilisateur peut en choisir un dans les Réglages de MALOREAN Notes, onglet « Écriture »"
     );
     drop(without);
-    let folder = Folder::parse("Modèles").unwrap();
-    let tools = session.open_tools(notes_workspace(), Some(folder)).unwrap();
+    session.set_templates_folder(Some("Modèles")).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     assert_eq!(
         found(&session, tools.key().as_str(), "list_templates", json!({})),
         json!([{ "name": "Journal" }, { "name": "Réunion" }])
@@ -409,7 +391,7 @@ fn template_names_come_from_the_templates_folder_of_the_turn() {
 fn the_versions_of_a_note_are_listed_and_read() {
     let session = opened(&[("a.md", "# A\nancien")]);
     session.keep_version("a.md").unwrap();
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     assert_eq!(
         found(&session, key, "list_versions", json!({ "path": "a.md" })),
@@ -441,7 +423,7 @@ fn a_search_gives_the_nodes_of_mind_maps_with_the_path_of_their_map_and_of_the_n
         ),
         ("note.md", "# Note\nlevain"),
     ]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     let by_words = found(&session, key, "search_notes", json!({ "query": "levain" }));
     let nodes: Vec<&Value> = by_words

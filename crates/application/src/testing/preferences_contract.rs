@@ -5,7 +5,7 @@
     reason = "code de test : un échec doit arrêter le test"
 )]
 
-use domain::MeaningModel;
+use domain::{Folder, MeaningModel};
 
 use crate::{Preferences, Workspace, WorkspaceLocation, WorkspaceName, Workspaces};
 
@@ -26,6 +26,8 @@ pub fn preferences_contract<P: Preferences>(fresh: impl Fn() -> P) {
     choosing_a_meaning_model_and_saving_workspaces_do_not_touch_each_other(&fresh());
     allowed_workspaces_are_read_back_and_none_is_allowed_at_first(&fresh());
     allowed_workspaces_follow_a_renaming_and_a_removal(&fresh());
+    templates_folders_are_read_back_and_none_is_chosen_at_first(&fresh());
+    templates_folders_follow_a_renaming_and_a_removal(&fresh());
 }
 
 fn allowed_workspaces_are_read_back_and_none_is_allowed_at_first(preferences: &impl Preferences) {
@@ -67,6 +69,59 @@ fn allowed_workspaces_follow_a_renaming_and_a_removal(preferences: &impl Prefere
     let removed = read.removed(&perso).unwrap();
     preferences.save_workspaces(&removed).unwrap();
     assert!(preferences.workspaces().unwrap().allowed().is_empty());
+}
+
+fn templates_folders_are_read_back_and_none_is_chosen_at_first(preferences: &impl Preferences) {
+    let notes = WorkspaceName::new("Notes").unwrap();
+    let travail = WorkspaceName::new("Travail").unwrap();
+    let workspaces = Workspaces::default()
+        .added(workspace("Notes", "/Users/moi/Notes"))
+        .unwrap()
+        .added(workspace("Travail", "/Users/moi/Travail"))
+        .unwrap();
+    preferences.save_workspaces(&workspaces).unwrap();
+    let read = preferences.workspaces().unwrap();
+    assert_eq!(read.templates_folder(&notes), None);
+    assert_eq!(read.templates_folder(&travail), None);
+
+    let chosen = workspaces
+        .choosing_templates_folder(&travail, Some(Folder::parse("Perso/Modèles").unwrap()))
+        .unwrap();
+    preferences.save_workspaces(&chosen).unwrap();
+    let read = preferences.workspaces().unwrap();
+    assert_eq!(
+        read.templates_folder(&travail),
+        Some(&Folder::parse("Perso/Modèles").unwrap())
+    );
+    assert_eq!(read.templates_folder(&notes), None);
+    assert_eq!(read, chosen);
+}
+
+fn templates_folders_follow_a_renaming_and_a_removal(preferences: &impl Preferences) {
+    let notes = WorkspaceName::new("Notes").unwrap();
+    let perso = WorkspaceName::new("Perso").unwrap();
+    let modeles = Folder::parse("Modèles").unwrap();
+    let workspaces = Workspaces::default()
+        .added(workspace("Notes", "/Users/moi/Notes"))
+        .unwrap()
+        .added(workspace("Travail", "/Users/moi/Travail"))
+        .unwrap()
+        .choosing_templates_folder(&notes, Some(modeles.clone()))
+        .unwrap()
+        .renamed(&notes, perso.clone())
+        .unwrap();
+    preferences.save_workspaces(&workspaces).unwrap();
+    let read = preferences.workspaces().unwrap();
+    assert_eq!(read.templates_folder(&perso), Some(&modeles));
+    assert_eq!(read.templates_folder(&notes), None);
+    preferences
+        .save_workspaces(&read.removed(&perso).unwrap())
+        .unwrap();
+    let travail = WorkspaceName::new("Travail").unwrap();
+    assert_eq!(
+        preferences.workspaces().unwrap().templates_folder(&travail),
+        None
+    );
 }
 
 fn the_default_meaning_model_is_chosen_at_first_launch(preferences: &impl Preferences) {

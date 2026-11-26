@@ -141,9 +141,10 @@ const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
 screen.show(welcome);
 void columns.change(columns.current());
-bridge
-  .reopenLastWorkspace()
-  // La note du jour, une fois les colonnes retrouvées.
+// Les dossiers des modèles gardés autrefois ici passent au moteur, puis la note du jour (colonnes retrouvées).
+templates
+  .migrate()
+  .then(bridge.reopenLastWorkspace)
   .then((opened) => (opened ? workspace.open(opened).then(journal.atLaunch) : undefined))
   .catch(messages.error);
 if (__ESSAI__) void import("./essai").then((e) => e.start({ bridge, actions, workspace, columns }));

@@ -48,12 +48,13 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 26] = [
+    let expected: [(AppTool, &[&str]); 27] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
         (AppTool::ListTags, &[]),
         (AppTool::LinkingNotes, path),
+        (AppTool::ReadNote, path),
         (AppTool::ListTemplates, &[]),
         (AppTool::ListVersions, path),
         (AppTool::ReadVersion, &["path", "version"]),
@@ -164,6 +165,34 @@ fn replacing_a_text_takes_a_note_two_texts_and_an_option_and_tells_every_refusal
         "carte mentale, un canvas ou un CRM",
         "utilisez ensuite le `path` rendu",
         "`path`, `title` et `replacements`",
+        "lisez d'abord la note avec `read_note`",
+    ] {
+        assert!(description.contains(expected), "{expected}");
+    }
+}
+
+#[test]
+fn reading_a_note_takes_a_path_and_tells_the_header_the_limit_and_every_refusal() {
+    let described = tool_description(AppTool::ReadNote);
+    let mut fields: Vec<_> = described["inputSchema"]["properties"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    fields.sort();
+    assert_eq!(fields, ["path", "workspace"]);
+    let description = described["description"].as_str().unwrap();
+    for expected in [
+        "`old_text` de `replace_in_note`",
+        "`header`",
+        "lignes `---` comprises",
+        "`header` suivi de `body` redonne le fichier à l'identique",
+        "60 000 caractères",
+        "`truncated` vaut alors true et `message` le dit",
+        "cahier de recherche (on y ajoute des entrées avec `add_entry`",
+        "une carte mentale, un canvas, un CRM",
+        "introuvable",
     ] {
         assert!(description.contains(expected), "{expected}");
     }

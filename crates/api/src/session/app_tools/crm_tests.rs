@@ -22,7 +22,7 @@ const CRM_NOTES: [(&str, &str); 4] = [
 #[test]
 fn a_search_finds_the_cards_of_a_crm_with_their_type_and_the_path_of_their_crm() {
     let session = opened(&CRM_NOTES);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     let by_words = found(
         &session,
@@ -63,7 +63,7 @@ fn a_search_finds_the_cards_of_a_crm_with_their_type_and_the_path_of_their_crm()
 #[test]
 fn a_crm_is_found_itself_with_its_type_and_no_crm_of_its_own() {
     let session = opened(&CRM_NOTES);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     let crms = found(
         &session,
@@ -85,7 +85,7 @@ fn a_crm_is_found_itself_with_its_type_and_no_crm_of_its_own() {
 #[test]
 fn a_search_can_keep_to_one_kind_of_card() {
     let session = opened(&CRM_NOTES);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     for (kind, expected) in [
         ("crm-action", "clients/actions/2026-11-24-devis.md"),
@@ -126,7 +126,7 @@ fn the_linking_notes_of_a_note_tell_the_type_and_the_crm_of_a_card() {
             "---\ntype: crm-action\nnotes: ['[[Plan]]']\n---\n# Devis",
         ),
     ]);
-    let linked_tools = linked.open_tools(notes_workspace(), None).unwrap();
+    let linked_tools = linked.open_tools(notes_workspace()).unwrap();
     assert_eq!(
         found(
             &linked,

@@ -9,7 +9,7 @@ use application::testing::preferences_contract::preferences_contract;
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
-use domain::MeaningModel;
+use domain::{Folder, MeaningModel};
 use infrastructure::JsonPreferences;
 use tempfile::TempDir;
 
@@ -226,4 +226,45 @@ fn an_allowed_workspace_with_an_empty_name_is_skipped_and_choosing_a_model_keeps
         .map(|w| w.name.as_str().to_owned())
         .collect();
     assert_eq!(names, ["Notes"]);
+}
+
+#[test]
+fn a_file_without_the_templates_field_gives_no_templates_folder_and_none_is_written_until_one_is_chosen()
+ {
+    let (dir, preferences) = written(
+        r#"{ "workspaces": [{ "name": "Notes", "folder": "/Users/moi/Notes" }], "active": "Notes" }"#,
+    );
+    let name = WorkspaceName::new("Notes").unwrap();
+    let workspaces = preferences.workspaces().unwrap();
+    assert_eq!(workspaces.templates_folder(&name), None);
+
+    preferences.save_workspaces(&workspaces).unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(!text.contains("templates"), "{text}");
+
+    let chosen = workspaces
+        .choosing_templates_folder(&name, Some(Folder::parse("Perso/Modèles").unwrap()))
+        .unwrap();
+    preferences.save_workspaces(&chosen).unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(text.contains(r#""templates": "Perso/Modèles""#), "{text}");
+}
+
+#[test]
+fn an_invalid_templates_folder_is_forgotten_and_choosing_a_model_keeps_the_valid_ones() {
+    let (_dir, preferences) = written(
+        r#"{ "workspaces": [
+            { "name": "Notes", "folder": "/Users/moi/Notes", "templates": "../dehors" },
+            { "name": "Travail", "folder": "/Users/moi/Travail", "templates": "Modèles" }
+        ] }"#,
+    );
+    preferences.save_meaning_model(MeaningModel::Large).unwrap();
+    let workspaces = preferences.workspaces().unwrap();
+    let templates = |name: &str| {
+        workspaces
+            .templates_folder(&WorkspaceName::new(name).unwrap())
+            .map(Folder::to_path)
+    };
+    assert_eq!(templates("Notes"), None);
+    assert_eq!(templates("Travail").as_deref(), Some("Modèles"));
 }

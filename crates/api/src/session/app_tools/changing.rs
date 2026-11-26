@@ -13,7 +13,7 @@ use domain::{Folder, NoteOrder, NotePath};
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use super::{ToolsScope, optional, required, written};
+use super::{optional, required, written};
 use crate::ApiError;
 use crate::session::Session;
 
@@ -47,7 +47,6 @@ impl Session {
     /// Joue un outil qui crée, change, range ou jette une note.
     pub(super) fn call_changing_tool(
         &self,
-        scope: &ToolsScope,
         tool: AppTool,
         arguments: &Value,
     ) -> Result<String, String> {
@@ -56,7 +55,7 @@ impl Session {
             AppTool::CreateFolder => self.tool_create_folder(arguments),
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
             AppTool::CreateCrm => self.tool_create_crm(arguments),
-            AppTool::CreateNoteFromTemplate => self.tool_create_from_template(scope, arguments),
+            AppTool::CreateNoteFromTemplate => self.tool_create_from_template(arguments),
             AppTool::TrashNote => {
                 let trashed = self.trash_note(required(arguments, "path")?);
                 written(&json!({ "trashed": trashed.map_err(|e| e.message)? }))
@@ -175,25 +174,17 @@ impl Session {
 
     /// Une note tirée du modèle nommé `template` (titre ou nom du fichier, dans le dossier des
     /// modèles du tour), titrée `title`.
-    pub(super) fn tool_create_from_template(
-        &self,
-        scope: &ToolsScope,
-        arguments: &Value,
-    ) -> Result<String, String> {
+    pub(super) fn tool_create_from_template(&self, arguments: &Value) -> Result<String, String> {
         let (name, title) = (
             required(arguments, "template")?,
             required(arguments, "title")?,
         );
         let folder =
             Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
-        let templates_folder = scope.templates.as_ref().ok_or_else(|| {
-            "aucun dossier des modèles n'est choisi : l'utilisateur peut en choisir un dans les \
-             réglages de MALOREAN Notes"
-                .to_owned()
-        })?;
+        let templates_folder = self.chosen_templates_folder()?;
         let index = self.index().map_err(|error| error.message)?;
         let templates = ListNotes::new(&*index)
-            .execute(templates_folder, NoteOrder::Title)
+            .execute(&templates_folder, NoteOrder::Title)
             .map_err(said)?;
         let template = templates
             .iter()

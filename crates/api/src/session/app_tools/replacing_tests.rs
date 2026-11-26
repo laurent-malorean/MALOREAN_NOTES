@@ -8,13 +8,13 @@ use crate::session::Session;
 
 /// Joue l'outil pendant un tour ; rend ce qu'il rend, lu en JSON.
 fn done(session: &Session, arguments: Value) -> Value {
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     found(session, tools.key().as_str(), "replace_in_note", arguments)
 }
 
 /// Joue l'outil, qui échoue ; rend pourquoi.
 fn failed(session: &Session, arguments: Value) -> String {
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     refused(session, tools.key().as_str(), "replace_in_note", arguments)
 }
 
@@ -85,7 +85,7 @@ fn the_search_index_follows_the_new_text() {
 
     done(&session, replace("a.md", "farine", "levure"));
 
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     let search = |query: &str| {
         let result = found(&session, key, "search_notes", json!({ "query": query }));

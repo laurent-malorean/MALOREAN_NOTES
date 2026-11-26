@@ -312,23 +312,41 @@ async function checkNewFolder(trial: Trial, { panel, journal }: Lists): Promise<
 }
 
 /** Le choix de dossier : l'arborescence, le choix gardé, « Nouveau dossier… ». */
-async function folderChoices(trial: Trial): Promise<void> {
+async function folderChoices(trial: Trial, env: Env): Promise<void> {
   const window = await openSettings();
   const panel = await showTab(window, "Écriture");
-  const templates = lineOf(panel, "Dossier des modèles") as HTMLSelectElement | undefined;
+  // La ligne des modèles paraît quand le moteur a dit le choix en cours (fiche 0077).
+  const templates = await until(
+    "la liste du dossier des modèles",
+    () => lineOf(panel, "Dossier des modèles") as HTMLSelectElement | undefined,
+    WAIT,
+  );
   const journal = lineOf(panel, "Dossier du journal") as HTMLSelectElement | undefined;
   if (!templates || !journal) throw new Error("liste des dossiers introuvable");
   const lists = { window, panel, templates, journal };
   checkLists(trial, lists);
   choose(templates, "⎿ Sous");
-  const kept = stored("malorean.templates:");
+  const kept = await until(
+    "le dossier des modèles gardé par le moteur",
+    async () => (await env.bridge.templatesFolder()) ?? undefined,
+    WAIT,
+  );
   trial.check(
-    "choisir un dossier l'enregistre (stockage de la fenêtre)",
+    "choisir un dossier l'enregistre dans les préférences, côté moteur",
     kept === "Essai/Sous",
     String(kept),
   );
+  trial.check(
+    "l'interface n'en garde plus de copie dans le stockage de la fenêtre",
+    stored("malorean.templates:") === null,
+  );
   choose(templates, "Aucun");
-  trial.check("choisir « Aucun » l'efface", stored("malorean.templates:") === null);
+  await until(
+    "le dossier des modèles effacé par le moteur",
+    async () => ((await env.bridge.templatesFolder()) === null ? true : undefined),
+    WAIT,
+  );
+  trial.check("choisir « Aucun » l'efface", (await env.bridge.templatesFolder()) === null);
   await checkNewFolder(trial, lists);
   closeSettings(window);
 }
@@ -440,5 +458,5 @@ export const settingsScenarios = (env: Env): Scenario[] => [
     run: (t) => allowedWorkspacesTab(t, env),
   },
   { name: "Réglages : même fenêtre sur les cinq onglets", run: (t) => fixedSize(t) },
-  { name: "Réglages : choix de dossier (modèles, journal)", run: (t) => folderChoices(t) },
+  { name: "Réglages : choix de dossier (modèles, journal)", run: (t) => folderChoices(t, env) },
 ];

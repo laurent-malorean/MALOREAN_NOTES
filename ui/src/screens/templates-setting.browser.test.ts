@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "../state/settings";
 import { openSettings } from "./settings-view";
-import { templatesFolderGroup } from "./templates-setting";
+import { loadingTemplatesFolderGroup, templatesFolderGroup } from "./templates-setting";
 
 function open(current: string | null) {
   const dialog = document.createElement("dialog");
@@ -73,5 +73,29 @@ describe("réglage du dossier des modèles", () => {
     select.value = "";
     select.dispatchEvent(new Event("change"));
     expect(chosen).toEqual(["Modèles", null]);
+  });
+
+  it("dessinée avant de connaître le choix, la partie se remplit ensuite avec le choix en cours", async () => {
+    const chosen: (string | null)[] = [];
+    const group = loadingTemplatesFolderGroup(
+      ["Modèles", "Travail/Gabarits"],
+      Promise.resolve("Modèles"),
+      (folder) => chosen.push(folder),
+    );
+    expect(group.querySelector("legend")?.textContent).toBe("Modèles");
+    expect(group.querySelector("select")).toBeNull();
+    await Promise.resolve();
+    const select = group.querySelector("select") as HTMLSelectElement;
+    expect(select.value).toBe("Modèles");
+    select.value = "Travail/Gabarits";
+    select.dispatchEvent(new Event("change"));
+    expect(chosen).toEqual(["Travail/Gabarits"]);
+  });
+
+  it("sans réponse, la partie reste sans ligne", async () => {
+    const group = loadingTemplatesFolderGroup([], Promise.reject(new Error("non")), () => {});
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(group.querySelector("select")).toBeNull();
   });
 });

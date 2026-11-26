@@ -36,16 +36,16 @@ impl WorkspaceOpener for Vanishing {
 }
 
 /// « Notes » (`pain.md`) puis « Travail » (`devis.md`), ouvert en dernier ; une IA branchée.
-struct World {
-    session: Session,
-    notes: Arc<InMemoryNoteStore>,
-    travail: Arc<InMemoryNoteStore>,
-    preferences: Arc<FakePreferences>,
+pub(super) struct World {
+    pub(super) session: Session,
+    pub(super) notes: Arc<InMemoryNoteStore>,
+    pub(super) travail: Arc<InMemoryNoteStore>,
+    pub(super) preferences: Arc<FakePreferences>,
     gone: Arc<AtomicBool>,
     key: String,
 }
 
-fn world() -> World {
+pub(super) fn world() -> World {
     let notes = Arc::new(InMemoryNoteStore::with_notes(&[(
         "pain.md",
         "# Pain\n\nLa farine.",
@@ -107,19 +107,19 @@ impl World {
         )
     }
 
-    fn found(&self, tool: &str, arguments: Value) -> Value {
+    pub(super) fn found(&self, tool: &str, arguments: Value) -> Value {
         let (text, failed) = self.tool(tool, arguments);
         assert!(!failed, "{text}");
         serde_json::from_str(&text).unwrap()
     }
 
-    fn refused(&self, tool: &str, arguments: Value) -> String {
+    pub(super) fn refused(&self, tool: &str, arguments: Value) -> String {
         let (text, failed) = self.tool(tool, arguments);
         assert!(failed, "{text}");
         text
     }
 
-    fn allow(&self, names: &[&str]) {
+    pub(super) fn allow(&self, names: &[&str]) {
         for name in names {
             self.session.set_workspace_allowed(name, true).unwrap();
         }
@@ -134,7 +134,7 @@ impl World {
             .collect()
     }
 
-    fn opened_name(&self) -> String {
+    pub(super) fn opened_name(&self) -> String {
         self.session.opened().unwrap().name.as_str().to_owned()
     }
 }
@@ -362,19 +362,6 @@ fn the_tools_about_the_screen_only_aim_at_the_open_workspace() {
 }
 
 #[test]
-fn another_workspace_has_no_templates_folder_for_the_ai() {
-    let world = world();
-    world.allow(&["Notes"]);
-
-    let error = world.refused("list_templates", json!({ "workspace": "Notes" }));
-
-    assert!(
-        error.starts_with("aucun dossier des modèles n'est choisi"),
-        "{error}"
-    );
-}
-
-#[test]
 fn naming_the_open_workspace_works_like_not_naming_it() {
     let world = world();
     world.allow(&["Travail"]);
@@ -446,7 +433,7 @@ fn the_claude_column_keeps_its_workspace_of_the_turn_as_the_default_even_if_not_
     let world = world();
     let tools = world
         .session
-        .open_tools(WorkspaceName::new("Travail").unwrap(), None)
+        .open_tools(WorkspaceName::new("Travail").unwrap())
         .unwrap();
     let key = tools.key().as_str().to_owned();
 
@@ -483,7 +470,7 @@ fn the_claude_column_can_aim_at_another_allowed_workspace() {
     world.allow(&["Notes"]);
     let tools = world
         .session
-        .open_tools(WorkspaceName::new("Travail").unwrap(), None)
+        .open_tools(WorkspaceName::new("Travail").unwrap())
         .unwrap();
     let key = tools.key().as_str().to_owned();
 
@@ -505,7 +492,7 @@ fn the_claude_column_can_aim_at_another_allowed_workspace() {
 #[test]
 fn the_claude_column_still_refuses_a_turn_whose_workspace_is_no_longer_open() {
     let world = world();
-    let tools = world.session.open_tools(notes_workspace(), None).unwrap();
+    let tools = world.session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str().to_owned();
 
     let error = refused(&world.session, &key, "list_tags", json!({}));

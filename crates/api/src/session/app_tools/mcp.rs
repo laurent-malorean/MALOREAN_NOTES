@@ -27,7 +27,7 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     `workspace`, et vise sans lui l'espace ouvert). Passez par eux pour chercher (avec l'index de l'application), \
     pour connaître les étiquettes, les liens entrants, les modèles de note et l'historique des \
     versions, pour créer, renommer, ranger, étiqueter, épingler ou jeter une note selon ses règles, \
-    pour savoir quelle note l'utilisateur regarde et lui en montrer une. Pour changer le texte d'une note simple, utilisez `replace_in_note` (un texte exact remplacé \
+    pour savoir quelle note l'utilisateur regarde et lui en montrer une. Pour lire le texte d'une note simple, utilisez `read_note` ; pour le changer, utilisez `replace_in_note` (un texte exact, recopié de `read_note`, remplacé \
     par un autre ; refusé s'il apparaît plusieurs fois, sauf `replace_all`). Une carte mentale (`type: carte-mentale`) se crée avec `create_mind_map` ; \
     ensuite vous la lisez et l'écrivez comme une note : sous son titre `# …`, elle n'a qu'une liste \
     à puces (une puce `- ` par nœud, 2 espaces de retrait par niveau, `> texte` sous une puce pour \
@@ -153,7 +153,12 @@ mod tests {
     fn the_introduction_sends_the_changes_of_a_simple_note_to_replace_in_note() {
         let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
         let text = reply["result"]["instructions"].as_str().unwrap();
-        for expected in ["`replace_in_note`", "`replace_all`", "note simple"] {
+        for expected in [
+            "`replace_in_note`",
+            "`replace_all`",
+            "note simple",
+            "`read_note`",
+        ] {
             assert!(text.contains(expected), "{expected}");
         }
         assert!(!text.contains("remplacer un passage"), "{text}");

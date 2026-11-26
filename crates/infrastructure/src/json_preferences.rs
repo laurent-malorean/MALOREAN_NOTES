@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
-use domain::MeaningModel;
+use domain::{Folder, MeaningModel};
 use serde::{Deserialize, Serialize};
 
 /// Un espace de travail tel qu'il est écrit dans le fichier.
@@ -18,6 +18,10 @@ struct StoredWorkspace {
     /// Autorisé pour les IA (fiche 0074) ; absent tant qu'il ne l'est pas.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     allowed: bool,
+    /// Son dossier des modèles (fiche 0077) ; absent tant qu'il n'en a pas. Un dossier invalide
+    /// est oublié à la lecture.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    templates: Option<String>,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -53,12 +57,22 @@ impl Stored {
             .filter(|w| w.allowed)
             .filter_map(|w| WorkspaceName::new(&w.name).ok())
             .collect();
+        let templates: Vec<(WorkspaceName, Folder)> = self
+            .workspaces
+            .iter()
+            .filter_map(|w| {
+                let folder = Folder::parse(w.templates.as_deref()?).ok()?;
+                Some((WorkspaceName::new(&w.name).ok()?, folder))
+            })
+            .collect();
         let list = self
             .workspaces
             .into_iter()
             .filter_map(|w| workspace(&w.name, w.folder))
             .collect();
-        Workspaces::from_saved(list, active).with_allowed(&allowed)
+        Workspaces::from_saved(list, active)
+            .with_allowed(&allowed)
+            .with_templates_folders(&templates)
     }
 
     fn of(workspaces: &Workspaces) -> Self {
@@ -71,6 +85,7 @@ impl Stored {
                     name: w.name.as_str().to_owned(),
                     folder: w.location.as_str().to_owned(),
                     allowed: workspaces.is_allowed(&w.name),
+                    templates: workspaces.templates_folder(&w.name).map(Folder::to_path),
                 })
                 .collect(),
             active: workspaces.active().map(|w| w.name.as_str().to_owned()),

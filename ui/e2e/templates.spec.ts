@@ -97,3 +97,22 @@ test("le dossier des modèles est gardé au relancement, et la palette propose l
   await page.keyboard.press("Meta+Shift+N");
   await expect(page.locator(".status")).toContainText("Aucun dossier des modèles");
 });
+
+test("le dossier des modèles gardé autrefois par l'interface est repris au lancement, sans rien refaire", async ({
+  page,
+}) => {
+  const KEPT = "malorean.templates:/Users/moi/Notes";
+  await launch(page);
+  await page.evaluate((key) => localStorage.setItem(key, "Modèles"), KEPT);
+  await page.reload();
+  await expect(page.locator(".cm-line").first()).toHaveText("Courses");
+
+  await page.keyboard.press("Meta+Shift+N");
+  await expect(picker(page).getByRole("option")).toHaveText(["Réunion du {{date}}", "Journal"]);
+  await page.keyboard.press("Escape");
+  expect(await page.evaluate((key) => localStorage.getItem(key), KEPT)).toBeNull();
+  await page.getByRole("button", { name: "Réglages" }).click();
+  const dialog = page.getByRole("dialog", { name: "Réglages" });
+  await dialog.getByRole("tab", { name: "Écriture" }).click();
+  await expect(dialog.getByLabel("Dossier des modèles")).toHaveValue("Modèles");
+});

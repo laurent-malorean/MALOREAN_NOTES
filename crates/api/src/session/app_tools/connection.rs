@@ -162,7 +162,6 @@ impl Session {
     const fn connected_scope() -> ToolsScope {
         ToolsScope {
             fallback: Fallback::Opened,
-            templates: None,
         }
     }
 }

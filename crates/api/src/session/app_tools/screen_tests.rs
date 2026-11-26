@@ -64,7 +64,7 @@ fn the_viewed_note_and_its_selection_come_from_the_interface_at_the_time_of_the_
         &[("Travail/a.md", "# Alpha\ndu pain")],
         answering(Some("Travail/a.md"), "du pain"),
     );
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     assert_eq!(
         found(&session, key, "viewed_note", json!({})),
@@ -80,7 +80,7 @@ fn the_viewed_note_and_its_selection_come_from_the_interface_at_the_time_of_the_
 fn without_an_open_note_the_viewed_note_is_none() {
     for note in [None, Some("disparue.md"), Some("../x.md")] {
         let (session, _) = with_screen(&[], answering(note, ""));
-        let tools = session.open_tools(notes_workspace(), None).unwrap();
+        let tools = session.open_tools(notes_workspace()).unwrap();
         assert_eq!(
             found(&session, tools.key().as_str(), "viewed_note", json!({})),
             json!({ "workspace": "Notes", "note": null, "selection": "" })
@@ -91,7 +91,7 @@ fn without_an_open_note_the_viewed_note_is_none() {
 #[test]
 fn an_interface_that_does_not_answer_makes_the_tool_fail_in_time() {
     let (session, screen) = with_screen(&[], FakeScreen::default());
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     assert_eq!(
         refused(&session, tools.key().as_str(), "viewed_note", json!({})),
         "l'interface n'a pas répondu : réessayez"
@@ -105,7 +105,7 @@ fn an_interface_that_does_not_answer_makes_the_tool_fail_in_time() {
 #[test]
 fn a_note_is_shown_to_the_user_only_if_it_exists() {
     let (session, screen) = with_screen(&[("a.md", "# A")], FakeScreen::default());
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     assert_eq!(
         found(&session, key, "show_note", json!({ "path": "a.md" })),
@@ -122,7 +122,7 @@ fn a_note_is_shown_to_the_user_only_if_it_exists() {
 #[test]
 fn without_an_interface_the_screen_tools_say_so() {
     let session = super::tests::opened(&[("a.md", "# A")]);
-    let tools = session.open_tools(notes_workspace(), None).unwrap();
+    let tools = session.open_tools(notes_workspace()).unwrap();
     let key = tools.key().as_str();
     let absent = "l'interface de MALOREAN Notes n'est pas là pour répondre";
     assert_eq!(refused(&session, key, "viewed_note", json!({})), absent);
