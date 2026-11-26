@@ -88,6 +88,7 @@ clients/actions/2026-11-24-demande-de-devis.md  type: crm-action
 ```
 
 - Le CRM est le **conteneur** de toutes ses fiches dans l'index : le dossier du même nom fait foi.
+- Le dossier des fiches n'est pas montré dans la liste des dossiers (ni ses sous-dossiers) : les fiches se gèrent depuis l'écran du CRM, pas à la main ; seul le fichier du CRM s'y voit, dans son dossier. Le dossier existe toujours sur le disque (Finder, Obsidian, iCloud le voient). Un dossier est un dossier des fiches quand il porte le nom du fichier d'un CRM (même dossier parent, nom sans `.md`) et que toutes les notes qu'il contient, sous-dossiers compris, sont des fiches ; si l'on y a rangé une note ordinaire (ou un autre CRM), il reste montré. Un dossier montré ne devient pas introuvable pour autant : si le dossier affiché cesse d'être montré, la liste passe à son dossier parent. Aucun autre comportement ne change : recherche, liens et index voient toujours les fiches ; les outils pour les IA (`list_folders`) suivent la même règle (fiche 0089).
 - Le nom de fichier d'une entreprise, d'une personne ou d'un projet est son nom en kebab-case, suivi de `-2`, `-3`… s'il est pris. Celui d'une action est la date de sa création et son titre en kebab-case, suivis d'un numéro si le nom est pris.
 - **Renommer une fiche change son titre, jamais son nom de fichier** : les autres fiches la désignent par ce nom.
 - Une fiche désigne une autre fiche par `[[nom-de-fichier]]`, sans dossier ni extension.

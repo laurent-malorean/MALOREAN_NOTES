@@ -45,7 +45,7 @@ pub use crm::{
     ProjectChange, ProjectEntry, ReadCrm, RecoverGestures, StageChange, WeekView,
 };
 pub use export::ExportMarkdown;
-pub use folders::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
+pub use folders::{CreateFolder, ListFolders, ListShownFolders, MoveFolder, RenameFolder};
 pub use history::{
     CompareVersion, KeepVersion, KeepVersionsBeforeChange, ListVersions, ReadVersion,
     RestoreVersion,

@@ -191,8 +191,11 @@ export function createWorkspace(deps: WorkspaceDeps): Workspace {
     return openWorkspace(deps, workspace);
   };
   const refreshFolders = async () => {
+    const before = currentFolder(deps.screen.get());
     await deps.screen.answer(deps.backend.listFolders(), foldersRefreshed);
     await refreshTags();
+    // Le dossier affiché n'est plus montré (caché, disparu) : la liste est celle de son parent.
+    if (currentFolder(deps.screen.get()) !== before) await refreshList(deps);
   };
   const rebuildIndex = async () => {
     await deps.backend.rebuildIndex();

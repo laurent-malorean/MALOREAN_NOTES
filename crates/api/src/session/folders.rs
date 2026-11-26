@@ -1,19 +1,30 @@
 //! Les dossiers de l'espace de travail ouvert, vus depuis l'interface.
 
-use application::use_cases::{CreateFolder, ListFolders, MoveFolder, RenameFolder};
+use application::use_cases::{
+    CreateFolder, ListFolders, ListShownFolders, MoveFolder, RenameFolder,
+};
 use domain::{Folder, FolderName};
 
 use super::Session;
 use crate::ApiError;
 
 impl Session {
-    /// Les chemins de tous les dossiers de l'espace de travail, dans l'ordre de l'arbre.
+    /// Les chemins des dossiers à montrer, dans l'ordre de l'arbre : tous ceux de l'espace de
+    /// travail, sauf les dossiers des fiches d'un CRM (fiche 0089).
     ///
     /// # Errors
     ///
     /// Un [`ApiError`] dont le message dit ce qui a échoué ; aucun espace de travail
     /// ouvert, espace de travail illisible.
     pub fn list_folders(&self) -> Result<Vec<String>, ApiError> {
+        let opened = self.opened()?;
+        let folders = ListShownFolders::new(&*opened.store, &*opened.index).execute()?;
+        Ok(folders.iter().map(Folder::to_path).collect())
+    }
+
+    /// Les chemins de tous les dossiers qui existent sur le disque, ceux des fiches d'un CRM
+    /// compris : pour savoir ce qu'il reste à créer.
+    pub(super) fn list_existing_folders(&self) -> Result<Vec<String>, ApiError> {
         let store = self.store()?;
         let folders = ListFolders::new(&*store).execute()?;
         Ok(folders.iter().map(Folder::to_path).collect())

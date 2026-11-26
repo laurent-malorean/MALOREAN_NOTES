@@ -169,6 +169,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0059-mutation-par-groupes-sur-github.md` | Toute la mutation du Rust confiée à GitHub, en groupes de mutation parallèles de 10 à 20 minutes ; sur le Mac, fin de tâche = barrière + `--fonction`, sans mutation |
 | `0083-application-sur-github.md` | Application fabriquée sur un Mac de GitHub à chaque tag `vX.Y.Z` : `.dmg` joint à la Release du tag, numéro de version vérifié avant toute compilation, application non signée |
 | `0086-recherche-de-notes-pour-les-ia.md` | `search_notes` dit que chaque mot est cherché aussi dans un mot plus long et rend `matches`, le nombre d'occurrences dans la note entière ; l'option « mot entier » reste possible plus tard |
+| `0089-dossiers-de-fiches-cachees.md` | Le dossier des fiches d'un CRM (même nom que son fichier, que des fiches dedans) n'est pas montré dans la liste des dossiers, ni par `list_folders` ; rien ne bouge sur le disque ; le dossier affiché caché retombe sur son parent |
 
 ## Construire l'application (`.app`)
 

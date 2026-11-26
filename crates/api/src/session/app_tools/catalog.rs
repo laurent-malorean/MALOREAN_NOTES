@@ -128,7 +128,9 @@ fn list_folders() -> Described {
          l'arbre de MALOREAN Notes (chaque dossier suivi de ses sous-dossiers, par ordre \
          alphabétique), sans la racine ; un dossier vide y est aussi. Les dossiers cachés, les \
          dossiers de pièces jointes (`….assets`), `node_modules` et la corbeille n'en font pas \
-         partie. Les notes d'un dossier se listent avec `search_notes` (paramètre `folder`).",
+         partie, ni les dossiers des fiches d'un CRM (`clients/` pour `clients.md`) : un CRM se \
+         lit et se change avec les outils du CRM. Les notes d'un dossier se listent avec \
+         `search_notes` (paramètre `folder`).",
         input(json!({}), &[]),
     )
 }
