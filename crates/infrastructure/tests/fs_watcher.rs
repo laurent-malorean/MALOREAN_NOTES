@@ -10,13 +10,15 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
-use application::use_cases::{ChangeCanvas, ReplaceInNote};
+use application::use_cases::{ChangeCanvas, EditMindMap, ReplaceInNote};
 use application::{
     History, NoteStore, StoreError, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher,
 };
 use domain::NotePath;
 use domain::canvas::CardKind;
 use domain::canvas_edit::NewCard;
+use domain::mind_map::NodePath;
+use domain::mind_map_editing::new_node;
 use infrastructure::{FsHistory, FsNoteStore, FsWorkspaceWatcher, SystemClock};
 
 /// Le disque du Mac annonce les changements avec un peu de retard.
@@ -152,6 +154,36 @@ fn a_text_replaced_by_the_tool_is_announced_so_that_the_screen_follows() {
         "# Courses\n- pain\n"
     );
     assert_eq!(store.read(&note).unwrap().content, "# Courses\n- lait\n");
+}
+
+/// L'écran suit un geste d'une IA sur une carte mentale (fiche 0080) : la carte écrite sur le vrai
+/// disque est annoncée à l'interface, qui la relit ; la version d'avant est gardée à part.
+#[test]
+fn a_mind_map_edited_by_the_tool_is_announced_so_that_the_screen_follows() {
+    let folder = tempfile::tempdir().unwrap();
+    let before = "---\ntype: carte-mentale\ntags: [a]\n---\n# Plan\n\n- Un\n";
+    fs::write(folder.path().join("plan.md"), before).unwrap();
+    let (_watching, received) = watch(&folder);
+    let store = FsNoteStore::new(folder.path().to_path_buf());
+    let history = FsHistory::new(folder.path().to_path_buf());
+    let note = NotePath::parse("plan.md").unwrap();
+
+    let edited = EditMindMap::new(&store, &history, &SystemClock)
+        .execute(&note, |map| {
+            map.add_child(&NodePath(vec![0]), new_node("Deux", "")?)
+        })
+        .unwrap();
+
+    assert!(announces(&received, "plan.md"));
+    assert_eq!(edited.outcome, NodePath(vec![0, 0]));
+    let after = "---\ntype: carte-mentale\ntags: [a]\nracines: [{x: 0, y: 0}]\n---\n# Plan\n\n- Un\n  - Deux\n";
+    assert_eq!(
+        fs::read_to_string(folder.path().join("plan.md")).unwrap(),
+        after
+    );
+    let versions = history.versions(&note).unwrap();
+    assert_eq!(versions.len(), 1);
+    assert_eq!(history.read_version(&note, &versions[0]).unwrap(), before);
 }
 
 /// L'écran suit un canvas changé par une IA (fiche 0079) : le canvas écrit sur le vrai disque est

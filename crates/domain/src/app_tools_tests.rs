@@ -101,6 +101,13 @@ fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
             "add_attachment",
             "add_entry",
             "create_mind_map",
+            "add_mind_map_child",
+            "add_mind_map_sibling",
+            "add_mind_map_root",
+            "edit_mind_map_node",
+            "color_mind_map_node",
+            "move_mind_map_node",
+            "delete_mind_map_node",
             "create_crm"
         ]
     );
@@ -152,6 +159,14 @@ fn each_tool_says_what_it_targets() {
             path,
             path,
             Some("title"),
+            path,
+            path,
+            path,
+            path,
+            path,
+            path,
+            path,
+            path,
             Some("title"),
             None,
             path
@@ -174,6 +189,23 @@ fn reading_a_note_changes_nothing_and_targets_its_path() {
     assert_eq!(tool.target_field(), Some("path"));
     let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
     assert_eq!(AppTool::ALL[at - 1], AppTool::LinkingNotes);
+}
+
+#[test]
+fn reading_a_mind_map_changes_nothing_and_targets_its_path() {
+    let tool = AppTool::ReadMindMap;
+    assert_eq!(tool.name(), "read_mind_map");
+    assert_eq!(tool.full_name(), "mcp__malorean__read_mind_map");
+    assert_eq!(
+        AppTool::of_full_name("mcp__malorean__read_mind_map"),
+        Some(tool)
+    );
+    assert!(!tool.changes_notes());
+    assert!(tool.aims_at_a_workspace());
+    assert!(!tool.uses_screen());
+    assert_eq!(tool.target_field(), Some("path"));
+    let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
+    assert_eq!(AppTool::ALL[at - 1], AppTool::CreateMindMap);
 }
 
 #[test]

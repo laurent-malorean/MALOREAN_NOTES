@@ -94,6 +94,23 @@ pub enum AppTool {
     /// Créer une carte mentale selon les règles : titre, nom du fichier tiré du titre, liste de
     /// départ facultative.
     CreateMindMap,
+    /// Lire une carte mentale en arbre : chaque nœud avec son chemin, son titre, sa couleur et son
+    /// détail (fiche 0080).
+    ReadMindMap,
+    /// Ajouter un dernier enfant à un nœud d'une carte mentale (fiche 0080).
+    AddMindMapChild,
+    /// Ajouter un frère juste en dessous d'un nœud d'une carte mentale (fiche 0080).
+    AddMindMapSibling,
+    /// Ajouter un nœud racine à la fin d'une carte mentale (fiche 0080).
+    AddMindMapRoot,
+    /// Changer le titre et/ou le détail d'un nœud d'une carte mentale (fiche 0080).
+    EditMindMapNode,
+    /// Changer la couleur d'un nœud d'une carte mentale, parmi la palette (fiche 0080).
+    ColorMindMapNode,
+    /// Déplacer un nœud d'une carte mentale, avec sa branche (fiche 0080).
+    MoveMindMapNode,
+    /// Supprimer un nœud d'une carte mentale, avec sa branche (fiche 0080).
+    DeleteMindMapNode,
     /// Créer un CRM selon les règles : titre, nom du fichier tiré du titre (spécification
     /// `doc/specs/crm.md`, § 13).
     CreateCrm,
@@ -106,7 +123,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 42] = [
+    pub const ALL: [Self; 50] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -146,6 +163,14 @@ impl AppTool {
         Self::AddAttachment,
         Self::AddEntry,
         Self::CreateMindMap,
+        Self::ReadMindMap,
+        Self::AddMindMapChild,
+        Self::AddMindMapSibling,
+        Self::AddMindMapRoot,
+        Self::EditMindMapNode,
+        Self::ColorMindMapNode,
+        Self::MoveMindMapNode,
+        Self::DeleteMindMapNode,
         Self::CreateCrm,
         Self::ViewedNote,
         Self::ShowNote,
@@ -194,6 +219,14 @@ impl AppTool {
             Self::AddAttachment => "add_attachment",
             Self::AddEntry => "add_entry",
             Self::CreateMindMap => "create_mind_map",
+            Self::ReadMindMap => "read_mind_map",
+            Self::AddMindMapChild => "add_mind_map_child",
+            Self::AddMindMapSibling => "add_mind_map_sibling",
+            Self::AddMindMapRoot => "add_mind_map_root",
+            Self::EditMindMapNode => "edit_mind_map_node",
+            Self::ColorMindMapNode => "color_mind_map_node",
+            Self::MoveMindMapNode => "move_mind_map_node",
+            Self::DeleteMindMapNode => "delete_mind_map_node",
             Self::CreateCrm => "create_crm",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
@@ -235,6 +268,7 @@ impl AppTool {
             | Self::LinkingNotes
             | Self::ReadNote
             | Self::ReadCanvas
+            | Self::ReadMindMap
             | Self::ListTemplates
             | Self::ListVersions
             | Self::ReadVersion
@@ -268,6 +302,13 @@ impl AppTool {
             | Self::AddAttachment
             | Self::AddEntry
             | Self::CreateMindMap
+            | Self::AddMindMapChild
+            | Self::AddMindMapSibling
+            | Self::AddMindMapRoot
+            | Self::EditMindMapNode
+            | Self::ColorMindMapNode
+            | Self::MoveMindMapNode
+            | Self::DeleteMindMapNode
             | Self::CreateCrm => true,
         }
     }
@@ -327,6 +368,14 @@ impl AppTool {
             | Self::UnpinNote
             | Self::AddAttachment
             | Self::AddEntry
+            | Self::ReadMindMap
+            | Self::AddMindMapChild
+            | Self::AddMindMapSibling
+            | Self::AddMindMapRoot
+            | Self::EditMindMapNode
+            | Self::ColorMindMapNode
+            | Self::MoveMindMapNode
+            | Self::DeleteMindMapNode
             | Self::ShowNote => Some("path"),
             Self::ListWorkspaces
             | Self::ListTags

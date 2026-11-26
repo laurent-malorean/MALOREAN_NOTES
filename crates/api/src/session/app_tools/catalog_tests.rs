@@ -36,6 +36,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
                 "limit" | "x" | "y" | "width" | "height" => "integer",
                 "cards" => "array",
                 "replace_all" => "boolean",
+                "place_x" | "place_y" => "number",
                 _ => "string",
             }));
         assert!(
@@ -49,7 +50,7 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 #[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
-    let expected: [(AppTool, &[&str]); 42] = [
+    let expected: [(AppTool, &[&str]); 50] = [
         (AppTool::ListWorkspaces, &[]),
         (AppTool::SearchNotes, &[]),
         (AppTool::SearchByMeaning, &["question"]),
@@ -92,6 +93,14 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::AddAttachment, &["path", "file"]),
         (AppTool::AddEntry, &["path", "text"]),
         (AppTool::CreateMindMap, &["title"]),
+        (AppTool::ReadMindMap, path),
+        (AppTool::AddMindMapChild, &["path", "node", "title"]),
+        (AppTool::AddMindMapSibling, &["path", "node", "title"]),
+        (AppTool::AddMindMapRoot, &["path", "title"]),
+        (AppTool::EditMindMapNode, &["path", "node"]),
+        (AppTool::ColorMindMapNode, &["path", "node", "color"]),
+        (AppTool::MoveMindMapNode, &["path", "node", "position"]),
+        (AppTool::DeleteMindMapNode, &["path", "node"]),
         (AppTool::CreateCrm, &["title"]),
         (AppTool::ViewedNote, &[]),
         (AppTool::ShowNote, path),
@@ -181,6 +190,7 @@ fn replacing_a_text_takes_a_note_two_texts_and_an_option_and_tells_every_refusal
         "nombre d'occurrences et leurs lignes",
         "`replace_all` à true",
         "cahier de recherche (utilisez `add_entry`)",
+        "une carte mentale (lisez-la avec `read_mind_map`, modifiez-la avec `add_mind_map_child`",
         "un canvas",
         "utilisez `read_canvas` et les outils du canvas",
         "utilisez ensuite le `path` rendu",
@@ -264,11 +274,170 @@ fn reading_a_note_takes_a_path_and_tells_the_header_the_limit_and_every_refusal(
         "60 000 caractères",
         "`truncated` vaut alors true et `message` le dit",
         "cahier de recherche (on y ajoute des entrées avec `add_entry`",
-        "une carte mentale, un CRM",
+        "une carte mentale (lisez-la avec `read_mind_map`), un CRM",
         "un canvas se lit avec `read_canvas`",
         "introuvable",
     ] {
         assert!(description.contains(expected), "{expected}");
+    }
+}
+
+#[test]
+fn reading_a_mind_map_takes_a_path_and_tells_the_tree_the_limit_and_the_tools_that_change_it() {
+    let described = tool_description(AppTool::ReadMindMap);
+    let mut fields: Vec<_> = described["inputSchema"]["properties"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    fields.sort();
+    assert_eq!(fields, ["path", "workspace"]);
+    let description = described["description"].as_str().unwrap();
+    for expected in [
+        "en arbre, pas en texte de fichier",
+        "`node` (son chemin dans la carte",
+        "`1.0.2`",
+        "`color`",
+        "turquoise",
+        "`detail`",
+        "`children`",
+        "`place`",
+        "50 000 caractères d'arbre",
+        "`truncated` vaut true et `message` le dit",
+        "relisez la carte",
+        "branches pliées",
+        "`add_mind_map_child`",
+        "`delete_mind_map_node`",
+    ] {
+        assert!(description.contains(expected), "{expected}");
+    }
+}
+
+/// Les champs de l'entrée d'un outil, triés.
+fn fields_of(tool: AppTool) -> Vec<String> {
+    let described = tool_description(tool);
+    let mut fields: Vec<_> = described["inputSchema"]["properties"]
+        .as_object()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect();
+    fields.sort();
+    fields
+}
+
+#[test]
+fn the_tools_that_add_a_node_take_its_text_and_say_where_it_goes_and_what_they_give_back() {
+    let node = ["detail", "node", "path", "title", "workspace"];
+    assert_eq!(fields_of(AppTool::AddMindMapChild), node);
+    assert_eq!(fields_of(AppTool::AddMindMapSibling), node);
+    assert_eq!(
+        fields_of(AppTool::AddMindMapRoot),
+        ["detail", "path", "place_x", "place_y", "title", "workspace"]
+    );
+    for (tool, expected) in [
+        (AppTool::AddMindMapChild, "dernier enfant"),
+        (AppTool::AddMindMapSibling, "juste en dessous"),
+        (AppTool::AddMindMapRoot, "à la fin"),
+    ] {
+        let description = tool_description(tool)["description"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        for phrase in [
+            expected,
+            "`node` (le chemin du nœud ajouté)",
+            "Refusé, sans rien changer",
+        ] {
+            assert!(description.contains(phrase), "{tool:?} : {phrase}");
+        }
+    }
+    let place = &tool_description(AppTool::AddMindMapRoot)["inputSchema"]["properties"]["place_x"];
+    assert_eq!(place["type"], "number");
+    assert!(place["description"].as_str().unwrap().contains("ensemble"));
+}
+
+#[test]
+fn the_tools_that_change_a_node_say_what_stays_and_what_they_refuse() {
+    assert_eq!(
+        fields_of(AppTool::EditMindMapNode),
+        ["detail", "node", "path", "title", "workspace"]
+    );
+    assert_eq!(
+        fields_of(AppTool::ColorMindMapNode),
+        ["color", "node", "path", "workspace"]
+    );
+    let edit = tool_description(AppTool::EditMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "reste tel quel",
+        "`detail` vide efface",
+        "ses enfants et sa couleur",
+        "ni `title` ni `detail`",
+    ] {
+        assert!(edit.contains(phrase), "{phrase}");
+    }
+    let color = tool_description(AppTool::ColorMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "10 couleurs de la palette",
+        "ardoise",
+        "`aucune`",
+        "Pas de couleur libre",
+        "l'erreur donne la palette",
+    ] {
+        assert!(color.contains(phrase), "{phrase}");
+    }
+}
+
+#[test]
+fn the_tools_that_move_or_delete_a_node_name_their_options_and_say_what_they_refuse() {
+    assert_eq!(
+        fields_of(AppTool::MoveMindMapNode),
+        [
+            "node",
+            "path",
+            "place_x",
+            "place_y",
+            "position",
+            "target",
+            "workspace"
+        ]
+    );
+    assert_eq!(
+        fields_of(AppTool::DeleteMindMapNode),
+        ["node", "path", "workspace"]
+    );
+    let moving = tool_description(AppTool::MoveMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "`child`",
+        "`before` ou `after`",
+        "`root`",
+        "seulement déplacé sur la carte",
+        "sa propre branche",
+        "relisez la carte",
+    ] {
+        assert!(moving.contains(phrase), "{phrase}");
+    }
+    let deleting = tool_description(AppTool::DeleteMindMapNode)["description"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for phrase in [
+        "toute sa branche",
+        "rien ne la demande",
+        "historique des versions",
+        "`deleted`",
+    ] {
+        assert!(deleting.contains(phrase), "{phrase}");
     }
 }
 

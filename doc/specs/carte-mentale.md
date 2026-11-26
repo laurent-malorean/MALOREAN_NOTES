@@ -381,7 +381,7 @@ Ce qui le trouve : les mots de son titre et de son détail. Un clic ouvre la car
 - Il crée le fichier selon les règles de nom et rend son chemin.
 - Comme les autres outils qui changent une note, il attend l'accord de l'utilisateur quand Claude a lu le web pendant la réponse.
 
-**Lire et modifier une carte** : Claude lit et écrit le fichier avec ses outils de fichiers, comme pour une note. Une carte ouverte se met à jour en direct.
+**Lire et modifier une carte** (fiche 0080) : Claude lit une carte en arbre avec `read_mind_map` (chaque nœud avec son chemin, son titre, sa couleur, son détail ; la place des nœuds racines) et la modifie avec un outil par geste de l'écran : `add_mind_map_child` (dernier enfant), `add_mind_map_sibling` (frère juste en dessous), `add_mind_map_root` (nœud racine), `edit_mind_map_node` (titre et détail), `color_mind_map_node` (une couleur de la palette, ou aucune), `move_mind_map_node` (comme le glisser-déposer : en enfant, en frère au-dessus ou en dessous, en nœud racine ; refusé dans sa propre branche) et `delete_mind_map_node` (le nœud et sa branche). Un nœud se désigne par son chemin (§ 1) ; chaque outil rend le chemin du nœud touché, et Claude relit la carte après une suppression ou un déplacement. Mêmes règles que l'écran : la carte est enregistrée selon le § 4.5, la version d'avant est gardée dans l'historique, l'index suit. Plier et déplier n'ont pas d'outil (§ 6.5). Une carte ouverte se met à jour en direct (§ 8). `read_note` et `replace_in_note` refusent une carte et renvoient vers ces outils.
 
 **Consigne donnée à Claude** sur les cartes mentales : le format du § 4 en bref, n'écrire dans la liste que des puces et des lignes de détail, ne jamais toucher à `racines`.
 

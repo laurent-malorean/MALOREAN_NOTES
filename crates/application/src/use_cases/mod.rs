@@ -59,7 +59,7 @@ pub use meaning::{
     RebuildMeaning, RelatedNotes, RemoveModel, SEGMENTS_PER_NOTE, SearchByMeaning,
     SearchWithMeaning,
 };
-pub use mind_map::{CreateMindMap, ReadMindMap, SaveMindMap};
+pub use mind_map::{CreateMindMap, EditMindMap, EditedMindMap, ReadMindMap, SaveMindMap};
 pub use move_note::MoveNote;
 pub use note_links::{LinkingNote, NoteLinks};
 pub use pin_note::PinNote;

@@ -7,6 +7,7 @@
 - **Complétée** par la fiche 0061 (25/11/2026) : l'outil `create_crm` crée un CRM, la présentation du serveur donne la consigne sur les CRM, la recherche rend les fiches avec leur CRM.
 - **Remplacée sur le point « partage »** par la fiche 0075 (26/11/2026) : l'outil `replace_in_note` change le texte d'une note simple ; il ne reste plus aux seuls outils de fichiers de l'IA.
 - **Complétée** par la fiche 0078 (26/11/2026) : les outils `list_folders`, `rename_folder`, `move_folder` et `trash_folder` (avec `create_folder`, déjà là) donnent à l'IA l'arbre des dossiers et leurs changements, par les cas d'usage de l'interface.
+- **Complétée** par la fiche 0080 (26/11/2026) : la carte mentale se lit en arbre (`read_mind_map`) et se modifie par un outil par geste de l'interface (`add_mind_map_child`, `add_mind_map_sibling`, `add_mind_map_root`, `edit_mind_map_node`, `color_mind_map_node`, `move_mind_map_node`, `delete_mind_map_node`) ; `read_note` et `replace_in_note` la refusent en renvoyant vers eux.
 
 ## Contexte
 

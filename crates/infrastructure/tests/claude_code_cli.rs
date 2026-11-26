@@ -183,7 +183,7 @@ impl FakeClaude {
 const CHANGING_APP_TOOLS: &str = "mcp__malorean__create_note|mcp__malorean__create_folder|mcp__malorean__rename_folder|mcp__malorean__move_folder|mcp__malorean__trash_folder|mcp__malorean__create_note_from_template|mcp__malorean__trash_n\
     ote|mcp__malorean__rename_note|mcp__malorean__move_note|mcp__malorean__restore_version|mcp__malorean__replace_in_note|mcp__malorean__add_canvas_card|mcp__malorean__change_canvas_card|mcp__malorean__move_canvas_card|mcp__malorean__resize_canvas_card|mcp__malorean__remove_canvas_card|mcp__malorean__add_canvas_arrow|mcp__malorean__change_canvas_arrow|mcp__malorean__remove_canvas_arrow|mcp__malorean__add_canvas_group|mcp__malorean__change_canvas_group|mcp\
     __malorean__add_tags|mcp__malorean__remove_tags|mcp__malorean__pin_note|mcp__malorean__unp\
-    in_note|mcp__malorean__add_attachment|mcp__malorean__add_entry|mcp__malorean__create_mind_map|mcp__malorean__create_crm";
+    in_note|mcp__malorean__add_attachment|mcp__malorean__add_entry|mcp__malorean__create_mind_map|mcp__malorean__add_mind_map_child|mcp__malorean__add_mind_map_sibling|mcp__malorean__add_mind_map_root|mcp__malorean__edit_mind_map_node|mcp__malorean__color_mind_map_node|mcp__malorean__move_mind_map_node|mcp__malorean__delete_mind_map_node|mcp__malorean__create_crm";
 
 /// Les outils que visent les crochets du garde-fou du web, dans l'ordre.
 fn guarded_tools(hooks: &serde_json::Value) -> Vec<&str> {
@@ -240,7 +240,7 @@ fn a_turn_with_a_key_offers_the_app_tools_by_the_relay_and_allows_each_of_them()
         mcp__malorean__add_canvas_card,mcp__malorean__change_canvas_card,mcp__malorean__move_canvas_card,mcp__malorean__resize_canvas_card,mcp__malorean__remove_canvas_card,mcp__malorean__add_canvas_arrow,mcp__malorean__change_canvas_arrow,mcp__malorean__remove_canvas_arrow,mcp__malorean__add_canvas_group,mcp__malorean__change_canvas_group,\
         mcp__malorean__add_tags,mcp__malorean__remove_tags,mcp__malorean__pin_note,\
         mcp__malorean__unpin_note,mcp__malorean__add_attachment,mcp__malorean__add_entry,\
-        mcp__malorean__create_mind_map,mcp__malorean__create_crm,mcp__malorean__viewed_note,mcp__malorean__show_note";
+        mcp__malorean__create_mind_map,mcp__malorean__read_mind_map,mcp__malorean__add_mind_map_child,mcp__malorean__add_mind_map_sibling,mcp__malorean__add_mind_map_root,mcp__malorean__edit_mind_map_node,mcp__malorean__color_mind_map_node,mcp__malorean__move_mind_map_node,mcp__malorean__delete_mind_map_node,mcp__malorean__create_crm,mcp__malorean__viewed_note,mcp__malorean__show_note";
     let (start, end) = PERMISSIONS.split_once("--disable").unwrap();
     assert_eq!(
         format!("{before}{after}"),

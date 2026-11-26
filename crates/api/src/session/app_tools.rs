@@ -6,11 +6,13 @@
 mod canvas;
 mod canvas_changing;
 mod catalog;
+mod catalog_mind_map;
 mod changing;
 mod connection;
 mod folders;
 mod mcp;
 mod meaning;
+mod mind_map;
 mod reading;
 mod screen;
 mod workspaces;
@@ -192,6 +194,7 @@ impl Session {
             AppTool::ListFolders => self.tool_list_folders(),
             AppTool::LinkingNotes => self.tool_linking_notes(arguments),
             AppTool::ReadNote => self.tool_read_note(arguments),
+            AppTool::ReadMindMap => self.tool_read_mind_map(arguments),
             AppTool::ReadCanvas => self.tool_read_canvas(arguments),
             AppTool::ListTemplates => self.tool_list_templates(),
             AppTool::ViewedNote => self.tool_viewed_note(),
@@ -250,6 +253,18 @@ mod templates_tests;
 
 #[cfg(test)]
 mod meaning_tests;
+
+#[cfg(test)]
+mod mind_map_editing_tests;
+
+#[cfg(test)]
+mod mind_map_moving_tests;
+
+#[cfg(test)]
+mod mind_map_tests;
+
+#[cfg(test)]
+mod mind_map_text_tests;
 
 #[cfg(test)]
 mod workspaces_tests;

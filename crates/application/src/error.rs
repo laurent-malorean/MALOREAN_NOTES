@@ -1,6 +1,7 @@
 //! Erreurs des cas d'usage.
 
 use domain::history::Version;
+use domain::mind_map_editing::RefusedMindMapEdit;
 use domain::reading::RefusedReading;
 use domain::replacing::RefusedReplacement;
 use domain::research_notebook::RefusedEntry;
@@ -133,6 +134,9 @@ pub enum AppError {
     /// La note n'est pas une carte mentale (fiche 0050).
     #[error("cette note n'est pas une carte mentale")]
     NotAMindMap,
+    /// Le geste sur la carte mentale est refusé ; la raison est lisible (fiche 0080).
+    #[error("{0}")]
+    MindMapEditRefused(#[from] RefusedMindMapEdit),
     /// Le fichier n'est pas un canvas (fiche 0052).
     #[error("ce fichier n'est pas un canvas")]
     NotACanvas,
