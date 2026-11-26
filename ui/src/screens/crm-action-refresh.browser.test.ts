@@ -62,3 +62,47 @@ describe("fenêtre d'une action : chaque geste se voit aussitôt, curseur resté
     expect(sent(m)).toEqual([{ kind: "tags", tags: ["urgent", "salon", "vip"] }]);
   });
 });
+
+describe("fenêtre d'une action : le sélecteur de date", () => {
+  it("choisit un jour au calendrier de l'application : un geste « date » part, la fenêtre reste ouverte", async () => {
+    const m = await openedWindow();
+    (document.querySelector(".crm-aw .date-open") as HTMLElement).click();
+    expect(document.querySelector(".crm-aw .date-popup")).not.toBeNull();
+    (document.querySelector('.date-day[data-date="2026-11-30"]') as HTMLElement).click();
+    await waitForGesture(m, 1);
+    expect(sent(m)).toEqual([{ kind: "date", date: "2026-11-30" }]);
+    expect(control<HTMLInputElement>("Date").value).toBe("30/11/2026");
+    expect(document.querySelector(".crm-aw")).not.toBeNull();
+  });
+
+  it("Échap ferme d'abord le calendrier, puis la fenêtre", async () => {
+    await openedWindow();
+    const date = control<HTMLInputElement>("Date");
+    date.focus();
+    date.click();
+    press(date, "Escape");
+    expect(document.querySelector(".date-popup")).toBeNull();
+    expect(document.querySelector(".crm-aw")).not.toBeNull();
+    press(date, "Escape");
+    expect(document.querySelector(".crm-aw")).toBeNull();
+  });
+
+  it("enregistre une date écrite et pas encore validée quand la fenêtre se ferme", async () => {
+    const m = await openedWindow();
+    control<HTMLInputElement>("Date").value = "03/12/2026";
+    (document.querySelector(".crm-aw-close") as HTMLElement).click();
+    await waitForGesture(m, 1);
+    expect(sent(m)).toEqual([{ kind: "date", date: "2026-12-03" }]);
+  });
+
+  it("garde la date et le curseur dans le champ quand la fenêtre se redessine", async () => {
+    const m = await openedWindow();
+    const date = control<HTMLInputElement>("Date");
+    date.focus();
+    m.disk.crm = changedCrm({ tags: ["vip"] });
+    await m.view.reload();
+    date.blur();
+    await vi.waitFor(() => expect(document.querySelector(".tag-chip")?.textContent).toBe("vip×"));
+    expect(control<HTMLInputElement>("Date").value).toBe("22/11/2026");
+  });
+});

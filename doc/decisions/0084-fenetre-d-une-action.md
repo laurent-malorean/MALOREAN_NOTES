@@ -26,6 +26,12 @@ calendrier natif minuscule et en anglais, aucune étiquette existante proposée)
   « Lier une note » ; un clic ouvre le champ d'ajout.
 - **Ordre** : titre, statut/date/canal, personnes, projet, couleur, description, **checklists juste sous la
   description**, étiquettes, notes liées, commentaires.
+- **Sélecteur de date maison** : le sélecteur natif du moteur web (WebKit) est minuscule (cases de 20 points),
+  en anglais (« Mo Tu We », « Nov 2026 ») et ne se règle pas par CSS. Le composant `dateField` (sans nouvelle
+  dépendance) donne un calendrier de 308 points, en français, semaine du lundi, au clavier, et sert partout
+  où l'interface demande une date (fenêtre d'une action, changement d'entreprise d'une personne) ; la
+  logique du calendrier (lecture « JJ/MM/AAAA », grille, déplacements) est pure et testée à part.
+  « Effacer » existe mais n'est proposé nulle part pour l'instant : la date d'une action n'est jamais vide.
 
 ## Analyse critique (mesurée dans WebKit avant de corriger)
 

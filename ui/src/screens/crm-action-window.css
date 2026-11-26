@@ -83,7 +83,6 @@
   gap: var(--space-3);
 }
 .crm-aw-select,
-.crm-aw-date,
 .crm-aw-title,
 .crm-aw-description,
 .crm-aw-add-input,
@@ -237,6 +236,19 @@
 }
 .crm-aw-list-name {
   font-weight: 600;
+}
+/* Le nom d'une checklist et le texte d'un élément se lisent comme du texte ; la bordure vient au survol et à la saisie. */
+.crm-aw-list-name,
+.crm-aw-item-text {
+  border-color: transparent;
+  background: transparent;
+}
+.crm-aw-list-name:hover,
+.crm-aw-item-text:hover,
+.crm-aw-list-name:focus,
+.crm-aw-item-text:focus {
+  border-color: var(--border);
+  background: var(--bg);
 }
 .crm-aw-progress {
   color: var(--muted);

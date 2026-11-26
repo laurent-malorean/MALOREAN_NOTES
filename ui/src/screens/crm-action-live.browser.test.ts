@@ -33,7 +33,7 @@ describe("fenêtre d'une action : mise à jour en direct (§ 10)", () => {
     });
     await vi.waitFor(() => expect(field<HTMLInputElement>("title").value).toBe("Titre d'ailleurs"));
     expect(control<HTMLSelectElement>("Statut").value).toBe("Done");
-    expect(control<HTMLInputElement>("Date").value).toBe("2026-12-05");
+    expect(control<HTMLInputElement>("Date").value).toBe("05/12/2026");
     expect(control<HTMLSelectElement>("Canal").value).toBe("salon");
     expect(control<HTMLTextAreaElement>("Description").value).toBe("Autre texte");
     expect(

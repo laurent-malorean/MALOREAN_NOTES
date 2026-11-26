@@ -359,7 +359,7 @@ Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de larg
 
 **De haut en bas** (chaque partie est un bloc à part, séparé du suivant par un grand espace, avec son titre quand elle en a un) :
 1. **Titre** : une ligne.
-2. **Statut**, **date** et **canal**, côte à côte.
+2. **Statut**, **date** et **canal**, côte à côte. La date se choisit avec le **sélecteur de date** de l'application (le même partout où l'on donne une date, § 9.2 comprise) : on écrit « JJ/MM/AAAA » ou on ouvre le calendrier par son bouton, un clic ou la saisie ; le calendrier est grand, en français (mois en lettres avec flèches, semaine commençant le lundi), repère aujourd'hui, marque le jour choisi, propose « Aujourd'hui » (et « Effacer » quand la date peut être vide) ; Échap ou un clic à côté le ferme ; au clavier, flèches pour changer de jour ou de semaine, PageHaut et PageBas pour le mois, Entrée pour valider. Une date fausse reprend la valeur d'avant.
 3. **Personnes** : les personnes de l'action, chacune « Nom · Entreprise » avec « × » pour la retirer ; un lien vers sa fiche ; au bout, une liste « + Ajouter une personne » (chaque personne avec son entreprise, celles déjà présentes écartées). Un lien « Copier les e-mails » copie dans le presse-papiers les e-mails des personnes qui en ont, séparés par « , », et le dit (« E-mails copiés. ») ; il n'apparaît que si l'une d'elles a un e-mail.
 4. **Projet** : une liste, « Sans projet » en tête.
 5. **Couleur** : une pastille par couleur de la palette et « Sans couleur ».

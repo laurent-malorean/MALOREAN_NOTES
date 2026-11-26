@@ -39,6 +39,7 @@ export type MenuIcon =
   | "no-color"
   | "add-child"
   | "add-sibling"
+  | "calendar"
   // Repris de la barre de mise en forme ou du canvas.
   | "copy"
   | "markdown"
@@ -124,6 +125,7 @@ const PATHS: Record<AppIcon, readonly string[]> = {
   "no-color": [CIRCLE, "M5.6 5.6l12.8 12.8"],
   "add-child": ["M4 4h7v5H4z", "M7.5 9v7h5", "M12.5 13.5h7v5h-7z"],
   "add-sibling": ["M3 5h8v4H3z", "M3 15h8v4H3z", "M16 8v8", "M13 12h6"],
+  calendar: ["M4 6h16v14H4z", "M4 10h16", "M8 3v4", "M16 3v4"],
   copy: FORMAT_ICON_PATHS.copy,
   markdown: FORMAT_ICON_PATHS.markdown,
   export: CANVAS_ICON_PATHS.export,

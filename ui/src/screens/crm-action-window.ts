@@ -230,8 +230,8 @@ class Window implements ActionWindow {
     const text = active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement;
     return {
       field,
-      start: text && active.type !== "date" ? active.selectionStart : null,
-      end: text && active.type !== "date" ? active.selectionEnd : null,
+      start: text ? active.selectionStart : null,
+      end: text ? active.selectionEnd : null,
     };
   }
 
@@ -296,20 +296,20 @@ class Window implements ActionWindow {
       return;
     }
     const value = input.value.trim();
-    const mayBeEmpty = field === "title" && this.name === null;
-    input.value = value === "" && !mayBeEmpty ? fields[field] : value;
-    if (input.value === fields[field]) return;
-    if (field === "title") this.change({ kind: "title", title: input.value });
-    else this.change({ kind: "date", date: input.value });
+    const mayBeEmpty = this.name === null;
+    input.value = value === "" && !mayBeEmpty ? fields.title : value;
+    if (input.value !== fields.title) this.change({ kind: "title", title: input.value });
   }
 
   /** Ce qui est tapé et pas encore enregistré, pris dans les champs. */
   private commitTyped(): void {
-    const fields: TextField[] = ["title", "description", "date"];
+    const fields: TextField[] = ["title", "description"];
     for (const field of fields) {
       const input = this.body.querySelector<HTMLInputElement>(`[data-field="${field}"]`);
       if (input !== null) this.commit(field, input);
     }
+    // Une date écrite et pas encore validée : le sélecteur la prend (ou la refuse) comme en quittant le champ.
+    this.body.querySelector('[data-field="date"]')?.dispatchEvent(new Event("change"));
   }
 
   private async save(): Promise<void> {
