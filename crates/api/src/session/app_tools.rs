@@ -277,6 +277,9 @@ mod replacing_tests;
 mod screen_tests;
 
 #[cfg(test)]
+mod search_matches_tests;
+
+#[cfg(test)]
 mod templates_tests;
 
 #[cfg(test)]

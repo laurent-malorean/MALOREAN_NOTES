@@ -154,6 +154,30 @@ pub fn search(query: &SearchQuery, content: &str) -> Option<Excerpt> {
     Some(Excerpt(merged(parts)))
 }
 
+/// Le nombre de fois que les mots de `query` sont trouvés dans `content` entier (en-tête compris),
+/// comme la recherche les trouve : à l'intérieur d'un mot plus long, sans tenir compte des
+/// majuscules ni des accents. Les occurrences qui se chevauchent (deux mots, ou un mot qui se
+/// recouvre lui-même) ne comptent qu'une fois.
+#[must_use]
+pub fn count(query: &SearchQuery, content: &str) -> usize {
+    let whole = Folded::of(content);
+    let mut ranges: Vec<(usize, usize)> = query
+        .words
+        .iter()
+        .flat_map(|word| whole.occurrences(word))
+        .collect();
+    ranges.sort_unstable();
+    let mut counted = 0;
+    let mut position = 0;
+    for (start, end) in ranges {
+        if start >= position {
+            counted += 1;
+            position = end;
+        }
+    }
+    counted
+}
+
 /// Le texte découpé en morceaux, les mots cherchés à part ; les mots qui se chevauchent ne font qu'un.
 fn highlighted(query: &SearchQuery, line: &str) -> Vec<ExcerptPart> {
     let chars: Vec<char> = line.chars().collect();
@@ -353,6 +377,42 @@ mod tests {
             found("projet", "---\ntags: projet\n---\n# Réunion"),
             Some(vec![text("# Réunion")])
         );
+    }
+
+    fn counted(query: &str, content: &str) -> usize {
+        count(&SearchQuery::parse(query).unwrap(), content)
+    }
+
+    #[test]
+    fn occurrences_count_a_word_inside_longer_words() {
+        assert_eq!(counted("tomy", "Anatomy, Tomy et tomyx"), 3);
+        assert_eq!(counted("tomy", "rien ici"), 0);
+    }
+
+    #[test]
+    fn occurrences_ignore_capitals_and_accents() {
+        assert_eq!(counted("ETE", "été Eté ete"), 3);
+        assert_eq!(counted("Été", "ete, ÉTÉ"), 2);
+    }
+
+    #[test]
+    fn occurrences_of_all_the_words_are_added() {
+        assert_eq!(counted("pain lait", "pain, lait et pain"), 3);
+    }
+
+    #[test]
+    fn occurrences_that_overlap_count_once() {
+        assert_eq!(counted("pai ain", "du pain"), 1);
+        assert_eq!(counted("pain pain", "pain"), 1);
+        assert_eq!(counted("aa", "aaaa"), 2);
+        assert_eq!(counted("pain lait", "painlait"), 2);
+    }
+
+    #[test]
+    fn occurrences_count_the_whole_text_not_only_the_excerpt() {
+        let content = format!("pain {} pain", "a".repeat(500));
+        assert_eq!(counted("pain", &content), 2);
+        assert_eq!(counted("projet", "---\ntags: projet\n---\n# projet"), 2);
     }
 
     #[test]

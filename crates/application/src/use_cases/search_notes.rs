@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use domain::note::compare;
-use domain::search::{Excerpt, SearchQuery, search};
+use domain::search::{Excerpt, SearchQuery, count, search};
 use domain::{ContentType, Modified, NoteOrder, NotePath, NoteSummary};
 
 use crate::{AppError, NoteIndex};
@@ -32,6 +32,9 @@ pub struct SearchResult {
     pub modified: Modified,
     /// Le passage autour du premier mot trouvé.
     pub excerpt: Excerpt,
+    /// Le nombre d'occurrences des mots cherchés dans le texte entier (voir
+    /// [`domain::search::count`]) ; aucun pour une note trouvée par le sens.
+    pub matches: Option<usize>,
 }
 
 impl SearchResult {
@@ -43,6 +46,7 @@ impl SearchResult {
     ) -> Self {
         Self {
             excerpt,
+            matches: None,
             path: note.path().clone(),
             title: note.title().to_owned(),
             content_type: note.content_type(),
@@ -111,11 +115,9 @@ impl<'a> SearchNotes<'a> {
             .into_iter()
             .filter_map(|(note, content)| {
                 let container_title = note.container().and_then(|c| titles.get(c).cloned());
-                Some(SearchResult::of(
-                    &note,
-                    search(query, &content)?,
-                    container_title,
-                ))
+                let mut result = SearchResult::of(&note, search(query, &content)?, container_title);
+                result.matches = Some(count(query, &content));
+                Some(result)
             })
             .collect())
     }
@@ -203,6 +205,20 @@ mod tests {
         assert_eq!(found[0].content_type, ContentType::Note);
         assert_eq!(found[0].container, None);
         assert_eq!(found[0].container_title, None);
+    }
+
+    #[test]
+    fn a_result_counts_the_occurrences_of_the_words_in_the_whole_note() {
+        let long = "a".repeat(500);
+        let content = format!("# Anatomie\npain {long} Painting, PAIN et lait");
+        let store = InMemoryNoteStore::with_notes(&[("a.md", content.as_str())]);
+        let found = SearchNotes::new(&indexed(&store))
+            .execute(
+                &SearchQuery::parse("pain lait").unwrap(),
+                NoteOrder::Modified,
+            )
+            .unwrap();
+        assert_eq!(found[0].matches, Some(4));
     }
 
     #[test]
