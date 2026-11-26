@@ -168,7 +168,8 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 
 - Binaire universel (Apple Silicon et Intel), sauf décision contraire.
 - Application signée, durcie (hardened runtime) et notarisée par Apple avant toute distribution.
-- Numéro de version unique, tiré du `Cargo.toml` de `app`.
+- Numéro de version Majeur.mineur.correctif : `Cargo.toml` (`[workspace.package]`) et `ui/package.json` le portent tous deux et restent identiques ; `scripts/version-coherente.sh` le vérifie (barrière de commit et, avant toute compilation, `.github/workflows/application.yml`). *Vérifié par : `scripts/test-version-coherente.sh`.*
+- Version livrée : un tag `vX.Y.Z` fabrique l'application sur un Mac de GitHub et joint le `.dmg` à la Release du tag (fiche 0083 ; procédure dans `doc/architecture.md`, « Fabriquer une version »). Pour l'instant : Apple Silicon seulement, non signée ni notarisée (clic droit puis « Ouvrir »), en attendant la signature.
 
 ## 14. Réglages des contrôles
 
@@ -232,6 +233,7 @@ disallowed-methods = [
 | Sur une copie figée : `scripts/ci.sh --copie [--complet \| --sans-mutation]` | les mêmes contrôles sur une copie du code rangée hors du dépôt (`~/Library/Caches/malorean-notes-ci`) : on peut continuer à modifier le code pendant qu'elle tourne ; elle valide l'état du code à son lancement *Vérifié par : lui-même.* |
 | Fin de chaque barrière et de `--complet` (réussie ou non) ; à part : `scripts/ci.sh --menage [--a-blanc]` | ménage du dossier de compilation de Cargo (`scripts/ci-menage.sh`, fiche 0048) : seulement au-delà de 8 Go, seulement le périmé, jamais pendant qu'un autre passage, une mutation ou un `cargo` tourne ; résumé d'une ligne (taille avant, après) ; son échec ne fait jamais échouer la CI ; `--a-blanc` liste sans rien effacer *Vérifié par : `scripts/test-ci-menage.sh`.* |
 | `scripts/ci.sh --verifier` | dit si le code est exactement celui de la dernière CI réussie (barrière ou complète ; empreinte gardée dans `.git/ci-validated-tree`) ; à lancer après `--copie` *Vérifié par : lui-même.* |
+| Quand `Cargo.toml`, `ui/package.json`, les scripts ou `.github/workflows/` changent (barrière et `--fonction`) | numéro de version identique dans `Cargo.toml` et `ui/package.json`, forme du travail de fabrication GitHub (déclenché par un tag, `contents: write` seulement à la publication) *Vérifié par : `scripts/test-version-coherente.sh`.* |
 | Avant de livrer : `scripts/ci.sh --livraison` | la fin de fonction, puis mutation du domaine et échantillon (un dixième, une erreur par fonction) du diff Rust depuis le tag local `ci-verte` ; le tag avance à son succès ; benchmarks si la lecture a changé ; build `release` signé et notarisé. Exceptionnel : `--tout-le-code` (tout muté) |
 | À la demande : `scripts/ci.sh --echantillon`, `--mutation-interface` | échantillon de mutation Rust (non bloquant, survivants dans `.git/ci-mutation/suivi.txt`) ; Stryker de l'interface, incrémental |
 

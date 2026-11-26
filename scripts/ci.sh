@@ -408,6 +408,10 @@ run_barrier() {
     scripts/test-ci-rejeu.sh
     scripts/test-essai-application.sh
   fi
+  if printf '%s\n' "$changed" | grep -q -E '^(scripts/|\.github/workflows/|Cargo\.toml$|ui/package\.json$)'; then
+    step "Numéro de version : Cargo.toml et ui/package.json identiques, fabrication sur GitHub (fiche 0083)"
+    scripts/test-version-coherente.sh
+  fi
   if printf '%s\n' "$changed" | grep -q -E '^(scripts/|\.github/workflows/)'; then
     step "Mutation par groupes : matrice, exhaustivité, travail GitHub (fiche 0059)"
     scripts/test-ci-mutation-groupes.sh
@@ -546,6 +550,8 @@ if [ "$MODE" = --tout-le-code ]; then check_mutations; check_ui_mutations comple
 if [ -f Cargo.toml ]; then
   step "Mutation par groupes : chaque fichier de production dans exactement un groupe (fiche 0059)"
   scripts/test-ci-mutation-groupes.sh
+  step "Numéro de version : cohérence et fabrication sur GitHub (fiche 0083)"
+  scripts/test-version-coherente.sh
 fi
 
 if [ -n "$STARTED_TREE" ]; then

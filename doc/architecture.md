@@ -27,9 +27,10 @@ ui/                   interface TypeScript (Vite)
   src/screens/        écrans : dossiers, liste des notes, éditeur
   src/state/          état d'écran et transitions, testés sans navigateur
 scripts/ci.sh         CI locale : barrière de commit, `--fonction`, `--livraison`, `--echantillon` (fiches 0047 et 0049)
-scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; mutation-rejeu.sh : rejeu des dépassements de délai de la mutation ; mutation-groupes.json, mutation-groupes.sh, mutation-groupe.sh, mutation-resume.sh : mutation par groupes sur GitHub (fiche 0059) ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-rejeu.sh, test-ci-mutation-groupes.sh, test-ci-doc-only.sh
+scripts/mutation-diff.sh   mutation du domaine après un commit, en arrière-plan, non bloquante (crochet scripts/hooks/post-commit, posé par install-hooks.sh) ; ci-verte.sh : tag git local `ci-verte` ; mutation-rejeu.sh : rejeu des dépassements de délai de la mutation ; mutation-groupes.json, mutation-groupes.sh, mutation-groupe.sh, mutation-resume.sh : mutation par groupes sur GitHub (fiche 0059) ; ci-doc-only.sh : documentation seule ; scénarios : test-ci-gate.sh, test-ci-rejeu.sh, test-ci-mutation-groupes.sh, test-ci-doc-only.sh ; version-coherente.sh : le tag, Cargo.toml et ui/package.json portent le même numéro de version (preuves : test-version-coherente.sh, fiche 0083)
 scripts/ui-mutations.sh   test de mutation de l'interface (appelé par ci.sh) ; ses scénarios de preuve : test-ui-mutations.sh
 .github/workflows/mutation.yml   mutation de tout le Rust chaque nuit sur GitHub Actions, par groupes parallèles (fiches 0050 et 0059)
+.github/workflows/application.yml   fabrication du .dmg sur un Mac de GitHub et Release GitHub, sur un tag vX.Y.Z (fiche 0083)
 ```
 
 Sens des dépendances : `api` → `application` → `domain` ; `infrastructure` → `application` → `domain` ; `app` → tout ; `ui/` → commandes de `api` uniquement.
@@ -166,6 +167,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0061-crm-claude.md` | CRM et Claude : l'outil `create_crm`, la consigne sur les CRM dans la présentation du serveur d'outils, la recherche (mots et sens) qui rend les fiches avec le chemin de leur CRM |
 | `0063-crm-listes-et-fiches.md` | CRM : les listes Personnes, Entreprises et Projets, la ligne d'une action, les fiches d'entreprise et de personne à la place de l'éditeur ; un point de branchement pour la fenêtre d'une action |
 | `0059-mutation-par-groupes-sur-github.md` | Toute la mutation du Rust confiée à GitHub, en groupes de mutation parallèles de 10 à 20 minutes ; sur le Mac, fin de tâche = barrière + `--fonction`, sans mutation |
+| `0083-application-sur-github.md` | Application fabriquée sur un Mac de GitHub à chaque tag `vX.Y.Z` : `.dmg` joint à la Release du tag, numéro de version vérifié avant toute compilation, application non signée |
 
 ## Construire l'application (`.app`)
 
@@ -177,6 +179,19 @@ ui/node_modules/.bin/tauri build --bundles app --config '{"build":{"beforeBuildC
 ```
 
 Le résultat est `target/release/bundle/macos/MALOREAN Notes.app` (sans `.dmg`, plus long à faire). L'application n'est pas signée par Apple : au premier lancement, clic droit puis « Ouvrir ». Mesuré le 23/11/2026 : 23 secondes avec un dossier de compilation chaud.
+
+### Fabriquer une version (`.dmg` dans les Releases GitHub)
+
+Fiche 0083. Le travail `.github/workflows/application.yml` fabrique l'application sur un Mac de GitHub (`macos-latest`, Apple Silicon) et dépose le `.dmg` dans les Releases du dépôt. Pour livrer une version :
+
+1. Monter le numéro (Majeur.mineur.correctif) **dans les deux fichiers** : `version` de `[workspace.package]` dans `Cargo.toml` et `version` de `ui/package.json` ; mettre `Cargo.lock` à jour (`cargo check`).
+2. Commiter, fusionner dans `main` (`./scripts/version-coherente.sh` vérifie que les deux numéros sont identiques ; la barrière le rejoue).
+3. Poser le tag du même numéro, précédé de `v`, puis l'envoyer : `git tag v0.2.0 && git push origin v0.2.0`.
+4. Le travail vérifie que le tag, `Cargo.toml` et `ui/package.json` portent le même numéro (il échoue sinon, avant toute compilation), fabrique le `.dmg`, crée la Release du tag et y joint `MALOREAN-Notes-<numéro>-aarch64.dmg`.
+
+Pour essayer sans tag : onglet Actions, « application », « Run workflow » : le travail vérifie et fabrique, garde le `.dmg` comme artefact de l'exécution (téléchargeable depuis la page de l'exécution) et ne crée aucune Release.
+
+L'application n'est pas signée par Apple : la Release le dit (« au premier lancement, clic droit sur l'application puis Ouvrir »). La signature et la notarisation restent à faire (« De côté »).
 
 ### Construire l'application d'essai
 
