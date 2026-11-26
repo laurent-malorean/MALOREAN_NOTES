@@ -415,6 +415,16 @@ Comme tout contenu, elle a, sous les onglets de sa colonne, le **champ d'étique
 
 Une fiche supprimée part à la corbeille et se restaure comme une note (avec ses pièces jointes pour une action). Ce que la suppression change aux autres fiches : § 5.1 (entreprise), § 5.2 (personne), § 5.4 (projet), § 5.3 (action : rien).
 
+**Supprimer et restaurer un CRM (fiche 0091).** Un CRM et ses fiches vivent et meurent ensemble : mettre un CRM à la corbeille y met aussi ses fiches (entreprises, personnes, actions, projets, avec les pièces jointes des actions), restaurer le CRM les remet toutes, au même endroit, et le Kanban montre les mêmes actions qu'avant.
+- La confirmation dit combien de fiches partent : « Placer « CRM1 » et ses 2 fiches dans la corbeille ? » (« et sa fiche » pour une seule) ; un CRM sans fiche se demande comme une note.
+- **Le dossier des fiches** part tout entier s'il ne contient que des fiches (le dossier ne reste jamais derrière). Si une note ordinaire y est rangée, elle reste avec le dossier : seules les fiches partent. Le dossier d'un autre CRM rangé dedans garde ses propres fiches.
+- **La corbeille** montre le CRM comme une note et ses fiches sous leurs dossiers, comme tout dossier supprimé ; « Restaurer » sur le CRM remet le CRM et ses fiches ; restaurer une fiche seule la remet seule.
+- **Un nom déjà pris** : un CRM mis une seconde fois à la corbeille sous le même nom prend un suffixe (`clients-2`), et son dossier des fiches le même, pour que ses fiches restent les siennes. Restauré sous un nom que le disque a repris, il prend de même un suffixe et ses fiches vont dans le dossier de ce nom.
+- **Les fiches sans CRM** (un CRM supprimé avant cette règle) ne sont jamais supprimées d'office : leur dossier, qui n'a plus de CRM, est montré dans la liste des dossiers ; on peut le mettre à la corbeille, ou recréer le CRM.
+- Les IA ont la même règle : l'outil qui met une note à la corbeille et celui qui la déplace traitent un CRM avec ses fiches (§ 13).
+
+**Déplacer un CRM** (« Déplacer vers… » ou glisser) déplace aussi son dossier des fiches, selon les mêmes règles (dossier entier s'il ne contient que des fiches, sinon les fiches seules ; une note ordinaire reste). Un nom ou un dossier du même nom déjà pris à l'arrivée donne au CRM un suffixe, que son dossier des fiches prend aussi. Un CRM ne se déplace pas dans son propre dossier de fiches. Renommer un CRM suit la même règle.
+
 ## 12. Recherche et liens
 
 **Chaque fiche est un résultat à elle seule**, rangée dans l'index avec son CRM comme conteneur. Le résultat montre son titre, le dossier du CRM, son type (« Entreprise », « Personne », « Action », « Projet ») avec « · titre du CRM », discret, et un extrait.
@@ -428,7 +438,7 @@ Une fiche supprimée part à la corbeille et se restaure comme une note (avec se
 ## 13. Claude
 
 - **Outil « créer un CRM »** : il prend le dossier (la racine par défaut) et le titre, crée le fichier selon les règles de nom et rend son chemin. Comme les autres outils qui changent une note, il attend l'accord de l'utilisateur quand Claude a lu le web pendant la réponse.
-- **Lire et modifier** : Claude (et toute IA branchée) lit un CRM avec `read_crm` (colonnes du Kanban, personnes, entreprises, projets, étapes, avec les filtres de l'écran) et le change avec quatorze outils, un par objet : créer, changer et supprimer une action, une personne, une entreprise ou un projet, déplacer une action dans une colonne, changer les étapes ; le changement d'une fiche prend une `operation` qui nomme le geste de l'écran (statut et place d'une carte, commentaires, listes à cocher, changement d'entreprise…). Mêmes règles et mêmes messages que l'écran ; une suppression va à la corbeille ; un CRM ouvert se met à jour en direct. Décision 0081.
+- **Lire et modifier** : Claude (et toute IA branchée) lit un CRM avec `read_crm` (colonnes du Kanban, personnes, entreprises, projets, étapes, avec les filtres de l'écran) et le change avec quatorze outils, un par objet : créer, changer et supprimer une action, une personne, une entreprise ou un projet, déplacer une action dans une colonne, changer les étapes ; le changement d'une fiche prend une `operation` qui nomme le geste de l'écran (statut et place d'une carte, commentaires, listes à cocher, changement d'entreprise…). Mêmes règles et mêmes messages que l'écran ; une suppression va à la corbeille ; un CRM se met à la corbeille ou se déplace avec ses fiches (fiche 0091) ; un CRM ouvert se met à jour en direct. Décision 0081.
 - **Consigne donnée à Claude** sur les CRM, dans la présentation des outils : un CRM se lit et se change avec ses outils, jamais en écrivant ses fiches ; une fiche se désigne par sa référence ; pour changer le statut d'une action, donner le nom d'une colonne du CRM ; ne rien supprimer sans qu'on le demande ; ajouter un commentaire plutôt que réécrire la description pour un compte rendu. Le rang d'une carte n'est jamais écrit à la main.
 - **Recherche dans l'index** : elle rend aussi les fiches, avec leur chemin et celui de leur CRM.
 

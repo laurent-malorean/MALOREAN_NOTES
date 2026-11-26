@@ -313,6 +313,8 @@ export const unpinNote = (path: string) => invoke<NoteContent>("unpin_note", { p
 
 /** Place une note dans la corbeille ; rend son chemin dans la corbeille. */
 export const trashNote = (path: string) => invoke<string>("trash_note", { path });
+/** Le nombre de fiches qui partent avec la note à la corbeille (celles de son CRM ; 0 pour une note ordinaire). */
+export const crmFichesInTrash = (path: string) => invoke<number>("crm_fiches_in_trash", { path });
 /** Place un dossier, avec tout ce qu'il contient, dans la corbeille. */
 export const trashFolder = (path: string) => invoke<string>("trash_folder", { path });
 export const listTrash = () => invoke<TrashInfo>("list_trash");

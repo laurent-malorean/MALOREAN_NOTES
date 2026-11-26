@@ -262,6 +262,9 @@ mod crm_records_tests;
 mod crm_tags_tests;
 
 #[cfg(test)]
+mod crm_trash_tests;
+
+#[cfg(test)]
 mod crm_tests;
 
 #[cfg(test)]
