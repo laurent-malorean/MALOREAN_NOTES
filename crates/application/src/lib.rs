@@ -35,7 +35,7 @@ pub use meaning_index::{
     PendingSegment, RelatedNote, SegmentId, check_dimensions,
 };
 pub use meaning_ports::{
-    DownloadProgress, Embedder, MeaningError, MeaningModels, ModelState, ProgressListener,
+    DownloadProgress, Embedder, MeaningError, MeaningModels, ModelState, ProgressListener, Uptime,
 };
 pub use memory_gestures::{MemoryPendingGestures, MemoryPendingGesturesOpener};
 pub use memory_history::{MemoryHistories, MemoryHistory};

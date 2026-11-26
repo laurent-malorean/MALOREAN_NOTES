@@ -13,8 +13,9 @@ use application::{
 use infrastructure::{
     AppToolsRelay, AppleWritingAssistant, CONNECT_OPTION, ClaudeCodeCli, FsConnectionKeys,
     FsExportStore, FsHistories, FsPendingGesturesOpener, FsWorkspaceOpener, FsWorkspaceWatcher,
-    JsonPreferences, MacClipboard, ModelFolder, PermanentSocket, RELAY_OPTION, SocketPlace,
-    SqliteIndexes, SystemClock, SystemSecretMaker, claude_folders, connect, relay,
+    JsonPreferences, KeptModels, MacClipboard, ModelFolder, PermanentSocket, RELAY_OPTION,
+    SocketPlace, SqliteIndexes, SystemClock, SystemSecretMaker, SystemUptime, claude_folders,
+    connect, relay,
 };
 use tauri::{Manager, RunEvent};
 
@@ -158,7 +159,10 @@ fn base_session(
     .with_indexes(Arc::new(MeaningIndexes(SqliteIndexes::new(
         support.clone(),
     ))))
-    .with_meaning_models(Arc::new(ModelFolder::new(&support)))
+    .with_meaning_models(Arc::new(KeptModels::new(
+        Arc::new(ModelFolder::new(&support)),
+        Arc::new(SystemUptime::default()),
+    )))
     .with_meaning_events(Arc::new(commands::meaning::TauriMeaningEvents(
         app.handle().clone(),
     )))

@@ -1,6 +1,8 @@
 //! L'horloge réelle : le seul endroit qui lit l'heure du Mac.
 
-use application::Clock;
+use std::time::{Duration, Instant};
+
+use application::{Clock, Uptime};
 use domain::Moment;
 
 /// L'heure locale du Mac.
@@ -24,6 +26,34 @@ impl Clock for SystemClock {
             field(now.minute()),
         )
         .unwrap_or_else(|_| unreachable!("jiff donne toujours une date valide"))
+    }
+}
+
+/// Le temps écoulé depuis la création du minuteur, lu sur l'horloge qui ne recule jamais.
+#[derive(Debug, Clone, Copy)]
+pub struct SystemUptime {
+    start: Instant,
+}
+
+impl Default for SystemUptime {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "l'horloge réelle est le seul endroit qui lit l'heure"
+    )]
+    fn default() -> Self {
+        Self {
+            start: Instant::now(),
+        }
+    }
+}
+
+impl Uptime for SystemUptime {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "l'horloge réelle est le seul endroit qui lit l'heure"
+    )]
+    fn elapsed(&self) -> Duration {
+        Instant::now().saturating_duration_since(self.start)
     }
 }
 

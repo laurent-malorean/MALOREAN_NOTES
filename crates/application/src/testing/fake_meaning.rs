@@ -2,11 +2,12 @@
 
 use std::ops::ControlFlow;
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::Duration;
 
 use domain::{MeaningModel, MeaningVector, ModelFileInfo};
 
 use crate::{
-    DownloadProgress, Embedder, MeaningError, MeaningModels, ModelState, ProgressListener,
+    DownloadProgress, Embedder, MeaningError, MeaningModels, ModelState, ProgressListener, Uptime,
 };
 
 /// Moteur de sens qui compte les mots : un vecteur de la taille du modèle, où chaque mot (sans
@@ -127,6 +128,25 @@ impl MeaningModels for FakeMeaningModels {
     }
 }
 
+/// Minuteur qui n'avance que sur ordre : les tests font passer le temps sans attendre.
+#[derive(Debug, Default)]
+pub struct FakeUptime {
+    elapsed: Mutex<Duration>,
+}
+
+impl FakeUptime {
+    /// Fait passer `time`.
+    pub fn advance(&self, time: Duration) {
+        *self.elapsed.lock().unwrap_or_else(PoisonError::into_inner) += time;
+    }
+}
+
+impl Uptime for FakeUptime {
+    fn elapsed(&self) -> Duration {
+        *self.elapsed.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,6 +178,15 @@ mod tests {
         assert!((segment.values()[356] - half).abs() < 1e-6);
         assert!((segment.values()[97] - half).abs() < 1e-6);
         assert_eq!(segment.values().iter().filter(|v| **v != 0.0).count(), 2);
+    }
+
+    #[test]
+    fn the_fake_uptime_only_moves_when_told_to() {
+        let uptime = FakeUptime::default();
+        assert_eq!(uptime.elapsed(), Duration::ZERO);
+        uptime.advance(Duration::from_secs(90));
+        uptime.advance(Duration::from_millis(500));
+        assert_eq!(uptime.elapsed(), Duration::from_millis(90_500));
     }
 
     #[test]

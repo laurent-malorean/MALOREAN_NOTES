@@ -5,6 +5,7 @@
 use std::fmt::Debug;
 use std::ops::ControlFlow;
 use std::sync::Arc;
+use std::time::Duration;
 
 use domain::{MeaningModel, MeaningVector, ModelFile};
 
@@ -132,4 +133,12 @@ pub trait MeaningModels: Send + Sync + Debug {
     /// [`MeaningError::ModelMissing`] s'il n'est pas téléchargé ;
     /// [`MeaningError::ComputationFailed`] si ses fichiers sont inutilisables.
     fn open(&self, model: MeaningModel) -> Result<Arc<dyn Embedder>, MeaningError>;
+}
+
+/// Le temps écoulé depuis un point fixe, à la milliseconde, qui ne recule jamais : ce que le
+/// minuteur du modèle gardé en mémoire lit (l'horloge `Clock` n'a que la minute et peut être
+/// remise à l'heure par le Mac).
+pub trait Uptime: Send + Sync + Debug {
+    /// Le temps passé depuis le point fixe de ce minuteur.
+    fn elapsed(&self) -> Duration;
 }
