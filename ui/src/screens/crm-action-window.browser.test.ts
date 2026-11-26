@@ -204,14 +204,23 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
     );
     expect(text(".crm-aw-note-link")).toBe("Cahier des charges");
     expect(buttonIn("Lier une note")).not.toBeUndefined();
-    const suggestions = [...document.querySelectorAll(".crm-aw datalist option")].map(
-      (o) => (o as HTMLOptionElement).value,
+    // « urgent » et « salon » sont déjà sur l'action : seules celles qu'elle n'a pas sont proposées, à la prise du curseur.
+    const add = control<HTMLInputElement>("Ajouter une étiquette");
+    expect(document.querySelector(".tag-suggestions")).toBeNull();
+    add.focus();
+    const suggestions = [...document.querySelectorAll(".crm-aw .tag-suggestion")].map(
+      (o) => o.textContent,
     );
-    // « urgent » et « salon » sont déjà sur l'action : seules celles qu'elle n'a pas sont proposées.
     expect(suggestions).toEqual(["vip"]);
-    expect(control<HTMLInputElement>("Ajouter une étiquette").getAttribute("list")).toBe(
-      found("datalist")?.id,
-    );
+    expect(add.getAttribute("aria-controls")).toBe(found(".tag-suggestions")?.id);
+  });
+
+  it("choisit une étiquette qui existe d'un clic dans la liste : le geste « étiquettes » part", async () => {
+    const m = await openedWindow();
+    control<HTMLInputElement>("Ajouter une étiquette").focus();
+    (document.querySelector(".crm-aw .tag-suggestion") as HTMLElement).click();
+    await waitForGesture(m, 1);
+    expect(sent(m)).toEqual([{ kind: "tags", tags: ["urgent", "salon", "vip"] }]);
   });
 });
 

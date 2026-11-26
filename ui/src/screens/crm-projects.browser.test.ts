@@ -297,10 +297,10 @@ describe("onglet Projets : étiquettes", () => {
 
   it("propose celles des actions et des autres projets du CRM, sans celles du projet", async () => {
     await open({ crm: tagged() });
-    const options = (name: string) =>
-      [...item(name).querySelectorAll("datalist option")].map(
-        (o) => (o as HTMLOptionElement).value,
-      );
+    const options = (name: string) => {
+      add(name).focus();
+      return [...item(name).querySelectorAll(".tag-suggestion-name")].map((o) => o.textContent);
+    };
     expect(options("refonte")).toEqual(["salon", "urgent"]);
     expect(options("salon")).toEqual(["salon", "urgent", "client", "2027"]);
   });

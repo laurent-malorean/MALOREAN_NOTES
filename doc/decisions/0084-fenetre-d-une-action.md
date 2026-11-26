@@ -32,6 +32,13 @@ calendrier natif minuscule et en anglais, aucune étiquette existante proposée)
   où l'interface demande une date (fenêtre d'une action, changement d'entreprise d'une personne) ; la
   logique du calendrier (lecture « JJ/MM/AAAA », grille, déplacements) est pure et testée à part.
   « Effacer » existe mais n'est proposé nulle part pour l'instant : la date d'une action n'est jamais vide.
+- **Liste des étiquettes qui existent** : le champ proposait déjà les étiquettes par une liste native du moteur
+  web (`datalist`), qui n'apparaît pas à la prise du curseur, n'a ni nombre de notes ni mise en forme, et
+  ne dit pas qu'une étiquette inconnue se crée : l'utilisateur ne la voyait pas (« on ne peut créer que de
+  nouvelles étiquettes »). Le champ d'étiquettes, commun aux notes, canvas, cartes mentales, cahiers et CRM,
+  ouvre maintenant sa propre liste (choix de la source : la liste des étiquettes de la barre latérale, déjà
+  lue par `listTags`, avec son nombre de notes ; dans le CRM, les étiquettes des actions et des projets).
+  Logique pure dans `tagChoices`, testée à part.
 
 ## Analyse critique (mesurée dans WebKit avant de corriger)
 

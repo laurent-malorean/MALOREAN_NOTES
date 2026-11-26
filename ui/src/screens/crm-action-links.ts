@@ -70,7 +70,7 @@ export function addControl(
 export function tagsSection(model: WindowModel, act: WindowActions): HTMLElement {
   const field = tagField({
     tags: model.fields.tags,
-    suggestions: model.crm.tags,
+    suggestions: model.crm.tags.map((name) => ({ name })),
     change: (tags) => act.change({ kind: "tags", tags }),
     draft: { get: () => act.drafts.get(TAG_KEY), set: (text) => act.drafts.set(TAG_KEY, text) },
     data: { field: TAG_KEY, draft: "" },

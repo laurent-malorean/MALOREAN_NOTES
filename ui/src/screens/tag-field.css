@@ -60,3 +60,60 @@
   border-radius: var(--control-radius);
   padding: 0 var(--space-3);
 }
+
+/* La liste des étiquettes qui existent : sous le champ, des lignes de 36 points, le nombre de notes à droite. */
+.tag-suggestions {
+  position: fixed;
+  z-index: 600;
+  box-sizing: border-box;
+  max-height: 296px;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+  list-style: none;
+  font-family: var(--sans);
+  font-size: var(--ui-text-size);
+  line-height: var(--ui-line-height);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px var(--shadow);
+}
+.tag-suggestion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  height: var(--control-height);
+  padding: 0 var(--space-3);
+  border-radius: var(--control-radius);
+  cursor: pointer;
+}
+.tag-suggestion:hover,
+.tag-suggestion[aria-selected="true"] {
+  background: var(--selected);
+}
+.tag-suggestion.create {
+  color: var(--accent);
+}
+.tag-suggestion-dot {
+  --label-color: var(--accent);
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--label-color);
+}
+.tag-suggestion-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tag-suggestion-count {
+  flex: none;
+  font-size: var(--ui-label-size);
+  color: var(--muted);
+}

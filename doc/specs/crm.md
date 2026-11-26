@@ -221,7 +221,7 @@ couleur: bleu
 ### 4.9 Étiquettes
 
 - Le CRM, une entreprise, une personne, une action et un projet peuvent porter `tags` dans leur en-tête, comme toute note (mêmes règles de lecture et de nettoyage : sans doublon, la casse ne compte pas) ; la propriété est facultative et n'est écrite que s'il y a au moins une étiquette.
-- On les change dans le **champ d'étiquettes** de l'application (pastilles avec « × », champ « Ajouter une étiquette » et « + », suggestions des étiquettes de l'espace de travail) : § 8 pour une action, § 9 pour une entreprise et une personne.
+- On les change dans le **champ d'étiquettes** de l'application (pastilles avec « × », champ « Ajouter une étiquette » et « + », liste des étiquettes de l'espace de travail proposée à la prise du curseur et à la saisie) : § 8 pour une action, § 9 pour une entreprise et une personne.
 - Changer les étiquettes ne change que la propriété `tags` : les autres propriétés, le texte et les propriétés libres restent identiques octet pour octet (§ 4.8).
 - Les étiquettes d'une entreprise, d'une personne et d'un projet servent au filtre par étiquette de l'application ; le filtre du Kanban (§ 7.1) ne porte que sur celles des actions.
 
@@ -365,7 +365,7 @@ Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de larg
 5. **Couleur** : une pastille par couleur de la palette et « Sans couleur ».
 6. **Description** : Markdown, en saisie de texte.
 7. **Checklists**, juste sous la description, en bloc à part avec son titre : plusieurs, chacune avec son nom, une **barre de progression** verte et son avancement en pourcentage (« 75 % »), ses éléments à cocher (un élément coché est barré et atténué) ; « Ajouter un élément » et « Ajouter une checklist » sont des boutons (icône « + ») qui ouvrent un champ (Entrée ajoute et laisse le champ ouvert pour le suivant, Échap ou « Annuler » le ferme) ; renommage, suppression, coche. **Supprimer une checklist demande confirmation** (« Supprimer la checklist « Historique » et 4 éléments ? », bouton rouge « Supprimer », « Annuler ») ; une checklist qui a changé de place pendant la question n'est pas supprimée.
-8. **Étiquettes** : le champ d'étiquettes de l'application : les étiquettes en pastilles à leur couleur avec « × » pour retirer, un champ « Ajouter une étiquette » (Entrée pour la suivante) et un « + » qui ajoute le texte tapé ; il propose celles du CRM que l'action n'a pas.
+8. **Étiquettes** : le champ d'étiquettes de l'application : les étiquettes en pastilles à leur couleur avec « × » pour retirer, un champ « Ajouter une étiquette » (Entrée pour la suivante) et un « + » qui ajoute le texte tapé ; il propose, dans une liste, celles du CRM que l'action n'a pas.
 9. **Notes liées** : les notes liées, chacune cliquable (un clic l'ouvre dans la colonne active) avec « × » pour la délier ; « Lier une note » (bouton « + ») ouvre la recherche de notes de l'application. Un lien vers une note absente est montré comme dans une note.
 10. **Commentaires** : le plus récent d'abord ; on ajoute, modifie et supprime un commentaire. Une adresse internet écrite dans un commentaire (seule, entre `<` `>` ou en `[texte](adresse)`) s'affiche en lien cliquable, ouvert dans le navigateur. Pas de commentaires sur une action en cours de création.
 11. **Supprimer** (action existante).
@@ -379,7 +379,7 @@ Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de larg
 
 Une fiche d'entreprise ou de personne s'ouvre dans un onglet d'une colonne d'édition, comme une note, à la place de l'éditeur de texte.
 
-Comme tout contenu, elle a, sous les onglets de sa colonne, le **champ d'étiquettes** de l'application (§ 4.9) : ses étiquettes en pastilles avec « × », un champ « Ajouter une étiquette » avec « + » et les suggestions de l'espace de travail. Il en va de même du CRM lui-même.
+Comme tout contenu, elle a, sous les onglets de sa colonne, le **champ d'étiquettes** de l'application (§ 4.9) : ses étiquettes en pastilles avec « × », un champ « Ajouter une étiquette » avec « + » et la liste des étiquettes de l'espace de travail (celles du contenu écartées, filtrée par ce qu'on tape, avec leur nombre de notes quand il est connu, choisie d'un clic ou aux flèches et Entrée ; une étiquette inconnue se crée par « Créer « mot » »). Il en va de même du CRM lui-même.
 
 ### 9.1 Fiche entreprise
 

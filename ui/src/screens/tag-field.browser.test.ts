@@ -116,24 +116,6 @@ describe("champ d'étiquettes", () => {
     expect(enter.defaultPrevented).toBe(true);
   });
 
-  it("propose les étiquettes qui existent, sans celles du contenu, par la liste du champ", () => {
-    const { element, input } = mount({
-      tags: ["Salon"],
-      suggestions: ["salon", "urgent", "vip"],
-    });
-    const list = element.querySelector("datalist") as HTMLDataListElement;
-    expect(input().getAttribute("list")).toBe(list.id);
-    expect([...list.options].map((o) => o.value)).toEqual(["urgent", "vip"]);
-  });
-
-  it("donne à chaque champ sa propre liste de suggestions", () => {
-    const first = mount();
-    const second = mount();
-    const ids = [first, second].map((m) => m.input().getAttribute("list"));
-    expect(new Set(ids).size).toBe(2);
-    expect(ids.every((id) => id !== null && id !== "")).toBe(true);
-  });
-
   it("garde le texte tapé par la mémoire donnée, et le rend à un nouveau champ", () => {
     let kept = "";
     const draft = {

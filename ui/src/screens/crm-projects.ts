@@ -6,6 +6,7 @@
 import type { CrmProjectItem } from "../bridge";
 import { countText, takenColors } from "../state/crm-lists";
 import { PALETTE } from "../state/palette";
+import type { TagSuggestion } from "../state/tag-field";
 import { actionButton, h } from "./crm-dom";
 import { tagField } from "./tag-field";
 import {
@@ -137,9 +138,10 @@ function projectButtons(ctx: ListsContext, project: CrmProjectItem): HTMLButtonE
 }
 
 /** Les étiquettes du CRM que le champ d'un projet propose : celles de ses actions et celles de ses projets. */
-const suggestionsOf = (ctx: ListsContext): string[] => [
-  ...new Set([...ctx.crm.tags, ...ctx.crm.projects.flatMap((project) => project.tags)]),
-];
+const suggestionsOf = (ctx: ListsContext): TagSuggestion[] =>
+  [...new Set([...ctx.crm.tags, ...ctx.crm.projects.flatMap((project) => project.tags)])].map(
+    (name) => ({ name }),
+  );
 
 /** Le champ d'étiquettes d'un projet : un geste l'écrit dans la fiche, le CRM est relu ensuite. */
 function tagsOf(ctx: ListsContext, project: CrmProjectItem): HTMLElement {

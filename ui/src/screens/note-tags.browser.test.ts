@@ -13,7 +13,10 @@ function mount(overrides: Partial<NoteTagsDeps> = {}) {
   const errors: unknown[] = [];
   const deps: NoteTagsDeps = {
     read: (path) => (calls.push(`read ${path}`), Promise.resolve(files[path] ?? [])),
-    suggestions: () => (calls.push("suggestions"), Promise.resolve(["perso", "voyage"])),
+    suggestions: () => (
+      calls.push("suggestions"),
+      Promise.resolve([{ name: "perso" }, { name: "voyage" }])
+    ),
     change: (path, tags) => {
       calls.push(`change ${path} ${tags.join(",")}`);
       files[path] = [...tags];
@@ -34,7 +37,8 @@ describe("barre des étiquettes d'une colonne", () => {
     await tags.show("a.md");
     expect(bar.hidden).toBe(false);
     expect(chips()).toEqual(["perso×"]);
-    const options = [...bar.querySelectorAll("option")].map((o) => o.value);
+    (bar.querySelector(".tag-input") as HTMLInputElement).focus();
+    const options = [...bar.querySelectorAll(".tag-suggestion-name")].map((o) => o.textContent);
     expect(options).toEqual(["voyage"]);
   });
 
