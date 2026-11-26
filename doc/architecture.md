@@ -168,6 +168,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0063-crm-listes-et-fiches.md` | CRM : les listes Personnes, Entreprises et Projets, la ligne d'une action, les fiches d'entreprise et de personne à la place de l'éditeur ; un point de branchement pour la fenêtre d'une action |
 | `0059-mutation-par-groupes-sur-github.md` | Toute la mutation du Rust confiée à GitHub, en groupes de mutation parallèles de 10 à 20 minutes ; sur le Mac, fin de tâche = barrière + `--fonction`, sans mutation |
 | `0083-application-sur-github.md` | Application fabriquée sur un Mac de GitHub à chaque tag `vX.Y.Z` : `.dmg` joint à la Release du tag, numéro de version vérifié avant toute compilation, application non signée |
+| `0086-recherche-de-notes-pour-les-ia.md` | `search_notes` dit que chaque mot est cherché aussi dans un mot plus long et rend `matches`, le nombre d'occurrences dans la note entière ; l'option « mot entier » reste possible plus tard |
 
 ## Construire l'application (`.app`)
 
