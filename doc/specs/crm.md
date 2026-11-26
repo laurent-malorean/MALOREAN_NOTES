@@ -355,6 +355,8 @@ Une ligne d'action dit, avant son titre, ce que l'écran ne dit pas déjà : `da
 
 Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de large au plus, qui défile quand il est long. Un clic à côté, ou Échap, le ferme.
 
+**Mise en page** : une grille de 4 points (décision 0084) : 24 points entre deux blocs et de marge, 12 entre un titre de bloc et son contenu, des contrôles et des boutons de 36 points de haut, des cibles de clic de 32 au moins, un texte de 15 points sur 1,5 d'interligne ; la même échelle pour les fiches, les listes, le Kanban et la fenêtre de confirmation.
+
 **De haut en bas** (chaque partie est un bloc à part, séparé du suivant par un grand espace, avec son titre quand elle en a un) :
 1. **Titre** : une ligne.
 2. **Statut**, **date** et **canal**, côte à côte.

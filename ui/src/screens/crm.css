@@ -14,6 +14,13 @@
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
+  font-size: var(--ui-text-size);
+  line-height: var(--ui-line-height);
+}
+/* Les boutons discrets de l'écran : au moins 32 points de haut (décision 0084). */
+.crm .link {
+  min-height: var(--target-size);
+  padding: 0 var(--space-2);
 }
 .crm[hidden] {
   display: none;
@@ -22,15 +29,16 @@
 /* Onglets */
 .crm-tabs {
   display: flex;
-  gap: 4px;
-  padding: 0 12px;
+  gap: var(--space-1);
+  padding: 0 var(--space-4);
   border-bottom: 1px solid var(--border);
 }
 .crm-tab {
   background: none;
   border: 0;
   border-bottom: 2px solid transparent;
-  padding: 0.55rem 0.8rem;
+  min-height: 40px;
+  padding: 0 var(--space-4);
   color: var(--muted);
 }
 .crm-tab:hover {
@@ -47,8 +55,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
 }
 .crm-filters[hidden] {
   display: none;
@@ -57,24 +65,29 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-3);
 }
 .crm-filter-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .crm-search,
 .crm-filter-select,
 .crm-quick-title,
 .crm-quick-person,
 .crm-stage-input {
+  box-sizing: border-box;
+  min-height: var(--control-height);
   font: inherit;
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.3rem 0.5rem;
+  border-radius: var(--control-radius);
+  padding: 0 var(--space-3);
+}
+.crm-filter-select {
+  height: var(--control-height);
 }
 .crm-search {
   min-width: 12rem;
@@ -83,7 +96,8 @@
   --label-color: var(--accent);
   border: 1px solid var(--label-color);
   border-radius: 999px;
-  padding: 0.15rem 0.7rem;
+  min-height: var(--target-size);
+  padding: 0 var(--space-3);
   font-size: 0.85rem;
   background: color-mix(in srgb, var(--label-color) 12%, var(--bg));
 }
@@ -121,11 +135,11 @@
 .crm-week-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 12px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
 }
 .crm-week-title {
-  margin: 0 0 0 8px;
+  margin: 0 0 0 var(--space-2);
   font-size: 1rem;
   font-weight: 600;
 }
@@ -133,16 +147,17 @@
 .crm-week-today {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.2rem 0.6rem;
+  border-radius: var(--control-radius);
+  min-height: var(--control-height);
+  padding: 0 var(--space-3);
 }
 .crm-board {
   display: flex;
   align-items: stretch;
-  gap: 12px;
+  gap: var(--space-3);
   flex: 1 1 0;
   min-height: 0;
-  padding: 12px;
+  padding: var(--space-4);
   overflow-x: auto;
 }
 .crm-column {
@@ -169,7 +184,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px 6px;
+  padding: var(--space-3) var(--space-3) var(--space-2);
 }
 .crm-column.stage .crm-column-header {
   cursor: grab;
@@ -197,8 +212,10 @@
   margin-left: auto;
   background: none;
   border: 0;
+  min-width: var(--target-size);
+  min-height: var(--target-size);
   color: var(--muted);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   line-height: 1;
 }
 .crm-stage-remove:hover {
@@ -213,42 +230,42 @@
   align-self: flex-start;
   display: flex;
   min-width: 12rem;
-  padding: 10px 4px;
+  padding: var(--space-3) var(--space-1);
 }
 .crm-cards {
   flex: 1 1 auto;
   min-height: 3rem;
   overflow-y: auto;
-  padding: 4px 8px;
+  padding: var(--space-1) var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 .crm-column-foot {
-  padding: 6px 12px 10px;
+  padding: var(--space-2) var(--space-3) var(--space-3);
 }
 .crm-add-action,
 .crm-more {
   text-align: left;
 }
 .crm-more {
-  padding: 4px 12px 8px;
+  padding: var(--space-1) var(--space-3) var(--space-2);
 }
 .crm-quick-add {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 /* Une carte */
 .crm-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 8px 10px;
+  gap: var(--space-2);
+  padding: var(--space-3);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--control-radius);
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
