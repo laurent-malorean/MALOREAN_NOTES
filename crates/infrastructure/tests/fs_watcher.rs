@@ -10,13 +10,15 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
-use application::use_cases::{ChangeCanvas, ReplaceInNote};
+use application::use_cases::{ActionChange, ChangeAction, ChangeCanvas, ReplaceInNote};
 use application::{
-    History, NoteStore, StoreError, WorkspaceChange, WorkspaceLocation, WorkspaceWatcher,
+    History, KeepingStore, NoteStore, StoreError, WorkspaceChange, WorkspaceLocation,
+    WorkspaceWatcher,
 };
 use domain::NotePath;
 use domain::canvas::CardKind;
 use domain::canvas_edit::NewCard;
+use domain::crm::Reference;
 use infrastructure::{FsHistory, FsNoteStore, FsWorkspaceWatcher, SystemClock};
 
 /// Le disque du Mac annonce les changements avec un peu de retard.
@@ -188,4 +190,44 @@ fn a_canvas_changed_by_the_tools_is_announced_so_that_the_screen_follows() {
     let versions = history.versions(&canvas).unwrap();
     assert_eq!(versions.len(), 1);
     assert_eq!(history.read_version(&canvas, &versions[0]).unwrap(), before);
+}
+
+/// L'écran suit une action de CRM changée par une IA (fiche 0081) : la fiche écrite sur le vrai
+/// disque est annoncée à l'interface, dont la vue CRM ouverte se rafraîchit ; le texte d'avant est
+/// gardé à part comme version.
+#[test]
+fn a_crm_action_changed_by_the_tools_is_announced_so_that_the_screen_follows() {
+    let folder = tempfile::tempdir().unwrap();
+    fs::create_dir_all(folder.path().join("clients/actions")).unwrap();
+    fs::write(
+        folder.path().join("clients.md"),
+        "---\ntype: crm\n---\n# Clients\n",
+    )
+    .unwrap();
+    let before = "---\ntype: crm-action\nstatut: TODO\ndate: '2026-11-16'\n---\n# Appel\n";
+    fs::write(folder.path().join("clients/actions/appel.md"), before).unwrap();
+    let (_watching, received) = watch(&folder);
+    let store = Arc::new(FsNoteStore::new(folder.path().to_path_buf()));
+    let history = Arc::new(FsHistory::new(folder.path().to_path_buf()));
+    let keeping = KeepingStore::new(store.clone(), history.clone(), Arc::new(SystemClock));
+    let crm = NotePath::parse("clients.md").unwrap();
+    let action = NotePath::parse("clients/actions/appel.md").unwrap();
+
+    ChangeAction::new(&keeping, &SystemClock)
+        .execute(
+            &crm,
+            &Reference::to("appel").unwrap(),
+            ActionChange::Status("Done".to_owned()),
+        )
+        .unwrap();
+
+    assert!(announces(&received, "clients/actions/appel.md"));
+    assert!(
+        fs::read_to_string(folder.path().join("clients/actions/appel.md"))
+            .unwrap()
+            .contains("statut: Done")
+    );
+    let versions = history.versions(&action).unwrap();
+    assert_eq!(versions.len(), 1);
+    assert_eq!(history.read_version(&action, &versions[0]).unwrap(), before);
 }

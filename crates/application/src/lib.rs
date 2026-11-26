@@ -6,6 +6,7 @@ pub mod error;
 mod gestures;
 mod history;
 mod indexed_store;
+mod keeping_store;
 mod meaning_index;
 mod meaning_ports;
 mod memory_gestures;
@@ -28,6 +29,7 @@ pub use error::AppError;
 pub use gestures::{Gesture, GestureId, GestureStep, PendingGestures, PendingGesturesOpener};
 pub use history::{History, HistoryOpener, HistoryPlace};
 pub use indexed_store::IndexedStore;
+pub use keeping_store::KeepingStore;
 pub use meaning_index::{
     FoundSegment, MeaningIndex, MeaningIndexError, MeaningSearch, MeaningStatus, MeaningStore,
     PendingSegment, RelatedNote, SegmentId, check_dimensions,

@@ -227,3 +227,29 @@ fn a_text_that_is_not_the_title_keeps_the_file_name_even_if_it_differs_from_the_
     assert_eq!(result["path"], "notes-du-lundi.md");
     assert_eq!(result["title"], "Réunion");
 }
+
+#[test]
+fn a_crm_and_its_fiches_are_refused_untouched_and_sent_to_the_crm_tools() {
+    let crm = "---\ntype: crm\n---\n# Clients\n";
+    let action = "---\ntype: crm-action\n---\n# Appeler\n";
+    let session = opened(&[("clients.md", crm), ("clients/actions/a.md", action)]);
+
+    let said_crm = failed(&session, replace("clients.md", "Clients", "Autre"));
+    let said_action = failed(
+        &session,
+        replace("clients/actions/a.md", "Appeler", "Autre"),
+    );
+
+    assert!(said_crm.starts_with("cette note est un CRM : replace_in_note ne change que"));
+    assert!(said_action.starts_with(
+        "cette note est une fiche de CRM, de type « crm-action » : replace_in_note ne change que"
+    ));
+    for said in [said_crm, said_action] {
+        assert!(
+            said.contains("read_crm") && said.contains("change_crm_action"),
+            "{said}"
+        );
+    }
+    assert_eq!(text(&session, "clients.md"), crm);
+    assert_eq!(text(&session, "clients/actions/a.md"), action);
+}

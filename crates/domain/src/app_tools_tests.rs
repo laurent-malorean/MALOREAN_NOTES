@@ -101,7 +101,21 @@ fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
             "add_attachment",
             "add_entry",
             "create_mind_map",
-            "create_crm"
+            "create_crm",
+            "create_crm_action",
+            "change_crm_action",
+            "move_crm_action",
+            "delete_crm_action",
+            "create_crm_person",
+            "change_crm_person",
+            "delete_crm_person",
+            "create_crm_company",
+            "change_crm_company",
+            "delete_crm_company",
+            "create_crm_project",
+            "change_crm_project",
+            "delete_crm_project",
+            "change_crm_stages"
         ]
     );
 }
@@ -110,8 +124,10 @@ fn only_the_tools_that_create_change_move_or_trash_a_note_change_notes() {
 fn each_tool_says_what_it_targets() {
     let targets: Vec<_> = AppTool::ALL.map(AppTool::target_field).into();
     let path = Some("path");
+    // Avant les outils du CRM : le même nombre d'outils que dans `ALL` jusqu'à `CreateCrm`.
+    const ALL_BEFORE_CRM: usize = 40;
     assert_eq!(
-        targets,
+        targets[..ALL_BEFORE_CRM],
         [
             None,
             Some("query"),
@@ -153,11 +169,12 @@ fn each_tool_says_what_it_targets() {
             path,
             Some("title"),
             Some("title"),
-            path,
-            None,
-            path
         ]
     );
+    // Les quinze outils du CRM (lire, puis changer) visent leur CRM, puis viennent les deux outils
+    // de l'écran.
+    assert_eq!(targets[ALL_BEFORE_CRM..ALL_BEFORE_CRM + 15], [path; 15]);
+    assert_eq!(targets[ALL_BEFORE_CRM + 15..], [None, path]);
 }
 
 #[test]
@@ -301,6 +318,18 @@ fn each_tool_that_changes_a_canvas_is_guarded_aims_at_a_workspace_and_targets_it
 }
 
 #[test]
+fn only_the_fourteen_crm_tools_change_a_crm() {
+    let changing: Vec<_> = AppTool::ALL
+        .into_iter()
+        .filter(|tool| tool.changes_a_crm())
+        .collect();
+    assert_eq!(changing.len(), 14);
+    assert!(changing.iter().all(|tool| tool.name().contains("_crm_")));
+    assert!(!AppTool::ReadCrm.changes_a_crm());
+    assert!(!AppTool::CreateCrm.changes_a_crm());
+}
+
+#[test]
 fn reading_a_crm_changes_nothing_targets_its_path_and_follows_the_creation_of_a_crm() {
     let tool = AppTool::ReadCrm;
     assert_eq!(tool.name(), "read_crm");
@@ -312,4 +341,67 @@ fn reading_a_crm_changes_nothing_targets_its_path_and_follows_the_creation_of_a_
     assert_eq!(tool.target_field(), Some("path"));
     let at = AppTool::ALL.iter().position(|t| *t == tool).unwrap();
     assert_eq!(AppTool::ALL[at - 1], AppTool::CreateCrm);
+}
+
+#[test]
+fn the_fourteen_tools_that_change_a_crm_are_named_and_ordered_as_their_decision_says() {
+    let names: Vec<_> = AppTool::ALL
+        .into_iter()
+        .filter(|tool| tool.name().contains("_crm_"))
+        .map(AppTool::name)
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "create_crm_action",
+            "change_crm_action",
+            "move_crm_action",
+            "delete_crm_action",
+            "create_crm_person",
+            "change_crm_person",
+            "delete_crm_person",
+            "create_crm_company",
+            "change_crm_company",
+            "delete_crm_company",
+            "create_crm_project",
+            "change_crm_project",
+            "delete_crm_project",
+            "change_crm_stages",
+        ]
+    );
+    let first = AppTool::ALL
+        .iter()
+        .position(|t| *t == AppTool::CreateCrmAction)
+        .unwrap();
+    assert_eq!(AppTool::ALL[first - 1], AppTool::ReadCrm);
+    assert_eq!(AppTool::ALL[first + 14], AppTool::ViewedNote);
+}
+
+#[test]
+fn each_tool_that_changes_a_crm_is_guarded_aims_at_a_workspace_and_targets_its_path() {
+    let names = AppTool::ALL
+        .into_iter()
+        .filter(|tool| tool.name().contains("_crm_"))
+        .map(AppTool::name);
+    for name in names {
+        let tool = AppTool::named(name).unwrap();
+        assert!(tool.changes_notes(), "{name}");
+        assert!(tool.changes_a_crm(), "{name}");
+        assert!(tool.aims_at_a_workspace(), "{name}");
+        assert!(!tool.uses_screen(), "{name}");
+        assert_eq!(tool.target_field(), Some("path"), "{name}");
+        assert_eq!(tool.full_name(), format!("mcp__malorean__{name}"));
+        assert_eq!(AppTool::of_full_name(&tool.full_name()), Some(tool));
+    }
+}
+
+#[test]
+fn the_crm_changing_tools_are_said_in_one_sentence() {
+    assert_eq!(
+        crm_changing_tools_said(),
+        "create_crm_action, change_crm_action, move_crm_action, delete_crm_action, \
+         create_crm_person, change_crm_person, delete_crm_person, create_crm_company, \
+         change_crm_company, delete_crm_company, create_crm_project, change_crm_project, \
+         delete_crm_project ou change_crm_stages"
+    );
 }

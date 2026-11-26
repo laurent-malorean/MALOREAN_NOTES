@@ -15,13 +15,13 @@ use serde_json::{Value, json};
 use crate::Session;
 use crate::session::app_tools::tests::notes_workspace;
 
-struct Fixture {
-    session: Session,
+pub(super) struct Fixture {
+    pub(super) session: Session,
     keys: Arc<InMemoryConnectionKeys>,
     socket: Arc<FakeConnectionSocket>,
 }
 
-fn fixture_with(notes: &[(&str, &str)], open_workspace: bool) -> Fixture {
+pub(super) fn fixture_with(notes: &[(&str, &str)], open_workspace: bool) -> Fixture {
     let keys = Arc::new(InMemoryConnectionKeys::default());
     let socket = Arc::new(FakeConnectionSocket::default());
     let opener = FakeOpener::new(Arc::new(InMemoryNoteStore::with_notes(notes)));
@@ -61,7 +61,7 @@ fn asked(session: &Session, key: &str, request: &Value) -> Value {
     .unwrap()
 }
 
-fn call(session: &Session, key: &str, tool: &str, arguments: &Value) -> Value {
+pub(super) fn call(session: &Session, key: &str, tool: &str, arguments: &Value) -> Value {
     asked(
         session,
         key,

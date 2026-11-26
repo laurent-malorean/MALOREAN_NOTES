@@ -10,6 +10,7 @@ mod changing;
 mod connection;
 mod crm;
 mod crm_budget;
+mod crm_changing;
 mod folders;
 mod mcp;
 mod meaning;
@@ -184,6 +185,9 @@ impl Session {
 
     /// Joue un outil dans l'espace de travail que `Session::opened` désigne en ce moment.
     fn play_tool(&self, tool: AppTool, arguments: &Value) -> mcp::ToolOutcome {
+        if tool.changes_a_crm() {
+            return self.call_crm_tool(tool, arguments);
+        }
         if tool.changes_notes() {
             return self.call_changing_tool(tool, arguments);
         }
@@ -234,13 +238,25 @@ mod canvas_tags_tests;
 mod changing_tests;
 
 #[cfg(test)]
+mod crm_actions_tests;
+
+#[cfg(test)]
 mod crm_catalog_tests;
 
 #[cfg(test)]
 mod crm_limits_tests;
 
 #[cfg(test)]
+mod crm_moving_tests;
+
+#[cfg(test)]
 mod crm_reading_tests;
+
+#[cfg(test)]
+mod crm_records_tests;
+
+#[cfg(test)]
+mod crm_tags_tests;
 
 #[cfg(test)]
 mod crm_tests;

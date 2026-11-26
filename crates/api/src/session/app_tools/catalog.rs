@@ -144,7 +144,7 @@ fn read_note() -> Described {
          (cherchez-la avec `search_notes`). Refusé, avec une erreur qui dit quoi faire, pour un \
          cahier de recherche (on y ajoute des entrées avec `add_entry` ; `search_notes` retrouve \
          ses entrées), une carte mentale, un CRM ou une fiche de CRM, une note \
-         introuvable ; un canvas se lit avec `read_canvas`.",
+         introuvable ; un canvas se lit avec `read_canvas`, un CRM et ses fiches avec `read_crm`.",
         input(json!({ "path": note_path() }), &["path"]),
     )
 }
@@ -295,8 +295,8 @@ fn rename_note() -> Described {
     (
         "Change le titre d'une note : son fichier et son dossier de pièces jointes sont \
          renommés, ses liens vers ses pièces jointes suivent. Rend son nouveau chemin et les \
-         notes dont un lien `[[ancien titre]]` la visait (à reprendre avec vos outils de \
-         fichiers si besoin).",
+         notes dont un lien `[[ancien titre]]` la visait (à reprendre avec \
+         `read_note` et `replace_in_note` si besoin).",
         input(
             json!({ "path": note_path(), "title": text("Le nouveau titre.") }),
             &["path", "title"],
@@ -340,7 +340,8 @@ fn replace_in_note() -> Described {
          donne le nombre d'occurrences et leurs lignes : ajoutez du texte autour pour qu'il \
          n'apparaisse qu'une fois, ou passez `replace_all` à true pour toutes les remplacer) ; la \
          note est un cahier de recherche (utilisez `add_entry`), une carte mentale, un canvas \
-         (utilisez `read_canvas` et les outils du canvas) ou un CRM. Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
+         (utilisez `read_canvas` et les outils du canvas) ou un CRM ou une fiche de CRM (utilisez \
+         `read_crm` et les outils du CRM). Si le remplacement change le titre `# …`, le fichier est renommé d'après le \
          nouveau titre : utilisez ensuite le `path` rendu, et pensez aux notes qui la lient (voir \
          `rename_note`). Rend `path`, `title` et `replacements` (le nombre de remplacements).",
         input(
@@ -452,10 +453,9 @@ fn create_crm() -> Described {
         "Crée un CRM (une note dont l'en-tête porte `type: crm`) selon les règles de MALOREAN \
          Notes : titre `# title` en tête, nom du fichier tiré du titre (sans écraser une autre \
          note), dans `folder` (la racine par défaut ; créé avec ses parents s'il n'existe pas). \
-         Le titre tient sur une ligne et n'est pas vide. Rend son chemin. Ensuite, ses entreprises, \
-         personnes, actions et projets sont des fiches (des notes) rangées dans des dossiers qui \
-         portent le nom du fichier du CRM : vous les lisez et les écrivez avec vos outils de \
-         fichiers, selon la consigne donnée à la présentation du serveur.",
+         Le titre tient sur une ligne et n'est pas vide. Rend son chemin. Ensuite, le CRM se lit \
+         avec `read_crm` et se change avec les outils du CRM (`create_crm_action`, \
+         `change_crm_action`, `create_crm_person`…) : ses fiches ne s'écrivent jamais à la main.",
         input(
             json!({
                 "title": text("Le titre du CRM."),
@@ -528,6 +528,20 @@ fn described(tool: AppTool) -> Described {
         AppTool::CreateMindMap => create_mind_map(),
         AppTool::CreateCrm => create_crm(),
         AppTool::ReadCrm => crm::read_crm(),
+        AppTool::CreateCrmAction => crm::create_crm_action(),
+        AppTool::ChangeCrmAction => crm::change_crm_action(),
+        AppTool::MoveCrmAction => crm::move_crm_action(),
+        AppTool::DeleteCrmAction => crm::delete_crm_action(),
+        AppTool::CreateCrmPerson => crm::create_crm_person(),
+        AppTool::ChangeCrmPerson => crm::change_crm_person(),
+        AppTool::DeleteCrmPerson => crm::delete_crm_person(),
+        AppTool::CreateCrmCompany => crm::create_crm_company(),
+        AppTool::ChangeCrmCompany => crm::change_crm_company(),
+        AppTool::DeleteCrmCompany => crm::delete_crm_company(),
+        AppTool::CreateCrmProject => crm::create_crm_project(),
+        AppTool::ChangeCrmProject => crm::change_crm_project(),
+        AppTool::DeleteCrmProject => crm::delete_crm_project(),
+        AppTool::ChangeCrmStages => crm::change_crm_stages(),
         AppTool::ViewedNote => viewed_note(),
         AppTool::ShowNote => show_note(),
     }

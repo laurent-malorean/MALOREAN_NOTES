@@ -222,7 +222,7 @@ struct CrmRead {
 }
 
 /// Le chemin de la fiche `reference` de la sorte `kind` du CRM `crm` : `clients/actions/x.md`.
-fn fiche_path(crm: &NotePath, kind: CrmKind, reference: &str) -> String {
+pub(super) fn fiche_path(crm: &NotePath, kind: CrmKind, reference: &str) -> String {
     let folder = kind
         .folder_of(crm.name().stem())
         .unwrap_or_else(|| crm.name().stem().to_owned());

@@ -32,10 +32,10 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
             .collect();
         assert!(kinds.iter().all(|(name, kind)| *kind
             == match *name {
-                "tags" | "projects" => "array",
-                "limit" | "x" | "y" | "width" | "height" => "integer",
-                "cards" => "array",
-                "replace_all" => "boolean",
+                "tags" | "projects" | "people" | "linked_notes" | "cards" => "array",
+                "limit" | "x" | "y" | "width" | "height" | "list" | "item" | "comment"
+                | "position" => "integer",
+                "replace_all" | "done" | "at_end" => "boolean",
                 _ => "string",
             }));
         assert!(
@@ -96,6 +96,29 @@ fn each_tool_requires_what_it_cannot_work_without() {
         (AppTool::ReadCrm, path),
         (AppTool::ViewedNote, &[]),
         (AppTool::ShowNote, path),
+    ];
+    for (tool, fields) in expected {
+        assert_eq!(checked_schema(tool)["required"], json!(fields), "{tool:?}");
+    }
+}
+
+#[test]
+fn each_tool_that_changes_a_crm_requires_its_crm_and_what_it_cannot_work_without() {
+    let expected: [(AppTool, &[&str]); 14] = [
+        (AppTool::CreateCrmAction, &["path", "title"]),
+        (AppTool::ChangeCrmAction, &["path", "action", "operation"]),
+        (AppTool::MoveCrmAction, &["path", "action", "status"]),
+        (AppTool::DeleteCrmAction, &["path", "action"]),
+        (AppTool::CreateCrmPerson, &["path", "name"]),
+        (AppTool::ChangeCrmPerson, &["path", "person", "operation"]),
+        (AppTool::DeleteCrmPerson, &["path", "person"]),
+        (AppTool::CreateCrmCompany, &["path", "name"]),
+        (AppTool::ChangeCrmCompany, &["path", "company", "operation"]),
+        (AppTool::DeleteCrmCompany, &["path", "company"]),
+        (AppTool::CreateCrmProject, &["path", "name"]),
+        (AppTool::ChangeCrmProject, &["path", "project", "operation"]),
+        (AppTool::DeleteCrmProject, &["path", "project"]),
+        (AppTool::ChangeCrmStages, &["path", "operation"]),
     ];
     for (tool, fields) in expected {
         assert_eq!(checked_schema(tool)["required"], json!(fields), "{tool:?}");
@@ -184,6 +207,7 @@ fn replacing_a_text_takes_a_note_two_texts_and_an_option_and_tells_every_refusal
         "cahier de recherche (utilisez `add_entry`)",
         "un canvas",
         "utilisez `read_canvas` et les outils du canvas",
+        "une fiche de CRM (utilisez `read_crm` et les outils du CRM)",
         "utilisez ensuite le `path` rendu",
         "`path`, `title` et `replacements`",
         "lisez d'abord la note avec `read_note`",
@@ -266,7 +290,7 @@ fn reading_a_note_takes_a_path_and_tells_the_header_the_limit_and_every_refusal(
         "`truncated` vaut alors true et `message` le dit",
         "cahier de recherche (on y ajoute des entrées avec `add_entry`",
         "une carte mentale, un CRM",
-        "un canvas se lit avec `read_canvas`",
+        "un canvas se lit avec `read_canvas`, un CRM et ses fiches avec `read_crm`",
         "introuvable",
     ] {
         assert!(description.contains(expected), "{expected}");

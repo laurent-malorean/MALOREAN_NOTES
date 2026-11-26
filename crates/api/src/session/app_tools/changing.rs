@@ -4,7 +4,7 @@
 
 use application::use_cases::{AttachWorkspaceFile, CreateNote, CreateNoteFromTemplate, ListNotes};
 use domain::app_tools::AppTool;
-use domain::crm::Name;
+use domain::crm::{CrmKind, Name};
 use domain::links::same_title;
 use domain::mind_map::with_list;
 use domain::tag::{retagged, same_tag, tags, writable_tag};
@@ -266,11 +266,19 @@ impl Session {
         let path = required(arguments, "path")?;
         let given = tags_given(arguments)?;
         // Un canvas n'a pas d'en-tête : ses étiquettes sont la propriété `tags` de la racine du
-        // fichier, que lisent et écrivent les cas d'usage du champ d'étiquettes (fiche 0079).
-        if NotePath::parse(path).is_ok_and(|note| note.name().is_canvas()) {
-            return self.change_canvas_tags(path, &given, adding);
+        // fichier, que lisent et écrivent les cas d'usage du champ d'étiquettes (fiche 0079). Une
+        // fiche de CRM passe aussi par eux : enregistrer une note renomme son fichier d'après son
+        // titre, ce qu'une fiche ne doit jamais subir, les autres fiches la désignent par son nom
+        // (fiche 0081).
+        let is_canvas = NotePath::parse(path).is_ok_and(|note| note.name().is_canvas());
+        let read = self.read_note(path);
+        let is_crm = read
+            .as_ref()
+            .is_ok_and(|read| CrmKind::of(&read.content).is_some());
+        if is_canvas || is_crm {
+            return self.change_field_tags(path, &given, adding);
         }
-        let read = self.read_note(path).map_err(|error| error.message)?;
+        let read = read.map_err(|error| error.message)?;
         let mut kept = tags(&read.content);
         if adding {
             for tag in given {
@@ -289,9 +297,9 @@ impl Session {
         written_tags(path, &kept)
     }
 
-    /// Ajoute ou retire des étiquettes de la propriété `tags` de la racine d'un canvas, sans toucher
-    /// au reste du fichier.
-    fn change_canvas_tags(
+    /// Ajoute ou retire des étiquettes de la propriété `tags` d'un canvas ou d'une fiche de CRM, sans
+    /// toucher au reste du fichier ni à son nom, par le champ d'étiquettes de l'interface.
+    fn change_field_tags(
         &self,
         path: &str,
         given: &[String],

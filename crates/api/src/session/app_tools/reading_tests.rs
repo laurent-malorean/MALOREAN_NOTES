@@ -158,10 +158,19 @@ fn a_research_notebook_is_sent_to_add_entry_and_the_search() {
 }
 
 #[test]
-fn a_mind_map_and_a_crm_with_its_cards_are_refused_with_their_type() {
+fn a_mind_map_is_refused_with_its_type() {
+    let session = opened(&[("m.md", "---\ntype: carte-mentale\n---\n# Idées\n- un\n")]);
+
+    assert_eq!(
+        unread(&session, json!({ "path": "m.md" })),
+        "cette note est de type « carte-mentale » : read_note ne lit que les notes simples ; \
+         ce type n'a pas encore d'outil de lecture"
+    );
+}
+
+#[test]
+fn a_crm_and_its_fiches_are_sent_to_read_crm_and_the_tools_that_change_them() {
     let session = opened(&[
-        ("m.md", "---\ntype: carte-mentale\n---\n# Idées\n- un\n"),
-        ("x.canvas", "{}"),
         ("clients.md", "---\ntype: crm\n---\n# Clients\n"),
         (
             "clients/actions/a.md",
@@ -169,18 +178,23 @@ fn a_mind_map_and_a_crm_with_its_cards_are_refused_with_their_type() {
         ),
     ]);
 
-    for (path, kind) in [
-        ("m.md", "carte-mentale"),
-        ("clients.md", "crm"),
-        ("clients/actions/a.md", "crm-action"),
-    ] {
-        assert_eq!(
-            unread(&session, json!({ "path": path })),
-            format!(
-                "cette note est de type « {kind} » : read_note ne lit que les notes simples ; \
-                 ce type n'a pas encore d'outil de lecture"
-            )
-        );
+    let crm = unread(&session, json!({ "path": "clients.md" }));
+    let fiche = unread(&session, json!({ "path": "clients/actions/a.md" }));
+
+    assert!(crm.starts_with("cette note est un CRM : read_note ne lit que les notes simples"));
+    assert!(fiche.starts_with(
+        "cette note est une fiche de CRM, de type « crm-action » : read_note ne lit que les notes simples"
+    ));
+    for said in [crm, fiche] {
+        for tool in [
+            "read_crm",
+            "create_crm_action",
+            "change_crm_person",
+            "change_crm_stages",
+        ] {
+            assert!(said.contains(tool), "{tool} : {said}");
+        }
+        assert!(!said.contains("pas encore"), "{said}");
     }
 }
 

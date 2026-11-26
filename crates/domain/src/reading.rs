@@ -5,6 +5,7 @@
 use std::fmt;
 
 use crate::ContentType;
+use crate::app_tools::crm_changing_tools_said;
 use crate::front_matter::split_exact;
 
 /// Combien de caractères de corps au plus une lecture rend : de quoi tenir sous la limite d'un
@@ -33,6 +34,25 @@ impl fmt::Display for RefusedReading {
                  move_canvas_card, resize_canvas_card, remove_canvas_card, add_canvas_arrow, \
                  change_canvas_arrow, remove_canvas_arrow, add_canvas_group ou \
                  change_canvas_group",
+            ),
+            Self::NotANote(ContentType::Crm) => write!(
+                f,
+                "cette note est un CRM : read_note ne lit que les notes simples ; lisez-le avec \
+                 read_crm, et changez-le avec {}",
+                crm_changing_tools_said()
+            ),
+            Self::NotANote(
+                kind @ (ContentType::CrmCompany
+                | ContentType::CrmPerson
+                | ContentType::CrmAction
+                | ContentType::CrmProject),
+            ) => write!(
+                f,
+                "cette note est une fiche de CRM, de type « {} » : read_note ne lit que les notes \
+                 simples ; lisez le CRM qui la contient avec read_crm (la fiche y a sa `ref`), et \
+                 changez-la avec {}",
+                kind.name(),
+                crm_changing_tools_said()
             ),
             Self::NotANote(kind) => write!(
                 f,
@@ -167,18 +187,49 @@ mod tests {
 
     #[test]
     fn another_type_is_named_and_said_to_have_no_reading_tool_yet() {
+        let said = RefusedReading::NotANote(ContentType::MindMap).to_string();
+        assert!(said.contains("« carte-mentale »"), "{said}");
+        assert!(
+            said.contains("read_note ne lit que les notes simples"),
+            "{said}"
+        );
+        assert!(said.contains("pas encore d'outil de lecture"), "{said}");
+    }
+
+    #[test]
+    fn a_crm_is_sent_to_the_crm_tools() {
+        let said = RefusedReading::NotANote(ContentType::Crm).to_string();
+        for expected in [
+            "cette note est un CRM",
+            "read_note ne lit que les notes simples",
+            "lisez-le avec read_crm",
+            "create_crm_action, change_crm_action, move_crm_action, delete_crm_action",
+            "create_crm_person, change_crm_person, delete_crm_person",
+            "create_crm_company, change_crm_company, delete_crm_company",
+            "create_crm_project, change_crm_project, delete_crm_project",
+            "ou change_crm_stages",
+        ] {
+            assert!(said.contains(expected), "{expected} : {said}");
+        }
+        assert!(!said.contains("pas encore"), "{said}");
+    }
+
+    #[test]
+    fn a_fiche_of_a_crm_is_named_and_sent_to_the_crm_tools() {
         for (kind, name) in [
-            (ContentType::MindMap, "carte-mentale"),
-            (ContentType::Crm, "crm"),
+            (ContentType::CrmCompany, "crm-entreprise"),
+            (ContentType::CrmPerson, "crm-personne"),
             (ContentType::CrmAction, "crm-action"),
+            (ContentType::CrmProject, "crm-projet"),
         ] {
             let said = RefusedReading::NotANote(kind).to_string();
-            assert!(said.contains(&format!("« {name} »")), "{said}");
             assert!(
-                said.contains("read_note ne lit que les notes simples"),
+                said.contains(&format!("fiche de CRM, de type « {name} »")),
                 "{said}"
             );
-            assert!(said.contains("pas encore d'outil de lecture"), "{said}");
+            assert!(said.contains("read_crm (la fiche y a sa `ref`)"), "{said}");
+            assert!(said.contains("ou change_crm_stages"), "{said}");
+            assert!(!said.contains("pas encore"), "{said}");
         }
     }
 

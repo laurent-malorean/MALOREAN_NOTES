@@ -9,6 +9,7 @@
 use std::fmt;
 
 use crate::ContentType;
+use crate::app_tools::crm_changing_tools_said;
 
 /// Combien de lignes au plus une erreur de texte répété cite.
 pub const MAX_LINES_SHOWN: usize = 5;
@@ -48,6 +49,25 @@ impl fmt::Display for RefusedReplacement {
                  change_canvas_card, move_canvas_card, resize_canvas_card, remove_canvas_card, \
                  add_canvas_arrow, change_canvas_arrow, remove_canvas_arrow, add_canvas_group ou \
                  change_canvas_group",
+            ),
+            Self::NotANote(ContentType::Crm) => write!(
+                f,
+                "cette note est un CRM : replace_in_note ne change que le texte des notes simples ; \
+                 lisez-le avec read_crm et changez-le avec {}",
+                crm_changing_tools_said()
+            ),
+            Self::NotANote(
+                kind @ (ContentType::CrmCompany
+                | ContentType::CrmPerson
+                | ContentType::CrmAction
+                | ContentType::CrmProject),
+            ) => write!(
+                f,
+                "cette note est une fiche de CRM, de type « {} » : replace_in_note ne change que le \
+                 texte des notes simples ; lisez le CRM qui la contient avec read_crm (la fiche y a \
+                 sa `ref`) et changez-la avec {}",
+                kind.name(),
+                crm_changing_tools_said()
             ),
             Self::NotANote(kind) => write!(
                 f,
@@ -356,6 +376,33 @@ mod tests {
             "change_canvas_group",
         ] {
             assert!(said.contains(expected), "{expected} : {said}");
+        }
+    }
+
+    #[test]
+    fn a_crm_and_its_fiches_are_sent_to_the_crm_tools() {
+        let crm = RefusedReplacement::NotANote(ContentType::Crm).to_string();
+        for expected in [
+            "cette note est un CRM",
+            "replace_in_note ne change que le texte des notes simples",
+            "lisez-le avec read_crm et changez-le avec create_crm_action",
+            "ou change_crm_stages",
+        ] {
+            assert!(crm.contains(expected), "{expected} : {crm}");
+        }
+        for (kind, name) in [
+            (ContentType::CrmCompany, "crm-entreprise"),
+            (ContentType::CrmPerson, "crm-personne"),
+            (ContentType::CrmAction, "crm-action"),
+            (ContentType::CrmProject, "crm-projet"),
+        ] {
+            let said = RefusedReplacement::NotANote(kind).to_string();
+            assert!(
+                said.contains(&format!("fiche de CRM, de type « {name} »")),
+                "{said}"
+            );
+            assert!(said.contains("read_crm (la fiche y a sa `ref`)"), "{said}");
+            assert!(said.contains("ou change_crm_stages"), "{said}");
         }
     }
 

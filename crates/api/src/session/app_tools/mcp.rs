@@ -42,25 +42,21 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     `add_canvas_arrow`, `change_canvas_arrow`, `remove_canvas_arrow`, `add_canvas_group` et `change_canvas_group` ; \
     une couleur y est un nom de la palette (`rouge`, `bleu`…), jamais un hexadécimal, et chaque changement garde \
     la version d'avant dans l'historique (`restore_version` l'annule). \
-    Un CRM (`type: crm`, créé par `create_crm`) est une note ; ses fiches sont des notes rangées \
-    dans des dossiers qui portent le nom de son fichier, un par sorte de fiche : pour `clients.md`, \
-    `clients/entreprises/`, `clients/personnes/`, `clients/projets/`, `clients/actions/`. Leurs \
-    types : `type: crm-entreprise`, `type: crm-personne`, `type: crm-projet`, `type: crm-action`. \
-    Une fiche en désigne une autre par `[[nom-de-fichier]]`, sans dossier ni extension ; le nom du \
-    fichier est le nom en kebab-case (pour une action, sa date puis son titre : \
-    `2026-11-24-demande-de-devis.md`) ; ne renommez jamais le fichier d'une fiche, ni ne renommez, déplacez ou jetez les dossiers de fiches d'un CRM. Une action a, \
-    dans son en-tête, `statut`, `date` (`2026-11-24`), `canal`, `projet`, `couleur`, `tags`, \
-    `notes`, `personnes` (chaque personne avec son entreprise du moment : \
-    `'[[jean-dupont]] · [[acme]]'`) et `rang` ; sous son titre `# …`, sa description, puis ses \
-    listes à cocher (`#### Liste à cocher : nom`, puis `- [ ]` ou `- [x]` par élément) et ses \
-    commentaires (`#### Commentaires`, puis `- 2026-11-24 10:32 · texte`). Une personne a \
-    `fonction`, `entreprise: '[[acme]]'` (rien pour une personne sans entreprise), `parcours`, \
-    `email`, `telephone`, `linkedin`. Règles : ne touchez jamais à la propriété `rang` d'une action \
-    (sa place dans la colonne, tenue par l'application) ; pour changer le statut d'une action, \
-    écrivez le nom exact d'une colonne du CRM : `TODO`, `Done`, `Cancel` et les étapes de la \
-    propriété `etapes` de l'en-tête du CRM (`Progress` et `WaitingFor` si elle est absente) ; ne \
-    supprimez rien sans que l'utilisateur le demande ; pour un compte rendu sur une action, \
-    ajoutez un commentaire plutôt que de réécrire sa description.";
+    Un CRM (`type: crm`, créé par `create_crm`) est une note ; ses entreprises, personnes, actions et \
+    projets sont des fiches (des notes) rangées dans des dossiers qui portent le nom de son fichier, \
+    qui ne se lisent ni ne s'écrivent à la main : `read_crm` rend le CRM en données (colonnes du \
+    Kanban avec leurs actions, personnes, entreprises, projets, étapes ; filtres facultatifs), une \
+    fiche se désigne par sa référence (`ref`), et les outils du CRM le changent : \
+    `create_crm_action`, `change_crm_action`, `move_crm_action`, `delete_crm_action`, \
+    `create_crm_person`, `change_crm_person`, `delete_crm_person`, `create_crm_company`, \
+    `change_crm_company`, `delete_crm_company`, `create_crm_project`, `change_crm_project`, \
+    `delete_crm_project` et `change_crm_stages` (le changement d'une fiche prend une `operation` qui \
+    nomme le geste de l'interface) ; les étiquettes d'une fiche se changent avec `add_tags` et \
+    `remove_tags`. Règles : pour changer le statut d'une action, utilisez `move_crm_action` avec le \
+    nom exact d'une colonne du CRM (`TODO`, `Done`, `Cancel` et ses étapes) ; ne supprimez rien sans \
+    que l'utilisateur le demande ; pour un compte rendu sur une action, ajoutez un commentaire \
+    (`add_comment`) plutôt que de réécrire sa description ; ne renommez jamais le fichier d'une \
+    fiche, ni ne renommez, déplacez ou jetez les dossiers de fiches d'un CRM.";
 
 /// L'issue d'un appel d'outil : le texte rendu à Claude, ou ce qui a empêché l'outil.
 pub(super) type ToolOutcome = Result<String, String>;
@@ -228,36 +224,56 @@ mod tests {
         }
     }
 
-    /// La consigne sur les CRM dans la présentation du serveur (spécification du CRM, § 13).
+    /// La consigne sur les CRM dans la présentation du serveur (fiche 0081).
     #[test]
     fn the_introduction_gives_the_instructions_on_crms() {
         let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
         let text = reply["result"]["instructions"].as_str().unwrap();
         for expected in [
-            // Le format en bref : le rangement, les types, les références, les noms.
             "Un CRM (`type: crm`, créé par `create_crm`)",
             "dossiers qui portent le nom de son fichier",
-            "`clients/entreprises/`, `clients/personnes/`, `clients/projets/`, `clients/actions/`",
-            "`type: crm-entreprise`, `type: crm-personne`, `type: crm-projet`, `type: crm-action`",
-            "`[[nom-de-fichier]]`",
-            "`2026-11-24-demande-de-devis.md`",
-            "ne renommez jamais le fichier d'une fiche",
-            "`statut`, `date` (`2026-11-24`), `canal`, `projet`, `couleur`, `tags`, `notes`, `personnes`",
-            "`'[[jean-dupont]] · [[acme]]'`",
-            "`#### Liste à cocher : nom`",
-            "`- [ ]` ou `- [x]`",
-            "`#### Commentaires`",
-            "`- 2026-11-24 10:32 · texte`",
-            "`entreprise: '[[acme]]'`",
-            // Les règles.
-            "ne touchez jamais à la propriété `rang`",
-            "le nom exact d'une colonne du CRM",
-            "`TODO`, `Done`, `Cancel` et les étapes de la propriété `etapes`",
-            "`Progress` et `WaitingFor` si elle est absente",
+            "ne se lisent ni ne s'écrivent à la main",
+            "`read_crm`",
+            "filtres facultatifs",
+            "sa référence (`ref`)",
+            "`create_crm_action`",
+            "`change_crm_action`",
+            "`move_crm_action`",
+            "`delete_crm_action`",
+            "`create_crm_person`",
+            "`change_crm_person`",
+            "`delete_crm_person`",
+            "`create_crm_company`",
+            "`change_crm_company`",
+            "`delete_crm_company`",
+            "`create_crm_project`",
+            "`change_crm_project`",
+            "`delete_crm_project`",
+            "`change_crm_stages`",
+            "une `operation` qui nomme le geste de l'interface",
+            "`add_tags` et `remove_tags`",
+            "utilisez `move_crm_action` avec le nom exact d'une colonne du CRM",
+            "`TODO`, `Done`, `Cancel` et ses étapes",
             "ne supprimez rien sans que l'utilisateur le demande",
-            "ajoutez un commentaire plutôt que de réécrire sa description",
+            "ajoutez un commentaire (`add_comment`) plutôt que de réécrire sa description",
+            "ne renommez jamais le fichier d'une fiche",
         ] {
             assert!(text.contains(expected), "{expected}");
+        }
+    }
+
+    #[test]
+    fn the_introduction_no_longer_sends_a_crm_to_the_file_tools() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for gone in [
+            "`rang`",
+            "`statut`",
+            "`#### Commentaires`",
+            "outils de fichiers",
+            "`etapes`",
+        ] {
+            assert!(!text.contains(gone), "{gone}");
         }
     }
 

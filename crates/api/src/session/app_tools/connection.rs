@@ -167,4 +167,7 @@ impl Session {
 }
 
 #[cfg(test)]
+mod crm_tests;
+
+#[cfg(test)]
 mod tests;

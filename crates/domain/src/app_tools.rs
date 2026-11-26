@@ -100,6 +100,34 @@ pub enum AppTool {
     /// Lire un CRM comme des données : colonnes du Kanban, personnes, entreprises, projets,
     /// étapes (fiche 0081).
     ReadCrm,
+    /// Créer une action dans un CRM (fiche 0081).
+    CreateCrmAction,
+    /// Changer une action d'un CRM par un geste de l'interface (fiche 0081).
+    ChangeCrmAction,
+    /// Mettre une action dans une colonne du Kanban d'un CRM (fiche 0081).
+    MoveCrmAction,
+    /// Mettre une action d'un CRM à la corbeille (fiche 0081).
+    DeleteCrmAction,
+    /// Créer une personne dans un CRM (fiche 0081).
+    CreateCrmPerson,
+    /// Changer une personne d'un CRM par un geste de l'interface (fiche 0081).
+    ChangeCrmPerson,
+    /// Mettre une personne d'un CRM à la corbeille (fiche 0081).
+    DeleteCrmPerson,
+    /// Créer une entreprise dans un CRM (fiche 0081).
+    CreateCrmCompany,
+    /// Changer une entreprise d'un CRM par un geste de l'interface (fiche 0081).
+    ChangeCrmCompany,
+    /// Mettre une entreprise d'un CRM à la corbeille (fiche 0081).
+    DeleteCrmCompany,
+    /// Créer un projet dans un CRM (fiche 0081).
+    CreateCrmProject,
+    /// Changer un projet d'un CRM par un geste de l'interface (fiche 0081).
+    ChangeCrmProject,
+    /// Mettre un projet d'un CRM à la corbeille (fiche 0081).
+    DeleteCrmProject,
+    /// Changer les étapes d'un CRM (fiche 0081).
+    ChangeCrmStages,
     /// Ce que l'utilisateur regarde : la note ouverte dans la colonne active, le texte
     /// sélectionné.
     ViewedNote,
@@ -109,7 +137,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 43] = [
+    pub const ALL: [Self; 57] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -151,6 +179,20 @@ impl AppTool {
         Self::CreateMindMap,
         Self::CreateCrm,
         Self::ReadCrm,
+        Self::CreateCrmAction,
+        Self::ChangeCrmAction,
+        Self::MoveCrmAction,
+        Self::DeleteCrmAction,
+        Self::CreateCrmPerson,
+        Self::ChangeCrmPerson,
+        Self::DeleteCrmPerson,
+        Self::CreateCrmCompany,
+        Self::ChangeCrmCompany,
+        Self::DeleteCrmCompany,
+        Self::CreateCrmProject,
+        Self::ChangeCrmProject,
+        Self::DeleteCrmProject,
+        Self::ChangeCrmStages,
         Self::ViewedNote,
         Self::ShowNote,
     ];
@@ -200,6 +242,20 @@ impl AppTool {
             Self::CreateMindMap => "create_mind_map",
             Self::CreateCrm => "create_crm",
             Self::ReadCrm => "read_crm",
+            Self::CreateCrmAction => "create_crm_action",
+            Self::ChangeCrmAction => "change_crm_action",
+            Self::MoveCrmAction => "move_crm_action",
+            Self::DeleteCrmAction => "delete_crm_action",
+            Self::CreateCrmPerson => "create_crm_person",
+            Self::ChangeCrmPerson => "change_crm_person",
+            Self::DeleteCrmPerson => "delete_crm_person",
+            Self::CreateCrmCompany => "create_crm_company",
+            Self::ChangeCrmCompany => "change_crm_company",
+            Self::DeleteCrmCompany => "delete_crm_company",
+            Self::CreateCrmProject => "create_crm_project",
+            Self::ChangeCrmProject => "change_crm_project",
+            Self::DeleteCrmProject => "delete_crm_project",
+            Self::ChangeCrmStages => "change_crm_stages",
             Self::ViewedNote => "viewed_note",
             Self::ShowNote => "show_note",
         }
@@ -274,8 +330,45 @@ impl AppTool {
             | Self::AddAttachment
             | Self::AddEntry
             | Self::CreateMindMap
-            | Self::CreateCrm => true,
+            | Self::CreateCrm
+            | Self::CreateCrmAction
+            | Self::ChangeCrmAction
+            | Self::MoveCrmAction
+            | Self::DeleteCrmAction
+            | Self::CreateCrmPerson
+            | Self::ChangeCrmPerson
+            | Self::DeleteCrmPerson
+            | Self::CreateCrmCompany
+            | Self::ChangeCrmCompany
+            | Self::DeleteCrmCompany
+            | Self::CreateCrmProject
+            | Self::ChangeCrmProject
+            | Self::DeleteCrmProject
+            | Self::ChangeCrmStages => true,
         }
+    }
+
+    /// Il change un CRM ou l'une de ses fiches (fiche 0081) : les quatorze outils du CRM, qui
+    /// passent par les mêmes cas d'usage que l'interface.
+    #[must_use]
+    pub const fn changes_a_crm(self) -> bool {
+        matches!(
+            self,
+            Self::CreateCrmAction
+                | Self::ChangeCrmAction
+                | Self::MoveCrmAction
+                | Self::DeleteCrmAction
+                | Self::CreateCrmPerson
+                | Self::ChangeCrmPerson
+                | Self::DeleteCrmPerson
+                | Self::CreateCrmCompany
+                | Self::ChangeCrmCompany
+                | Self::DeleteCrmCompany
+                | Self::CreateCrmProject
+                | Self::ChangeCrmProject
+                | Self::DeleteCrmProject
+                | Self::ChangeCrmStages
+        )
     }
 
     /// Il parle de l'écran de l'utilisateur (la note qu'il regarde, la note qu'on lui montre) :
@@ -334,6 +427,20 @@ impl AppTool {
             | Self::UnpinNote
             | Self::AddAttachment
             | Self::AddEntry
+            | Self::CreateCrmAction
+            | Self::ChangeCrmAction
+            | Self::MoveCrmAction
+            | Self::DeleteCrmAction
+            | Self::CreateCrmPerson
+            | Self::ChangeCrmPerson
+            | Self::DeleteCrmPerson
+            | Self::CreateCrmCompany
+            | Self::ChangeCrmCompany
+            | Self::DeleteCrmCompany
+            | Self::CreateCrmProject
+            | Self::ChangeCrmProject
+            | Self::DeleteCrmProject
+            | Self::ChangeCrmStages
             | Self::ShowNote => Some("path"),
             Self::ListWorkspaces
             | Self::ListTags
@@ -341,6 +448,20 @@ impl AppTool {
             | Self::ListTemplates
             | Self::ViewedNote => None,
         }
+    }
+}
+
+/// Les noms des outils qui changent un CRM, dits dans une phrase : « a, b, … ou z » (fiche 0081).
+#[must_use]
+pub fn crm_changing_tools_said() -> String {
+    let names: Vec<&str> = AppTool::ALL
+        .into_iter()
+        .filter(|tool| tool.changes_a_crm())
+        .map(AppTool::name)
+        .collect();
+    match names.split_last() {
+        Some((last, first)) => format!("{} ou {last}", first.join(", ")),
+        None => String::new(),
     }
 }
 
