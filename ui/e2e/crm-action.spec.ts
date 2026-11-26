@@ -186,7 +186,7 @@ test("une nouvelle action se crée depuis un jour de Ma semaine, avec « Enregis
     .getByRole("button", { name: "+ Ajouter une action" })
     .click();
   await expect(page.locator(".crm-aw-heading")).toHaveText("Nouvelle action");
-  await expect(panel(page).getByLabel("Date")).toHaveValue("2026-11-27");
+  await expect(panel(page).getByLabel("Date")).toHaveValue("27/11/2026");
   await panel(page).getByRole("textbox", { name: "Titre" }).fill("Relancer Marie");
   await panel(page).getByLabel("+ Ajouter une personne").selectOption("marie-durand");
   await panel(page).getByRole("button", { name: "Enregistrer" }).click();
