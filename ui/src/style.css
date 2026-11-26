@@ -1603,20 +1603,22 @@ button {
 /* Confirmation : une question avant une action, Annuler puis le bouton de l'action */
 .confirmation {
   width: min(var(--confirmation-width), 90vw);
-  padding: 1rem 1.1rem;
+  box-sizing: border-box;
+  padding: var(--space-5);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--bg);
   color: var(--text);
   box-shadow: 0 10px 30px var(--shadow);
   font-family: var(--sans);
   font-size: var(--confirmation-text-size);
+  line-height: var(--ui-line-height);
 }
 .confirmation::backdrop {
   background: var(--shadow);
 }
 .confirmation-question {
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-5);
 }
 .name-prompt-input {
   display: block;
@@ -1664,7 +1666,22 @@ button {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 0.8rem;
+  gap: var(--space-3);
+}
+/* « Annuler » est un bouton à bordure, comme celui de l'action : deux cibles de 36 points. */
+.confirmation-buttons button {
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--confirmation-text-size);
+  border-radius: var(--control-radius);
+}
+.confirmation-buttons .link {
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.confirmation-buttons .link:hover {
+  border-color: var(--accent);
 }
 
 /* À propos : l'icône, le nom, la version, l'auteur et le site, centrés */

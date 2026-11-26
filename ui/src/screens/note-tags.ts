@@ -1,6 +1,7 @@
 // La barre des étiquettes d'une colonne : sous les onglets, le champ d'étiquettes du contenu montré
 // (note, cahier de recherche, carte mentale, canvas, fiche du CRM). Rust lit et écrit ; la barre
 // montre ce qu'il rend, et n'est redessinée que si les étiquettes ou les suggestions changent.
+import type { TagSuggestion } from "../state/tag-field";
 import { tagField } from "./tag-field";
 
 /** Ce que la barre demande à l'application. */
@@ -8,7 +9,7 @@ export interface NoteTagsDeps {
   /** Les étiquettes du contenu `path`, lues dans son fichier. */
   readonly read: (path: string) => Promise<string[]>;
   /** Les étiquettes qui existent déjà dans l'espace de travail, proposées à la saisie. */
-  readonly suggestions: () => Promise<string[]>;
+  readonly suggestions: () => Promise<TagSuggestion[]>;
   /** Donne ces étiquettes au contenu `path` ; rend celles qui sont écrites. */
   readonly change: (path: string, tags: readonly string[]) => Promise<string[]>;
   readonly error: (error: unknown) => void;
@@ -28,7 +29,7 @@ const FIELD_KEY = "tag";
 class TagBar implements NoteTags {
   private path: string | null = null;
   private tags: readonly string[] = [];
-  private suggestions: readonly string[] = [];
+  private suggestions: readonly TagSuggestion[] = [];
   private draft = "";
   /** La dernière lecture demandée : une réponse arrivée après une plus récente est ignorée. */
   private generation = 0;
@@ -77,11 +78,11 @@ class TagBar implements NoteTags {
     this.bar.replaceChildren();
   }
 
-  private render(tags: readonly string[], suggestions: readonly string[]): void {
+  private render(tags: readonly string[], suggestions: readonly TagSuggestion[]): void {
     const same =
       !this.bar.hidden &&
       tags.join("\n") === this.tags.join("\n") &&
-      suggestions.join("\n") === this.suggestions.join("\n");
+      JSON.stringify(suggestions) === JSON.stringify(this.suggestions);
     this.tags = tags;
     this.suggestions = suggestions;
     this.bar.hidden = false;

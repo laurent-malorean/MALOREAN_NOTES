@@ -175,6 +175,15 @@ describe("espace de travail ouvert", () => {
     expect(t.calls.slice(3)).toEqual(["notes de «projets»", "chercher courses"]);
   });
 
+  it("si le dossier affiché n'est plus dans la liste des dossiers, la liste des notes passe à son dossier parent", async () => {
+    const t = setup(workspaceScreen([], (screen) => ({ ...screen, folder: "projets/crm1" })));
+    await t.workspace.refreshFolders();
+    expect(t.calls).toEqual(["dossiers", "étiquettes", "notes de «projets»"]);
+    const now = t.screen.get();
+    expect(now.kind === "workspace" && now.folder).toBe("projets");
+    expect(now.kind === "workspace" && now.notes).toEqual([listed("projetsn.md")]);
+  });
+
   it("avec un filtre par étiquette, la liste relue est celle des notes qui la portent", async () => {
     const t = setup(tagSelected(workspaceScreen(), "perso", []));
     await t.workspace.refreshList();

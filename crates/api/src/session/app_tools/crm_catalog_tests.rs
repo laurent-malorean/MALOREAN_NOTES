@@ -341,3 +341,11 @@ fn creating_a_crm_and_the_note_tools_send_to_the_crm_tools_not_to_the_file_tools
     );
     assert!(!description(AppTool::RenameNote).contains("outils de fichiers"));
 }
+
+#[test]
+fn the_folder_tree_tells_that_the_folders_of_the_fiches_of_a_crm_are_not_in_it() {
+    says(
+        AppTool::ListFolders,
+        &["dossiers des fiches d'un CRM", "outils du CRM"],
+    );
+}

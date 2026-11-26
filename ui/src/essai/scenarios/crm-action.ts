@@ -85,12 +85,72 @@ function chooseStatus(status: string): void {
   select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+/** Une checklist de deux éléments dont un coché, pour la barre de progression et l'élément barré. */
+async function addChecklist(env: Env, path: string, action: string): Promise<void> {
+  const body = (change: object) =>
+    env.bridge.changeCrmAction(path, action, { kind: "body", change } as never);
+  await body({ kind: "addChecklist", name: "Essai" });
+  await body({ kind: "addItem", list: 0, text: "Fait" });
+  await body({ kind: "addItem", list: 0, text: "À faire" });
+  await body({ kind: "checkItem", list: 0, item: 0, done: true });
+}
+
+/** La barre de progression à 50 % et l'élément coché barré. */
+function checkChecklist(trial: Trial): void {
+  const bar = find<HTMLElement>(".crm-aw-bar");
+  trial.check(
+    "la checklist a une barre de progression à 50 %",
+    bar?.getAttribute("role") === "progressbar" && bar.getAttribute("aria-valuenow") === "50",
+    bar?.outerHTML.slice(0, 120) ?? "absente",
+  );
+  const lines = (label: string) => {
+    const item = control(label);
+    return item === null ? "absent" : getComputedStyle(item).textDecorationLine;
+  };
+  trial.check(
+    "un élément coché est barré, un élément à faire ne l'est pas",
+    lines("Élément Fait") === "line-through" && lines("Élément À faire") === "none",
+    `${lines("Élément Fait")} / ${lines("Élément À faire")}`,
+  );
+}
+
+/** Le calendrier de l'application : grand, en français, semaine du lundi. */
+async function checkCalendar(trial: Trial): Promise<void> {
+  find<HTMLButtonElement>(".crm-aw .date-open")?.click();
+  const calendar = await until("le calendrier", () => find(".date-popup"), WAIT).catch(() => null);
+  const width = calendar === null ? 0 : rectOf(calendar).width;
+  const month = find(".date-month")?.textContent ?? "";
+  trial.check(
+    "le calendrier de l'application est grand (300 points au moins), en français, semaine du lundi",
+    width >= 300 && find(".date-weekday")?.textContent === "L" && /^[a-zéû]+ \d{4}$/i.test(month),
+    `${String(width)} ${month}`,
+  );
+  control("Date")?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+}
+
+/** La liste des étiquettes qui existent, à la prise du curseur dans le champ. */
+async function checkTagList(trial: Trial): Promise<void> {
+  const tags = control("Ajouter une étiquette");
+  tags?.focus();
+  const listed = await until("la liste des étiquettes", () => find(".tag-suggestion"), WAIT).catch(
+    () => null,
+  );
+  trial.check(
+    "le champ d'étiquettes propose celles qui existent déjà",
+    listed?.textContent?.includes("autre") === true,
+    listed?.textContent ?? "aucune liste",
+  );
+  tags?.blur();
+}
+
 async function actionScenario(env: Env, trial: Trial): Promise<void> {
   const { path } = await env.bridge.createCrm("", "Essai fenêtre");
   const name = await env.bridge.createCrmAction(path, draft("Appeler Marie"));
+  await env.bridge.createCrmAction(path, { ...draft("Relancer"), tags: ["autre"] });
+  await addChecklist(env, path, name);
   const file = `${notesFolder(env)}/${path.replace(/\.md$/, "")}/actions/${name}.md`;
   env.open(path);
-  await until("la carte", () => (findAll(".crm-card").length === 1 ? true : null), WAIT);
+  await until("les cartes", () => (findAll(".crm-card").length === 2 ? true : null), WAIT);
   clickCard("Appeler Marie");
   await until("la fenêtre de l'action", () => panel(), WAIT);
   trial.check(
@@ -99,6 +159,9 @@ async function actionScenario(env: Env, trial: Trial): Promise<void> {
     "",
   );
   checkPanel(trial);
+  checkChecklist(trial);
+  await checkCalendar(trial);
+  await checkTagList(trial);
   chooseStatus("Progress");
   const written = await until(
     "le statut écrit sur le disque",

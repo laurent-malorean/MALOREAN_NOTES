@@ -96,7 +96,7 @@ function tagsOf(deps: PanesDeps): { tags?: PaneTags } {
     tags: {
       read: noteTags,
       change: changeNoteTags,
-      suggestions: async () => (await listTags()).map((tag) => tag.name),
+      suggestions: async () => (await listTags()).map(({ name, count }) => ({ name, count })),
       changed: () =>
         void Promise.all([workspace.refreshTags(), workspace.refreshList()]).catch(events.error),
     },

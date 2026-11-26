@@ -11,6 +11,7 @@ import {
   press,
   type,
 } from "../../test-support/crm-view-fixture";
+import { withStages } from "../../test-support/crm-fixture";
 import "../theme.css";
 import "../style.css";
 
@@ -59,6 +60,34 @@ describe("CRM : étapes", () => {
     await vi.waitFor(() => expect(stages(m)).toEqual([{ kind: "add", name: "Devis" }]));
     await vi.waitFor(() => expect(document.querySelector(".crm-stage-input")).toBeNull());
     expect(buttonNamed("+ Ajouter une étape")).toBeDefined();
+  });
+
+  it("montre aussitôt l'étape ajoutée, sans quitter ni rouvrir le CRM", async () => {
+    const m = await mountCrm();
+    buttonNamed("+ Ajouter une étape").click();
+    field().focus();
+    type(field(), "Devis");
+    m.disk.crm = withStages(m.disk.crm, ["Progress", "WaitingFor", "Devis"]);
+    press(field(), "Enter");
+    await vi.waitFor(() => expect(column("Devis")).not.toBeNull());
+    expect(column("Devis").querySelector(".crm-stage-name")?.textContent).toBe("Devis");
+  });
+
+  it("montre aussitôt l'étape renommée, retirée ou déplacée", async () => {
+    const m = await mountCrm();
+    const order = () =>
+      [...document.querySelectorAll<HTMLElement>(".crm-column.stage")].map((c) => c.dataset.status);
+    (column("Progress").querySelector(".crm-stage-name") as HTMLElement).click();
+    field().focus();
+    type(field(), "En cours");
+    m.disk.crm = withStages(m.disk.crm, ["En cours", "WaitingFor"]);
+    press(field(), "Enter");
+    await vi.waitFor(() => expect(order()).toEqual(["En cours", "WaitingFor"]));
+    expect(document.querySelector(".crm-stage-input")).toBeNull();
+    m.disk.crm = withStages(m.disk.crm, ["En cours"]);
+    m.answer.value = true;
+    (column("WaitingFor").querySelector(".crm-stage-remove") as HTMLElement).click();
+    await vi.waitFor(() => expect(order()).toEqual(["En cours"]));
   });
 
   it("annule l'ajout par Échap, sans rien demander à Rust", async () => {

@@ -26,6 +26,10 @@ struct FoundNote {
     /// Le passage autour des mots cherchés, s'il y en avait.
     #[serde(skip_serializing_if = "Option::is_none")]
     excerpt: Option<String>,
+    /// Le nombre d'occurrences des mots cherchés dans le texte entier de la note (à l'intérieur
+    /// des mots aussi), s'il y avait des mots cherchés (fiche 0086).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    matches: Option<usize>,
     /// Pour le CRM ou une fiche d'un CRM : son type de contenu (`crm`, `crm-action`…).
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     content_type: Option<&'static str>,
@@ -124,6 +128,26 @@ fn tagged_paths(
     Ok(Some(notes.iter().map(|note| note.path().clone()).collect()))
 }
 
+/// Pour chaque note qui contient tous les mots de `query`, parmi les types demandés : son
+/// extrait et son nombre d'occurrences.
+fn found_by_words(
+    index: &dyn application::NoteIndex,
+    query: &SearchQuery,
+    types: &[ContentType],
+) -> Result<HashMap<NotePath, (String, Option<usize>)>, application::AppError> {
+    Ok(SearchNotes::new(index)
+        .among(types)
+        .execute(query, NoteOrder::Modified)?
+        .into_iter()
+        .map(|found| {
+            (
+                found.path,
+                (excerpt_text(found.excerpt.parts()), found.matches),
+            )
+        })
+        .collect())
+}
+
 impl Session {
     /// Les notes qui contiennent les mots cherchés, portent l'étiquette et sont dans le dossier
     /// demandés, parmi les types de contenu demandés ; les plus récentes d'abord.
@@ -136,19 +160,10 @@ impl Session {
             .map_err(|_| "dossier invalide".to_owned())?;
         let unavailable = |error: application::AppError| crate::ApiError::from(error).message;
         let tagged = tagged_paths(&*index, arguments).map_err(unavailable)?;
-        let excerpts: Option<HashMap<NotePath, String>> =
-            match optional(arguments, "query").and_then(SearchQuery::parse) {
-                Some(query) => Some(
-                    SearchNotes::new(&*index)
-                        .among(&types)
-                        .execute(&query, NoteOrder::Modified)
-                        .map_err(unavailable)?
-                        .into_iter()
-                        .map(|found| (found.path, excerpt_text(found.excerpt.parts())))
-                        .collect(),
-                ),
-                None => None,
-            };
+        let excerpts = optional(arguments, "query")
+            .and_then(SearchQuery::parse)
+            .map(|query| found_by_words(&*index, &query, &types).map_err(unavailable))
+            .transpose()?;
         let kept = |note: &&NoteSummary| {
             types.contains(&note.content_type())
                 && folder
@@ -173,7 +188,10 @@ impl Session {
                 tags: note.tags().to_vec(),
                 excerpt: excerpts
                     .as_ref()
-                    .and_then(|found| found.get(note.path()).cloned()),
+                    .and_then(|found| found.get(note.path()).map(|(excerpt, _)| excerpt.clone())),
+                matches: excerpts
+                    .as_ref()
+                    .and_then(|found| found.get(note.path()).and_then(|(_, matches)| *matches)),
                 content_type: crm_type_of(note.content_type()),
                 crm: note.container().map(NotePath::to_path),
                 node: None,
@@ -213,6 +231,7 @@ impl Session {
                 title: node.title,
                 tags: Vec::new(),
                 excerpt: Some(excerpt_text(node.excerpt.parts())),
+                matches: node.matches,
                 content_type: None,
                 crm: None,
                 node: node.node,

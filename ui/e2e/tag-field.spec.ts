@@ -97,10 +97,18 @@ test("le champ propose les étiquettes qui existent déjà, sans celles de la no
   page,
 }) => {
   await launch(page);
-  const options = bar(page).locator("datalist option");
+  await field(page).focus();
+  const options = page.locator(".tag-suggestion-name");
   await expect(options).toHaveCount(4);
-  const values = await options.evaluateAll((all) => all.map((o) => (o as HTMLOptionElement).value));
-  expect(values.sort()).toEqual(["grand compte", "labo", "projet", "travail"]);
+  expect((await options.allTextContents()).sort()).toEqual([
+    "grand compte",
+    "labo",
+    "projet",
+    "travail",
+  ]);
+  await expect(page.locator(".tag-suggestion-count").first()).toContainText("note");
+  await field(page).fill("zz");
+  await expect(page.locator(".tag-suggestion.create")).toHaveText(/Créer « zz »/);
 });
 
 test("ce qui est tapé dans la note est gardé quand on change ses étiquettes", async ({ page }) => {

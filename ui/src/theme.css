@@ -71,6 +71,20 @@
   --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --mono: "SF Mono", ui-monospace, Menlo, monospace;
 
+  /* Fenêtres et écrans du CRM, confirmation (décision 0084) : une grille de 4 points, des contrôles de 36, des cibles de clic de 32 au moins */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --control-height: 36px;
+  --control-radius: 8px;
+  --target-size: 32px;
+  --ui-text-size: 15px;
+  --ui-label-size: 13px;
+  --ui-line-height: 1.5;
+
   /* Lecture : la police, la taille et la largeur du texte suivent les réglages d'affichage */
   --text-font: var(--serif);
   --text-size-small: 16px;
@@ -102,7 +116,7 @@
   --search-window-top: calc(3.4rem + var(--window-bar-height));
   --search-window-width: 60rem;
   --confirmation-width: 26rem;
-  --confirmation-text-size: 14px;
+  --confirmation-text-size: 15px;
   --about-width: 20rem;
   --about-icon-size: 64px;
   --about-name-size: 17px;
@@ -232,7 +246,7 @@
   --muted: #9a9890;
   --marker: #5f5d58;
   --accent: #6fa0ff;
-  --on-accent: #ffffff;
+  --on-accent: #0b1b3a;
   --folder-icon-color: var(--accent);
   --tag-text: #b3ab98;
   --tag-background: #313134;

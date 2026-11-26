@@ -140,13 +140,13 @@ describe("fiche de personne : l'entreprise", () => {
       "Initech",
     ]);
     expect(select.value).toBe("acme");
-    const day = q(".crm-career-form input") as HTMLInputElement;
-    expect(day.value).toBe("2026-11-25");
+    const day = q(".crm-career-form .date-input") as HTMLInputElement;
+    expect(day.value).toBe("25/11/2026");
     expect(day.getAttribute("aria-label")).toBe("Jour du changement");
     select.value = "initech";
     select.dispatchEvent(new Event("change", { bubbles: true }));
-    day.value = "2026-12-01";
-    day.dispatchEvent(new Event("input", { bubbles: true }));
+    day.value = "01/12/2026";
+    day.dispatchEvent(new Event("change", { bubbles: true }));
     button("Valider").click();
     await settle();
     expect(calls(m, "changeCrmPerson")).toEqual([
@@ -183,14 +183,15 @@ describe("fiche de personne : l'entreprise", () => {
     button("Annuler").click();
     expect(document.querySelector(".crm-career-form")).toBeNull();
     button("Changer d'entreprise").click();
-    const day = q(".crm-career-form input") as HTMLInputElement;
+    const day = q(".crm-career-form .date-input") as HTMLInputElement;
     day.value = "";
-    day.dispatchEvent(new Event("input", { bubbles: true }));
-    button("Valider").click();
-    await settle();
-    expect(calls(m, "changeCrmPerson")).toEqual([]);
-    day.value = "2026-12-01";
-    day.dispatchEvent(new Event("input", { bubbles: true }));
+    day.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(day.value).toBe("25/11/2026");
+    day.value = "31/02/2026";
+    day.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(day.value).toBe("25/11/2026");
+    day.value = "01/12/2026";
+    day.dispatchEvent(new Event("change", { bubbles: true }));
     m.fail.next = "Jour invalide";
     button("Valider").click();
     await settle();

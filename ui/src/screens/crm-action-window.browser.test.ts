@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { TODAY } from "../../test-support/crm-fixture";
 import { callsTo, card, dayColumn, mountCrm, press } from "../../test-support/crm-view-fixture";
 import {
   buttonIn,
@@ -98,14 +97,14 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
   it("montre les parties dans l'ordre du § 8", async () => {
     await openedWindow();
     expect(labels()).toEqual([
-      ...["Personnes", "Statut", "Date", "Canal", "Projet", "Couleur", "Titre", "Description"],
-      ...["Étiquettes", "Notes liées", "Listes à cocher", "Commentaires"],
+      ...["Titre", "Statut", "Date", "Canal", "Personnes", "Projet", "Couleur", "Description"],
+      ...["Checklists", "Étiquettes", "Notes liées", "Commentaires"],
     ]);
     const order = [...document.querySelectorAll(".crm-aw-body > section")].map((s) => s.className);
     expect(order.map((c) => c.replace("crm-aw-section ", ""))).toEqual([
-      ...["crm-aw-people-section", "crm-aw-status", "crm-aw-project", "crm-aw-color"],
-      ...["crm-aw-title-section", "crm-aw-description-section", "crm-aw-tags-section"],
-      ...["crm-aw-notes-section", "crm-aw-checklists", "crm-aw-comments-section"],
+      ...["crm-aw-title-section", "crm-aw-status", "crm-aw-people-section", "crm-aw-project"],
+      ...["crm-aw-color", "crm-aw-description-section", "crm-aw-checklists"],
+      ...["crm-aw-tags-section", "crm-aw-notes-section", "crm-aw-comments-section"],
     ]);
     expect(buttonIn(DELETE_TEXT)).not.toBeUndefined();
     expect(DELETE_TEXT).toBe("Supprimer");
@@ -138,7 +137,7 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
     expect(optionTexts(status)).toEqual(["TODO", "Progress", "WaitingFor", "Done", "Cancel"]);
     expect(status.value).toBe("TODO");
     const date = control<HTMLInputElement>("Date");
-    expect([date.type, date.value]).toEqual(["date", "2026-11-22"]);
+    expect([date.type, date.value]).toEqual(["text", "22/11/2026"]);
     const channel = control<HTMLSelectElement>("Canal");
     expect(optionTexts(channel)).toEqual([
       ...["Sans canal", "appel", "e-mail", "rendez-vous", "courrier", "salon"],
@@ -154,7 +153,7 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
   it("montre « Sans canal » pour une action sans canal", async () => {
     await openedWindow("appel");
     expect(control<HTMLSelectElement>("Canal").value).toBe("");
-    expect(control<HTMLInputElement>("Date").value).toBe(TODAY);
+    expect(control<HTMLInputElement>("Date").value).toBe("25/11/2026");
     expect(control<HTMLSelectElement>("Statut").value).toBe("Progress");
   });
 
@@ -204,15 +203,24 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
       "var(--palette-orange)",
     );
     expect(text(".crm-aw-note-link")).toBe("Cahier des charges");
-    expect(buttonIn("+ Lier une note")).not.toBeUndefined();
-    const suggestions = [...document.querySelectorAll(".crm-aw datalist option")].map(
-      (o) => (o as HTMLOptionElement).value,
+    expect(buttonIn("Lier une note")).not.toBeUndefined();
+    // « urgent » et « salon » sont déjà sur l'action : seules celles qu'elle n'a pas sont proposées, à la prise du curseur.
+    const add = control<HTMLInputElement>("Ajouter une étiquette");
+    expect(document.querySelector(".tag-suggestions")).toBeNull();
+    add.focus();
+    const suggestions = [...document.querySelectorAll(".crm-aw .tag-suggestion")].map(
+      (o) => o.textContent,
     );
-    // « urgent » et « salon » sont déjà sur l'action : seules celles qu'elle n'a pas sont proposées.
     expect(suggestions).toEqual(["vip"]);
-    expect(control<HTMLInputElement>("Ajouter une étiquette").getAttribute("list")).toBe(
-      found("datalist")?.id,
-    );
+    expect(add.getAttribute("aria-controls")).toBe(found(".tag-suggestions")?.id);
+  });
+
+  it("choisit une étiquette qui existe d'un clic dans la liste : le geste « étiquettes » part", async () => {
+    const m = await openedWindow();
+    control<HTMLInputElement>("Ajouter une étiquette").focus();
+    (document.querySelector(".crm-aw .tag-suggestion") as HTMLElement).click();
+    await waitForGesture(m, 1);
+    expect(sent(m)).toEqual([{ kind: "tags", tags: ["urgent", "salon", "vip"] }]);
   });
 });
 
@@ -220,7 +228,7 @@ describe("fenêtre d'une action existante : enregistrement à chaque geste", () 
   it("change le statut, la date, le canal, le projet, la couleur dès qu'on les change", async () => {
     const m = await openedWindow();
     choose(control("Statut"), "Done");
-    commit(control("Date"), "2026-12-01");
+    commit(control("Date"), "01/12/2026");
     choose(control("Canal"), "salon");
     choose(control("Projet"), "salon");
     (document.querySelector('.crm-aw-swatch[aria-label="rouge"]') as HTMLElement).click();
@@ -298,8 +306,8 @@ describe("fenêtre d'une action existante : enregistrement à chaque geste", () 
   it("une date vidée reprend sa valeur", async () => {
     const m = await openedWindow();
     commit(control("Date"), "");
-    expect(control<HTMLInputElement>("Date").value).toBe("2026-11-22");
-    commit(control("Date"), "2026-11-22");
+    expect(control<HTMLInputElement>("Date").value).toBe("22/11/2026");
+    commit(control("Date"), "22/11/2026");
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(sent(m)).toEqual([]);
   });

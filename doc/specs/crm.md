@@ -88,6 +88,7 @@ clients/actions/2026-11-24-demande-de-devis.md  type: crm-action
 ```
 
 - Le CRM est le **conteneur** de toutes ses fiches dans l'index : le dossier du même nom fait foi.
+- Le dossier des fiches n'est pas montré dans la liste des dossiers (ni ses sous-dossiers) : les fiches se gèrent depuis l'écran du CRM, pas à la main ; seul le fichier du CRM s'y voit, dans son dossier. Le dossier existe toujours sur le disque (Finder, Obsidian, iCloud le voient). Un dossier est un dossier des fiches quand il porte le nom du fichier d'un CRM (même dossier parent, nom sans `.md`) et que toutes les notes qu'il contient, sous-dossiers compris, sont des fiches ; si l'on y a rangé une note ordinaire (ou un autre CRM), il reste montré. Un dossier montré ne devient pas introuvable pour autant : si le dossier affiché cesse d'être montré, la liste passe à son dossier parent. Aucun autre comportement ne change : recherche, liens et index voient toujours les fiches ; les outils pour les IA (`list_folders`) suivent la même règle (fiche 0089).
 - Le nom de fichier d'une entreprise, d'une personne ou d'un projet est son nom en kebab-case, suivi de `-2`, `-3`… s'il est pris. Celui d'une action est la date de sa création et son titre en kebab-case, suivis d'un numéro si le nom est pris.
 - **Renommer une fiche change son titre, jamais son nom de fichier** : les autres fiches la désignent par ce nom.
 - Une fiche désigne une autre fiche par `[[nom-de-fichier]]`, sans dossier ni extension.
@@ -221,7 +222,7 @@ couleur: bleu
 ### 4.9 Étiquettes
 
 - Le CRM, une entreprise, une personne, une action et un projet peuvent porter `tags` dans leur en-tête, comme toute note (mêmes règles de lecture et de nettoyage : sans doublon, la casse ne compte pas) ; la propriété est facultative et n'est écrite que s'il y a au moins une étiquette.
-- On les change dans le **champ d'étiquettes** de l'application (pastilles avec « × », champ « Ajouter une étiquette » et « + », suggestions des étiquettes de l'espace de travail) : § 8 pour une action, § 9 pour une entreprise et une personne.
+- On les change dans le **champ d'étiquettes** de l'application (pastilles avec « × », champ « Ajouter une étiquette » et « + », liste des étiquettes de l'espace de travail proposée à la prise du curseur et à la saisie) : § 8 pour une action, § 9 pour une entreprise et une personne.
 - Changer les étiquettes ne change que la propriété `tags` : les autres propriétés, le texte et les propriétés libres restent identiques octet pour octet (§ 4.8).
 - Les étiquettes d'une entreprise, d'une personne et d'un projet servent au filtre par étiquette de l'application ; le filtre du Kanban (§ 7.1) ne porte que sur celles des actions.
 
@@ -355,21 +356,23 @@ Une ligne d'action dit, avant son titre, ce que l'écran ne dit pas déjà : `da
 
 Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de large au plus, qui défile quand il est long. Un clic à côté, ou Échap, le ferme.
 
-**De haut en bas** :
-1. **Personnes** : les personnes de l'action, chacune « Nom · Entreprise » avec « × » pour la retirer ; un lien vers sa fiche ; au bout, une liste « + Ajouter une personne » (chaque personne avec son entreprise, celles déjà présentes écartées). Un lien « Copier les e-mails » copie dans le presse-papiers les e-mails des personnes qui en ont, séparés par « , », et le dit (« E-mails copiés. ») ; il n'apparaît que si l'une d'elles a un e-mail.
-2. **Statut**, **date** et **canal**, côte à côte.
-3. **Projet** : une liste, « Sans projet » en tête.
-4. **Couleur** : une pastille par couleur de la palette et « Sans couleur ».
-5. **Titre** : une ligne.
+**Mise en page** : une grille de 4 points (décision 0084) : 24 points entre deux blocs et de marge, 12 entre un titre de bloc et son contenu, des contrôles et des boutons de 36 points de haut, des cibles de clic de 32 au moins, un texte de 15 points sur 1,5 d'interligne ; la même échelle pour les fiches, les listes, le Kanban et la fenêtre de confirmation.
+
+**De haut en bas** (chaque partie est un bloc à part, séparé du suivant par un grand espace, avec son titre quand elle en a un) :
+1. **Titre** : une ligne.
+2. **Statut**, **date** et **canal**, côte à côte. La date se choisit avec le **sélecteur de date** de l'application (le même partout où l'on donne une date, § 9.2 comprise) : on écrit « JJ/MM/AAAA » ou on ouvre le calendrier par son bouton, un clic ou la saisie ; le calendrier est grand, en français (mois en lettres avec flèches, semaine commençant le lundi), repère aujourd'hui, marque le jour choisi, propose « Aujourd'hui » (et « Effacer » quand la date peut être vide) ; Échap ou un clic à côté le ferme ; au clavier, flèches pour changer de jour ou de semaine, PageHaut et PageBas pour le mois, Entrée pour valider. Une date fausse reprend la valeur d'avant.
+3. **Personnes** : les personnes de l'action, chacune « Nom · Entreprise » avec « × » pour la retirer ; un lien vers sa fiche ; au bout, une liste « + Ajouter une personne » (chaque personne avec son entreprise, celles déjà présentes écartées). Un lien « Copier les e-mails » copie dans le presse-papiers les e-mails des personnes qui en ont, séparés par « , », et le dit (« E-mails copiés. ») ; il n'apparaît que si l'une d'elles a un e-mail.
+4. **Projet** : une liste, « Sans projet » en tête.
+5. **Couleur** : une pastille par couleur de la palette et « Sans couleur ».
 6. **Description** : Markdown, en saisie de texte.
-7. **Étiquettes** : le champ d'étiquettes de l'application : les étiquettes en pastilles à leur couleur avec « × » pour retirer, un champ « Ajouter une étiquette » (Entrée pour la suivante) et un « + » qui ajoute le texte tapé ; il propose celles du CRM que l'action n'a pas.
-8. **Notes liées** : les notes liées, chacune cliquable (un clic l'ouvre dans la colonne active) avec « × » pour la délier ; « + Lier une note » ouvre la recherche de notes de l'application. Un lien vers une note absente est montré comme dans une note.
-9. **Listes à cocher** : plusieurs, chacune avec son nom, ses éléments à cocher et son avancement en pourcentage ; ajout, renommage, suppression d'une liste, ajout, modification, suppression et coche d'un élément.
+7. **Checklists**, juste sous la description, en bloc à part avec son titre : plusieurs, chacune avec son nom, une **barre de progression** verte et son avancement en pourcentage (« 75 % »), ses éléments à cocher (un élément coché est barré et atténué) ; « Ajouter un élément » et « Ajouter une checklist » sont des boutons (icône « + ») qui ouvrent un champ (Entrée ajoute et laisse le champ ouvert pour le suivant, Échap ou « Annuler » le ferme) ; renommage, suppression, coche. **Supprimer une checklist demande confirmation** (« Supprimer la checklist « Historique » et 4 éléments ? », bouton rouge « Supprimer », « Annuler ») ; une checklist qui a changé de place pendant la question n'est pas supprimée.
+8. **Étiquettes** : le champ d'étiquettes de l'application : les étiquettes en pastilles à leur couleur avec « × » pour retirer, un champ « Ajouter une étiquette » (Entrée pour la suivante) et un « + » qui ajoute le texte tapé ; il propose, dans une liste, celles du CRM que l'action n'a pas.
+9. **Notes liées** : les notes liées, chacune cliquable (un clic l'ouvre dans la colonne active) avec « × » pour la délier ; « Lier une note » (bouton « + ») ouvre la recherche de notes de l'application. Un lien vers une note absente est montré comme dans une note.
 10. **Commentaires** : le plus récent d'abord ; on ajoute, modifie et supprime un commentaire. Une adresse internet écrite dans un commentaire (seule, entre `<` `>` ou en `[texte](adresse)`) s'affiche en lien cliquable, ouvert dans le navigateur. Pas de commentaires sur une action en cours de création.
 11. **Supprimer** (action existante).
 
 **Enregistrement** :
-- Pour une action **existante**, à chaque geste : le statut, la date, le canal, les personnes, le projet, la couleur et les notes liées dès qu'on les change ; le titre à Entrée ou en quittant le champ ; la description en quittant le champ ; les étiquettes, les listes à cocher et les commentaires à chaque geste. La fenêtre reste ouverte, le Kanban derrière se met à jour. Pas de bouton « Enregistrer ». Un titre ou une date vidés reprennent leur valeur. Fermer la fenêtre enregistre ce qui ne l'est pas encore.
+- Pour une action **existante**, à chaque geste : le statut, la date, le canal, les personnes, le projet, la couleur et les notes liées dès qu'on les change ; le titre à Entrée ou en quittant le champ ; la description en quittant le champ ; les étiquettes, les checklists et les commentaires à chaque geste ; ce qu'on ajoute (élément, checklist, étiquette) apparaît aussitôt, même si le curseur est resté dans le champ d'ajout. La fenêtre reste ouverte, le Kanban derrière se met à jour. Pas de bouton « Enregistrer ». Un titre ou une date vidés reprennent leur valeur. Fermer la fenêtre enregistre ce qui ne l'est pas encore.
 - Une **nouvelle** action garde un bouton « Enregistrer » (Entrée dans le titre aussi), qui la crée.
 - Changer le **statut** efface le rang.
 
@@ -377,7 +380,7 @@ Un panneau à droite de la fenêtre, sur toute sa hauteur, de 600 points de larg
 
 Une fiche d'entreprise ou de personne s'ouvre dans un onglet d'une colonne d'édition, comme une note, à la place de l'éditeur de texte.
 
-Comme tout contenu, elle a, sous les onglets de sa colonne, le **champ d'étiquettes** de l'application (§ 4.9) : ses étiquettes en pastilles avec « × », un champ « Ajouter une étiquette » avec « + » et les suggestions de l'espace de travail. Il en va de même du CRM lui-même.
+Comme tout contenu, elle a, sous les onglets de sa colonne, le **champ d'étiquettes** de l'application (§ 4.9) : ses étiquettes en pastilles avec « × », un champ « Ajouter une étiquette » avec « + » et la liste des étiquettes de l'espace de travail (celles du contenu écartées, filtrée par ce qu'on tape, avec leur nombre de notes quand il est connu, choisie d'un clic ou aux flèches et Entrée ; une étiquette inconnue se crée par « Créer « mot » »). Il en va de même du CRM lui-même.
 
 ### 9.1 Fiche entreprise
 
@@ -402,7 +405,7 @@ Comme tout contenu, elle a, sous les onglets de sa colonne, le **champ d'étique
   - changer les étapes : le CRM et les actions des étapes touchées.
   Une première fiche crée aussi son dossier.
 - **Historique des versions** : celui de toute note.
-- **Changement venu d'ailleurs** (Claude, Obsidian, iCloud, le même CRM dans une autre colonne) : le CRM ouvert se met à jour aussitôt ; la fenêtre d'une action aussi, sauf pendant une saisie (la mise à jour attend la fin de la saisie).
+- **Changement venu d'ailleurs** (Claude, Obsidian, iCloud, le même CRM dans une autre colonne) : le CRM ouvert se met à jour aussitôt ; la fenêtre d'une action aussi, sauf pendant la saisie d'un titre, d'une description, d'un nom ou d'un commentaire (la mise à jour attend la fin de la saisie) ; un champ d'ajout (élément, checklist, étiquette) garde son texte à part et ne retient jamais la mise à jour.
 - **Conflit** : un geste ne change que son champ, sur la version la plus récente du fichier (§ 4.8). Si la fiche touchée n'existe plus, le geste est abandonné et le message « Cette fiche n'existe plus. » s'affiche ; la fenêtre d'une action supprimée se ferme.
 - **Erreur d'écriture** : un message le dit, le geste est retenté à l'enregistrement suivant.
 - **Type retiré** : si le fichier n'a plus son `type:`, l'onglet le montre comme une note ordinaire.

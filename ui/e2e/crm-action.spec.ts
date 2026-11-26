@@ -88,8 +88,8 @@ test("un clic sur une carte ouvre la fenêtre de l'action, à droite, avec tous 
     panel(page).getByRole("textbox", { name: "Titre" }),
     panel(page).getByRole("textbox", { name: "Description" }),
     panel(page).getByLabel("Ajouter une étiquette"),
-    panel(page).getByRole("button", { name: "+ Lier une note" }),
-    panel(page).getByRole("textbox", { name: "Ajouter une liste" }),
+    panel(page).getByRole("button", { name: "Lier une note" }),
+    panel(page).getByRole("button", { name: "Ajouter une checklist" }),
     panel(page).getByRole("textbox", { name: "Ajouter un commentaire" }),
     panel(page).getByRole("button", { name: "Copier les e-mails" }),
     page.locator(".crm-aw-delete"),
@@ -144,14 +144,15 @@ test("chaque geste est enregistré dans le fichier, le Kanban derrière se met �
   await expect.poll(() => saved(page, DEVIS)).toContain("Pour 4 postes");
 });
 
-test("les listes à cocher et les commentaires s'ajoutent, se cochent, s'écrivent dans le fichier", async ({
+test("les checklists et les commentaires s'ajoutent, se cochent, s'écrivent dans le fichier", async ({
   page,
 }) => {
   await openDevis(page);
   await panel(page).getByRole("checkbox", { name: "Cocher Chiffrer" }).check();
   await expect.poll(() => saved(page, DEVIS)).toContain("- [x] Chiffrer");
   await expect(page.locator(".crm-aw-progress")).toHaveText(["100 %"]);
-  const newList = panel(page).getByRole("textbox", { name: "Ajouter une liste" });
+  await panel(page).getByRole("button", { name: "Ajouter une checklist" }).click();
+  const newList = panel(page).getByRole("textbox", { name: "Ajouter une checklist" });
   await newList.fill("Envoi");
   await newList.press("Enter");
   await expect.poll(() => saved(page, DEVIS)).toContain("#### Liste à cocher : Envoi");
@@ -185,7 +186,7 @@ test("une nouvelle action se crée depuis un jour de Ma semaine, avec « Enregis
     .getByRole("button", { name: "+ Ajouter une action" })
     .click();
   await expect(page.locator(".crm-aw-heading")).toHaveText("Nouvelle action");
-  await expect(panel(page).getByLabel("Date")).toHaveValue("2026-11-27");
+  await expect(panel(page).getByLabel("Date")).toHaveValue("27/11/2026");
   await panel(page).getByRole("textbox", { name: "Titre" }).fill("Relancer Marie");
   await panel(page).getByLabel("+ Ajouter une personne").selectOption("marie-durand");
   await panel(page).getByRole("button", { name: "Enregistrer" }).click();

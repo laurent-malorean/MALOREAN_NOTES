@@ -119,6 +119,34 @@ async function dragScenario(env: Env, trial: Trial): Promise<void> {
     /statut:\s*Progress/.test(text),
     text.slice(0, 120),
   );
+  await checkFichesFolderHidden(env, trial, path, file !== null);
+}
+
+/** Le dossier des fiches existe sur le disque (on vient d'y lire une fiche), mais la liste des dossiers ne le montre pas. */
+async function checkFichesFolderHidden(
+  env: Env,
+  trial: Trial,
+  crm: string,
+  onDisk: boolean,
+): Promise<void> {
+  const stem = crm.replace(/\.md$/, "");
+  const listed = await env.bridge.listFolders();
+  trial.check(
+    "le dossier des fiches du CRM existe sur le disque",
+    onDisk,
+    "aucune fiche lue dans son dossier",
+  );
+  trial.check(
+    "la liste des dossiers ne contient ni le dossier des fiches du CRM ni ses sous-dossiers",
+    !listed.some((folder) => folder === stem || folder.startsWith(`${stem}/`)),
+    listed.join(),
+  );
+  const shown = findAll(".folders-list .folder-name").map((name) => name.textContent);
+  trial.check(
+    "la liste des dossiers montrée à l'écran n'a pas le dossier des fiches du CRM",
+    !shown.includes(stem) && !shown.includes("actions"),
+    shown.join(),
+  );
 }
 
 export const crmScenarios = (env: Env): Scenario[] => [

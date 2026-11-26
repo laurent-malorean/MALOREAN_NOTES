@@ -22,8 +22,8 @@ export interface MountedCrm {
   disk: { crm: CrmItem };
   /** Le prochain geste ou la prochaine lecture échoue avec ce message. */
   fail: { next: string | null; read: string | null };
-  /** La réponse à la prochaine confirmation. */
-  answer: { value: boolean };
+  /** La réponse à la prochaine confirmation, donnée une fois `wait` tenue s'il y en a une. */
+  answer: { value: boolean; wait?: Promise<unknown> };
   /** Le retard, en millisecondes, de chacune des prochaines lectures. */
   delays: number[];
   /** Ce que la recherche de notes rend au prochain « Lier une note » (`null` : on annule). */
@@ -127,6 +127,7 @@ export async function mountCrm(options: MountOptions = {}): Promise<MountedCrm> 
       : {}),
     confirm: async (question) => {
       mounted.questions.push(question);
+      await mounted.answer.wait;
       return mounted.answer.value;
     },
     error: (error) => mounted.errors.push(error),

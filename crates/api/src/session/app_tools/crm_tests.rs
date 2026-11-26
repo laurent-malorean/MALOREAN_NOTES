@@ -40,7 +40,7 @@ fn a_search_finds_the_cards_of_a_crm_with_their_type_and_the_path_of_their_crm()
         *action,
         json!({ "path": "clients/actions/2026-11-24-devis.md", "title": "Demande de devis",
                 "folder": "clients/actions", "tags": ["urgent"], "type": "crm-action",
-                "crm": "clients.md", "excerpt": "Demande de devis Pour trois postes. urgent" })
+                "crm": "clients.md", "excerpt": "Demande de devis Pour trois postes. urgent", "matches": 2 })
     );
     let mut found_paths = paths(&by_words);
     found_paths.sort_unstable();

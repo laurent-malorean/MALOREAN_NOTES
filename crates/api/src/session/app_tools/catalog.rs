@@ -65,15 +65,20 @@ fn search_notes() -> Described {
     (
         "Cherche des notes de l'espace de travail avec l'index de MALOREAN Notes, sans \
          parcourir les fichiers : les notes qui contiennent tous les mots de `query` \
-         (majuscules et accents ignorés), et/ou qui portent l'étiquette `tag`, et/ou rangées \
+         (majuscules et accents ignorés ; chaque mot est cherché aussi à l'intérieur d'un mot \
+         plus long : « tomy » trouve « anatomy », ce n'est pas une recherche de mot entier), et/ou qui portent l'étiquette `tag`, et/ou rangées \
          dans `folder` (sous-dossiers compris), et/ou d'un type de contenu (`note`, \
          `cahier-de-recherche`, `carte-mentale`, `crm` ou une fiche d'un CRM : `crm-entreprise`, \
          `crm-personne`, `crm-action`, `crm-projet`). Rend 100 notes au plus : chemin, titre, \
-         dossier, étiquettes, et un extrait autour des mots trouvés ; pour un CRM ou une fiche, \
+         dossier, étiquettes, et un extrait autour des mots trouvés ; avec `query`, aussi \
+         `matches`, le nombre d'occurrences des mots cherchés dans le texte entier de la note \
+         (à l'intérieur des mots aussi) : il aide à juger la pertinence, un seul résultat est \
+         peut-être un mot trouvé par hasard dans un mot plus long, et `read_note` lit la note \
+         entière pour le confirmer ; pour un CRM ou une fiche, \
          aussi `type` et, pour une fiche, `crm`, le chemin de son CRM.",
         input(
             json!({
-                "query": text("Les mots cherchés dans le texte des notes."),
+                "query": text("Les mots cherchés dans le texte des notes, chacun aussi à l'intérieur d'un mot plus long (`tomy` trouve `anatomy`)."),
                 "tag": text("Une étiquette que les notes doivent porter."),
                 "folder": text("Un dossier depuis l'espace de travail : `Travail/Projets`."),
                 "content_type": text(
@@ -123,7 +128,9 @@ fn list_folders() -> Described {
          l'arbre de MALOREAN Notes (chaque dossier suivi de ses sous-dossiers, par ordre \
          alphabétique), sans la racine ; un dossier vide y est aussi. Les dossiers cachés, les \
          dossiers de pièces jointes (`….assets`), `node_modules` et la corbeille n'en font pas \
-         partie. Les notes d'un dossier se listent avec `search_notes` (paramètre `folder`).",
+         partie, ni les dossiers des fiches d'un CRM (`clients/` pour `clients.md`) : un CRM se \
+         lit et se change avec les outils du CRM. Les notes d'un dossier se listent avec \
+         `search_notes` (paramètre `folder`).",
         input(json!({}), &[]),
     )
 }

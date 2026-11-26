@@ -17,7 +17,7 @@ use domain::{MeaningModel, MeaningVector};
 use infrastructure::CandleEmbedder;
 use serde_json::Value;
 
-const MODEL: MeaningModel = MeaningModel::Small;
+pub(crate) const MODEL: MeaningModel = MeaningModel::Small;
 
 /// Le dossier est-il celui du modèle, entier (chaque fichier de la bonne taille) ?
 fn is_whole(folder: &Path) -> bool {
@@ -28,7 +28,7 @@ fn is_whole(folder: &Path) -> bool {
 
 /// Le vrai modèle sur ce Mac, s'il y est : celui de l'application, sinon celui du cache de
 /// Hugging Face (la révision choisie, ou n'importe quelle autre).
-fn real_model_folder() -> Option<PathBuf> {
+pub(crate) fn real_model_folder() -> Option<PathBuf> {
     let home = PathBuf::from(std::env::var_os("HOME")?);
     let application = home.join("Library/Application Support/com.malorean.notes/models/e5-small");
     let cache =

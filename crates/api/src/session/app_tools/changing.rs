@@ -131,7 +131,9 @@ impl Session {
 
     /// Le dossier `path` existe, avec chaque dossier qui manquait sur son chemin ; rend son chemin.
     fn ensure_folder(&self, path: &str) -> Result<String, String> {
-        let existing = self.list_folders().map_err(|error| error.message)?;
+        let existing = self
+            .list_existing_folders()
+            .map_err(|error| error.message)?;
         let mut parent = String::new();
         for name in path.split('/').filter(|name| !name.is_empty()) {
             let folder = if parent.is_empty() {

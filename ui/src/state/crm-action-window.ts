@@ -139,6 +139,13 @@ export function progress(list: ChecklistItem): number {
   return list.items.length === 0 ? 0 : Math.round((list.done / list.items.length) * 100);
 }
 
+/** La question avant de supprimer une checklist : son nom et, s'il y en a, le nombre de ses éléments. */
+export function removeChecklistQuestion(list: ChecklistItem): string {
+  const count = list.items.length;
+  const items = count === 0 ? "" : ` et ${String(count)} élément${count > 1 ? "s" : ""}`;
+  return `Supprimer la checklist « ${list.name} »${items} ?`;
+}
+
 /** Les commentaires du plus récent au plus ancien, chacun avec sa place dans l'ordre écrit (c'est elle que Rust attend). */
 export function newestFirst(
   comments: readonly CommentItem[],
