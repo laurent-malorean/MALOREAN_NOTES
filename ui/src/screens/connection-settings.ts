@@ -15,6 +15,31 @@ export const WORKSPACES_LOADING = "Lecture des espaces de travail…";
 export const WORKSPACES_EMPTY =
   "Aucun espace de travail : ajoutez-en un depuis le sélecteur d'espace de travail.";
 
+/** Les fichiers où coller les blocs de configuration (documentation de Claude Code et de Codex). */
+export const CLAUDE_CONFIG_FILE = ".mcp.json";
+export const CODEX_CONFIG_FILE = "~/.codex/config.toml";
+
+/** La phrase sous chaque bloc : où le coller ; le nom du fichier est mis en style code. */
+interface Where {
+  before: string;
+  file: string;
+  after: string;
+}
+const CLAUDE_WHERE: Where = {
+  before: "Collez ce bloc tel quel dans le fichier ",
+  file: CLAUDE_CONFIG_FILE,
+  after:
+    ", à la racine du dossier ouvert dans l'éditeur. Si le fichier existe déjà, ajoutez l'entrée du bloc dans « mcpServers ».",
+};
+const CODEX_WHERE: Where = {
+  before: "Collez ce bloc tel quel à la fin du fichier ",
+  file: CODEX_CONFIG_FILE,
+  after: ".",
+};
+const sentence = (where: Where) => `${where.before}${where.file}${where.after}`;
+export const CLAUDE_CONFIG_WHERE = sentence(CLAUDE_WHERE);
+export const CODEX_CONFIG_WHERE = sentence(CODEX_WHERE);
+
 /** Ce que l'on copie : la clé, ou l'un des deux blocs de configuration. */
 export type Copyable = "key" | "claude" | "codex";
 
@@ -70,17 +95,24 @@ function copyButton(title: string, copy: () => Promise<boolean>): HTMLButtonElem
   return created;
 }
 
-/** Un texte à copier, sous son titre, avec son bouton « Copier ». */
+/** Un texte à copier, sous son titre (et sa phrase « où le coller », s'il en a une), avec son bouton « Copier ». */
 function copyable(
   title: string,
   text: string,
   tag: "code" | "pre",
   copy: () => Promise<boolean>,
+  where?: Where,
 ): HTMLElement {
   const block = element("div", "connection-copyable", "");
   const body = element(tag, "connection-text", text);
   body.setAttribute("aria-label", title);
-  block.append(element("p", "setting-help", title), body, copyButton(title, copy));
+  block.append(element("p", "setting-help", title));
+  if (where) {
+    const line = element("p", "setting-help connection-where", where.before);
+    line.append(element("code", "", where.file), where.after);
+    block.append(line);
+  }
+  block.append(body, copyButton(title, copy));
   return block;
 }
 
@@ -119,8 +151,15 @@ function withKey(key: ConnectionKeyItem, handlers: ConnectionHandlers): HTMLElem
       key.claudeConfig,
       "pre",
       () => handlers.copy("claude"),
+      CLAUDE_WHERE,
     ),
-    copyable("Configuration pour Codex", key.codexConfig, "pre", () => handlers.copy("codex")),
+    copyable(
+      "Configuration pour Codex",
+      key.codexConfig,
+      "pre",
+      () => handlers.copy("codex"),
+      CODEX_WHERE,
+    ),
     button("Révoquer la clé", "Révoquer la clé", handlers.revoke),
   ];
 }

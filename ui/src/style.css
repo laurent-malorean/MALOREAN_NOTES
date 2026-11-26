@@ -2521,6 +2521,20 @@ button.claude-chip:hover {
 .connection-copyable .setting-help {
   font-weight: 600;
 }
+/* La phrase « où coller le bloc » : texte courant, le nom du fichier en police de code */
+.connection-copyable .setting-help.connection-where {
+  margin: 0;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.connection-where code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  padding: 0.05rem 0.3rem;
+  background: var(--code-block-background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
 /* Le bouton qui vient de copier : vert (la couleur « succès » du thème), lisible en clair et en sombre */
 .settings .tool.copied {
   color: var(--success);

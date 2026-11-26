@@ -1,7 +1,11 @@
 // Essai de l'application réelle (fiche 0054) : l'écran des Réglages dans la vraie fenêtre. Ses onglets s'ouvrent
 // par un clic ; les rectangles réels disent ce qui se voit (barres de l'onglet « Index »).
 import type { ConnectionInfo } from "../../bridge";
-import { renderConnectionSettings } from "../../screens/connection-settings";
+import {
+  CLAUDE_CONFIG_FILE,
+  CODEX_CONFIG_FILE,
+  renderConnectionSettings,
+} from "../../screens/connection-settings";
 import type { Scenario, Trial } from "../runner";
 import { until } from "../wait";
 import { type Env, find, findAll, type Rect, rectOf } from "./env";
@@ -191,6 +195,26 @@ function checkCopyButtonBox(trial: Trial, panel: HTMLElement, first: HTMLButtonE
   );
 }
 
+/** Sous le titre de chaque bloc, la phrase qui dit dans quel fichier le coller, dans la fenêtre des Réglages. */
+function checkWhereSentences(trial: Trial, panel: HTMLElement, window: HTMLElement): void {
+  const sentences = findAll<HTMLElement>(".connection-where", panel);
+  const frame = rectOf(window);
+  const files = sentences.map((sentence) => find("code", sentence)?.textContent ?? "sans fichier");
+  trial.check(
+    "une phrase « où coller » sous chacun des deux blocs, avec le nom du fichier en style code",
+    files.join("|") === [CLAUDE_CONFIG_FILE, CODEX_CONFIG_FILE].join("|"),
+    files.join(", "),
+  );
+  trial.check(
+    "les deux phrases et leurs blocs restent dans la largeur de la fenêtre des Réglages",
+    findAll<HTMLElement>(".connection-where, .connection-text", panel).every((e) => {
+      const box = rectOf(e);
+      return box.x >= frame.x && box.x + box.width <= frame.x + frame.width;
+    }),
+    `fenêtre de ${Math.round(frame.width)} points`,
+  );
+}
+
 /** Les boutons « Copier » : à la taille des boutons des Réglages, sous le texte ; un clic les passe au vert, « ✓ Copié ». */
 async function connectionTab(trial: Trial): Promise<void> {
   const window = await openSettings();
@@ -198,6 +222,7 @@ async function connectionTab(trial: Trial): Promise<void> {
   const copies = await drawnKeyButtons(panel);
   const first = copies[0] as HTMLButtonElement;
   checkCopyButtonBox(trial, panel, first);
+  checkWhereSentences(trial, panel, window);
   const before = getComputedStyle(first).color;
   first.click();
   await until("« ✓ Copié »", () => (first.textContent === "✓ Copié" ? true : null), WAIT);

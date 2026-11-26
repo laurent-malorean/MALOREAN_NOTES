@@ -3,6 +3,10 @@ import "../theme.css";
 import "../style.css";
 import type { AiWorkspaceItem, ConnectionInfo } from "../bridge";
 import {
+  CLAUDE_CONFIG_FILE,
+  CLAUDE_CONFIG_WHERE,
+  CODEX_CONFIG_FILE,
+  CODEX_CONFIG_WHERE,
   CONNECTION_LOADING,
   COPIED_FOR_MS,
   CONNECTION_PURPOSE,
@@ -85,7 +89,9 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
       "Clé de branchement créée le 25 novembre 2026.",
       "Clé de branchement",
       "Configuration pour Claude (extension VS Code, Claude Code hors de l'application)",
+      CLAUDE_CONFIG_WHERE,
       "Configuration pour Codex",
+      CODEX_CONFIG_WHERE,
     ]);
     const texts = [...t.frame.querySelectorAll(".connection-text")];
     expect(texts.map((text) => text.tagName)).toEqual(["CODE", "PRE", "PRE"]);
@@ -101,6 +107,57 @@ describe("partie « Brancher une IA » de l'écran de réglages", () => {
       "Révoquer la clé",
     ]);
     expect(t.frame.textContent).not.toContain("Créer une clé de branchement");
+  });
+
+  it("dit sous chaque bloc dans quel fichier le coller, le nom du fichier en style code", () => {
+    expect(CLAUDE_CONFIG_FILE).toBe(".mcp.json");
+    expect(CODEX_CONFIG_FILE).toBe("~/.codex/config.toml");
+    expect(CLAUDE_CONFIG_WHERE).toBe(
+      "Collez ce bloc tel quel dans le fichier .mcp.json, à la racine du dossier ouvert dans l'éditeur. Si le fichier existe déjà, ajoutez l'entrée du bloc dans « mcpServers ».",
+    );
+    expect(CODEX_CONFIG_WHERE).toBe(
+      "Collez ce bloc tel quel à la fin du fichier ~/.codex/config.toml.",
+    );
+    const t = setup(KEY);
+    const blocks = [...t.frame.querySelectorAll(".connection-copyable")].slice(1);
+    expect(blocks.map((block) => block.querySelector(".connection-where")?.textContent)).toEqual([
+      CLAUDE_CONFIG_WHERE,
+      CODEX_CONFIG_WHERE,
+    ]);
+    expect(
+      blocks.map((block) =>
+        [...block.querySelectorAll(".connection-where code")].map((c) => c.textContent),
+      ),
+    ).toEqual([[".mcp.json"], ["~/.codex/config.toml"]]);
+    // Titre, puis phrase, puis bloc, puis bouton.
+    for (const block of blocks) {
+      expect([...block.children].map((child) => child.className)).toEqual([
+        "setting-help",
+        "setting-help connection-where",
+        "connection-text",
+        "tool",
+      ]);
+    }
+    // La clé seule n'a pas de fichier.
+    const key = t.frame.querySelector(".connection-copyable");
+    expect(key?.querySelector(".connection-where")).toBeNull();
+  });
+
+  it("garde les phrases et les blocs dans la largeur de la partie, même longs", () => {
+    const t = setup({
+      key: {
+        secret: "abc123",
+        createdOn: "25 novembre 2026",
+        claudeConfig: `{\n  "command": "/Applications/${"x".repeat(200)}"\n}`,
+        codexConfig: `command = "/Applications/${"y".repeat(200)}"`,
+      },
+    });
+    const frame = t.frame.getBoundingClientRect();
+    for (const element of t.frame.querySelectorAll(".connection-where, .connection-text")) {
+      const box = element.getBoundingClientRect();
+      expect(box.left).toBeGreaterThanOrEqual(frame.left);
+      expect(box.right).toBeLessThanOrEqual(frame.right);
+    }
   });
 
   it("copie la clé, le bloc de Claude et le bloc de Codex, chacun par son bouton", () => {
