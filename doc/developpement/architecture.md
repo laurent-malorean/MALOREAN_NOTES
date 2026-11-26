@@ -2,7 +2,7 @@
 
 ![Architecture](architecture.svg)
 
-Produit : `doc/produit.md`. Règles de qualité et contrôles : `doc/code.md`. Vocabulaire : `doc/ontology.md`.
+Produit : `doc/produit.md`. Règles de qualité et contrôles : `doc/developpement/code.md`. Vocabulaire : `doc/ontology.md`.
 
 ## Organisation du projet
 
@@ -173,6 +173,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0089-dossiers-de-fiches-cachees.md` | Le dossier des fiches d'un CRM (même nom que son fichier, que des fiches dedans) n'est pas montré dans la liste des dossiers, ni par `list_folders` ; rien ne bouge sur le disque ; le dossier affiché caché retombe sur son parent |
 | `0092-barre-d-outils-centree.md` | La bande du haut est centrée dans la zone de l'éditeur (chaque ligne), et non rangée contre le bord droit ; règle CSS seule, seuils inchangés |
 | `0098-bande-du-haut-unique.md` | Une seule bande tout en haut de la fenêtre (réserve des boutons du Mac et bouton des panneaux, outils centrés, recherche) à la place de la barre de la fenêtre et de la bande du haut séparées ; remplace en partie la fiche 0085 |
+| `0101-licence-agpl-et-marque.md` | Code sous AGPL-3.0 ou ultérieure (remplace MIT) : chacun reprend le code, les versions dérivées restent open source ; le nom et l'icône restent à l'auteur |
 
 ## Construire l'application (`.app`)
 

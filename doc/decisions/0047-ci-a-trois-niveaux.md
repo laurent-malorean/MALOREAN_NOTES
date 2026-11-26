@@ -43,5 +43,5 @@ La CI prenait 41 % du temps de travail (30,2 h sur 73,6 h, 394 passages) ; une g
 
 ## Conséquences
 
-- `CLAUDE.md`, `doc/code.md` (§ 7 et « Temps de la CI ») et `doc/specs/ci-plus-rapide.md` décrivent les trois niveaux ; `scripts/test-ci-gate.sh` et `scripts/test-ci-doc-only.sh` prouvent la barrière, la dette et la voie documentation.
+- `CLAUDE.md`, `doc/developpement/code.md` (§ 7 et « Temps de la CI ») et `doc/specs/ci-plus-rapide.md` décrivent les trois niveaux ; `scripts/test-ci-gate.sh` et `scripts/test-ci-doc-only.sh` prouvent la barrière, la dette et la voie documentation.
 - Une erreur du domaine qu'aucun test du domaine n'attrape (seulement une autre crate) devient une survivante : le test s'écrit dans la crate du code.

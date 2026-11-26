@@ -1,4 +1,4 @@
-// Assemblage : crée chaque partie de l'interface et les relie, sans logique (le fonctionnement vit sous app/, doc/code.md).
+// Assemblage : crée chaque partie de l'interface et les relie, sans logique (le fonctionnement vit sous app/, doc/developpement/code.md).
 import * as bridge from "./bridge";
 import { createClaudeColumn } from "./app/claude-column";
 import { createConnectAi } from "./app/connect-ai";

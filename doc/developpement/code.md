@@ -1,6 +1,6 @@
 # Qualité du code — bonnes pratiques (Rust, application macOS)
 
-Le guide pour garder le code propre. Vocabulaire : `doc/ontology.md`. Architecture : `doc/architecture.md`. Chaque règle dit **comment on la vérifie** ; une règle sans vérification est un vœu.
+Le guide pour garder le code propre. Vocabulaire : `doc/ontology.md`. Architecture : `doc/developpement/architecture.md`. Chaque règle dit **comment on la vérifie** ; une règle sans vérification est un vœu.
 
 Les seuils ci-dessous sont des **cibles**. Un dépassement existant est suivi dans `TODO.md` (« Qualité du code ») ; on ne l'aggrave pas, et on le réduit quand on touche au code concerné.
 
@@ -147,7 +147,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - Spécification technique et fonctionnelle à jour dans le même commit que l'évolution.
 - `doc/migration.md` à chaque changement de format des données gardées : l'application doit relire les données des versions précédentes.
 - Un rapport d'audit est daté ; quand le code change, on le refait au lieu de le croire.
-- Une décision d'architecture s'écrit dans `doc/decisions/` (voir `doc/architecture.md`).
+- Une décision d'architecture s'écrit dans `doc/decisions/` (voir `doc/developpement/architecture.md`).
 
 ## 11. Performance
 
@@ -169,7 +169,7 @@ Une donnée gardée (mémoire, index, cache, fichier) sert un besoin et ne conti
 - Binaire universel (Apple Silicon et Intel), sauf décision contraire.
 - Application signée, durcie (hardened runtime) et notarisée par Apple avant toute distribution.
 - Numéro de version Majeur.mineur.correctif : `Cargo.toml` (`[workspace.package]`) et `ui/package.json` le portent tous deux et restent identiques ; `scripts/version-coherente.sh` le vérifie (barrière de commit et, avant toute compilation, `.github/workflows/application.yml`). *Vérifié par : `scripts/test-version-coherente.sh`.*
-- Version livrée : un tag `vX.Y.Z` fabrique l'application sur un Mac de GitHub et joint le `.dmg` à la Release du tag (fiche 0083 ; procédure dans `doc/architecture.md`, « Fabriquer une version »). Pour l'instant : Apple Silicon seulement, non signée ni notarisée (clic droit puis « Ouvrir »), en attendant la signature.
+- Version livrée : un tag `vX.Y.Z` fabrique l'application sur un Mac de GitHub et joint le `.dmg` à la Release du tag (fiche 0083 ; procédure dans `doc/developpement/architecture.md`, « Fabriquer une version »). Pour l'instant : Apple Silicon seulement, non signée ni notarisée (clic droit puis « Ouvrir »), en attendant la signature.
 
 ## 14. Réglages des contrôles
 
@@ -269,7 +269,7 @@ Politique en vigueur (fiches 0047 et 0049) :
 
 **CI de nuit sur GitHub, par groupes** (fiches 0050 puis 0059) : `.github/workflows/mutation.yml` joue chaque nuit (02:17 UTC) et à la demande (onglet Actions, « Run workflow », entrée facultative « groupe ») la mutation de tout le Rust (`domain`, `application`, `infrastructure`, `api`) en **groupes de mutation parallèles**, un par machine (25 minutes au plus, `fail-fast: false`). Les groupes sont décrits une seule fois dans `scripts/mutation-groupes.json` (nom, crate, fichiers par motifs de cargo-mutants ; le groupe « autres » de chaque crate prend tout fichier qu'aucun autre ne nomme) ; une première tâche en tire la matrice, `scripts/mutation-groupe.sh` joue un groupe (`--all-features --jobs 4 --test-workspace=false`, coupure 30 s pour le domaine, 90 s ailleurs, rejeu des dépassements de la fiche 0053), la dernière tâche (étape Summary) résume chaque groupe (erreurs, attrapées, survivantes, dépassements, durée). `domain` et `application` jouent sur Linux, `infrastructure` et `api` sur macOS (Accelerate, Tauri). Un survivant fait échouer son groupe (e-mail de GitHub), un dépassement persistant avertit ; le bilan de chaque groupe est joint en artefact `mutation-<groupe>` (`missed.txt`, `outcomes.json`, `bilan.json`). Un survivant se corrige à la tâche suivante : jamais une barrière. Mesure du 23/11 (ancien travail du domaine seul, 992 erreurs en 47 min) et du 25/11 (1 413 erreurs, coupé à 75 min) : voir la fiche 0059 pour les tailles de groupes (`scripts/mutation-groupes.sh compter`). Scénarios : `scripts/test-ci-mutation-groupes.sh` (matrice, exhaustivité des fichiers, groupe joué avec un faux cargo-mutants, résumé, forme du travail). Le planning n'est actif que depuis la branche `main`.
 
-Dossiers de travail (`git worktree`, `doc/travail-en-branches.md`) : la CI y fonctionne. L'empreinte de validation (`--verifier`) est propre à chaque dossier (`git rev-parse --git-dir`) ; le tag `ci-verte`, les verdicts de mutation et la liste de suivi sont communs à tous (`git rev-parse --git-common-dir`, dossier `ci-mutation`) ; le crochet `post-commit` marche depuis un worktree. Scénario : `scripts/test-ci-gate.sh`.
+Dossiers de travail (`git worktree`, `doc/developpement/travail-en-branches.md`) : la CI y fonctionne. L'empreinte de validation (`--verifier`) est propre à chaque dossier (`git rev-parse --git-dir`) ; le tag `ci-verte`, les verdicts de mutation et la liste de suivi sont communs à tous (`git rev-parse --git-common-dir`, dossier `ci-mutation`) ; le crochet `post-commit` marche depuis un worktree. Scénario : `scripts/test-ci-gate.sh`.
 
 Mesures du 23/11 (Mac M4, caches chauds) :
 

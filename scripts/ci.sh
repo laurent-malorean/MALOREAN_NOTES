@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CI locale (doc/code.md, « Temps de la CI » ; doc/decisions/0047 et 0049). La mutation n'est plus une barrière.
+# CI locale (doc/developpement/code.md, « Temps de la CI » ; doc/decisions/0047 et 0049). La mutation n'est plus une barrière.
 #   scripts/ci.sh            BARRIÈRE DE COMMIT (moins de 3 minutes) : fichiers privés, vocabulaire, longueur des
 #                            fichiers, mise en forme, lints, dépendances, tests avec couverture (Rust ≥ 95 %,
 #                            interface : seuils de Vitest), types partagés à jour. Seulement ce qui a changé :
@@ -43,7 +43,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 readonly MAX_FILE_LINES=600
-# Assemblage de l'interface : il relie les modules sans logique, il reste court (doc/code.md).
+# Assemblage de l'interface : il relie les modules sans logique, il reste court (doc/developpement/code.md).
 readonly UI_ASSEMBLY=ui/src/main.ts
 readonly MAX_UI_ASSEMBLY_LINES=150
 readonly RUST_MIN_LINE_COVERAGE=95
@@ -176,7 +176,7 @@ mutate_since_tag() {
 }
 
 fail() { printf '✗ %s\n' "$1" >&2; exit 1; }
-require() { "$@" >/dev/null 2>&1 || fail "outil manquant : $* (voir doc/code.md, « Contrôles automatiques »)"; }
+require() { "$@" >/dev/null 2>&1 || fail "outil manquant : $* (voir doc/developpement/code.md, « Contrôles automatiques »)"; }
 
 check_private_files() {
   step "Fichiers privés exclus du dépôt"
@@ -275,7 +275,7 @@ check_ui_parcours() {
   (cd ui && npx --no-install playwright test)
 
   # Lecture des notes ralentie dans le faux : un parcours qui clique ou tape avant que la note soit
-  # montrée échoue à coup sûr au lieu d'échouer une fois sur cent (doc/code.md, « Parcours »).
+  # montrée échoue à coup sûr au lieu d'échouer une fois sur cent (doc/developpement/code.md, « Parcours »).
   step "Interface : parcours utilisateur, lecture des notes ralentie à 100 ms"
   (cd ui && VITE_READ_DELAY=100 npx --no-install playwright test)
 }

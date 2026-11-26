@@ -7,12 +7,15 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 ## Documents de référence
 
 - `doc/produit.md` : vision, principes, périmètre.
-- `doc/architecture.md` (+ `architecture.svg`) : couches, organisation du projet, parcours d'une action.
-- `doc/code.md` : règles de qualité et leurs contrôles.
+- `doc/developpement/architecture.md` (+ `architecture.svg`) : couches, organisation du projet, parcours d'une action.
+- `doc/developpement/code.md` : règles de qualité et leurs contrôles.
 - `doc/ontology.md` : vocabulaire, à employer partout.
-- `doc/travail-en-branches.md` : une branche et un dossier de travail (`worktrees/<fonction>`) par fonction ; nommage, création, fusion, nettoyage.
+- `doc/developpement/travail-en-branches.md` : une branche et un dossier de travail (`worktrees/<fonction>`) par fonction ; nommage, création, fusion, nettoyage.
 - `doc/decisions/` : fiches des décisions d'architecture.
 - `doc/specs/` : spécifications fonctionnelles validées, une par fonction.
+- `doc/format/` : formats de fichier, un par type de contenu (note, cahier de recherche, carte mentale, canvas, CRM) et l'espace de travail ; seule description du format, les specs y renvoient.
+- `doc/mcp/` : les outils du serveur MCP pour les IA, la liste puis une page par partie ; à tenir à jour avec chaque outil ajouté ou changé.
+- `doc/README.md` : sommaire de la documentation.
 
 ## Méthode
 
@@ -23,9 +26,9 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 
 ## Organisation du travail
 
-- `todo.md` ne liste que ce qui est à produire (fonctions, bugs, code de qualité) ; les règles de développement vont dans `CLAUDE.md` et `doc/code.md` ; l'ordre des prochaines tâches est dans `CLAUDE.local.md`.
+- `todo.md` ne liste que ce qui est à produire (fonctions, bugs, code de qualité) ; les règles de développement vont dans `CLAUDE.md` et `doc/developpement/code.md` ; l'ordre des prochaines tâches est dans `CLAUDE.local.md`.
 - **Bugs d'abord** : la section « Bugs » de `todo.md` passe avant toute nouvelle fonction.
-- **Une fonction = une branche et un dossier de travail** (`worktrees/<fonction>`, voir `doc/travail-en-branches.md`) : plusieurs agents peuvent avancer en même temps, chacun dans son dossier ; seul l'agent principal fusionne dans `main`.
+- **Une fonction = une branche et un dossier de travail** (`worktrees/<fonction>`, voir `doc/developpement/travail-en-branches.md`) : plusieurs agents peuvent avancer en même temps, chacun dans son dossier ; seul l'agent principal fusionne dans `main`.
 - **Un agent par tâche**, avec une consigne qui se suffit à elle-même ; les agents travaillent l'un après l'autre, jamais deux en même temps sur la même branche.
 - Chaque tâche : TDD, mini CI, commit, case cochée dans `todo.md` aussitôt.
 - Une tâche marquée « à préciser » ou « à discuter » attend l'utilisateur : ne pas la coder.
@@ -40,7 +43,7 @@ Application Mac de notes, toutes en Markdown. Rust + Tauri 2 + CodeMirror 6.
 - **Mutation de nuit par groupes sur GitHub** (doc/decisions/0059) : toute la mutation du Rust (domaine, application, infrastructure, api) se joue chaque nuit (02:17 UTC) et à la demande (onglet Actions, « Run workflow », entrée facultative « groupe »), un groupe de mutation par machine, 25 minutes au plus ; un survivant fait échouer son groupe (e-mail) ; le résumé de l'exécution donne le bilan de chaque groupe.
 - **Rejeu des dépassements** (doc/decisions/0053) : les erreurs dont le test dépasse le délai sont rejouées une fois avec un délai x 4 par `scripts/ci.sh` et la CI de nuit ; un survivant du rejeu est un survivant, un dépassement persistant est un avertissement chiffré ; le crochet post-commit ne rejoue rien.
 - **Essai de l'application réelle** (à la demande, avant une livraison ; ni dans la barrière ni dans `--fonction`) : `scripts/essai-application.sh` construit le vrai `.app` d'essai, le lance sur un espace de travail temporaire et lit le rapport que l'application écrit après avoir joué ses scénarios dans sa vraie fenêtre (fiche 0054).
-- **Écrire les tests qui tuent les erreurs introduites en même temps que le code** : chaque valeur littérale, borne et cas limite a un test qui l'affirme. Constats, durées et pièges : `doc/code.md`, section « Temps de la CI ».
+- **Écrire les tests qui tuent les erreurs introduites en même temps que le code** : chaque valeur littérale, borne et cas limite a un test qui l'affirme. Constats, durées et pièges : `doc/developpement/code.md`, section « Temps de la CI ».
 - L'envoi (push) ne relance pas la CI.
 
 ## Secrets

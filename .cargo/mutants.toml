@@ -1,4 +1,4 @@
-# Réglages de cargo-mutants (test de mutation Rust, doc/code.md). S'ajoutent aux options
+# Réglages de cargo-mutants (test de mutation Rust, doc/developpement/code.md). S'ajoutent aux options
 # passées par scripts/ci.sh.
 
 # Les lints du projet refusent le code inutilisé (`unused = "deny"`) : une erreur introduite qui

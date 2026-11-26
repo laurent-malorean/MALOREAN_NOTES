@@ -1,7 +1,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
-// Mêmes limites qu'en Rust (doc/code.md).
+// Mêmes limites qu'en Rust (doc/developpement/code.md).
 export default tseslint.config(
   {
     ignores: ["node_modules/", "src/bridge/generated/"],
@@ -9,7 +9,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
-    // Analyse typée : les règles qui ont besoin des types du projet (doc/code.md).
+    // Analyse typée : les règles qui ont besoin des types du projet (doc/developpement/code.md).
     languageOptions: {
       parserOptions: {
         projectService: { allowDefaultProject: ["eslint.config.js", "vitest.stryker.config.ts"] },

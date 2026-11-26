@@ -24,9 +24,9 @@ Une CI « complète » lancée en fin de fonction a duré plus de 2 heures : `--
 
 ## Mesures (23/11/2026, Mac M4)
 
-La mutation du domaine (42 erreurs, deux fichiers du sens) donne le même verdict avec la coupure de 30 s qu'avec la coupure automatique : 38 attrapées, 4 non compilables, 0 survivante, environ 69 s dans les deux cas. `--fonction` : environ 2 minutes 40 (Rust 98 s de couverture globale, parcours normaux 60 s et ralentis 60 s en parallèle). Barrière : 3 à 5 s (documentation), 64 s (interface), 80 à 100 s (Rust). Échantillon d'un dixième du diff depuis `f637671` : 81 à 93 s. Détails et pistes écartées : `doc/code.md`, « Temps de la CI ».
+La mutation du domaine (42 erreurs, deux fichiers du sens) donne le même verdict avec la coupure de 30 s qu'avec la coupure automatique : 38 attrapées, 4 non compilables, 0 survivante, environ 69 s dans les deux cas. `--fonction` : environ 2 minutes 40 (Rust 98 s de couverture globale, parcours normaux 60 s et ralentis 60 s en parallèle). Barrière : 3 à 5 s (documentation), 64 s (interface), 80 à 100 s (Rust). Échantillon d'un dixième du diff depuis `f637671` : 81 à 93 s. Détails et pistes écartées : `doc/developpement/code.md`, « Temps de la CI ».
 
 ## Conséquences
 
-- `CLAUDE.md`, `doc/code.md` (§ 7, « Temps de la CI »), `doc/architecture.md`, `doc/specs/ci-plus-rapide.md` et `CLAUDE.local.md` portent la nouvelle règle ; `scripts/test-ci-gate.sh` prouve les scénarios (domaine non bloquant, tag, échantillon, livraison, ménage).
+- `CLAUDE.md`, `doc/developpement/code.md` (§ 7, « Temps de la CI »), `doc/developpement/architecture.md`, `doc/specs/ci-plus-rapide.md` et `CLAUDE.local.md` portent la nouvelle règle ; `scripts/test-ci-gate.sh` prouve les scénarios (domaine non bloquant, tag, échantillon, livraison, ménage).
 - La coupure de 90 s de l'échantillon n'a pas été comparée à la coupure automatique sur l'api ou l'infrastructure : à refaire si une erreur est vue « boucle » à tort.

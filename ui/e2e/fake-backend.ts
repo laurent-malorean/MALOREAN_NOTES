@@ -47,7 +47,7 @@ export interface FakeBackend
   opened: string[];
   /** Durée d'une recherche en millisecondes, pour simuler un gros espace de travail. */
   searchDuration: number;
-  /** Durée de la lecture d'une note en millisecondes (lecture ralentie, voir `doc/code.md`). */
+  /** Durée de la lecture d'une note en millisecondes (lecture ralentie, voir `doc/developpement/code.md`). */
   readDelay: number;
   /** Le plein écran demandé par le Mac lui-même (bouton vert, menu). */
   enterFullScreenFromTheSystem: () => Promise<void>;

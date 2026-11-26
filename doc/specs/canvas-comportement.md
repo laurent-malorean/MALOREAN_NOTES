@@ -1,6 +1,6 @@
 # Canvas : comportement
 
-Spécification fonctionnelle de l'usage d'un canvas dans MALOREAN Notes. **Principe décidé par l'utilisateur le 24/11 : on suit Obsidian**, rien n'est inventé. Ce document reprend le comportement décrit par l'aide officielle d'Obsidian (page « Canvas », <https://obsidian.md/help/plugins/canvas>), version bureau seulement. Le format du fichier est dans [canvas.md](canvas.md). Ce document se lit seul.
+Spécification fonctionnelle de l'usage d'un canvas dans MALOREAN Notes. **Principe décidé par l'utilisateur le 24/11 : on suit Obsidian**, rien n'est inventé. Ce document reprend le comportement décrit par l'aide officielle d'Obsidian (page « Canvas », <https://obsidian.md/help/plugins/canvas>), version bureau seulement. Le format du fichier est décrit dans [doc/format/canvas.md](../format/canvas.md) ; le rendu constaté dans Obsidian, dans [canvas.md](canvas.md). Ce document se lit seul.
 
 Un canvas est un nouveau type de contenu, à côté des notes, des cahiers de recherche et des cartes mentales. C'est un fichier `.canvas` de l'espace de travail, au format ouvert JSON Canvas : il s'ouvre aussi dans Obsidian.
 
@@ -51,13 +51,13 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - **Déconnecter** : survoler la ligne jusqu'à voir deux petits ronds, puis glisser un rond sans l'accrocher à une carte. Ou clic droit sur la ligne puis « Retirer » ; ou sélectionner la ligne puis Suppr.
 - **Reconnecter une extrémité** : glisser son rond vers une autre carte.
 - **Suivre une connexion** : clic droit près d'une extrémité, puis « Suivre la connexion » ; le canvas se centre sur la carte à l'autre bout.
-- **Sens** : par défaut, la flèche pointe vers la seconde carte. Sélectionner la ligne, puis le bouton « sens de la ligne » de sa barre ouvre un menu de trois choix, avec l'icône de chacun et une coche sur le choix actuel : **« Non directionnel »** (un trait), **« Unidirectionnel »** (une flèche vers la seconde carte, le choix par défaut), **« Bidirectionnel »** (une flèche à chaque bout). Dans le fichier, ils s'écrivent comme dans le format (voir [canvas.md](canvas.md), § 5) : trait sans pointe, flèche du départ vers l'arrivée, flèche aux deux bouts.
+- **Sens** : par défaut, la flèche pointe vers la seconde carte. Sélectionner la ligne, puis le bouton « sens de la ligne » de sa barre ouvre un menu de trois choix, avec l'icône de chacun et une coche sur le choix actuel : **« Non directionnel »** (un trait), **« Unidirectionnel »** (une flèche vers la seconde carte, le choix par défaut), **« Bidirectionnel »** (une flèche à chaque bout). Leur écriture dans le fichier : voir [doc/format/canvas.md](../format/canvas.md), section 5.
 - **Étiquette** : double-clic sur la ligne, saisir le texte, puis Échap ou un clic sur le canvas. Ou « Modifier l'étiquette » (commandes de la sélection, ou clic droit). « Retirer l'étiquette » l'enlève.
 - **Couleur** : sélectionner des cartes ou des connexions, « Couleur » (icône palette), choisir une couleur. **Décidé par l'utilisateur le 24/11 (écart voulu avec Obsidian) : pas de couleur libre.** Obsidian propose ses 7 couleurs puis un rond arc-en-ciel pour une couleur libre ; ici, le menu ne propose que **les couleurs de la palette de l'application** (celles de la carte mentale, voir ci-dessous), et rien d'autre.
 
 **Une seule palette pour toute l'application (décidé le 24/11).** Les couleurs de la carte mentale (rouge, orange, jaune, vert, turquoise, bleu, violet, rose, marron, ardoise) sont **la** palette de l'application : le canvas, la carte mentale et toute fonction à venir qui colore quelque chose n'en ont pas d'autre. Aucune couleur n'est définie ailleurs que dans cette palette.
 
-**Dans le fichier.** Rouge, orange, jaune, vert, turquoise (cyan) et violet s'écrivent avec les préréglages `"1"` à `"6"` du format ; bleu, rose, marron et ardoise s'écrivent en hexadécimal `#RRGGBB`. Un canvas venu d'Obsidian qui contient une autre couleur est lu et affiché tel quel, sans être modifié ; on ne peut simplement pas en choisir une autre que celles de la palette.
+Un canvas venu d'Obsidian qui contient une autre couleur est affiché tel quel, sans être modifié ; on ne peut simplement pas en choisir une autre que celles de la palette. L'écriture des couleurs dans le fichier : voir [doc/format/canvas.md](../format/canvas.md), section 6.
 
 ## 7. Groupes
 
@@ -65,7 +65,7 @@ Les **bases** décrites par Obsidian n'existent pas dans MALOREAN Notes : elles 
 - **Groupe avec des cartes** : sélectionner les cartes, clic droit sur l'une d'elles, « Créer un groupe ».
 - **Renommer** : double-clic sur le nom, Entrée pour valider.
 - **Arrière-plan** : sélectionner le groupe, « Définir l'arrière-plan », choisir une image de l'espace de travail. « Modifier l'arrière-plan » propose : remplacer, retirer, couvrir (`cover`), garder les proportions (`ratio`), répéter (`repeat`).
-- **Mettre une carte dans un groupe** : on glisse la carte dans le groupe. **La carte fait partie du groupe seulement si elle est entièrement à l'intérieur de son cadre.** Quand on déplace le groupe, les cartes qui en font partie se déplacent avec lui ; une carte qui dépasse du cadre, même un peu, reste en place. (Le fichier ne garde aucune liste : l'appartenance se calcule à partir des positions, voir [canvas.md](canvas.md), § 4.5.)
+- **Mettre une carte dans un groupe** : on glisse la carte dans le groupe. **La carte fait partie du groupe seulement si elle est entièrement à l'intérieur de son cadre.** Quand on déplace le groupe, les cartes qui en font partie se déplacent avec lui ; une carte qui dépasse du cadre, même un peu, reste en place. (Le fichier : voir [doc/format/canvas.md](../format/canvas.md), section 4.4.)
 - **Aller à un groupe** : clic droit sur le canvas, « Aller à un groupe » (ou la commande « Canvas : aller à un groupe », même action) ; elle liste les groupes et centre le canvas sur celui choisi. L'entrée est grisée quand le canvas n'a aucun groupe, et reste offerte en lecture seule.
 
 ## 8. Menus du clic droit

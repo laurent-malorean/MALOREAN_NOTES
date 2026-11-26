@@ -20,7 +20,7 @@ L'audit de l'ontologie et du code a trouvé plusieurs notions à deux noms :
 
 ## Décision
 
-- **La règle** s'écrit dans `CLAUDE.md` (« Méthode ») et `doc/code.md` : un seul mot par notion, partout (écrans, documents, code, tests) ; pas de synonymes ; le mot vient de `doc/ontology.md`. Un mot remplacé reste noté « Autrefois … » dans l'ontologie.
+- **La règle** s'écrit dans `CLAUDE.md` (« Méthode ») et `doc/developpement/code.md` : un seul mot par notion, partout (écrans, documents, code, tests) ; pas de synonymes ; le mot vient de `doc/ontology.md`. Un mot remplacé reste noté « Autrefois … » dans l'ontologie.
 - **Type de contenu « note »** : `ContentType::Note`, nommé `"note"` dans l'index ; `ContentTypeItem` vaut `"note"` ; chaque résultat de recherche montre « Note ». Le format de l'index passe à 3 : une base du format 2, dont les lignes disent `page`, est remplacée par une base vide, aussitôt remplie à l'ouverture de l'espace de travail, comme le prévoit la fiche 0028. Rien à faire pour l'utilisateur.
 - **« Page »** ne garde qu'un sens : le feuillet compté par le bandeau (« caractères par page »). Une page web reste « page web ».
 - **« Interface »** désigne le code de `ui/` partout ; « la page » n'est plus employée pour elle (commentaires Rust et TypeScript, documents, noms de tests, description des permissions de Tauri). Les objets techniques de WebKit ou de Playwright gardent leur nom d'outil (`page` des parcours, `page_setup` de l'impression), comme la commande `print_page` déjà nommée dans l'ontologie.

@@ -35,4 +35,4 @@ Spécification : `doc/specs/crm.md` (§§ 4, 5, 6, 10, 11, 12). La tranche préc
 ## Conséquences
 
 - La tranche suivante (vue Kanban) appelle les commandes `create_crm`, `read_crm`, `change_crm_action`, `move_crm_action`… et affiche `CrmItem`.
-- `doc/architecture.md` et `doc/ontology.md` portent les mots nouveaux (geste, gestes en attente, vue du CRM, fiche disparue, types de contenu du CRM).
+- `doc/developpement/architecture.md` et `doc/ontology.md` portent les mots nouveaux (geste, gestes en attente, vue du CRM, fiche disparue, types de contenu du CRM).

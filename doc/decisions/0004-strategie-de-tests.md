@@ -18,4 +18,4 @@ Les tests doivent être solides à tous les niveaux, du domaine à l'écran. Sur
 - Chaque couche se teste au plus près, et la cohérence entre couches (noms de commandes, types échangés) est vérifiée automatiquement.
 - La mini CI prend quelques minutes ; le test de mutation, plus long, est réservé à la livraison.
 - Le vrai binaire Tauri n'est pas piloté de bout en bout : la page et les commandes sont testées séparément, l'assemblage est vérifié à la main.
-- Plusieurs outils à installer une fois (voir `doc/code.md`).
+- Plusieurs outils à installer une fois (voir `doc/developpement/code.md`).

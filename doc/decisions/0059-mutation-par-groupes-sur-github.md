@@ -2,7 +2,7 @@
 
 - **Date** : 2026-11-25
 - **Statut** : acceptée, décision de l'utilisateur
-- **Remplace** la fiche 0050 (un seul travail de nuit, domaine seul) et la consigne « `--branche` en fin de tâche » de la fiche 0049 / `doc/travail-en-branches.md`. Complète la fiche 0053 (rejeu des dépassements, inchangé).
+- **Remplace** la fiche 0050 (un seul travail de nuit, domaine seul) et la consigne « `--branche` en fin de tâche » de la fiche 0049 / `doc/developpement/travail-en-branches.md`. Complète la fiche 0053 (rejeu des dépassements, inchangé).
 
 ## Contexte (mesures)
 

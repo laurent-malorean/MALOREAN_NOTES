@@ -39,9 +39,9 @@ Pour chacune : mesurer la durée du test de mutation Rust sur le même lot de co
 
 - Un changement à la fois, mesuré, gardé seulement s'il fait gagner du temps ; chaque essai raté est noté (pas de piste perdue deux fois).
 - Aucun contrôle retiré, aucun seuil baissé, aucun mutant écarté pour aller plus vite ; en cas de doute, la CI reste la plus exigeante.
-- `scripts/ci.sh` ne se modifie pas pendant qu'un passage tourne (voir `doc/code.md`, « Temps de la CI ») : le remplacer d'un coup.
+- `scripts/ci.sh` ne se modifie pas pendant qu'un passage tourne (voir `doc/developpement/code.md`, « Temps de la CI ») : le remplacer d'un coup.
 - Vérifier à la fin, sur un passage complet réel, que les durées visées sont tenues et qu'une erreur volontairement introduite dans le code (puis retirée) est toujours attrapée.
-- Mettre à jour `doc/code.md` (section « Temps de la CI » : constats, ce qui réduit le temps, ce qui ne marche pas) et la fiche de décision (numéro suivant) dans le même commit.
+- Mettre à jour `doc/developpement/code.md` (section « Temps de la CI » : constats, ce qui réduit le temps, ce qui ne marche pas) et la fiche de décision (numéro suivant) dans le même commit.
 
 ## 6. Piste 10 : un commit de documentation seule ne rejoue pas le code (demandé le 23/11)
 

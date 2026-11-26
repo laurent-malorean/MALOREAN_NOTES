@@ -44,7 +44,7 @@ Les mots ci-dessous valent dans le domaine du CRM. Un même mot peut avoir un au
 - **Simplicité** : pas de pipeline de vente, pas de montant, pas de devis.
 - **Ce qui est écarté par rapport au dépôt d'origine** : le sens entrant/sortant d'une action, l'auteur, l'historique des changements de statut, « Ma journée », les pastilles de compteurs au bout des onglets, la page « Voir tout » d'un statut terminé.
 - **Ce qui est nouveau** : plusieurs personnes par action, des notes liées à une action.
-- Rien de ce que l'utilisateur a écrit dans un fichier n'est perdu quand le CRM enregistre, sauf les exceptions nommées au § 4.8.
+- Rien de ce que l'utilisateur a écrit dans un fichier n'est perdu quand le CRM enregistre, sauf les exceptions nommées dans `doc/format/crm.md` (§ 4.4 et § 8).
 - Une fiche rendue illisible ailleurs (statut inconnu, valeur incompréhensible) est laissée de côté par le CRM, jamais effacée.
 
 ## 3. Palette des couleurs
@@ -73,139 +73,36 @@ Rendu d'une carte qui a une couleur d'action :
 
 **Couleur d'un projet** : sa pastille et son étiquette sur la carte. **Couleur d'une étiquette** : l'une des 10 couleurs, choisie d'après son nom, la même partout : la somme des codes Unicode de son nom en minuscules, modulo 10, donne le rang dans la palette (0 = rouge).
 
-## 4. Format des fichiers
+## 4. Fichiers
+
+Le format des fichiers (fichier du CRM, dossier des fiches et ses sous-dossiers, noms de fichier, en-tête de chaque sorte de fiche, références `[[nom-de-fichier]]`, texte d'une action, ce que l'application réécrit et garde) est décrit dans `doc/format/crm.md`, seule description de ce format. Cette section ne garde que le comportement.
 
 ### 4.1 Rangement
 
-Un CRM est une note ; ses fiches sont rangées dans des dossiers qui portent son nom de fichier, un dossier par sorte de fiche. Un dossier naît avec sa première fiche.
-
-```
-clients.md                                      type: crm
-clients/projets/refonte-du-site.md              type: crm-projet
-clients/entreprises/acme.md                     type: crm-entreprise
-clients/personnes/jean-dupont.md                type: crm-personne
-clients/actions/2026-11-24-demande-de-devis.md  type: crm-action
-```
-
-- Le CRM est le **conteneur** de toutes ses fiches dans l'index : le dossier du même nom fait foi.
-- Le dossier des fiches n'est pas montré dans la liste des dossiers (ni ses sous-dossiers) : les fiches se gèrent depuis l'écran du CRM, pas à la main ; seul le fichier du CRM s'y voit, dans son dossier. Le dossier existe toujours sur le disque (Finder, Obsidian, iCloud le voient). Un dossier est un dossier des fiches quand il porte le nom du fichier d'un CRM (même dossier parent, nom sans `.md`) et que toutes les notes qu'il contient, sous-dossiers compris, sont des fiches ; si l'on y a rangé une note ordinaire (ou un autre CRM), il reste montré. Un dossier montré ne devient pas introuvable pour autant : si le dossier affiché cesse d'être montré, la liste passe à son dossier parent. Aucun autre comportement ne change : recherche, liens et index voient toujours les fiches ; les outils pour les IA (`list_folders`) suivent la même règle (fiche 0089).
-- Le nom de fichier d'une entreprise, d'une personne ou d'un projet est son nom en kebab-case, suivi de `-2`, `-3`… s'il est pris. Celui d'une action est la date de sa création et son titre en kebab-case, suivis d'un numéro si le nom est pris.
+- Le dossier des fiches n'est pas montré dans la liste des dossiers (ni ses sous-dossiers) : les fiches se gèrent depuis l'écran du CRM, pas à la main ; seul le fichier du CRM s'y voit, dans son dossier. Le dossier existe toujours sur le disque (Finder, Obsidian, iCloud le voient). Si l'on y a rangé une note ordinaire (ou un autre CRM), il reste montré. Un dossier montré ne devient pas introuvable pour autant : si le dossier affiché cesse d'être montré, la liste passe à son dossier parent. Aucun autre comportement ne change : recherche, liens et index voient toujours les fiches ; les outils pour les IA (`list_folders`) suivent la même règle (fiche 0089).
 - **Renommer une fiche change son titre, jamais son nom de fichier** : les autres fiches la désignent par ce nom.
-- **Renommer le CRM** : « Renommer… » dans le menu du clic droit de la liste, d'un onglet ou d'un résultat de recherche (décision 0090). Le titre `#` du CRM change, son fichier prend le nom du titre en kebab-case, et **le dossier de ses fiches prend le même nom** (`clients.md` + `clients/` deviennent `prospects.md` + `prospects/`) : toutes les fiches restent ouvrables, le Kanban montre les mêmes actions. Les fiches se désignent par `[[nom-de-fichier]]` sans dossier : aucune n'est réécrite. Le renommage est refusé si le nom de fichier du titre ou le nom du dossier des fiches est déjà pris. Une fiche (entreprise, personne, action, projet) n'a pas « Renommer… » dans ce menu : elle se renomme dans son écran (§ 9, § 10 et la fenêtre de l'action), et Rust refuse aussi ce renommage.
-- Une fiche désigne une autre fiche par `[[nom-de-fichier]]`, sans dossier ni extension.
-- Une référence à une fiche qui n'existe plus est ignorée à l'affichage, puis retirée au prochain enregistrement de la fiche qui la porte.
+- **Renommer le CRM** : « Renommer… » dans le menu du clic droit de la liste, d'un onglet ou d'un résultat de recherche (décision 0090). Le titre du CRM change, son fichier et le dossier de ses fiches prennent le nom du nouveau titre (format : `doc/format/crm.md`) : toutes les fiches restent ouvrables, le Kanban montre les mêmes actions. Le renommage est refusé si le nom de fichier du titre ou le nom du dossier des fiches est déjà pris. Une fiche (entreprise, personne, action, projet) n'a pas « Renommer… » dans ce menu : elle se renomme dans son écran (§ 9, § 10 et la fenêtre de l'action), et Rust refuse aussi ce renommage.
+- Une référence à une fiche qui n'existe plus est ignorée à l'affichage.
 
 ### 4.2 Le CRM
 
-```markdown
----
-type: crm
-etapes: [Progress, WaitingFor]
----
-# Clients
-```
-
-- `type: crm` dit que la note est un CRM. Seule compte la première propriété `type:` au premier niveau de l'en-tête.
-- `etapes` est la liste ordonnée des étapes. Absente : « Progress » puis « WaitingFor ». Une liste vide : aucune étape (le Kanban a trois colonnes). Elle se change dans le CRM (§ 5.5).
-- Le titre est le premier titre `#`, comme toute note. Le CRM ne modifie jamais le texte sous le titre ; il ne l'affiche pas.
+Format : `doc/format/crm.md`. Le CRM ne montre pas le texte sous son titre ; ses étapes se changent dans le CRM (§ 5.5).
 
 ### 4.3 Une entreprise
 
-```markdown
----
-type: crm-entreprise
-site: https://acme.fr
-secteur: Industrie
-adresse: 12 rue des Lilas, Lyon
-telephone: 01 23 45 67 89
----
-# Acme
-
-Notes libres sur l'entreprise, en Markdown.
-```
-
-- Seul le titre est obligatoire ; les autres propriétés sont facultatives.
-- Le texte sous le titre est les notes libres de l'entreprise : tout le Markdown, liens entre notes compris.
+Format : `doc/format/crm.md`.
 
 ### 4.4 Une personne
 
-```markdown
----
-type: crm-personne
-fonction: Responsable maintenance
-entreprise: '[[acme]]'
-parcours: ['[[globex]] · 2024-01-10 → 2026-03-01', '[[acme]] · 2026-03-01 →']
-email: jean.dupont@acme.fr
-telephone: 06 12 34 56 78
-linkedin: https://www.linkedin.com/in/jean-dupont
----
-# Jean Dupont
-
-Notes libres sur la personne.
-```
-
-- Le titre est le nom entier (prénom et nom), obligatoire.
-- Une personne sans entreprise n'a pas de propriété `entreprise` : elle est dans NODATA.
-- `parcours` : une ligne par passage, `[[entreprise]] · début → fin` (jour au format `2026-03-01`), la fin vide pour le passage en cours.
-- L'entreprise et le parcours se changent dans le CRM (« Changer d'entreprise »), pas à la main.
+Format : `doc/format/crm.md`. L'entreprise et le parcours se changent dans le CRM (« Changer d'entreprise »), pas à la main.
 
 ### 4.5 Une action
 
-```markdown
----
-type: crm-action
-personnes: ['[[jean-dupont]] · [[acme]]', '[[marie-durand]]']
-statut: Progress
-date: '2026-11-24'
-canal: e-mail
-projet: '[[refonte-du-site]]'
-couleur: violet
-tags: [urgent, salon]
-notes: ['[[Cahier des charges]]']
-rang: 2
----
-# Demande de devis
-
-Pour 3 postes. Voir le [[plan de la salle]].
-
-#### Liste à cocher : Préparation
-- [x] Relire la demande
-- [ ] Chiffrer
-
-#### Commentaires
-- 2026-11-24 10:32 · Rappelé, pas de réponse.
-  Retenter jeudi.
-```
-
-- **Titre** : une ligne, obligatoire.
-- **`personnes`** : zéro, une ou plusieurs personnes, sans doublon. Chaque entrée est `[[personne]]`, suivie de ` · [[entreprise]]` : l'entreprise de la personne **au moment** où elle a été donnée à l'action. Sans ` · …`, la personne était dans NODATA. Propriété absente : aucune personne. Une action passée reste ainsi attachée à l'ancienne entreprise quand la personne en change.
-- **`statut`** : le nom de la colonne (§ 5.5). Absent ou inconnu : voir § 5.5.
-- **`date`** : au format `2026-11-24`. Pour une action ouverte, le jour où elle est à faire ; pour une action terminée, celui où elle a été faite.
-- **`canal`** : l'un des sept canaux ; absent ou autre valeur : aucun.
-- **`projet`** : `[[projet]]`, un seul ; absent : « Sans projet ».
-- **`couleur`** : un nom de la palette ; absent ou autre nom : sans couleur (le nom inconnu disparaît au prochain enregistrement).
-- **`tags`** : les étiquettes, comme pour toute note (mêmes règles de lecture et de nettoyage : sans doublon, la casse ne compte pas).
-- **`notes`** : les notes liées, `[[titre de la note]]`, comme un lien entre notes.
-- **`rang`** : un entier ≥ 1 ; absent : pas de place choisie.
-- **Description** : le texte sous le titre, hors listes à cocher et commentaires. Elle accepte tout le Markdown, liens entre notes compris.
-- **Liste à cocher** : une ligne `#### Liste à cocher : nom`, puis une ligne `- [ ]` ou `- [x]` par élément.
-- **Commentaires** : une ligne `#### Commentaires`, puis `- AAAA-MM-JJ HH:MM · texte` par commentaire (heure du Mac) ; les lignes suivantes d'un commentaire sont en retrait de deux espaces.
-- La description, les listes à cocher et les commentaires peuvent se suivre **dans n'importe quel ordre** : une partie va de son titre `####` jusqu'au titre `####` d'une autre partie, ou jusqu'à la fin. Le CRM les écrit dans l'ordre : description, listes à cocher, commentaires.
-- Une ligne d'une partie qui n'a pas sa place (texte dans une liste à cocher, ligne d'un commentaire qui ne commence pas par `- date · ` et n'est pas en retrait) est gardée dans la description, à sa fin.
+Format : `doc/format/crm.md`.
 
 ### 4.6 Un projet
 
-```markdown
----
-type: crm-projet
-couleur: bleu
----
-# Refonte du site
-```
-
-- `tags` : facultatif, comme pour toute fiche (§ 4.9).
-- Le texte sous le titre est gardé tel quel, jamais montré.
-- Une couleur absente ou inconnue se lit comme la première couleur de la palette, sans modifier le fichier ; une couleur n'est écrite que si l'utilisateur en choisit une.
+Format : `doc/format/crm.md`. Le texte sous le titre d'un projet n'est jamais montré.
 
 ### 4.7 Noms et unicité
 
@@ -215,16 +112,13 @@ couleur: bleu
 
 ### 4.8 Ce que le CRM change en enregistrant
 
-- **Un geste ne change que le champ touché**, dans la version la plus récente du fichier : les autres propriétés, le texte inconnu et les propriétés libres (`aliases`, épinglage…) restent identiques octet pour octet.
-- Pour une action, le CRM réécrit seulement la partie touchée (description, une liste à cocher, les commentaires) ; l'ordre des parties est remis dans l'ordre du § 4.5 au premier enregistrement.
-- Le fichier finit par un seul retour à la ligne.
-- Une action dont `rang` n'a plus de sens (statut changé, § 7.1) perd cette propriété.
+Un geste ne change que le champ touché, dans la version la plus récente du fichier ; le détail (clés réécrites, texte gardé, rang effacé) est dans `doc/format/crm.md`.
 
 ### 4.9 Étiquettes
 
-- Le CRM, une entreprise, une personne, une action et un projet peuvent porter `tags` dans leur en-tête, comme toute note (mêmes règles de lecture et de nettoyage : sans doublon, la casse ne compte pas) ; la propriété est facultative et n'est écrite que s'il y a au moins une étiquette.
+- Le CRM, une entreprise, une personne, une action et un projet peuvent porter des étiquettes, comme toute note (format : `doc/format/crm.md`).
 - On les change dans le **champ d'étiquettes** de l'application (pastilles avec « × », champ « Ajouter une étiquette » et « + », liste des étiquettes de l'espace de travail proposée à la prise du curseur et à la saisie) : § 8 pour une action, § 9 pour une entreprise et une personne.
-- Changer les étiquettes ne change que la propriété `tags` : les autres propriétés, le texte et les propriétés libres restent identiques octet pour octet (§ 4.8).
+- Changer les étiquettes ne change qu'elles : le reste de la fiche ne bouge pas.
 - Les étiquettes d'une entreprise, d'une personne et d'un projet servent au filtre par étiquette de l'application ; le filtre du Kanban (§ 7.1) ne porte que sur celles des actions.
 
 ## 5. Règles des fiches
@@ -262,7 +156,7 @@ couleur: bleu
 - Statuts fixes : « TODO » (première colonne), « Done » et « Cancel » (dernières). Entre eux, les étapes du CRM dans leur ordre.
 - On passe librement d'un statut à n'importe quel autre. « Cancel » n'exige pas de motif (la description sert si besoin).
 - **Une action dont le statut n'est pas une colonne du CRM** (fichier écrit à la main, étape retirée entre-temps) reste visible, rangée dans la colonne « TODO », sans que son fichier change.
-- Le statut se lit sans compter majuscules ni accents ; il s'écrit comme la colonne.
+- Le statut se lit sans compter majuscules ni accents (format : `doc/format/crm.md`).
 - **Changer les étapes** : « + Ajouter une étape » (avant « Done »), renommer, retirer, réordonner (§ 7.1). Une étape :
   - ne porte ni le nom d'une colonne fixe, ni celui d'une autre étape (sans compter majuscules ni accents) ;
   - tient sur une ligne et fait 40 caractères au plus ;
@@ -277,8 +171,7 @@ couleur: bleu
 
 **Ce qui est créé** :
 - La commande demande le nom ; un nom vide est refusé, Échap annule.
-- Le fichier contient l'en-tête `type: crm` et la ligne `# Nom donné`, sans étapes écrites.
-- Son nom de fichier suit les règles de toute note.
+- Le fichier créé est décrit dans `doc/format/crm.md` (fichier neuf d'un CRM).
 - Le CRM s'ouvre dans la colonne active, sur l'onglet Kanban.
 
 ## 7. La vue du CRM

@@ -11,7 +11,7 @@ todo.md
 done.md
 mutants.out*/
 stats.md
-
+.obsidian
 
 _DIST/
 # Un dossier de travail par fonction (git worktree), jamais versionné

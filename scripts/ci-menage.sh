@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ménage du dossier de compilation de Cargo : retire seulement ce qui est périmé (doc/code.md, « Temps de la
+# Ménage du dossier de compilation de Cargo : retire seulement ce qui est périmé (doc/developpement/code.md, « Temps de la
 # CI » ; doc/decisions/0048). Effacer tout obligerait à tout recompiler (candle : plusieurs minutes).
 #   ci-menage.sh             ménage (résumé d'une ligne : taille avant et après)
 #   ci-menage.sh --a-blanc   liste ce qui serait retiré, n'efface rien (ne contrôle pas les processus)

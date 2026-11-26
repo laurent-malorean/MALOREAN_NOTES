@@ -20,7 +20,7 @@ S'il manque un élément, voir le dépôt dont la fonction s'inspire : https://g
 | Place des nœuds racines | La position de chaque nœud racine sur la carte. |
 | Chemin d'un nœud | Sa position dans l'arbre : les rangs depuis 0, séparés par des points. `0` est le premier nœud racine, `0.1` le deuxième enfant de ce nœud, `1.0.2` le troisième enfant du premier enfant du deuxième nœud racine. |
 | Point | L'unité des tailles de la carte : un pixel de l'écran quand le zoom est à 100 %. |
-| Ligne hors format | Une ligne du fichier qui n'a pas sa place dans le format imposé (§ 4). |
+| Ligne hors format | Une ligne du fichier qui n'a pas sa place dans le format imposé (`doc/format/carte-mentale.md`). |
 
 ## 2. Principes
 
@@ -31,7 +31,7 @@ S'il manque un élément, voir le dépôt dont la fonction s'inspire : https://g
   - notes récentes, liens entrants, historique des versions ;
   - synchronisation par iCloud.
 - Le fichier reste du Markdown ordinaire : lisible et modifiable à la main, dans Obsidian ou par Claude.
-- Rien de ce que l'utilisateur a écrit dans le fichier n'est perdu quand la carte enregistre, sauf les exceptions nommées au § 4.
+- Rien de ce que l'utilisateur a écrit dans le fichier n'est perdu quand la carte enregistre, sauf les exceptions nommées dans `doc/format/carte-mentale.md`.
 
 ## 3. Palette des couleurs
 
@@ -62,122 +62,7 @@ Un nœud sans couleur prend le fond des panneaux latéraux du thème, la bordure
 
 ## 4. Format du fichier
 
-### 4.1 Exemple complet
-
-```markdown
----
-type: carte-mentale
-tags: [projet, 2027]
-racines: [{x: 0, y: 0}, {x: 40.5, y: 320}]
----
-# Lancement du produit
-
-- Clients <!-- couleur: bleu -->
-  - Artisans
-    > Premiers essais en janvier.
-    >
-    > - appeler **Martin**
-    > - envoyer la plaquette
-    - Plombiers
-    - Électriciens <!-- couleur: vert -->
-  - [[Grands comptes]]
-- Calendrier <!-- couleur: orange -->
-  - Bêta *fermée*
-  - Lancement public
-```
-
-Cette carte a deux nœuds racines, « Clients » (chemin `0`) et « Calendrier » (chemin `1`).
-- « Artisans » (`0.0`) a un détail de quatre lignes, la deuxième vide, et deux enfants.
-- « [[Grands comptes]] » (`0.1`) est un lien vers une note.
-
-### 4.2 Les parties du fichier, dans l'ordre
-
-Le format est imposé : un fichier de carte mentale ne contient que ces trois parties, dans cet ordre.
-
-1. **L'en-tête** : un bloc YAML entre deux lignes `---`, tout en haut.
-2. **Le titre** : une ligne `# …`.
-3. **La liste de la carte** : des puces et des lignes de détail (§ 4.4), séparées du titre par une ligne vide.
-
-Règles :
-- Aucun autre texte : ni paragraphe, ni autre titre, ni tableau, ni bloc de code, ni deuxième liste.
-- Une carte sans titre `#` s'affiche sous le nom de son fichier, sans `.md`.
-- Une ligne hors format (écrite à la main, dans Obsidian ou par Claude) : voir § 4.6.
-
-### 4.3 L'en-tête
-
-**`type`** dit que la note est une carte mentale.
-- Valeur `carte-mentale`.
-- Seule compte la première propriété `type:` au premier niveau de l'en-tête.
-- Sans elle, ou avec une autre valeur, la note est une note ordinaire.
-
-**`racines`** donne la place des nœuds racines. Elle est tenue par l'application, qui la réécrit à chaque enregistrement fait par la carte.
-- C'est une liste de positions `{x: …, y: …}`, une par nœud racine, dans l'ordre des nœuds racines de la liste.
-- `x` et `y` sont en points. Ils donnent le coin haut gauche du nœud racine, et `y` croît vers le bas.
-- Elles sont écrites sans décimale quand elles sont entières, sinon arrondies au dixième (`40.5`), sur une seule ligne, comme dans l'exemple.
-
-**Toutes les autres propriétés** (`tags`, épinglage, propriétés libres…) sont gardées telles quelles, à leur place, quand la carte enregistre.
-
-Lecture de `racines` :
-
-| Cas | Effet |
-|---|---|
-| Absente, vide, ou pas une liste | Chaque nœud racine prend la place par défaut : x = 0, y = rang × 160 (le premier nœud racine est au rang 0). |
-| Une position qui n'est pas un objet `{x, y}` | Ce nœud racine prend la place par défaut. |
-| `x` ou `y` absent, ou qui n'est pas un nombre | Cette valeur prend sa valeur par défaut (x = 0, y = rang × 160). |
-| Plus de positions que de nœuds racines | Les positions en trop sont ignorées, puis retirées au prochain enregistrement. |
-| Moins de positions que de nœuds racines | Les nœuds racines sans position prennent la place par défaut. |
-
-### 4.4 La liste de la carte
-
-**Une puce est un nœud.**
-- Une puce est une ligne qui commence, après son retrait, par `-`, `*` ou `+`, puis un espace ou une tabulation, puis un texte qui n'est pas fait que d'espaces.
-- L'application écrit toujours `-` suivi d'un espace.
-
-**La profondeur vient du retrait.**
-- Une puce sans retrait est un nœud racine.
-- Une puce dont le retrait est plus grand que celui de la puce du dessus est son enfant.
-- Sinon, la puce est l'enfant du dernier nœud au-dessus d'elle dont le retrait est plus petit que le sien. S'il n'y en a pas, c'est un nœud racine.
-- Le retrait compte les espaces de tête ; une tabulation vaut 4 espaces. Le nombre d'espaces par niveau n'est pas imposé : seuls les retraits comparés entre eux comptent.
-- L'application écrit 2 espaces par niveau.
-
-**Le début et la fin de la liste.**
-- Elle commence à la première puce après le titre et va jusqu'à la fin du fichier.
-- Les lignes vides à l'intérieur de la liste ne la coupent pas.
-- L'application écrit la liste sans ligne vide.
-
-**Le titre d'un nœud.**
-- C'est le texte de la puce, sans son commentaire de couleur. Les espaces de début et de fin sont retirés.
-- Il tient sur une ligne et accepte le Markdown de ligne : gras, italique, code, barré, liens `[texte](adresse)`, liens entre notes `[[titre]]` et `[[titre|texte]]`.
-- Une case à cocher (`- [ ] …`) ou un `#` en tête restent du texte du titre, affichés tels quels.
-- Une puce sans texte n'est pas un nœud : elle disparaît au premier enregistrement fait par la carte.
-
-**Le détail d'un nœud.**
-- Une ligne de détail est une ligne qui commence, après son retrait, par `>`. Son texte est ce qui suit le `>` et un éventuel espace.
-- Elle appartient au dernier nœud au-dessus d'elle dont le retrait est plus petit que le sien. Une ligne de détail qui n'appartient à aucun nœud est hors format (§ 4.6).
-- Les lignes de détail d'un même nœud se suivent dans l'ordre. Une ligne `>` sans texte est une ligne vide du détail.
-- Le détail accepte tout le Markdown : listes, gras, code, liens, liens entre notes.
-- L'application l'écrit juste sous la puce, avant les enfants, au retrait des enfants. Chaque ligne commence par `> ` ; une ligne vide s'écrit `>`.
-
-**La couleur d'un nœud.**
-- C'est un commentaire HTML au bout de la puce, après le titre : `<!-- couleur: rouge -->`.
-- À la lecture, les espaces autour de `couleur`, du `:` et du nom ne comptent pas, ni les majuscules.
-- Un nom de la palette donne cette couleur.
-- Tout autre nom se lit « sans couleur », et le commentaire disparaît au prochain enregistrement fait par la carte.
-- L'application écrit ` <!-- couleur: nom -->` : un espace avant, le nom en minuscules.
-
-### 4.5 Ce que l'application change en enregistrant
-
-- Seulement la liste de la carte et la propriété `racines`.
-- Restent identiques octet pour octet : le reste de l'en-tête et le titre.
-- Le fichier finit par un seul retour à la ligne.
-- Un fichier qui suit déjà l'écriture de l'application et que la carte réenregistre sans changement reste identique octet pour octet.
-
-### 4.6 Lignes hors format
-
-- Une ligne hors format est ignorée à la lecture : elle n'est pas montrée sur la carte.
-- Elle disparaît du fichier au premier enregistrement fait par la carte, sans message.
-- L'historique des versions garde le fichier tel qu'il était avant cet enregistrement.
-- C'est le cas, entre autres, d'un paragraphe, d'un autre titre, d'un tableau, d'un bloc de code, et d'une ligne en retrait dans la liste qui n'est ni une puce ni une ligne de détail.
+Le format de fichier d'une carte mentale (en-tête et propriété `racines`, titre, puces et retrait, détail, couleur de nœud, chemin d'un nœud, lignes tolérées à la lecture, ce que l'application réécrit en enregistrant) est décrit dans `doc/format/carte-mentale.md`, qui en est la seule description.
 
 ## 5. Créer une carte mentale
 
@@ -193,7 +78,7 @@ La carte est créée dans le dossier cliqué.
 
 **Ce qui est créé** :
 - La commande demande d'abord le nom de la carte ; un nom vide est refusé, Échap annule.
-- Le fichier contient l'en-tête `type: carte-mentale` et la ligne `# Nom donné`, sans liste.
+- Le fichier est celui d'une carte neuve, titrée du nom donné, sans nœud (`doc/format/carte-mentale.md`).
 - Son nom de fichier suit les règles de toute note : le nom en kebab-case, puis `-2`, `-3`… s'il est pris.
 - La carte s'ouvre dans la colonne active.
 
@@ -237,7 +122,7 @@ La carte est créée dans le dossier cliqué.
 
 ### 6.3 Disposition
 
-- **Nœuds racines** : chacun à sa place (§ 4.3).
+- **Nœuds racines** : chacun à sa place (propriété `racines`, `doc/format/carte-mentale.md`).
 - **Enfants** : rangés à droite de leur parent, de haut en bas dans l'ordre du fichier.
 - **Hauteur d'une branche** : le plus grand de deux nombres, la hauteur du nœud ou la somme des hauteurs des branches de ses enfants affichés et des écarts entre elles.
 - **Centrage** : les enfants d'un nœud, pris ensemble, sont centrés verticalement sur le centre de leur parent.
@@ -377,13 +262,13 @@ Ce qui le trouve : les mots de son titre et de son détail. Un clic ouvre la car
 ## 10. Claude
 
 **Un outil de l'application, « créer une carte mentale »** :
-- Il prend le dossier (la racine par défaut), le titre et, en option, le contenu de départ : une liste à puces au format du § 4.4.
+- Il prend le dossier (la racine par défaut), le titre et, en option, le contenu de départ : une liste à puces au format de la carte (`doc/format/carte-mentale.md`).
 - Il crée le fichier selon les règles de nom et rend son chemin.
 - Comme les autres outils qui changent une note, il attend l'accord de l'utilisateur quand Claude a lu le web pendant la réponse.
 
-**Lire et modifier une carte** (fiche 0080) : Claude lit une carte en arbre avec `read_mind_map` (chaque nœud avec son chemin, son titre, sa couleur, son détail ; la place des nœuds racines) et la modifie avec un outil par geste de l'écran : `add_mind_map_child` (dernier enfant), `add_mind_map_sibling` (frère juste en dessous), `add_mind_map_root` (nœud racine), `edit_mind_map_node` (titre et détail), `color_mind_map_node` (une couleur de la palette, ou aucune), `move_mind_map_node` (comme le glisser-déposer : en enfant, en frère au-dessus ou en dessous, en nœud racine ; refusé dans sa propre branche) et `delete_mind_map_node` (le nœud et sa branche). Un nœud se désigne par son chemin (§ 1) ; chaque outil rend le chemin du nœud touché, et Claude relit la carte après une suppression ou un déplacement. Mêmes règles que l'écran : la carte est enregistrée selon le § 4.5, la version d'avant est gardée dans l'historique, l'index suit. Plier et déplier n'ont pas d'outil (§ 6.5). Une carte ouverte se met à jour en direct (§ 8). `read_note` et `replace_in_note` refusent une carte et renvoient vers ces outils.
+**Lire et modifier une carte** (fiche 0080) : Claude lit une carte en arbre avec `read_mind_map` (chaque nœud avec son chemin, son titre, sa couleur, son détail ; la place des nœuds racines) et la modifie avec un outil par geste de l'écran : `add_mind_map_child` (dernier enfant), `add_mind_map_sibling` (frère juste en dessous), `add_mind_map_root` (nœud racine), `edit_mind_map_node` (titre et détail), `color_mind_map_node` (une couleur de la palette, ou aucune), `move_mind_map_node` (comme le glisser-déposer : en enfant, en frère au-dessus ou en dessous, en nœud racine ; refusé dans sa propre branche) et `delete_mind_map_node` (le nœud et sa branche). Un nœud se désigne par son chemin (§ 1) ; chaque outil rend le chemin du nœud touché, et Claude relit la carte après une suppression ou un déplacement. Mêmes règles que l'écran : la carte est enregistrée comme le décrit `doc/format/carte-mentale.md`, la version d'avant est gardée dans l'historique, l'index suit. Plier et déplier n'ont pas d'outil (§ 6.5). Une carte ouverte se met à jour en direct (§ 8). `read_note` et `replace_in_note` refusent une carte et renvoient vers ces outils.
 
-**Consigne donnée à Claude** sur les cartes mentales : le format du § 4 en bref, n'écrire dans la liste que des puces et des lignes de détail, ne jamais toucher à `racines`.
+**Consigne donnée à Claude** sur les cartes mentales : le format de `doc/format/carte-mentale.md` en bref, n'écrire dans la liste que des puces et des lignes de détail, ne jamais toucher à `racines`.
 
 **Recherche dans l'index** : elle rend aussi les nœuds, avec le chemin du fichier de leur carte et le chemin du nœud.
 

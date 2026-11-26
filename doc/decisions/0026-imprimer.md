@@ -16,7 +16,7 @@ Pistes regardées :
 
 - **Action « Imprimer… »** sur la note de la colonne active (palette, **Cmd+P**, libre dans l'application, dans l'éditeur et dans le menu par défaut de Tauri ; la palette reste sur Cmd+Maj+P) ou sur la note cliquée (menu d'une note dans la liste, après « Exporter… » ; menu d'un onglet, en dernier). Ce qui est tapé est enregistré d'abord.
 - **Même rendu que l'export** : le module d'export de l'interface (`app/export.ts`) pose le rendu HTML de la note (`noteHtml`) sur la feuille d'impression et attend ses images (`prepareSheet`, partagé), puis appelle `print_page`. Aucune copie du rendu ni de la feuille de style d'impression.
-- **Rust** : commande `print_page` ; `pdf.rs` gagne `print_with_panel`, qui partage avec `print_to_pdf` le format de page (marges de 2 cm) et le lancement de l'impression modale. La commande répond dès la fenêtre d'impression ouverte. L'exception `unsafe` de `doc/code.md` couvre ce module, sans changer de forme.
+- **Rust** : commande `print_page` ; `pdf.rs` gagne `print_with_panel`, qui partage avec `print_to_pdf` le format de page (marges de 2 cm) et le lancement de l'impression modale. La commande répond dès la fenêtre d'impression ouverte. L'exception `unsafe` de `doc/developpement/code.md` couvre ce module, sans changer de forme.
 
 ## Conséquences
 

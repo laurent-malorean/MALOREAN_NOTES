@@ -1,6 +1,6 @@
 # Écrire une entrée de cahier de recherche
 
-Spécification fonctionnelle, refaite le 23/11 (version simple, remplace la précédente). Elle complète la fonction « Cahier de recherche » (entrées ajoutées, jamais modifiées). Ce document se lit seul.
+Spécification fonctionnelle, refaite le 23/11 (version simple, remplace la précédente). Elle complète la fonction « Cahier de recherche » (entrées ajoutées, jamais modifiées). Ce document se lit seul. Le format du fichier d'un cahier (en-tête, titres d'année, de mois et de jour, syntaxe des entrées, heures, ancres, numéros, ce que l'application lit et écrit) est décrit dans `doc/format/cahier-de-recherche.md`, seule référence sur ce point.
 
 ![Maquette dans l'écran de l'application](entree-de-cahier.png)
 
@@ -13,7 +13,7 @@ Ajouter une observation à un cahier de recherche simplement, sans fenêtre ni c
 - Le cahier est une note comme les autres, ouverte dans sa colonne. **Son texte n'est pas modifiable** : on ne peut rien y changer, ni dans les entrées ni dans les titres.
 - **On ne saisit qu'en bas de la page** : une zone de saisie fait partie de la page du cahier, sous son texte. Elle montre **8 lignes** à la fois (au-delà, elle défile) et accepte un texte libre sur plusieurs lignes.
 - Un seul bouton, **« Ajouter l'entrée »**, sous la zone de saisie. Un message au-dessus dit où l'entrée sera rangée (« elle sera datée au moment de l'ajout et rangée sous « Lundi 23 novembre » »).
-- À l'ajout, l'entrée est **datée du moment de l'ajout** et rangée au bon niveau de titre du cahier : `## année`, `### mois`, `#### jour`, puis `- 09:42 - texte`. Un titre d'année, de mois ou de jour qui n'existe pas encore est créé. Les entrées restent classées de la plus ancienne (en haut) à la plus récente (en bas), comme un cahier papier. La zone de saisie se vide ensuite.
+- À l'ajout, l'entrée est **datée du moment de l'ajout** et rangée à la fin du cahier, sous le titre de son jour (créé s'il n'existe pas encore), comme dans un cahier papier : la plus ancienne en haut, la plus récente en bas. L'écriture dans le fichier est décrite dans `doc/format/cahier-de-recherche.md`. La zone de saisie se vide ensuite.
 - **Étiquettes** : comme pour tout contenu, le champ d'étiquettes est sous les onglets de la colonne (étiquettes en pastilles avec « × », champ « Ajouter une étiquette » et « + »). C'est la seule chose modifiable en dehors de la zone de saisie : un geste réécrit seulement `tags` dans l'en-tête, le texte du cahier reste tel quel.
 - **Pas de correction** : aucune entrée ne se modifie, et il n'y a aucun bouton « Corriger ». Une erreur se rectifie par une nouvelle entrée.
 
@@ -37,9 +37,9 @@ But : citer facilement une entrée. Rendu dans la marge gauche, en face de la pr
  └────────┘
 ```
 
-- Chaque entrée porte un **numéro d'entrée** : sa position dans le cahier, dans l'ordre du fichier. La première est `0001`, la deuxième `0002`, etc. Il s'écrit sur **4 chiffres** ; au-delà de 9999 entrées, le nombre est écrit en entier (`10000`), sans être coupé.
+- Chaque entrée porte un **numéro d'entrée** : sa position dans le cahier (définie dans `doc/format/cahier-de-recherche.md`). La première est `0001`, la deuxième `0002`, etc. Il s'écrit sur **4 chiffres** ; au-delà de 9999 entrées, le nombre est écrit en entier (`10000`), sans être coupé.
 - Le numéro est dans un **rectangle aux coins arrondis**, au contour lisible du thème (clair comme sombre), dans la marge à gauche de l'entrée, **centré sur sa première ligne**. Il est **assez grand pour se lire et se viser** : chiffres de la même taille que le texte du cahier (18 px par défaut, il suit le réglage de taille du texte), hauteur de 32 px (la cible de clic du projet), largeur de 71 px pour 4 chiffres (avant : 48 × 19 px, texte de 11 px, jugé « bien trop petit »). Plus haut que la ligne, il déborde dans la marge sans repousser les lignes ni créer d'espace entre entrées ; deux numéros voisins restent séparés d'au moins 12 px. Le texte ne bouge pas d'une entrée à l'autre ; la marge du cahier est élargie (92 px) pour que le rectangle ne recouvre jamais le texte, même dans une colonne étroite ou avec un nombre de 5 chiffres. Survol et focus clavier restent marqués (contour de l'accent).
-- Un cahier ne se modifie jamais : le numéro d'une entrée est stable. Rien n'est écrit dans le fichier pour le numéro : il est calculé, donc **les cahiers existants sont numérotés d'office**. Un cahier vide n'affiche aucun numéro ; une entrée ajoutée apparaît avec le numéro suivant, sans recharger.
+- Le numéro d'une entrée est stable et **les cahiers existants sont numérotés d'office**. Un cahier vide n'affiche aucun numéro ; une entrée ajoutée apparaît avec le numéro suivant, sans recharger.
 - **Le numéro est un bouton** (« Copier la référence de l'entrée 0007 », au clavier comme à la souris). Un clic copie dans le presse-papiers le texte `Titre du cahier · 0007` (titre `#` du cahier, ou à défaut le nom de son fichier) et le message « Référence copiée » le confirme.
 - Hors périmètre : un lien par numéro dans une autre note, une renumérotation, une recherche par numéro.
 - L'outil de l'application pour Claude (« ajouter une entrée ») rend aussi le numéro de l'entrée ajoutée.
