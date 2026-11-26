@@ -6,9 +6,9 @@
 import type { Scenario, Trial } from "../runner";
 import { type Rect, centreOf, find, findAll, rectOf } from "./env";
 
-const NAMES = ["Focus", "Plan", "Machine à écrire", "Panneaux", "Plein écran", "Claude"];
-/** La largeur utile à partir de laquelle la bande tient sur une ligne : 44,1 rem. */
-const SWITCH_WIDTH = 44.1 * 16;
+const NAMES = ["Focus", "Plan", "Machine à écrire", "Plein écran", "Claude"];
+/** La largeur utile à partir de laquelle la bande tient sur une ligne : 42,05 rem. */
+const SWITCH_WIDTH = 42.05 * 16;
 /** La largeur de la mise en forme et des copies côte à côte (première ligne). */
 const FIRST_ROW_WIDTH = 390;
 /** Le minimum du champ de recherche : 6 rem. */
@@ -67,9 +67,13 @@ function pointable(element: HTMLElement | null): boolean {
 const named = (name: string) =>
   find<HTMLButtonElement>(`.display-tools button[aria-label="${name}"]`);
 
+/** Le bouton des panneaux latéraux : dans la barre de la fenêtre, plus dans le bloc d'affichage. */
+const sidePanels = () =>
+  find<HTMLButtonElement>('.window-bar button[aria-label="Panneaux latéraux"]');
+
 function checkNames(trial: Trial): void {
   const missing = NAMES.filter((name) => named(name) === null);
-  trial.check("les six boutons d'affichage ont leur nom", missing.length === 0, missing.join());
+  trial.check("les cinq boutons d'affichage ont leur nom", missing.length === 0, missing.join());
   const withText = findAll<HTMLElement>(".display-tools button").filter(
     (button) => (button.textContent ?? "").trim() !== "" || button.querySelector("svg") === null,
   );
@@ -84,7 +88,7 @@ function checkPointer(trial: Trial, when: string): void {
   const blind = buttons.filter((button) => !pointable(button));
   trial.check(
     `${when} : chaque icône reçoit le pointeur (${buttons.length} icônes)`,
-    buttons.length === 17 && blind.length === 0,
+    buttons.length === 16 && blind.length === 0,
     blind.map((button) => button.getAttribute("aria-label")).join(),
   );
 }
@@ -265,7 +269,7 @@ export function displayToolsScenarios(): Scenario[] {
       async run(trial) {
         checkNames(trial);
         // Panneaux cachés, le temps de la mesure : la bande a alors toute la largeur de la fenêtre (900 points au moins).
-        const panels = named("Panneaux");
+        const panels = sidePanels();
         const hidden = panels?.getAttribute("aria-pressed") === "true";
         if (hidden) panels?.click();
         try {
@@ -275,7 +279,7 @@ export function displayToolsScenarios(): Scenario[] {
           if (parts === null) return;
           checkSqueezed(trial, parts.display.x + parts.display.width - parts.format.x);
         } finally {
-          if (hidden) named("Panneaux")?.click();
+          if (hidden) sidePanels()?.click();
         }
       },
     },

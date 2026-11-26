@@ -19,6 +19,49 @@ button {
   cursor: pointer;
 }
 
+/* La barre de la fenêtre remplace la barre de titre du Mac (fenêtre à barre de titre superposée) : on la
+   saisit pour déplacer la fenêtre, et la fenêtre commence dessous. */
+#app {
+  padding-top: var(--window-bar-height);
+}
+.window-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--window-bar-height);
+  display: flex;
+  align-items: center;
+  padding-left: var(--window-bar-inset);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  z-index: 20;
+}
+.window-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--window-button-size);
+  height: var(--window-button-size);
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+.window-button[hidden] {
+  display: none;
+}
+.window-button svg {
+  width: var(--window-button-icon-size);
+  height: var(--window-button-icon-size);
+  stroke-width: 1.6;
+}
+.window-button:hover {
+  color: var(--text);
+  background: var(--selected);
+}
+
 .welcome {
   height: 100%;
   display: grid;
@@ -749,9 +792,10 @@ button {
 /* Place insuffisante : deux lignes. En haut la mise en forme et les copies ; dessous l'affichage,
    puis la recherche qui prend toute la largeur restante (jamais tronquée, jamais de ligne à moitié
    vide). Le seuil est la largeur des trois blocs, des écarts et de la recherche à son minimum
-   (705 points mesurés) ; une requête de conteneur n'accepte pas de variable, d'où la valeur en rem
-   (44,1 rem), gardée par le parcours « top-bar-rows ». */
-@container editor-tools (max-width: 44.1rem) {
+   (672,3 points mesurés, depuis que le bouton des panneaux est dans la barre de la fenêtre) ; une
+   requête de conteneur n'accepte pas de variable, d'où la valeur en rem (42,05 rem), gardée par le
+   parcours « top-bar-rows ». */
+@container editor-tools (max-width: 42.05rem) {
   .tool-rows {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -767,9 +811,9 @@ button {
     width: 100%;
   }
 }
-/* Plus étroit encore que l'affichage et la recherche à leur minimum (310 points, 19,5 rem) : la
+/* Plus étroit encore que l'affichage et la recherche à leur minimum (277,2 points, 17,45 rem) : la
    recherche passe seule sur une troisième ligne, pleine largeur, plutôt que de déborder. */
-@container editor-tools (max-width: 19.5rem) {
+@container editor-tools (max-width: 17.45rem) {
   .tool-rows > .search-field {
     grid-column: 1 / -1;
   }
@@ -1882,6 +1926,9 @@ button {
   #app {
     height: auto;
     background: none;
+  }
+  #app {
+    padding-top: 0;
   }
   body > :not(#app),
   #app > :not(.print-sheet) {

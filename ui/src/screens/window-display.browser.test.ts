@@ -143,6 +143,19 @@ describe("plein écran et panneaux latéraux", () => {
     expect(storage.items.has("malorean.side-panels")).toBe(false);
   });
 
+  it("le bouton des panneaux change d'icône avec leur état, au clic comme au raccourci", () => {
+    const { display, sidePanelsButton } = setup();
+    const shown = sidePanelsButton.innerHTML;
+    expect(shown).toContain("<path");
+    display.toggleSidePanels();
+    const hidden = sidePanelsButton.innerHTML;
+    expect(hidden).not.toBe(shown);
+    sidePanelsButton.click();
+    expect(sidePanelsButton.innerHTML).toBe(shown);
+    sidePanelsButton.click();
+    expect(sidePanelsButton.innerHTML).toBe(hidden);
+  });
+
   it("retrouve les panneaux cachés au lancement suivant", () => {
     const { panelsHidden, sidePanelsButton } = setup(
       fakeWindow(),

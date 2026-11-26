@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { dragEdge, edgesOf, waitForNote, widthOf } from "./journey";
+import { dragEdge, edgesOf, sidePanelsButton, waitForNote, widthOf } from "./journey";
 
 // Largeur de la colonne Claude Code : on tire son bord gauche à la souris, la largeur reste entre
 // son minimum et son maximum, les colonnes d'édition prennent le reste, et elle revient au
@@ -94,7 +94,7 @@ test("avec trois colonnes, panneaux cachés puis en plein écran, la largeur ré
   expect(await widthOf(claude(page))).toBe(400);
   await expectColumnsBeforeClaude(page);
 
-  const panels = page.getByRole("button", { name: "Panneaux" });
+  const panels = sidePanelsButton(page);
   await panels.click();
   expect((await edgesOf(columns(page).first())).left).toBe(0);
   expect(await widthOf(claude(page))).toBe(400);

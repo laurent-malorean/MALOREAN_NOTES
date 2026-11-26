@@ -1,10 +1,10 @@
 import { expect, type Page, test } from "@playwright/test";
-import { waitForNote } from "./journey";
+import { sidePanelsButton, waitForNote } from "./journey";
 
-// Le bloc d'icônes d'affichage (Focus, Plan, Machine à écrire, Panneaux, plein écran, Claude) : le
+// Le bloc d'icônes d'affichage (Focus, Plan, Machine à écrire, plein écran, Claude) : le
 // troisième bloc de la bande du haut, sur la même ligne que les deux autres et que la recherche.
 
-const NAMES = ["Focus", "Plan", "Machine à écrire", "Panneaux", "Plein écran", "Claude"];
+const NAMES = ["Focus", "Plan", "Machine à écrire", "Plein écran", "Claude"];
 
 async function launch(page: Page) {
   const params = new URLSearchParams({
@@ -51,12 +51,12 @@ const disjoint = (a: Box, b: Box) =>
 
 const centre = (box: Box) => box.y + box.height / 2;
 
-test("les six boutons sont des icônes seules, trouvées par leur nom, avec raccourci en bulle d'aide", async ({
+test("les cinq boutons sont des icônes seules, trouvées par leur nom, avec raccourci en bulle d'aide", async ({
   page,
 }) => {
   await launch(page);
   const buttons = page.locator(".display-tools").getByRole("button");
-  await expect(buttons).toHaveCount(6);
+  await expect(buttons).toHaveCount(5);
   for (const name of NAMES) {
     await expect(tool(page, name)).toBeVisible();
     await expect(tool(page, name)).toHaveText("");
@@ -88,11 +88,11 @@ test("la fenêtre se réduit : la recherche rétrécit d'abord jusqu'à son mini
 }) => {
   await page.setViewportSize({ width: 1800, height: 700 });
   await launch(page);
-  await tool(page, "Panneaux").click();
+  await sidePanelsButton(page).click();
   const wide = await strip(page);
   // Largeur qui laisse juste la place des trois blocs et du champ à son minimum (6 rem = 96 px).
   const blocks = wide.display.x + wide.display.width - wide.format.x;
-  // Un point de plus : le seuil de bascule (44,1 rem) laisse un demi-point de marge sur la largeur nécessaire.
+  // Un point de plus : le seuil de bascule (42,05 rem) laisse un demi-point de marge sur la largeur nécessaire.
   const exact = Math.ceil(blocks + 6.4 + 96 + 2 * 12.8) + 1;
   await page.setViewportSize({ width: exact, height: 700 });
   await expect
@@ -119,7 +119,7 @@ test("fenêtre étroite : rien ne se chevauche ni ne déborde, et chaque icône 
   await page.setViewportSize({ width: 900, height: 700 });
   await launch(page);
   for (const hidePanels of [false, true]) {
-    if (hidePanels) await tool(page, "Panneaux").click();
+    if (hidePanels) await sidePanelsButton(page).click();
     const { format, copy, display, search, overflow } = await strip(page);
     expect(overflow).toBe(0);
     const boxes = [format, copy, display, search];
@@ -133,19 +133,13 @@ test("les boutons actifs restent surlignés et le nom du plein écran change ave
   page,
 }) => {
   await launch(page);
-  const panels = tool(page, "Panneaux");
   const color = (name: string) =>
     tool(page, name).evaluate((element) => getComputedStyle(element).color);
-  await expect(panels).toHaveAttribute("aria-pressed", "true");
-  const accent = await color("Panneaux");
-  expect(accent).not.toBe(await color("Claude"));
+  const idle = await color("Claude");
   // Sous le pointeur, un bouton actif garde sa couleur d'accent.
   await tool(page, "Plan").click();
   await expect(tool(page, "Plan")).toHaveAttribute("aria-pressed", "true");
-  expect(await color("Plan")).toBe(accent);
-  await panels.click();
-  await expect(panels).toHaveAttribute("aria-pressed", "false");
-  expect(await color("Panneaux")).not.toBe(accent);
+  expect(await color("Plan")).not.toBe(idle);
   await tool(page, "Plein écran").click();
   await expect(tool(page, "Quitter le plein écran")).toHaveAttribute(
     "title",

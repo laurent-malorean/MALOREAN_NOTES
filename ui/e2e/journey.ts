@@ -11,6 +11,10 @@ export async function waitForNote(scope: Page | Locator, firstLine: string | Reg
   await expect(scope.locator(".cm-line").first()).toHaveText(firstLine);
 }
 
+/** Le bouton des panneaux latéraux, dans la barre de la fenêtre (tout en haut, toujours visible). */
+export const sidePanelsButton = (page: Page) =>
+  page.getByRole("button", { name: "Panneaux latéraux", exact: true });
+
 /** Attend qu'une note vide (nouvelle note) soit montrée : une seule ligne, où paraît l'invite. */
 export async function waitForEmptyNote(scope: Page | Locator) {
   await expect(scope.locator(".cm-line")).toHaveCount(1);

@@ -67,6 +67,7 @@ function renderNavigation(
 function renderWorkspace(layout: Layout, screen: WorkspaceScreen, actions: ScreenActions) {
   layout.welcome.hidden = true;
   layout.mainArea.hidden = false;
+  layout.sidePanelsButton.hidden = false;
   const search = screen.search && searchable(screen.search.query) ? screen.search : null;
   // Le filtre et Récentes se voient quand la liste montre leurs notes : pas la corbeille.
   const aside = screen.trash !== null;
@@ -95,6 +96,7 @@ export function renderScreen(layout: Layout, screen: Screen, actions: ScreenActi
     case "welcome":
       layout.welcome.hidden = false;
       layout.mainArea.hidden = true;
+      layout.sidePanelsButton.hidden = true;
       return;
     case "workspace":
       return renderWorkspace(layout, screen, actions);

@@ -54,13 +54,17 @@ export type MenuIcon =
   | "align-left"
   | "zoom-selection";
 
-/** Tous les dessins du jeu : ceux du menu de création, du chevron et des menus du clic droit. */
-export type AppIcon = NewContentIcon | "chevron" | MenuIcon;
+/** Les deux dessins du bouton des panneaux latéraux, dans la barre de la fenêtre : panneau plein (montrés), vide (cachés). */
+export type WindowIcon = "side-panels-shown" | "side-panels-hidden";
+
+/** Tous les dessins du jeu : ceux du menu de création, du chevron, de la barre de la fenêtre et des menus du clic droit. */
+export type AppIcon = NewContentIcon | "chevron" | WindowIcon | MenuIcon;
 
 const SHEET = "M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z";
 const WINDOW = "M4 5h16v14H4z";
 const CIRCLE = "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z";
 const PIN = ["M9 4h6", "M10 4v6l-3 4h10l-3-4V4", "M12 14v6"];
+const PANELS_FRAME = "M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z";
 
 const PATHS: Record<AppIcon, readonly string[]> = {
   note: [SHEET, "M14 3v5h5", "M9 13h6", "M9 17h6"],
@@ -80,6 +84,9 @@ const PATHS: Record<AppIcon, readonly string[]> = {
   canvas: ["M4 5h7v6H4z", "M13 13h7v6h-7z", "M11 8h2a2 2 0 0 1 2 2v3"],
   crm: ["M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M5 20a7 7 0 0 1 14 0"],
   chevron: ["M6 9l6 6 6-6"],
+  // Panneau plein : le trait de séparation et les lignes des listes ; panneau vide : un pointillé.
+  "side-panels-shown": [PANELS_FRAME, "M10 5v14", "M6.5 9h1", "M6.5 12h1", "M6.5 15h1"],
+  "side-panels-hidden": [PANELS_FRAME, "M10 7v2", "M10 11v2", "M10 15v2"],
   "new-tab": [WINDOW, "M12 9v6", "M9 12h6"],
   "open-left": [WINDOW, "M12 5v14", "M10 9l-3 3 3 3"],
   "open-right": [WINDOW, "M12 5v14", "M14 9l3 3-3 3"],

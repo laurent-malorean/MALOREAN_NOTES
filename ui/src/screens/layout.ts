@@ -1,4 +1,5 @@
 import { buildDisplayTools } from "./editor-tools";
+import { buildWindowBar } from "./window-bar";
 
 /** Les éléments de la fenêtre, cherchés une seule fois. */
 export interface Layout {
@@ -49,6 +50,9 @@ export interface Layout {
   /** La zone des colonnes d'édition, à gauche du plan. */
   readonly columns: HTMLElement;
   readonly fullScreenButton: HTMLButtonElement;
+  /** La barre tout en haut de la fenêtre : boutons de fenêtre du Mac à gauche, puis le bouton des panneaux latéraux. */
+  readonly windowBar: HTMLElement;
+  /** Le bouton des panneaux latéraux, dans la barre de la fenêtre : visible même panneaux cachés. */
   readonly sidePanelsButton: HTMLButtonElement;
   /** Le bouton qui affiche ou masque la colonne Claude Code. */
   readonly claudeButton: HTMLButtonElement;
@@ -71,6 +75,7 @@ export interface Layout {
 
 /** La fenêtre : accueil, dossiers, liste des notes, outils et colonnes d'édition, message, réglages. */
 const TEMPLATE = `
+    <header class="window-bar"></header>
     <section class="welcome">
       <h1>MALOREAN Notes</h1>
       <p>Vos notes sont de simples fichiers Markdown, dans le dossier de votre choix.</p>
@@ -144,7 +149,10 @@ const TEMPLATE = `
 export function createLayout(root: HTMLElement): Layout {
   root.innerHTML = TEMPLATE;
   buildDisplayTools(root.querySelector(".display-tools") as HTMLElement);
+  buildWindowBar(root.querySelector(".window-bar") as HTMLElement);
   const find = <T extends HTMLElement>(selector: string) => root.querySelector(selector) as T;
+  // L'accueil est montré au départ : sans espace de travail ouvert, le bouton n'a rien à cacher.
+  find("[data-side-panels]").hidden = true;
   return {
     welcome: find(".welcome"),
     mainArea: find(".main-area"),
@@ -176,6 +184,7 @@ export function createLayout(root: HTMLElement): Layout {
     outline: find(".outline"),
     columns: find(".columns"),
     fullScreenButton: find("[data-full-screen]"),
+    windowBar: find(".window-bar"),
     sidePanelsButton: find("[data-side-panels]"),
     claudeButton: find("[data-claude]"),
     claudeColumn: find(".claude-column"),

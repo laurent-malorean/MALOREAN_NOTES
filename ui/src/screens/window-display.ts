@@ -2,9 +2,10 @@
 // largeur), réglés indépendamment.
 import { type PreferenceStorage } from "../state/focus-preference";
 import { loadSidePanels, nextSidePanels, saveSidePanels } from "../state/side-panels-preference";
-import { showFullScreen, showSidePanels } from "./editor-tools";
+import { showFullScreen } from "./editor-tools";
 import { connectFoldersHandle, type FoldersParts } from "./folders-handle";
 import { connectPanelEdges } from "./panel-edges";
+import { showSidePanels } from "./window-bar";
 
 /** Ce que la fenêtre du Mac sait faire de son plein écran. */
 export interface WindowControl {

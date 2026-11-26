@@ -168,6 +168,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0063-crm-listes-et-fiches.md` | CRM : les listes Personnes, Entreprises et Projets, la ligne d'une action, les fiches d'entreprise et de personne à la place de l'éditeur ; un point de branchement pour la fenêtre d'une action |
 | `0059-mutation-par-groupes-sur-github.md` | Toute la mutation du Rust confiée à GitHub, en groupes de mutation parallèles de 10 à 20 minutes ; sur le Mac, fin de tâche = barrière + `--fonction`, sans mutation |
 | `0083-application-sur-github.md` | Application fabriquée sur un Mac de GitHub à chaque tag `vX.Y.Z` : `.dmg` joint à la Release du tag, numéro de version vérifié avant toute compilation, application non signée |
+| `0085-bouton-des-panneaux.md` | Barre de la fenêtre (barre de titre du Mac superposée) : le bouton des panneaux latéraux à côté des boutons de fenêtre, toujours visible, icône selon l'état ; retiré de la bande du haut, dont les seuils sont recalculés |
 
 ## Construire l'application (`.app`)
 
