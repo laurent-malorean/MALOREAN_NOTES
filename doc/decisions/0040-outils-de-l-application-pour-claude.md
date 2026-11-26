@@ -124,3 +124,4 @@ Outils qui changent une note et garde-fou du web (20/11, mêmes conditions ; le 
 - Chaque tour lance un relais de plus (le programme de l'application, sans interface), quelques millisecondes.
 - Si la prise ne peut pas être ouverte au lancement, la colonne marche comme avant, sans les outils de l'application (un avertissement dans le journal).
 - Un autre programme du même compte, qui lirait les arguments de `claude` pendant un tour, pourrait lire la clé : il pourrait de toute façon lire et écrire les notes de l'utilisateur. La prise protège des autres comptes et du réseau.
+- **Complétée** par la fiche 0079 (26/11/2026) : `read_canvas` et dix outils de changement (`add_canvas_card`, `change_canvas_card`, `move_canvas_card`, `resize_canvas_card`, `remove_canvas_card`, `add_canvas_arrow`, `change_canvas_arrow`, `remove_canvas_arrow`, `add_canvas_group`, `change_canvas_group`) lisent et changent un canvas par les règles de l'interface.
