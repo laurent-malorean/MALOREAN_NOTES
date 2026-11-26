@@ -83,16 +83,16 @@ describe("fenêtre d'une action : notes liées", () => {
   it("lie la note choisie par la recherche de notes ; annuler ou choisir une note déjà liée ne fait rien", async () => {
     const m = await openedWindow();
     m.chosenNote.value = "Plan de la salle";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await waitForGesture(m, 1);
     expect(sent(m)[0]).toEqual({
       kind: "linkedNotes",
       notes: ["Cahier des charges", "Plan de la salle"],
     });
     m.chosenNote.value = null;
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     m.chosenNote.value = "Cahier des charges";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await tick();
     expect(sent(m)).toHaveLength(1);
   });
@@ -199,7 +199,7 @@ describe("fenêtre d'une nouvelle action", () => {
     choose(control("+ Ajouter une personne"), "jean-dupont");
     typedIn("Ajouter une étiquette", "vip");
     m.chosenNote.value = "Plan";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await vi.waitFor(() => expect(document.querySelectorAll(".crm-aw-note")).toHaveLength(1));
     expect(document.querySelectorAll(".crm-aw-person")).toHaveLength(1);
     expect(document.querySelectorAll(".tag-chip")).toHaveLength(1);
@@ -219,7 +219,7 @@ describe("fenêtre d'une nouvelle action", () => {
     choose(control("+ Ajouter une personne"), "jean-dupont");
     typedIn("Ajouter une étiquette", "vip");
     m.chosenNote.value = "Plan";
-    buttonIn("+ Lier une note").click();
+    buttonIn("Lier une note").click();
     await vi.waitFor(() => expect(document.querySelectorAll(".crm-aw-note")).toHaveLength(1));
     buttonIn("Enregistrer").click();
     await vi.waitFor(() => expect(callsTo(m, "createCrmAction")).toHaveLength(1));

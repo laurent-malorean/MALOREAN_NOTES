@@ -3,6 +3,7 @@
 // par `act.change` ; le texte, qui s'enregistre en quittant le champ, passe par `act.commit`.
 import type { CrmActionChangeItem, CrmActionItem, CrmItem } from "../bridge";
 import type { BodyChangeItem } from "../bridge/generated/BodyChangeItem";
+import type { ChecklistItem } from "../bridge/generated/ChecklistItem";
 import { type ActionFields, CHANNELS, emailsToCopy } from "../state/crm-action-window";
 import { PALETTE } from "../state/palette";
 import { actionButton, h } from "./crm-dom";
@@ -36,6 +37,10 @@ export interface WindowActions {
   readonly linkNote: () => void;
   readonly openNote: (title: string) => void;
   readonly openAddress: (url: string) => void;
+  /** Demande confirmation, puis supprime la checklist `list`, à la place `index` dans l'ordre écrit. */
+  readonly removeChecklist: (index: number, list: ChecklistItem) => void;
+  /** La clé du champ d'ajout ouvert (« Ajouter un élément », « Ajouter une checklist »), `null` s'il n'y en a pas. */
+  readonly adding: { get(): string | null; set(key: string | null): void };
   /** La place du commentaire en cours de modification, dans l'ordre écrit. */
   readonly editing: { get(): number | null; set(index: number | null): void };
 }
@@ -54,7 +59,7 @@ export const COPY_EMAILS = "Copier les e-mails";
 /** Une partie de la fenêtre : un titre, puis ses contrôles. */
 export function section(className: string, label: string | null, ...content: HTMLElement[]) {
   const box = h("section", `crm-aw-section ${className}`);
-  if (label !== null) box.append(h("h3", "crm-aw-label", label));
+  if (label !== null) box.append(h("h3", "crm-aw-section-title", label));
   box.append(...content);
   return box;
 }

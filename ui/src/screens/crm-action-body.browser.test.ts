@@ -11,6 +11,7 @@ import {
   waitForGesture,
 } from "../../test-support/crm-window-fixture";
 import { press, type } from "../../test-support/crm-view-fixture";
+import { removeChecklistQuestion } from "../state/crm-action-window";
 import "../theme.css";
 import "../style.css";
 
@@ -18,7 +19,7 @@ const body = (change: object) => ({ kind: "body", change });
 const texts = (selector: string) =>
   [...document.querySelectorAll(`.crm-aw ${selector}`)].map((e) => e.textContent);
 
-describe("fenêtre d'une action : listes à cocher", () => {
+describe("fenêtre d'une action : checklists", () => {
   it("montre chaque liste avec son nom, ses éléments et son avancement en pourcentage", async () => {
     await openedWindow();
     expect(texts(".crm-aw-progress")).toEqual(["50 %", "0 %"]);
@@ -61,37 +62,92 @@ describe("fenêtre d'une action : listes à cocher", () => {
     expect(sent(m)).toEqual([body({ kind: "removeItem", list: 0, item: 0 })]);
   });
 
-  it("ajoute un élément à Entrée dans le champ de sa liste ; un champ vide ne fait rien", async () => {
+  it("ajoute un élément à Entrée dans le champ ouvert par « Ajouter un élément » ; un champ vide ne fait rien", async () => {
     const m = await openedWindow();
-    const add = field<HTMLInputElement>("item-new-1");
+    expect(field("item-new-0")).toBeNull();
+    buttonIn("Ajouter un élément").click();
+    const add = field<HTMLInputElement>("item-new-0");
+    expect(document.activeElement).toBe(add);
     type(add, "  Poster ");
     press(add, "Enter");
-    type(field("item-new-1"), "   ");
-    press(field("item-new-1"), "Enter");
+    type(field("item-new-0"), "   ");
+    press(field("item-new-0"), "Enter");
     await waitForGesture(m, 1);
     await tick();
-    expect(sent(m)).toEqual([body({ kind: "addItem", list: 1, text: "Poster" })]);
-    expect(field<HTMLInputElement>("item-new-1").value).toBe("");
+    expect(sent(m)).toEqual([body({ kind: "addItem", list: 0, text: "Poster" })]);
+    expect(field<HTMLInputElement>("item-new-0").value).toBe("");
   });
 
-  it("renomme une liste en la quittant", async () => {
+  it("ferme le champ d'ajout par Échap ou « Annuler », sans fermer la fenêtre", async () => {
+    await openedWindow();
+    buttonIn("Ajouter un élément").click();
+    type(field("item-new-0"), "Brouillon");
+    press(field("item-new-0"), "Escape");
+    expect(field("item-new-0")).toBeNull();
+    expect(document.querySelector(".crm-aw")).not.toBeNull();
+    buttonIn("Ajouter un élément").click();
+    expect(field<HTMLInputElement>("item-new-0").value).toBe("");
+    buttonIn("Annuler").click();
+    expect(field("item-new-0")).toBeNull();
+  });
+
+  it("ajoute par le bouton « Ajouter » du champ ouvert", async () => {
     const m = await openedWindow();
-    commit(control("Nom de la liste Envoi"), "Expédition");
+    buttonIn("Ajouter un élément").click();
+    type(field("item-new-0"), "Poster");
+    buttonIn("Ajouter").click();
+    await waitForGesture(m, 1);
+    expect(sent(m)).toEqual([body({ kind: "addItem", list: 0, text: "Poster" })]);
+  });
+
+  it("renomme une checklist en la quittant", async () => {
+    const m = await openedWindow();
+    commit(control("Nom de la checklist Envoi"), "Expédition");
     await waitForGesture(m, 1);
     expect(sent(m)).toEqual([body({ kind: "renameChecklist", list: 1, name: "Expédition" })]);
-    commit(control("Nom de la liste Préparation"), "");
-    expect(control<HTMLInputElement>("Nom de la liste Préparation").value).toBe("Préparation");
+    commit(control("Nom de la checklist Préparation"), "");
+    expect(control<HTMLInputElement>("Nom de la checklist Préparation").value).toBe("Préparation");
   });
 
-  it("supprime une liste", async () => {
+  it("demande confirmation avant de supprimer une checklist : annuler ne supprime rien", async () => {
     const m = await openedWindow();
-    buttonIn("Supprimer la liste Envoi").click();
+    m.answer.value = false;
+    buttonIn("Supprimer la checklist Préparation").click();
+    await vi.waitFor(() => expect(m.questions).toHaveLength(1));
+    expect(m.questions).toEqual(["Supprimer la checklist « Préparation » et 2 éléments ?"]);
+    await tick();
+    expect(sent(m)).toEqual([]);
+    expect(document.querySelectorAll(".crm-aw-checklist")).toHaveLength(2);
+  });
+
+  it("supprime la checklist une fois confirmé ; la question dit « et 1 élément » ou rien sans élément", async () => {
+    const m = await openedWindow();
+    buttonIn("Supprimer la checklist Envoi").click();
     await waitForGesture(m, 1);
+    expect(m.questions).toEqual(["Supprimer la checklist « Envoi » ?"]);
     expect(sent(m)).toEqual([body({ kind: "removeChecklist", list: 1 })]);
+    expect(
+      removeChecklistQuestion({ name: "N", done: 0, items: [{ done: false, text: "a" }] }),
+    ).toBe("Supprimer la checklist « N » et 1 élément ?");
   });
 
-  it("ajoute une liste à Entrée dans le champ « Ajouter une liste »", async () => {
+  it("ne supprime rien si la checklist a changé de place pendant la question", async () => {
     const m = await openedWindow();
+    let answered = (): void => undefined;
+    m.answer.wait = new Promise<void>((resolve) => (answered = resolve));
+    buttonIn("Supprimer la checklist Envoi").click();
+    m.disk.crm = changedCrm({ checklists: [{ name: "Autre", done: 0, items: [] }] });
+    await m.view.reload();
+    answered();
+    await tick();
+    expect(sent(m)).toEqual([]);
+  });
+
+  it("ajoute une checklist à Entrée dans le champ ouvert par « Ajouter une checklist »", async () => {
+    const m = await openedWindow();
+    expect(field("list-new")).toBeNull();
+    buttonIn("Ajouter une checklist").click();
+    expect(document.activeElement).toBe(field("list-new"));
     type(field("list-new"), " Courrier ");
     press(field("list-new"), "Enter");
     type(field("list-new"), "");
@@ -99,6 +155,63 @@ describe("fenêtre d'une action : listes à cocher", () => {
     await waitForGesture(m, 1);
     await tick();
     expect(sent(m)).toEqual([body({ kind: "addChecklist", name: "Courrier" })]);
+  });
+
+  it("montre l'avancement de chaque checklist : pourcentage et barre de progression", async () => {
+    await openedWindow();
+    const bars = [...document.querySelectorAll<HTMLElement>(".crm-aw-bar")];
+    expect(bars.map((b) => b.getAttribute("role"))).toEqual(["progressbar", "progressbar"]);
+    expect(bars.map((b) => b.getAttribute("aria-valuenow"))).toEqual(["50", "0"]);
+    expect(bars.map((b) => b.getAttribute("aria-valuemin"))).toEqual(["0", "0"]);
+    expect(bars.map((b) => b.getAttribute("aria-valuemax"))).toEqual(["100", "100"]);
+    expect(bars[0]?.getAttribute("aria-label")).toBe("Avancement de la checklist Préparation");
+    const fill = (bar?: HTMLElement) => bar?.querySelector<HTMLElement>(".crm-aw-bar-fill");
+    expect(fill(bars[0])?.style.width).toBe("50%");
+    const track = (bars[0] as HTMLElement).getBoundingClientRect().width;
+    expect(fill(bars[0])?.getBoundingClientRect().width).toBeCloseTo(track / 2, 0);
+    expect(fill(bars[1])?.getBoundingClientRect().width).toBe(0);
+    const green = document.createElement("i");
+    green.style.color = "var(--palette-vert)";
+    document.body.append(green);
+    expect(getComputedStyle(fill(bars[0]) as HTMLElement).backgroundColor).toBe(
+      getComputedStyle(green).color,
+    );
+    green.remove();
+  });
+
+  it("barre et atténue un élément coché, pas un élément à faire", async () => {
+    await openedWindow();
+    const done = control<HTMLInputElement>("Élément Relire");
+    const todo = control<HTMLInputElement>("Élément Chiffrer");
+    expect(getComputedStyle(done).textDecorationLine).toBe("line-through");
+    expect(getComputedStyle(todo).textDecorationLine).toBe("none");
+    expect(Number(getComputedStyle(done).opacity)).toBeLessThan(
+      Number(getComputedStyle(todo).opacity),
+    );
+    control<HTMLInputElement>("Cocher Chiffrer").click();
+    expect(getComputedStyle(todo).textDecorationLine).toBe("line-through");
+  });
+
+  it("met à jour la barre aussitôt qu'un élément est coché", async () => {
+    const m = await openedWindow();
+    m.disk.crm = changedCrm({
+      checklists: [
+        {
+          name: "Préparation",
+          done: 2,
+          items: [
+            { done: true, text: "Relire" },
+            { done: true, text: "Chiffrer" },
+          ],
+        },
+        { name: "Envoi", done: 0, items: [] },
+      ],
+    });
+    control<HTMLInputElement>("Cocher Chiffrer").click();
+    await vi.waitFor(() =>
+      expect(document.querySelector(".crm-aw-bar")?.getAttribute("aria-valuenow")).toBe("100"),
+    );
+    expect(texts(".crm-aw-progress")).toEqual(["100 %", "0 %"]);
   });
 });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  buttonIn,
   changedCrm,
   control,
   field,
@@ -20,8 +21,8 @@ const names = () =>
 describe("fenêtre d'une action : chaque geste se voit aussitôt, curseur resté dans le champ", () => {
   it("une checklist créée apparaît dès Entrée", async () => {
     const m = await openedWindow();
+    buttonIn("Ajouter une checklist").click();
     const add = field<HTMLInputElement>("list-new");
-    add.focus();
     type(add, "Courrier");
     m.disk.crm = changedCrm({
       checklists: [...devis().checklists, { name: "Courrier", done: 0, items: [] }],
@@ -35,13 +36,13 @@ describe("fenêtre d'une action : chaque geste se voit aussitôt, curseur resté
 
   it("un élément ajouté apparaît dès Entrée", async () => {
     const m = await openedWindow();
-    const add = field<HTMLInputElement>("item-new-1");
-    add.focus();
+    buttonIn("Ajouter un élément").click();
+    const add = field<HTMLInputElement>("item-new-0");
     type(add, "Poster");
     const lists = devis().checklists;
     m.disk.crm = changedCrm({
       checklists: lists.map((list, at) =>
-        at === 1 ? { ...list, items: [{ done: false, text: "Poster" }] } : list,
+        at === 0 ? { ...list, items: [{ done: false, text: "Poster" }] } : list,
       ),
     });
     press(add, "Enter");

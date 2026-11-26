@@ -98,14 +98,14 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
   it("montre les parties dans l'ordre du § 8", async () => {
     await openedWindow();
     expect(labels()).toEqual([
-      ...["Personnes", "Statut", "Date", "Canal", "Projet", "Couleur", "Titre", "Description"],
-      ...["Étiquettes", "Notes liées", "Listes à cocher", "Commentaires"],
+      ...["Titre", "Statut", "Date", "Canal", "Personnes", "Projet", "Couleur", "Description"],
+      ...["Checklists", "Étiquettes", "Notes liées", "Commentaires"],
     ]);
     const order = [...document.querySelectorAll(".crm-aw-body > section")].map((s) => s.className);
     expect(order.map((c) => c.replace("crm-aw-section ", ""))).toEqual([
-      ...["crm-aw-people-section", "crm-aw-status", "crm-aw-project", "crm-aw-color"],
-      ...["crm-aw-title-section", "crm-aw-description-section", "crm-aw-tags-section"],
-      ...["crm-aw-notes-section", "crm-aw-checklists", "crm-aw-comments-section"],
+      ...["crm-aw-title-section", "crm-aw-status", "crm-aw-people-section", "crm-aw-project"],
+      ...["crm-aw-color", "crm-aw-description-section", "crm-aw-checklists"],
+      ...["crm-aw-tags-section", "crm-aw-notes-section", "crm-aw-comments-section"],
     ]);
     expect(buttonIn(DELETE_TEXT)).not.toBeUndefined();
     expect(DELETE_TEXT).toBe("Supprimer");
@@ -204,7 +204,7 @@ describe("fenêtre d'une action : ce qu'elle montre", () => {
       "var(--palette-orange)",
     );
     expect(text(".crm-aw-note-link")).toBe("Cahier des charges");
-    expect(buttonIn("+ Lier une note")).not.toBeUndefined();
+    expect(buttonIn("Lier une note")).not.toBeUndefined();
     const suggestions = [...document.querySelectorAll(".crm-aw datalist option")].map(
       (o) => (o as HTMLOptionElement).value,
     );

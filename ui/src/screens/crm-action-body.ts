@@ -1,12 +1,12 @@
-// Les listes à cocher et les commentaires dans la fenêtre d'une action existante (fiche 0062,
-// spécification § 8) : chaque geste est enregistré aussitôt. Une liste, un élément ou un commentaire
+// Les checklists et les commentaires dans la fenêtre d'une action existante (fiche 0062,
+// spécification § 8) : chaque geste est enregistré aussitôt. Une checklist, un élément ou un commentaire
 // se désigne à Rust par sa place dans l'ordre écrit.
 import type { ChecklistItem } from "../bridge/generated/ChecklistItem";
 import type { CommentItem } from "../bridge/generated/CommentItem";
 import { newestFirst, progress, segmentsOf } from "../state/crm-action-window";
 import { actionButton, h } from "./crm-dom";
 import { section, type WindowActions, type WindowModel } from "./crm-action-fields";
-import { addField } from "./crm-action-links";
+import { addControl } from "./crm-action-links";
 
 const EDIT_PREFIX = "comment-edit-";
 const NEW_COMMENT = "comment-new";
@@ -40,22 +40,38 @@ function itemRow(
   box.type = "checkbox";
   box.checked = item.done;
   box.setAttribute("aria-label", `Cocher ${item.text}`);
-  box.addEventListener("change", () =>
-    act.body({ kind: "checkItem", list, item: index, done: box.checked }),
-  );
   const text = editable(
     {
       label: `Élément ${item.text}`,
       field: `item-${String(list)}-${String(index)}`,
-      className: "crm-aw-item-text",
+      className: item.done ? "crm-aw-item-text done" : "crm-aw-item-text",
     },
     item.text,
     (value) => act.body({ kind: "editItem", list, item: index, text: value }),
   );
+  box.addEventListener("change", () => {
+    text.classList.toggle("done", box.checked);
+    act.body({ kind: "checkItem", list, item: index, done: box.checked });
+  });
   const remove = actionButton("crm-aw-remove", "×", `Retirer ${item.text}`);
   remove.addEventListener("click", () => act.body({ kind: "removeItem", list, item: index }));
   row.append(box, text, remove);
   return row;
+}
+
+/** La barre d'avancement : de 0 à 100, lue par les lecteurs d'écran comme une barre de progression. */
+function progressBar(list: ChecklistItem): HTMLElement {
+  const percent = progress(list);
+  const bar = h("div", "crm-aw-bar");
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-label", `Avancement de la checklist ${list.name}`);
+  bar.setAttribute("aria-valuemin", "0");
+  bar.setAttribute("aria-valuemax", "100");
+  bar.setAttribute("aria-valuenow", String(percent));
+  const fill = h("div", "crm-aw-bar-fill");
+  fill.style.width = `${String(percent)}%`;
+  bar.append(fill);
+  return bar;
 }
 
 function checklistBox(list: ChecklistItem, index: number, act: WindowActions): HTMLElement {
@@ -63,7 +79,7 @@ function checklistBox(list: ChecklistItem, index: number, act: WindowActions): H
   const head = h("div", "crm-aw-checklist-head");
   const name = editable(
     {
-      label: `Nom de la liste ${list.name}`,
+      label: `Nom de la checklist ${list.name}`,
       field: `list-${String(index)}`,
       className: "crm-aw-list-name",
     },
@@ -72,34 +88,35 @@ function checklistBox(list: ChecklistItem, index: number, act: WindowActions): H
   );
   const done = h("span", "crm-aw-progress", `${String(progress(list))} %`);
   const remove = actionButton(
-    "crm-aw-remove-list link",
-    "Supprimer la liste",
-    `Supprimer la liste ${list.name}`,
+    "crm-aw-remove crm-aw-remove-list",
+    "×",
+    `Supprimer la checklist ${list.name}`,
   );
-  remove.addEventListener("click", () => act.body({ kind: "removeChecklist", list: index }));
+  remove.title = `Supprimer la checklist ${list.name}`;
+  remove.addEventListener("click", () => act.removeChecklist(index, list));
   head.append(name, done, remove);
   const items = h("ul", "crm-aw-items");
   list.items.forEach((item, at) => items.append(itemRow(index, at, item, act)));
-  const add = addField(
+  const add = addControl(
     act,
     { key: `item-new-${String(index)}`, label: "Ajouter un élément", className: "crm-aw-add" },
     (text) => text.trim() !== "" && act.body({ kind: "addItem", list: index, text: text.trim() }),
   );
-  box.append(head, items, add);
+  box.append(head, progressBar(list), items, add);
   return box;
 }
 
-/** Les listes à cocher, leur avancement, et « Ajouter une liste ». */
+/** Les checklists : chacune son nom, son avancement (pourcentage et barre), ses éléments ; « Ajouter une checklist ». */
 export function checklistsSection(model: WindowModel, act: WindowActions): HTMLElement {
   const lists = (model.action?.checklists ?? []).map((list, index) =>
     checklistBox(list, index, act),
   );
-  const add = addField(
+  const add = addControl(
     act,
-    { key: "list-new", label: "Ajouter une liste", className: "crm-aw-add" },
+    { key: "list-new", label: "Ajouter une checklist", className: "crm-aw-add crm-aw-add-list" },
     (text) => text.trim() !== "" && act.body({ kind: "addChecklist", name: text.trim() }),
   );
-  return section("crm-aw-checklists", "Listes à cocher", ...lists, add);
+  return section("crm-aw-checklists", "Checklists", ...lists, add);
 }
 
 /** Un commentaire : le texte, chaque adresse en lien cliquable (ouvert dans le navigateur). */
