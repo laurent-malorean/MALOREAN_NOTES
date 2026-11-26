@@ -2,8 +2,8 @@
 // vraie fenêtre. Chaque choix a son icône, visible, de la couleur de son texte ; les icônes sont dans une même
 // colonne, les noms au même bord ; le menu est entier dans la fenêtre et chaque choix reçoit le pointeur.
 import type { Scenario, Trial } from "../runner";
-import { pause, until } from "../wait";
-import { type Env, centreOf, find, findAll, rectOf } from "./env";
+import { until } from "../wait";
+import { centreOf, find, findAll, rectOf } from "./env";
 
 const WAIT = 20_000;
 /** Le plus petit côté d'une icône visible, en pixels. */
@@ -93,21 +93,20 @@ async function checkMenu(
   await until(`le menu ${where} fermé`, () => (menu() === null ? true : null), WAIT);
 }
 
-async function iconsScenario(env: Env, trial: Trial): Promise<void> {
-  // Une note existe dans la racine, et la racine est affichée : la liste a au moins une note.
-  await env.bridge.createNote("");
+async function iconsScenario(trial: Trial): Promise<void> {
+  // La racine est affichée (comme pour le menu de création) : sa liste a les notes des scénarios d'avant.
   find<HTMLElement>('.folder-item[data-path=""]')?.click();
-  await pause(500);
   const note = await until("une note dans la liste", () => find<HTMLElement>(".note-item"), WAIT);
   await checkMenu(trial, "menu d'une note", note, NOTE_ENTRIES);
-  note.click();
-  const tab = await until("l'onglet de la note", () => find<HTMLElement>('[role="tab"]'), WAIT);
+  // Sans onglet ouvert, on ouvre la note comme le fait un clic.
+  if (find('[role="tab"]') === null) note.click();
+  const tab = await until("un onglet", () => find<HTMLElement>('[role="tab"]'), WAIT);
   await checkMenu(trial, "menu d'un onglet", tab, TAB_ENTRIES);
   const folder = find<HTMLElement>('.folder-item[data-path=""]');
   if (folder === null) throw new Error("dossier racine absent");
   await checkMenu(trial, "menu d'un dossier", folder, ROOT_FOLDER_ENTRIES);
 }
 
-export function menuIconsScenarios(env: Env): Scenario[] {
-  return [{ name: "menus du clic droit : icônes alignées", run: (t) => iconsScenario(env, t) }];
+export function menuIconsScenarios(): Scenario[] {
+  return [{ name: "menus du clic droit : icônes alignées", run: (t) => iconsScenario(t) }];
 }
