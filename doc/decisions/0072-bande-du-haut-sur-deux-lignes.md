@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-25
 - **Statut** : acceptée
+- **Complétée** par la fiche 0098 (la bande du haut est unique, en haut de toute la fenêtre ; seuils inchangés).
 - **Complète** la fiche 0064 (bloc d'icônes d'affichage, une seule ligne) ; elle remplace son troisième point (« la recherche rétrécit, puis le dernier bloc passe à la ligne »).
 
 ## Contexte

@@ -126,8 +126,12 @@ test("colonne Claude Code ouverte, la zone du milieu étroite : deux lignes prop
   expect(s.search.width).toBeGreaterThan(320);
   // La bande ne cache ni les colonnes ni les onglets : les colonnes commencent sous la bande.
   const columns = await page.locator(".columns").boundingBox();
-  const bar = await page.locator(".editor-tools").boundingBox();
+  const bar = await page.locator(".window-bar").boundingBox();
   expect((columns as Box).y).toBeGreaterThanOrEqual((bar as Box).y + (bar as Box).height - 1);
+  // Les deux lignes grandissent la bande, qui reste une seule : les boutons de fenêtre du Mac restent sur la première ligne.
+  expect((bar as Box).height).toBeGreaterThan(90);
+  const button = await page.getByRole("button", { name: "Panneaux latéraux" }).boundingBox();
+  expect(Math.abs(middle(button as Box) - middle(s.format))).toBeLessThan(1);
   // Fermer la colonne rend la ligne unique.
   await tool(page, "Claude").click();
   await expectOneRowAt(page);

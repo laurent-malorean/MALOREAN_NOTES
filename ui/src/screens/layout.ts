@@ -50,9 +50,12 @@ export interface Layout {
   /** La zone des colonnes d'édition, à gauche du plan. */
   readonly columns: HTMLElement;
   readonly fullScreenButton: HTMLButtonElement;
-  /** La barre tout en haut de la fenêtre : boutons de fenêtre du Mac à gauche, puis le bouton des panneaux latéraux. */
+  /**
+   * La bande du haut, unique, tout en haut de la fenêtre : la réserve des boutons de fenêtre du Mac et le bouton
+   * des panneaux latéraux à gauche, puis les outils (mise en forme, copies, affichage) et la recherche.
+   */
   readonly windowBar: HTMLElement;
-  /** Le bouton des panneaux latéraux, dans la barre de la fenêtre : visible même panneaux cachés. */
+  /** Le bouton des panneaux latéraux, dans la réserve gauche de la bande : visible même panneaux cachés. */
   readonly sidePanelsButton: HTMLButtonElement;
   /** Le bouton qui affiche ou masque la colonne Claude Code. */
   readonly claudeButton: HTMLButtonElement;
@@ -75,13 +78,23 @@ export interface Layout {
 
 /** La fenêtre : accueil, dossiers, liste des notes, outils et colonnes d'édition, message, réglages. */
 const TEMPLATE = `
-    <header class="window-bar"></header>
     <section class="welcome">
+      <div class="welcome-drag" data-tauri-drag-region></div>
       <h1>MALOREAN Notes</h1>
       <p>Vos notes sont de simples fichiers Markdown, dans le dossier de votre choix.</p>
       <button class="primary" data-add>Choisir un dossier de notes</button>
     </section>
     <section class="main-area" hidden>
+      <header class="window-bar" data-tauri-drag-region>
+        <div class="window-left"></div>
+        <div class="editor-tools" data-tauri-drag-region>
+          <div class="tool-rows" data-tauri-drag-region>
+            <div class="format-bar" data-tauri-drag-region></div>
+            <div class="display-tools format-group"></div>
+            <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
+          </div>
+        </div>
+      </header>
       <aside class="folders">
         <header class="side-panel-header">
           <button class="workspace-switcher" aria-haspopup="menu" title="Changer d'espace de travail (Cmd+Maj+E)"></button>
@@ -114,13 +127,6 @@ const TEMPLATE = `
         <nav class="notes-list"></nav>
       </aside>
       <main class="editor">
-        <div class="editor-tools">
-          <div class="tool-rows">
-            <div class="format-bar"></div>
-            <div class="display-tools format-group"></div>
-            <input class="search-field" type="search" placeholder="Rechercher dans toutes les notes" aria-label="Rechercher" spellcheck="false" />
-          </div>
-        </div>
         <div class="columns"></div>
         <nav class="outline" aria-label="Plan de la note" hidden></nav>
       </main>
@@ -149,10 +155,8 @@ const TEMPLATE = `
 export function createLayout(root: HTMLElement): Layout {
   root.innerHTML = TEMPLATE;
   buildDisplayTools(root.querySelector(".display-tools") as HTMLElement);
-  buildWindowBar(root.querySelector(".window-bar") as HTMLElement);
+  buildWindowBar(root.querySelector(".window-left") as HTMLElement);
   const find = <T extends HTMLElement>(selector: string) => root.querySelector(selector) as T;
-  // L'accueil est montré au départ : sans espace de travail ouvert, le bouton n'a rien à cacher.
-  find("[data-side-panels]").hidden = true;
   return {
     welcome: find(".welcome"),
     mainArea: find(".main-area"),

@@ -2,6 +2,7 @@
 
 - **Date** : 2026-11-26
 - **Statut** : acceptée, demande de l'utilisateur (« centre »)
+- **Complétée** par la fiche 0098 (panneaux cachés, la zone de l'éditeur s'entend à droite de la réserve des boutons du Mac).
 - **Complète** les fiches 0072 (une ou deux lignes) et 0085 (seuils recalculés).
 
 ## Contexte

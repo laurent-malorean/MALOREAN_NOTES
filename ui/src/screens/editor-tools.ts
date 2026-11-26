@@ -1,5 +1,5 @@
 // Outils posés sur l'éditeur : le bloc d'icônes du mode focus, du plan, du mode machine à écrire,
-// du plein écran et de Claude (le bouton des panneaux latéraux est dans la barre de la fenêtre). Un bouton n'a pas de texte : son nom (qui change
+// du plein écran et de Claude (le bouton des panneaux latéraux est dans la bande du haut). Un bouton n'a pas de texte : son nom (qui change
 // avec son état) est dans son nom accessible et sa bulle d'aide.
 import type { FocusUnit } from "../editor/focus/focus-range";
 import type { Typewriter } from "../editor/writing/typewriter";

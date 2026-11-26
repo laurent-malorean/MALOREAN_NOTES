@@ -118,7 +118,7 @@
   --picker-max-height: 50vh;
   --search-field-width: 20rem;
   --search-field-min-width: 6rem;
-  --search-window-top: calc(3.4rem + var(--window-bar-height));
+  --search-window-top: 3.4rem;
   --search-window-width: 60rem;
   --confirmation-width: 26rem;
   --confirmation-text-size: 15px;
@@ -186,11 +186,14 @@
   --notes-panel-width: 280px;
   /* Largeur d'un panneau latéral réglée à la souris : bornes, et bord qu'on tire */
   --side-panel-min-width: 9rem;
-  /* Barre de la fenêtre (en haut, à la place de la barre de titre du Mac) : sa hauteur, la place des trois
-     boutons de fenêtre du Mac à sa gauche (réglée avec `trafficLightPosition`, crates/app/tauri.conf.json),
-     la taille du bouton des panneaux latéraux (28 points au moins) et celle de son icône */
-  --window-bar-height: 38px;
+  /* Bande du haut, unique (fiche 0098) : la place des trois boutons de fenêtre du Mac à sa gauche (réglée avec
+     `trafficLightPosition`, crates/app/tauri.conf.json), puis le bouton des panneaux latéraux (28 points au moins)
+     et son icône. La réserve gauche est la place de ces deux éléments et d'un écart : les outils ne passent jamais
+     dessous. La hauteur de la bande est celle d'une pilule de la barre d'outils, plus deux marges de l'échelle ;
+     le milieu de sa première ligne (marge + moitié de la pilule) est celui des boutons de fenêtre du Mac. */
   --window-bar-inset: 78px;
+  --window-reserve: calc(var(--window-bar-inset) + var(--window-button-size) + var(--space-2));
+  --window-bar-height: calc(var(--format-pill-height) + 2 * var(--space-2) + 1px);
   --window-button-size: 30px;
   --window-button-icon-size: 20px;
   --side-panel-max-width: min(28rem, 30vw);
@@ -210,6 +213,8 @@
   --format-pill-radius: 999px;
   --format-pill-padding: 0.2rem 0.4rem;
   --format-button-size: 1.8rem;
+  /* Hauteur d'une pilule : le bouton, deux marges de 0,2 rem et la bordure. */
+  --format-pill-height: calc(var(--format-button-size) + 0.4rem + 2px);
   --format-button-radius: 999px;
   --format-icon-size: 1.1rem;
   /* Flèche du parcours d'un onglet qui ne mène nulle part. */

@@ -168,10 +168,11 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0063-crm-listes-et-fiches.md` | CRM : les listes Personnes, Entreprises et Projets, la ligne d'une action, les fiches d'entreprise et de personne à la place de l'éditeur ; un point de branchement pour la fenêtre d'une action |
 | `0059-mutation-par-groupes-sur-github.md` | Toute la mutation du Rust confiée à GitHub, en groupes de mutation parallèles de 10 à 20 minutes ; sur le Mac, fin de tâche = barrière + `--fonction`, sans mutation |
 | `0083-application-sur-github.md` | Application fabriquée sur un Mac de GitHub à chaque tag `vX.Y.Z` : `.dmg` joint à la Release du tag, numéro de version vérifié avant toute compilation, application non signée |
-| `0085-bouton-des-panneaux.md` | Barre de la fenêtre (barre de titre du Mac superposée) : le bouton des panneaux latéraux à côté des boutons de fenêtre, toujours visible, icône selon l'état ; retiré de la bande du haut, dont les seuils sont recalculés |
+| `0085-bouton-des-panneaux.md` | Bouton des panneaux latéraux à côté des boutons de fenêtre du Mac (barre de titre superposée), toujours visible, icône selon l'état ; retiré de la bande du haut, dont les seuils sont recalculés (sa barre séparée est remplacée par la fiche 0098) |
 | `0086-recherche-de-notes-pour-les-ia.md` | `search_notes` dit que chaque mot est cherché aussi dans un mot plus long et rend `matches`, le nombre d'occurrences dans la note entière ; l'option « mot entier » reste possible plus tard |
 | `0089-dossiers-de-fiches-cachees.md` | Le dossier des fiches d'un CRM (même nom que son fichier, que des fiches dedans) n'est pas montré dans la liste des dossiers, ni par `list_folders` ; rien ne bouge sur le disque ; le dossier affiché caché retombe sur son parent |
 | `0092-barre-d-outils-centree.md` | La bande du haut est centrée dans la zone de l'éditeur (chaque ligne), et non rangée contre le bord droit ; règle CSS seule, seuils inchangés |
+| `0098-bande-du-haut-unique.md` | Une seule bande tout en haut de la fenêtre (réserve des boutons du Mac et bouton des panneaux, outils centrés, recherche) à la place de la barre de la fenêtre et de la bande du haut séparées ; remplace en partie la fiche 0085 |
 
 ## Construire l'application (`.app`)
 

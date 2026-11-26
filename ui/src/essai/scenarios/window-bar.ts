@@ -1,10 +1,12 @@
-// Essai de l'application réelle (fiche 0054, fiche 0085) : la barre de la fenêtre et le bouton des panneaux
-// latéraux dans la vraie fenêtre. La barre est tout en haut, sur toute la largeur, sous elle la fenêtre commence ;
-// le bouton est à droite de la place des trois boutons de fenêtre du Mac, grand de 28 points au moins, reçoit le
-// pointeur ; un clic cache les deux listes, le bouton reste à la même place et visible ; un second clic les rend.
+// Essai de l'application réelle (fiche 0054, fiches 0085 et 0098) : la bande du haut unique et le bouton des
+// panneaux latéraux dans la vraie fenêtre. La bande est tout en haut, sur toute la largeur, seule : les outils y sont,
+// les listes et les colonnes commencent dessous ; le bouton est à droite de la place des trois boutons de fenêtre
+// du Mac, centré sur la première ligne de la bande, grand de 28 points au moins, reçoit le pointeur ; un clic cache
+// les deux listes, le bouton reste à la même place et visible ; un second clic les rend. Le centrage des boutons de
+// fenêtre du Mac eux-mêmes ne se mesure pas dans la page : il se voit à l'œil.
 import type { Scenario, Trial } from "../runner";
 import { pause, until } from "../wait";
-import { type Rect, centreOf, find, rectOf } from "./env";
+import { type Rect, centreOf, find, findAll, rectOf } from "./env";
 
 /** La place laissée aux trois boutons de fenêtre du Mac : 78 points (`--window-bar-inset`). */
 const TRAFFIC_LIGHTS = 78;
@@ -13,6 +15,9 @@ const MINIMUM_TARGET = 28;
 /** Le temps que la fenêtre se remette en page après avoir caché ou montré les panneaux. */
 const SETTLE_MS = 300;
 const WAIT = 5_000;
+
+/** Une bande d'une ligne : une pilule (37,2 points), deux marges de 8 points et la ligne de séparation. */
+const MAXIMUM_HEIGHT = 56;
 
 const bar = () => find<HTMLElement>(".window-bar");
 const button = () => find<HTMLButtonElement>('.window-bar button[aria-label="Panneaux latéraux"]');
@@ -34,24 +39,38 @@ function pointable(element: HTMLElement): boolean {
 
 function checkBar(trial: Trial): void {
   const strip = bar();
-  const main = find<HTMLElement>(".main-area");
-  if (strip === null || main === null) return trial.check("la barre de la fenêtre existe", false);
+  const columns = find<HTMLElement>(".columns");
+  if (strip === null || columns === null) return trial.check("la bande du haut existe", false);
   const box = rectOf(strip);
-  trial.measure("barreDeLaFenêtre", box);
+  trial.measure("bandeDuHaut", box);
   trial.check(
-    "la barre est tout en haut, sur toute la largeur",
+    "la bande est tout en haut, sur toute la largeur",
     box.x === 0 && box.y === 0 && Math.abs(box.width - window.innerWidth) < 1,
     JSON.stringify(box),
   );
   trial.check(
-    "on la saisit pour déplacer la fenêtre",
-    strip.hasAttribute("data-tauri-drag-region"),
+    "la bande est seule : les outils et le bouton des panneaux y sont, aucune autre barre",
+    findAll<HTMLElement>(".window-bar").length === 1 &&
+      strip.querySelector(".format-bar") !== null &&
+      strip.querySelector(".search-field") !== null &&
+      find<HTMLElement>(".editor .editor-tools") === null,
   );
-  const below = rectOf(main).y;
   trial.check(
-    "la fenêtre commence sous la barre",
-    below >= box.y + box.height - 1,
-    `barre jusqu'à ${Math.round(box.y + box.height)}, fenêtre à ${Math.round(below)}`,
+    "on la saisit pour déplacer la fenêtre (elle et ses vides)",
+    strip.hasAttribute("data-tauri-drag-region") &&
+      strip.querySelector(".window-left")?.hasAttribute("data-tauri-drag-region") === true,
+  );
+  trial.check(
+    "les listes et les colonnes commencent sous la bande",
+    [folders(), notes(), columns].every(
+      (element) => element !== null && rectOf(element).y >= box.y + box.height - 1,
+    ),
+    `bande jusqu'à ${Math.round(box.y + box.height)}, colonnes à ${Math.round(rectOf(columns).y)}`,
+  );
+  trial.check(
+    `la bande tient en ${MAXIMUM_HEIGHT} points au plus sur une ligne d'outils`,
+    box.height <= MAXIMUM_HEIGHT,
+    String(Math.round(box.height)),
   );
 }
 
@@ -67,6 +86,12 @@ function checkButton(trial: Trial, element: HTMLButtonElement): void {
     `le bouton fait ${MINIMUM_TARGET} points au moins`,
     box.width >= MINIMUM_TARGET && box.height >= MINIMUM_TARGET,
     `${Math.round(box.width)} sur ${Math.round(box.height)}`,
+  );
+  const pill = find<HTMLElement>(".format-bar > :nth-child(1)");
+  trial.check(
+    "le bouton est centré sur la première ligne de la bande",
+    pill !== null && Math.abs(centreOf(box).y - centreOf(rectOf(pill)).y) < 1,
+    JSON.stringify([centreOf(box).y, pill === null ? null : centreOf(rectOf(pill)).y]),
   );
   trial.check("le bouton reçoit le pointeur", pointable(element));
   trial.check(
@@ -121,7 +146,7 @@ async function checkShow(trial: Trial, iconShown: string): Promise<void> {
 export function windowBarScenarios(): Scenario[] {
   return [
     {
-      name: "Barre de la fenêtre : bouton des panneaux latéraux",
+      name: "Bande du haut : bouton des panneaux latéraux",
       async run(trial) {
         const element = await until("le bouton des panneaux latéraux", button, WAIT);
         checkBar(trial);

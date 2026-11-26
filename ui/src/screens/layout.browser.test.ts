@@ -81,18 +81,49 @@ describe("mise en page", () => {
     expect(displayTools.firstElementChild).toBe(layout.focusButton);
   });
 
-  it("pose le bouton des panneaux latéraux dans la barre de la fenêtre, avant l'espace de travail", () => {
+  it("une seule bande en haut : la réserve gauche avec le bouton des panneaux, puis les outils, en tête de l'espace de travail", () => {
     const root = document.createElement("div");
     document.body.replaceChildren(root);
     const layout = createLayout(root);
+    expect(root.querySelectorAll(".window-bar")).toHaveLength(1);
     expect(layout.windowBar.className).toBe("window-bar");
     expect(layout.windowBar.hasAttribute("data-tauri-drag-region")).toBe(true);
-    expect(layout.windowBar.contains(layout.sidePanelsButton)).toBe(true);
-    expect(layout.windowBar.nextElementSibling).toBe(layout.welcome);
-    expect(layout.mainArea.contains(layout.sidePanelsButton)).toBe(false);
+    expect(layout.windowBar.parentElement).toBe(layout.mainArea);
+    expect(layout.mainArea.firstElementChild).toBe(layout.windowBar);
+    expect([...layout.windowBar.children].map((child) => child.className)).toEqual([
+      "window-left",
+      "editor-tools",
+    ]);
+    const left = layout.windowBar.firstElementChild as HTMLElement;
+    expect(left.contains(layout.sidePanelsButton)).toBe(true);
+    expect(left.hasAttribute("data-tauri-drag-region")).toBe(true);
     expect(layout.sidePanelsButton.getAttribute("aria-label")).toBe("Panneaux latéraux");
-    // Pas d'espace de travail ouvert : le bouton n'a rien à cacher ni à montrer.
-    expect(layout.sidePanelsButton.hidden).toBe(true);
+    // Les outils sont dans la bande, plus dans l'éditeur ; le bouton est dans l'espace de travail, caché avec lui sur l'accueil.
+    expect(layout.windowBar.contains(layout.searchField)).toBe(true);
+    expect(layout.editor.contains(layout.searchField)).toBe(false);
+    expect(layout.editor.querySelector(".editor-tools")).toBeNull();
+    expect(layout.mainArea.hidden).toBe(true);
+  });
+
+  it("on saisit chaque vide de la bande pour déplacer la fenêtre, jamais un bouton ni le champ ; l'accueil a sa bande de saisie", () => {
+    const root = document.createElement("div");
+    document.body.replaceChildren(root);
+    const layout = createLayout(root);
+    const draggable = [...root.querySelectorAll("[data-tauri-drag-region]")].map(
+      (element) => element.className,
+    );
+    expect(draggable).toEqual([
+      "welcome-drag",
+      "window-bar",
+      "window-left",
+      "editor-tools",
+      "tool-rows",
+      "format-bar",
+    ]);
+    expect(layout.welcome.firstElementChild?.className).toBe("welcome-drag");
+    for (const control of root.querySelectorAll("button, input, select")) {
+      expect(control.hasAttribute("data-tauri-drag-region")).toBe(false);
+    }
   });
 
   it("les cinq boutons d'affichage sont des icônes, trouvées par leur nom", () => {

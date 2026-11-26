@@ -3,17 +3,17 @@ import { appIcon } from "./app-icons";
 import { buildWindowBar, showSidePanels } from "./window-bar";
 
 function build() {
-  const bar = document.createElement("header");
-  buildWindowBar(bar);
-  return { bar, button: bar.querySelector("button") as HTMLButtonElement };
+  const left = document.createElement("div");
+  buildWindowBar(left);
+  return { left, button: left.querySelector("button") as HTMLButtonElement };
 }
 
-describe("barre de la fenêtre", () => {
+describe("réserve gauche de la bande du haut", () => {
   it("se saisit pour déplacer la fenêtre, et ne porte qu'un bouton : celui des panneaux latéraux", () => {
-    const { bar } = build();
-    expect(bar.hasAttribute("data-tauri-drag-region")).toBe(true);
-    expect(bar.children).toHaveLength(1);
-    expect(bar.querySelectorAll("button")).toHaveLength(1);
+    const { left } = build();
+    expect(left.hasAttribute("data-tauri-drag-region")).toBe(true);
+    expect(left.children).toHaveLength(1);
+    expect(left.querySelectorAll("button")).toHaveLength(1);
   });
 
   it("le bouton est une icône seule, nommée « Panneaux latéraux », avec le raccourci en bulle d'aide", () => {

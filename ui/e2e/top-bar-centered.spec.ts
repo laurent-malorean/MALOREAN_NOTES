@@ -2,7 +2,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { sidePanelsButton, waitForNote } from "./journey";
 
 // La bande du haut est centrée dans la zone de l'éditeur (celle qui est à droite des panneaux
-// latéraux), pas collée à son bord droit : chaque ligne de la bande a son milieu au milieu de la
+// latéraux, ou, panneaux cachés, à droite de la réserve des boutons de fenêtre du Mac), pas collée à son bord droit : chaque ligne de la bande a son milieu au milieu de la
 // zone, quelle que soit la largeur de la fenêtre, la colonne Claude Code, les panneaux cachés ou
 // montrés (fiche 0092).
 
@@ -35,6 +35,8 @@ interface Measure {
   readonly lines: readonly Line[];
   /** Les boutons hors de la zone de l'éditeur (coupés), et le débordement horizontal de la bande et de la page. */
   readonly cut: number;
+  /** Les boutons passés sous la réserve gauche : aucun. */
+  readonly beneathReserve: number;
   readonly overflow: number;
   readonly pageOverflow: number;
 }
@@ -43,7 +45,10 @@ interface Measure {
 const measure = (page: Page): Promise<Measure> =>
   page.evaluate(() => {
     const strip = document.querySelector(".editor-tools") as HTMLElement;
-    const zone = (strip.closest(".editor") as HTMLElement).getBoundingClientRect();
+    // La zone de l'éditeur, sans la réserve gauche (boutons de fenêtre du Mac et bouton des panneaux) quand elle la recouvre.
+    const editor = (document.querySelector(".editor") as HTMLElement).getBoundingClientRect();
+    const reserve = (document.querySelector(".window-left") as HTMLElement).getBoundingClientRect();
+    const zone = { x: Math.max(editor.x, reserve.right), right: editor.right };
     const parts = [
       ".format-bar > :nth-child(1)",
       ".format-bar > :nth-child(2)",
@@ -67,6 +72,7 @@ const measure = (page: Page): Promise<Measure> =>
       zone: { left: zone.x, right: zone.right },
       lines: lines.map(({ left, right, buttons: count }) => ({ left, right, buttons: count })),
       cut: buttons.filter((box) => box.x < zone.x - 0.5 || box.right > zone.right + 0.5).length,
+      beneathReserve: buttons.filter((box) => box.x < reserve.right - 0.5).length,
       overflow: strip.scrollWidth - strip.clientWidth,
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
@@ -80,6 +86,7 @@ function expectCentred(m: Measure, lines: number) {
     expect(Math.abs((line.left + line.right) / 2 - centre)).toBeLessThanOrEqual(CENTRE_TOLERANCE);
   }
   expect(m.cut).toBe(0);
+  expect(m.beneathReserve).toBe(0);
   expect(m.overflow).toBe(0);
   expect(m.pageOverflow).toBe(0);
 }
