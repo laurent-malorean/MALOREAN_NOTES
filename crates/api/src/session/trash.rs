@@ -20,6 +20,18 @@ impl Session {
             .to_path())
     }
 
+    /// Le nombre de fiches qui partent avec cette note à la corbeille : celles de son CRM, zéro
+    /// pour une note ordinaire.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; chemin invalide, note absente,
+    /// stockage indisponible, aucun espace de travail ouvert.
+    pub fn crm_fiches_in_trash(&self, path: &str) -> Result<usize, ApiError> {
+        let store = self.store()?;
+        Ok(Trash::new(&*store).fiches_with(&NotePath::parse(path)?)?)
+    }
+
     /// Place un dossier, avec tout ce qu'il contient, dans la corbeille ; rend son chemin dans
     /// la corbeille.
     ///

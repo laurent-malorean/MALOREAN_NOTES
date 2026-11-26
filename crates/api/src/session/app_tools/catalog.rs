@@ -274,7 +274,8 @@ fn trash_folder() -> Described {
     (
         "Met un dossier, avec tout ce qu'il contient (notes, sous-dossiers, pièces jointes, \
          historique), à la corbeille de MALOREAN Notes, à son chemin d'origine (`Nom 2` s'il y est \
-         déjà) : jamais effacé, l'utilisateur peut le restaurer. Refusé : dossier introuvable ; la \
+         déjà) : jamais effacé, l'utilisateur peut le restaurer ; un CRM du dossier part avec ses \
+         fiches quand leur dossier est dans celui-ci. Refusé : dossier introuvable ; la \
          racine de l'espace (chemin vide). Rend `trashed`, son chemin dans la corbeille.",
         input(json!({ "path": folder_path() }), &["path"]),
     )
@@ -299,7 +300,10 @@ fn create_note_from_template() -> Described {
 fn trash_note() -> Described {
     (
         "Met une note à la corbeille de MALOREAN Notes (jamais effacée : l'utilisateur peut \
-         la restaurer), avec ses pièces jointes et son historique.",
+         la restaurer), avec ses pièces jointes et son historique. Un CRM part avec ses fiches \
+         (entreprises, personnes, actions, projets, avec leurs pièces jointes) et revient avec \
+         elles à la restauration ; une note ordinaire rangée dans le dossier des fiches reste \
+         en place.",
         input(json!({ "path": note_path() }), &["path"]),
     )
 }
@@ -320,7 +324,9 @@ fn rename_note() -> Described {
 fn move_note() -> Described {
     (
         "Range une note dans un autre dossier, avec ses pièces jointes et son historique ; un \
-         nom pris reçoit un suffixe. Rend son nouveau chemin.",
+         nom pris reçoit un suffixe. Un CRM emporte ses fiches (son dossier des fiches prend le \
+         même suffixe que lui) ; une note ordinaire rangée dans le dossier des fiches reste en \
+         place. Rend son nouveau chemin.",
         input(
             json!({ "path": note_path(), "folder": text("Le dossier d'arrivée depuis l'espace de travail ; `` pour la racine.") }),
             &["path", "folder"],

@@ -149,6 +149,59 @@ async function checkFichesFolderHidden(
   );
 }
 
+/** Le fichier d'une action du CRM `path`, sur le disque, à partir de la référence que Rust en donne. */
+async function actionFile(env: Env, path: string, title: string): Promise<Uint8Array | null> {
+  const crm: CrmItem = await env.bridge.readCrm(path, NO_FILTERS, null);
+  const name = crm.actions.find((a) => a.title === title)?.name;
+  const stem = path.replace(/\.md$/, "");
+  return name === undefined ? null : readDisk(`${notesFolder(env)}/${stem}/actions/${name}.md`);
+}
+
+/** Un CRM part à la corbeille avec ses fiches, sans dossier laissé derrière, et revient avec elles (fiche 0091). */
+async function trashScenario(env: Env, trial: Trial): Promise<void> {
+  const { path } = await env.bridge.createCrm("", "Essai corbeille");
+  await env.bridge.createCrmAction(path, draft("Appeler Paul", "TODO"));
+  await env.bridge.createCrmAction(path, draft("Écrire à Léa", "Progress"));
+  const stem = path.replace(/\.md$/, "");
+  const onDisk = async (relative: string) =>
+    (await readDisk(`${notesFolder(env)}/${relative}`)) !== null;
+  trial.check(
+    "la confirmation annonce les deux fiches du CRM",
+    (await env.bridge.crmFichesInTrash(path)) === 2,
+    String(await env.bridge.crmFichesInTrash(path)),
+  );
+  await env.bridge.trashNote(path);
+  trial.check(
+    "à la corbeille, ni le CRM ni ses fiches ne sont restés sur le disque",
+    !(await onDisk(path)) && (await actionFile(env, path, "Appeler Paul")) === null,
+    "",
+  );
+  const folders = await env.bridge.listFolders();
+  trial.check(
+    "à la corbeille, le dossier des fiches n'est pas laissé dans la liste des dossiers",
+    !folders.some((folder) => folder === stem || folder.startsWith(`${stem}/`)),
+    folders.join(),
+  );
+  const found = await env.bridge.searchNotes("Appeler Paul", "modified");
+  trial.check("à la corbeille, les fiches ne sont plus cherchées", found.length === 0, "");
+  await env.bridge.restoreNote(path);
+  const back: CrmItem = await env.bridge.readCrm(path, NO_FILTERS, null);
+  trial.check(
+    "restauré, le CRM retrouve ses deux actions",
+    back.actions
+      .map((a) => a.title)
+      .sort()
+      .join() === "Appeler Paul,Écrire à Léa",
+    back.actions.map((a) => a.title).join(),
+  );
+  trial.check(
+    "restauré, le fichier d'une action est revenu sur le disque",
+    (await actionFile(env, path, "Appeler Paul")) !== null,
+    "",
+  );
+}
+
 export const crmScenarios = (env: Env): Scenario[] => [
   { name: "CRM : créer, voir le Kanban, glisser une carte", run: (t) => dragScenario(env, t) },
+  { name: "CRM : corbeille avec ses fiches, restauration", run: (t) => trashScenario(env, t) },
 ];

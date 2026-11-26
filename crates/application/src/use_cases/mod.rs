@@ -6,6 +6,7 @@ mod change_canvas;
 mod connection;
 mod create_note;
 mod crm;
+mod crm_fiches;
 mod export;
 mod folders;
 mod history;

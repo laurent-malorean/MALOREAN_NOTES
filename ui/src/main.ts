@@ -67,7 +67,7 @@ const folders = createFolders({
   ...{ refreshList: workspace.refreshList, recent, list: layout.foldersList, run },
 });
 const trash = createTrash({
-  ...{ backend: bridge, screen, columns, ask: (name) => askTrash(layout.confirmation, name) },
+  ...{ backend: bridge, screen, columns, ask: askTrash.bind(null, layout.confirmation) },
   ...{ refreshList: workspace.refreshList, refreshTags: workspace.refreshTags },
 });
 const tags = createTags({ backend: bridge, screen, columns, run });

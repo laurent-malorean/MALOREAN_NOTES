@@ -16,15 +16,17 @@ const EMPTY_TRASH = { notes: [], folders: ["vieux"] };
 function setup(
   start: Screen = workspaceScreen(),
   columnsStart: Columns = columnsStarted,
-  options: { accept?: boolean; listed?: NoteListItem[] } = {},
+  options: { accept?: boolean; listed?: NoteListItem[]; fiches?: number } = {},
 ) {
   const { screen } = recordedScreen(start);
   const columns = fakeColumns(columnsStart);
   const log: string[] = [];
   const asked: string[] = [];
+  const askedFiches: number[] = [];
   const trash = createTrash({
     backend: {
       trashNote: async (path) => (log.push(`corbeille ${path}`), path),
+      crmFichesInTrash: async () => options.fiches ?? 0,
       trashFolder: async (path) => (log.push(`corbeille ${path}/`), path),
       listTrash: async () => (log.push("corbeille"), EMPTY_TRASH),
       listFolders: async () => (log.push("dossiers"), ["projets"]),
@@ -38,7 +40,11 @@ function setup(
     },
     screen,
     columns: columns.open,
-    ask: async (name) => (asked.push(name), options.accept ?? true),
+    ask: async (name, fiches) => (
+      asked.push(name),
+      askedFiches.push(fiches),
+      options.accept ?? true
+    ),
     refreshList: async () => {
       log.push("liste");
       if (options.listed) screen.show(workspaceScreen(options.listed));
@@ -46,7 +52,7 @@ function setup(
     refreshTags: async () => void log.push("étiquettes"),
   });
   const tabs = () => columns.columns().list[0]?.tabs.map((tab) => tab.note);
-  return { trash, screen, columns, log, asked, tabs };
+  return { trash, screen, columns, log, asked, askedFiches, tabs };
 }
 
 const notes = [listed("a.md", "Alpha"), listed("b.md", "Bêta"), listed("c.md")];
@@ -89,6 +95,37 @@ describe("corbeille : une note", () => {
     const t = setup(welcome, open("a.md"));
     await t.trash.trashNote("a.md");
     expect(t.tabs()).toEqual([]);
+  });
+
+  it("une note ordinaire est demandée sans fiche", async () => {
+    const t = setup(workspaceScreen(notes), open("a.md"), { listed: notes.slice(1) });
+    await t.trash.trashNote("a.md");
+    expect(t.askedFiches).toEqual([0]);
+  });
+
+  it("un CRM dit combien de fiches partent avec lui et ferme aussi leurs onglets", async () => {
+    const crm = [listed("c.md", "CRM1"), listed("b.md", "Bêta")];
+    const t = setup(
+      workspaceScreen(crm),
+      open("c.md", "c/actions/x.md", "c/personnes/p.md", "cc/y.md"),
+      {
+        listed: crm.slice(1),
+        fiches: 2,
+      },
+    );
+    await t.trash.trashNote("c.md");
+    expect(t.asked).toEqual(["CRM1"]);
+    expect(t.askedFiches).toEqual([2]);
+    expect(t.tabs()).toEqual(["cc/y.md"]);
+  });
+
+  it("sans fiche, les onglets d'un dossier du même nom restent ouverts", async () => {
+    const t = setup(workspaceScreen(notes), open("a.md", "a/x.md"), {
+      listed: notes.slice(1),
+      fiches: 0,
+    });
+    await t.trash.trashNote("a.md");
+    expect(t.tabs()).toEqual(["a/x.md"]);
   });
 });
 

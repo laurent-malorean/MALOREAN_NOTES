@@ -2,11 +2,12 @@
 //! avec les règles de l'enregistrement. Le titre d'une note, d'une carte mentale, d'un cahier de
 //! recherche et d'un CRM est leur titre `#` ; celui d'un canvas est son nom de fichier.
 
-use domain::crm::CrmKind;
+use domain::crm::{CrmFiches, CrmKind, fiches_folder};
 use domain::saving::plan_save;
 use domain::title::retitled;
-use domain::{ContentType, FileName, Fingerprint, Folder, FolderName, NotePath};
+use domain::{ContentType, FileName, Fingerprint, NotePath};
 
+use super::crm_fiches::{fiches_of, move_with};
 use crate::use_cases::{KeepVersion, SaveNote};
 use crate::{AppError, Clock, History, NoteStore};
 
@@ -105,14 +106,15 @@ impl<'a> RenameNote<'a> {
         if planned.file_name() != plan_save(note.name(), &content, &[]).file_name() {
             return Err(AppError::TitleTaken);
         }
-        let fiches = if is_crm && planned.file_name() != note.name() {
-            self.fiches_move(note, planned.file_name())?
+        let renamed = note.renamed(planned.file_name().clone());
+        let fiches = if is_crm && renamed != *note {
+            self.fiches_to_follow(note, &renamed)?
         } else {
             None
         };
         self.keeping.keep(note, &current)?;
-        if let Some((from, to)) = &fiches {
-            self.store.move_folder(from, to)?;
+        if let Some(fiches) = &fiches {
+            move_with(self.store, fiches, &renamed)?;
         }
         let saved = self
             .saving
@@ -123,38 +125,30 @@ impl<'a> RenameNote<'a> {
                 path: saved.path,
             }),
             Err(error) => {
-                if let Some((from, to)) = &fiches {
+                if let Some(back) = fiches.and_then(|f| f.relocated(note, &renamed)) {
                     // Les fiches ne restent pas orphelines : le CRM n'a pas changé de nom.
-                    self.store.move_folder(to, from).ok();
+                    move_with(self.store, &back, note).ok();
                 }
                 Err(error)
             }
         }
     }
 
-    /// Le dossier des fiches du CRM et le dossier qu'il aura sous son nouveau nom ; rien s'il
-    /// n'a pas encore de fiche.
-    fn fiches_move(
+    /// Les fiches du CRM, qui suivent son nouveau nom (la règle est celle de la corbeille et du
+    /// déplacement : `crm_fiches`) ; rien s'il n'a pas encore de fiche.
+    fn fiches_to_follow(
         &self,
         crm: &NotePath,
-        renamed: &FileName,
-    ) -> Result<Option<(Folder, Folder)>, AppError> {
-        let in_folder = |name: &FileName| {
-            FolderName::parse(name.stem())
-                .ok()
-                .map(|stem| crm.folder().join(stem))
-        };
-        let (Some(from), Some(to)) = (in_folder(crm.name()), in_folder(renamed)) else {
+        renamed: &NotePath,
+    ) -> Result<Option<CrmFiches>, AppError> {
+        let Some(fiches) = fiches_of(self.store, crm)? else {
             return Ok(None);
         };
         let folders = self.store.folders()?;
-        if !folders.contains(&from) {
-            return Ok(None);
-        }
-        if folders.contains(&to) {
+        if fiches_folder(renamed).is_some_and(|folder| folders.contains(&folder)) {
             return Err(AppError::TitleTaken);
         }
-        Ok(Some((from, to)))
+        Ok(Some(fiches))
     }
 }
 
@@ -168,7 +162,7 @@ fn unchanged(note: &NotePath, content: String) -> RenamedNote {
 
 #[cfg(test)]
 mod tests {
-    use domain::Moment;
+    use domain::{Folder, Moment};
 
     use super::*;
     use crate::MemoryHistory;
@@ -389,6 +383,18 @@ mod tests {
         assert!(w.exists("toto/prospects/actions/2026-11-10-devis.md"));
         assert!(!w.exists("toto/clients/entreprises/acme.md"));
         assert!(!w.store.folders().unwrap().contains(&folder("toto/clients")));
+    }
+
+    #[test]
+    fn an_ordinary_note_in_the_fiches_folder_stays_where_it_was() {
+        let w = crm_workspace();
+        w.store
+            .write(&path("toto/clients/ma-note.md"), "# Ma note")
+            .unwrap();
+        w.rename("toto/clients.md", "Prospects").unwrap();
+        assert!(w.exists("toto/prospects/entreprises/acme.md"));
+        assert!(w.exists("toto/clients/ma-note.md"));
+        assert!(!w.exists("toto/clients/entreprises/acme.md"));
     }
 
     #[test]

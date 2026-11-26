@@ -19,6 +19,7 @@ export interface TrashDeps {
   readonly backend: Pick<
     typeof Bridge,
     | "trashNote"
+    | "crmFichesInTrash"
     | "trashFolder"
     | "listTrash"
     | "listFolders"
@@ -29,8 +30,8 @@ export interface TrashDeps {
   >;
   readonly screen: CurrentScreen;
   readonly columns: Pick<OpenColumns, "current" | "change" | "flushAll" | "flushedPath" | "forget">;
-  /** Demande s'il faut placer l'élément ainsi nommé dans la corbeille. */
-  ask(name: string): Promise<boolean>;
+  /** Demande s'il faut placer l'élément ainsi nommé dans la corbeille, avec les `fiches` d'un CRM qui partent avec lui. */
+  ask(name: string, fiches: number): Promise<boolean>;
   /** Relit la liste des notes du dossier affiché (ou du filtre par étiquette). */
   refreshList(): Promise<void>;
   /** Relit la liste des étiquettes : une note partie ou revenue change leurs nombres. */
@@ -55,9 +56,11 @@ const noteTitle = (screen: Screen, path: string) =>
  * Place une note dans la corbeille, une fois ce qui est tapé enregistré ; si la colonne active la
  * montrait, la suivante de la liste s'y ouvre (ou aucune).
  */
-async function trashNote(deps: TrashDeps, path: string) {
+async function trashNote(deps: TrashDeps, path: string, fiches: number) {
   const source = await deps.columns.flushedPath(path);
-  const gone = (note: string) => note === source;
+  // Un CRM emporte ses fiches, rangées dans le dossier qui porte son nom : leurs onglets se ferment aussi.
+  const fichesFolder = `${source.replace(/\.md$/, "")}/`;
+  const gone = (note: string) => note === source || (fiches > 0 && note.startsWith(fichesFolder));
   const screen = deps.screen.get();
   const next = screen.kind === "workspace" ? nextSelection(screen.notes, source) : null;
   await deps.backend.trashNote(source);
@@ -111,12 +114,17 @@ export function createTrash(deps: TrashDeps): Trash {
     await show();
   };
   /** Placer une note ou un dossier dans la corbeille attend d'abord sa confirmation. */
-  const confirm = async (name: string, trash: () => Promise<void>) => {
-    if (await deps.ask(name)) await trash();
+  const confirm = async (name: string, fiches: number, trash: () => Promise<void>) => {
+    if (await deps.ask(name, fiches)) await trash();
   };
   return {
-    trashNote: (path) => confirm(noteTitle(deps.screen.get(), path), () => trashNote(deps, path)),
-    trashFolder: (path) => confirm(nameOf(path), () => trashFolder(deps, path)),
+    trashNote: async (path) => {
+      const fiches = await deps.backend.crmFichesInTrash(path);
+      await confirm(noteTitle(deps.screen.get(), path), fiches, () =>
+        trashNote(deps, path, fiches),
+      );
+    },
+    trashFolder: (path) => confirm(nameOf(path), 0, () => trashFolder(deps, path)),
     show,
     restoreNote: (path) => change(deps.backend.restoreNote(path)),
     restoreFolder: (path) => change(deps.backend.restoreFolder(path)),
