@@ -5,12 +5,13 @@
 - **Complète** la fiche 0032 (colonne Claude Code) : Claude y reçoit, en plus de ses outils de fichiers et du web, les outils de l'application.
 - **Complétée** par la fiche 0041 (20/11/2026) : l'outil `add_entry` ajoute une entrée à un cahier de recherche.
 - **Complétée** par la fiche 0061 (25/11/2026) : l'outil `create_crm` crée un CRM, la présentation du serveur donne la consigne sur les CRM, la recherche rend les fiches avec leur CRM.
+- **Remplacée sur le point « partage »** par la fiche 0075 (26/11/2026) : l'outil `replace_in_note` change le texte d'une note simple ; il ne reste plus aux seuls outils de fichiers de l'IA.
 
 ## Contexte
 
 Dans la colonne Claude Code, Claude ne connaît les notes que par leurs fichiers : il parcourt le dossier pour chercher, ignore l'index, les modèles de note, l'historique des versions, et peut créer un fichier sans suivre les règles de l'application (nom tiré du titre, en-tête, dossier des pièces jointes, corbeille au lieu d'effacer). L'utilisateur veut que Claude passe par l'application (todo.md, « Pilotage par des IA », validé le 19/11) :
 
-- **Partage** : changer le texte d'une note reste aux outils de fichiers de Claude (remplacer un passage par un autre couvre tous les cas) ; l'application n'offre que les actions qui ont ses propres règles.
+- **Partage** (remplacé par la fiche 0075 : `replace_in_note` change le texte d'une note simple) : à l'origine, changer le texte d'une note restait aux outils de fichiers de Claude (remplacer un passage par un autre couvre tous les cas) ; l'application n'offrait que les actions qui ont ses propres règles.
 - **Exigence** : ces outils ne répondent **que sur ce Mac**, sans aucun port réseau ; des tests le vérifient. Un mode réseau pourra venir plus tard : les outils ne doivent pas dépendre de leur transport.
 - **Choisi** : un serveur MCP local (Claude Code sait déjà s'en servir). Une API OpenAPI pourra s'ajouter pour d'autres IA.
 - Les IA désignent un espace de travail par son nom, jamais par un chemin sur le disque.
@@ -62,6 +63,7 @@ Ils passent par les cas d'usage, comme l'interface, et rendent ce qu'elle reçoi
 | `restore_version` | Remet le texte d'une version, après avoir gardé le texte actuel comme version |
 | `add_tags`, `remove_tags` | Ajoute ou retire des étiquettes dans l'en-tête, sans toucher au reste : la clé `tags` réécrite à sa place (`tags: [a, b]`, quelle que soit sa forme d'avant), ajoutée après les autres clés, ou retirée avec l'en-tête s'il ne contient plus rien ; une étiquette déjà là (majuscules et accents ignorés) n'est pas doublée ; une étiquette qui changerait le sens de la liste (`,`, `[`, `:`, guillemets…) est refusée |
 | `pin_note`, `unpin_note` | Épingle ou désépingle une note |
+| `replace_in_note` | Remplace un texte par un autre dans une note simple, selon les règles de la saisie (fiche 0075) |
 | `add_attachment` | Joint à une note une image ou un PDF déjà rangé dans l'espace de travail : copié dans son dossier de pièces jointes (nom des règles des pièces jointes glissées, suffixe si pris), son lien ajouté à la fin de la note ; le fichier d'origine reste où il est. Le stockage lit ce fichier (`NoteStore::read_file`) sans jamais suivre un lien symbolique qui sortirait de l'espace de travail |
 | `viewed_note` | Ce que l'utilisateur regarde : la note de la colonne active (chemin et titre, ou rien) et le texte qui y est sélectionné, avec le nom de l'espace de travail |
 | `show_note` | Montre une note à l'utilisateur : elle s'ouvre dans la colonne active (une note qui n'existe pas est refusée) |
@@ -82,7 +84,7 @@ Les outils qui créent, changent, rangent ou jettent une note (`AppTool::changes
 
 ### Dans la colonne
 
-Une action d'un outil de l'application (`mcp__malorean__…` dans le flux) devient `ActionKind::AppTool` ; l'interface la nomme en français : « Recherche dans l’index », « Étiquettes », « Liens entrants », « Modèles », « Historique », « Lecture d’une version », « Nouvelle note », « Note depuis un modèle », « Mise à la corbeille », « Renommage », « Déplacement », « Restauration d’une version », « Ajout d’étiquettes », « Retrait d’étiquettes », « Épinglage », « Désépinglage », « Pièce jointe », « Note regardée », « Note montrée » ; un outil inconnu, « Outil de l’application ». Sa cible est la recherche ou la note visée.
+Une action d'un outil de l'application (`mcp__malorean__…` dans le flux) devient `ActionKind::AppTool` ; l'interface la nomme en français : « Recherche dans l’index », « Étiquettes », « Liens entrants », « Modèles », « Historique », « Lecture d’une version », « Nouvelle note », « Note depuis un modèle », « Mise à la corbeille », « Renommage », « Déplacement », « Restauration d’une version », « Ajout d’étiquettes », « Retrait d’étiquettes », « Modification du texte », « Épinglage », « Désépinglage », « Pièce jointe », « Note regardée », « Note montrée » ; un outil inconnu, « Outil de l’application ». Sa cible est la recherche ou la note visée.
 
 ### Mesuré avec le vrai `claude` (20/11, 2.1.311, `--model haiku`, dossier jetable)
 
