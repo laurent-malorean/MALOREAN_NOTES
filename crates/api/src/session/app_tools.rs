@@ -232,6 +232,9 @@ mod canvas_catalog_tests;
 mod canvas_changing_tests;
 
 #[cfg(test)]
+mod canvas_creating_tests;
+
+#[cfg(test)]
 mod canvas_reading_tests;
 
 #[cfg(test)]
@@ -262,6 +265,9 @@ mod crm_records_tests;
 mod crm_tags_tests;
 
 #[cfg(test)]
+mod crm_trash_tests;
+
+#[cfg(test)]
 mod crm_tests;
 
 #[cfg(test)]
@@ -284,6 +290,9 @@ mod templates_tests;
 
 #[cfg(test)]
 mod meaning_tests;
+
+#[cfg(test)]
+mod notebook_creating_tests;
 
 #[cfg(test)]
 mod mind_map_editing_tests;

@@ -383,6 +383,8 @@ const trashCommands: Record<string, (args: Record<string, string>) => unknown> =
     addFolders(backend.trash.folders, folderOf(path));
     return path;
   },
+  // Les fiches d'un CRM sont comptées côté Rust : la doublure n'en connaît pas.
+  crm_fiches_in_trash: () => 0,
   trash_folder: ({ path = "" }) => {
     addFolders(backend.trash.folders, path);
     for (const f of backend.folders.filter((f) => within(f, path))) {

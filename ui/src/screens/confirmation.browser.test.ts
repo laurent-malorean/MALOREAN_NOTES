@@ -74,6 +74,17 @@ describe("confirmation", () => {
     expect(button(element, "Placer dans la corbeille").className).toBe("danger");
   });
 
+  it("un CRM dit combien de fiches partent avec lui", () => {
+    const question = (fiches: number) => {
+      const element = dialog();
+      void askTrash(element, "CRM1", fiches);
+      return element.querySelector(".confirmation-question")?.textContent;
+    };
+    expect(question(0)).toBe("Placer « CRM1 » dans la corbeille ?");
+    expect(question(1)).toBe("Placer « CRM1 » et sa fiche dans la corbeille ?");
+    expect(question(2)).toBe("Placer « CRM1 » et ses 2 fiches dans la corbeille ?");
+  });
+
   it("retirer un espace de travail dit que ses notes restent", () => {
     const element = dialog();
     void askWorkspaceRemoval(element, "Travail");

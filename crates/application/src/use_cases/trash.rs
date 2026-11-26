@@ -1,10 +1,12 @@
 //! La corbeille : y placer une note ou un dossier, voir ce qu'elle contient, restaurer, vider.
 
 use domain::attachments::relink;
+use domain::crm::CrmKind;
 use domain::folder::sort_for_display;
 use domain::saving::moved_note;
 use domain::{FileName, Folder, NotePath, NoteSummary};
 
+use super::crm_fiches::{fiches_of, restore_with, taken_with_folders, trash_with};
 use crate::{AppError, NoteStore, TrashContents};
 
 /// Ce que montre la corbeille : ses dossiers dans l'ordre de l'arbre, ses notes par chemin.
@@ -17,6 +19,7 @@ pub struct TrashView {
 }
 
 /// La corbeille de l'espace de travail ouvert. Rien n'y est supprimé tant qu'on ne la vide pas.
+/// Un CRM y va avec ses fiches et en revient avec elles (fiche 0091).
 #[derive(Debug)]
 pub struct Trash<'a> {
     store: &'a dyn NoteStore,
@@ -31,7 +34,9 @@ impl<'a> Trash<'a> {
 
     /// Place la note (et ses pièces jointes) dans la corbeille, à son chemin d'origine ; si une
     /// note supprimée avant elle y est déjà, elle reçoit le premier suffixe libre, et ses liens
-    /// vers ses pièces jointes suivent. Rend son chemin dans la corbeille.
+    /// vers ses pièces jointes suivent. Un CRM emporte ses fiches : le dossier qui porte son nom
+    /// s'il ne contient que des fiches, sinon les fiches seules (une note ordinaire y reste) ; le
+    /// dossier des fiches prend le même suffixe que lui. Rend son chemin dans la corbeille.
     ///
     /// # Errors
     ///
@@ -40,14 +45,33 @@ impl<'a> Trash<'a> {
     /// stockage ne répond pas.
     pub fn put_note(&self, note: &NotePath) -> Result<NotePath, AppError> {
         let trashed = self.store.trash()?;
-        let at = moved_note(note, note.folder(), &names_in(&trashed, note.folder()));
+        let fiches = fiches_of(self.store, note)?;
+        let mut taken = names_in(&trashed, note.folder());
+        if fiches.is_some() {
+            taken = taken_with_folders(taken, &trashed.folders, note.folder());
+        }
+        let at = moved_note(note, note.folder(), &taken);
         if at.name() != note.name() {
             let content = self.store.read(note)?.content;
             self.store
                 .write_keeping_date(note, &relink(&content, note.name(), at.name()))?;
         }
+        if let Some(fiches) = fiches {
+            trash_with(self.store, &fiches, &at)?;
+        }
         self.store.trash_note(note, &at)?;
         Ok(at)
+    }
+
+    /// Le nombre de fiches qui partent avec la note à la corbeille : celles de son CRM, zéro pour
+    /// une note ordinaire.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::NoteNotFound`] si elle n'existe pas, [`AppError::StorageUnavailable`] si le
+    /// stockage ne répond pas.
+    pub fn fiches_with(&self, note: &NotePath) -> Result<usize, AppError> {
+        Ok(fiches_of(self.store, note)?.map_or(0, |fiches| fiches.count()))
     }
 
     /// Place le dossier, avec tout ce qu'il contient, dans la corbeille, à son chemin d'origine ;
@@ -101,10 +125,11 @@ impl<'a> Trash<'a> {
         let trashed = self.store.trash()?;
         let content = trashed
             .notes
-            .into_iter()
+            .iter()
             .find(|n| &n.path == at)
             .ok_or_else(|| AppError::NoteNotFound(at.clone()))?
-            .content;
+            .content
+            .clone();
         let existing = if self.has_folder(at.folder())? {
             self.store.names(at.folder())?
         } else {
@@ -115,6 +140,9 @@ impl<'a> Trash<'a> {
         if to.name() != at.name() {
             self.store
                 .write_keeping_date(&to, &relink(&content, at.name(), to.name()))?;
+        }
+        if CrmKind::of(&content) == Some(CrmKind::Crm) {
+            restore_with(self.store, &trashed, (at, &to))?;
         }
         Ok(to)
     }
@@ -413,3 +441,7 @@ mod tests {
         assert!(store.read(&note("Travail/Réunions/mardi.md")).is_ok());
     }
 }
+
+#[cfg(test)]
+#[path = "trash_crm_tests.rs"]
+mod crm_tests;

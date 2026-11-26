@@ -42,10 +42,14 @@ export function askConfirmation(
   });
 }
 
-/** Demande avant de placer une note ou un dossier, nommé par `name`, dans la corbeille. */
-export const askTrash = (dialog: HTMLDialogElement, name: string) =>
+/** Ce qui part avec un CRM : « et sa fiche », « et ses 3 fiches » ; rien sans fiche. */
+const withFiches = (fiches: number) =>
+  fiches === 0 ? "" : fiches === 1 ? " et sa fiche" : ` et ses ${fiches} fiches`;
+
+/** Demande avant de placer une note ou un dossier, nommé par `name`, dans la corbeille ; un CRM dit combien de `fiches` partent avec lui. */
+export const askTrash = (dialog: HTMLDialogElement, name: string, fiches = 0) =>
   askConfirmation(dialog, {
-    question: `Placer « ${name} » dans la corbeille ?`,
+    question: `Placer « ${name} »${withFiches(fiches)} dans la corbeille ?`,
     confirm: "Placer dans la corbeille",
   });
 

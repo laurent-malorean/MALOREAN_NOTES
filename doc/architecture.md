@@ -171,6 +171,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0085-bouton-des-panneaux.md` | Barre de la fenêtre (barre de titre du Mac superposée) : le bouton des panneaux latéraux à côté des boutons de fenêtre, toujours visible, icône selon l'état ; retiré de la bande du haut, dont les seuils sont recalculés |
 | `0086-recherche-de-notes-pour-les-ia.md` | `search_notes` dit que chaque mot est cherché aussi dans un mot plus long et rend `matches`, le nombre d'occurrences dans la note entière ; l'option « mot entier » reste possible plus tard |
 | `0089-dossiers-de-fiches-cachees.md` | Le dossier des fiches d'un CRM (même nom que son fichier, que des fiches dedans) n'est pas montré dans la liste des dossiers, ni par `list_folders` ; rien ne bouge sur le disque ; le dossier affiché caché retombe sur son parent |
+| `0092-barre-d-outils-centree.md` | La bande du haut est centrée dans la zone de l'éditeur (chaque ligne), et non rangée contre le bord droit ; règle CSS seule, seuils inchangés |
 
 ## Construire l'application (`.app`)
 

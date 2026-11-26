@@ -65,6 +65,8 @@ impl Session {
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
             tool if edits_a_mind_map(tool) => self.call_mind_map_tool(tool, arguments),
             AppTool::CreateCrm => self.tool_create_crm(arguments),
+            AppTool::CreateCanvas => self.tool_create_canvas(arguments),
+            AppTool::CreateResearchNotebook => self.tool_create_research_notebook(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(arguments),
             AppTool::TrashNote => {
                 let trashed = self.trash_note(required(arguments, "path")?);
@@ -174,6 +176,30 @@ impl Session {
             Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
         self.ensure_folder(&folder.to_path())?;
         let created = self.create_crm(&folder.to_path(), title).map_err(said)?;
+        written(&created)
+    }
+
+    /// Un cahier de recherche neuf, sans entrée, titré `title`, dans `folder` (créé avec ses
+    /// parents) par le cas d'usage de l'écran ; rend son chemin. Un dossier refusé ne crée rien.
+    fn tool_create_research_notebook(&self, arguments: &Value) -> Result<String, String> {
+        let title = required(arguments, "title")?;
+        let folder =
+            Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
+        self.ensure_folder(&folder.to_path())?;
+        let created = self
+            .create_research_notebook(&folder.to_path(), title)
+            .map_err(said)?;
+        written(&created)
+    }
+
+    /// Un canvas vide, titré `title`, dans `folder` (créé avec ses parents) par le cas d'usage de
+    /// l'interface ; rend son chemin. Un dossier refusé ne crée rien.
+    fn tool_create_canvas(&self, arguments: &Value) -> Result<String, String> {
+        let title = required(arguments, "title")?;
+        let folder =
+            Folder::parse(optional(arguments, "folder").unwrap_or_default()).map_err(said)?;
+        self.ensure_folder(&folder.to_path())?;
+        let created = self.create_canvas(&folder.to_path(), title).map_err(said)?;
         written(&created)
     }
 

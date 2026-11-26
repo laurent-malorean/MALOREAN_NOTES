@@ -48,6 +48,17 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
 }
 
 #[test]
+fn creating_a_canvas_or_a_notebook_requires_a_title() {
+    for tool in [AppTool::CreateCanvas, AppTool::CreateResearchNotebook] {
+        assert_eq!(
+            checked_schema(tool)["required"],
+            json!(["title"]),
+            "{tool:?}"
+        );
+    }
+}
+
+#[test]
 fn each_tool_requires_what_it_cannot_work_without() {
     let path: &[&str] = &["path"];
     let expected: [(AppTool, &[&str]); 51] = [
@@ -213,10 +224,11 @@ fn replacing_a_text_takes_a_note_two_texts_and_an_option_and_tells_every_refusal
         "introuvable ou vide ou identique",
         "nombre d'occurrences et leurs lignes",
         "`replace_all` à true",
-        "cahier de recherche (utilisez `add_entry`)",
+        "cahier de recherche (utilisez `add_entry` ; `create_research_notebook` en crée un)",
         "une carte mentale (lisez-la avec `read_mind_map`, modifiez-la avec `add_mind_map_child`",
         "un canvas",
         "utilisez `read_canvas` et les outils du canvas",
+        "`create_canvas` en crée un",
         "une fiche de CRM (utilisez `read_crm` et les outils du CRM)",
         "utilisez ensuite le `path` rendu",
         "`path`, `title` et `replacements`",
@@ -298,9 +310,9 @@ fn reading_a_note_takes_a_path_and_tells_the_header_the_limit_and_every_refusal(
         "`header` suivi de `body` redonne le fichier à l'identique",
         "60 000 caractères",
         "`truncated` vaut alors true et `message` le dit",
-        "cahier de recherche (on y ajoute des entrées avec `add_entry`",
+        "cahier de recherche (il se crée avec `create_research_notebook`, on y ajoute des entrées avec `add_entry`",
         "une carte mentale (lisez-la avec `read_mind_map`), un CRM",
-        "un canvas se lit avec `read_canvas`, un CRM et ses fiches avec `read_crm`",
+        "un canvas se lit avec `read_canvas` (il se crée avec `create_canvas`), un CRM et ses fiches avec `read_crm`",
         "introuvable",
     ] {
         assert!(description.contains(expected), "{expected}");

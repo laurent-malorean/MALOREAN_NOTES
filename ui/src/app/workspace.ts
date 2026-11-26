@@ -4,6 +4,8 @@ import type { MessageKind } from "./messages";
 import type * as Bridge from "../bridge";
 import type { WorkspaceInfo, NoteContent } from "../bridge";
 import { notesMoved, noteShown, notesRemoved } from "../state/columns";
+import { declaredType } from "../state/declared-type";
+import { movedPath } from "../state/folders";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { loadNoteOrder, type NoteOrder, saveNoteOrder } from "../state/note-order";
 import {
@@ -26,6 +28,9 @@ import { indexSettings } from "./index-settings";
 import type { LayoutMemory } from "./layout-memory";
 import type { RecentNotes } from "./recent-notes";
 
+const CRM = "crm";
+const NOTE_EXTENSION = /\.md$/i;
+
 export interface WorkspaceDeps {
   readonly backend: Pick<
     typeof Bridge,
@@ -36,6 +41,7 @@ export interface WorkspaceDeps {
     | "createNote"
     | "resolveLinks"
     | "moveNote"
+    | "readNote"
     | "rebuildIndex"
     | "indexOverview"
   >;
@@ -163,13 +169,16 @@ async function followLink(deps: WorkspaceDeps, title: string, inNewTab: boolean)
 
 async function moveNote(deps: WorkspaceDeps, path: string, into: string) {
   const source = await deps.columns.flushedPath(path);
+  const isCrm = declaredType((await deps.backend.readNote(source)).content) === CRM;
   const moved = await deps.backend.moveNote(source, into);
-  deps.recent.moved((note) => (note === source ? moved.path : note));
+  // Les fiches d'un CRM sont dans le dossier qui porte son nom : elles suivent le CRM.
+  const stem = (note: string) => note.replace(NOTE_EXTENSION, "");
+  const follow = (note: string) =>
+    note === source ? moved.path : isCrm ? movedPath(note, stem(source), stem(moved.path)) : note;
+  deps.recent.moved(follow);
   deps.screen.show(folderRevealed(deps.screen.get(), into));
   await refreshList(deps);
-  await deps.columns.update((now) =>
-    notesMoved(now, (note) => (note === source ? moved.path : note)),
-  );
+  await deps.columns.update((now) => notesMoved(now, follow));
 }
 
 async function changePin(
