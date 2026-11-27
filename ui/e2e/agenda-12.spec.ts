@@ -72,6 +72,8 @@ const chevron = (page: Page) => page.getByRole("button", { name: "Nouveau conten
 async function enter(page: Page, label: string, text: string) {
   await field(page, label).fill(text);
   await field(page, label).press("Enter");
+  // Le geste fini : la bande a relu l'événement (les lectures peuvent être lentes).
+  await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
 }
 
 test("un agenda 12 se crée par le menu de création et par le clic droit sur un dossier", async ({
@@ -174,10 +176,13 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   await expect(page.locator(".agenda-country-option")).toHaveText(["🇩🇪 Allemagne"]);
   await page.locator(".agenda-country-option").click();
   await expect(field(page, "Pays")).toHaveValue("🇩🇪 Allemagne");
+  await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
   await enter(page, "Ville", "Hanovre");
   await field(page, "Mois").selectOption("5");
+  await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
   await page.getByLabel("Ajouter une étiquette").fill("salon");
   await page.getByLabel("Ajouter une étiquette").press("Enter");
+  await expect(page.locator(".tag-chip")).toHaveText(["salon×"]);
   await page.locator(".cm-content").click();
   await page.keyboard.press("Meta+End");
   await page.keyboard.type("Budget 5000");

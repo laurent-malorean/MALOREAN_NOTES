@@ -77,6 +77,9 @@ class Band implements EventBand {
   private detail: Agenda12EventDetailItem | null = null;
   private generation = 0;
   private countries: Promise<CountryItem[]> | null = null;
+  /** Les gestes se suivent l'un après l'autre : le suivant attend la fin du précédent (le texte de la note est réécrit à chacun). */
+  private queue: Promise<unknown> = Promise.resolve();
+  private pending = 0;
 
   constructor(private readonly deps: EventBandDeps) {
     this.fields = createEventFields({
@@ -135,29 +138,45 @@ class Band implements EventBand {
     this.message.hidden = text === "";
   }
 
+  /** Met le geste en file, la bande est « occupée » (`aria-busy`) tant qu'il en reste. */
+  private enqueue(task: () => Promise<void>): Promise<void> {
+    this.pending += 1;
+    this.element.setAttribute("aria-busy", "true");
+    const done = this.queue.then(task).finally(() => {
+      this.pending -= 1;
+      if (this.pending === 0) this.element.removeAttribute("aria-busy");
+    });
+    this.queue = done;
+    return done;
+  }
+
   /** Un geste du bouton : son refus est montré dans la bande, et la bande relit ensuite ce qui est écrit. */
-  private async go(run: () => Promise<unknown>): Promise<void> {
-    this.say("");
-    try {
-      await this.deps.flush();
-      await run();
-    } catch (error) {
-      this.say(this.deps.errorText(error));
-      await this.reload(true);
-    }
+  private go(run: () => Promise<unknown>): Promise<void> {
+    return this.enqueue(async () => {
+      this.say("");
+      try {
+        await this.deps.flush();
+        await run();
+      } catch (error) {
+        this.say(this.deps.errorText(error));
+        await this.reload(true);
+      }
+    });
   }
 
   /** Un geste d'un champ : le texte tapé est enregistré d'abord, Rust réécrit une clé, le texte et la bande relisent le fichier. */
-  private async change(change: Agenda12EventChangeItem): Promise<void> {
-    this.say("");
-    try {
-      await this.deps.flush();
-      await this.deps.backend.changeAgenda12Event(this.deps.path, change);
-      await this.deps.followText();
-    } catch (error) {
-      this.say(this.deps.errorText(error));
-    }
-    await this.reload(true);
+  private change(change: Agenda12EventChangeItem): Promise<void> {
+    return this.enqueue(async () => {
+      this.say("");
+      try {
+        await this.deps.flush();
+        await this.deps.backend.changeAgenda12Event(this.deps.path, change);
+        await this.deps.followText();
+      } catch (error) {
+        this.say(this.deps.errorText(error));
+      }
+      await this.reload(true);
+    });
   }
 
   private async openAgenda(): Promise<void> {

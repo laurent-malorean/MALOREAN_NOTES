@@ -23,13 +23,17 @@ function mount(first: Detail = detailOf()) {
     closing: "alone" as Agenda12ClosingItem | null,
     asked: [] as string[],
     readFails: false,
+    flushHold: null as Promise<void> | null,
     hold: null as Promise<void> | null,
   };
   const band = createEventBand({
     path: PATH,
     error: (error) => errors.push(error),
     errorText: (error) => (error as { message: string }).message,
-    flush: async () => void log.push("enregistrer"),
+    flush: async () => {
+      log.push("enregistrer");
+      await state.flushHold;
+    },
     followText: async () => void log.push("relire le texte"),
     open: async (path) => void opened.push(path),
     askClosing: async (title) => (state.asked.push(title), state.closing),
@@ -323,6 +327,30 @@ describe("bande d'un événement : chaque champ est un geste", () => {
     enter("Jour", "11");
     await vi.waitFor(() => expect(message().hidden).toBe(true));
     expect(message().textContent).toBe("");
+  });
+});
+
+describe("bande d'un événement : les gestes se suivent", () => {
+  it("un geste lancé pendant un autre attend sa fin, et la bande est occupée entre-temps", async () => {
+    const m = mount();
+    await m.band.reload();
+    let release = () => {};
+    m.state.flushHold = new Promise((resolve) => (release = resolve));
+    const element = document.querySelector(".agenda-band") as HTMLElement;
+    enter("Ville", "Hanovre");
+    enter("Jour", "12");
+    expect(element.getAttribute("aria-busy")).toBe("true");
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Le premier geste n'a pas fini d'enregistrer le texte : rien n'est encore écrit.
+    expect(m.changes).toEqual([]);
+    m.state.flushHold = null;
+    release();
+    await vi.waitFor(() => expect(m.changes).toHaveLength(2));
+    expect(m.changes).toEqual([
+      { kind: "city", city: "Hanovre" },
+      { kind: "day", day: 12 },
+    ]);
+    await vi.waitFor(() => expect(element.hasAttribute("aria-busy")).toBe(false));
   });
 });
 
