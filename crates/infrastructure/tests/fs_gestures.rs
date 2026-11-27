@@ -123,6 +123,17 @@ fn a_gesture_that_cannot_be_kept_is_an_error_and_leaves_nothing() {
 }
 
 #[test]
+fn a_folder_that_cannot_be_listed_is_an_error_not_an_empty_list() {
+    let dir = TempDir::new().unwrap();
+    fs::write(dir.path().join(".pending-gestures"), "pas un dossier").unwrap();
+    let pending = FsPendingGestures::new(dir.path());
+    assert!(matches!(
+        pending.interrupted(),
+        Err(StoreError::Unavailable(_))
+    ));
+}
+
+#[test]
 fn a_number_whose_temporary_file_is_there_is_not_taken() {
     let dir = TempDir::new().unwrap();
     let folder = dir.path().join(".pending-gestures");
