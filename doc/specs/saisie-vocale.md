@@ -60,7 +60,7 @@ Une saisie vocale, du clic de départ à l'arrêt, forme **une seule étape d'an
 
 ## 6. Où elle marche
 
-- **Dans l'éditeur de texte d'une note** et dans celui d'un brouillon d'entrée de cahier de recherche : partout où l'utilisateur écrit du Markdown avec l'éditeur habituel.
+- **Dans l'éditeur de texte d'une note** : partout où l'utilisateur écrit du Markdown avec l'éditeur habituel. La zone de saisie d'une entrée de cahier de recherche est un champ de texte simple (version du 23/11), pas cet éditeur : elle est hors périmètre, le micro y est grisé (correction du 27/11).
 - **Pas dans** : les champs de formulaire (CRM, étiquettes, recherche, renommer), les nœuds de canvas et de carte mentale, la note en lecture seule (cahier de recherche, corbeille). Le micro est alors grisé (§ 4). Une extension à d'autres champs viendrait plus tard.
 
 ## 7. Langue
