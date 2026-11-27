@@ -185,6 +185,18 @@ pub enum AppError {
     /// Ce que l'interface donne pour un statut n'est pas une colonne du CRM.
     #[error("« {0} » n'est pas une colonne de ce CRM")]
     UnknownStatus(String),
+    /// L'espace de travail n'a pas de note des favoris (fiche 0102).
+    #[error("Aucune note des favoris n'est choisie.")]
+    NoFavoritesNote,
+    /// Le contenu choisi comme note des favoris n'est pas une note simple (fiche 0102).
+    #[error("Seule une note simple peut être la note des favoris.")]
+    NotAFavoritesNote,
+    /// La note des favoris n'a pas d'étoile : elle ne se met pas elle-même en favori (fiche 0102).
+    #[error("La note des favoris ne se met pas elle-même en favori.")]
+    FavoritesNoteIsNoFavorite,
+    /// Une fiche du CRM n'a pas d'étoile : seul le CRM entier est un favori (fiche 0102).
+    #[error("Une fiche du CRM n'a pas d'étoile : seul le CRM entier se met en favori.")]
+    FicheHasNoStar,
     /// La recherche par le sens a reçu une question vide.
     #[error("la question est vide : écrivez ce que vous cherchez")]
     EmptyQuestion,

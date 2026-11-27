@@ -3,6 +3,7 @@
 mod claude;
 mod connection_ports;
 pub mod error;
+mod favorites_store;
 mod gestures;
 mod history;
 mod indexed_store;
@@ -26,6 +27,7 @@ mod writing;
 pub use claude::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn};
 pub use connection_ports::{ConnectionKeys, ConnectionSocket, SecretMaker};
 pub use error::AppError;
+pub use favorites_store::FavoritesStore;
 pub use gestures::{Gesture, GestureId, GestureStep, PendingGestures, PendingGesturesOpener};
 pub use history::{History, HistoryOpener, HistoryPlace};
 pub use indexed_store::IndexedStore;

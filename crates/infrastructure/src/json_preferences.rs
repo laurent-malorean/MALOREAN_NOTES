@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
-use domain::{Folder, MeaningModel};
+use domain::{Folder, MeaningModel, NotePath};
 use serde::{Deserialize, Serialize};
 
 /// Un espace de travail tel qu'il est écrit dans le fichier.
@@ -22,6 +22,10 @@ struct StoredWorkspace {
     /// est oublié à la lecture.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     templates: Option<String>,
+    /// Sa note des favoris (fiche 0102), par son chemin ; absente tant qu'il n'en a pas. Un chemin
+    /// invalide est oublié à la lecture.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    favorites: Option<String>,
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -65,6 +69,14 @@ impl Stored {
                 Some((WorkspaceName::new(&w.name).ok()?, folder))
             })
             .collect();
+        let favorites: Vec<(WorkspaceName, NotePath)> = self
+            .workspaces
+            .iter()
+            .filter_map(|w| {
+                let note = NotePath::parse(w.favorites.as_deref()?).ok()?;
+                Some((WorkspaceName::new(&w.name).ok()?, note))
+            })
+            .collect();
         let list = self
             .workspaces
             .into_iter()
@@ -73,6 +85,7 @@ impl Stored {
         Workspaces::from_saved(list, active)
             .with_allowed(&allowed)
             .with_templates_folders(&templates)
+            .with_favorites_notes(&favorites)
     }
 
     fn of(workspaces: &Workspaces) -> Self {
@@ -86,6 +99,7 @@ impl Stored {
                     folder: w.location.as_str().to_owned(),
                     allowed: workspaces.is_allowed(&w.name),
                     templates: workspaces.templates_folder(&w.name).map(Folder::to_path),
+                    favorites: workspaces.favorites_note(&w.name).map(NotePath::to_path),
                 })
                 .collect(),
             active: workspaces.active().map(|w| w.name.as_str().to_owned()),

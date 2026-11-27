@@ -9,7 +9,7 @@ use application::testing::preferences_contract::preferences_contract;
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
-use domain::{Folder, MeaningModel};
+use domain::{Folder, MeaningModel, NotePath};
 use infrastructure::JsonPreferences;
 use tempfile::TempDir;
 
@@ -267,4 +267,48 @@ fn an_invalid_templates_folder_is_forgotten_and_choosing_a_model_keeps_the_valid
     };
     assert_eq!(templates("Notes"), None);
     assert_eq!(templates("Travail").as_deref(), Some("Modèles"));
+}
+
+#[test]
+fn a_file_without_the_favorites_field_gives_no_favorites_note_and_none_is_written_until_one_is_chosen()
+ {
+    let (dir, preferences) = written(
+        r#"{ "workspaces": [{ "name": "Notes", "folder": "/Users/moi/Notes" }], "active": "Notes" }"#,
+    );
+    let name = WorkspaceName::new("Notes").unwrap();
+    let workspaces = preferences.workspaces().unwrap();
+    assert_eq!(workspaces.favorites_note(&name), None);
+
+    preferences.save_workspaces(&workspaces).unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(!text.contains("favorites"), "{text}");
+
+    let chosen = workspaces
+        .choosing_favorites_note(&name, Some(NotePath::parse("Perso/favoris.md").unwrap()))
+        .unwrap();
+    preferences.save_workspaces(&chosen).unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(
+        text.contains(r#""favorites": "Perso/favoris.md""#),
+        "{text}"
+    );
+}
+
+#[test]
+fn an_invalid_favorites_note_is_forgotten_and_choosing_a_model_keeps_the_valid_ones() {
+    let (_dir, preferences) = written(
+        r#"{ "workspaces": [
+            { "name": "Notes", "folder": "/Users/moi/Notes", "favorites": "../dehors.md" },
+            { "name": "Travail", "folder": "/Users/moi/Travail", "favorites": "favoris.md" }
+        ] }"#,
+    );
+    preferences.save_meaning_model(MeaningModel::Large).unwrap();
+    let workspaces = preferences.workspaces().unwrap();
+    let favorites = |name: &str| {
+        workspaces
+            .favorites_note(&WorkspaceName::new(name).unwrap())
+            .map(NotePath::to_path)
+    };
+    assert_eq!(favorites("Notes"), None);
+    assert_eq!(favorites("Travail").as_deref(), Some("favoris.md"));
 }

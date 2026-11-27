@@ -5,7 +5,7 @@
     reason = "code de test : un échec doit arrêter le test"
 )]
 
-use domain::{Folder, MeaningModel};
+use domain::{Folder, MeaningModel, NotePath};
 
 use crate::{Preferences, Workspace, WorkspaceLocation, WorkspaceName, Workspaces};
 
@@ -28,6 +28,8 @@ pub fn preferences_contract<P: Preferences>(fresh: impl Fn() -> P) {
     allowed_workspaces_follow_a_renaming_and_a_removal(&fresh());
     templates_folders_are_read_back_and_none_is_chosen_at_first(&fresh());
     templates_folders_follow_a_renaming_and_a_removal(&fresh());
+    favorites_notes_are_read_back_and_none_is_chosen_at_first(&fresh());
+    favorites_notes_follow_a_renaming_and_a_removal(&fresh());
 }
 
 fn allowed_workspaces_are_read_back_and_none_is_allowed_at_first(preferences: &impl Preferences) {
@@ -120,6 +122,57 @@ fn templates_folders_follow_a_renaming_and_a_removal(preferences: &impl Preferen
     let travail = WorkspaceName::new("Travail").unwrap();
     assert_eq!(
         preferences.workspaces().unwrap().templates_folder(&travail),
+        None
+    );
+}
+
+fn favorites_notes_are_read_back_and_none_is_chosen_at_first(preferences: &impl Preferences) {
+    let notes = WorkspaceName::new("Notes").unwrap();
+    let travail = WorkspaceName::new("Travail").unwrap();
+    let workspaces = Workspaces::default()
+        .added(workspace("Notes", "/Users/moi/Notes"))
+        .unwrap()
+        .added(workspace("Travail", "/Users/moi/Travail"))
+        .unwrap();
+    preferences.save_workspaces(&workspaces).unwrap();
+    let read = preferences.workspaces().unwrap();
+    assert_eq!(read.favorites_note(&notes), None);
+    assert_eq!(read.favorites_note(&travail), None);
+
+    let favorites = NotePath::parse("Perso/Mes favoris.md").unwrap();
+    let chosen = workspaces
+        .choosing_favorites_note(&travail, Some(favorites.clone()))
+        .unwrap();
+    preferences.save_workspaces(&chosen).unwrap();
+    let read = preferences.workspaces().unwrap();
+    assert_eq!(read.favorites_note(&travail), Some(&favorites));
+    assert_eq!(read.favorites_note(&notes), None);
+    assert_eq!(read, chosen);
+}
+
+fn favorites_notes_follow_a_renaming_and_a_removal(preferences: &impl Preferences) {
+    let notes = WorkspaceName::new("Notes").unwrap();
+    let perso = WorkspaceName::new("Perso").unwrap();
+    let favorites = NotePath::parse("favoris.md").unwrap();
+    let workspaces = Workspaces::default()
+        .added(workspace("Notes", "/Users/moi/Notes"))
+        .unwrap()
+        .added(workspace("Travail", "/Users/moi/Travail"))
+        .unwrap()
+        .choosing_favorites_note(&notes, Some(favorites.clone()))
+        .unwrap()
+        .renamed(&notes, perso.clone())
+        .unwrap();
+    preferences.save_workspaces(&workspaces).unwrap();
+    let read = preferences.workspaces().unwrap();
+    assert_eq!(read.favorites_note(&perso), Some(&favorites));
+    assert_eq!(read.favorites_note(&notes), None);
+    preferences
+        .save_workspaces(&read.removed(&perso).unwrap())
+        .unwrap();
+    let travail = WorkspaceName::new("Travail").unwrap();
+    assert_eq!(
+        preferences.workspaces().unwrap().favorites_note(&travail),
         None
     );
 }

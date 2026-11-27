@@ -8,6 +8,8 @@ mod create_note;
 mod crm;
 mod crm_fiches;
 mod export;
+mod favorites;
+mod favorites_note;
 mod folders;
 mod history;
 mod index;
@@ -47,6 +49,8 @@ pub use crm::{
     ProjectChange, ProjectEntry, ReadCrm, RecoverGestures, StageChange, WeekView,
 };
 pub use export::ExportMarkdown;
+pub use favorites::{FavoriteContent, Favorites, FavoritesList};
+pub use favorites_note::{FavoritesNote, ManageFavoritesNote};
 pub use folders::{CreateFolder, ListFolders, ListShownFolders, MoveFolder, RenameFolder};
 pub use history::{
     CompareVersion, KeepVersion, KeepVersionsBeforeChange, ListVersions, ReadVersion,

@@ -4,8 +4,10 @@
 //! Chacun est autorisé ou non pour les IA (décoché au départ) : une IA branchée ne voit et ne vise
 //! que les espaces autorisés (fiche 0074). Chacun a aussi son dossier des modèles, s'il en a choisi un
 //! (fiche 0077) : gardé ici, là où l'interface, les IA branchées et la colonne Claude Code le lisent.
+//! Et sa note des favoris, s'il en a choisi une (fiche 0102).
 
-use domain::Folder;
+use domain::favorites_note::{PlaceChange, followed};
+use domain::{Folder, NotePath};
 
 use crate::{AppError, WorkspaceLocation};
 
@@ -60,6 +62,9 @@ pub struct Workspaces {
     /// Pour chaque espace de la liste, dans le même ordre : son dossier des modèles, s'il en a
     /// choisi un (fiche 0077).
     templates: Vec<Option<Folder>>,
+    /// Pour chaque espace de la liste, dans le même ordre : sa note des favoris, s'il en a choisi
+    /// une (fiche 0102).
+    favorites: Vec<Option<NotePath>>,
     active: Option<WorkspaceName>,
 }
 
@@ -82,10 +87,12 @@ impl Workspaces {
             .map(|w| w.name.clone());
         let allowed = vec![false; list.len()];
         let templates = vec![None; list.len()];
+        let favorites = vec![None; list.len()];
         Self {
             list,
             allowed,
             templates,
+            favorites,
             active,
         }
     }
@@ -132,6 +139,7 @@ impl Workspaces {
         self.list.push(workspace);
         self.allowed.push(false);
         self.templates.push(None);
+        self.favorites.push(None);
         Ok(self)
     }
 
@@ -187,6 +195,7 @@ impl Workspaces {
         self.list.remove(index);
         self.allowed.remove(index);
         self.templates.remove(index);
+        self.favorites.remove(index);
         Ok(self)
     }
 
@@ -235,6 +244,60 @@ impl Workspaces {
         let index = self.index_of(name)?;
         self.templates[index] = folder;
         Ok(self)
+    }
+
+    /// La même liste, où les espaces qui portent ces noms ont ces notes des favoris ; un nom
+    /// inconnu est oublié. Sert à relire ce qui a été gardé (fiche 0102).
+    #[must_use]
+    pub fn with_favorites_notes(mut self, saved: &[(WorkspaceName, NotePath)]) -> Self {
+        for (workspace, favorites) in self.list.iter().zip(&mut self.favorites) {
+            *favorites = saved
+                .iter()
+                .find(|(name, _)| name.same_as(&workspace.name))
+                .map(|(_, note)| note.clone());
+        }
+        self
+    }
+
+    /// La note des favoris de l'espace de travail `name` ; rien s'il n'en a pas choisi, ou s'il
+    /// est inconnu.
+    #[must_use]
+    pub fn favorites_note(&self, name: &WorkspaceName) -> Option<&NotePath> {
+        let index = self.index_of(name).ok()?;
+        self.favorites[index].as_ref()
+    }
+
+    /// La même liste, la note des favoris de l'espace de travail `name` devenue `note` (aucune
+    /// pour `None`).
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::WorkspaceNotFound`] si aucun ne porte ce nom.
+    pub fn choosing_favorites_note(
+        mut self,
+        name: &WorkspaceName,
+        note: Option<NotePath>,
+    ) -> Result<Self, AppError> {
+        let index = self.index_of(name)?;
+        self.favorites[index] = note;
+        Ok(self)
+    }
+
+    /// La même liste, où la note des favoris de l'espace de travail dont le dossier est `location`
+    /// suit `change` : son nouveau chemin si elle a bougé, plus de note des favoris si elle est
+    /// partie à la corbeille. Les autres espaces ne changent pas.
+    #[must_use]
+    pub fn with_favorites_note_following(
+        mut self,
+        location: &WorkspaceLocation,
+        change: PlaceChange<'_>,
+    ) -> Self {
+        for (workspace, favorites) in self.list.iter().zip(&mut self.favorites) {
+            if workspace.location == *location {
+                *favorites = favorites.as_ref().and_then(|note| followed(note, change));
+            }
+        }
+        self
     }
 
     /// L'espace de travail `name` est-il autorisé pour les IA ? Faux s'il est inconnu.
@@ -326,3 +389,7 @@ impl Workspaces {
 #[cfg(test)]
 #[path = "workspaces_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "workspaces_favorites_tests.rs"]
+mod favorites_tests;
