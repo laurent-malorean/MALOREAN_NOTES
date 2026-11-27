@@ -9,6 +9,7 @@ mod claude_load;
 mod connection;
 mod crm;
 mod crm_change;
+mod favorites;
 mod links;
 mod meaning;
 mod mind_map;
@@ -29,6 +30,7 @@ pub use crm_change::{
     CrmCompanyChangeItem, CrmFiltersItem, CrmPersonChangeItem, CrmProjectChangeItem, PlacementItem,
     StageChangeItem,
 };
+pub use favorites::{FavoritesNoteItem, RemovedLineItem};
 pub use links::{LinkResolutionItem, LinkableItem};
 pub use meaning::{
     MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,

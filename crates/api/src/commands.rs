@@ -25,6 +25,7 @@ pub mod connection;
 pub mod crm;
 pub mod crm_fiches;
 pub mod export;
+pub mod favorites;
 pub mod history;
 pub mod links;
 pub mod meaning;
@@ -568,6 +569,14 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         templates::templates_folder,
         templates::set_templates_folder,
         templates::import_templates_folders,
+        favorites::favorites_note,
+        favorites::choose_favorites_note,
+        favorites::create_favorites_note,
+        favorites::stop_using_favorites_note,
+        favorites::is_favorite,
+        favorites::add_favorite,
+        favorites::remove_favorite,
+        favorites::restore_favorites,
         connection::connection_info,
         connection::create_connection_key,
         connection::revoke_connection_key,

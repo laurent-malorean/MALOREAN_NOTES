@@ -8,6 +8,7 @@ mod canvas;
 mod claude;
 mod crm;
 mod export;
+mod favorites;
 mod folders;
 mod gestures;
 mod history;
@@ -40,10 +41,11 @@ use application::use_cases::{
     CreateNote, ListNotes, MoveNote, OpenedWorkspace, PinNote, ReadNote, RefreshIndex, SearchNotes,
 };
 use application::{
-    AppError, ClaudeCode, Clipboard, Clock, ExportStore, History, HistoryOpener, IndexOpener,
-    IndexedStore, MeaningModels, MeaningStore, MemoryHistories, MemoryIndexes, NoMeaningModels,
-    NoteIndex, NoteStore, OpenedIndex, Preferences, StoredNote, VersionedStore, Watching,
-    WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher, WritingAssistant,
+    AppError, ClaudeCode, Clipboard, Clock, ExportStore, FavoritesStore, History, HistoryOpener,
+    IndexOpener, IndexedStore, MeaningModels, MeaningStore, MemoryHistories, MemoryIndexes,
+    NoMeaningModels, NoteIndex, NoteStore, OpenedIndex, Preferences, StoredNote, VersionedStore,
+    Watching, WorkspaceLocation, WorkspaceName, WorkspaceOpener, WorkspaceWatcher,
+    WritingAssistant,
 };
 
 use application::use_cases::RecoverGestures;
@@ -295,10 +297,15 @@ impl Session {
         RecoverGestures::new(&*opened.store, &*gestures).execute()?;
         RefreshIndex::new(&*opened.store, &*index).execute()?;
         let versioned = Arc::new(VersionedStore::new(opened.store, Arc::clone(&history)));
+        let following = Arc::new(FavoritesStore::new(
+            versioned,
+            Arc::clone(&self.preferences),
+            location.clone(),
+        ));
         Ok(OpenWorkspaceState {
             name: opened.workspace.name,
             location,
-            store: Arc::new(IndexedStore::new(versioned, Arc::clone(&index))),
+            store: Arc::new(IndexedStore::new(following, Arc::clone(&index))),
             index,
             meaning,
             history,
