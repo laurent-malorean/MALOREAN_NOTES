@@ -217,6 +217,14 @@
   --format-pill-height: calc(var(--format-button-size) + 0.4rem + 2px);
   --format-button-radius: 999px;
   --format-icon-size: 1.1rem;
+  /* Micro de la saisie vocale : tour de l'icône en préparation, témoin du niveau sonore (barre à droite de l'icône) */
+  --voice-spin-duration: 1s;
+  --voice-level-width: 3px;
+  --voice-level-height: 0.9rem;
+  --voice-level-offset: 0.15rem;
+  --voice-level-bottom: 0.45rem;
+  --voice-level-minimum: 0.15;
+  --voice-level-transition: 100ms;
   /* Flèche du parcours d'un onglet qui ne mène nulle part. */
   --trail-disabled-opacity: 0.35;
 }

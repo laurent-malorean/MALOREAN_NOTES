@@ -29,6 +29,15 @@ export const FORMAT_ICON_PATHS: Record<FormatIcon, readonly string[]> = {
     "M3.8 11.2a1.2 1.2 0 0 1 2.4.2c0 .9-2.4 1.6-2.4 2.6h2.5",
     "M3.8 15.6h2.2l-1 1.4a1.2 1.2 0 1 1-1 1.8",
   ],
+  // Le micro : la capsule en premier (la saisie vocale en écoute la remplit), puis l'arceau et le pied.
+  microphone: [
+    "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z",
+    "M6 11a6 6 0 0 0 12 0",
+    "M12 17v4",
+    "M9 21h6",
+  ],
+  // Un cercle ouvert : il tourne pendant la préparation de la langue.
+  spinner: ["M12 4a8 8 0 1 0 8 8"],
   date: [
     "M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z",
     "M4 10.5h16",

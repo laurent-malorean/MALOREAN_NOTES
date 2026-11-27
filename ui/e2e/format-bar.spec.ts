@@ -152,7 +152,7 @@ test("sans note montrée, tous les boutons sont grisés ; ils reviennent avec un
 }) => {
   await launch(page);
   const buttons = bar(page).getByRole("button");
-  await expect(buttons).toHaveCount(11);
+  await expect(buttons).toHaveCount(12);
   await page.getByRole("button", { name: "Fermer l'onglet" }).click();
   await expect(page.getByRole("tab")).toHaveCount(0);
   for (const each of await buttons.all()) await expect(each).toBeDisabled();

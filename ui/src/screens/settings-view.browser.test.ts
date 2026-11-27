@@ -79,6 +79,7 @@ describe("écran de réglages", () => {
       "Écriture",
       "Claude",
       "Index",
+      "Saisie vocale",
       "Favoris",
       "Brancher une IA",
     ]);
@@ -89,25 +90,26 @@ describe("écran de réglages", () => {
       "false",
       "false",
       "false",
+      "false",
     ]);
     expect(dialog.querySelector("[role=tablist]")?.getAttribute("aria-label")).toBe(
       "Parties des réglages",
     );
     const panels = [...dialog.querySelectorAll<HTMLElement>("[role=tabpanel]")];
-    expect(panels.map((p) => p.hidden)).toEqual([false, true, true, true, true, true]);
+    expect(panels.map((p) => p.hidden)).toEqual([false, true, true, true, true, true, true]);
     expect(panels[1]?.getAttribute("aria-labelledby")).toBe(tabs[1]?.id);
     expect(tabs[1]?.getAttribute("aria-controls")).toBe(panels[1]?.id);
-    expect(tabs.map((t) => t.tabIndex)).toEqual([0, -1, -1, -1, -1, -1]);
+    expect(tabs.map((t) => t.tabIndex)).toEqual([0, -1, -1, -1, -1, -1, -1]);
   });
 
   it("donne leurs classes à la rangée d'onglets, aux panneaux et aux boutons", () => {
     const { dialog } = open();
     expect(dialog.querySelector("[role=tablist]")?.className).toBe("settings-tabs");
-    expect(dialog.querySelector(".settings-panels")?.querySelectorAll("section")).toHaveLength(6);
+    expect(dialog.querySelector(".settings-panels")?.querySelectorAll("section")).toHaveLength(7);
     const panels = dialog.querySelectorAll("[role=tabpanel]");
-    expect([...panels].map((p) => p.className)).toEqual(Array(6).fill("settings-panel"));
+    expect([...panels].map((p) => p.className)).toEqual(Array(7).fill("settings-panel"));
     const types = [...dialog.querySelectorAll<HTMLButtonElement>("[role=tab]")].map((t) => t.type);
-    expect(types).toEqual(Array(6).fill("button"));
+    expect(types).toEqual(Array(7).fill("button"));
   });
 
   it("ne prend pas le focus à l'ouverture ni au clic sur un onglet", () => {
@@ -152,7 +154,7 @@ describe("écran de réglages", () => {
     const shown = [...first.dialog.querySelectorAll<HTMLElement>("[role=tabpanel]")].map(
       (p) => !p.hidden,
     );
-    expect(shown).toEqual([false, false, false, true, false, false]);
+    expect(shown).toEqual([false, false, false, true, false, false, false]);
     const second = open(DEFAULT_SETTINGS, storage);
     const selected = second.dialog.querySelector("[role=tab][aria-selected=true]");
     expect(selected?.textContent).toBe("Index");
@@ -167,12 +169,12 @@ describe("écran de réglages", () => {
     expect(tabs[1]?.getAttribute("aria-selected")).toBe("true");
     expect(document.activeElement).toBe(tabs[1]);
     press(tabs[1], "End");
-    expect(tabs[5]?.getAttribute("aria-selected")).toBe("true");
-    press(tabs[5], "ArrowRight");
+    expect(tabs[6]?.getAttribute("aria-selected")).toBe("true");
+    press(tabs[6], "ArrowRight");
     expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
     press(tabs[0], "ArrowLeft");
-    expect(tabs[5]?.getAttribute("aria-selected")).toBe("true");
-    press(tabs[5], "Home");
+    expect(tabs[6]?.getAttribute("aria-selected")).toBe("true");
+    press(tabs[6], "Home");
     expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
     const other = new KeyboardEvent("keydown", { key: "a", bubbles: true, cancelable: true });
     tabs[0]?.dispatchEvent(other);
@@ -191,7 +193,7 @@ describe("écran de réglages", () => {
     };
     const extra = [
       ...["Modèles", "Journal", "Index", "Recherche par le sens"],
-      ...["Favoris", "Brancher une IA"],
+      ...["Saisie vocale", "Favoris", "Brancher une IA"],
     ].map(part);
     openSettings(dialog, DEFAULT_SETTINGS, () => {}, extra, memoryStorage());
     const panels = [...dialog.querySelectorAll("[role=tabpanel]")].map((p) =>
@@ -202,6 +204,7 @@ describe("écran de réglages", () => {
       ["Écriture", "Modèles", "Journal"],
       ["Claude"],
       ["Index", "Recherche par le sens"],
+      ["Saisie vocale"],
       ["Favoris"],
       ["Brancher une IA"],
     ]);
@@ -331,7 +334,7 @@ describe("écran de réglages", () => {
       const dialog = openTall();
       tab(dialog, 0);
       const first = boxes(dialog);
-      for (let index = 1; index < 6; index++) {
+      for (let index = 1; index < 7; index++) {
         tab(dialog, index);
         expect(boxes(dialog)).toEqual(first);
       }
@@ -342,7 +345,7 @@ describe("écran de réglages", () => {
 
     it("fait défiler dans la zone de contenu un onglet plus long que la fenêtre", () => {
       const dialog = openTall();
-      tab(dialog, 5);
+      tab(dialog, 6);
       const panel = dialog.querySelector<HTMLElement>(".settings-panel:not([hidden])");
       if (!panel) throw new Error("panneau introuvable");
       expect(panel.scrollHeight).toBeGreaterThan(panel.clientHeight);
@@ -380,6 +383,7 @@ describe("focus à l'ouverture des réglages", () => {
       "false",
       "false",
       "true",
+      "false",
       "false",
       "false",
       "false",

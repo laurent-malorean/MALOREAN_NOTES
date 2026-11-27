@@ -23,6 +23,7 @@ export type CommandId =
   | "correct-selection"
   | "rephrase-selection"
   | "summarize-selection"
+  | "voice-input"
   | "toggle-focus"
   | "toggle-typewriter"
   | "toggle-outline"
@@ -98,6 +99,7 @@ export const COMMANDS: readonly Command[] = [
   { id: "correct-selection", label: "Corriger la sélection", shortcut: "Ctrl+Cmd+K" },
   { id: "rephrase-selection", label: "Reformuler la sélection", shortcut: "Ctrl+Cmd+R" },
   { id: "summarize-selection", label: "Résumer la sélection", shortcut: "Ctrl+Cmd+U" },
+  { id: "voice-input", label: "Saisie vocale", shortcut: "Ctrl+Maj+D" },
   { id: "toggle-focus", label: "Mode focus", shortcut: "Cmd+Maj+F" },
   { id: "toggle-typewriter", label: "Mode machine à écrire", shortcut: "Cmd+Maj+T" },
   { id: "toggle-outline", label: "Plan de la note", shortcut: "Cmd+Maj+O" },

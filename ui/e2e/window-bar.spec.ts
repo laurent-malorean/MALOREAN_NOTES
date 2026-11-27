@@ -111,7 +111,7 @@ test("la réserve gauche reste libre : aucun outil ne passe dessous, panneaux mo
           return { x: rect.x, right: rect.right };
         }),
       );
-    expect(tools.length).toBe(17);
+    expect(tools.length).toBe(18);
     for (const tool of tools) expect(tool.x).toBeGreaterThanOrEqual(RESERVE - 0.5);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(900);
   }
@@ -230,7 +230,7 @@ test("fenêtre de 1100 × 720 : deux lignes d'outils panneaux montrés (la zone 
   page,
 }) => {
   await launch(page, 1100, 720);
-  // Les deux listes (200 et 280 points) laissent 620 points : moins que les 672 qu'il faut pour une ligne (fiche 0072).
+  // Les deux listes (200 et 280 points) laissent 620 points : moins que les 705 qu'il faut pour une ligne (fiche 0072).
   const tight = await box(bar(page));
   expect(tight.height).toBeGreaterThan(90);
   expect(tight.height).toBeLessThanOrEqual(100);

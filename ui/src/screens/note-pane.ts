@@ -38,6 +38,8 @@ export interface PaneEvents {
   readonly error: (error: unknown) => void;
   /** Montre un message ; sans cela, les messages d'information d'une carte mentale ne sont pas dits. */
   readonly show?: (message: string, kind?: "info" | "success" | "warning" | "error") => void;
+  /** Ce que la colonne montre vient de changer (une note lue, une carte mentale, un canvas, un CRM) : le micro s'y règle. */
+  readonly displayed?: () => void;
 }
 
 /** Ce qu'une colonne fait d'un cahier de recherche qu'elle montre (fiche 0041). */
@@ -115,6 +117,8 @@ export interface Pane {
   forget(): void;
   /** Une carte mentale montrée : choisit son nœud de ce chemin (`1.0.2`), ses ancêtres dépliés, la vue centrée sur lui. */
   revealNode(node: string): void;
+  /** L'éditeur de texte où l'on peut écrire, s'il est ce que la colonne montre (ni carte, canvas, CRM, ni cahier en lecture seule) ; sinon rien. */
+  textEditor(): Editor | null;
   /** Le canvas montré, s'il y en a un (fiche 0052). */
   canvasPane(): CanvasPane | null;
   /** Des fichiers ont changé hors de l'application : un CRM montré dont l'un est une fiche est relu (fiche 0060). */
@@ -267,11 +271,13 @@ class NotePane implements Pane, Viewer {
     void this.tags?.show(path);
     if (path === null) {
       this.editor.show("");
-      return this.showMap();
+      await this.showMap();
+    } else {
+      await this.options.shared.join(path, this);
+      await this.showMap();
+      void this.showStar().catch(this.options.events.error);
     }
-    await this.options.shared.join(path, this);
-    await this.showMap();
-    void this.showStar().catch(this.options.events.error);
+    this.options.events.displayed?.();
   }
 
   /** La carte mentale ou le canvas prend la place de l'éditeur si le fichier en est un. */
@@ -296,6 +302,11 @@ class NotePane implements Pane, Viewer {
 
   revealNode(node: string): void {
     this.map?.reveal(node);
+  }
+
+  textEditor(): Editor | null {
+    const elsewhere = [this.map, this.canvas, this.crm, this.fiche].some((p) => p?.shown());
+    return this.shown !== null && !elsewhere && this.editor.writable() ? this.editor : null;
   }
 
   canvasPane(): CanvasPane | null {
@@ -363,6 +374,8 @@ class NotePane implements Pane, Viewer {
   }
 
   destroy(): void {
+    // Le texte provisoire d'une saisie vocale en cours est fixé avant que la note soit quittée.
+    this.editor.dictation.end();
     void this.options.shared.leave(this).catch(this.options.events.error);
     this.map?.destroy();
     this.canvas?.destroy();

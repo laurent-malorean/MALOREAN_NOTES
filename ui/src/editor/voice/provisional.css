@@ -1,0 +1,4 @@
+/* Le texte provisoire de la saisie vocale : grisé, à la suite du curseur, jamais dans la note. */
+.editor .cm-voice-provisional {
+  color: var(--muted);
+}

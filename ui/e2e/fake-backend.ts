@@ -16,6 +16,7 @@ import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning"
 import { fakeCanvases } from "./fake-canvas";
 import { fakeFavorites } from "./fake-favorites";
 import { fakeLinks } from "./fake-links";
+import { type FakeVoice, fakeVoice, fakeVoiceState } from "./fake-voice";
 import { fakeCrms } from "./fake-crm";
 import { searchContentType, searchTitle } from "./fake-search-types";
 import { fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
@@ -31,7 +32,15 @@ interface FakeNote {
 }
 
 export interface FakeBackend
-  extends FakeExports, FakeMenu, FakeHistory, FakeWriting, FakeClaude, FakeMeaning, FakeConnection {
+  extends
+    FakeExports,
+    FakeMenu,
+    FakeHistory,
+    FakeWriting,
+    FakeClaude,
+    FakeMeaning,
+    FakeConnection,
+    FakeVoice {
   notes: Record<string, FakeNote>;
   folders: string[];
   /** La corbeille : les notes et les dossiers à leur chemin d'origine. */
@@ -88,6 +97,7 @@ const backend: FakeBackend = {
   ...fakeClaudeState(params),
   ...fakeMeaningState(params),
   ...fakeConnectionState(params),
+  ...fakeVoiceState(params),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
   readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
@@ -454,6 +464,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
       setTimeout(() => resolve(searchNotes(query, order)), backend.searchDuration),
     ),
   ...fakeLinks({ notes: () => backend.notes, titleOf, folded, folderOf }),
+  ...fakeVoice(backend),
   ...fakeFavorites(params, {
     ...{ notes: () => backend.notes, titleOf, freeName, slug },
     write: (path, content) => void backend.changeOutside(path, content),

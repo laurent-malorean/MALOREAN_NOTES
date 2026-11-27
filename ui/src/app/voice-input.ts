@@ -1,0 +1,306 @@
+// Saisie vocale (fiche 0103, spécification « saisie-vocale ») : le micro de la bande du haut, le texte du moteur
+// écrit dans l'éditeur de la colonne active, les messages et l'onglet « Saisie vocale » des réglages.
+// Les règles (ordre des événements, silence, texte provisoire fixé à l'arrêt) sont celles du moteur.
+import type * as Bridge from "../bridge";
+import type { VoiceEventItem, VoiceInputStatusItem } from "../bridge";
+import type { Editor } from "../editor/editor";
+import { microphoneButton, showMicrophone } from "../screens/microphone";
+import type { Pane } from "../screens/note-pane";
+import { voiceGroup, type VoiceSetting, type VoiceSettingState } from "../screens/voice-setting";
+import { type Columns, shownNote } from "../state/columns";
+import {
+  DENIED_MESSAGE,
+  levelOf,
+  microphoneOf,
+  OPEN_MACOS_SETTINGS,
+  sessionAfter,
+  type VoiceSession,
+} from "../state/voice-input";
+import type { OpenColumns } from "./columns";
+import type { MessageAction, MessageKind } from "./messages";
+
+export interface VoiceInputDeps {
+  readonly backend: Pick<
+    typeof Bridge,
+    | "voiceInputStatus"
+    | "startVoiceInput"
+    | "stopVoiceInput"
+    | "onVoiceInputEvent"
+    | "openVoicePrivacySettings"
+    | "chooseVoiceLanguage"
+    | "prepareVoiceLanguage"
+    | "errorMessage"
+  >;
+  readonly columns: Pick<OpenColumns, "activePane" | "current">;
+  /** La barre de mise en forme, où est le micro. */
+  readonly bar: HTMLElement;
+  show(message: string, kind?: MessageKind, action?: MessageAction): void;
+  error(error: unknown): void;
+  run(action: Promise<unknown>): void;
+}
+
+export interface VoiceInput {
+  /** Le clic sur le micro, ou son raccourci : démarre l'écoute au curseur, ou l'arrête. */
+  toggle(): void;
+  /** Échap : arrête l'écoute en cours ; faux s'il n'y en avait pas. */
+  escape(): boolean;
+  /** Les colonnes ont changé : l'écoute s'arrête si l'on a changé de contenu. */
+  follow(columns: Columns): void;
+  /** Ce que montre la colonne active a changé : le micro se règle (éditeur de texte ou non). */
+  refresh(): void;
+  /** L'onglet « Saisie vocale » des réglages. */
+  settingsGroups(): HTMLElement[];
+}
+
+/** Où écrit l'écoute en cours : l'éditeur de la colonne qui était active au départ. */
+interface Target {
+  readonly pane: Pane;
+  readonly column: number;
+  readonly editor: Editor;
+}
+
+const RETRY = "Réessayer";
+const ACTIVE: ReadonlySet<VoiceSession> = new Set(["starting", "preparing", "listening"]);
+
+class VoiceInputGestures implements VoiceInput {
+  private engine: VoiceInputStatusItem | null = null;
+  private session: VoiceSession = "idle";
+  private denied = false;
+  private editable = false;
+  private level = 0;
+  private target: Target | null = null;
+  /** Un échec est en cours : l'état du moteur est relu une fois l'écoute finie. */
+  private failed = false;
+  private setting: VoiceSetting | null = null;
+  private preparing: string | null = null;
+  private failure: string | null = null;
+  private readonly ready: Promise<void>;
+
+  constructor(private readonly deps: VoiceInputDeps) {
+    deps.backend.onVoiceInputEvent((event) => this.handle(event)).catch(deps.error);
+    this.ready = this.readStatus();
+    // L'application passe à l'arrière-plan : l'écoute s'arrête (pas pendant la demande d'accès de macOS).
+    window.addEventListener("blur", () => this.background());
+    document.addEventListener("visibilitychange", () => document.hidden && this.background());
+  }
+
+  toggle(): void {
+    this.deps.run(this.press());
+  }
+
+  escape(): boolean {
+    if (!ACTIVE.has(this.session)) return false;
+    this.stop();
+    return true;
+  }
+
+  refresh(): void {
+    this.editable = this.deps.columns.activePane().textEditor() !== null;
+    this.paint();
+  }
+
+  follow(columns: Columns): void {
+    const { target } = this;
+    if (target === null) return;
+    const column = columns.list.find((each) => each.id === target.column);
+    const unchanged =
+      column !== undefined &&
+      columns.active === target.column &&
+      shownNote(column) === target.pane.note();
+    if (unchanged) return;
+    // Le texte provisoire est fixé dans la note qu'on quitte, qui est encore montrée ; le moteur n'écrit plus rien.
+    target.editor.dictation.end();
+    this.target = null;
+    this.stop();
+  }
+
+  settingsGroups(): HTMLElement[] {
+    const { run } = this.deps;
+    const group = voiceGroup({
+      choose: (language) => run(this.choose(language)),
+      prepare: (language) => run(this.prepare(language)),
+    });
+    this.setting = group;
+    this.showSetting();
+    run(this.readStatus());
+    return [group.element];
+  }
+
+  private async press(): Promise<void> {
+    if (this.session === "ending") return;
+    if (ACTIVE.has(this.session)) return this.stop();
+    await this.ready;
+    if (this.denied) await this.readStatus();
+    this.refresh();
+    const microphone = microphoneOf(this.input());
+    if (microphone.kind !== "unavailable") return this.start();
+    if (microphone.enabled) return this.showDenied();
+    this.deps.show(microphone.title, "info");
+  }
+
+  private async start(): Promise<void> {
+    const { columns, backend } = this.deps;
+    const pane = columns.activePane();
+    const editor = pane.textEditor();
+    if (editor === null) return;
+    this.target = { pane, column: columns.current().active, editor };
+    editor.dictation.begin();
+    this.session = "starting";
+    this.paint();
+    try {
+      await backend.startVoiceInput();
+    } catch (error) {
+      editor.dictation.drop();
+      this.target = null;
+      this.session = "idle";
+      this.paint();
+      this.deps.error(error);
+    }
+  }
+
+  private stop(): void {
+    if (!ACTIVE.has(this.session)) return;
+    this.session = "ending";
+    this.paint();
+    this.deps.run(
+      this.deps.backend.stopVoiceInput().catch((error: unknown) => {
+        this.deps.error(error);
+        return this.resync();
+      }),
+    );
+  }
+
+  /** L'arrêt demandé a échoué : le moteur dit s'il écoute encore. */
+  private async resync(): Promise<void> {
+    await this.readStatus();
+    if (this.engine?.kind === "available" && this.engine.listening) this.session = "listening";
+    else this.endListening();
+    this.paint();
+  }
+
+  private background(): void {
+    if (this.session === "listening") this.stop();
+  }
+
+  private handle(event: VoiceEventItem): void {
+    this.session = sessionAfter(this.session, event);
+    this.show(event);
+    this.paint();
+  }
+
+  /** Ce que chaque événement fait au-delà de l'état : écrire dans l'éditeur, dire un message, finir. */
+  private show(event: VoiceEventItem): void {
+    const dictation = this.target?.editor.dictation;
+    if (event.kind === "provisional") dictation?.provisional(event.text);
+    else if (event.kind === "fixed") dictation?.fixed(event.text);
+    else if (event.kind === "level") this.level = levelOf(event.value);
+    else if (event.kind === "silence") this.deps.show(event.message, "info");
+    else if (event.kind === "failed") this.fail(event.reason, event.message);
+    else if (event.kind === "ended") this.endListening();
+  }
+
+  private endListening(): void {
+    this.target?.editor.dictation.end();
+    this.target = null;
+    this.session = "idle";
+    this.level = 0;
+    if (this.failed) {
+      this.failed = false;
+      this.deps.run(this.readStatus());
+    }
+  }
+
+  /** Le moteur s'arrête sur une erreur : son message est montré tel quel, avec ce qu'on peut faire. */
+  private fail(reason: string, message: string): void {
+    this.failed = true;
+    if (reason === "accessDenied") {
+      this.denied = true;
+      return this.showDenied(message);
+    }
+    const retry =
+      reason === "languageDownload" ? { label: RETRY, run: () => this.start() } : undefined;
+    this.deps.show(message, "error", retry);
+  }
+
+  private showDenied(message = DENIED_MESSAGE): void {
+    const { backend } = this.deps;
+    this.deps.show(message, "error", {
+      label: OPEN_MACOS_SETTINGS,
+      run: () => backend.openVoicePrivacySettings(),
+    });
+  }
+
+  /** Relit ce que dit le moteur ; une erreur est montrée. */
+  private readStatus(): Promise<void> {
+    return this.deps.backend
+      .voiceInputStatus()
+      .then((status) => {
+        this.engine = status;
+        this.denied = status.kind === "available" && status.access === "denied";
+        this.paint();
+        this.showSetting();
+      })
+      .catch(this.deps.error);
+  }
+
+  private async choose(language: string | null): Promise<void> {
+    try {
+      await this.deps.backend.chooseVoiceLanguage(language);
+    } catch (error) {
+      this.deps.error(error);
+    }
+    await this.readStatus();
+  }
+
+  private async prepare(language: string): Promise<void> {
+    this.preparing = language;
+    this.failure = null;
+    this.showSetting();
+    try {
+      await this.deps.backend.prepareVoiceLanguage(language);
+    } catch (error) {
+      this.failure = this.deps.backend.errorMessage(error);
+    }
+    this.preparing = null;
+    await this.readStatus();
+  }
+
+  private showSetting(): void {
+    const state = this.settingState();
+    this.setting?.show(state);
+  }
+
+  private settingState(): VoiceSettingState {
+    const { engine } = this;
+    if (engine === null) return { kind: "loading" };
+    if (engine.kind === "unavailable") return { kind: "unavailable", message: engine.message };
+    return {
+      kind: "ready",
+      languages: engine.languages,
+      chosen: engine.usingMacLanguage ? null : engine.language,
+      used: engine.language,
+      usedName: engine.languageName,
+      preparing: this.preparing,
+      failure: this.failure,
+    };
+  }
+
+  private input() {
+    return {
+      engine: this.engine,
+      session: this.session,
+      denied: this.denied,
+      editable: this.editable,
+    };
+  }
+
+  private paint(): void {
+    const button = microphoneButton(this.deps.bar);
+    if (button) showMicrophone(button, microphoneOf(this.input()), this.level);
+  }
+}
+
+/** Branche la saisie vocale : les événements du moteur, son état, le micro. */
+export function createVoiceInput(deps: VoiceInputDeps): VoiceInput {
+  return new VoiceInputGestures(deps);
+}

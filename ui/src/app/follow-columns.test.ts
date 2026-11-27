@@ -18,6 +18,7 @@ describe("ce qui suit un changement des colonnes", () => {
       menu: saying("menu"),
       formatBar: saying("barre"),
       claude: saying("claude"),
+      voice: saying("saisie vocale"),
     });
     expect(log).toEqual([
       "écriture machine",
@@ -26,6 +27,7 @@ describe("ce qui suit un changement des colonnes", () => {
       "menu true",
       "barre true",
       "claude false",
+      "saisie vocale true",
     ]);
   });
 });

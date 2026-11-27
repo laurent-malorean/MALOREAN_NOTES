@@ -106,6 +106,8 @@ describe("barre des menus", () => {
           "Corriger la sélection… Ctrl+Cmd+K",
           "Reformuler la sélection… Ctrl+Cmd+R",
           "Résumer la sélection… Ctrl+Cmd+U",
+          "—",
+          "Saisie vocale Ctrl+Shift+D",
         ],
       ],
       [
@@ -273,6 +275,7 @@ describe("barre des menus", () => {
       "bullet-list",
       "numbered-list",
       "insert-date",
+      "voice-input",
     ]);
   });
 
