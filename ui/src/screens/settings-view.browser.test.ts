@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { DEFAULT_SETTINGS, type Settings } from "../state/settings";
+import { TAB_SHOWN } from "../state/settings-tabs";
 import { openSettings } from "./settings-view";
 import "../theme.css";
 import "../style.css";
@@ -426,5 +427,41 @@ describe("focus à l'ouverture des réglages", () => {
     expect(document.activeElement).toBe(close);
     await userEvent.keyboard("{Enter}");
     expect(dialog.open).toBe(false);
+  });
+});
+
+describe("onglet montré : chaque partie de l'onglet l'apprend", () => {
+  /** Une partie « Serveurs MCP » (dans l'onglet « Claude ») qui compte les fois où son onglet est montré. */
+  function openWithPart(storage = memoryStorage()) {
+    const dialog = document.createElement("dialog");
+    document.body.replaceChildren(dialog);
+    const part = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = "Serveurs MCP";
+    part.append(legend);
+    let shown = 0;
+    part.addEventListener(TAB_SHOWN, () => (shown += 1));
+    openSettings(dialog, DEFAULT_SETTINGS, () => undefined, [part], storage);
+    const tab = (name: string) =>
+      [...dialog.querySelectorAll<HTMLElement>("[role=tab]")].find(
+        (each) => each.textContent === name,
+      ) as HTMLElement;
+    return { dialog, tab, shown: () => shown };
+  }
+
+  it("ne dit rien à une partie dont l'onglet n'est pas montré, puis le lui dit quand il l'est", () => {
+    const { tab, shown } = openWithPart();
+    expect(shown()).toBe(0);
+    tab("Claude").click();
+    expect(shown()).toBe(1);
+    tab("Index").click();
+    expect(shown()).toBe(1);
+    tab("Claude").click();
+    expect(shown()).toBe(2);
+  });
+
+  it("le dit dès l'ouverture quand le dernier onglet ouvert est celui de la partie", () => {
+    const { shown } = openWithPart(memoryStorage({ "malorean.settings-tab": "Claude" }));
+    expect(shown()).toBe(1);
   });
 });

@@ -11,12 +11,15 @@ export interface SettingsTab {
 export const SETTINGS_TABS: readonly SettingsTab[] = [
   { name: "Affichage", groups: ["Affichage"] },
   { name: "Écriture", groups: ["Écriture", "Modèles", "Journal"] },
-  { name: "Claude", groups: ["Claude"] },
+  { name: "Claude", groups: ["Claude", "Serveurs MCP"] },
   { name: "Index", groups: ["Index", "Recherche par le sens"] },
   { name: "Saisie vocale", groups: ["Saisie vocale"] },
   { name: "Favoris", groups: ["Favoris"] },
   { name: "Brancher une IA", groups: ["Brancher une IA"] },
 ];
+
+/** L'événement que reçoit chaque partie d'un onglet quand l'écran de réglages le montre. */
+export const TAB_SHOWN = "settings-tab-shown";
 
 const KEY = "malorean.settings-tab";
 

@@ -17,6 +17,7 @@ import { fakeCanvases } from "./fake-canvas";
 import { fakeFavorites } from "./fake-favorites";
 import { fakeLinks } from "./fake-links";
 import { fakeAgenda12 } from "./fake-agenda-12";
+import { type FakeMcpServers, fakeMcpServers, fakeMcpServersState } from "./fake-mcp-servers";
 import { type FakeVoice, fakeVoice, fakeVoiceState } from "./fake-voice";
 import { fakeCrms } from "./fake-crm";
 import { searchContentType, searchTitle } from "./fake-search-types";
@@ -41,6 +42,7 @@ export interface FakeBackend
     FakeClaude,
     FakeMeaning,
     FakeConnection,
+    FakeMcpServers,
     FakeVoice {
   notes: Record<string, FakeNote>;
   folders: string[];
@@ -99,6 +101,7 @@ const backend: FakeBackend = {
   ...fakeMeaningState(params),
   ...fakeConnectionState(params),
   ...fakeVoiceState(params),
+  ...fakeMcpServersState(params),
   searchDuration: 0,
   // Lecture ralentie : paramètre `readDelay` de l'adresse, ou `VITE_READ_DELAY` pour tous les parcours.
   readDelay: Number(params.get("readDelay") ?? import.meta.env.VITE_READ_DELAY ?? 0),
@@ -452,6 +455,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
     ),
   ...fakeLinks({ notes: () => backend.notes, titleOf, folded, folderOf }),
   ...fakeVoice(backend),
+  ...fakeMcpServers(backend),
   ...fakeFavorites(params, {
     ...{ notes: () => backend.notes, titleOf, freeName, slug },
     write: (path, content) => void backend.changeOutside(path, content),

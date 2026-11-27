@@ -46,7 +46,7 @@ describe("onglets des réglages", () => {
     expect(SETTINGS_TABS.map((tab) => tab.groups)).toEqual([
       ["Affichage"],
       ["Écriture", "Modèles", "Journal"],
-      ["Claude"],
+      ["Claude", "Serveurs MCP"],
       ["Index", "Recherche par le sens"],
       ["Saisie vocale"],
       ["Favoris"],
@@ -59,6 +59,7 @@ describe("onglets des réglages", () => {
       "Écriture",
       "Affichage",
       "Claude",
+      "Serveurs MCP",
       "Modèles",
       "Journal",
       "Brancher une IA",
@@ -70,7 +71,7 @@ describe("onglets des réglages", () => {
     expect(placeInTabs(groups).map((tab) => tab.map((group) => group.name))).toEqual([
       ["Affichage"],
       ["Écriture", "Modèles", "Journal"],
-      ["Claude"],
+      ["Claude", "Serveurs MCP"],
       ["Index", "Recherche par le sens"],
       ["Saisie vocale"],
       ["Favoris"],
