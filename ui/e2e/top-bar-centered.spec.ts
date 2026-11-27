@@ -8,8 +8,8 @@ import { sidePanelsButton, waitForNote } from "./journey";
 
 /** Tolérance sur le milieu : un point. */
 const CENTRE_TOLERANCE = 1;
-/** La bande n'a la place d'une seule ligne qu'à partir de 672 points utiles (fiche 0085). */
-const SINGLE_ROW_NEEDS = 672;
+/** La bande n'a la place d'une seule ligne qu'à partir de 705 points utiles (fiche 0085). */
+const SINGLE_ROW_NEEDS = 705;
 
 async function launch(page: Page, width: number, height = 700) {
   await page.setViewportSize({ width, height });

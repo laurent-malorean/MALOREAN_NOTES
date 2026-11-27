@@ -9,10 +9,10 @@ import type { Scenario, Trial } from "../runner";
 import { type Rect, centreOf, find, findAll, rectOf } from "./env";
 
 const NAMES = ["Focus", "Plan", "Machine à écrire", "Plein écran", "Claude"];
-/** La largeur utile à partir de laquelle la bande tient sur une ligne : 42,05 rem. */
-const SWITCH_WIDTH = 42.05 * 16;
+/** La largeur utile à partir de laquelle la bande tient sur une ligne : 44,1 rem. */
+const SWITCH_WIDTH = 44.1 * 16;
 /** La largeur de la mise en forme et des copies côte à côte (première ligne). */
-const FIRST_ROW_WIDTH = 390;
+const FIRST_ROW_WIDTH = 423;
 /** Le minimum du champ de recherche : 6 rem. */
 const SEARCH_MINIMUM = 96;
 const ROOT_REM = 16;
@@ -97,7 +97,7 @@ function checkPointer(trial: Trial, when: string): void {
   const blind = buttons.filter((button) => !pointable(button));
   trial.check(
     `${when} : chaque icône reçoit le pointeur (${buttons.length} icônes)`,
-    buttons.length === 16 && blind.length === 0,
+    buttons.length === 17 && blind.length === 0,
     blind.map((button) => button.getAttribute("aria-label")).join(),
   );
 }

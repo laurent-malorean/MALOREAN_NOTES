@@ -841,12 +841,12 @@ button {
 /* Place insuffisante : deux lignes. En haut la mise en forme et les copies ; dessous l'affichage,
    puis la recherche qui prend toute la largeur restante (jamais tronquée, jamais de ligne à moitié
    vide). Le seuil est la largeur des trois blocs, des écarts et de la recherche à son minimum
-   (672,3 points mesurés, depuis que le bouton des panneaux est dans la réserve gauche) ; une
-   requête de conteneur n'accepte pas de variable, d'où la valeur en rem (42,05 rem), gardée par le
+   (705,1 points mesurés : 672,3 avant le micro, qui ajoute son bouton de 28,8 et un écart de 4 points) ; une
+   requête de conteneur n'accepte pas de variable, d'où la valeur en rem (44,1 rem), gardée par le
    parcours « top-bar-rows ». La requête mesure la place utile des outils (sans leurs marges) : la
    réserve gauche, panneaux cachés, est une marge, donc le seuil ne bouge pas (fiche 0098). Chaque ligne reste centrée : la première, plus étroite que la zone,
    est au milieu ; la seconde, dont la recherche prend la largeur restante, la remplit. */
-@container editor-tools (max-width: 42.05rem) {
+@container editor-tools (max-width: 44.1rem) {
   .tool-rows {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);

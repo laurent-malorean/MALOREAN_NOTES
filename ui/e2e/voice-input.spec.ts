@@ -300,9 +300,9 @@ test("Réglages, onglet « Saisie vocale » : la langue, le téléchargement, l'
   await expect(panel).toContainText("Le son reste sur le Mac");
   const language = panel.getByRole("combobox", { name: "Langue" });
   await expect(language).toHaveValue("");
-  await expect(panel.locator("output")).toHaveText("français (France) : prête");
+  await expect(panel.locator(".voice-status")).toHaveText("français (France) : prête");
   await language.selectOption("en-US");
-  await expect(panel.locator("output")).toHaveText("anglais (États-Unis) : à télécharger");
+  await expect(panel.locator(".voice-status")).toHaveText("anglais (États-Unis) : à télécharger");
   expect(await page.evaluate(() => window.backend.voice.chosen)).toBe("en-US");
 
   await page.evaluate(() => {
@@ -311,15 +311,15 @@ test("Réglages, onglet « Saisie vocale » : la langue, le téléchargement, l'
     window.backend.voice.prepareDelay = 300;
   });
   await panel.getByRole("button", { name: "Télécharger le modèle de langue" }).click();
-  await expect(panel.locator("output")).toHaveText("Préparation de la langue…");
+  await expect(panel.locator(".voice-status")).toHaveText("Préparation de la langue…");
   await expect(panel.getByRole("alert")).toHaveText(
     "Le modèle de la langue n'a pas pu être téléchargé : vérifiez la connexion, puis réessayez.",
   );
   await panel.getByRole("button", { name: "Réessayer" }).click();
-  await expect(panel.locator("output")).toHaveText("anglais (États-Unis) : prête");
+  await expect(panel.locator(".voice-status")).toHaveText("anglais (États-Unis) : prête");
   expect(await page.evaluate(() => window.backend.voice.prepared)).toEqual(["en-US"]);
   await language.selectOption("");
-  await expect(panel.locator("output")).toHaveText("français (France) : prête");
+  await expect(panel.locator(".voice-status")).toHaveText("français (France) : prête");
 });
 
 test("changer de langue pendant l'écoute est refusé, avec le message du moteur", async ({

@@ -29,7 +29,7 @@ function mount() {
   document.body.replaceChildren(group.element);
   const select = () => group.element.querySelector("select") as HTMLSelectElement;
   const buttons = () => [...group.element.querySelectorAll("button")].map((b) => b.textContent);
-  const status = () => group.element.querySelector("output")?.textContent;
+  const status = () => group.element.querySelector(".voice-status")?.textContent;
   const failure = () => group.element.querySelector<HTMLElement>(".setting-error") as HTMLElement;
   return { group, log, select, buttons, status, failure };
 }

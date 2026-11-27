@@ -96,9 +96,9 @@ export function voiceGroup(actions: VoiceSettingActions): VoiceSetting {
   const line = document.createElement("div");
   line.className = "setting";
   line.append(label, select, help);
-  const status = document.createElement("output");
+  const status = document.createElement("p");
   status.className = "voice-status";
-  status.setAttribute("aria-live", "polite");
+  status.setAttribute("role", "status");
   const failure = paragraph("setting-error");
   failure.setAttribute("role", "alert");
   const buttons = document.createElement("div");

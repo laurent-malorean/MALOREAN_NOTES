@@ -7,8 +7,8 @@ import { waitForNote } from "./journey";
 // Code ouverte le déclenche aussi.
 
 const SEARCH_MINIMUM = 96;
-/** Les trois blocs, la recherche à son minimum et les écarts entre eux (mesurés : 672,3 points). */
-const SINGLE_ROW_NEEDS = 672;
+/** Les trois blocs, la recherche à son minimum et les écarts entre eux (mesurés : 705,1 points). */
+const SINGLE_ROW_NEEDS = 705;
 /** Tolérance autour du seuil : le basculement tombe à quelques points de la largeur nécessaire. */
 const MARGIN = 8;
 
@@ -177,7 +177,7 @@ test("à deux lignes, chaque bouton reste visible, nommé en bulle d'aide et cli
   await giveStripWidth(page, 560);
   expectTwoRows(await strip(page));
   const buttons = page.locator(".format-bar button, .display-tools button");
-  await expect(buttons).toHaveCount(16);
+  await expect(buttons).toHaveCount(17);
   for (const button of await buttons.all()) {
     await expect(button).toBeInViewport();
     await expect(button).toHaveAttribute("title", /\S/);
@@ -202,7 +202,7 @@ test("zone du milieu plus étroite que l'affichage et la recherche à leur minim
   expect(Math.abs(s.search.x - s.inner.x)).toBeLessThan(1);
   expect(Math.abs(right(s.search) - right(s.inner))).toBeLessThan(1);
   expect(s.search.width).toBeGreaterThanOrEqual(SEARCH_MINIMUM);
-  // Assez large pour la mise en forme et les copies sur une ligne (389 points) : les deux lignes propres.
-  await page.locator(".editor-tools").evaluate((row) => (row.style.width = "430px"));
+  // Assez large pour la mise en forme et les copies sur une ligne (422 points) : les deux lignes propres.
+  await page.locator(".editor-tools").evaluate((row) => (row.style.width = "470px"));
   expectTwoRows(await strip(page));
 });

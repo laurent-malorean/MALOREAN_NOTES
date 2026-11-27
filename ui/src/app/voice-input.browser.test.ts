@@ -453,7 +453,7 @@ describe("saisie vocale : l'onglet des réglages", () => {
     await settle();
     expect(s.calls).toContain("choisir en-US");
     expect(select(element).value).toBe("en-US");
-    expect(element.querySelector("output")?.textContent).toBe(
+    expect(element.querySelector(".voice-status")?.textContent).toBe(
       "anglais (États-Unis) : à télécharger",
     );
   });
@@ -481,10 +481,12 @@ describe("saisie vocale : l'onglet des réglages", () => {
     await settle();
     s.setStatus(allowed({ ...english, languages: [{ ...ENGLISH, ready: true }, FRENCH] }));
     buttonLabelled(element, "Télécharger le modèle de langue")?.click();
-    expect(element.querySelector("output")?.textContent).toBe("Préparation de la langue…");
+    expect(element.querySelector(".voice-status")?.textContent).toBe("Préparation de la langue…");
     await settle();
     expect(s.calls).toContain("préparer en-US");
-    expect(element.querySelector("output")?.textContent).toBe("anglais (États-Unis) : prête");
+    expect(element.querySelector(".voice-status")?.textContent).toBe(
+      "anglais (États-Unis) : prête",
+    );
     expect(buttonLabelled(element, "Télécharger le modèle de langue")).toBeUndefined();
   });
 
@@ -520,7 +522,7 @@ describe("saisie vocale : l'onglet des réglages", () => {
     });
     const [element] = s.voice.settingsGroups();
     await settle();
-    expect(element?.querySelector("output")?.textContent).toBe(
+    expect(element?.querySelector(".voice-status")?.textContent).toBe(
       "Le moteur de la saisie vocale est introuvable : réinstallez l'application.",
     );
   });
