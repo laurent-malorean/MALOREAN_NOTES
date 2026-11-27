@@ -7,7 +7,7 @@
 #   4. un groupe joué avec un faux cargo-mutants : arguments, coupure, bilan chiffré, survivant = échec,
 #      dépassement persistant = avertissement, groupe vide = succès ;
 #   5. le résumé dit chaque groupe, signale un survivant et un groupe sans bilan ;
-#   6. le travail GitHub : groupes en parallèle sans arrêt au premier échec, 25 minutes, résumé toujours joué,
+#   6. le travail GitHub : groupes en parallèle sans arrêt au premier échec, 60 minutes, résumé toujours joué,
 #      actions épinglées.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -162,7 +162,7 @@ if command -v ruby >/dev/null 2>&1; then
   chk '(.["true"] // .on).workflow_dispatch.inputs.groupe.required == false' "entrée facultative « groupe »"
   chk '.jobs.mutation.strategy["fail-fast"] == false' "fail-fast: false"
   chk '.jobs.mutation.strategy.matrix == "${{ fromJSON(needs.matrice.outputs.matrice) }}"' "matrice lue du fichier de groupes"
-  chk '.jobs.mutation["timeout-minutes"] == 25' "25 minutes par groupe"
+  chk '.jobs.mutation["timeout-minutes"] == 60' "60 minutes par groupe"
   chk '.jobs.mutation["runs-on"] == "${{ matrix.machine }}"' "machine du groupe"
   chk '.jobs.resume.if | contains("always()")' "résumé toujours joué"
   chk '[.jobs.resume.steps[].name] | index("Summary") != null' "étape Summary"

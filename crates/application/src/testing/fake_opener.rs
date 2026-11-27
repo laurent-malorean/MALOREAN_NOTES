@@ -49,3 +49,45 @@ impl WorkspaceOpener for FakeOpener {
             .ok_or_else(|| StoreError::Unavailable("dossier introuvable".to_owned()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use domain::NotePath;
+
+    use super::*;
+
+    fn store_with(note: &str) -> Arc<InMemoryNoteStore> {
+        Arc::new(InMemoryNoteStore::with_notes(&[(note, "# Note")]))
+    }
+
+    fn location(text: &str) -> WorkspaceLocation {
+        WorkspaceLocation::new(text).unwrap()
+    }
+
+    fn knows(store: &Arc<dyn NoteStore>, note: &str) -> bool {
+        store.read(&NotePath::parse(note).unwrap()).is_ok()
+    }
+
+    #[test]
+    fn the_opener_by_location_opens_the_workspace_kept_under_that_location_only() {
+        let opener = FakeOpener::by_location(vec![
+            ("/a", store_with("dans-a.md")),
+            ("/b", store_with("dans-b.md")),
+        ]);
+        let a = opener.open(&location("/a")).unwrap();
+        assert!(knows(&a, "dans-a.md") && !knows(&a, "dans-b.md"));
+        let b = opener.open(&location("/b")).unwrap();
+        assert!(knows(&b, "dans-b.md") && !knows(&b, "dans-a.md"));
+        assert!(matches!(
+            opener.open(&location("/c")),
+            Err(StoreError::Unavailable(_))
+        ));
+    }
+
+    #[test]
+    fn the_plain_opener_opens_the_same_workspace_whatever_the_location() {
+        let opener = FakeOpener::new(store_with("seule.md"));
+        let opened = opener.open(&location("/n/importe/ou")).unwrap();
+        assert!(knows(&opened, "seule.md"));
+    }
+}

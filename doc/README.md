@@ -14,7 +14,8 @@
   - [`cahier-de-recherche.md`](format/cahier-de-recherche.md) : le cahier de recherche et ses entrées datées ;
   - [`carte-mentale.md`](format/carte-mentale.md) : la carte mentale, une liste à puces ;
   - [`canvas.md`](format/canvas.md) : le canvas, au format ouvert JSON Canvas ;
-  - [`crm.md`](format/crm.md) : le CRM et ses fiches (entreprises, personnes, projets, actions).
+  - [`crm.md`](format/crm.md) : le CRM et ses fiches (entreprises, personnes, projets, actions) ;
+  - [`agenda-12.md`](format/agenda-12.md) : l'agenda 12, ses événements et leurs archives.
 - [`mcp/`](mcp/) : les outils du serveur MCP offerts aux IA (la liste complète, puis une page par partie : paramètres, réponses, erreurs, exemples).
 - [`decisions/`](decisions/) : les fiches des décisions d'architecture, numérotées.
 - [`developpement/`](developpement/) : pour travailler sur le code :

@@ -123,3 +123,28 @@ fn a_company_without_people_is_only_trashed_and_one_that_is_gone_is_refused() {
     assert_eq!(text(&store, JEAN_PATH), JEAN);
     assert!(pending.interrupted().unwrap().is_empty());
 }
+
+#[test]
+fn the_folders_of_the_first_company_are_created_before_it_is_written() {
+    // Sur le disque, écrire dans un dossier absent échoue : le cas d'usage crée les dossiers.
+    let store =
+        InMemoryNoteStore::with_notes(&[("Ventes/pipeline.md", "---\ntype: crm\n---\n# P\n")])
+            .requiring_folders();
+    CreateCompany::new(&store)
+        .execute(&path("Ventes/pipeline.md"), "Acme")
+        .unwrap();
+    assert!(
+        store
+            .read(&path("Ventes/pipeline/entreprises/acme.md"))
+            .is_ok()
+    );
+    // Le dossier existe déjà : une seconde fiche ne le recrée pas.
+    CreateCompany::new(&store)
+        .execute(&path("Ventes/pipeline.md"), "Globex")
+        .unwrap();
+    assert!(
+        store
+            .read(&path("Ventes/pipeline/entreprises/globex.md"))
+            .is_ok()
+    );
+}

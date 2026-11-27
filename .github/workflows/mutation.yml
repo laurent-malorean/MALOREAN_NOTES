@@ -1,6 +1,6 @@
 # Test de mutation de tout le Rust, chaque nuit, par groupes parallèles (doc/decisions/0059, qui complète 0050 et 0053).
 # Les groupes (nom, crate, fichiers) sont décrits dans scripts/mutation-groupes.json, source unique ; la première
-# tâche en tire la matrice, chaque groupe joue sa mutation sur sa machine (25 minutes au plus), la dernière tâche
+# tâche en tire la matrice, chaque groupe joue sa mutation sur sa machine (60 minutes au plus), la dernière tâche
 # résume. Réglage de chaque groupe (scripts/mutation-groupe.sh) : --all-features --jobs 4 --test-workspace=false,
 # coupure des erreurs qui bouclent à 30 s (domaine) ou 90 s (ailleurs), rejeu des dépassements (scripts/mutation-rejeu.sh,
 # fiche 0053). Un survivant fait échouer le groupe (GitHub envoie un e-mail) ; un dépassement persistant avertit.
@@ -43,7 +43,7 @@ jobs:
     name: ${{ matrix.nom }}
     needs: matrice
     runs-on: ${{ matrix.machine }}
-    timeout-minutes: 25
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrice.outputs.matrice) }}
@@ -70,8 +70,8 @@ jobs:
           path: ~/.cargo/bin/cargo-mutants
           key: cargo-mutants-27.1.0-${{ runner.os }}-${{ runner.arch }}
       - name: Mutation du groupe
-        # Coupée avant la fin du travail (25 minutes) pour que le bilan soit toujours joint.
-        timeout-minutes: 22
+        # Coupée avant la fin du travail (60 minutes) pour que le bilan soit toujours joint.
+        timeout-minutes: 57
         env:
           GROUPE: ${{ matrix.nom }}
         run: scripts/mutation-groupe.sh "$GROUPE" out

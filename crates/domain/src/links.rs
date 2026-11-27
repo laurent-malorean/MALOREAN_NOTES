@@ -424,6 +424,13 @@ mod tests {
         assert_eq!(index.resolve(&written), found("a.md"));
     }
 
+    #[test]
+    fn the_canvas_extension_alone_is_a_name_not_an_extension_to_strip() {
+        assert_eq!(strip_canvas(".canvas"), (".canvas", false));
+        assert_eq!(strip_canvas("a.CANVAS"), ("a", true));
+        assert_eq!(strip_canvas("a.canva"), ("a.canva", false));
+    }
+
     proptest! {
         #[test]
         fn any_title_written_in_a_link_is_found(title in "[a-zA-Zéè]{1,8}( [a-zA-Zéè]{1,8}){0,3}") {

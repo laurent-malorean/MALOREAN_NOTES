@@ -35,6 +35,8 @@ struct State {
     /// Les notes dont l'écriture échoue, pour essayer une écriture ratée.
     failing: BTreeSet<NotePath>,
     tick: u64,
+    /// Écrire dans un dossier qui n'existe pas échoue, comme sur le disque.
+    requiring_folders: bool,
 }
 
 impl State {
@@ -135,6 +137,14 @@ impl InMemoryNoteStore {
         self
     }
 
+    /// Le même espace de travail, qui n'écrit plus dans un dossier absent
+    /// ([`StoreError::FolderNotFound`]), comme le disque : le dossier se crée d'abord.
+    #[must_use]
+    pub fn requiring_folders(self) -> Self {
+        self.state().requiring_folders = true;
+        self
+    }
+
     /// Fait échouer toute écriture de la note `name` ([`StoreError::Unavailable`]), jusqu'à
     /// [`Self::stop_failing`] ; elle garde alors son ancien texte.
     pub fn fail_writes_to(&self, name: &NotePath) {
@@ -200,6 +210,9 @@ impl NoteStore for InMemoryNoteStore {
         let mut state = self.state();
         if state.failing.contains(name) {
             return Err(StoreError::Unavailable("disque plein".to_owned()));
+        }
+        if state.requiring_folders && !state.has_folder(name.folder()) {
+            return Err(StoreError::FolderNotFound(name.folder().clone()));
         }
         state.add_folder(name.folder());
         state.tick += 1;
