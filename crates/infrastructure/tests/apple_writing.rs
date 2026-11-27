@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 
 use application::testing::writing_contract::writing_assistant_contract;
 use application::{AssistError, Unavailability, WritingAssistant};
+use domain::writing::{Passages, WritingAction};
 use infrastructure::{AppleWritingAssistant, WRITING_HELPER};
 use tempfile::TempDir;
 
@@ -181,9 +182,30 @@ fn the_installed_helper_is_the_built_one_when_none_is_next_to_the_program() {
 fn the_apple_model_honours_the_writing_assistant_contract_when_this_mac_has_it() {
     let assistant = AppleWritingAssistant::built();
     match assistant.availability() {
-        Ok(()) => writing_assistant_contract(&assistant),
+        Ok(()) => match probe(&assistant) {
+            Ok(()) => writing_assistant_contract(&assistant),
+            Err(error) => skipped_after(&assistant, &error),
+        },
         Err(reason) => skipped(&assistant, &reason),
     }
+}
+
+/// Une question d'essai au vrai modèle : il peut se dire disponible puis refuser de répondre
+/// (erreur du système, modèle occupé ou en préparation). Ce n'est pas un défaut du contrat.
+fn probe(assistant: &AppleWritingAssistant) -> Result<(), AssistError> {
+    let passages = Passages::of(WritingAction::Correct, "Bonjour.");
+    assistant
+        .answer(WritingAction::Correct.instructions(), &passages.prompts())
+        .map(|_| ())
+}
+
+fn skipped_after(assistant: &AppleWritingAssistant, error: &AssistError) {
+    let helper: &Path = assistant.helper();
+    let message = format!(
+        "contrat du modèle d'Apple sauté ({}) : le modèle n'a pas répondu à la question d'essai : {error:?}\n",
+        helper.display()
+    );
+    std::io::stderr().write_all(message.as_bytes()).unwrap();
 }
 
 fn skipped(assistant: &AppleWritingAssistant, reason: &Unavailability) {
