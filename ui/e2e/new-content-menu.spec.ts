@@ -18,6 +18,7 @@ const ENTRIES = [
   "Carte mentale",
   "Canvas",
   "CRM",
+  "Agenda 12",
 ];
 
 async function launch(page: Page) {
@@ -74,7 +75,7 @@ for (const appearance of ["dark", "light"]) {
     expect(box.x + box.width).toBeLessThanOrEqual(1300);
     expect(box.y + box.height).toBeLessThanOrEqual(800);
     expect(box.y).toBeGreaterThanOrEqual(p.y + p.height - 1);
-    await expect(menu(page).locator("svg")).toHaveCount(6);
+    await expect(menu(page).locator("svg")).toHaveCount(7);
     await expect(items(page).first()).toContainText("Cmd+N");
     await expect(items(page).nth(1)).toContainText("Cmd+Maj+N");
     await chevron(page).click();

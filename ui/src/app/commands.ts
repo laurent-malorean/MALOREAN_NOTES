@@ -46,7 +46,10 @@ export interface CommandsDeps {
   /** La note du jour du journal. */
   readonly journal: { open(): Promise<void> };
   /** Les cahiers de recherche : en créer un, ajouter une entrée sans en ouvrir. */
-  readonly notebooks: Pick<NewContents, "create" | "createMindMap" | "createCanvas" | "createCrm">;
+  readonly notebooks: Pick<
+    NewContents,
+    "create" | "createMindMap" | "createCanvas" | "createCrm" | "createAgenda12"
+  >;
   readonly folders: { startCreation(): void };
   readonly trash: { show(): Promise<void> };
   readonly settings: { open(): void };
@@ -148,6 +151,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "new-mind-map": () => run(deps.notebooks.createMindMap()),
     "new-canvas": () => run(deps.notebooks.createCanvas()),
     "new-crm": () => run(deps.notebooks.createCrm()),
+    "new-agenda-12": () => run(deps.notebooks.createAgenda12()),
     "canvas-fit": () => columns.activePane().canvasPane()?.fitAll(),
     "canvas-go-to-group": () =>
       run(columns.activePane().canvasPane()?.goToGroup() ?? Promise.resolve()),

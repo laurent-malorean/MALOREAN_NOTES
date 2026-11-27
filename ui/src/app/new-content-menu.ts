@@ -12,7 +12,7 @@ export interface NewContentMenuDeps {
   /** Ce qu'on crée dans un dossier. */
   readonly actions: Pick<
     ScreenActions,
-    "newNote" | "newNotebook" | "newMindMap" | "newCanvas" | "newCrm"
+    "newNote" | "newNotebook" | "newMindMap" | "newCanvas" | "newCrm" | "newAgenda12"
   >;
   /** La note depuis un modèle : elle demande le modèle, ou dit pourquoi elle ne peut pas. */
   readonly templates: { newNote(): Promise<void> };
@@ -31,6 +31,7 @@ function launch(deps: NewContentMenuDeps, command: NewContentItem["command"]): (
     "new-mind-map": () => actions.newMindMap(folder),
     "new-canvas": () => actions.newCanvas(folder),
     "new-crm": () => actions.newCrm(folder),
+    "new-agenda-12": () => actions.newAgenda12(folder),
   };
   return launches[command];
 }

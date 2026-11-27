@@ -16,6 +16,7 @@ import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning"
 import { fakeCanvases } from "./fake-canvas";
 import { fakeFavorites } from "./fake-favorites";
 import { fakeLinks } from "./fake-links";
+import { fakeAgenda12 } from "./fake-agenda-12";
 import { fakeCrms } from "./fake-crm";
 import { searchContentType, searchTitle } from "./fake-search-types";
 import { fakeMindMaps, fakeNodeResults } from "./fake-mind-map";
@@ -214,7 +215,10 @@ const DAILY_TITLE = "16 novembre 2026";
 const wantedName = (path: string, content: string) =>
   path.endsWith(`${DAILY_NAME}.md`) && titleOf(content) === DAILY_TITLE
     ? DAILY_NAME
-    : slug(titleOf(content));
+    : /^type: agenda-12-evenement$/m.test(content)
+      ? // Le nom de fichier d'un événement d'un agenda 12 ne change jamais (fiche 0104).
+        (path.split("/").at(-1) ?? "").replace(/\.md$/, "")
+      : slug(titleOf(content));
 
 function createDailyNote(journal: string, template: string | null) {
   const path = inFolder(journal, `${DAILY_NAME}.md`);
@@ -441,6 +445,7 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
   ...fakeMindMaps(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeCanvases(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeCrms(backend, { freeName, slug, tick: () => (clock += 1) }),
+  ...fakeAgenda12(backend, { freeName, slug, tick: () => (clock += 1) }),
   ...fakeTags(backend, { tagsOf, tick: () => (clock += 1) }),
   ...fakeRenaming(backend, {
     ...{ titleOf, slug, fingerprint: fingerprintOf, tick: () => (clock += 1) },

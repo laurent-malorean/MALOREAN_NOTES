@@ -1,5 +1,6 @@
 // Confirmation : petite fenêtre qui pose une question avant une action. Échap ou « Annuler » ne
 // fait rien ; Entrée ou le bouton de l'action la lance.
+import type { Agenda12ClosingItem } from "../bridge";
 
 export interface ConfirmationOptions {
   readonly question: string;
@@ -39,6 +40,38 @@ export function askConfirmation(
   accept.focus();
   return new Promise((resolve) => {
     dialog.onclose = () => resolve(accepted);
+  });
+}
+
+export const CLOSE_ALONE = "Clore";
+export const CLOSE_WITH_SUCCESSOR = "Clore et préparer le suivant";
+
+/** Demande comment clore l'événement `title` d'un agenda 12 (spécification § 7) : seul, avec son suivant, ou pas du tout (`null`). */
+export function askClosing(
+  dialog: HTMLDialogElement,
+  title: string,
+): Promise<Agenda12ClosingItem | null> {
+  const text = document.createElement("p");
+  text.className = "confirmation-question";
+  text.textContent = `Clore « ${title} » ? Il passe dans les archives.`;
+  let chosen: Agenda12ClosingItem | null = null;
+  const alone = button(CLOSE_ALONE, "agenda-closing-choice");
+  const withSuccessor = button(CLOSE_WITH_SUCCESSOR, "agenda-closing-choice");
+  alone.addEventListener("click", () => (chosen = "alone"));
+  withSuccessor.addEventListener("click", () => (chosen = "withSuccessor"));
+  const buttons = document.createElement("div");
+  buttons.className = "confirmation-buttons";
+  buttons.append(button("Annuler", "link"), alone, withSuccessor);
+  const form = document.createElement("form");
+  form.method = "dialog";
+  form.append(text, buttons);
+  dialog.className = "confirmation";
+  dialog.setAttribute("aria-label", "Confirmation");
+  dialog.replaceChildren(form);
+  dialog.showModal();
+  withSuccessor.focus();
+  return new Promise((resolve) => {
+    dialog.onclose = () => resolve(chosen);
   });
 }
 

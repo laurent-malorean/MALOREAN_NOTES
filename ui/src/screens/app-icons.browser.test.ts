@@ -27,10 +27,10 @@ describe("jeu d'icônes de l'application", () => {
     expect(new Set(shapes).size).toBe(APP_ICONS.length);
   });
 
-  it("contient les six contenus du menu de création, le chevron et les dessins des menus", () => {
+  it("contient les sept contenus du menu de création, le chevron et les dessins des menus", () => {
     for (const { icon } of NEW_CONTENT_MENU) expect(APP_ICONS).toContain(icon);
     expect(APP_ICONS).toContain("chevron");
-    expect(APP_ICONS.length).toBe(53);
+    expect(APP_ICONS.length).toBe(54);
   });
 
   it("a deux dessins pour le bouton des panneaux latéraux : panneau plein (montrés), panneau vide (cachés)", () => {

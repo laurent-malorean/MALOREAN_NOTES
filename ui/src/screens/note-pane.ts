@@ -10,6 +10,8 @@ import type { TagSuggestion } from "../state/tag-field";
 import { renderBacklinks } from "./backlinks-view";
 import { createFavoriteStar, type FavoriteStar, type StarState } from "./favorite-star";
 import { type CanvasDeps, type CanvasPane, createCanvasPane } from "./canvas-pane";
+import { type Agenda12Deps, type Agenda12Pane, createAgenda12Pane } from "./agenda-12-pane";
+import { createEventPane, type EventPane } from "./agenda-12-event-pane";
 import { createFichePane, type FichePane } from "./crm-fiche-pane";
 import { type CrmDeps, type CrmPane, createCrmPane } from "./crm-pane";
 import { createMindMapPane, type MindMapBackend, type MindMapPane } from "./mind-map-pane";
@@ -94,6 +96,8 @@ export interface PaneOptions {
   readonly canvas?: CanvasDeps;
   /** Sans lui, un CRM reste du texte (fiche 0060). */
   readonly crm?: CrmDeps;
+  /** Sans lui, un agenda 12 et ses événements restent du texte (fiche 0104). */
+  readonly agenda12?: Agenda12Deps;
   /** Sans elles, aucune barre d'étiquettes n'est montrée sous les onglets. */
   readonly tags?: PaneTags;
   /** Sans lui, l'étoile des favoris reste cachée. */
@@ -117,8 +121,10 @@ export interface Pane {
   revealNode(node: string): void;
   /** Le canvas montré, s'il y en a un (fiche 0052). */
   canvasPane(): CanvasPane | null;
-  /** Des fichiers ont changé hors de l'application : un CRM montré dont l'un est une fiche est relu (fiche 0060). */
+  /** Des fichiers ont changé hors de l'application : un CRM ou un agenda 12 montré dont l'un est une fiche ou un événement est relu (fiches 0060 et 0104). */
   followCrm(changed: readonly string[]): Promise<void>;
+  /** Un événement d'un agenda 12 montré : met le curseur sur son titre (fiche 0104). */
+  focusEventTitle(): void;
   /** Montre les liens entrants de la note ; une réponse arrivée pour une autre note est ignorée. */
   showBacklinks(): Promise<void>;
   /** Montre les notes proches de la note, ou cache la liste si elle n'est pas demandée. */
@@ -153,6 +159,8 @@ class NotePane implements Pane, Viewer {
   private readonly canvas: CanvasPane | null;
   private readonly crm: CrmPane | null;
   private readonly fiche: FichePane | null;
+  private readonly agenda: Agenda12Pane | null;
+  private readonly event: EventPane | null;
   private readonly tags: NoteTags | null;
   private readonly star: FavoriteStar | null;
   /** Ce que l'étoile montre en ce moment : un clic en dépend (ajouter ou retirer). */
@@ -190,6 +198,8 @@ class NotePane implements Pane, Viewer {
         })
       : null;
     ({ crm: this.crm, fiche: this.fiche } = crmPanes(parts.element, options.crm, events));
+    this.agenda = this.agendaPane(parts.element);
+    this.event = this.eventPane(parts.element);
     this.tags = this.tagBar(parts);
     this.star = this.starButton(parts);
     this.editor = createEditor(
@@ -216,6 +226,27 @@ class NotePane implements Pane, Viewer {
         copyReference: notebook && ((number) => this.copyReference(notebook, number)),
       },
     );
+  }
+
+  /** La grille d'agenda 12 de la colonne ; rien si l'application ne donne pas de quoi la lire. */
+  private agendaPane(element: HTMLElement): Agenda12Pane | null {
+    const { agenda12, events } = this.options;
+    return agenda12 === undefined
+      ? null
+      : createAgenda12Pane(element, { deps: agenda12, error: events.error });
+  }
+
+  /** La bande d'événement de la colonne ; elle enregistre le texte avant un geste, et le relit après. */
+  private eventPane(element: HTMLElement): EventPane | null {
+    const { agenda12, events } = this.options;
+    if (agenda12 === undefined) return null;
+    return createEventPane(element, {
+      ...{ deps: agenda12, error: events.error },
+      flush: () => this.flush(),
+      followText: async () => {
+        await this.options.shared.followDisk(this);
+      },
+    });
   }
 
   /** La barre d'étiquettes de la colonne ; rien si l'application ne donne pas de quoi les lire. */
@@ -247,8 +278,9 @@ class NotePane implements Pane, Viewer {
     const { favorites } = this.options;
     const path = this.shown;
     if (favorites === undefined || this.star === null) return;
-    // Une fiche du CRM n'a pas d'étoile : seul le CRM entier se met en favori.
-    const state = path === null || this.fiche?.shown() ? "hidden" : await favorites.state(path);
+    // Une fiche du CRM ou un événement n'a pas d'étoile : seul le CRM ou l'agenda 12 entier se met en favori.
+    const alone = this.fiche?.shown() || this.event?.shown();
+    const state = path === null || alone ? "hidden" : await favorites.state(path);
     if (this.shown === path) this.setStar(state);
   }
 
@@ -281,6 +313,8 @@ class NotePane implements Pane, Viewer {
       await this.map?.sync(this.shown, this.editor.content());
       await this.crm?.sync(this.shown, this.editor.content());
       await this.fiche?.sync(this.shown, this.editor.content());
+      await this.agenda?.sync(this.shown, this.editor.content());
+      await this.event?.sync(this.shown, this.editor.content());
     } catch (error) {
       this.options.events.error(error);
     }
@@ -302,10 +336,15 @@ class NotePane implements Pane, Viewer {
     return this.canvas;
   }
 
+  focusEventTitle(): void {
+    this.event?.focusTitle();
+  }
+
   async followCrm(changed: readonly string[]): Promise<void> {
     try {
       await this.crm?.refresh(changed);
       await this.fiche?.refresh(changed);
+      await this.agenda?.refresh(changed);
     } catch (error) {
       this.options.events.error(error);
     }
@@ -360,6 +399,8 @@ class NotePane implements Pane, Viewer {
     if (renamed) void this.showStar().catch(this.options.events.error);
     void this.showBacklinks().catch(this.options.events.error);
     void this.tags?.refresh(path);
+    // Le titre du texte est celui de l'événement.
+    void this.event?.refresh().catch(this.options.events.error);
   }
 
   destroy(): void {
@@ -368,6 +409,8 @@ class NotePane implements Pane, Viewer {
     this.canvas?.destroy();
     this.crm?.destroy();
     this.fiche?.destroy();
+    this.agenda?.destroy();
+    this.event?.destroy();
     this.tags?.destroy();
     this.editor.destroy();
   }

@@ -12,7 +12,7 @@ import {
 
 export interface NewContentsDeps extends Omit<ResearchNotebooksDeps, "backend"> {
   readonly backend: ResearchNotebooksDeps["backend"] &
-    Pick<typeof Bridge, "createMindMap" | "createCanvas" | "createCrm">;
+    Pick<typeof Bridge, "createMindMap" | "createCanvas" | "createCrm" | "createAgenda12">;
 }
 
 export interface NewContents extends ResearchNotebooks {
@@ -22,6 +22,8 @@ export interface NewContents extends ResearchNotebooks {
   createCanvas(folder?: string): Promise<void>;
   /** Fait choisir le nom d'un nouveau CRM, le crée dans `folder` (le dossier affiché par défaut) et l'ouvre, sur son onglet Kanban (fiche 0060). */
   createCrm(folder?: string): Promise<void>;
+  /** Fait choisir le titre d'un nouvel agenda 12, le crée dans `folder` (le dossier affiché par défaut) et l'ouvre (fiche 0104). */
+  createAgenda12(folder?: string): Promise<void>;
 }
 
 export const NEW_MIND_MAP = {
@@ -67,6 +69,22 @@ async function createCrm(deps: NewContentsDeps, folder: string | undefined) {
   await deps.columns.openNote(created.path);
 }
 
+export const NEW_AGENDA_12 = {
+  question: "Titre du nouvel agenda 12",
+  initial: "",
+  confirm: "Créer",
+};
+
+async function createAgenda12(deps: NewContentsDeps, folder: string | undefined) {
+  if (deps.screen.get().kind !== "workspace") return;
+  const title = await nameOf(deps, NEW_AGENDA_12);
+  if (title === null) return;
+  const where = folder ?? currentFolder(deps.screen.get());
+  const created = await deps.backend.createAgenda12(where, title);
+  await deps.workspace.refreshList();
+  await deps.columns.openNote(created.path);
+}
+
 export const NEW_CANVAS = {
   question: "Nom du nouveau canvas",
   initial: "",
@@ -90,5 +108,6 @@ export function createNewContents(deps: NewContentsDeps): NewContents {
     createMindMap: (folder) => createMindMap(deps, folder),
     createCanvas: (folder) => createCanvas(deps, folder),
     createCrm: (folder) => createCrm(deps, folder),
+    createAgenda12: (folder) => createAgenda12(deps, folder),
   };
 }

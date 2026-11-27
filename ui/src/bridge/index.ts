@@ -82,6 +82,9 @@ import type { TrashInfo } from "./generated/TrashInfo";
 import type { VersionItem } from "./generated/VersionItem";
 import type { WritingActionItem } from "./generated/WritingActionItem";
 
+// L'agenda 12 a son propre fichier : ses commandes et ses types sont ceux du pont.
+export * from "./agenda-12";
+
 export type {
   ActionKindItem,
   AgentStateItem,

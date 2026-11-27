@@ -31,6 +31,7 @@ const FOLDER_MENU = [
   "Nouveau canvas",
   "Nouveau cahier de recherche",
   "Nouveau CRM",
+  "Nouvel agenda 12",
   "Placer dans la corbeille",
 ];
 

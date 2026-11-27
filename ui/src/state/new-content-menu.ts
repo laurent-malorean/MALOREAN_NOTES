@@ -7,7 +7,8 @@ import { COMMANDS, type CommandId } from "./commands";
 export const LONG_PRESS_MS = 500;
 
 /** Le dessin de chaque entrée. */
-export type NewContentIcon = "note" | "template" | "notebook" | "mind-map" | "canvas" | "crm";
+export type NewContentIcon =
+  "note" | "template" | "notebook" | "mind-map" | "canvas" | "crm" | "agenda-12";
 
 type NewContentCommand = Extract<
   CommandId,
@@ -17,6 +18,7 @@ type NewContentCommand = Extract<
   | "new-mind-map"
   | "new-canvas"
   | "new-crm"
+  | "new-agenda-12"
 >;
 
 /** Une entrée du menu : sa commande, son nom, son dessin et le raccourci de la commande. */
@@ -39,4 +41,5 @@ export const NEW_CONTENT_MENU: readonly NewContentItem[] = [
   item("new-mind-map", "Carte mentale", "mind-map"),
   item("new-canvas", "Canvas", "canvas"),
   item("new-crm", "CRM", "crm"),
+  item("new-agenda-12", "Agenda 12", "agenda-12"),
 ];

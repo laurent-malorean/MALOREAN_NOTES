@@ -84,6 +84,7 @@ const PATHS: Record<AppIcon, readonly string[]> = {
   ],
   canvas: ["M4 5h7v6H4z", "M13 13h7v6h-7z", "M11 8h2a2 2 0 0 1 2 2v3"],
   crm: ["M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M5 20a7 7 0 0 1 14 0"],
+  "agenda-12": ["M4 5h16v14H4z", "M4 9h16", "M4 14h16", "M9.3 9v10", "M14.7 9v10"],
   chevron: ["M6 9l6 6 6-6"],
   // Panneau plein : le trait de séparation et les lignes des listes ; panneau vide : un pointillé.
   "side-panels-shown": [PANELS_FRAME, "M10 5v14", "M6.5 9h1", "M6.5 12h1", "M6.5 15h1"],
