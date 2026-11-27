@@ -3,7 +3,7 @@ import { COMMANDS } from "./commands";
 import { LONG_PRESS_MS, NEW_CONTENT_MENU } from "./new-content-menu";
 
 describe("menu de création", () => {
-  it("propose, dans cet ordre, la note, la note depuis un modèle, le cahier, la carte mentale, le canvas et le CRM", () => {
+  it("propose, dans cet ordre, la note, la note depuis un modèle, le cahier, la carte mentale, le canvas, le CRM et l'agenda 12", () => {
     expect(NEW_CONTENT_MENU.map((item) => [item.label, item.command])).toEqual([
       ["Note", "new-note"],
       ["Note depuis un modèle", "new-note-from-template"],
@@ -11,6 +11,7 @@ describe("menu de création", () => {
       ["Carte mentale", "new-mind-map"],
       ["Canvas", "new-canvas"],
       ["CRM", "new-crm"],
+      ["Agenda 12", "new-agenda-12"],
     ]);
   });
 
@@ -22,6 +23,7 @@ describe("menu de création", () => {
       "mind-map",
       "canvas",
       "crm",
+      "agenda-12",
     ]);
   });
 
@@ -29,6 +31,7 @@ describe("menu de création", () => {
     expect(NEW_CONTENT_MENU.map((item) => item.shortcut)).toEqual([
       "Cmd+N",
       "Cmd+Maj+N",
+      undefined,
       undefined,
       undefined,
       undefined,

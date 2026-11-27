@@ -1,5 +1,6 @@
 // Corbeille : y placer une note ou un dossier après confirmation, la montrer, restaurer, vider.
 import type * as Bridge from "../bridge";
+import type { TrashedEvent } from "../screens/agenda-12-event-band";
 import { activeNote, noteShown, notesRemoved } from "../state/columns";
 import { folderOf, nameOf } from "../state/folders";
 import {
@@ -19,6 +20,7 @@ export interface TrashDeps {
   readonly backend: Pick<
     typeof Bridge,
     | "trashNote"
+    | "deleteAgenda12Event"
     | "crmFichesInTrash"
     | "trashFolder"
     | "listTrash"
@@ -39,6 +41,8 @@ export interface TrashDeps {
 }
 
 export interface Trash {
+  /** Place un événement d'un agenda 12 dans la corbeille, si on le confirme, et ouvre son agenda 12 (fiche 0104). */
+  trashEvent(event: TrashedEvent): Promise<void>;
   /** Place une note dans la corbeille, si on le confirme. */
   trashNote(path: string): Promise<void>;
   /** Place un dossier dans la corbeille, avec tout ce qu'il contient, si on le confirme. */
@@ -56,14 +60,18 @@ const noteTitle = (screen: Screen, path: string) =>
  * Place une note dans la corbeille, une fois ce qui est tapé enregistré ; si la colonne active la
  * montrait, la suivante de la liste s'y ouvre (ou aucune).
  */
-async function trashNote(deps: TrashDeps, path: string, fiches: number) {
+async function trashNote(deps: TrashDeps, path: string, fiches: number, event?: TrashedEvent) {
   const source = await deps.columns.flushedPath(path);
   // Un CRM emporte ses fiches, rangées dans le dossier qui porte son nom : leurs onglets se ferment aussi.
   const fichesFolder = `${source.replace(/\.md$/, "")}/`;
   const gone = (note: string) => note === source || (fiches > 0 && note.startsWith(fichesFolder));
   const screen = deps.screen.get();
-  const next = screen.kind === "workspace" ? nextSelection(screen.notes, source) : null;
-  await deps.backend.trashNote(source);
+  // Un événement n'est pas dans la liste : c'est son agenda 12 qui s'ouvre à sa place.
+  const listed = screen.kind === "workspace" ? nextSelection(screen.notes, source) : null;
+  const next = event === undefined ? listed : event.agenda;
+  await (event === undefined
+    ? deps.backend.trashNote(source)
+    : deps.backend.deleteAgenda12Event(source));
   deps.columns.forget(gone);
   await deps.refreshList();
   await deps.refreshTags();
@@ -118,6 +126,7 @@ export function createTrash(deps: TrashDeps): Trash {
     if (await deps.ask(name, fiches)) await trash();
   };
   return {
+    trashEvent: (event) => confirm(event.title, 0, () => trashNote(deps, event.path, 0, event)),
     trashNote: async (path) => {
       const fiches = await deps.backend.crmFichesInTrash(path);
       await confirm(noteTitle(deps.screen.get(), path), fiches, () =>

@@ -26,6 +26,7 @@ function setup(
   const trash = createTrash({
     backend: {
       trashNote: async (path) => (log.push(`corbeille ${path}`), path),
+      deleteAgenda12Event: async (path) => (log.push(`corbeille événement ${path}`), path),
       crmFichesInTrash: async () => options.fiches ?? 0,
       trashFolder: async (path) => (log.push(`corbeille ${path}/`), path),
       listTrash: async () => (log.push("corbeille"), EMPTY_TRASH),
@@ -126,6 +127,29 @@ describe("corbeille : une note", () => {
     });
     await t.trash.trashNote("a.md");
     expect(t.tabs()).toEqual(["a/x.md"]);
+  });
+});
+
+describe("corbeille : un événement d'un agenda 12", () => {
+  const event = { path: "pro/salons/a.md", title: "Salon A", agenda: "pro/salons.md" };
+
+  it("demande d'abord, par son titre ; refusée, rien ne part", async () => {
+    const t = setup(workspaceScreen(notes), open(event.path), { accept: false });
+    await t.trash.trashEvent(event);
+    expect(t.asked).toEqual(["Salon A"]);
+    expect(t.askedFiches).toEqual([0]);
+    expect(t.log).toEqual([]);
+  });
+
+  it("accepté, il part par la commande de l'agenda 12, et l'agenda 12 s'ouvre à sa place", async () => {
+    const t = setup(workspaceScreen(notes), open("pro/salons.md", event.path), { listed: notes });
+    const pane = fakePane(event.path);
+    t.columns.panes.set(t.columns.columns().active, pane);
+    await t.trash.trashEvent(event);
+    expect(t.log).toEqual(["corbeille événement pro/salons/a.md", "liste", "étiquettes"]);
+    expect(pane.forget).toHaveBeenCalled();
+    expect(t.tabs()).toEqual(["pro/salons.md"]);
+    expect(activeNote(t.columns.columns())).toBe("pro/salons.md");
   });
 });
 

@@ -118,7 +118,7 @@ const favorites = createFavorites({
   ...{ open: (path) => actions.open(path), show: messages.show },
 });
 const newPane = paneMaker({
-  ...{ backend: bridge, shared, workspace, related: search.meaning, layout },
+  ...{ backend: bridge, shared, workspace, related: search.meaning, layout, columns, trash },
   favorites: favorites.star,
   events: {
     ...{ openNote: (path) => actions.open(path), error: messages.error, show: messages.show },

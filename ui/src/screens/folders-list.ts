@@ -25,6 +25,7 @@ export interface FolderActions {
   readonly newCanvas: (folder: string) => void;
   readonly newNotebook: (folder: string) => void;
   readonly newCrm: (folder: string) => void;
+  readonly newAgenda12: (folder: string) => void;
 }
 
 /** Comment un dossier se montre : sans sous-dossier, plié ou déplié. */
@@ -139,6 +140,7 @@ function folderMenu(path: string, actions: FolderActions): MenuEntry[] {
       run: () => actions.newNotebook(path),
     },
     { label: "Nouveau CRM", icon: "crm", run: () => actions.newCrm(path) },
+    { label: "Nouvel agenda 12", icon: "agenda-12", run: () => actions.newAgenda12(path) },
     ...(path === ROOT
       ? []
       : [

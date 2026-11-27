@@ -1,0 +1,61 @@
+// L'agenda 12 à l'écran (fiche 0104) : ce que l'interface sait d'un agenda 12 et d'un événement sans écran.
+// Les règles (ordre d'une case, ligne, validité des dates) sont calculées par Rust ; ici, seulement ce
+// qui se lit, se filtre et se formate pour l'affichage.
+import type { CountryItem } from "../bridge";
+import { declaredType } from "./declared-type";
+import { formatDate, MONTHS } from "./date-picker";
+
+/** Les valeurs de `type:` d'un agenda 12 et d'un événement, comme Rust les écrit. */
+const AGENDA_TYPE = "agenda-12";
+const EVENT_TYPE = "agenda-12-evenement";
+
+/** La note est un agenda 12 : son en-tête le déclare, comme Rust le lit. */
+export const isAgenda12Content = (content: string): boolean =>
+  declaredType(content) === AGENDA_TYPE;
+
+/** La note est un événement d'un agenda 12. */
+export const isAgenda12EventContent = (content: string): boolean =>
+  declaredType(content) === EVENT_TYPE;
+
+/** Les nombres de colonnes de la grille (spécification § 5.1). */
+export const COLUMN_CHOICES = [3, 4, 6] as const;
+
+/** Le dossier des événements d'un agenda 12 : celui qui porte son nom de fichier (`pro/salons.md` : `pro/salons/`). */
+export const agenda12Folder = (path: string): string => `${path.replace(/\.md$/i, "")}/`;
+
+/** Un des fichiers annoncés est l'agenda 12 `path` ou l'un de ses événements (archives comprises). */
+export function touchesAgenda12(path: string, changed: readonly string[]): boolean {
+  const folder = agenda12Folder(path);
+  return changed.some((file) => file === path || file.startsWith(folder));
+}
+
+/** Le nom d'un mois (1 à 12), avec sa majuscule : « Février ». */
+export function monthName(month: number): string {
+  const name = MONTHS[month - 1] ?? "";
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+/** Le texte d'un champ de nombre : vide, `null` ; des chiffres, leur valeur ; autre chose, `undefined`. */
+export function wholeNumber(text: string): number | null | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  return /^\d+$/.test(trimmed) ? Number(trimmed) : undefined;
+}
+
+/** Sans majuscule ni accent, pour chercher en tapant. */
+const folded = (text: string): string => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** Les pays dont le nom contient ce qui est tapé (ou dont le code est exactement cela), dans l'ordre de la liste. */
+export function matchingCountries(countries: readonly CountryItem[], query: string): CountryItem[] {
+  const wanted = folded(query.trim());
+  if (wanted === "") return [...countries];
+  return countries.filter(
+    (country) => folded(country.name).includes(wanted) || country.code.toLowerCase() === wanted,
+  );
+}
+
+/** Le pays tel que le champ le montre : « 🇩🇪 Allemagne ». */
+export const countryText = (country: CountryItem): string => `${country.flag} ${country.name}`;
+
+/** Le jour de clôture tel qu'on le lit : `27/11/2026`. */
+export const closedDay = (closedOn: string): string => formatDate(closedOn);

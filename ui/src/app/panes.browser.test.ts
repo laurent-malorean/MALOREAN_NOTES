@@ -1,5 +1,6 @@
 import { moreBackend } from "../../test-support/crm-lists-fixture";
 import { describe, expect, it, vi } from "vitest";
+import { agendaItem } from "../../test-support/agenda-12-fixture";
 import { crm } from "../../test-support/crm-fixture";
 import { fakeBackend } from "../../test-support/pane-fixture";
 import { createSharedNotes } from "../screens/shared-notes";
@@ -153,6 +154,57 @@ describe("CRM d'une colonne", () => {
     await expect.poll(() => read.mock.calls.length).toBe(1);
     expect(element.classList.contains("crm-shown")).toBe(true);
     pane.destroy();
+  });
+
+  it("avec le pont de l'agenda 12, les colonnes et la corbeille, la colonne sait montrer un agenda 12", async () => {
+    const fake = fakeBackend({ "salons.md": "---\ntype: agenda-12\n---\n# Salons\n" });
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
+    });
+    const read = vi.fn(async () => agendaItem());
+    const bridge = {
+      ...{ readAgenda12: read, changeAgenda12Columns: vi.fn(), createAgenda12Event: vi.fn() },
+      ...{ readAgenda12Event: vi.fn(), changeAgenda12Event: vi.fn(), listCountries: vi.fn() },
+      ...{ closeAgenda12Event: vi.fn(), reopenAgenda12Event: vi.fn(), errorMessage: String },
+    };
+    const options = {
+      backend: { ...fake.backend, fileAddress: (path: string) => path, ...bridge } as never,
+      shared,
+      events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() },
+      layout: {
+        picker: document.createElement("dialog"),
+        confirmation: document.createElement("dialog"),
+      },
+      columns: { openNote: vi.fn(), activePane: vi.fn() },
+      trash: { trashEvent: vi.fn() },
+      workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
+      configure: vi.fn(),
+    };
+    const shows = async (deps: typeof options) => {
+      const element = document.createElement("section");
+      const backlinks = document.createElement("nav");
+      const related = document.createElement("nav");
+      element.append(backlinks, related);
+      document.body.replaceChildren(element);
+      const pane = paneMaker(deps)({ element, backlinks, related });
+      await pane.load("salons.md");
+      const shown = element.classList.contains("agenda-shown");
+      pane.destroy();
+      return shown;
+    };
+    // Rien ne se montre tant qu'une pièce manque : fenêtres, colonnes, corbeille ou pont.
+    expect(await shows(options)).toBe(true);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(await shows({ ...options, layout: undefined } as never)).toBe(false);
+    expect(await shows({ ...options, columns: undefined } as never)).toBe(false);
+    expect(await shows({ ...options, trash: undefined } as never)).toBe(false);
+    const incomplete = {
+      ...options,
+      backend: { ...(options.backend as object), readAgenda12: undefined },
+    };
+    expect(await shows(incomplete as never)).toBe(false);
   });
 
   it("donne à l'étoile de la colonne ce que l'application sait des favoris", async () => {

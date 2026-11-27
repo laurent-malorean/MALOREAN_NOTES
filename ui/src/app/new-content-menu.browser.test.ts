@@ -14,6 +14,7 @@ function setup(folder = "") {
       newMindMap: (where) => log.push(`carte mentale dans « ${where} »`),
       newCanvas: (where) => log.push(`canvas dans « ${where} »`),
       newCrm: (where) => log.push(`CRM dans « ${where} »`),
+      newAgenda12: (where) => log.push(`agenda 12 dans « ${where} »`),
     },
     templates: { newNote: async () => void log.push("note depuis un modèle") },
     run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
@@ -22,7 +23,7 @@ function setup(folder = "") {
 }
 
 describe("entrées du menu de création", () => {
-  it("sont, dans l'ordre, Note, Note depuis un modèle, Cahier de recherche, Carte mentale, Canvas, CRM", () => {
+  it("sont, dans l'ordre, Note, Note depuis un modèle, Cahier de recherche, Carte mentale, Canvas, CRM, Agenda 12", () => {
     expect(setup().entries.map((entry) => entry.label)).toEqual([
       "Note",
       "Note depuis un modèle",
@@ -30,6 +31,7 @@ describe("entrées du menu de création", () => {
       "Carte mentale",
       "Canvas",
       "CRM",
+      "Agenda 12",
     ]);
   });
 
@@ -42,10 +44,12 @@ describe("entrées du menu de création", () => {
       "mind-map",
       "canvas",
       "crm",
+      "agenda-12",
     ]);
     expect(entries.map((entry) => entry.shortcut)).toEqual([
       "Cmd+N",
       "Cmd+Maj+N",
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -65,6 +69,7 @@ describe("entrées du menu de création", () => {
       "carte mentale dans « Voyages »",
       "canvas dans « Voyages »",
       "CRM dans « Voyages »",
+      "agenda 12 dans « Voyages »",
     ]);
   });
 

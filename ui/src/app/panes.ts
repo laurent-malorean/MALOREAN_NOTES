@@ -1,5 +1,6 @@
 // L'éditeur de chaque colonne : branché sur les notes partagées, réglé comme les autres colonnes.
 import type { Editor } from "../editor/editor";
+import { type Agenda12HostBackend, createAgenda12Host, hasAgenda12Backend } from "./agenda-12-host";
 import { type CanvasHostBackend, createCanvasHost, hasCanvasBackend } from "./canvas-host";
 import { type CrmHostBackend, createCrmHost, hasCrmBackend } from "./crm-host";
 import { linkChooser } from "./link-chooser";
@@ -21,6 +22,8 @@ import type { Layout } from "../screens/layout";
 import type { SharedNotes } from "../screens/shared-notes";
 import { folderOf } from "../state/folders";
 import type * as Bridge from "../bridge";
+import type { OpenColumns } from "./columns";
+import type { Trash } from "./trash";
 import type { Workspace } from "./workspace";
 
 /** Ce que le champ d'étiquettes d'une colonne demande à Rust. */
@@ -33,6 +36,7 @@ export interface PanesDeps {
   readonly backend: PaneBackend &
     Partial<CanvasHostBackend> &
     Partial<CrmHostBackend> &
+    Partial<Agenda12HostBackend> &
     Partial<LinkPickerBackend> &
     Partial<LinkStatusBackend> &
     Partial<TagsBackend> & { readonly fileAddress: (path: string) => string };
@@ -46,6 +50,9 @@ export interface PanesDeps {
   readonly related?: RelatedNotes;
   /** L'étoile de chaque colonne : son état, et ce que fait un clic. */
   readonly favorites?: PaneFavorites;
+  /** Les colonnes et la corbeille, dont se sert l'agenda 12 d'une colonne pour ouvrir une note et placer un événement dans la corbeille (fiche 0104). */
+  readonly columns?: Pick<OpenColumns, "openNote" | "activePane">;
+  readonly trash?: Pick<Trash, "trashEvent">;
   /** L'espace de travail ouvert : son dossier, et ce qui se relit quand les étiquettes d'un contenu changent. */
   readonly workspace: Pick<Workspace, "path" | "refreshTags" | "refreshList">;
   /** Règle l'éditeur d'une nouvelle colonne comme ceux des autres : mode focus, caractères par page. */
@@ -77,6 +84,15 @@ function crmOf(deps: PanesDeps) {
   const { backend, layout } = deps;
   if (layout === undefined || !hasCrmBackend(backend)) return {};
   return { crm: createCrmHost({ backend, dialog: layout.confirmation, picker: layout.picker }) };
+}
+
+/** Ce que l'agenda 12 d'une colonne demande à l'application ; rien si les fenêtres, les colonnes ou le pont manquent. */
+function agenda12Of({ backend, layout, columns, trash }: PanesDeps) {
+  if (layout === undefined || columns === undefined || trash === undefined) return {};
+  if (!hasAgenda12Backend(backend)) return {};
+  return {
+    agenda12: createAgenda12Host({ backend, dialog: layout.confirmation, columns, trash }),
+  };
 }
 
 /** Ce que le menu des liens d'une colonne demande à Rust ; rien si le pont ne sait pas lister ce qu'on peut lier. */
@@ -118,6 +134,7 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       favorites: deps.favorites,
       ...canvasOf(deps),
       ...crmOf(deps),
+      ...agenda12Of(deps),
       ...linksOf(deps),
       ...tagsOf(deps),
       resolveImage: (src, note) =>

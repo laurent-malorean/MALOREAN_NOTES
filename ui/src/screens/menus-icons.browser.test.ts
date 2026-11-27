@@ -134,10 +134,10 @@ describe("icônes de tous les menus du clic droit", () => {
     renderFoldersList(container, "Notes", ["Plans"], null, nothing, []);
     const [root, folder] = [...container.querySelectorAll(".folder-item")];
     rightClick(root as Element);
-    expect(buttons().map(nameOf)).toHaveLength(5);
+    expect(buttons().map(nameOf)).toHaveLength(6);
     expect(problems()).toEqual([]);
     rightClick(folder as Element);
-    expect(buttons().map(nameOf)).toHaveLength(6);
+    expect(buttons().map(nameOf)).toHaveLength(7);
     expect(problems()).toEqual([]);
   });
 

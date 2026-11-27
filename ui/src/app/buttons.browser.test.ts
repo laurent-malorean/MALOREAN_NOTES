@@ -30,6 +30,7 @@ function setup() {
       newMindMap: (folder) => log.push(`carte mentale dans « ${folder} »`),
       newCanvas: (folder) => log.push(`canvas dans « ${folder} »`),
       newCrm: (folder) => log.push(`CRM dans « ${folder} »`),
+      newAgenda12: (folder) => log.push(`agenda 12 dans « ${folder} »`),
     },
     error: (error) => log.push(`erreur ${String(error)}`),
     run: (action) => void action.catch((error: unknown) => log.push(`erreur ${String(error)}`)),
@@ -72,7 +73,10 @@ describe("boutons de la fenêtre", () => {
     expect(log).toEqual(["nouvelle note"]);
     const entries = [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
     expect(entries.map((entry) => entry.querySelector(".context-menu-label")?.textContent)).toEqual(
-      ["Note", "Note depuis un modèle", "Cahier de recherche", "Carte mentale", "Canvas", "CRM"],
+      [
+        ...["Note", "Note depuis un modèle", "Cahier de recherche"],
+        ...["Carte mentale", "Canvas", "CRM", "Agenda 12"],
+      ],
     );
     for (const entry of entries) entry.click();
     await settle();
@@ -83,6 +87,7 @@ describe("boutons de la fenêtre", () => {
       "carte mentale dans «  »",
       "canvas dans «  »",
       "CRM dans «  »",
+      "agenda 12 dans «  »",
     ]);
   });
 

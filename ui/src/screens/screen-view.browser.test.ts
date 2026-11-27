@@ -38,6 +38,7 @@ const ignore: ScreenActions = {
   newMindMap: () => {},
   newCanvas: () => {},
   newNotebook: () => {},
+  newAgenda12: () => {},
   newCrm: () => {},
   restoreNote: () => {},
   restoreFolder: () => {},

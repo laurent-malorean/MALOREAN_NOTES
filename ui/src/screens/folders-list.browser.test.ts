@@ -28,6 +28,7 @@ function column(
     newCanvas: (folder) => calls.push(["newCanvas", folder]),
     newNotebook: (folder) => calls.push(["newNotebook", folder]),
     newCrm: (folder) => calls.push(["newCrm", folder]),
+    newAgenda12: (folder) => calls.push(["newAgenda12", folder]),
   };
   renderFoldersList(container, "Notes", folders, selected, actions, folded);
   return { container, calls, actions };
@@ -265,7 +266,7 @@ describe("le menu d'un dossier", () => {
 
   const entries = () => [...document.querySelectorAll<HTMLButtonElement>(".context-menu button")];
 
-  it("le clic droit sur un dossier propose de créer, dans l'ordre, une note, une carte mentale, un canvas, un cahier de recherche, un CRM, puis de le placer dans la corbeille", () => {
+  it("le clic droit sur un dossier propose de créer, dans l'ordre, une note, une carte mentale, un canvas, un cahier de recherche, un CRM, un agenda 12, puis de le placer dans la corbeille", () => {
     const { container, calls } = column();
     expect(rightClick(item(container, "Travail")).defaultPrevented).toBe(true);
     expect(entries().map((e) => e.textContent)).toEqual([
@@ -274,6 +275,7 @@ describe("le menu d'un dossier", () => {
       "Nouveau canvas",
       "Nouveau cahier de recherche",
       "Nouveau CRM",
+      "Nouvel agenda 12",
       "Placer dans la corbeille",
     ]);
     for (const entry of entries()) entry.click();
@@ -283,11 +285,12 @@ describe("le menu d'un dossier", () => {
       ["newCanvas", "Travail"],
       ["newNotebook", "Travail"],
       ["newCrm", "Travail"],
+      ["newAgenda12", "Travail"],
       ["trashFolder", "Travail"],
     ]);
   });
 
-  it("la racine propose les cinq créations, mais pas la corbeille", () => {
+  it("la racine propose les six créations, mais pas la corbeille", () => {
     const { container, calls } = column();
     expect(rightClick(item(container, "")).defaultPrevented).toBe(true);
     expect(entries().map((e) => e.textContent)).toEqual([
@@ -296,6 +299,7 @@ describe("le menu d'un dossier", () => {
       "Nouveau canvas",
       "Nouveau cahier de recherche",
       "Nouveau CRM",
+      "Nouvel agenda 12",
     ]);
     entries()[1]?.click();
     expect(calls).toEqual([["newMindMap", ""]]);

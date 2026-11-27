@@ -23,6 +23,10 @@ function setup() {
         calls.push(`crm ${folder} ${title}`);
         return { path: "clients.md" };
       },
+      createAgenda12: async (folder: string, title: string): Promise<SavedNote> => {
+        calls.push(`agenda 12 ${folder} ${title}`);
+        return { path: "salons.md" };
+      },
       createResearchNotebook: async () => ({ path: "cahier.md" }),
       addEntry: async () => ({ anchor: "", label: "", text: "", line: 0, number: 1 }),
     },
@@ -151,5 +155,39 @@ describe("nouveau CRM", () => {
     await setup().createCrm();
     expect(dialog.open).toBe(false);
     expect(calls).toEqual([]);
+  });
+});
+
+describe("nouvel agenda 12", () => {
+  it("demande le titre, crée l'agenda 12 dans le dossier donné, la liste est relue et il s'ouvre", async () => {
+    const creating = setup().createAgenda12("Pro");
+    expect(dialog.getAttribute("aria-label")).toBe("Titre du nouvel agenda 12");
+    expect(dialog.querySelector("button.primary")?.textContent).toBe("Créer");
+    answer("Salons");
+    await creating;
+    expect(calls).toEqual(["agenda 12 Pro Salons", "liste", "ouvrir salons.md"]);
+  });
+
+  it("sans dossier donné, c'est le dossier affiché", async () => {
+    const creating = setup().createAgenda12();
+    answer("Salons");
+    await creating;
+    expect(calls[0]).toBe("agenda 12 Idees Salons");
+  });
+
+  it("refuse un titre vide : la demande revient ; Échap annule", async () => {
+    const creating = setup().createAgenda12();
+    answer("   ");
+    await vi.waitFor(() => expect(dialog.open).toBe(true));
+    answer(null);
+    await creating;
+    expect(calls).toEqual([]);
+  });
+
+  it("ne fait rien hors d'un espace de travail", async () => {
+    kind = "welcome";
+    await setup().createAgenda12();
+    expect(calls).toEqual([]);
+    expect(dialog.open).toBe(false);
   });
 });

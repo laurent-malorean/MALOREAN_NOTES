@@ -24,7 +24,10 @@ export interface ScreenActionsDeps {
   readonly folders: Pick<Folders, "select" | "create" | "rename" | "move" | "fold">;
   readonly workspace: Pick<Workspace, "moveNote" | "changePin" | "sortBy" | "createNote">;
   /** Ce qu'on crée dans un dossier, par son menu. */
-  readonly notebooks: Pick<NewContents, "create" | "createMindMap" | "createCanvas" | "createCrm">;
+  readonly notebooks: Pick<
+    NewContents,
+    "create" | "createMindMap" | "createCanvas" | "createCrm" | "createAgenda12"
+  >;
   readonly trash: Pick<
     Trash,
     "trashNote" | "trashFolder" | "restoreNote" | "restoreFolder" | "empty"
@@ -45,7 +48,7 @@ export interface ScreenActionsDeps {
 
 type Creations = Pick<
   ScreenActions,
-  "newNote" | "newMindMap" | "newCanvas" | "newCrm" | "newNotebook"
+  "newNote" | "newMindMap" | "newCanvas" | "newCrm" | "newAgenda12" | "newNotebook"
 >;
 
 /** Ce qu'on crée dans un dossier, par le menu du dossier. */
@@ -55,6 +58,7 @@ function creations({ workspace, notebooks, run }: ScreenActionsDeps): Creations 
     newMindMap: (folder) => run(notebooks.createMindMap(folder)),
     newCanvas: (folder) => run(notebooks.createCanvas(folder)),
     newCrm: (folder) => run(notebooks.createCrm(folder)),
+    newAgenda12: (folder) => run(notebooks.createAgenda12(folder)),
     newNotebook: (folder) => run(notebooks.create(folder)),
   };
 }

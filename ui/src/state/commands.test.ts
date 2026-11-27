@@ -18,6 +18,7 @@ describe("palette de commandes", () => {
       ["canvas-go-to-group", "Canvas : aller à un groupe", null],
       ["canvas-export-image", "Canvas : exporter en image", null],
       ["new-crm", "Nouveau CRM", null],
+      ["new-agenda-12", "Nouvel agenda 12", null],
       ["new-folder", "Nouveau dossier", null],
       ["search-workspace", "Rechercher dans toutes les notes", null],
       ["find-in-note", "Rechercher dans la note", "Cmd+F"],

@@ -53,6 +53,7 @@ function setup(searching: string | null = null) {
       createMindMap: (folder) => done(`nouvelle carte mentale ${folder}`)(),
       createCanvas: (folder) => done(`nouveau canvas ${folder}`)(),
       createCrm: (folder) => done(`nouveau CRM ${folder}`)(),
+      createAgenda12: (folder) => done(`nouvel agenda 12 ${folder}`)(),
     },
     trash: {
       trashNote: (path) => done(`jeter ${path}`)(),
@@ -120,6 +121,7 @@ describe("demandes de l'écran", () => {
     t.actions.newMindMap("projets");
     t.actions.newNotebook("projets");
     t.actions.newCrm("projets");
+    t.actions.newAgenda12("projets");
     t.actions.selectTag("perso");
     t.actions.clearTag();
     t.actions.sortNotes("title");
@@ -148,12 +150,13 @@ describe("demandes de l'écran", () => {
       "nouvelle carte mentale projets",
       "nouveau cahier projets",
       "nouveau CRM projets",
+      "nouvel agenda 12 projets",
       "filtrer #perso",
       "retirer le filtre",
       "trier par title",
       "récentes",
     ]);
-    expect(t.ran).toHaveLength(19);
+    expect(t.ran).toHaveLength(20);
   });
 
   it("ouvre une note, la place ou la ferme dans les colonnes", async () => {

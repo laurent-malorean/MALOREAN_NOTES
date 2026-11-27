@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { askConfirmation, askTrash, askWorkspaceRemoval } from "./confirmation";
+import { askClosing, askConfirmation, askTrash, askWorkspaceRemoval } from "./confirmation";
 
 function dialog() {
   const element = document.createElement("dialog");
@@ -92,5 +92,47 @@ describe("confirmation", () => {
       "Retirer « Travail » de la liste des espaces de travail ? Ses notes restent dans leur dossier.",
     );
     expect(button(element, "Retirer").className).toBe("danger");
+  });
+});
+
+describe("confirmation : clore un événement d'un agenda 12", () => {
+  const choices = (element: HTMLElement) =>
+    [...element.querySelectorAll("button")].map((b) => b.textContent);
+
+  it("pose la question avec le titre, et trois choix : Annuler, Clore, Clore et préparer le suivant", () => {
+    const element = dialog();
+    void askClosing(element, "Salon A");
+    expect(element.open).toBe(true);
+    expect(element.getAttribute("aria-label")).toBe("Confirmation");
+    expect(element.querySelector(".confirmation-question")?.textContent).toBe(
+      "Clore « Salon A » ? Il passe dans les archives.",
+    );
+    expect(choices(element)).toEqual(["Annuler", "Clore", "Clore et préparer le suivant"]);
+  });
+
+  it("« Clore » clôt seul", async () => {
+    const element = dialog();
+    const answer = askClosing(element, "Salon A");
+    button(element, "Clore").click();
+    await expect(answer).resolves.toBe("alone");
+    expect(element.open).toBe(false);
+  });
+
+  it("« Clore et préparer le suivant » clôt avec la copie, et a la main dès l'ouverture", async () => {
+    const element = dialog();
+    const answer = askClosing(element, "Salon A");
+    expect(document.activeElement).toBe(button(element, "Clore et préparer le suivant"));
+    await userEvent.keyboard("{Enter}");
+    await expect(answer).resolves.toBe("withSuccessor");
+  });
+
+  it("« Annuler » et Échap ne closent rien", async () => {
+    const element = dialog();
+    const first = askClosing(element, "Salon A");
+    button(element, "Annuler").click();
+    await expect(first).resolves.toBeNull();
+    const second = askClosing(element, "Salon A");
+    element.close();
+    await expect(second).resolves.toBeNull();
   });
 });
