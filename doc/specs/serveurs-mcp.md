@@ -110,3 +110,43 @@ Sur le vrai `.app`, avec le compte de l'utilisateur :
 4. Décocher Noota : au message suivant, Claude ne voit plus Noota.
 
 L'utilisateur est prévenu avant que la fonction soit annoncée terminée, avec ces gestes à essayer.
+
+## 8. Contrat du moteur
+
+Ce que le moteur offre à l'interface (fiche 0105). Les arguments sont en camelCase ; une erreur est un objet `{ message }` dont le message est en français, prêt à afficher. Les types sont générés dans `ui/src/bridge/generated/` (`McpServersItem`, `McpServerItem`, `ServerStateItem`). Les commandes ne dépendent d'aucun espace de travail ouvert.
+
+### Types
+
+- `ServerStateItem` : `"connected" | "toConnect" | "failed" | "notFound"` : « Connecté », « À connecter », « En échec », « Introuvable ». Les mots en toutes lettres sont ceux de la maquette (§ 3) ; c'est à l'interface de les écrire.
+- `McpServerItem` : `{ name: string, displayName: string, connector: boolean, state: ServerStateItem, allowed: boolean }` : `name` est le nom tel que Claude Code le donne (celui que les commandes reçoivent) ; `displayName` le même sans le préfixe « claude.ai » ; `connector` vrai pour un connecteur du compte claude.ai (la phrase d'un serveur « À connecter » n'est pas la même que pour un serveur ajouté dans le Terminal) ; `allowed` : la case est cochée.
+- `McpServersItem` : `{ kind: "listed", servers: McpServerItem[] } | { kind: "unavailable", message: string }`. `servers` est déjà trié par nom montré (casse ignorée), sans les serveurs des plugins, avec les serveurs cochés que Claude Code ne connaît plus (`state: "notFound"`, `allowed: true`). `message` est la phrase de la rubrique quand Claude Code est absent, pas connecté ou muet : elle renvoie à la colonne Claude Code et à « Actualiser ».
+
+### Commandes
+
+- `list_mcp_servers()` → `McpServersItem` : lit la liste auprès de Claude Code. **Dure jusqu'à une dizaine de secondes** (Claude Code vérifie chaque serveur) : à appeler sans bloquer l'écran, en montrant « Lecture des serveurs de Claude Code… ». Appelée à l'ouverture de l'onglet « Claude » et par « Actualiser ». Ne connecte rien. Erreur : seulement les préférences illisibles ; Claude Code absent ou muet n'est pas une erreur mais `kind: "unavailable"`.
+- `allow_mcp_server({ name })` → rien : coche le serveur `name` (son `name`, pas `displayName`). Vaut dès le message suivant. Sans effet s'il est déjà coché. Erreurs : « « … » n'est pas un nom de serveur MCP » (nom vide ou sur plusieurs lignes) ; préférences illisibles ou impossibles à écrire.
+- `disallow_mcp_server({ name })` → rien : décoche. Vaut dès le message suivant ; le serveur introuvable décoché disparaît de la liste à la relecture. Sans effet s'il n'était pas coché. Mêmes erreurs.
+
+Les commandes ne rendent pas la liste : après un cochage, l'interface garde la ligne dans l'état voulu sans relire (la relecture dure) ; seule « Actualiser » relit.
+
+### Événements
+
+Aucun événement nouveau. L'action d'un outil d'un serveur permis arrive par l'événement existant `claude-event` (`actionStarted`, `action: "other"`) dont `tool` est déjà le texte à montrer : « Noota · search_records ».
+
+### Règles que l'interface n'a pas à connaître
+
+- Quels serveurs sont ceux de plugins, le tri, le serveur introuvable, le nom montré, le choix de ce qui est ouvert ou caché à Claude à chaque tour, `ToolSearch`, la description des serveurs ajoutés dans le Terminal : tout est dans le moteur.
+- Le choix est gardé dans les préférences de l'application (`allowed_mcp_servers`), pour tous les espaces de travail ; il est relu à chaque message envoyé à Claude (`send_to_claude` n'a aucun argument de plus).
+- La liste est demandée depuis le dossier personnel de l'utilisateur, jamais depuis l'espace de travail : un `.mcp.json` posé dans les notes ne change rien à la liste ni à ce que Claude reçoit. Un serveur ajouté dans le Terminal « pour un dossier » n'est donc listé que s'il l'a été pour le dossier personnel.
+- Si la lecture n'a jamais été faite depuis le lancement, le premier message envoyé avec un connecteur coché la fait d'abord (une dizaine de secondes) pour savoir quels connecteurs cacher.
+
+## 9. Interface réalisée
+
+- **Où** : l'onglet « Claude » des Réglages montre, sous le réglage des modifications après une lecture du web, la rubrique « Serveurs MCP » (une partie de l'écran comme les autres, titre « Serveurs MCP »). Un champ de plus dans le contrôle des onglets : les parties « Claude » et « Serveurs MCP » vont ensemble dans l'onglet « Claude ».
+- **Quand la liste est lue** : la première fois que l'onglet « Claude » est montré après l'ouverture des Réglages (au clic sur l'onglet, ou à l'ouverture si c'est le dernier onglet ouvert), jamais si l'on ne va pas sur cet onglet ; un nouveau passage sur l'onglet ne relit pas. « Actualiser » (en haut à droite de la rubrique, à la hauteur de la phrase d'introduction) relit ; il est grisé pendant la lecture.
+- **Textes** : ceux du § 3, mots pour mots. Pendant la lecture : « Lecture des serveurs de Claude Code… ». La phrase d'un serveur « À connecter » : pour un connecteur, « Connectez-le dans les réglages des connecteurs de claude.ai, puis cliquez sur « Actualiser ». » ; pour un autre serveur, « Connectez-le dans le Terminal : tapez `claude`, puis `/mcp`, puis cliquez sur « Actualiser ». » avec `claude` et `/mcp` en police de code (les accents graves du § 3 sont la notation du code, ils ne s'affichent pas). Un serveur n'a de phrase que s'il est « À connecter ». Liste vide : « Claude Code ne connaît aucun serveur MCP extérieur. » (seule phrase ajoutée à celles du § 3). Claude Code absent ou muet : la phrase du moteur (§ 8), en couleur d'erreur, sans liste.
+- **La case** : nommée par le serveur (nom montré, sans « claude.ai »), décrite par son état et, s'il y en a une, sa phrase ; sa bulle d'aide dit que Claude pourra se servir de tous les outils du serveur, y compris ceux qui écrivent dans le service, sans rien demander (§ 4). L'état est coloré par les couleurs du thème (succès pour « Connecté », erreur pour « En échec » et « Introuvable », discret pour « À connecter »).
+- **Cocher / décocher** : la ligne change aussitôt et la commande part ; la liste n'est pas relue. Si le moteur refuse (préférences illisibles ou impossibles à écrire), la case revient comme elle était et l'erreur du moteur est montrée en message. Décocher un serveur « Introuvable » le fait disparaître de la liste.
+- **Les réglages restent utilisables** pendant la lecture : on change d'onglet, on règle autre chose ; la lecture finie, la rubrique se remplit.
+- **Dans la colonne Claude Code** : l'action d'un outil d'un serveur permis est montrée « Noota · search_records » (§ 3) ; aucun autre changement d'écran.
+- **Essais** : tests d'écran de la rubrique (textes, états, cases, erreurs) et de son câblage ; parcours Playwright (`ui/e2e/mcp-servers.spec.ts`, avec le faux de Rust `ui/e2e/fake-mcp-servers.ts` : paramètres d'adresse `mcp=absent|empty|failing`, `mcpDelay`, `mcpAllowed`).

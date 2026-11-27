@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
+use domain::external_servers::ServerName;
 use domain::{Folder, MeaningModel, NotePath};
 use serde::{Deserialize, Serialize};
 
@@ -45,20 +46,31 @@ struct Stored {
     /// du Mac.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     voice_language: Option<String>,
+    /// Les noms des serveurs MCP extérieurs permis à Claude dans la colonne Claude Code (fiche
+    /// 0105) ; absents tant qu'aucun n'est coché.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    allowed_mcp_servers: Vec<String>,
 }
 
 impl Stored {
-    fn workspaces(self) -> Workspaces {
+    fn workspaces(&self) -> Workspaces {
         if self.workspaces.is_empty() {
             return self
                 .last_workspace
+                .as_ref()
                 .map_or_else(Workspaces::default, |folder| {
-                    let name = folder_name(&folder);
+                    let name = folder_name(folder);
                     let active = WorkspaceName::new(&name).ok();
-                    Workspaces::from_saved(workspace(&name, folder).into_iter().collect(), active)
+                    Workspaces::from_saved(
+                        workspace(&name, folder.clone()).into_iter().collect(),
+                        active,
+                    )
                 });
         }
-        let active = self.active.and_then(|name| WorkspaceName::new(&name).ok());
+        let active = self
+            .active
+            .as_ref()
+            .and_then(|name| WorkspaceName::new(name).ok());
         let allowed: Vec<WorkspaceName> = self
             .workspaces
             .iter()
@@ -83,8 +95,8 @@ impl Stored {
             .collect();
         let list = self
             .workspaces
-            .into_iter()
-            .filter_map(|w| workspace(&w.name, w.folder))
+            .iter()
+            .filter_map(|w| workspace(&w.name, w.folder.clone()))
             .collect();
         Workspaces::from_saved(list, active)
             .with_allowed(&allowed)
@@ -109,6 +121,25 @@ impl Stored {
             active: workspaces.active().map(|w| w.name.as_str().to_owned()),
             meaning_model: None,
             voice_language: None,
+            allowed_mcp_servers: Vec::new(),
+        }
+    }
+
+    /// Les mêmes préférences sous leur forme actuelle : un fichier d'avant les espaces de travail
+    /// n'y réécrit pas l'ancienne clé.
+    fn rewritten(self) -> Self {
+        let workspaces = self.workspaces();
+        self.replacing_workspaces(&workspaces)
+    }
+
+    /// Les mêmes choix (modèle de sens, langue de la saisie vocale, serveurs permis), avec ces
+    /// espaces de travail à la place des siens.
+    fn replacing_workspaces(self, workspaces: &Workspaces) -> Self {
+        Self {
+            meaning_model: self.meaning_model,
+            voice_language: self.voice_language,
+            allowed_mcp_servers: self.allowed_mcp_servers,
+            ..Self::of(workspaces)
         }
     }
 }
@@ -172,11 +203,7 @@ impl Preferences for JsonPreferences {
 
     fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError> {
         let kept = self.load()?;
-        self.save(&Stored {
-            meaning_model: kept.meaning_model,
-            voice_language: kept.voice_language,
-            ..Stored::of(workspaces)
-        })
+        self.save(&kept.replacing_workspaces(workspaces))
     }
 
     fn meaning_model(&self) -> Result<MeaningModel, StoreError> {
@@ -190,13 +217,9 @@ impl Preferences for JsonPreferences {
     fn save_meaning_model(&self, model: MeaningModel) -> Result<(), StoreError> {
         // Un fichier d'avant les espaces de travail les garde sous sa forme actuelle : on ne
         // réécrit pas l'ancienne clé.
-        let kept = self.load()?;
-        let voice_language = kept.voice_language.clone();
-        self.save(&Stored {
-            meaning_model: Some(model.name().to_owned()),
-            voice_language,
-            ..Stored::of(&kept.workspaces())
-        })
+        let mut kept = self.load()?;
+        kept.meaning_model = Some(model.name().to_owned());
+        self.save(&kept.rewritten())
     }
 
     fn voice_language(&self) -> Result<Option<String>, StoreError> {
@@ -204,13 +227,27 @@ impl Preferences for JsonPreferences {
     }
 
     fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
-        let kept = self.load()?;
-        let meaning_model = kept.meaning_model.clone();
-        self.save(&Stored {
-            meaning_model,
-            voice_language: language.map(str::to_owned),
-            ..Stored::of(&kept.workspaces())
-        })
+        let mut kept = self.load()?;
+        kept.voice_language = language.map(str::to_owned);
+        self.save(&kept.rewritten())
+    }
+
+    fn allowed_servers(&self) -> Result<Vec<ServerName>, StoreError> {
+        Ok(self
+            .load()?
+            .allowed_mcp_servers
+            .iter()
+            .filter_map(|name| ServerName::new(name))
+            .collect())
+    }
+
+    fn save_allowed_servers(&self, servers: &[ServerName]) -> Result<(), StoreError> {
+        let mut kept = self.load()?;
+        kept.allowed_mcp_servers = servers
+            .iter()
+            .map(|name| name.as_str().to_owned())
+            .collect();
+        self.save(&kept.rewritten())
     }
 }
 

@@ -47,7 +47,8 @@ impl Session {
     /// modèle et le niveau d'effort de `settings`, et donne à `on_event` chaque événement prêt pour
     /// l'interface dès qu'il arrive, dont le début de la conversation, avec chaque note modifiée
     /// par Claude. Pendant le tour, Claude a aussi les outils de l'application (fiche 0040), dans
-    /// cet espace de travail, avec le dossier des modèles que gardent les préférences (fiche 0077).
+    /// cet espace de travail, avec le dossier des modèles que gardent les préférences (fiche 0077),
+    /// et ceux des serveurs MCP extérieurs que l'utilisateur a cochés (fiche 0105).
     /// Rend la main à la fin du tour.
     ///
     /// # Errors
@@ -68,6 +69,9 @@ impl Session {
         // Les outils de l'application restent ouverts jusqu'à la fin du tour.
         let tools = self.open_tools(opened.name);
         let key = tools.as_ref().map(|tools| tools.key());
+        // Les serveurs MCP extérieurs que l'utilisateur a cochés, relus à chaque tour : cocher ou
+        // décocher vaut dès le message suivant (fiche 0105).
+        let servers = self.allowed_mcp_servers()?;
         let mut notes = ChangedNotes::new(&location);
         claude.send(
             ClaudeTurn {
@@ -75,6 +79,7 @@ impl Session {
                 conversation,
                 settings,
                 tools: key,
+                servers: &servers,
             },
             message,
             &mut |event| {

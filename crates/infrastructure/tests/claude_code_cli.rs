@@ -107,6 +107,7 @@ impl FakeClaude {
                 conversation,
                 settings,
                 tools,
+                servers: &[],
             },
             message,
             &mut |event| {
@@ -158,7 +159,7 @@ fn the_claude_code_program_honours_the_claude_code_contract() {
 
 /// Ce que dit `claude --help` : chaque option dont l'application a besoin.
 const FULL_HELP: &str = "--output-format --verbose --resume --model --effort --tools \\
-    --allowed-tools --permission-mode --strict-mcp-config --mcp-config --disable-slash-commands \\
+    --allowed-tools --disallowed-tools --append-system-prompt --permission-mode --strict-mcp-config --mcp-config --disable-slash-commands \\
     --setting-sources --settings";
 
 /// Les arguments attendus après le flux JSON, la conversation éventuelle, le modèle et le niveau
@@ -511,6 +512,7 @@ fn a_missing_program_means_claude_code_is_missing() {
             conversation: None,
             settings: TurnSettings::default(),
             tools: None,
+            servers: &[],
         },
         "Bonjour",
         &mut |_| {},
@@ -528,6 +530,7 @@ fn a_missing_workspace_fails_the_turn_without_launching_claude_code() {
             conversation: None,
             settings: TurnSettings::default(),
             tools: None,
+            servers: &[],
         },
         "Bonjour",
         &mut |_| {},

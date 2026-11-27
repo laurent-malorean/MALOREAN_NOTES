@@ -9,6 +9,7 @@ use application::testing::preferences_contract::preferences_contract;
 use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
+use domain::external_servers::ServerName;
 use domain::{Folder, MeaningModel, NotePath};
 use infrastructure::JsonPreferences;
 use tempfile::TempDir;
@@ -311,4 +312,66 @@ fn an_invalid_favorites_note_is_forgotten_and_choosing_a_model_keeps_the_valid_o
     };
     assert_eq!(favorites("Notes"), None);
     assert_eq!(favorites("Travail").as_deref(), Some("favoris.md"));
+}
+
+fn server(name: &str) -> ServerName {
+    ServerName::new(name).unwrap()
+}
+
+#[test]
+fn a_file_without_the_servers_field_allows_no_server_and_none_is_written_until_one_is_allowed() {
+    let (dir, preferences) = written(
+        r#"{ "workspaces": [{ "name": "Notes", "folder": "/Users/moi/Notes" }], "active": "Notes" }"#,
+    );
+    assert_eq!(preferences.allowed_servers().unwrap(), []);
+    preferences.save_meaning_model(MeaningModel::Large).unwrap();
+    preferences.save_voice_language(Some("fr-FR")).unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(!text.contains("mcp"), "{text}");
+
+    preferences
+        .save_allowed_servers(&[server("claude.ai Noota"), server("mon serveur")])
+        .unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(
+        text.contains(r#""allowed_mcp_servers": ["#) && text.contains(r#""claude.ai Noota""#),
+        "{text}"
+    );
+    preferences.save_allowed_servers(&[]).unwrap();
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    assert!(!text.contains("mcp"), "{text}");
+}
+
+#[test]
+fn the_allowed_servers_survive_a_restart_and_an_illegible_name_is_forgotten() {
+    let (dir, preferences) = written(
+        r#"{ "allowed_mcp_servers": ["claude.ai Noota", "", "  ", "a\nb", " mon serveur "] }"#,
+    );
+    assert_eq!(
+        preferences.allowed_servers().unwrap(),
+        [server("claude.ai Noota"), server("mon serveur")]
+    );
+    let file = dir.path().join("preferences.json");
+    preferences
+        .save_allowed_servers(&[server("claude.ai Slack")])
+        .unwrap();
+    assert_eq!(
+        JsonPreferences::new(file).allowed_servers().unwrap(),
+        [server("claude.ai Slack")]
+    );
+}
+
+#[test]
+fn the_allowed_servers_are_kept_when_the_workspaces_are_saved_and_never_written_in_one() {
+    let (dir, preferences) = written(r#"{ "allowed_mcp_servers": ["claude.ai Noota"] }"#);
+    preferences
+        .save_workspaces(&one("Notes", "/Users/moi/Notes"))
+        .unwrap();
+    assert_eq!(
+        preferences.allowed_servers().unwrap(),
+        [server("claude.ai Noota")]
+    );
+    let text = std::fs::read_to_string(dir.path().join("preferences.json")).unwrap();
+    let kept: serde_json::Value = serde_json::from_str(&text).unwrap();
+    assert!(kept["workspaces"][0].get("allowed_mcp_servers").is_none());
 }

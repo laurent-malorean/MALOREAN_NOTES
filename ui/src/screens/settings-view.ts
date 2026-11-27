@@ -13,6 +13,7 @@ import {
   placeInTabs,
   SETTINGS_TABS,
   saveSettingsTab,
+  TAB_SHOWN,
   tabMoved,
 } from "../state/settings-tabs";
 
@@ -139,6 +140,8 @@ function tabs(panels: readonly HTMLElement[][], storage: PreferenceStorage): HTM
       button.tabIndex = index === selected ? 0 : -1;
     });
     sections.forEach((section, index) => (section.hidden = index !== selected));
+    // Les parties de l'onglet montré l'apprennent (la rubrique « Serveurs MCP » lit sa liste à ce moment).
+    for (const part of sections[selected]?.children ?? []) part.dispatchEvent(new Event(TAB_SHOWN));
     saveSettingsTab(storage, selected);
   };
   buttons.forEach((button, index) => {

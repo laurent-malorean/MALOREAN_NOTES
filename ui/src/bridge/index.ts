@@ -85,6 +85,7 @@ import type { WritingActionItem } from "./generated/WritingActionItem";
 
 // L'agenda 12 a son propre fichier : ses commandes et ses types sont ceux du pont.
 export * from "./agenda-12";
+export * from "./mcp-servers";
 
 export type {
   VoiceEventItem,

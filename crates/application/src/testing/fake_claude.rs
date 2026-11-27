@@ -4,6 +4,7 @@ use std::sync::{Condvar, Mutex, MutexGuard, PoisonError};
 
 use domain::app_tools::AppToolsKey;
 use domain::claude::{ClaudeEvent, ConversationId, TurnSettings};
+use domain::external_servers::{ExternalServer, ServerName};
 
 use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn, WorkspaceLocation};
 
@@ -37,6 +38,8 @@ pub struct FakeClaudeCode {
     stopped: Condvar,
     requests: Mutex<Vec<ClaudeRequest>>,
     tools_keys: Mutex<Vec<Option<AppToolsKey>>>,
+    external: Option<Result<Vec<ExternalServer>, ClaudeError>>,
+    allowed_servers: Mutex<Vec<Vec<ServerName>>>,
 }
 
 impl FakeClaudeCode {
@@ -88,6 +91,29 @@ impl FakeClaudeCode {
     pub const fn failing_to_sign_in(mut self) -> Self {
         self.auth_fails = true;
         self
+    }
+
+    /// Le même Claude Code, qui connaît ces serveurs MCP extérieurs ; sans cet appel, il n'en
+    /// connaît aucun.
+    #[must_use]
+    pub fn knowing_servers(mut self, servers: Vec<ExternalServer>) -> Self {
+        self.external = Some(Ok(servers));
+        self
+    }
+
+    /// Le même Claude Code, qui ne donne pas la liste de ses serveurs MCP extérieurs : `error`.
+    #[must_use]
+    pub fn failing_to_list_servers(mut self, error: ClaudeError) -> Self {
+        self.external = Some(Err(error));
+        self
+    }
+
+    /// Les serveurs MCP extérieurs permis reçus à chaque tour demandé, dans l'ordre.
+    pub fn allowed_servers(&self) -> Vec<Vec<ServerName>> {
+        self.allowed_servers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
     }
 
     /// Les tours demandés, dans l'ordre.
@@ -154,6 +180,10 @@ impl ClaudeCode for FakeClaudeCode {
             .unwrap_or_else(|| ClaudeStatus::Ready(ClaudeAccount::default()))
     }
 
+    fn external_servers(&self) -> Result<Vec<ExternalServer>, ClaudeError> {
+        self.external.clone().unwrap_or_else(|| Ok(Vec::new()))
+    }
+
     fn log_out(&self) -> Result<(), ClaudeError> {
         if self.turn().running {
             return Err(ClaudeError::Busy);
@@ -183,6 +213,7 @@ impl ClaudeCode for FakeClaudeCode {
             conversation,
             settings,
             tools,
+            servers,
         }: ClaudeTurn<'_>,
         message: &str,
         on_event: &mut dyn FnMut(ClaudeEvent),
@@ -192,6 +223,10 @@ impl ClaudeCode for FakeClaudeCode {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .push(tools.cloned());
+        self.allowed_servers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(servers.to_vec());
         self.requests
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
@@ -221,7 +256,8 @@ mod tests {
 
     use super::*;
     use crate::testing::claude_contract::{
-        ClaudeAccounts, ClaudeCodes, claude_account_contract, claude_code_contract,
+        ClaudeAccounts, ClaudeCodes, ClaudeServers, claude_account_contract, claude_code_contract,
+        claude_servers_contract,
     };
 
     fn started() -> ClaudeEvent {
@@ -307,6 +343,62 @@ mod tests {
     }
 
     #[test]
+    fn honours_the_claude_servers_contract() {
+        use domain::external_servers::ServerState;
+        let known = vec![
+            ExternalServer {
+                name: ServerName::new("claude.ai Noota").unwrap(),
+                state: ServerState::Connected,
+            },
+            ExternalServer {
+                name: ServerName::new("mon serveur").unwrap(),
+                state: ServerState::ToConnect,
+            },
+        ];
+        let knowing = FakeClaudeCode::default().knowing_servers(known.clone());
+        claude_servers_contract(&ClaudeServers {
+            knowing: &knowing,
+            known,
+        });
+    }
+
+    #[test]
+    fn a_claude_code_knows_the_servers_it_is_given_and_none_otherwise() {
+        use domain::external_servers::ServerState;
+        let noota = ExternalServer {
+            name: ServerName::new("claude.ai Noota").unwrap(),
+            state: ServerState::Connected,
+        };
+        assert_eq!(FakeClaudeCode::default().external_servers(), Ok(Vec::new()));
+        let claude = FakeClaudeCode::default().knowing_servers(vec![noota.clone()]);
+        assert_eq!(claude.external_servers(), Ok(vec![noota]));
+        let failing = FakeClaudeCode::default().failing_to_list_servers(ClaudeError::Missing);
+        assert_eq!(failing.external_servers(), Err(ClaudeError::Missing));
+    }
+
+    #[test]
+    fn the_servers_allowed_at_each_turn_are_kept() {
+        let claude = FakeClaudeCode::replaying(Vec::new());
+        let noota = ServerName::new("claude.ai Noota").unwrap();
+        for servers in [vec![noota.clone()], Vec::new()] {
+            claude
+                .send(
+                    ClaudeTurn {
+                        workspace: &workspace(),
+                        conversation: None,
+                        settings: TurnSettings::default(),
+                        tools: None,
+                        servers: &servers,
+                    },
+                    "Un",
+                    &mut |_| {},
+                )
+                .unwrap();
+        }
+        assert_eq!(claude.allowed_servers(), vec![vec![noota], Vec::new()]);
+    }
+
+    #[test]
     fn each_requested_turn_is_kept() {
         let claude = FakeClaudeCode::replaying(Vec::new());
         let conversation = ConversationId::new("conversation-1").unwrap();
@@ -323,6 +415,7 @@ mod tests {
                     conversation: None,
                     settings: TurnSettings::default(),
                     tools: Some(&key),
+                    servers: &[],
                 },
                 "Un",
                 &mut |_| {},
@@ -335,6 +428,7 @@ mod tests {
                     conversation: Some(&conversation),
                     settings: opus,
                     tools: None,
+                    servers: &[],
                 },
                 "Deux",
                 &mut |_| {},

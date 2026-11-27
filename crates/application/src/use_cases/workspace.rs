@@ -220,6 +220,8 @@ impl<'a> ManageWorkspaces<'a> {
 mod tests {
     use std::sync::Arc;
 
+    use domain::external_servers::ServerName;
+
     use super::*;
     use crate::StoreError;
     use crate::testing::{FakeOpener, FakePreferences, InMemoryNoteStore};
@@ -555,6 +557,12 @@ mod tests {
         }
         fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
             self.0.save_voice_language(language)
+        }
+        fn allowed_servers(&self) -> Result<Vec<ServerName>, StoreError> {
+            self.0.allowed_servers()
+        }
+        fn save_allowed_servers(&self, servers: &[ServerName]) -> Result<(), StoreError> {
+            self.0.save_allowed_servers(servers)
         }
     }
 

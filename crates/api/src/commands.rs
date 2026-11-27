@@ -27,6 +27,7 @@ pub mod export;
 pub mod favorites;
 pub mod history;
 pub mod links;
+pub mod mcp_servers;
 pub mod meaning;
 pub mod menu;
 pub mod mind_map;
@@ -544,6 +545,9 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         templates::templates_folder,
         templates::set_templates_folder,
         templates::import_templates_folders,
+        mcp_servers::list_mcp_servers,
+        mcp_servers::allow_mcp_server,
+        mcp_servers::disallow_mcp_server,
         favorites::favorites_note,
         favorites::choose_favorites_note,
         favorites::create_favorites_note,

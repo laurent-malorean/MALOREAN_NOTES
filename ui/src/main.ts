@@ -11,6 +11,7 @@ import { createCurrentScreen } from "./app/current-screen";
 import { createExport } from "./app/export";
 import { createFoldMemory } from "./app/fold-memory";
 import { createFavorites } from "./app/favorites";
+import { createMcpServers } from "./app/mcp-servers";
 import { createFolders } from "./app/folders";
 import { followColumns } from "./app/follow-columns";
 import { createHistory } from "./app/history";
@@ -40,7 +41,6 @@ import { askName } from "./screens/name-prompt";
 import { renderScreen, type ScreenActions } from "./screens/screen-view";
 import { createSharedNotes } from "./screens/shared-notes";
 import { connectWindowDisplay } from "./screens/window-display";
-
 const layout = createLayout(document.querySelector<HTMLElement>("#app") as HTMLElement);
 const messages = createMessages(layout.status, bridge.errorMessage);
 const { run } = messages;
@@ -81,9 +81,10 @@ const settings = connectSettings(
   { documentElement: document.documentElement, ...layout },
   {
     ...{ columns, storage: localStorage, systemDark: matchMedia("(prefers-color-scheme: dark)") },
-    groups: () => [templates, journal, workspace, search.meaning, voice, favorites, ai],
+    groups: () => [templates, journal, workspace, search.meaning, voice, favorites, mcp, ai],
   },
 );
+const mcp = createMcpServers({ backend: bridge, error: messages.error });
 const ai = createConnectAi({ ...messages, backend: bridge, dialog: layout.confirmation });
 const templates = createTemplates({
   ...{ backend: bridge, storage: localStorage, screen, columns, workspace },

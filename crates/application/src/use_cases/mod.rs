@@ -16,6 +16,7 @@ mod history;
 mod index;
 mod link_choices;
 mod list_notes;
+mod mcp_servers;
 mod meaning;
 mod mind_map;
 mod move_note;
@@ -66,6 +67,7 @@ pub use history::{
 pub use index::{ReadIndexStatus, RebuildIndex, RefreshIndex};
 pub use link_choices::{LinkChoices, LinkableContent};
 pub use list_notes::{ListAllNotes, ListNotes};
+pub use mcp_servers::{McpServers, ServersListing};
 pub use meaning::{
     BATCH_SIZE, ChooseModel, ComputeListener, ComputeMeaning, ComputeOutcome, ComputeProgress,
     DownloadModel, MeaningOverview, MeaningUse, MixedResults, ModelOverview, ReadMeaningStatus,

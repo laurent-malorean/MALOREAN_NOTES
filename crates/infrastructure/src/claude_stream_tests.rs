@@ -478,8 +478,23 @@ fn a_tool_of_the_application_gives_its_action_and_its_target() {
     );
     assert_eq!(
         action_of("mcp__autre__search_notes", r#"{"query":"pain"}"#),
+        action(ActionKind::Other("autre · search_notes".to_owned()), None)
+    );
+}
+
+#[test]
+fn a_tool_of_a_permitted_server_is_shown_with_the_server_name_then_the_tool_name() {
+    assert_eq!(
+        action_of(
+            "mcp__claude_ai_Noota__search_records",
+            r#"{"query":"réunion"}"#
+        ),
+        action(ActionKind::Other("Noota · search_records".to_owned()), None)
+    );
+    assert_eq!(
+        action_of("mcp__claude_ai_Google_Drive__search_files", "{}"),
         action(
-            ActionKind::Other("mcp__autre__search_notes".to_owned()),
+            ActionKind::Other("Google Drive · search_files".to_owned()),
             None
         )
     );

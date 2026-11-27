@@ -18,6 +18,7 @@ mod index;
 mod items;
 mod journal;
 mod links;
+mod mcp_servers;
 mod meaning;
 #[cfg(test)]
 mod meaning_fakes;

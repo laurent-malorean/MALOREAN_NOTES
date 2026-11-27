@@ -1,0 +1,62 @@
+/* Réglages, onglet « Claude » : la rubrique « Serveurs MCP » */
+.mcp-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.mcp-head .setting-help {
+  flex: 1;
+}
+.mcp-refresh {
+  flex: none;
+}
+.mcp-status {
+  margin: 0 0 0.5rem;
+}
+.mcp-status[hidden] {
+  display: none;
+}
+.mcp-servers {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mcp-server {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  column-gap: 0.5rem;
+}
+.mcp-server-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.mcp-server-state {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.mcp-server-connected {
+  color: var(--success);
+}
+.mcp-server-failed,
+.mcp-server-notFound {
+  color: var(--danger);
+}
+.mcp-server-hint {
+  grid-column: 2 / -1;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.mcp-server-hint code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  padding: 0.05rem 0.3rem;
+  background: var(--code-block-background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}

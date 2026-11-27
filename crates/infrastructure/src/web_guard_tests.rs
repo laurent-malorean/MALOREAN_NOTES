@@ -81,7 +81,7 @@ fn a_folder_whose_name_has_an_apostrophe_is_quoted_for_the_shell() {
     let parent = tempfile::TempDir::new().unwrap();
     let odd = parent.path().join("l'espace $HOME");
     std::fs::create_dir(&odd).unwrap();
-    let guard = WebGuard::within(&odd).unwrap();
+    let guard = WebGuard::within(&odd, &[]).unwrap();
     run(&guard, "WebSearch|WebFetch");
     assert!(guard.mark().exists());
     assert!(!run(&guard, &change_tools()).is_empty());
@@ -117,4 +117,34 @@ fn every_change_tool_of_claude_code_or_of_the_application_is_held_back() {
             .filter(|tool| !tool.changes_notes())
             .all(|tool| !held.contains(&tool.full_name().as_str()))
     );
+}
+
+#[test]
+fn the_tools_of_a_permitted_server_count_as_a_web_read() {
+    let prefixes = vec![
+        "mcp__claude_ai_Noota".to_owned(),
+        "mcp__mon-serveur".to_owned(),
+    ];
+    let guard = WebGuard::with_servers(&prefixes).unwrap();
+    let settings = settings_of(&guard);
+    let matchers: Vec<&Value> = settings["hooks"]["PreToolUse"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|entry| &entry["matcher"])
+        .collect();
+    let reading = "WebSearch|WebFetch|mcp__claude_ai_Noota__.*|mcp__mon-serveur__.*";
+    assert_eq!(matchers, [reading, change_tools().as_str()]);
+    assert_eq!(run(&guard, reading), "");
+    assert!(!run(&guard, &change_tools()).is_empty());
+}
+
+#[test]
+fn the_matcher_of_a_permitted_server_matches_its_tools_and_only_them() {
+    let prefixes = vec!["mcp__claude_ai_Noota".to_owned()];
+    let matcher = web_tools(&prefixes);
+    // Une expression régulière, non ancrée, comme Claude Code l'évalue.
+    let tools: Vec<&str> = matcher.split('|').collect();
+    assert_eq!(tools, ["WebSearch", "WebFetch", "mcp__claude_ai_Noota__.*"]);
+    assert!(tools[2].ends_with("__.*"));
 }
