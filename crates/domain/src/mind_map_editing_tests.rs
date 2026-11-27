@@ -568,3 +568,17 @@ racines: [{x: 0, y: 0}, {x: 10, y: 200}, {x: 20, y: 400}]
 "
     );
 }
+
+#[test]
+fn a_path_follows_a_removed_branch_only_in_the_same_family() {
+    // Un frère plus loin dans la fratrie recule d'un rang ; un descendant de ce frère aussi.
+    assert_eq!(path("0.3").after_removal_of(&path("0.1")), path("0.2"));
+    assert_eq!(path("0.3.5").after_removal_of(&path("0.1")), path("0.2.5"));
+    // Un frère plus tôt, la branche elle-même ou une autre famille ne bougent pas.
+    assert_eq!(path("0.0").after_removal_of(&path("0.1")), path("0.0"));
+    assert_eq!(path("0.1").after_removal_of(&path("0.1")), path("0.1"));
+    assert_eq!(path("1.3").after_removal_of(&path("0.1")), path("1.3"));
+    // Le parent de la branche retirée, plus court que le niveau retiré, ne bouge pas.
+    assert_eq!(path("1").after_removal_of(&path("1.0")), path("1"));
+    assert_eq!(path("2").after_removal_of(&path("1.0")), path("2"));
+}
