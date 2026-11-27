@@ -2,7 +2,7 @@
 # RÉSUMÉ DE LA NUIT (doc/decisions/0059) : une ligne par groupe, en Markdown, pour l'étape « Summary » du travail.
 #   mutation-resume.sh <dossier des artefacts> <matrice JSON>
 # Chaque groupe a déposé <dossier>/mutation-<groupe>/bilan.json (artefact, scripts/mutation-groupe.sh). Un groupe
-# sans bilan (machine coupée à 25 minutes, installation en échec) est dit « sans bilan », jamais passé sous silence.
+# sans bilan (machine coupée à 60 minutes, installation en échec) est dit « sans bilan », jamais passé sous silence.
 # Totaux en fin. Rend toujours 0 : le verdict est celui des travaux de groupe, ce script ne fait que rapporter.
 set -uo pipefail
 dir=${1:?dossier des artefacts}
