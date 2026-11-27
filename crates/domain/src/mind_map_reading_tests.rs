@@ -147,3 +147,29 @@ fn a_node_that_does_not_fit_the_rest_is_left_out_with_the_following_ones() {
     assert_eq!((read.shown, read.total), (1, 3));
     assert_eq!(read.last, Some(path(&[0])));
 }
+
+fn budget(left: usize) -> Budget {
+    Budget {
+        left,
+        shown: 1,
+        last: None,
+        full: false,
+    }
+}
+
+#[test]
+fn each_detail_line_costs_its_characters_and_its_line_break() {
+    let node = MindNode {
+        title: "ab".to_owned(),
+        detail: vec!["cde".to_owned(), "f".to_owned()],
+        ..MindNode::default()
+    };
+    // 2 (titre) + (3 + 1) + (1 + 1) (détail) + la structure.
+    let cost = 2 + 4 + 2 + NODE_STRUCTURE;
+    let mut just_enough = budget(cost);
+    assert!(just_enough.take(&node, &path(&[0])));
+    assert_eq!(just_enough.left, 0);
+    let mut one_short = budget(cost - 1);
+    assert!(!one_short.take(&node, &path(&[0])));
+    assert!(one_short.full);
+}

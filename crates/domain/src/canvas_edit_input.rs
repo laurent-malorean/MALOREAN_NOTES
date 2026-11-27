@@ -332,3 +332,16 @@ pub(super) fn listed(ids: impl Iterator<Item = String>) -> String {
     };
     format!("{}{more}", shown.join(", "))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::counter;
+
+    #[test]
+    fn the_counter_never_gives_the_same_number_twice() {
+        let first = counter();
+        let second = counter();
+        let third = counter();
+        assert!(first < second && second < third);
+    }
+}
