@@ -1,6 +1,6 @@
 # Agenda 12
 
-Spécification fonctionnelle rédigée le 27/11, **à valider par l'utilisateur** : ne pas coder avant sa validation. Ce document se lit seul.
+Spécification fonctionnelle rédigée le 27/11, **validée par l'utilisateur le 27/11** (demande de développement). Ce document se lit seul.
 
 ## 1. Idée
 
