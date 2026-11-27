@@ -1,6 +1,8 @@
 //! L'espace de travail ouvert et les cas d'usage qu'on lui applique.
 
+mod agenda_12;
 mod app_tools;
+pub(crate) use agenda_12::agenda_12_countries;
 pub use app_tools::AppScreen;
 pub use meaning::MeaningEvents;
 mod attachments;

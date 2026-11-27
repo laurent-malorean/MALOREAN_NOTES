@@ -2,7 +2,7 @@
 
 use crate::attachments::relink;
 use crate::journal::keeps_date_name;
-use crate::{FileName, Folder, NotePath, Title};
+use crate::{ContentType, FileName, Folder, NotePath, Title};
 
 /// Ce que devient une note enregistrée : le nom de fichier qu'elle doit porter
 /// et le contenu à écrire (liens vers ses pièces jointes déjà mis à jour).
@@ -29,13 +29,16 @@ impl SavePlan {
 /// Le nom et le contenu d'une note enregistrée sous `current`.
 ///
 /// Le nom suit le titre, sauf pour une note du jour dont le titre est encore sa date, qui garde
-/// son nom daté (voir [`crate::journal`]). S'il est pris par une autre note de `existing`, il reçoit
+/// son nom daté (voir [`crate::journal`]), et pour un événement d'un agenda 12, dont le nom de
+/// fichier ne change jamais après la création (fiche 0104). S'il est pris par une autre note de `existing`, il reçoit
 /// le premier suffixe `-2`, `-3`… libre. La note elle-même ne compte pas comme une autre.
 #[must_use]
 pub fn plan_save(current: &FileName, content: &str, existing: &[FileName]) -> SavePlan {
     // Sans titre `#`, le fichier garde son nom : une note importée n'est pas renommée.
     let wanted = match Title::of(content) {
-        Some(title) if !keeps_date_name(current, content) => FileName::from_title(Some(&title)),
+        Some(title) if !keeps_date_name(current, content) && !is_event(content) => {
+            FileName::from_title(Some(&title))
+        }
         _ => current.clone(),
     };
     let file_name =
@@ -46,6 +49,11 @@ pub fn plan_save(current: &FileName, content: &str, existing: &[FileName]) -> Sa
         relink(content, current, &file_name)
     };
     SavePlan { file_name, content }
+}
+
+/// La note est un événement d'un agenda 12 : son nom de fichier est celui de sa création.
+fn is_event(content: &str) -> bool {
+    ContentType::of(content) == ContentType::Agenda12Event
 }
 
 /// Le chemin d'une note déplacée dans `into`, où se trouvent déjà les notes `existing` :
@@ -127,6 +135,14 @@ mod tests {
             plan.content(),
             "# Lisbonne\n![vue](lisbonne.assets/vue.png)"
         );
+    }
+
+    #[test]
+    fn an_event_of_an_agenda_12_keeps_its_name_whatever_its_title() {
+        let content = "---\ntype: agenda-12-evenement\nmois: 2\n---\n# Autre titre\n";
+        let plan = plan_save(&name("salon.md"), content, &[name("salon.md")]);
+        assert_eq!(plan.file_name(), &name("salon.md"));
+        assert_eq!(plan.content(), content);
     }
 
     #[test]

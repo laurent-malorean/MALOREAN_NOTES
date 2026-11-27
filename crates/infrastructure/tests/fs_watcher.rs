@@ -11,7 +11,8 @@ use std::sync::mpsc::{Receiver, channel};
 use std::time::Duration;
 
 use application::use_cases::{
-    ActionChange, ChangeAction, ChangeCanvas, EditMindMap, ReplaceInNote,
+    ActionChange, ChangeAction, ChangeCanvas, CloseAgenda12Event, Closing, EditMindMap,
+    ReplaceInNote,
 };
 use application::{
     History, KeepingStore, NoteStore, StoreError, WorkspaceChange, WorkspaceLocation,
@@ -29,6 +30,19 @@ use infrastructure::{FsHistory, FsNoteStore, FsWorkspaceWatcher, SystemClock};
 const ARRIVAL: Duration = Duration::from_secs(10);
 /// Temps pendant lequel on vérifie qu'un changement ignoré n'arrive pas.
 const SILENCE: Duration = Duration::from_millis(1500);
+
+/// Attend que tous les chemins de `notes` aient été annoncés, dans un même changement ou dans
+/// plusieurs ; chaque attente dure au plus [`ARRIVAL`].
+fn announces_all(received: &Receiver<WorkspaceChange>, notes: &[&str]) -> bool {
+    let mut missing: Vec<NotePath> = notes.iter().map(|n| NotePath::parse(n).unwrap()).collect();
+    while !missing.is_empty() {
+        let Ok(change) = received.recv_timeout(ARRIVAL) else {
+            return false;
+        };
+        missing.retain(|note| !change.notes.contains(note));
+    }
+    true
+}
 
 fn watch(
     folder: &tempfile::TempDir,
@@ -264,4 +278,41 @@ fn a_crm_action_changed_by_the_tools_is_announced_so_that_the_screen_follows() {
     let versions = history.versions(&action).unwrap();
     assert_eq!(versions.len(), 1);
     assert_eq!(history.read_version(&action, &versions[0]).unwrap(), before);
+}
+
+/// L'écran suit la clôture d'un événement d'un agenda 12 faite par une IA (fiche 0104) : l'événement
+/// rangé dans les archives, et sa copie dans la grille, sont annoncés à l'interface.
+#[test]
+fn an_event_closed_by_the_tools_is_announced_at_its_new_place_and_its_successor_too() {
+    let folder = tempfile::tempdir().unwrap();
+    fs::create_dir_all(folder.path().join("salons")).unwrap();
+    fs::write(
+        folder.path().join("salons.md"),
+        "---\ntype: agenda-12\n---\n# Salons\n",
+    )
+    .unwrap();
+    fs::write(
+        folder.path().join("salons/audit.md"),
+        "---\ntype: agenda-12-evenement\nmois: 1\n---\n# Audit\n",
+    )
+    .unwrap();
+    let (_watching, received) = watch(&folder);
+    let store = FsNoteStore::new(folder.path().to_path_buf());
+
+    CloseAgenda12Event::new(&store, &SystemClock)
+        .execute(
+            &NotePath::parse("salons/audit.md").unwrap(),
+            Closing::WithSuccessor,
+        )
+        .unwrap();
+
+    assert!(announces_all(
+        &received,
+        &["salons/archives/audit.md", "salons/audit.md"]
+    ));
+    assert!(
+        fs::read_to_string(folder.path().join("salons/archives/audit.md"))
+            .unwrap()
+            .contains("clos-le: ")
+    );
 }

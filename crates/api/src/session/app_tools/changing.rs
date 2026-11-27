@@ -65,6 +65,8 @@ impl Session {
             AppTool::CreateMindMap => self.tool_create_mind_map(arguments),
             tool if edits_a_mind_map(tool) => self.call_mind_map_tool(tool, arguments),
             AppTool::CreateCrm => self.tool_create_crm(arguments),
+            AppTool::AddAgenda12Event => self.tool_add_agenda_12_event(arguments),
+            AppTool::CloseAgenda12Event => self.tool_close_agenda_12_event(arguments),
             AppTool::CreateCanvas => self.tool_create_canvas(arguments),
             AppTool::CreateResearchNotebook => self.tool_create_research_notebook(arguments),
             AppTool::CreateNoteFromTemplate => self.tool_create_from_template(arguments),

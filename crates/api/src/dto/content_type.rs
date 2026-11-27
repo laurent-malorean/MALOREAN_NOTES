@@ -30,6 +30,10 @@ pub enum ContentTypeItem {
     CrmAction,
     /// Un projet d'un CRM.
     CrmProject,
+    /// Un agenda 12.
+    Agenda12,
+    /// Un événement d'un agenda 12.
+    Agenda12Event,
 }
 
 impl From<domain::ContentType> for ContentTypeItem {
@@ -46,6 +50,8 @@ impl From<domain::ContentType> for ContentTypeItem {
             domain::ContentType::CrmPerson => Self::CrmPerson,
             domain::ContentType::CrmAction => Self::CrmAction,
             domain::ContentType::CrmProject => Self::CrmProject,
+            domain::ContentType::Agenda12 => Self::Agenda12,
+            domain::ContentType::Agenda12Event => Self::Agenda12Event,
         }
     }
 }

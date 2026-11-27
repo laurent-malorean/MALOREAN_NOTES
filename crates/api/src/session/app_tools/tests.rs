@@ -307,7 +307,8 @@ fn a_search_by_an_unknown_content_type_or_an_invalid_folder_is_refused() {
             json!({ "content_type": "kanban" })
         ),
         "type de contenu inconnu : « kanban » ; ceux d'une note : « note », « cahier-de-recherche », « carte-mentale », \
-         « crm », « crm-entreprise », « crm-personne », « crm-action », « crm-projet »"
+         « crm », « crm-entreprise », « crm-personne », « crm-action », « crm-projet », \
+         « agenda-12 », « agenda-12-evenement »"
     );
     assert!(
         refused(

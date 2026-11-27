@@ -1,12 +1,11 @@
 //! La corbeille : y placer une note ou un dossier, voir ce qu'elle contient, restaurer, vider.
 
 use domain::attachments::relink;
-use domain::crm::CrmKind;
 use domain::folder::sort_for_display;
 use domain::saving::moved_note;
 use domain::{FileName, Folder, NotePath, NoteSummary};
 
-use super::crm_fiches::{fiches_of, restore_with, taken_with_folders, trash_with};
+use super::crm_fiches::{fiches_of, owns_a_folder, restore_with, taken_with_folders, trash_with};
 use crate::{AppError, NoteStore, TrashContents};
 
 /// Ce que montre la corbeille : ses dossiers dans l'ordre de l'arbre, ses notes par chemin.
@@ -19,7 +18,8 @@ pub struct TrashView {
 }
 
 /// La corbeille de l'espace de travail ouvert. Rien n'y est supprimé tant qu'on ne la vide pas.
-/// Un CRM y va avec ses fiches et en revient avec elles (fiche 0091).
+/// Un CRM y va avec ses fiches et en revient avec elles (fiche 0091) ; un agenda 12 de même avec ses
+/// événements (fiche 0104).
 #[derive(Debug)]
 pub struct Trash<'a> {
     store: &'a dyn NoteStore,
@@ -141,7 +141,7 @@ impl<'a> Trash<'a> {
             self.store
                 .write_keeping_date(&to, &relink(&content, at.name(), to.name()))?;
         }
-        if CrmKind::of(&content) == Some(CrmKind::Crm) {
+        if owns_a_folder(&content) {
             restore_with(self.store, &trashed, (at, &to))?;
         }
         Ok(to)

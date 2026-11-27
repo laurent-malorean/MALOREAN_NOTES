@@ -158,6 +158,14 @@ pub enum AppTool {
     DeleteCrmProject,
     /// Changer les étapes d'un CRM (fiche 0081).
     ChangeCrmStages,
+    /// Lire un agenda 12 comme des données : ses événements case par case, dans l'ordre de la
+    /// grille, avec ses archives en option (fiche 0104).
+    ReadAgenda12,
+    /// Ajouter un événement à un agenda 12 : un titre, un mois et les champs facultatifs
+    /// (fiche 0104).
+    AddAgenda12Event,
+    /// Clore un événement d'un agenda 12, avec ou sans copie pour le suivant (fiche 0104).
+    CloseAgenda12Event,
     /// Ce que l'utilisateur regarde : la note ouverte dans la colonne active, le texte
     /// sélectionné.
     ViewedNote,
@@ -167,7 +175,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 70] = [
+    pub const ALL: [Self; 73] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -236,6 +244,9 @@ impl AppTool {
         Self::ChangeCrmProject,
         Self::DeleteCrmProject,
         Self::ChangeCrmStages,
+        Self::ReadAgenda12,
+        Self::AddAgenda12Event,
+        Self::CloseAgenda12Event,
         Self::ViewedNote,
         Self::ShowNote,
     ];
@@ -323,6 +334,16 @@ impl AppTool {
             Self::ChangeCrmProject => "change_crm_project",
             Self::DeleteCrmProject => "delete_crm_project",
             Self::ChangeCrmStages => "change_crm_stages",
+            _ => self.agenda_12_name(),
+        }
+    }
+
+    /// Le nom de l'un des trois outils de l'agenda 12 (fiche 0104) ; vide pour un autre outil.
+    const fn agenda_12_name(self) -> &'static str {
+        match self {
+            Self::ReadAgenda12 => "read_agenda_12",
+            Self::AddAgenda12Event => "add_agenda_12_event",
+            Self::CloseAgenda12Event => "close_agenda_12_event",
             _ => "",
         }
     }
@@ -366,6 +387,7 @@ impl AppTool {
                 | Self::ReadCanvas
                 | Self::ReadMindMap
                 | Self::ReadCrm
+                | Self::ReadAgenda12
                 | Self::ListTemplates
                 | Self::ListVersions
                 | Self::ReadVersion

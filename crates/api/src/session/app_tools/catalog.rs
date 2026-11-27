@@ -9,6 +9,7 @@ use super::catalog_mind_map::{
     delete_mind_map_node, edit_mind_map_node, move_mind_map_node, read_mind_map,
 };
 
+mod agenda_12;
 mod canvas;
 mod crm;
 mod favorites;
@@ -71,13 +72,14 @@ fn search_notes() -> Described {
          plus long : « tomy » trouve « anatomy », ce n'est pas une recherche de mot entier), et/ou qui portent l'étiquette `tag`, et/ou rangées \
          dans `folder` (sous-dossiers compris), et/ou d'un type de contenu (`note`, \
          `cahier-de-recherche`, `carte-mentale`, `crm` ou une fiche d'un CRM : `crm-entreprise`, \
-         `crm-personne`, `crm-action`, `crm-projet`). Rend 100 notes au plus : chemin, titre, \
+         `crm-personne`, `crm-action`, `crm-projet`, ou `agenda-12` et son événement \
+         `agenda-12-evenement`). Rend 100 notes au plus : chemin, titre, \
          dossier, étiquettes, et un extrait autour des mots trouvés ; avec `query`, aussi \
          `matches`, le nombre d'occurrences des mots cherchés dans le texte entier de la note \
          (à l'intérieur des mots aussi) : il aide à juger la pertinence, un seul résultat est \
          peut-être un mot trouvé par hasard dans un mot plus long, et `read_note` lit la note \
          entière pour le confirmer ; pour un CRM ou une fiche, \
-         aussi `type` et, pour une fiche, `crm`, le chemin de son CRM.",
+         aussi `type` et, pour une fiche, `crm`, le chemin de son CRM ; pour un agenda 12 ou un événement, aussi `type` et, pour un événement, `agenda`, le chemin de son agenda 12.",
         input(
             json!({
                 "query": text("Les mots cherchés dans le texte des notes, chacun aussi à l'intérieur d'un mot plus long (`tomy` trouve `anatomy`)."),
@@ -85,7 +87,8 @@ fn search_notes() -> Described {
                 "folder": text("Un dossier depuis l'espace de travail : `Travail/Projets`."),
                 "content_type": text(
                     "Un type de contenu : `note`, `cahier-de-recherche`, `carte-mentale`, `crm`, \
-                     `crm-entreprise`, `crm-personne`, `crm-action` ou `crm-projet`."
+                     `crm-entreprise`, `crm-personne`, `crm-action`, `crm-projet`, `agenda-12` ou \
+                     `agenda-12-evenement`."
                 ),
             }),
             &[],

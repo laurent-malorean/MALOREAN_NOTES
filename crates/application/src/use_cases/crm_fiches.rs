@@ -1,16 +1,23 @@
 //! Les fiches d'un CRM suivent son fichier (fiche 0091) : mis à la corbeille, restauré ou déplacé,
 //! un CRM emporte avec lui le dossier qui porte son nom. Une seule règle pour ces trois gestes (et
 //! pour tout geste futur qui change le nom ou la place du CRM) : ce module la porte, les cas
-//! d'usage `Trash` et `MoveNote` l'appellent.
+//! d'usage `Trash` et `MoveNote` l'appellent. Un agenda 12 emporte de même son dossier des
+//! événements, archives comprises (fiche 0104) : ce sont les mêmes gestes, la même règle.
 
 use domain::crm::{CrmFiches, CrmKind, fiches_folder, names_of_folders_in, retargeted};
 use domain::saving::moved_note;
-use domain::{FileName, Folder, NotePath, NoteSummary};
+use domain::{ContentType, FileName, Folder, NotePath, NoteSummary};
 
 use crate::{AppError, NoteStore, StoreError, TrashContents};
 
-/// Les fiches du CRM de la note `note` ; rien si `note` n'est pas un CRM ou n'a pas de dossier de
-/// fiches.
+/// La note de ce texte emporte un dossier avec elle : un CRM (ses fiches) ou un agenda 12 (ses
+/// événements).
+pub(super) fn owns_a_folder(content: &str) -> bool {
+    CrmKind::of(content) == Some(CrmKind::Crm) || ContentType::of(content) == ContentType::Agenda12
+}
+
+/// Les fiches du CRM (ou les événements de l'agenda 12) de la note `note` ; rien si `note` n'est ni
+/// l'un ni l'autre ou n'a pas de dossier de fiches.
 ///
 /// # Errors
 ///
@@ -21,7 +28,7 @@ pub(super) fn fiches_of(
     note: &NotePath,
 ) -> Result<Option<CrmFiches>, AppError> {
     let content = store.read_indexed(note)?.content;
-    if CrmKind::of(&content) != Some(CrmKind::Crm) {
+    if !owns_a_folder(&content) {
         return Ok(None);
     }
     let Some(folder) = fiches_folder(note) else {
@@ -60,7 +67,7 @@ fn base_of(crm: &NotePath) -> Result<Folder, AppError> {
 }
 
 /// Crée le dossier `folder` et ceux qui manquent au-dessus.
-fn ensure_folder(store: &dyn NoteStore, folder: &Folder) -> Result<(), AppError> {
+pub(super) fn ensure_folder(store: &dyn NoteStore, folder: &Folder) -> Result<(), AppError> {
     let existing = store.folders()?;
     let mut missing = Vec::new();
     let mut current = Some(folder.clone());

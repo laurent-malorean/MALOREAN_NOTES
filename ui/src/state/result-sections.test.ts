@@ -56,6 +56,12 @@ describe("sections de résultats", () => {
     expect(titles(kinds.map((kind) => found(kind, kind)))).toEqual(["CRM (5)"]);
   });
 
+  it("réunit les agendas 12 et leurs événements, avant les notes", () => {
+    expect(
+      titles([found("note", "n"), found("agenda12Event", "e"), found("agenda12", "a")]),
+    ).toEqual(["Agendas 12 (2)", "Notes (1)"]);
+  });
+
   it("réunit les cahiers de recherche et leurs entrées", () => {
     expect(titles([found("entry", "e"), found("researchNotebook", "c")])).toEqual([
       "Cahiers de recherche (2)",

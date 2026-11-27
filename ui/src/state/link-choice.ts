@@ -18,6 +18,8 @@ const ICONS: Readonly<Record<ContentTypeItem, NewContentIcon>> = {
   crmPerson: "crm",
   crmAction: "crm",
   crmProject: "crm",
+  agenda12: "note",
+  agenda12Event: "note",
 };
 
 /** L'icône d'un contenu liable, selon son type. */

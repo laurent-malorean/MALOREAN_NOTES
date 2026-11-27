@@ -61,7 +61,12 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     nom exact d'une colonne du CRM (`TODO`, `Done`, `Cancel` et ses étapes) ; ne supprimez rien sans \
     que l'utilisateur le demande ; pour un compte rendu sur une action, ajoutez un commentaire \
     (`add_comment`) plutôt que de réécrire sa description ; ne renommez jamais le fichier d'une \
-    fiche, ni ne renommez, déplacez ou jetez les dossiers de fiches d'un CRM.";
+    fiche, ni ne renommez, déplacez ou jetez les dossiers de fiches d'un CRM. \
+    Un agenda 12 (`type: agenda-12`) est une grille de 12 mois, de janvier à décembre, où chaque \
+    événement est une note rangée dans un dossier qui porte le nom de son fichier : `read_agenda_12` \
+    le lit case par case, `add_agenda_12_event` y ajoute un événement et `close_agenda_12_event` en \
+    clôt un (il passe dans les archives) ; le texte d'un événement se lit avec `read_note` et se \
+    change avec `replace_in_note` ; ne clôturez rien sans que l'utilisateur le demande.";
 
 /// L'issue d'un appel d'outil : le texte rendu à Claude, ou ce qui a empêché l'outil.
 pub(super) type ToolOutcome = Result<String, String>;
@@ -194,6 +199,22 @@ mod tests {
             "`remove_favorite`",
             "`list_favorites`",
             "onglet « Favoris »",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
+    }
+
+    #[test]
+    fn the_introduction_names_the_agenda_12_tools_and_how_to_read_the_text_of_an_event() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            "`type: agenda-12`",
+            "`read_agenda_12`",
+            "`add_agenda_12_event`",
+            "`close_agenda_12_event`",
+            "`read_note`",
+            "ne clôturez rien sans que l'utilisateur le demande",
         ] {
             assert!(text.contains(expected), "{expected}");
         }

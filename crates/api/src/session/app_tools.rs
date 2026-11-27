@@ -3,6 +3,7 @@
 //! en cours est refusée. Les outils passent par les cas d'usage, comme l'interface, et
 //! n'agissent que dans l'espace de travail du tour, désigné par son nom.
 
+mod agenda_12;
 mod canvas;
 mod canvas_changing;
 mod catalog;
@@ -204,6 +205,7 @@ impl Session {
             AppTool::ReadMindMap => self.tool_read_mind_map(arguments),
             AppTool::ReadCanvas => self.tool_read_canvas(arguments),
             AppTool::ReadCrm => self.tool_read_crm(arguments),
+            AppTool::ReadAgenda12 => self.tool_read_agenda_12(arguments),
             AppTool::ListTemplates => self.tool_list_templates(),
             AppTool::ListFavorites => self.tool_list_favorites(),
             AppTool::ViewedNote => self.tool_viewed_note(),
@@ -226,6 +228,9 @@ impl Session {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod agenda_12_tests;
 
 #[cfg(test)]
 mod canvas_catalog_tests;

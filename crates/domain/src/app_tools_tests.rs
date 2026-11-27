@@ -69,7 +69,7 @@ fn tool_names_are_distinct() {
 }
 
 /// Les outils qui changent des notes, dans l'ordre de `ALL`.
-const CHANGING_NOTES: [&str; 54] = [
+const CHANGING_NOTES: [&str; 56] = [
     "create_note",
     "create_folder",
     "rename_folder",
@@ -124,6 +124,8 @@ const CHANGING_NOTES: [&str; 54] = [
     "change_crm_project",
     "delete_crm_project",
     "change_crm_stages",
+    "add_agenda_12_event",
+    "close_agenda_12_event",
 ];
 
 #[test]
@@ -165,10 +167,10 @@ fn each_tool_says_what_it_targets() {
     ]
     .concat();
     assert_eq!(targets[..ALL_BEFORE_CRM], before_crm);
-    // Les quinze outils du CRM (lire, puis changer) visent leur CRM, puis viennent les deux outils
-    // de l'écran.
-    assert_eq!(targets[ALL_BEFORE_CRM..ALL_BEFORE_CRM + 15], [path; 15]);
-    assert_eq!(targets[ALL_BEFORE_CRM + 15..], [None, path]);
+    // Les quinze outils du CRM (lire, puis changer) visent leur CRM, les trois de l'agenda 12 leur
+    // agenda 12, puis viennent les deux outils de l'écran.
+    assert_eq!(targets[ALL_BEFORE_CRM..ALL_BEFORE_CRM + 18], [path; 18]);
+    assert_eq!(targets[ALL_BEFORE_CRM + 18..], [None, path]);
 }
 
 #[test]
@@ -388,7 +390,37 @@ fn the_fourteen_tools_that_change_a_crm_are_named_and_ordered_as_their_decision_
         .position(|t| *t == AppTool::CreateCrmAction)
         .unwrap();
     assert_eq!(AppTool::ALL[first - 1], AppTool::ReadCrm);
-    assert_eq!(AppTool::ALL[first + 14], AppTool::ViewedNote);
+    assert_eq!(AppTool::ALL[first + 14], AppTool::ReadAgenda12);
+}
+
+#[test]
+fn the_three_agenda_12_tools_follow_the_crm_tools_read_first() {
+    let first = AppTool::ALL
+        .iter()
+        .position(|t| *t == AppTool::ReadAgenda12)
+        .unwrap();
+    assert_eq!(AppTool::ALL[first - 1], AppTool::ChangeCrmStages);
+    assert_eq!(AppTool::ALL[first + 1], AppTool::AddAgenda12Event);
+    assert_eq!(AppTool::ALL[first + 2], AppTool::CloseAgenda12Event);
+    assert_eq!(AppTool::ALL[first + 3], AppTool::ViewedNote);
+}
+
+#[test]
+fn each_agenda_12_tool_has_its_name_its_guard_and_its_target() {
+    for (tool, name, changes) in [
+        (AppTool::ReadAgenda12, "read_agenda_12", false),
+        (AppTool::AddAgenda12Event, "add_agenda_12_event", true),
+        (AppTool::CloseAgenda12Event, "close_agenda_12_event", true),
+    ] {
+        assert_eq!(tool.name(), name);
+        assert_eq!(tool.full_name(), format!("mcp__malorean_notes__{name}"));
+        assert_eq!(AppTool::of_full_name(&tool.full_name()), Some(tool));
+        assert_eq!(tool.changes_notes(), changes, "{name}");
+        assert!(!tool.changes_a_crm(), "{name}");
+        assert!(tool.aims_at_a_workspace(), "{name}");
+        assert!(!tool.uses_screen(), "{name}");
+        assert_eq!(tool.target_field(), Some("path"), "{name}");
+    }
 }
 
 #[test]

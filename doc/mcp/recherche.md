@@ -17,7 +17,7 @@ La recherche par mots ignore les majuscules et les accents, et cherche chaque mo
 | `query` | texte | non | Les mots cherchés dans le texte des notes. |
 | `tag` | texte | non | Une étiquette que les notes doivent porter. |
 | `folder` | texte | non | Un dossier depuis l'espace de travail : `Travail/Projets` ; ses sous-dossiers sont compris. |
-| `content_type` | texte | non | Un type de contenu : `note`, `cahier-de-recherche`, `carte-mentale`, `canvas`, `crm`, `crm-entreprise`, `crm-personne`, `crm-action` ou `crm-projet`. Sans lui, tous ces types. |
+| `content_type` | texte | non | Un type de contenu : `note`, `cahier-de-recherche`, `carte-mentale`, `canvas`, `crm`, `crm-entreprise`, `crm-personne`, `crm-action`, `crm-projet`, `agenda-12` ou `agenda-12-evenement`. Sans lui, tous ces types. |
 | `workspace` | texte | non | L'espace de travail visé. |
 
 **Rend** : une liste de 100 résultats au plus, la note la plus récemment modifiée d'abord. Chaque résultat :
@@ -25,15 +25,16 @@ La recherche par mots ignore les majuscules et les accents, et cherche chaque mo
 - `path`, `title`, `folder`, `tags` ;
 - `excerpt` : un extrait autour des mots trouvés, seulement avec `query` ;
 - `matches` : seulement avec `query`, le nombre d'occurrences des mots cherchés dans le texte entier de la note (pas seulement l'extrait ; à l'intérieur des mots aussi ; deux occurrences qui se chevauchent comptent pour une). Il aide à juger la pertinence : un seul résultat est peut-être un mot trouvé par hasard dans un mot plus long ; `read_note` lit la note entière pour confirmer. Il ne change ni l'ordre ni la limite ;
-- `type` : pour un CRM ou une fiche de CRM seulement (`crm`, `crm-action`…) ;
+- `type` : pour un CRM, une fiche de CRM, un agenda 12 ou un événement seulement (`crm`, `crm-action`, `agenda-12-evenement`…) ;
 - `crm` : pour une fiche de CRM, le chemin de son CRM ;
+- `agenda` : pour un événement d'un agenda 12, le chemin de son agenda 12 ;
 - `node` : pour un nœud de carte mentale, son chemin dans la carte (`1.0.2`) ; `path` est alors le fichier de la carte et `title` le titre du nœud.
 
 Les nœuds de carte mentale ne sont cherchés qu'avec `query` et sans `content_type` ; ils viennent après les notes, filtrés par `folder` et `tag`, dans la même limite de 100.
 
 **Erreurs** :
 
-- type inconnu : « type de contenu inconnu : « … » ; ceux d'une note : « note », « cahier-de-recherche », « carte-mentale », « crm », « crm-entreprise », « crm-personne », « crm-action », « crm-projet » » ;
+- type inconnu : « type de contenu inconnu : « … » ; ceux d'une note : « note », « cahier-de-recherche », « carte-mentale », « crm », « crm-entreprise », « crm-personne », « crm-action », « crm-projet », « agenda-12 », « agenda-12-evenement » » ;
 - « dossier invalide » ;
 - index indisponible (« stockage indisponible : … »).
 
@@ -68,7 +69,7 @@ Cherche des notes par ce qu'elles disent plutôt que par leurs mots exacts : à 
 
 - `meaning_used` : `true` si la recherche par le sens a servi ;
 - `reason` : seulement si elle n'a pas servi, la phrase à dire à l'utilisateur ;
-- `notes` : les notes les plus proches, la mieux classée d'abord ; chacune avec `path`, `title`, `excerpt` (le titre de la section trouvée, puis le début de son texte), et, pour un CRM ou une fiche de CRM, `type` et, pour une fiche, `crm` (le chemin de son CRM).
+- `notes` : les notes les plus proches, la mieux classée d'abord ; chacune avec `path`, `title`, `excerpt` (le titre de la section trouvée, puis le début de son texte), et, pour un CRM, une fiche de CRM, un agenda 12 ou un événement, `type` et, pour une fiche, `crm` (le chemin de son CRM) ou, pour un événement, `agenda` (le chemin de son agenda 12).
 
 **Erreurs** :
 
@@ -101,7 +102,7 @@ Les liens entrants d'une note : les notes dont un lien `[[titre]]` la désigne. 
 | `path` | texte | oui | Le chemin de la note depuis l'espace de travail : `dossier/nom.md`. |
 | `workspace` | texte | non | L'espace de travail visé. |
 
-**Rend** : une liste ; chaque note avec `path`, `title`, `folder`, et, pour une fiche de CRM, `type` (`crm-action`…) et `crm` (le chemin de son CRM).
+**Rend** : une liste ; chaque note avec `path`, `title`, `folder`, et, pour une fiche de CRM ou un événement d'un agenda 12, `type` (`crm-action`, `agenda-12-evenement`…) et `crm` (le chemin de son CRM) ou `agenda` (le chemin de son agenda 12).
 
 **Erreurs** : « il manque « path » » ; note introuvable (« la note « … » n'existe pas ») ; chemin invalide.
 

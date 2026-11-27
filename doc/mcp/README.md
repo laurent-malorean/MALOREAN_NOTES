@@ -1,13 +1,13 @@
 # Le serveur MCP de MALOREAN Notes
 
-MALOREAN Notes offre ses actions aux IA par un **serveur MCP local** nommé `malorean_notes`. Ce sont les **outils de l'application** : chercher avec l'index, lire et changer une note selon ses règles, ranger les dossiers, écrire dans un cahier de recherche, modifier une carte mentale, un canvas ou un CRM. Une IA qui passe par eux respecte les règles de l'application (nom du fichier tiré du titre, historique des versions, corbeille, index à jour) au lieu d'écrire les fichiers à la main.
+MALOREAN Notes offre ses actions aux IA par un **serveur MCP local** nommé `malorean_notes`. Ce sont les **outils de l'application** : chercher avec l'index, lire et changer une note selon ses règles, ranger les dossiers, écrire dans un cahier de recherche, modifier une carte mentale, un canvas, un CRM ou un agenda 12. Une IA qui passe par eux respecte les règles de l'application (nom du fichier tiré du titre, historique des versions, corbeille, index à jour) au lieu d'écrire les fichiers à la main.
 
 Le même serveur, avec les mêmes outils, sert à deux endroits :
 
 - la **colonne Claude Code** de l'application, le temps d'un tour ;
 - une **IA extérieure branchée** : Claude Code hors de l'application, l'extension Claude de VS Code, Codex.
 
-Dans la liste de l'IA, chaque outil s'appelle `mcp__malorean_notes__<outil>` (par exemple `mcp__malorean_notes__search_notes`). Le serveur compte **70 outils**, listés plus bas.
+Dans la liste de l'IA, chaque outil s'appelle `mcp__malorean_notes__<outil>` (par exemple `mcp__malorean_notes__search_notes`). Le serveur compte **73 outils**, listés plus bas.
 
 ## Brancher une IA extérieure
 
@@ -46,7 +46,7 @@ Tout se fait dans les Réglages, onglet **« Brancher une IA »**.
 
 ## Le protocole
 
-Une demande JSON-RPC par ligne, une réponse par ligne. Le serveur comprend `initialize` (sa présentation, avec la consigne générale sur les outils), `ping`, `tools/list` (les 70 outils, leur description et le schéma de leur entrée) et `tools/call`. Une autre méthode reçoit l'erreur `-32601` « méthode inconnue ».
+Une demande JSON-RPC par ligne, une réponse par ligne. Le serveur comprend `initialize` (sa présentation, avec la consigne générale sur les outils), `ping`, `tools/list` (les 73 outils, leur description et le schéma de leur entrée) et `tools/call`. Une autre méthode reçoit l'erreur `-32601` « méthode inconnue ».
 
 Un appel d'outil :
 
@@ -73,7 +73,7 @@ Dans les pages de ce dossier, les exemples donnent la partie `params` d'un appel
 - **La corbeille, jamais l'effacement** : jeter une note, un dossier ou une fiche de CRM les met dans la corbeille de l'application, à leur chemin d'origine ; l'utilisateur les restaure. Aucun outil n'efface un fichier.
 - **L'historique des versions** : un changement fait par un outil garde le texte d'avant comme version ; `list_versions` et `restore_version` l'annulent.
 - **Le cahier de recherche est en ajout seul** : on y écrit uniquement avec `add_entry`, une entrée à la fin ; `read_note` et `replace_in_note` le refusent.
-- **Un outil par sorte de contenu** : une note simple se lit avec `read_note` et se change avec `replace_in_note` ; une carte mentale, un canvas et un CRM ont leurs propres outils, et les outils des notes simples les refusent en nommant les bons.
+- **Un outil par sorte de contenu** : une note simple se lit avec `read_note` et se change avec `replace_in_note` ; une carte mentale, un canvas, un CRM et un agenda 12 ont leurs propres outils, et les outils des notes simples les refusent en nommant les bons (les événements d'un agenda 12 sont des notes simples pour eux).
 - **Les messages d'erreur sont en français** et disent quoi faire ; ce sont ceux de l'interface quand le geste existe à l'écran. Un appel refusé ne change rien.
 
 ## Liste des outils
@@ -186,6 +186,12 @@ Dans les pages de ce dossier, les exemples donnent la partie `params` d'un appel
 - [`change_crm_project`](crm.md#change_crm_project) : change un projet.
 - [`delete_crm_project`](crm.md#delete_crm_project) : met un projet à la corbeille.
 - [`change_crm_stages`](crm.md#change_crm_stages) : change les étapes (colonnes du Kanban entre `TODO` et `Done`).
+
+### Agenda 12 ([page](agenda-12.md))
+
+- [`read_agenda_12`](agenda-12.md#read_agenda_12) : lit un agenda 12 comme des données, case par case, dans l'ordre de la grille.
+- [`add_agenda_12_event`](agenda-12.md#add_agenda_12_event) : ajoute un événement à un agenda 12.
+- [`close_agenda_12_event`](agenda-12.md#close_agenda_12_event) : clôt un événement, avec ou sans copie pour le suivant.
 
 ## Références
 

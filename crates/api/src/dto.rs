@@ -3,6 +3,8 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+mod agenda_12;
+mod agenda_12_change;
 mod canvas;
 mod claude;
 mod claude_load;
@@ -18,6 +20,14 @@ mod templates;
 mod turn_settings;
 mod voice;
 
+pub use agenda_12::{
+    Agenda12CellItem, Agenda12ClosedItem, Agenda12EndItem, Agenda12EventDetailItem,
+    Agenda12EventItem, Agenda12Item, Agenda12LineItem, CountryItem, YearToneItem,
+};
+pub use agenda_12_change::{Agenda12ClosingItem, Agenda12EventChangeItem};
+pub(crate) use agenda_12_change::{
+    columns as agenda_12_columns, country as agenda_12_country, month as agenda_12_month,
+};
 pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
 pub use connection::{AiWorkspaceItem, ConnectionInfo, ConnectionKeyItem};
@@ -308,8 +318,8 @@ pub struct LinkingNoteItem {
     pub title: String,
     /// Le dossier de la note : `""` pour la racine.
     pub folder: String,
-    /// Son type de contenu, pour le CRM et ses fiches seulement (« Action · titre » à l'écran) ;
-    /// absent pour une note.
+    /// Son type de contenu, pour le CRM, ses fiches, l'agenda 12 et ses événements seulement
+    /// (« Action · titre » à l'écran) ; absent pour une note.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub content_type: Option<ContentTypeItem>,
@@ -317,6 +327,10 @@ pub struct LinkingNoteItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub crm: Option<String>,
+    /// Pour un événement d'un agenda 12, le chemin de son agenda 12, où l'ouvrir ; absent sinon.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub agenda: Option<String>,
 }
 
 /// Une note de la corbeille.

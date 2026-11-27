@@ -309,6 +309,27 @@ fn a_crm_fiche_has_no_star() {
 }
 
 #[test]
+fn an_agenda_12_has_a_star_but_not_its_events() {
+    let workspace = with_favorites(
+        "",
+        &[
+            ("salons.md", "---\ntype: agenda-12\n---\n# Salons"),
+            (
+                "salons/x.md",
+                "---\ntype: agenda-12-evenement\nmois: 2\n---\n# X",
+            ),
+        ],
+    );
+    workspace.favorites().add(&path("salons.md")).unwrap();
+    assert_eq!(workspace.text("favoris.md"), "- [[Salons]]\n");
+    assert_eq!(
+        workspace.favorites().add(&path("salons/x.md")),
+        Err(AppError::EventHasNoStar)
+    );
+    assert_eq!(workspace.text("favoris.md"), "- [[Salons]]\n");
+}
+
+#[test]
 fn the_favorites_note_is_not_its_own_favorite() {
     let workspace = with_favorites("# Favoris\n- [[Favoris]]\n", &[]);
     let favorites = workspace.favorites();

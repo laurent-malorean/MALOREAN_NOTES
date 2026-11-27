@@ -7,7 +7,7 @@ use crate::front_matter::is_pinned;
 use crate::mind_map::searchable_text;
 use crate::tag::{file_tags, sort_key};
 use crate::title::displayed_title_of_note;
-use crate::{ContentType, NotePath, canvas, crm};
+use crate::{ContentType, NotePath, agenda_12, canvas, crm};
 
 /// Date de dernière modification, en millisecondes depuis le 1er janvier 1970.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -64,7 +64,8 @@ impl NoteSummary {
     /// Le résumé d'une note : son titre affiché, son épinglage, ses étiquettes et son type de
     /// contenu (la propriété `type:` de l'en-tête, fiche 0041) sont tirés de son contenu ; une
     /// note n'a pas de conteneur, sauf une fiche du CRM rangée dans le dossier de sa sorte : son
-    /// CRM est son conteneur (fiche 0058).
+    /// CRM est son conteneur (fiche 0058), et un événement d'agenda 12 rangé dans le dossier d'un
+    /// agenda 12 ou dans ses archives : cet agenda 12 est son conteneur (fiche 0104).
     #[must_use]
     pub fn new(path: NotePath, content: &str, modified: Modified) -> Self {
         let title = displayed_title_of_note(content, path.name());
@@ -72,7 +73,12 @@ impl NoteSummary {
         let tags = file_tags(path.name(), content);
         let container = content_type
             .crm_kind()
-            .and_then(|kind| kind.container_of(&path));
+            .and_then(|kind| kind.container_of(&path))
+            .or_else(|| {
+                (content_type == ContentType::Agenda12Event)
+                    .then(|| agenda_12::event_place(&path).map(|place| place.agenda))
+                    .flatten()
+            });
         Self {
             path,
             title,
@@ -130,12 +136,16 @@ impl NoteSummary {
 
     /// Ce que la recherche par les mots lit de cette note, de texte `content` : son texte, sauf
     /// pour une carte mentale (son titre et ses étiquettes ; ses nœuds sont cherchés à part), un
-    /// canvas (les textes qu'il montre, pas son JSON), le CRM et ses fiches (leur texte utile).
+    /// canvas (les textes qu'il montre, pas son JSON), le CRM et ses fiches (leur texte utile), un
+    /// événement d'un agenda 12 (son texte, sa ville, son pays et ses étiquettes).
     #[must_use]
     pub fn searched_text<'a>(&self, content: &'a str) -> Cow<'a, str> {
         match self.content_type {
             ContentType::MindMap => Cow::Owned(searchable_text(self)),
             ContentType::Canvas => Cow::Owned(canvas::indexed_text(&self.title, content)),
+            ContentType::Agenda12Event => {
+                agenda_12::searchable_text(content).map_or(Cow::Borrowed(content), Cow::Owned)
+            }
             _ => match crm::searchable_text(self, content) {
                 Some(text) => Cow::Owned(text),
                 None => Cow::Borrowed(content),
@@ -284,6 +294,25 @@ mod tests {
     }
 
     #[test]
+    fn an_event_of_an_agenda_12_has_its_agenda_for_container_open_or_closed() {
+        let event = "---\ntype: agenda-12-evenement\nmois: 2\n---\n# Salon";
+        let agenda = Some(NotePath::parse("pro/salons.md").unwrap());
+        let open = note("pro/salons/salon.md", event, 0);
+        assert_eq!(open.content_type(), ContentType::Agenda12Event);
+        assert_eq!(open.container(), agenda.as_ref());
+        let closed = note("pro/salons/archives/salon.md", event, 0);
+        assert_eq!(closed.container(), agenda.as_ref());
+        let at_root = note("salon.md", event, 0);
+        assert_eq!(at_root.content_type(), ContentType::Agenda12Event);
+        assert_eq!(at_root.container(), None);
+        let itself = note("pro/salons.md", "---\ntype: agenda-12\n---\n# Salons", 0);
+        assert_eq!(itself.content_type(), ContentType::Agenda12);
+        assert_eq!(itself.container(), None);
+        let ordinary = note("pro/salons/note.md", "# Note", 0);
+        assert_eq!(ordinary.container(), None);
+    }
+
+    #[test]
     fn the_words_search_reads_the_text_each_kind_of_note_makes_useful() {
         let text =
             |path: &str, content: &str| note(path, content, 0).searched_text(content).into_owned();
@@ -302,6 +331,13 @@ mod tests {
                 "---\ntype: crm-projet\ncouleur: bleu\n---\n# P\n"
             ),
             "P"
+        );
+        assert_eq!(
+            text(
+                "a/e.md",
+                "---\ntype: agenda-12-evenement\nmois: 2\nville: Lyon\n---\n# E\n"
+            ),
+            "Lyon\n# E\n"
         );
     }
 

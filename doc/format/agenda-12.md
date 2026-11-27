@@ -2,7 +2,7 @@
 
 Ce document est la seule description du format de fichiers d'un agenda 12 : le fichier de l'agenda 12, son dossier des événements, ses archives et le fichier d'un événement. Il suffit pour lire ou écrire un agenda 12 avec un autre outil (Obsidian, un script, une IA) sans lire le code de l'application. Ce que l'écran montre et les gestes qui changent un agenda 12 sont dans `doc/specs/agenda-12.md`.
 
-Format validé par l'utilisateur le 27/11 (clés en français, dates en champs séparés, pays par son code, archives dans un sous-dossier) ; la spécification reste à valider.
+Format validé par l'utilisateur le 27/11 (clés en français, dates en champs séparés, pays par son code, archives dans un sous-dossier), comme la spécification.
 
 Les règles communes à toute note ne sont pas redites ici : forme générale de l'en-tête, titre, nom de fichier, liens entre notes, étiquettes (`tags`) et pièces jointes sont décrits dans `doc/format/note.md` ; l'espace de travail et la corbeille dans `doc/format/espace-de-travail.md`. Un agenda 12 et ses événements sont des notes : tout ce qui vaut pour une note vaut pour eux, sauf ce que ce document précise.
 
@@ -46,6 +46,7 @@ Règles de lecture de `type:` : les mêmes que pour le CRM (`doc/format/crm.md`,
   - un fichier rangé plus profond (`salons/2027/x.md`, `salons/archives/2026/x.md`) n'est pas lu ;
   - un fichier sans ce `type:` (une note ordinaire posée dans `salons/`) n'est pas lu ;
   - un fichier `.canvas` n'est jamais un événement.
+- Un fichier posé directement dans un dossier nommé `archives` est un événement clos de l'agenda 12 du dossier au-dessus (`salons/archives/x.md` appartient à `salons.md`) : si `salons/archives.md` était lui-même un agenda 12, ce serait toujours la clôture qui l'emporterait.
 - Seul le sous-dossier nommé exactement `archives` est celui des événements clos. Un autre sous-dossier est ignoré par l'agenda 12.
 - L'agenda 12 d'un événement se déduit uniquement de son chemin : `pro/salons/x.md` et `pro/salons/archives/x.md` appartiennent à `pro/salons.md`. Aucune propriété de l'événement ne nomme son agenda 12.
 - **Ouvert ou clos** se déduit uniquement du dossier : un événement dans `archives/` est clos, un événement hors de `archives/` est ouvert, quelle que soit la clé `clos-le`.
@@ -121,7 +122,7 @@ type: agenda-12
 
 - Avec une année, le jour doit exister ce mois-là (pas de 31 avril, pas de 29 février 2027). Sans année, le jour doit exister pour au moins une année (le 29 février est permis, pas le 30).
 - La fin suit les mêmes règles, avec l'année du début (ou l'année suivante quand la fin passe l'année, voir ci-dessous).
-- **Fin dans le même mois** (`mois-fin` absente) : `jour-fin` est après `jour`. Égal au jour du début, l'événement tient sur un jour (la fin est ignorée à la lecture).
+- **Fin dans le même mois** (`mois-fin` absente) : `jour-fin` est après `jour`. Égal au jour du début, l'événement tient sur un jour (la fin est ignorée à la lecture, et l'application ne l'écrit pas à la saisie).
 - **Fin un autre mois** : un `mois-fin` plus grand que `mois` est dans la même année (30 janvier → 2 février) ; un `mois-fin` plus petit passe à l'année suivante (30 décembre → 2 janvier). Un `mois-fin` égal à `mois` vaut une fin dans le même mois.
 - `jour-fin` sans `jour`, `mois-fin` sans `jour-fin`, une fin avant le début : la fin est illisible et ignorée ; l'événement reste lisible, sans fin.
 - `mois` absent ou illisible : l'événement est **illisible** (laissé de côté et signalé, jamais effacé). Un autre champ illisible est seulement ignoré : l'événement reste dans sa case, sans ce champ.

@@ -405,6 +405,6 @@ pub(super) fn described(tool: AppTool) -> Described {
         AppTool::ChangeCrmProject => change_crm_project(),
         AppTool::DeleteCrmProject => delete_crm_project(),
         AppTool::ChangeCrmStages => change_crm_stages(),
-        _ => unreachable!("un outil qui n'est pas du CRM est décrit par le catalogue"),
+        _ => super::agenda_12::described(tool),
     }
 }

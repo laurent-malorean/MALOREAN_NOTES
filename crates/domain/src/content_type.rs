@@ -2,6 +2,7 @@
 //! cahier de recherche, et l'entrée d'un cahier de recherche.
 
 use crate::FileName;
+use crate::agenda_12::{AGENDA_TYPE, EVENT_TYPE};
 use crate::crm::CrmKind;
 use crate::front_matter::declared_type;
 
@@ -34,11 +35,16 @@ pub enum ContentType {
     CrmAction,
     /// Un projet d'un CRM, déclaré par `type: crm-projet` ; son CRM est son conteneur.
     CrmProject,
+    /// Un agenda 12, déclaré par `type: agenda-12` (fiche 0104).
+    Agenda12,
+    /// Un événement d'un agenda 12, déclaré par `type: agenda-12-evenement` ; son agenda 12 est son
+    /// conteneur.
+    Agenda12Event,
 }
 
 impl ContentType {
     /// Tous les types de contenu : ce sur quoi porte une recherche par défaut.
-    pub const ALL: [Self; 11] = [
+    pub const ALL: [Self; 13] = [
         Self::Note,
         Self::ResearchNotebook,
         Self::MindMap,
@@ -50,10 +56,12 @@ impl ContentType {
         Self::CrmPerson,
         Self::CrmAction,
         Self::CrmProject,
+        Self::Agenda12,
+        Self::Agenda12Event,
     ];
 
     /// Les types qu'une note (un fichier) peut avoir.
-    pub const FILES: [Self; 9] = [
+    pub const FILES: [Self; 11] = [
         Self::Note,
         Self::ResearchNotebook,
         Self::MindMap,
@@ -63,6 +71,8 @@ impl ContentType {
         Self::CrmPerson,
         Self::CrmAction,
         Self::CrmProject,
+        Self::Agenda12,
+        Self::Agenda12Event,
     ];
 
     /// Le nom du type, tel que l'écrit la propriété `type:` d'un en-tête et que l'index le
@@ -81,6 +91,8 @@ impl ContentType {
             Self::CrmPerson => CrmKind::Person.name(),
             Self::CrmAction => CrmKind::Action.name(),
             Self::CrmProject => CrmKind::Project.name(),
+            Self::Agenda12 => AGENDA_TYPE,
+            Self::Agenda12Event => EVENT_TYPE,
         }
     }
 
@@ -157,7 +169,9 @@ mod tests {
                 "crm-entreprise",
                 "crm-personne",
                 "crm-action",
-                "crm-projet"
+                "crm-projet",
+                "agenda-12",
+                "agenda-12-evenement"
             ]
         );
     }
@@ -172,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn only_notes_notebooks_mind_maps_canvases_and_the_crm_are_files() {
+    fn only_notes_notebooks_mind_maps_canvases_the_crm_and_the_agenda_12_are_files() {
         assert_eq!(
             ContentType::FILES,
             [
@@ -185,8 +199,32 @@ mod tests {
                 ContentType::CrmPerson,
                 ContentType::CrmAction,
                 ContentType::CrmProject,
+                ContentType::Agenda12,
+                ContentType::Agenda12Event,
             ]
         );
+    }
+
+    #[test]
+    fn an_agenda_12_and_its_events_have_the_type_their_header_declares() {
+        assert_eq!(
+            ContentType::of("---\ntype: agenda-12\n---\n# S\n"),
+            ContentType::Agenda12
+        );
+        assert_eq!(
+            ContentType::of("---\ntype: 'agenda-12-evenement'\nmois: 2\n---\n# S\n"),
+            ContentType::Agenda12Event
+        );
+        assert_eq!(
+            ContentType::of("---\ntype: agenda-12-\n---\n"),
+            ContentType::Note
+        );
+        assert_eq!(
+            ContentType::of("---\ntype: Agenda-12\n---\n"),
+            ContentType::Note
+        );
+        assert_eq!(ContentType::Agenda12.crm_kind(), None);
+        assert_eq!(ContentType::Agenda12Event.crm_kind(), None);
     }
 
     #[test]

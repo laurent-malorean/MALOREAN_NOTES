@@ -2,6 +2,7 @@
 //! aide à l'écriture, événements de Claude Code, outils de l'application.
 //! Aucun accès au disque, à l'horloge ni au réseau.
 
+pub mod agenda_12;
 pub mod app_tools;
 pub mod attachment_name;
 pub mod attachments;

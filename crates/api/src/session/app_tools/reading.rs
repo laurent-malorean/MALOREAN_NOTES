@@ -30,12 +30,16 @@ struct FoundNote {
     /// des mots aussi), s'il y avait des mots cherchés (fiche 0086).
     #[serde(skip_serializing_if = "Option::is_none")]
     matches: Option<usize>,
-    /// Pour le CRM ou une fiche d'un CRM : son type de contenu (`crm`, `crm-action`…).
+    /// Pour le CRM, une fiche d'un CRM, un agenda 12 ou un événement : son type de contenu (`crm`,
+    /// `crm-action`, `agenda-12-evenement`…).
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     content_type: Option<&'static str>,
     /// Pour une fiche d'un CRM : le chemin de son CRM.
     #[serde(skip_serializing_if = "Option::is_none")]
     crm: Option<String>,
+    /// Pour un événement d'un agenda 12 : le chemin de son agenda 12.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    agenda: Option<String>,
     /// Pour un nœud d'une carte mentale : son chemin dans la carte (`1.0.2`) ; `path` est alors le
     /// fichier de la carte.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -48,12 +52,16 @@ struct LinkingNote {
     path: String,
     title: String,
     folder: String,
-    /// Pour une fiche d'un CRM : son type de contenu (`crm-action`…).
+    /// Pour une fiche d'un CRM ou un événement d'un agenda 12 : son type de contenu (`crm-action`,
+    /// `agenda-12-evenement`…).
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     content_type: Option<&'static str>,
     /// Pour une fiche d'un CRM : le chemin de son CRM.
     #[serde(skip_serializing_if = "Option::is_none")]
     crm: Option<String>,
+    /// Pour un événement d'un agenda 12 : le chemin de son agenda 12.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    agenda: Option<String>,
 }
 
 /// Le texte d'une note simple, tel que Claude le reçoit (fiche 0076) : `header` suivi de `body`
@@ -95,16 +103,37 @@ fn content_types(arguments: &Value) -> Result<Vec<ContentType>, String> {
                         .join(", ");
                     format!(
                         "type de contenu inconnu : « {name} » ; ceux d'une note : « note », \
-                         « cahier-de-recherche », « carte-mentale », {crm_types}"
+                         « cahier-de-recherche », « carte-mentale », {crm_types}, \
+                         « agenda-12 », « agenda-12-evenement »"
                     )
                 })
         },
     )
 }
 
-/// Le nom du type de contenu d'un CRM ou de l'une de ses fiches ; rien pour le reste.
-fn crm_type_of(content_type: ContentType) -> Option<&'static str> {
-    content_type.crm_kind().map(|_| content_type.name())
+/// Le nom du type de contenu d'un CRM, de l'une de ses fiches, d'un agenda 12 ou d'un événement ;
+/// rien pour le reste.
+fn typed_name_of(content_type: ContentType) -> Option<&'static str> {
+    let typed = content_type.crm_kind().is_some()
+        || matches!(
+            content_type,
+            ContentType::Agenda12 | ContentType::Agenda12Event
+        );
+    typed.then(|| content_type.name())
+}
+
+/// Le chemin du CRM d'une fiche et celui de l'agenda 12 d'un événement, tirés du conteneur d'une
+/// note.
+fn containers_of(
+    content_type: ContentType,
+    container: Option<&NotePath>,
+) -> (Option<String>, Option<String>) {
+    let path = container.map(NotePath::to_path);
+    if content_type == ContentType::Agenda12Event {
+        (None, path)
+    } else {
+        (path, None)
+    }
 }
 
 fn excerpt_text(parts: &[ExcerptPart]) -> String {
@@ -192,8 +221,9 @@ impl Session {
                 matches: excerpts
                     .as_ref()
                     .and_then(|found| found.get(note.path()).and_then(|(_, matches)| *matches)),
-                content_type: crm_type_of(note.content_type()),
-                crm: note.container().map(NotePath::to_path),
+                content_type: typed_name_of(note.content_type()),
+                crm: containers_of(note.content_type(), note.container()).0,
+                agenda: containers_of(note.content_type(), note.container()).1,
                 node: None,
             })
             .collect();
@@ -234,6 +264,7 @@ impl Session {
                 matches: node.matches,
                 content_type: None,
                 crm: None,
+                agenda: None,
                 node: node.node,
             })
             .collect())
@@ -248,11 +279,12 @@ impl Session {
             &linking
                 .into_iter()
                 .map(|note| LinkingNote {
-                    content_type: note.content_type.and_then(super::meaning::crm_type_of),
+                    content_type: note.content_type.and_then(super::meaning::typed_name_of),
                     path: note.path,
                     title: note.title,
                     folder: note.folder,
                     crm: note.crm,
+                    agenda: note.agenda,
                 })
                 .collect::<Vec<_>>(),
         )

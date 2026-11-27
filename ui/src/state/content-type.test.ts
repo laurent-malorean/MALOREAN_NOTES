@@ -16,6 +16,15 @@ describe("type de contenu", () => {
     expect(contentTypeLabel("crmProject")).toBe("Projet");
   });
 
+  it("l'agenda 12 et ses événements ont leur nom", () => {
+    expect(contentTypeLabel("agenda12")).toBe("Agenda 12");
+    expect(contentTypeLabel("agenda12Event")).toBe("Événement");
+  });
+
+  it("un événement est suivi du titre de son agenda 12", () => {
+    expect(placeLabel("agenda12Event", "Salons")).toBe("Événement · Salons");
+  });
+
   it("une fiche est suivie du titre de son CRM", () => {
     expect(placeLabel("crmPerson", "Clients")).toBe("Personne · Clients");
   });

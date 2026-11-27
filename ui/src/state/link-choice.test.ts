@@ -78,6 +78,8 @@ describe("icône d'un contenu liable", () => {
       crmPerson: "crm",
       crmAction: "crm",
       crmProject: "crm",
+      agenda12: "note",
+      agenda12Event: "note",
     };
     for (const [type, icon] of Object.entries(icons)) {
       expect(linkIcon(item("x", { contentType: type as ContentTypeItem }))).toBe(icon);

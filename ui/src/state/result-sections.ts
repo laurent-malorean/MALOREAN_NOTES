@@ -14,6 +14,7 @@ const SECTIONS: readonly { readonly title: string; readonly types: readonly Cont
     { title: "Cartes mentales", types: ["mindMap", "node"] },
     { title: "Cahiers de recherche", types: ["researchNotebook", "entry"] },
     { title: "CRM", types: ["crm", "crmAction", "crmProject", "crmPerson", "crmCompany"] },
+    { title: "Agendas 12", types: ["agenda12", "agenda12Event"] },
     { title: "Notes", types: ["note"] },
   ];
 

@@ -3,4 +3,4 @@
 /**
  * Le type de contenu d'un élément de l'index.
  */
-export type ContentTypeItem = "note" | "researchNotebook" | "mindMap" | "canvas" | "entry" | "node" | "crm" | "crmCompany" | "crmPerson" | "crmAction" | "crmProject";
+export type ContentTypeItem = "note" | "researchNotebook" | "mindMap" | "canvas" | "entry" | "node" | "crm" | "crmCompany" | "crmPerson" | "crmAction" | "crmProject" | "agenda12" | "agenda12Event";
