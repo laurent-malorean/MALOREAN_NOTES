@@ -398,6 +398,16 @@ mod tests {
     }
 
     #[test]
+    fn a_crm_whose_title_changes_only_in_capitals_keeps_its_file_and_its_fiches() {
+        let w = crm_workspace();
+        let renamed = w.rename("toto/clients.md", "CLIENTS").unwrap();
+        assert_eq!(renamed.path, path("toto/clients.md"));
+        assert_eq!(renamed.content, "---\ntype: crm\n---\n# CLIENTS\n");
+        assert!(w.exists("toto/clients/entreprises/acme.md"));
+        assert!(w.exists("toto/clients/actions/2026-11-10-devis.md"));
+    }
+
+    #[test]
     fn a_crm_without_fiche_is_renamed_alone() {
         let w = workspace(&[("clients.md", "---\ntype: crm\n---\n# Clients\n")]);
         assert_eq!(
