@@ -3,11 +3,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use domain::{AttachmentName, FileName, Folder, MeaningModel, Modified, Moment, NotePath};
+use domain::{AttachmentName, FileName, Folder, Modified, Moment, NotePath};
 
 use crate::{
-    AttachmentLocation, Clock, IndexedNote, NoteStamp, NoteStore, Preferences, StoreError,
-    StoredNote, TrashContents, Workspaces,
+    AttachmentLocation, Clock, IndexedNote, NoteStamp, NoteStore, StoreError, StoredNote,
+    TrashContents,
 };
 
 /// Emplacement fictif d'une pièce jointe en mémoire.
@@ -510,55 +510,6 @@ fn stored(name: &NotePath, content: &str, modified: Modified) -> StoredNote {
         path: name.clone(),
         content: content.to_owned(),
         modified,
-    }
-}
-
-/// Préférences en mémoire.
-#[derive(Debug)]
-pub struct FakePreferences {
-    workspaces: Mutex<Workspaces>,
-    meaning_model: Mutex<MeaningModel>,
-}
-
-impl Default for FakePreferences {
-    fn default() -> Self {
-        Self {
-            workspaces: Mutex::default(),
-            meaning_model: Mutex::new(MeaningModel::DEFAULT),
-        }
-    }
-}
-
-impl Preferences for FakePreferences {
-    fn workspaces(&self) -> Result<Workspaces, StoreError> {
-        Ok(self
-            .workspaces
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .clone())
-    }
-
-    fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError> {
-        *self
-            .workspaces
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner) = workspaces.clone();
-        Ok(())
-    }
-
-    fn meaning_model(&self) -> Result<MeaningModel, StoreError> {
-        Ok(*self
-            .meaning_model
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner))
-    }
-
-    fn save_meaning_model(&self, model: MeaningModel) -> Result<(), StoreError> {
-        *self
-            .meaning_model
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner) = model;
-        Ok(())
     }
 }
 

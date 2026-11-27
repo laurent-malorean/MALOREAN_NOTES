@@ -21,6 +21,8 @@ import type { EffortItem } from "./generated/EffortItem";
 import type { EntryItem } from "./generated/EntryItem";
 import type { FavoritesNoteItem } from "./generated/FavoritesNoteItem";
 import type { RemovedLineItem } from "./generated/RemovedLineItem";
+import type { VoiceEventItem } from "./generated/VoiceEventItem";
+import type { VoiceInputStatusItem } from "./generated/VoiceInputStatusItem";
 import type { CanvasArrowItem } from "./generated/CanvasArrowItem";
 import type { CanvasCardItem } from "./generated/CanvasCardItem";
 import type { CanvasFileItem } from "./generated/CanvasFileItem";
@@ -552,3 +554,23 @@ const MODEL_DOWNLOAD_EVENT = "model-download";
 /** Prévient de l'avancement du téléchargement d'un modèle de sens. */
 export const onModelDownload = (handler: (progress: ModelDownloadItem) => void) =>
   listen<ModelDownloadItem>(MODEL_DOWNLOAD_EVENT, (event) => handler(event.payload));
+
+/** L'état de la saisie vocale : le micro peut-il servir, l'accès, la langue utilisée, les langues du Mac. */
+export const voiceInputStatus = () => invoke<VoiceInputStatusItem>("voice_input_status");
+/** Choisit la langue de la saisie vocale (`id` comme `fr-FR`) ; `null` : la langue du Mac. Refusé pendant l'écoute. */
+export const chooseVoiceLanguage = (language: string | null) =>
+  invoke<null>("choose_voice_language", { language });
+/** Prépare le modèle d'une langue (le télécharge s'il manque) ; rend la main quand il est prêt. */
+export const prepareVoiceLanguage = (language: string) =>
+  invoke<null>("prepare_voice_language", { language });
+/** Démarre la saisie vocale et rend la main aussitôt ; la suite arrive par `onVoiceInputEvent`. */
+export const startVoiceInput = () => invoke<null>("start_voice_input");
+/** Arrête la saisie vocale en cours (sans effet s'il n'y en a pas) : le texte provisoire est fixé, puis vient la fin. */
+export const stopVoiceInput = () => invoke<null>("stop_voice_input");
+/** Ouvre la page Confidentialité des réglages de macOS, où l'on rend l'accès au micro. */
+export const openVoicePrivacySettings = () => invoke<null>("open_voice_privacy_settings");
+/** Même nom côté Rust (`VOICE_INPUT_EVENT`). */
+const VOICE_INPUT_EVENT = "voice-input-event";
+/** Les événements de la saisie vocale, dans l'ordre, jusqu'à `ended`. */
+export const onVoiceInputEvent = (handler: (event: VoiceEventItem) => void) =>
+  listen<VoiceEventItem>(VOICE_INPUT_EVENT, (event) => handler(event.payload));

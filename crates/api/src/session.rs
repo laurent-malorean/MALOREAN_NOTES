@@ -29,6 +29,7 @@ mod saving;
 mod tags;
 mod templates;
 mod trash;
+mod voice;
 mod watching;
 mod workspace;
 mod writing;
@@ -77,6 +78,8 @@ pub struct Session {
     exports: Option<Arc<dyn ExportStore>>,
     clipboard: Option<Arc<dyn Clipboard>>,
     assistant: Option<Arc<dyn WritingAssistant>>,
+    /// La saisie vocale (fiche 0103) ; sans elle, elle se dit indisponible.
+    voice: Option<application::use_cases::VoiceInput>,
     claude: Option<Arc<dyn ClaudeCode>>,
     /// Les outils de l'application, ouverts pendant un tour de la colonne Claude Code.
     tools_turn: Mutex<Option<app_tools::ToolsTurn>>,
@@ -145,6 +148,7 @@ impl Session {
             exports: None,
             clipboard: None,
             assistant: None,
+            voice: None,
             claude: None,
             tools_turn: Mutex::new(None),
             connection: None,

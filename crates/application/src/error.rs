@@ -131,6 +131,10 @@ pub enum AppError {
     /// Le modèle n'a pas pu répondre ; la cause est lisible.
     #[error("l'aide à l'écriture a échoué : {0}")]
     AssistantFailed(String),
+    /// La saisie vocale ne démarre pas ou ne peut pas changer de langue ; le message est prêt à
+    /// afficher.
+    #[error("{0}")]
+    Voice(#[from] domain::voice_input::VoiceFailure),
     /// L'entrée n'est pas ajoutée au cahier de recherche ; la raison est lisible.
     #[error("{0}")]
     EntryRefused(#[from] RefusedEntry),

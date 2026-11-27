@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>com.malorean.notes.voice</string>
+<key>CFBundleName</key><string>malorean-voice</string>
+<key>NSMicrophoneUsageDescription</key><string>MALOREAN Notes écoute le micro pour écrire ce que vous dictez. Le son reste sur votre Mac : il n'est ni envoyé ni enregistré.</string>
+<key>NSSpeechRecognitionUsageDescription</key><string>MALOREAN Notes transcrit votre voix en texte avec la reconnaissance vocale de votre Mac. Le son reste sur votre Mac : il n'est ni envoyé ni enregistré.</string>
+</dict></plist>

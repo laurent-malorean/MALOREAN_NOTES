@@ -11,11 +11,11 @@ use application::{
     WorkspaceLocation,
 };
 use infrastructure::{
-    AppToolsRelay, AppleWritingAssistant, CONNECT_OPTION, ClaudeCodeCli, FsConnectionKeys,
-    FsExportStore, FsHistories, FsPendingGesturesOpener, FsWorkspaceOpener, FsWorkspaceWatcher,
-    JsonPreferences, KeptModels, MacClipboard, ModelFolder, PermanentSocket, RELAY_OPTION,
-    SocketPlace, SqliteIndexes, SystemClock, SystemSecretMaker, SystemUptime, claude_folders,
-    connect, relay,
+    AppToolsRelay, AppleTranscriber, AppleWritingAssistant, CONNECT_OPTION, ClaudeCodeCli,
+    FsConnectionKeys, FsExportStore, FsHistories, FsPendingGesturesOpener, FsWorkspaceOpener,
+    FsWorkspaceWatcher, JsonPreferences, KeptModels, MacClipboard, ModelFolder, PermanentSocket,
+    RELAY_OPTION, SocketPlace, SqliteIndexes, SystemClock, SystemSecretMaker, SystemUptime,
+    claude_folders, connect, relay,
 };
 use tauri::{Manager, RunEvent};
 
@@ -144,7 +144,7 @@ fn open_connection(session: &Arc<Session>, socket: &PermanentSocket) {
 
 /// La session avec ses stockages : espaces de travail, index de mots et de sens, modèles de sens
 /// (dans le dossier de support de l'application, `models/`), historique, surveillance, exports,
-/// presse-papiers et aide à l'écriture. Sans modèle de sens téléchargé, la recherche se fait par
+/// presse-papiers, aide à l'écriture et saisie vocale. Sans modèle de sens téléchargé, la recherche se fait par
 /// les mots seuls.
 fn base_session(
     app: &tauri::App,
@@ -171,7 +171,12 @@ fn base_session(
     .with_watcher(Arc::new(FsWorkspaceWatcher))
     .with_exports(Arc::new(FsExportStore))
     .with_clipboard(Arc::new(MacClipboard::default()))
-    .with_writing_assistant(Arc::new(AppleWritingAssistant::installed())))
+    .with_writing_assistant(Arc::new(AppleWritingAssistant::installed()))
+    .with_voice_input(
+        Arc::new(AppleTranscriber::installed()),
+        Arc::new(commands::voice::TauriVoiceEvents(app.handle().clone())),
+        Arc::new(SystemUptime::default()),
+    ))
 }
 
 /// Prépare l'application au lancement : préférences, session avec ses stockages, outils de
@@ -248,6 +253,7 @@ fn main() {
                 let session = app.state::<Arc<Session>>();
                 session.keep_pending_versions();
                 session.stop_meaning();
+                session.stop_voice_input();
             }
         }),
         Err(error) => {

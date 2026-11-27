@@ -13,5 +13,7 @@ exclude_globs = ["crates/application/src/testing/*contract.rs"]
 
 # Commandes qui ouvrent une fenêtre de choix du Mac (enregistrement, dossier) : le simulateur de
 # Tauri n'a pas ces fenêtres, aucun test automatique ne peut les ouvrir. Ce qu'elles font du
-# choix est testé à part (`Session::chosen_export`, `Session::chosen_folder`).
-exclude_re = ["choose_export_file", "choose_workspace_folder"]
+# choix est testé à part (`Session::chosen_export`, `Session::chosen_folder`). Et la commande qui
+# ouvre les réglages de confidentialité de macOS (le simulateur n'a pas le module d'ouverture, et
+# un test ouvrirait vraiment les réglages de la personne qui le joue).
+exclude_re = ["choose_export_file", "choose_workspace_folder", "open_voice_privacy_settings"]

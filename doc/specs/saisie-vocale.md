@@ -105,3 +105,47 @@ Une saisie vocale, du clic de départ à l'arrêt, forme **une seule étape d'an
 4. Une saisie vocale = une étape d'annulation.
 5. Langue par défaut : celle du Mac, réglable dans Réglages > Saisie vocale.
 6. Périmètre : éditeurs de texte seulement, pas les champs de formulaire.
+
+## 13. Contrat du moteur
+
+Ce que le moteur offre à l'interface (fiche 0103). Les arguments sont en camelCase ; une erreur est un objet `{ message }` dont le message est en français, prêt à afficher. Les types sont générés dans `ui/src/bridge/generated/` (`VoiceInputStatusItem`, `VoiceLanguageItem`, `VoiceAccessItem`, `VoiceEventItem`) et le pont est dans `ui/src/bridge/index.ts`. Aucune commande ne dépend de l'espace de travail ouvert.
+
+### Types
+
+- `VoiceInputStatusItem`, un objet à `kind` :
+  - `{ kind: "available", access: "allowed" | "denied" | "undecided", language: string | null, languageName: string | null, usingMacLanguage: boolean, languages: VoiceLanguageItem[], listening: boolean }` : le moteur répond. `access` est l'autorisation du micro (`undecided` : le premier clic la demande ; `denied` : micro grisé, § 8). `language` est la langue utilisée (la langue choisie, sinon celle du Mac ; `null` si le Mac n'en propose aucune), `usingMacLanguage` vaut vrai tant qu'aucune langue n'est choisie. `listening` : une saisie vocale est en cours (ou se termine).
+  - `{ kind: "unavailable", code: "systemTooOld" | "engineMissing", message: string }` : micro grisé, l'info-bulle dit `message` (« Saisie vocale : macOS 26 minimum » ; « Le moteur de la saisie vocale est introuvable : réinstallez l'application. »).
+- `VoiceLanguageItem` : `{ id: string, name: string, ready: boolean }` : une langue que macOS sait transcrire (`fr-FR`, « français (France) », triées par nom) ; `ready` faux : son modèle n'est pas encore sur le Mac, le premier usage le télécharge (« préparation », § 7).
+- `VoiceEventItem`, un objet à `kind` (événement `voice-input-event`) :
+  - `{ kind: "preparing" }` : le modèle de la langue se télécharge ; le micro tourne (« préparation ») ;
+  - `{ kind: "listening" }` : le micro écoute ;
+  - `{ kind: "provisional", text }` : le texte provisoire, **en entier** : il remplace le précédent ; `text` vide : le décor s'efface ;
+  - `{ kind: "fixed", text }` : le texte fixé, à écrire dans la note au curseur ; le texte provisoire repart de zéro. Le texte est celui du moteur, sans blanc ajouté ni retiré : le blanc entre deux phrases fixées (§ 5.5) est à l'interface ;
+  - `{ kind: "level", value }` : le niveau sonore de 0 à 1 (environ dix par seconde) pour le témoin ;
+  - `{ kind: "silence", message }` : trente secondes sans parole ; `message` est « Saisie vocale arrêtée : silence » ; l'écoute s'arrête, `ended` suit ;
+  - `{ kind: "failed", reason, message }` : la saisie vocale s'arrête ; `message` est à montrer tel quel comme les autres erreurs ; `reason` : `accessDenied` (« La saisie vocale a besoin du micro et de la reconnaissance vocale. » : griser le micro, proposer « Ouvrir les réglages de macOS »), `noMicrophone` (« Aucun micro disponible. »), `stopped` (« La saisie vocale s'est arrêtée. »), `languageUnsupported`, `languageDownload` (« Le modèle de la langue n'a pas pu être téléchargé : vérifiez la connexion, puis réessayez. » : proposer de réessayer), `systemTooOld`, `engineMissing`. `ended` suit toujours ;
+  - `{ kind: "ended" }` : fin ; plus aucun événement ne suit, le micro revient au repos.
+- Ordre garanti : `preparing` (si le modèle manque) puis `listening`, puis des `provisional`, `fixed` et `level` mêlés, puis éventuellement `silence` ou `failed`, puis `ended`, **toujours en dernier**, une seule fois par saisie vocale. À l'arrêt, le texte provisoire en cours est d'abord rendu en `fixed` (jamais perdu), y compris avant un `failed` : le moteur applique § 5.1, l'interface n'a qu'à écrire chaque `fixed`.
+
+### Commandes
+
+- `voice_input_status()` → `VoiceInputStatusItem`. À appeler à l'ouverture de l'application, à l'ouverture des Réglages (onglet « Saisie vocale »), après un choix de langue et après un échec. Chaque appel lance le moteur quelques dizaines de millisecondes : pas en boucle. Erreur : préférences illisibles.
+- `choose_voice_language({ language })` → rien : garde la langue (`id` de `languages`) pour toute l'application ; `null` : revient à la langue du Mac. Erreurs : « Cette langue n'est pas prise en charge par la saisie vocale. » ; « Arrêtez la saisie vocale avant de changer de langue. » (§ 7) ; moteur indisponible (message de `unavailable`).
+- `prepare_voice_language({ language })` → rien : prépare le modèle de la langue (le télécharge s'il manque) et ne rend la main qu'une fois prêt (long au premier usage : l'onglet des Réglages montre « préparation » pendant l'attente). Sans effet si le modèle est déjà sur le Mac. Erreurs : langue non prise en charge ; « Le modèle de la langue n'a pas pu être téléchargé : vérifiez la connexion, puis réessayez. » ; moteur indisponible.
+- `start_voice_input()` → rien : démarre l'écoute dans la langue utilisée et **rend la main aussitôt** ; la suite (accès au micro demandé par macOS, préparation du modèle, texte) arrive par `voice-input-event`, y compris les échecs d'accès, de micro et de langue. Erreurs immédiates : « La saisie vocale est déjà en cours. » (une seule écoute à la fois, la précédente doit avoir fini : attendre `ended` avant de relancer) ; « Cette langue n'est pas prise en charge par la saisie vocale. » (le Mac n'a aucune langue à proposer) ; moteur indisponible.
+- `stop_voice_input()` → rien : demande l'arrêt (clic, raccourci, Échap, changement de contenu, arrière-plan : § 5.1). Rend la main aussitôt ; la fin arrive par `ended`, précédée du dernier `fixed`. Sans effet s'il n'y a pas d'écoute. Quitter l'application arrête aussi l'écoute.
+- `open_voice_privacy_settings()` → rien : ouvre la page Confidentialité des réglages de macOS, sur le micro (bouton « Ouvrir les réglages de macOS » du message d'accès refusé). Erreur : « les réglages de macOS ne se sont pas ouverts : … ».
+
+### Événement
+
+- `voice-input-event`, porte un `VoiceEventItem` (`onVoiceInputEvent` dans le pont). Un seul abonné suffit : il pilote le micro (états, témoin de niveau), le décor du texte provisoire, l'écriture du texte fixé et les messages.
+
+### Règles que l'interface n'a pas à connaître
+
+- Le silence de trente secondes (compté depuis que le micro écoute, pas pendant le téléchargement d'un modèle ; le niveau sonore et les textes vides ne comptent pas comme parole), l'ordre des événements, le texte provisoire fixé à l'arrêt ou avant un échec, l'unicité de l'écoute.
+- La langue du Mac (la première des langues préférées que macOS sait transcrire) et la langue choisie, gardée dans les préférences de l'application ; l'interface ne lit jamais ces préférences.
+- Rien n'est écrit par le moteur : ni la note, ni un fichier audio, ni un historique. Ce qui n'est pas passé par `fixed` n'existe pas.
+
+### À faire par l'interface
+
+Le micro (états, info-bulles, raccourci), le décor du texte provisoire, l'écriture du texte fixé au curseur et le blanc entre phrases (§ 5.5), l'étape d'annulation unique (§ 5.3), l'arrêt aux changements de contenu, à Échap et à l'arrière-plan, l'onglet « Saisie vocale » des Réglages (langue, état du modèle, « préparation »), les messages.
