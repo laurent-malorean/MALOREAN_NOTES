@@ -241,7 +241,13 @@ fn every_command_called_by_the_interface_exists() {
     assert!(called.len() >= 6, "commandes trouvées : {called:?}");
     for command in called
         .into_iter()
-        .filter(|c| *c != "choose_workspace_folder")
+        // Ces deux commandes ouvrent une fenêtre ou les réglages du Mac : le simulateur n'a pas de quoi.
+        .filter(|c| {
+            !matches!(
+                *c,
+                "choose_workspace_folder" | "open_voice_privacy_settings"
+            )
+        })
     {
         let result = call(&window, command, json!({}));
         let message = result.err().map(|e| e.to_string()).unwrap_or_default();

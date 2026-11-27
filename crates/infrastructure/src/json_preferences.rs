@@ -41,6 +41,10 @@ struct Stored {
     /// Le nom du modèle de sens choisi ; un nom inconnu vaut le modèle par défaut.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     meaning_model: Option<String>,
+    /// La langue de la saisie vocale (fiche 0103), ex. `fr-FR` ; absente tant qu'on suit la langue
+    /// du Mac.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    voice_language: Option<String>,
 }
 
 impl Stored {
@@ -104,6 +108,7 @@ impl Stored {
                 .collect(),
             active: workspaces.active().map(|w| w.name.as_str().to_owned()),
             meaning_model: None,
+            voice_language: None,
         }
     }
 }
@@ -166,9 +171,10 @@ impl Preferences for JsonPreferences {
     }
 
     fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError> {
-        let meaning_model = self.load()?.meaning_model;
+        let kept = self.load()?;
         self.save(&Stored {
-            meaning_model,
+            meaning_model: kept.meaning_model,
+            voice_language: kept.voice_language,
             ..Stored::of(workspaces)
         })
     }
@@ -184,9 +190,27 @@ impl Preferences for JsonPreferences {
     fn save_meaning_model(&self, model: MeaningModel) -> Result<(), StoreError> {
         // Un fichier d'avant les espaces de travail les garde sous sa forme actuelle : on ne
         // réécrit pas l'ancienne clé.
-        let mut stored = Stored::of(&self.workspaces()?);
-        stored.meaning_model = Some(model.name().to_owned());
-        self.save(&stored)
+        let kept = self.load()?;
+        let voice_language = kept.voice_language.clone();
+        self.save(&Stored {
+            meaning_model: Some(model.name().to_owned()),
+            voice_language,
+            ..Stored::of(&kept.workspaces())
+        })
+    }
+
+    fn voice_language(&self) -> Result<Option<String>, StoreError> {
+        Ok(self.load()?.voice_language)
+    }
+
+    fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
+        let kept = self.load()?;
+        let meaning_model = kept.meaning_model.clone();
+        self.save(&Stored {
+            meaning_model,
+            voice_language: language.map(str::to_owned),
+            ..Stored::of(&kept.workspaces())
+        })
     }
 }
 

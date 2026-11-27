@@ -30,6 +30,42 @@ pub fn preferences_contract<P: Preferences>(fresh: impl Fn() -> P) {
     templates_folders_follow_a_renaming_and_a_removal(&fresh());
     favorites_notes_are_read_back_and_none_is_chosen_at_first(&fresh());
     favorites_notes_follow_a_renaming_and_a_removal(&fresh());
+    the_voice_language_is_the_macs_at_first_launch_and_is_read_back(&fresh());
+    the_voice_language_survives_the_other_preferences(&fresh());
+}
+
+fn the_voice_language_is_the_macs_at_first_launch_and_is_read_back(preferences: &impl Preferences) {
+    assert_eq!(preferences.voice_language().unwrap(), None);
+    preferences.save_voice_language(Some("fr-FR")).unwrap();
+    assert_eq!(
+        preferences.voice_language().unwrap().as_deref(),
+        Some("fr-FR")
+    );
+    preferences.save_voice_language(Some("en-US")).unwrap();
+    assert_eq!(
+        preferences.voice_language().unwrap().as_deref(),
+        Some("en-US")
+    );
+    preferences.save_voice_language(None).unwrap();
+    assert_eq!(preferences.voice_language().unwrap(), None);
+}
+
+fn the_voice_language_survives_the_other_preferences(preferences: &impl Preferences) {
+    let workspaces = Workspaces::default()
+        .added(workspace("Notes", "/Users/moi/Notes"))
+        .unwrap();
+    preferences.save_voice_language(Some("de-DE")).unwrap();
+    preferences.save_workspaces(&workspaces).unwrap();
+    preferences.save_meaning_model(MeaningModel::Large).unwrap();
+    assert_eq!(
+        preferences.voice_language().unwrap().as_deref(),
+        Some("de-DE")
+    );
+    assert_eq!(preferences.workspaces().unwrap(), workspaces);
+    assert_eq!(preferences.meaning_model().unwrap(), MeaningModel::Large);
+    preferences.save_voice_language(Some("fr-FR")).unwrap();
+    assert_eq!(preferences.workspaces().unwrap(), workspaces);
+    assert_eq!(preferences.meaning_model().unwrap(), MeaningModel::Large);
 }
 
 fn allowed_workspaces_are_read_back_and_none_is_allowed_at_first(preferences: &impl Preferences) {

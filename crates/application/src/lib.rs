@@ -16,11 +16,13 @@ mod memory_index;
 mod memory_meaning_index;
 mod no_meaning_models;
 pub mod ports;
+mod preferences;
 mod segmenting_index;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 pub mod use_cases;
 mod versioned_store;
+mod voice;
 pub mod workspaces;
 mod writing;
 
@@ -52,5 +54,8 @@ pub use ports::{
 };
 pub use segmenting_index::{SegmentingIndex, note_segments};
 pub use versioned_store::VersionedStore;
+pub use voice::{
+    Listening, Transcriber, VoiceAccess, VoiceCatalog, VoiceEvents, VoiceLanguage, VoiceSink,
+};
 pub use workspaces::{Workspace, WorkspaceName, Workspaces};
 pub use writing::{AssistError, Unavailability, WritingAssistant};

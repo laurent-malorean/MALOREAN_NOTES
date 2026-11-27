@@ -550,6 +550,12 @@ mod tests {
         fn save_meaning_model(&self, model: domain::MeaningModel) -> Result<(), StoreError> {
             self.0.save_meaning_model(model)
         }
+        fn voice_language(&self) -> Result<Option<String>, StoreError> {
+            self.0.voice_language()
+        }
+        fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
+            self.0.save_voice_language(language)
+        }
     }
 
     #[test]

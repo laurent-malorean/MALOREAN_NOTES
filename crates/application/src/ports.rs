@@ -1,15 +1,15 @@
 //! Ports : ce dont les cas d'usage ont besoin, sans savoir comment c'est fait.
 
+pub use crate::preferences::Preferences;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use crate::{MeaningStore, MemoryMeaningIndex, Workspaces};
+use crate::{MeaningStore, MemoryMeaningIndex};
 use domain::export::ExportDestination;
 use domain::history::Version;
 use domain::search::SearchQuery;
 use domain::{
-    AttachmentName, ContentType, FileName, Folder, MeaningModel, Modified, Moment, NotePath,
-    NoteSummary,
+    AttachmentName, ContentType, FileName, Folder, Modified, Moment, NotePath, NoteSummary,
 };
 
 /// Une note telle qu'elle est gardée : chemin, contenu Markdown, date de modification.
@@ -549,38 +549,6 @@ pub struct OpenedIndex {
     pub words: Arc<dyn NoteIndex>,
     /// L'index de sens du même espace de travail.
     pub meaning: Arc<dyn MeaningStore>,
-}
-
-/// Préférences gardées d'un lancement à l'autre.
-pub trait Preferences: Send + Sync + Debug {
-    /// Les espaces de travail connus, et celui ouvert en dernier ; aucun au premier lancement.
-    ///
-    /// # Errors
-    ///
-    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
-    fn workspaces(&self) -> Result<Workspaces, StoreError>;
-
-    /// Garde cette liste d'espaces de travail, à la place de la précédente.
-    ///
-    /// # Errors
-    ///
-    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
-    fn save_workspaces(&self, workspaces: &Workspaces) -> Result<(), StoreError>;
-
-    /// Le modèle de sens choisi pour toute l'application ; [`MeaningModel::DEFAULT`] tant que
-    /// rien n'est choisi, ou si le nom gardé n'est plus celui d'un modèle connu.
-    ///
-    /// # Errors
-    ///
-    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
-    fn meaning_model(&self) -> Result<MeaningModel, StoreError>;
-
-    /// Garde ce modèle de sens comme choisi, sans toucher au reste des préférences.
-    ///
-    /// # Errors
-    ///
-    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
-    fn save_meaning_model(&self, model: MeaningModel) -> Result<(), StoreError>;
 }
 
 #[cfg(test)]

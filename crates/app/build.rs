@@ -1,7 +1,8 @@
 //! Prépare l'application Tauri à la compilation (configuration, permissions, icônes), et
-//! construit l'assistant Swift de l'aide à l'écriture, qu'elle emporte comme programme annexe
-//! (`bundle.externalBin`) : Tauri le pose à côté du programme de l'application, en
-//! développement comme dans l'application livrée (fiche 0031).
+//! construit les assistants Swift qu'elle emporte comme programmes annexes (`bundle.externalBin`) :
+//! `malorean-writing` pour l'aide à l'écriture (fiche 0031) et `malorean-voice` pour la saisie
+//! vocale (fiche 0103). Tauri les pose à côté du programme de l'application, en développement
+//! comme dans l'application livrée.
 
 use std::env;
 use std::fs;
@@ -9,41 +10,76 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::Command;
 
-const SOURCE: &str = "../infrastructure/swift/writing.swift";
-/// La plus ancienne version de macOS où l'assistant se lance (il dit alors « macOS trop ancien »).
+/// La plus ancienne version de macOS où les assistants se lancent (ils disent alors « macOS trop
+/// ancien »).
 const OLDEST_MACOS: &str = "12.0";
 /// Sans Swift, l'assistant livré ne fait que s'arrêter : l'application le dit introuvable.
 const STAND_IN: &str = "#!/bin/sh\nexit 1\n";
 
+/// Un assistant Swift : sa source, son nom de programme annexe, et le fichier d'informations lié
+/// au programme (les textes des demandes d'accès), s'il en a un.
+struct Helper {
+    source: &'static str,
+    name: &'static str,
+    plist: Option<&'static str>,
+}
+
+const HELPERS: [Helper; 2] = [
+    Helper {
+        source: "../infrastructure/swift/writing.swift",
+        name: "malorean-writing",
+        plist: None,
+    },
+    Helper {
+        source: "../infrastructure/swift/voice.swift",
+        name: "malorean-voice",
+        plist: Some("../infrastructure/swift/voice-Info.plist"),
+    },
+];
+
 fn main() {
-    println!("cargo:rerun-if-changed={SOURCE}");
     let target = env::var("TARGET").unwrap_or_default();
-    let helper = format!("binaries/malorean-writing-{target}");
-    if !compile(Path::new(&helper)) {
-        stand_in(Path::new(&helper));
+    for helper in &HELPERS {
+        println!("cargo:rerun-if-changed={}", helper.source);
+        if let Some(plist) = helper.plist {
+            println!("cargo:rerun-if-changed={plist}");
+        }
+        let path = format!("binaries/{}-{target}", helper.name);
+        if !compile(helper, Path::new(&path)) {
+            stand_in(Path::new(&path));
+        }
     }
+    println!("cargo:rerun-if-changed=Info.plist");
+    println!("cargo:rerun-if-changed=Entitlements.plist");
     tauri_build::build();
 }
 
-/// Compile l'assistant à `helper` ; faux, avec un avertissement, si ce n'est pas possible.
-fn compile(helper: &Path) -> bool {
+/// Compile `helper` à `path` ; faux, avec un avertissement, si ce n'est pas possible.
+fn compile(helper: &Helper, path: &Path) -> bool {
     let arch = match env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
         Ok("aarch64") => "arm64",
         _ => "x86_64",
     };
-    if let Some(folder) = helper.parent() {
+    if let Some(folder) = path.parent() {
         fs::create_dir_all(folder).ok();
     }
-    let status = Command::new("swiftc")
+    let mut command = Command::new("swiftc");
+    command
         .args(["-O", "-parse-as-library", "-target"])
         .arg(format!("{arch}-apple-macos{OLDEST_MACOS}"))
-        .arg(SOURCE)
+        .arg(helper.source)
         .arg("-o")
-        .arg(helper)
-        .status();
-    let built = status.is_ok_and(|status| status.success());
+        .arg(path);
+    if let Some(plist) = helper.plist {
+        command.args(["-Xlinker", "-sectcreate", "-Xlinker", "__TEXT"]);
+        command.args(["-Xlinker", "__info_plist", "-Xlinker", plist]);
+    }
+    let built = command.status().is_ok_and(|status| status.success());
     if !built {
-        println!("cargo:warning=assistant d'écriture non construit : swiftc a échoué ou manque");
+        println!(
+            "cargo:warning={} non construit : swiftc a échoué ou manque",
+            helper.name
+        );
     }
     built
 }

@@ -274,6 +274,14 @@ impl Preferences for BrokenPreferences {
     fn save_meaning_model(&self, _model: MeaningModel) -> Result<(), StoreError> {
         Err(StoreError::Unavailable("préférences illisibles".to_owned()))
     }
+
+    fn voice_language(&self) -> Result<Option<String>, StoreError> {
+        self.0.voice_language()
+    }
+
+    fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
+        self.0.save_voice_language(language)
+    }
 }
 
 /// Un téléchargement qui garde le modèle une fois les fichiers reçus, et laisse la main au test
