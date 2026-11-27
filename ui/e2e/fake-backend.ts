@@ -339,24 +339,6 @@ function searchNotes(query: string, order?: string) {
     });
 }
 
-/** Liens entre notes simplifiés : `[[titre]]`, majuscules et accents ignorés. */
-const linkedTitles = (content: string) =>
-  [...content.matchAll(/\[\[([^\]|\n]+)(?:\|[^\]\n]*)?\]\]/g)].map((m) =>
-    folded(m[1]?.trim() ?? ""),
-  );
-
-function listBacklinks(path: string) {
-  const title = folded(titleOf(backend.notes[path]?.content ?? "") ?? "");
-  return Object.entries(backend.notes)
-    .filter(([other, note]) => other !== path && linkedTitles(note.content).includes(title))
-    .sort(([, a], [, b]) => b.modified - a.modified)
-    .map(([other, note]) => ({
-      path: other,
-      title: titleOf(note.content) ?? "Sans titre",
-      folder: folderOf(other),
-    }));
-}
-
 /** Doublure de l'en-tête d'une note épinglée : les vraies règles sont testées côté Rust. */
 const PIN_HEADER = "---\npinned: true\n---\n";
 
@@ -482,7 +464,6 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
         title: titleOf(note.content) ?? "Sans titre",
         folder: folderOf(path),
       })),
-  list_backlinks: ({ path = "" }) => listBacklinks(path),
   ...fakeWorkspaces(params, backend, backend.rememberedWorkspace),
   ...fakeExport(backend),
   ...fakeHistory(backend, noteContent),

@@ -63,7 +63,26 @@ export function fakeLinks(helpers: LinkHelpers): Record<string, Handler> {
       };
     });
 
+  /** Liens entre notes simplifiés : `[[titre]]`, majuscules et accents ignorés. */
+  const linkedTitles = (content: string) =>
+    [...content.matchAll(/\[\[([^\]|\n]+)(?:\|[^\]\n]*)?\]\]/g)].map((m) =>
+      folded(m[1]?.trim() ?? ""),
+    );
+
+  const backlinks = ({ path = "" }) => {
+    const title = folded(titleOf(notes()[path]?.content ?? "") ?? "");
+    return Object.entries(notes())
+      .filter(([other, note]) => other !== path && linkedTitles(note.content).includes(title))
+      .sort(([, a], [, b]) => b.modified - a.modified)
+      .map(([other, note]) => ({
+        path: other,
+        title: titleOf(note.content) ?? "Sans titre",
+        folder: folderOf(other),
+      }));
+  };
+
   return {
+    list_backlinks: backlinks,
     resolve_links: ({ targets = [] as unknown as string }) =>
       (targets as unknown as string[]).map(resolve),
     list_linkable: linkable,
