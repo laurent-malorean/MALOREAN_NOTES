@@ -1238,8 +1238,10 @@ button {
 .favorite-star {
   flex: none;
 }
+/* Cachée, l'étoile garde sa place : elle paraît quand son état est lu, sans pousser « Diviser » sous le pointeur. */
 .favorite-star[hidden] {
-  display: none;
+  display: block;
+  visibility: hidden;
 }
 .favorite-star svg {
   display: block;

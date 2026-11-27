@@ -162,7 +162,8 @@ test("la ligne en cours revient au milieu quand la fenêtre ou la colonne change
   await typewriter(page).click();
   await moveDown(page, 0, 30);
   await expect.poll(() => cursorOffCentre(page)).toBeLessThan(15);
-  await page.setViewportSize({ width: 1100, height: 480 });
+  // 560 et non 480 : avec « Favoris » au pied des dossiers, la liste des dossiers déborde à 480 et le clic sur « Diviser » est perdu.
+  await page.setViewportSize({ width: 1100, height: 560 });
   await expect.poll(() => cursorOffCentre(page)).toBeLessThan(15);
   await page.getByTitle("Diviser la colonne").first().click();
   await expect(columns(page)).toHaveCount(2);

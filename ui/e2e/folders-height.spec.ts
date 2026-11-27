@@ -14,6 +14,8 @@ for (let n = 0; n < 12; n += 1) {
 const FOLDERS = Array.from({ length: 12 }, (_, n) => `d${n}`);
 
 async function launch(page: Page) {
+  // Assez haute pour que « Favoris » au pied des dossiers ne réduise pas la marge de la poignée.
+  await page.setViewportSize({ width: 1280, height: 800 });
   const params = new URLSearchParams({
     notes: JSON.stringify(NOTES),
     folders: JSON.stringify(FOLDERS),
