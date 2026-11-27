@@ -88,6 +88,14 @@ pub enum AppTool {
     PinNote,
     /// Désépingler une note.
     UnpinNote,
+    /// Mettre un contenu en favori : une ligne de lien à la fin de la note des favoris (fiche 0102).
+    AddFavorite,
+    /// Retirer un contenu des favoris : les lignes de la note des favoris qui le désignent
+    /// (fiche 0102).
+    RemoveFavorite,
+    /// Les favoris : la note des favoris et les contenus qu'elle désigne, dans son ordre
+    /// (fiche 0102).
+    ListFavorites,
     /// Joindre à une note un fichier de l'espace de travail (image ou PDF).
     AddAttachment,
     /// Créer un cahier de recherche selon les règles : titre, nom du fichier tiré du titre ; sans
@@ -159,7 +167,7 @@ pub enum AppTool {
 
 impl AppTool {
     /// Tous les outils de l'application, dans l'ordre où Claude les découvre.
-    pub const ALL: [Self; 67] = [
+    pub const ALL: [Self; 70] = [
         Self::ListWorkspaces,
         Self::SearchNotes,
         Self::SearchByMeaning,
@@ -197,6 +205,9 @@ impl AppTool {
         Self::RemoveTags,
         Self::PinNote,
         Self::UnpinNote,
+        Self::AddFavorite,
+        Self::RemoveFavorite,
+        Self::ListFavorites,
         Self::AddAttachment,
         Self::CreateResearchNotebook,
         Self::AddEntry,
@@ -270,6 +281,9 @@ impl AppTool {
             Self::RemoveTags => "remove_tags",
             Self::PinNote => "pin_note",
             Self::UnpinNote => "unpin_note",
+            Self::AddFavorite => "add_favorite",
+            Self::RemoveFavorite => "remove_favorite",
+            Self::ListFavorites => "list_favorites",
             Self::AddAttachment => "add_attachment",
             Self::CreateResearchNotebook => "create_research_notebook",
             Self::AddEntry => "add_entry",
@@ -355,6 +369,7 @@ impl AppTool {
                 | Self::ListTemplates
                 | Self::ListVersions
                 | Self::ReadVersion
+                | Self::ListFavorites
                 | Self::ViewedNote
                 | Self::ShowNote
         )
@@ -414,6 +429,7 @@ impl AppTool {
             | Self::ListTags
             | Self::ListFolders
             | Self::ListTemplates
+            | Self::ListFavorites
             | Self::ViewedNote => None,
             _ => Some("path"),
         }

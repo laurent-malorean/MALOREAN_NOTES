@@ -11,6 +11,7 @@ use super::catalog_mind_map::{
 
 mod canvas;
 mod crm;
+mod favorites;
 mod notebook;
 
 /// Un champ texte de l'entrée d'un outil, décrit pour Claude.
@@ -541,6 +542,9 @@ fn described(tool: AppTool) -> Described {
         AppTool::RemoveTags => remove_tags(),
         AppTool::PinNote => pin_note(),
         AppTool::UnpinNote => unpin_note(),
+        AppTool::AddFavorite => favorites::add_favorite(),
+        AppTool::RemoveFavorite => favorites::remove_favorite(),
+        AppTool::ListFavorites => favorites::list_favorites(),
         AppTool::AddAttachment => add_attachment(),
         AppTool::CreateResearchNotebook => notebook::create_research_notebook(),
         AppTool::AddEntry => notebook::add_entry(),

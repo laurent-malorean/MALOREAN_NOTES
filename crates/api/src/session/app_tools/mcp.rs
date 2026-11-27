@@ -34,7 +34,10 @@ const INSTRUCTIONS: &str = "Outils de MALOREAN Notes, l'application de notes de 
     `move_mind_map_node` et `delete_mind_map_node`, qui appliquent les règles de l'écran : ne l'écrivez pas à la \
     main, et ne touchez jamais à la propriété `racines` de son en-tête (tenue par l'application) ; les chemins \
     se renumérotent après un ajout, un déplacement ou une suppression : relisez la carte avant de viser un autre \
-    nœud ; `read_note` et `replace_in_note` refusent une carte. Les notes sont désignées par leur chemin depuis l'espace de travail \
+    nœud ; `read_note` et `replace_in_note` refusent une carte. Les favoris de l'utilisateur tiennent dans une seule note, qu'il a choisie dans les Réglages \
+    (onglet « Favoris ») : `add_favorite` et `remove_favorite` y mettent un contenu ou l'en retirent, comme \
+    l'étoile de l'écran, `list_favorites` les lit ; sans cette note, ils échouent : dites-le à l'utilisateur, \
+    ne la créez pas à sa place. Les notes sont désignées par leur chemin depuis l'espace de travail \
     (`dossier/nom.md`). Les dossiers aussi (`dossier/sous-dossier`) : `list_folders` donne l'arbre, \
     `create_folder`, `rename_folder`, `move_folder` et `trash_folder` en créent, renomment, déplacent et \
     mettent à la corbeille un avec tout son contenu. \
@@ -177,6 +180,20 @@ mod tests {
             "`change_canvas_group`",
             "nom de la palette",
             "`restore_version` l'annule",
+        ] {
+            assert!(text.contains(expected), "{expected}");
+        }
+    }
+
+    #[test]
+    fn the_introduction_names_the_favorites_tools_and_the_note_the_user_chooses() {
+        let reply = replied(r#"{"jsonrpc":"2.0","id":0,"method":"initialize"}"#);
+        let text = reply["result"]["instructions"].as_str().unwrap();
+        for expected in [
+            "`add_favorite`",
+            "`remove_favorite`",
+            "`list_favorites`",
+            "onglet « Favoris »",
         ] {
             assert!(text.contains(expected), "{expected}");
         }

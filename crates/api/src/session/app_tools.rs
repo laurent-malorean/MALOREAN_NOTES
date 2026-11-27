@@ -12,6 +12,7 @@ mod connection;
 mod crm;
 mod crm_budget;
 mod crm_changing;
+mod favorites;
 mod folders;
 mod mcp;
 mod meaning;
@@ -204,6 +205,7 @@ impl Session {
             AppTool::ReadCanvas => self.tool_read_canvas(arguments),
             AppTool::ReadCrm => self.tool_read_crm(arguments),
             AppTool::ListTemplates => self.tool_list_templates(),
+            AppTool::ListFavorites => self.tool_list_favorites(),
             AppTool::ViewedNote => self.tool_viewed_note(),
             AppTool::ShowNote => self.tool_show_note(arguments),
             AppTool::ListVersions => {
@@ -227,6 +229,9 @@ mod tests;
 
 #[cfg(test)]
 mod canvas_catalog_tests;
+
+#[cfg(test)]
+mod favorites_tests;
 
 #[cfg(test)]
 mod canvas_changing_tests;

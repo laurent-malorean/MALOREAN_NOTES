@@ -104,6 +104,8 @@ impl Session {
                     .map_err(|e| e.message)?;
                 written(&json!({ "path": unpinned.path, "pinned": false }))
             }
+            AppTool::AddFavorite => self.tool_add_favorite(arguments),
+            AppTool::RemoveFavorite => self.tool_remove_favorite(arguments),
             AppTool::AddAttachment => self.tool_add_attachment(arguments),
             AppTool::AddEntry => {
                 let (path, text) = (required(arguments, "path")?, required(arguments, "text")?);

@@ -69,7 +69,7 @@ fn tool_names_are_distinct() {
 }
 
 /// Les outils qui changent des notes, dans l'ordre de `ALL`.
-const CHANGING_NOTES: [&str; 52] = [
+const CHANGING_NOTES: [&str; 54] = [
     "create_note",
     "create_folder",
     "rename_folder",
@@ -96,6 +96,8 @@ const CHANGING_NOTES: [&str; 52] = [
     "remove_tags",
     "pin_note",
     "unpin_note",
+    "add_favorite",
+    "remove_favorite",
     "add_attachment",
     "create_research_notebook",
     "add_entry",
@@ -139,62 +141,30 @@ fn each_tool_says_what_it_targets() {
     let targets: Vec<_> = AppTool::ALL.map(AppTool::target_field).into();
     let path = Some("path");
     // Avant les outils du CRM : le même nombre d'outils que dans `ALL` jusqu'à `CreateCrm`.
-    const ALL_BEFORE_CRM: usize = 50;
-    assert_eq!(
-        targets[..ALL_BEFORE_CRM],
-        [
-            None,
-            Some("query"),
-            Some("question"),
-            None,
-            None,
-            path,
-            path,
-            path,
-            None,
-            path,
-            path,
-            Some("title"),
-            path,
-            path,
-            path,
-            path,
-            Some("title"),
-            path,
-            path,
-            path,
-            path,
-            path,
-            Some("title"),
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            Some("title"),
-            path,
-            Some("title"),
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            path,
-            Some("title"),
-        ]
-    );
+    const ALL_BEFORE_CRM: usize = 53;
+    let title = Some("title");
+    let before_crm = [
+        vec![None, Some("query"), Some("question"), None, None],
+        vec![path; 3],
+        vec![None],
+        vec![path; 2],
+        vec![title],
+        vec![path; 4],
+        vec![title],
+        vec![path; 5],
+        vec![title],
+        // Les outils du canvas, des étiquettes, des épingles, puis des favoris (lire : sans cible).
+        vec![path; 16],
+        vec![None],
+        vec![path],
+        vec![title],
+        vec![path],
+        vec![title],
+        vec![path; 8],
+        vec![title],
+    ]
+    .concat();
+    assert_eq!(targets[..ALL_BEFORE_CRM], before_crm);
     // Les quinze outils du CRM (lire, puis changer) visent leur CRM, puis viennent les deux outils
     // de l'écran.
     assert_eq!(targets[ALL_BEFORE_CRM..ALL_BEFORE_CRM + 15], [path; 15]);
