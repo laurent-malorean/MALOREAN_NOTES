@@ -405,4 +405,15 @@ describe("colonnes à l'écran", () => {
       expect(drops).toEqual([{ tab: 1, drop: { column: 1, before: null } }]);
     });
   });
+
+  it("donne à chaque colonne la place de son étoile, dans l'en-tête, juste avant le bouton « Diviser »", () => {
+    const m = mount();
+    m.view.render(state([1, 1]));
+    for (const [index, column] of sections(m.container).entries()) {
+      const star = column.querySelector<HTMLButtonElement>(".column-header .favorite-star");
+      expect(star).not.toBeNull();
+      expect(star?.nextElementSibling).toBe(splitButton(column));
+      expect(m.created[index]?.parts.star).toBe(star);
+    }
+  });
 });

@@ -8,6 +8,7 @@ import type { OpenNoteLink } from "../editor/links/note-links";
 import { entryReference, lineStart, notebookTitle } from "../state/research-notebook";
 import type { TagSuggestion } from "../state/tag-field";
 import { renderBacklinks } from "./backlinks-view";
+import { createFavoriteStar, type FavoriteStar, type StarState } from "./favorite-star";
 import { type CanvasDeps, type CanvasPane, createCanvasPane } from "./canvas-pane";
 import { createFichePane, type FichePane } from "./crm-fiche-pane";
 import { type CrmDeps, type CrmPane, createCrmPane } from "./crm-pane";
@@ -68,6 +69,14 @@ export interface PaneTags {
   readonly changed: () => void;
 }
 
+/** Ce qu'une colonne demande à l'application pour l'étoile de son contenu (fiche 0102). */
+export interface PaneFavorites {
+  /** Ce que l'étoile du contenu `path` montre : cachée sur la note des favoris, sinon creuse ou pleine. */
+  readonly state: (path: string) => Promise<StarState>;
+  /** Un clic sur l'étoile du contenu `path`, montrée dans l'état `state` : l'ajouter aux favoris, ou l'en retirer. */
+  readonly toggle: (path: string, state: StarState) => Promise<void>;
+}
+
 export interface PaneOptions {
   readonly backend: PaneBackend;
   /** Ce qu'on peut lier, pour le menu des liens sous le curseur ; sans lui, `[[` et `/` n'ouvrent rien. */
@@ -87,6 +96,8 @@ export interface PaneOptions {
   readonly crm?: CrmDeps;
   /** Sans elles, aucune barre d'étiquettes n'est montrée sous les onglets. */
   readonly tags?: PaneTags;
+  /** Sans lui, l'étoile des favoris reste cachée. */
+  readonly favorites?: PaneFavorites;
 }
 
 export interface Pane {
@@ -112,6 +123,8 @@ export interface Pane {
   showBacklinks(): Promise<void>;
   /** Montre les notes proches de la note, ou cache la liste si elle n'est pas demandée. */
   showRelated(): Promise<void>;
+  /** Relit l'étoile du contenu montré : creuse, pleine, ou cachée (note des favoris, fiche du CRM, aucune note). */
+  showStar(): Promise<void>;
   /** La note a changé sur le disque : voir la fiche de décision 0014. */
   followDisk(): Promise<void>;
   /** Retire la colonne de l'écran, ce qui est tapé étant enregistré. */
@@ -141,6 +154,9 @@ class NotePane implements Pane, Viewer {
   private readonly crm: CrmPane | null;
   private readonly fiche: FichePane | null;
   private readonly tags: NoteTags | null;
+  private readonly star: FavoriteStar | null;
+  /** Ce que l'étoile montre en ce moment : un clic en dépend (ajouter ou retirer). */
+  private starState: StarState = "hidden";
 
   constructor(
     private readonly parts: ColumnParts,
@@ -175,6 +191,7 @@ class NotePane implements Pane, Viewer {
       : null;
     ({ crm: this.crm, fiche: this.fiche } = crmPanes(parts.element, options.crm, events));
     this.tags = this.tagBar(parts);
+    this.star = this.starButton(parts);
     this.editor = createEditor(
       parts.element,
       (content, changes) => shared.typed(this, changes, content),
@@ -211,6 +228,30 @@ class NotePane implements Pane, Viewer {
     });
   }
 
+  /** L'étoile de la colonne ; rien si l'application ne donne pas de quoi la lire. */
+  private starButton(parts: ColumnParts): FavoriteStar | null {
+    const { favorites, events } = this.options;
+    if (favorites === undefined || parts.star === undefined) return null;
+    return createFavoriteStar(parts.star, () => {
+      if (this.shown !== null)
+        favorites.toggle(this.shown, this.starState).catch((error) => events.error(error));
+    });
+  }
+
+  private setStar(state: StarState): void {
+    this.starState = state;
+    this.star?.show(state);
+  }
+
+  async showStar(): Promise<void> {
+    const { favorites } = this.options;
+    const path = this.shown;
+    if (favorites === undefined || this.star === null) return;
+    // Une fiche du CRM n'a pas d'étoile : seul le CRM entier se met en favori.
+    const state = path === null || this.fiche?.shown() ? "hidden" : await favorites.state(path);
+    if (this.shown === path) this.setStar(state);
+  }
+
   note(): string | null {
     return this.shown;
   }
@@ -218,6 +259,8 @@ class NotePane implements Pane, Viewer {
   async load(path: string | null): Promise<void> {
     if (this.shown === path) return;
     this.shown = path;
+    // Pas d'étoile vieillie : un clic, pendant la lecture, viserait la note qu'on quitte.
+    this.setStar("hidden");
     await this.options.shared.leave(this);
     void this.showBacklinks().catch(this.options.events.error);
     void this.showRelated().catch(this.options.events.error);
@@ -228,6 +271,7 @@ class NotePane implements Pane, Viewer {
     }
     await this.options.shared.join(path, this);
     await this.showMap();
+    void this.showStar().catch(this.options.events.error);
   }
 
   /** La carte mentale ou le canvas prend la place de l'éditeur si le fichier en est un. */
@@ -310,7 +354,10 @@ class NotePane implements Pane, Viewer {
 
   /** La note vient d'être enregistrée sous ce chemin ; son titre, donc ses liens entrants, ont pu changer. */
   saved(path: string): void {
+    const renamed = this.shown !== path;
     this.shown = path;
+    // Renommée, la note peut être la note des favoris, ou un favori sous un autre nom.
+    if (renamed) void this.showStar().catch(this.options.events.error);
     void this.showBacklinks().catch(this.options.events.error);
     void this.tags?.refresh(path);
   }

@@ -4,7 +4,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { waitForLaunchedNote } from "./journey";
 
 const NOTES = { "courses.md": { content: "# Courses\n\npain", modified: 30 } };
-const TABS = ["Affichage", "Écriture", "Claude", "Index", "Brancher une IA"];
+const TABS = ["Affichage", "Écriture", "Claude", "Index", "Favoris", "Brancher une IA"];
 const WIDE = { width: 1280, height: 1000 };
 const LOW = { width: 1280, height: 420 };
 
@@ -45,7 +45,7 @@ async function boxesPerTab(page: Page, settings: Locator) {
 }
 
 for (const theme of ["light", "dark"]) {
-  test(`la fenêtre a la même boîte sur les cinq onglets (thème ${theme})`, async ({ page }) => {
+  test(`la fenêtre a la même boîte sur les six onglets (thème ${theme})`, async ({ page }) => {
     const settings = await launch(page, WIDE, theme);
     const boxes = await boxesPerTab(page, settings);
     expect(boxes).toHaveLength(TABS.length);

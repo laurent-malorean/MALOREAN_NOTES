@@ -19,6 +19,8 @@ import type { ConnectionKeyItem } from "./generated/ConnectionKeyItem";
 import type { ClaudeModelItem } from "./generated/ClaudeModelItem";
 import type { EffortItem } from "./generated/EffortItem";
 import type { EntryItem } from "./generated/EntryItem";
+import type { FavoritesNoteItem } from "./generated/FavoritesNoteItem";
+import type { RemovedLineItem } from "./generated/RemovedLineItem";
 import type { CanvasArrowItem } from "./generated/CanvasArrowItem";
 import type { CanvasCardItem } from "./generated/CanvasCardItem";
 import type { CanvasFileItem } from "./generated/CanvasFileItem";
@@ -123,6 +125,8 @@ export type {
   DifferenceItem,
   ExportFile,
   ExportFormatItem,
+  FavoritesNoteItem,
+  RemovedLineItem,
   MeaningOverviewItem,
   MeaningProgressItem,
   MeaningSearchItem,
@@ -452,6 +456,26 @@ export const setTemplatesFolder = (folder: string | null) =>
 /** Reprend les dossiers des modèles que l'interface gardait avant la fiche 0077 ; rend combien d'espaces ont été repris. */
 export const importTemplatesFolders = (chosen: TemplatesFolderItem[]) =>
   invoke<number>("import_templates_folders", { chosen });
+/** La note des favoris de l'espace de travail ouvert ; `null` s'il n'en a pas. */
+export const favoritesNote = () => invoke<FavoritesNoteItem | null>("favorites_note");
+/** Choisit la note `path` comme note des favoris ; seule une note simple convient. */
+export const chooseFavoritesNote = (path: string) =>
+  invoke<FavoritesNoteItem>("choose_favorites_note", { path });
+/** Crée la note des favoris titrée `title` dans `folder` (`""` : la racine), la choisit et la rend. */
+export const createFavoritesNote = (title: string, folder: string) =>
+  invoke<FavoritesNoteItem>("create_favorites_note", { title, folder });
+/** L'espace de travail ouvert n'a plus de note des favoris ; la note n'est pas supprimée. */
+export const stopUsingFavoritesNote = () => invoke<null>("stop_using_favorites_note");
+/** Le contenu `path` est-il en favori (étoile pleine) ? */
+export const isFavorite = (path: string) => invoke<boolean>("is_favorite", { path });
+/** Met le contenu `path` en favori : une ligne de lien à la fin de la note des favoris. */
+export const addFavorite = (path: string) => invoke<null>("add_favorite", { path });
+/** Retire le contenu `path` des favoris, sans confirmation ; rend les lignes retirées, pour annuler. */
+export const removeFavorite = (path: string) =>
+  invoke<RemovedLineItem[]>("remove_favorite", { path });
+/** Remet à leur place les lignes d'un retrait, telles que `removeFavorite` les a rendues. */
+export const restoreFavorites = (removed: readonly RemovedLineItem[]) =>
+  invoke<null>("restore_favorites", { removed });
 /** Arrête le tour en cours (ce que Claude a déjà écrit reste écrit), ou annule la connexion en cours. */
 export const stopClaude = () => invoke<null>("stop_claude");
 /** Déconnecte Claude Code de son compte Claude, pour tout le Mac (Terminal et VS Code compris). */

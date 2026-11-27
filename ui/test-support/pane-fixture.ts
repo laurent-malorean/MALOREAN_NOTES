@@ -6,7 +6,14 @@ import type { LinkingNoteItem } from "../src/bridge/generated/LinkingNoteItem";
 import type { SaveResult } from "../src/bridge/generated/SaveResult";
 import type { Scheduler } from "../src/state/autosave";
 import type { ColumnParts } from "../src/screens/columns-view";
-import { createPane, type Pane, type PaneBackend, type PaneTags } from "../src/screens/note-pane";
+import type { StarState } from "../src/screens/favorite-star";
+import {
+  createPane,
+  type Pane,
+  type PaneBackend,
+  type PaneFavorites,
+  type PaneTags,
+} from "../src/screens/note-pane";
 import {
   createSharedNotes,
   type SharedNotes,
@@ -40,7 +47,23 @@ function fakeColumnState() {
       ]),
     changed: () => void (tagsChanged.count += 1),
   };
-  return { tags, tagCalls, tagsChanged, paneTags, relatedShown: { on: false } };
+  // L'étoile de chaque contenu, creuse tant qu'on n'a rien dit ; les appels de la colonne y sont notés.
+  const stars: Record<string, StarState> = {};
+  const starCalls: string[] = [];
+  const starFails = { on: false };
+  const paneFavorites: PaneFavorites = {
+    state: (path) => {
+      starCalls.push(`état ${path}`);
+      return starFails.on
+        ? Promise.reject(new Error("préférences illisibles"))
+        : Promise.resolve(stars[path] ?? "empty");
+    },
+    toggle: (path, state) => (starCalls.push(`basculer ${path} ${state}`), Promise.resolve()),
+  };
+  return {
+    ...{ tags, tagCalls, tagsChanged, paneTags, relatedShown: { on: false } },
+    ...{ stars, starCalls, starFails, paneFavorites },
+  };
 }
 
 /** Un espace de travail en mémoire : chaque note, son contenu ; l'empreinte est le contenu même. */
@@ -131,9 +154,10 @@ function column(
   const tags = document.createElement("div");
   const backlinks = document.createElement("nav");
   const related = document.createElement("nav");
-  element.append(tags, backlinks, related);
+  const star = document.createElement("button");
+  element.append(tags, star, backlinks, related);
   document.body.append(element);
-  const parts: ColumnParts = { element, tags, backlinks, related };
+  const parts: ColumnParts = { element, tags, star, backlinks, related };
   const images: string[] = [];
   const pane: Pane = createPane(parts, {
     backend,
@@ -145,6 +169,7 @@ function column(
     },
     related: { enabled: () => fake.relatedShown.on, notes: backend.relatedNotes },
     tags: fake.paneTags,
+    favorites: fake.paneFavorites,
     resolveImage: (src, note) => {
       images.push(`${note ?? "aucune"} ${src}`);
       return src;

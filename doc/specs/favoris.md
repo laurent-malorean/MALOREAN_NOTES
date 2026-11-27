@@ -92,3 +92,10 @@ Aucun événement nouveau. Un changement de la note des favoris est un changemen
 - Quelles lignes sont des favoris, le lien écrit, les doublons, le suivi de la note renommée ou déplacée (note seule ou avec son dossier) et son oubli à la corbeille : tout est dans le moteur. Un renommage fait par `rename_note` ou `move_note` met le choix à jour sans autre appel.
 - Le choix est gardé par espace de travail dans les préférences de l'application ; changer d'espace change de note des favoris.
 - Les outils pour les IA (§ 8) passent par les mêmes cas d'usage que ces commandes.
+
+## 11. Interface réalisée
+
+- **Étoile** : un bouton dans l'en-tête de chaque colonne, à droite des onglets et juste avant « Diviser » ; même place sur tous les contenus. Elle se relit à l'ouverture d'un contenu, après un ajout, un retrait ou une annulation, quand le choix de la note change dans les réglages et à chaque changement venu du disque. Cachée sur la note des favoris, sur une fiche du CRM et sans contenu.
+- **Messages** : « Ajouté aux favoris » ; « Retiré des favoris » avec le bouton « Annuler » (cinq secondes, comme tout message). Si le retrait ne rend aucune ligne, le contenu n'était plus en favori : l'étoile se corrige, sans message. Une erreur du moteur est montrée telle quelle.
+- **Note des favoris ouverte** : elle est relue aussitôt après chaque ajout, retrait ou annulation, sans attendre la surveillance du dossier.
+- **Réglages, onglet « Favoris »** (entre « Index » et « Brancher une IA ») : la note choisie (ou « Aucune »), « Choisir une note » (recherche de « Lier une note », notes simples seulement), « Créer la note des favoris » (formulaire : nom proposé « Favoris », dossier proposé « Racine » ; la note créée s'ouvre), « Ne plus utiliser de note des favoris » (inutilisable sans note choisie). Ouvert par l'étoile faute de note des favoris, le contenu cliqué est ajouté dès que la note est choisie ou créée (une seule fois).

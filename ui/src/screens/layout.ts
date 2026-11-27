@@ -27,6 +27,8 @@ export interface Layout {
   /** Le choix du tri de la liste, au-dessus de la liste des notes. */
   readonly noteOrder: HTMLSelectElement;
   readonly newFolderButton: HTMLButtonElement;
+  /** L'entrée « Favoris », juste au-dessus de « Corbeille » : ouvre la note des favoris. */
+  readonly favoritesButton: HTMLButtonElement;
   readonly trashButton: HTMLButtonElement;
   /** Le champ de recherche, dans la bande du haut, à droite des trois blocs : mise en forme, copies, outils d'affichage. */
   readonly searchField: HTMLInputElement;
@@ -104,6 +106,7 @@ const TEMPLATE = `
         <button class="recent-item" data-recent title="Les notes ouvertes le plus récemment">Récentes</button>
         <nav class="tags-list" aria-label="Étiquettes" hidden></nav>
         <footer class="side-panel-footer">
+          <button class="trash-item favorites-item" data-favorites title="La note des favoris"><svg class="favorites-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" /></svg>Favoris</button>
           <button class="trash-item" data-trash>Corbeille</button>
           <button class="trash-item" data-settings title="Réglages (Cmd+,)">Réglages</button>
         </footer>
@@ -172,6 +175,7 @@ export function createLayout(root: HTMLElement): Layout {
     tagFilter: find(".tag-filter"),
     noteOrder: find(".note-order select"),
     newFolderButton: find("[data-new-folder]"),
+    favoritesButton: find("[data-favorites]"),
     trashButton: find("[data-trash]"),
     searchField: find(".search-field"),
     searchWindow: find(".search-window"),
