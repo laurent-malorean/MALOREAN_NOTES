@@ -40,7 +40,7 @@ fn fake_claude(folder: &Path, answer: &str, exit: u8) -> PathBuf {
 
 /// Ce que dit `claude --help` : chaque option dont l'application a besoin.
 const FULL_HELP: &str = "--output-format --verbose --resume --model --effort --tools \
-    --allowed-tools --permission-mode --strict-mcp-config --mcp-config --disable-slash-commands \
+    --allowed-tools --disallowed-tools --append-system-prompt --permission-mode --strict-mcp-config --mcp-config --disable-slash-commands \
     --setting-sources --settings";
 
 fn status_with_help(help: &str, answer: &str) -> ClaudeStatus {

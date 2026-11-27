@@ -10,6 +10,7 @@ use domain::claude::{
     ActionId, ActionKind, ActionOutcome, AgentState, ClaudeAction, ClaudeEvent, ContextFill,
     ConversationId, LimitPeriod, TurnOutcome, TurnSummary, UsageLimits, UsageWindow,
 };
+use domain::external_servers::external_tool_label;
 use serde_json::Value;
 
 use crate::web_guard::HELD_BACK;
@@ -152,8 +153,11 @@ fn kind(tool: &str) -> ActionKind {
         "Agent" | "Task" => ActionKind::SubAgent,
         "WebSearch" => ActionKind::WebSearch,
         "WebFetch" => ActionKind::WebPage,
-        other => AppTool::of_full_name(other)
-            .map_or_else(|| ActionKind::Other(other.to_owned()), ActionKind::AppTool),
+        other => AppTool::of_full_name(other).map_or_else(
+            // Un outil d'un serveur MCP extérieur permis se montre « Noota · search_records ».
+            || ActionKind::Other(external_tool_label(other).unwrap_or_else(|| other.to_owned())),
+            ActionKind::AppTool,
+        ),
     }
 }
 

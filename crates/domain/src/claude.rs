@@ -81,7 +81,8 @@ pub enum ActionKind {
     WebPage,
     /// Un outil de l'application (fiche 0040).
     AppTool(AppTool),
-    /// Un outil que l'application ne connaît pas encore, par son nom.
+    /// Un outil que l'application ne connaît pas encore, par son nom ; pour un outil d'un serveur
+    /// MCP extérieur permis (fiche 0105), le serveur puis l'outil (« Noota · search_records »).
     Other(String),
 }
 

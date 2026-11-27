@@ -3,6 +3,7 @@
 use std::fmt::Debug;
 
 use domain::MeaningModel;
+use domain::external_servers::ServerName;
 
 use crate::{StoreError, Workspaces};
 
@@ -52,4 +53,21 @@ pub trait Preferences: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
     fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError>;
+
+    /// Les serveurs MCP extérieurs que l'utilisateur a permis à Claude dans la colonne Claude Code
+    /// (fiche 0105), par leur nom ; aucun tant qu'il n'en a pas coché. Ils valent pour tous les
+    /// espaces de travail. Un nom illisible est oublié à la lecture.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
+    fn allowed_servers(&self) -> Result<Vec<ServerName>, StoreError>;
+
+    /// Garde ces serveurs comme les seuls permis, à la place des précédents, sans toucher au reste
+    /// des préférences.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
+    fn save_allowed_servers(&self, servers: &[ServerName]) -> Result<(), StoreError>;
 }

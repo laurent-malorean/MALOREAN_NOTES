@@ -12,27 +12,21 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::thread::{self, JoinHandle};
 
 use application::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn};
-use domain::app_tools::{APP_TOOLS_SERVER, AppTool, AppToolsKey};
-use domain::claude::{
-    ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings,
-};
+use domain::app_tools::{APP_TOOLS_SERVER, AppToolsKey};
+use domain::claude::ChangesAfterWeb;
+use domain::claude::ClaudeEvent;
+use domain::external_servers::{ExternalServer, ServerName};
+use serde_json::Value;
 
+use crate::claude_launch::{FORWARD_SUBAGENT_TEXT, Launch, arguments};
+use crate::claude_server_access::{ServerAccess, list_servers, mcp_config};
 use crate::claude_stream::StreamReader;
 use crate::mcp_relay::RELAY_OPTION;
 use crate::web_guard::WebGuard;
 
-/// Les seuls outils offerts à Claude : lire, chercher, créer et modifier des fichiers, lancer
-/// des sous-agents, chercher sur le web et lire des pages web ; aucune commande système.
-const TOOLS: &str = "Read,Write,Edit,Glob,Grep,Agent,WebSearch,WebFetch";
-
-/// Les outils permis d'office : sans cela, chercher sur le web et lire une page web demanderaient
-/// une autorisation, que personne ne donne : sans personne pour répondre, `claude -p` refuse
-/// d'office ce qui n'est pas permis (fichiers hors de l'espace de travail compris).
-const ALLOWED_TOOLS: &str = "WebSearch,WebFetch";
-
 /// Les options de `claude` dont l'application a besoin : si l'une manque à `claude --help`, ce
 /// Claude Code est trop ancien et l'application le dit au lieu de le lancer pour rien.
-const REQUIRED_OPTIONS: [&str; 13] = [
+pub(crate) const REQUIRED_OPTIONS: [&str; 15] = [
     "--output-format",
     "--verbose",
     "--resume",
@@ -40,6 +34,8 @@ const REQUIRED_OPTIONS: [&str; 13] = [
     "--effort",
     "--tools",
     "--allowed-tools",
+    "--disallowed-tools",
+    "--append-system-prompt",
     "--permission-mode",
     "--strict-mcp-config",
     "--mcp-config",
@@ -47,10 +43,6 @@ const REQUIRED_OPTIONS: [&str; 13] = [
     "--setting-sources",
     "--settings",
 ];
-
-/// Option facultative, passée seulement si Claude Code la connaît : suivre les textes des
-/// sous-agents.
-const FORWARD_SUBAGENT_TEXT: &str = "--forward-subagent-text";
 
 /// Ce que dit `claude --help` ; rien si le programme ne répond pas ou ne liste aucune option (on
 /// ne peut alors rien en conclure).
@@ -66,7 +58,7 @@ fn help_of(program: &Path) -> Option<String> {
 }
 
 /// Les options nécessaires que ce `claude --help` ne connaît pas, dans l'ordre de la liste.
-fn missing_options(help: &str) -> Vec<&'static str> {
+pub(crate) fn missing_options(help: &str) -> Vec<&'static str> {
     REQUIRED_OPTIONS
         .into_iter()
         .filter(|option| !help.contains(option))
@@ -118,30 +110,14 @@ pub struct AppToolsRelay {
 }
 
 impl AppToolsRelay {
-    /// Les réglages de Claude Code qui lui donnent le seul serveur MCP de l'application, joint
-    /// par le relais avec la clé du tour, pour `--mcp-config`.
-    fn mcp_config(&self, key: &AppToolsKey) -> String {
+    /// La description du serveur MCP de l'application, joint par le relais avec la clé du tour,
+    /// pour `--mcp-config`.
+    fn description(&self, key: &AppToolsKey) -> Value {
         serde_json::json!({
-            "mcpServers": {
-                APP_TOOLS_SERVER: {
-                    "command": self.program,
-                    "args": [RELAY_OPTION, self.socket, key.as_str()],
-                }
-            }
+            "command": self.program,
+            "args": [RELAY_OPTION, self.socket, key.as_str()],
         })
-        .to_string()
     }
-}
-
-/// Les outils permis d'office quand les outils de l'application sont offerts : ceux du web et,
-/// nommés un par un, tous ceux de l'application ; rien de plus.
-fn allowed_tools_with_app_tools() -> String {
-    AppTool::ALL
-        .iter()
-        .map(|tool| tool.full_name())
-        .fold(ALLOWED_TOOLS.to_owned(), |allowed, tool| {
-            format!("{allowed},{tool}")
-        })
 }
 
 /// Ce que dit `claude auth status --json` : connecté ou non, et le compte. Jamais écrit dans le
@@ -186,7 +162,7 @@ fn read_reason(output: impl Read + Send + 'static) -> JoinHandle<String> {
 }
 
 /// `claude`, lancé avec les seules variables d'environnement gardées de l'application.
-fn claude_command(program: &Path) -> Command {
+pub(crate) fn claude_command(program: &Path) -> Command {
     let mut command = Command::new(program);
     command.env_clear().envs(
         std::env::vars_os().filter(|(name, _)| KEPT_VARIABLES.iter().any(|kept| name == kept)),
@@ -213,6 +189,9 @@ pub struct ClaudeCodeCli {
     candidates: Vec<PathBuf>,
     /// Le relais des outils de l'application, s'ils peuvent être offerts.
     relay: Option<AppToolsRelay>,
+    /// Les noms des serveurs MCP que Claude Code connaissait à la dernière lecture de la liste :
+    /// ce que Claude ne doit pas voir en est déduit à chaque tour (fiche 0105).
+    known: Mutex<Option<Vec<ServerName>>>,
     turn: Mutex<Turn>,
 }
 
@@ -223,6 +202,7 @@ impl ClaudeCodeCli {
         Self {
             candidates: vec![program.into()],
             relay: None,
+            known: Mutex::default(),
             turn: Mutex::default(),
         }
     }
@@ -245,6 +225,7 @@ impl ClaudeCodeCli {
                 .map(|folder| folder.join(PROGRAM))
                 .collect(),
             relay: None,
+            known: Mutex::default(),
             turn: Mutex::default(),
         }
     }
@@ -261,6 +242,29 @@ impl ClaudeCodeCli {
             })
     }
 
+    /// Les serveurs que dit `claude mcp list`, dont les noms sont gardés pour les tours.
+    fn list_servers(&self, program: &Path) -> Result<Vec<ExternalServer>, ClaudeError> {
+        let servers = list_servers(program)?;
+        *self.known.lock().unwrap_or_else(PoisonError::into_inner) =
+            Some(servers.iter().map(|server| server.name.clone()).collect());
+        Ok(servers)
+    }
+
+    /// Les noms que Claude Code connaissait à la dernière lecture de la liste ; la liste est lue
+    /// d'abord si elle ne l'a jamais été.
+    fn known_servers(&self, program: &Path) -> Vec<ServerName> {
+        let kept = self
+            .known
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        kept.unwrap_or_else(|| {
+            self.list_servers(program)
+                .map(|servers| servers.into_iter().map(|server| server.name).collect())
+                .unwrap_or_default()
+        })
+    }
+
     fn turn(&self) -> MutexGuard<'_, Turn> {
         self.turn.lock().unwrap_or_else(PoisonError::into_inner)
     }
@@ -275,6 +279,7 @@ impl ClaudeCodeCli {
             conversation,
             settings,
             tools,
+            servers,
         }: ClaudeTurn<'_>,
         message: &str,
     ) -> Result<(ChildStdout, Option<WebGuard>), ClaudeError> {
@@ -296,27 +301,37 @@ impl ClaudeCodeCli {
             )));
         }
         let forward_subagent_text = help.is_some_and(|help| help.contains(FORWARD_SUBAGENT_TEXT));
+        let access = self
+            .program()
+            .map_or_else(ServerAccess::default, |program| {
+                ServerAccess::open(program, servers, || self.known_servers(program))
+            });
         let guard = match settings.changes_after_web {
-            ChangesAfterWeb::HeldBack => Some(WebGuard::new().map_err(|_| {
-                ClaudeError::Failed("le garde-fou du web n'a pas pu être posé".to_owned())
-            })?),
+            ChangesAfterWeb::HeldBack => {
+                Some(WebGuard::with_servers(&access.prefixes).map_err(|_| {
+                    ClaudeError::Failed("le garde-fou du web n'a pas pu être posé".to_owned())
+                })?)
+            }
             ChangesAfterWeb::Allowed => None,
         };
-        let hooks = guard.as_ref().map(WebGuard::settings);
-        let mcp = self
-            .relay
-            .as_ref()
-            .zip(tools)
-            .map(|(relay, key)| relay.mcp_config(key));
+        let app = self.relay.as_ref().zip(tools);
+        let mut described: Vec<(String, Value)> = app
+            .map(|(relay, key)| (APP_TOOLS_SERVER.to_owned(), relay.description(key)))
+            .into_iter()
+            .collect();
+        described.extend(access.described.iter().cloned());
+        let launch = Launch {
+            conversation,
+            settings,
+            mcp: (!described.is_empty()).then(|| mcp_config(described)),
+            app_tools: app.is_some(),
+            hooks: guard.as_ref().map(WebGuard::settings),
+            forward_subagent_text,
+            access: &access,
+        };
         let (mut stdin, stdout) = self.launch(|command| {
             command
-                .args(arguments(
-                    conversation,
-                    settings,
-                    mcp.as_deref(),
-                    hooks.as_deref(),
-                    forward_subagent_text,
-                ))
+                .args(arguments(&launch))
                 .current_dir(workspace.as_str())
                 .stderr(Stdio::piped());
         })?;
@@ -402,72 +417,6 @@ fn forward_lines(output: impl Read + Send + 'static, lines: mpsc::Sender<String>
     });
 }
 
-/// Le nom que Claude Code donne au dernier modèle de chaque famille (`--model`).
-const fn model_alias(model: ClaudeModel) -> &'static str {
-    match model {
-        ClaudeModel::Haiku => "haiku",
-        ClaudeModel::Sonnet => "sonnet",
-        ClaudeModel::Opus => "opus",
-        ClaudeModel::Fable => "fable",
-    }
-}
-
-/// Le nom que Claude Code donne à chaque niveau d'effort (`--effort`).
-const fn effort_level(effort: Effort) -> &'static str {
-    match effort {
-        Effort::Low => "low",
-        Effort::Medium => "medium",
-        Effort::High => "high",
-        Effort::ExtraHigh => "xhigh",
-        Effort::Max => "max",
-    }
-}
-
-/// Les arguments d'un tour : flux JSON, conversation continuée, modèle et niveau d'effort choisis,
-/// autorisations de Claude, le seul serveur MCP de l'application (`mcp`) s'il est offert, et les
-/// crochets du garde-fou du web (`hooks`) s'il y en a un.
-fn arguments(
-    conversation: Option<&ConversationId>,
-    settings: TurnSettings,
-    mcp: Option<&str>,
-    hooks: Option<&str>,
-    forward_subagent_text: bool,
-) -> Vec<String> {
-    let mut arguments = vec!["-p", "--output-format", "stream-json", "--verbose"];
-    if let Some(conversation) = conversation {
-        arguments.extend(["--resume", conversation.as_str()]);
-    }
-    if let Some(model) = settings.model {
-        arguments.extend(["--model", model_alias(model)]);
-    }
-    if let Some(effort) = settings.effort {
-        arguments.extend(["--effort", effort_level(effort)]);
-    }
-    let allowed = mcp.map(|_| allowed_tools_with_app_tools());
-    arguments.extend([
-        "--tools",
-        TOOLS,
-        "--allowed-tools",
-        allowed.as_deref().unwrap_or(ALLOWED_TOOLS),
-        "--permission-mode",
-        "acceptEdits",
-        "--strict-mcp-config",
-    ]);
-    if let Some(mcp) = mcp {
-        arguments.extend(["--mcp-config", mcp]);
-    }
-    // Aucun réglage du dossier ni de l'utilisateur : un `.claude/settings.json` posé parmi les
-    // notes (crochets, permissions plus larges) ne doit rien changer ; `--settings` s'applique.
-    arguments.extend(["--disable-slash-commands", "--setting-sources", ""]);
-    if forward_subagent_text {
-        arguments.push(FORWARD_SUBAGENT_TEXT);
-    }
-    if let Some(hooks) = hooks {
-        arguments.extend(["--settings", hooks]);
-    }
-    arguments.into_iter().map(str::to_owned).collect()
-}
-
 impl ClaudeCode for ClaudeCodeCli {
     fn status(&self) -> ClaudeStatus {
         let Some(program) = self.program() else {
@@ -499,6 +448,11 @@ impl ClaudeCode for ClaudeCodeCli {
             Ok(_) => ClaudeStatus::LoggedOut,
             Err(_) => ClaudeStatus::Failed,
         }
+    }
+
+    fn external_servers(&self) -> Result<Vec<ExternalServer>, ClaudeError> {
+        let program = self.program().ok_or(ClaudeError::Missing)?;
+        self.list_servers(program)
     }
 
     fn log_out(&self) -> Result<(), ClaudeError> {

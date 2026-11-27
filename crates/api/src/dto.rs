@@ -14,6 +14,7 @@ mod crm;
 mod crm_change;
 mod favorites;
 mod links;
+mod mcp_servers;
 mod meaning;
 mod mind_map;
 mod templates;
@@ -45,6 +46,7 @@ pub use crm_change::{
 };
 pub use favorites::{FavoritesNoteItem, RemovedLineItem};
 pub use links::{LinkResolutionItem, LinkableItem};
+pub use mcp_servers::{McpServerItem, McpServersItem, ServerStateItem};
 pub use meaning::{
     MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, ModelDownloadItem,
     ModelOverviewItem,

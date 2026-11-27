@@ -9,6 +9,7 @@ use application::{
     Embedder, MeaningError, MeaningModels, ModelState, Preferences, ProgressListener, StoreError,
     Workspaces,
 };
+use domain::external_servers::ServerName;
 use domain::{MeaningModel, MeaningVector};
 
 use super::MeaningEvents;
@@ -281,6 +282,14 @@ impl Preferences for BrokenPreferences {
 
     fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
         self.0.save_voice_language(language)
+    }
+
+    fn allowed_servers(&self) -> Result<Vec<ServerName>, StoreError> {
+        self.0.allowed_servers()
+    }
+
+    fn save_allowed_servers(&self, servers: &[ServerName]) -> Result<(), StoreError> {
+        self.0.save_allowed_servers(servers)
     }
 }
 

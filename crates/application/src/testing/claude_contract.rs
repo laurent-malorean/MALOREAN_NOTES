@@ -14,6 +14,7 @@ use domain::app_tools::AppToolsKey;
 use domain::claude::{
     ChangesAfterWeb, ClaudeEvent, ClaudeModel, ConversationId, Effort, TurnSettings,
 };
+use domain::external_servers::{ExternalServer, ServerName};
 
 use crate::{ClaudeAccount, ClaudeCode, ClaudeError, ClaudeStatus, ClaudeTurn, WorkspaceLocation};
 
@@ -37,6 +38,7 @@ pub fn claude_code_contract(codes: &ClaudeCodes<'_>) {
     a_continued_conversation_gives_every_event_in_order(codes);
     a_conversation_continued_with_other_settings_gives_every_event_in_order(codes);
     a_turn_offering_the_app_tools_gives_every_event_in_order(codes);
+    a_turn_offering_servers_gives_every_event_in_order(codes);
     stopping_without_a_turn_changes_nothing(codes);
     a_running_turn_is_alone_and_stops_on_request(codes);
 }
@@ -76,6 +78,7 @@ fn turn_offering(
             conversation,
             settings,
             tools,
+            servers: &[],
         },
         "Bonjour",
         &mut |event| {
@@ -135,6 +138,27 @@ fn a_turn_offering_the_app_tools_gives_every_event_in_order(codes: &ClaudeCodes<
     assert_eq!(events, codes.replayed);
 }
 
+fn a_turn_offering_servers_gives_every_event_in_order(codes: &ClaudeCodes<'_>) {
+    let servers = [
+        ServerName::new("claude.ai Noota").unwrap(),
+        ServerName::new("mon serveur").unwrap(),
+    ];
+    let mut events = Vec::new();
+    let end = codes.replaying.send(
+        ClaudeTurn {
+            workspace: &codes.workspace,
+            conversation: None,
+            settings: TurnSettings::default(),
+            tools: None,
+            servers: &servers,
+        },
+        "Bonjour",
+        &mut |event| events.push(event),
+    );
+    assert_eq!(end, Ok(()));
+    assert_eq!(events, codes.replayed);
+}
+
 fn stopping_without_a_turn_changes_nothing(codes: &ClaudeCodes<'_>) {
     codes.replaying.stop();
     let (end, events) = turn(codes.replaying, &codes.workspace, None);
@@ -152,6 +176,7 @@ fn a_running_turn_is_alone_and_stops_on_request(codes: &ClaudeCodes<'_>) {
                     conversation: None,
                     settings: TurnSettings::default(),
                     tools: None,
+                    servers: &[],
                 },
                 "Bonjour",
                 &mut |event| {
@@ -165,6 +190,36 @@ fn a_running_turn_is_alone_and_stops_on_request(codes: &ClaudeCodes<'_>) {
         assert_eq!(second, (Err(ClaudeError::Busy), Vec::new()));
         assert_eq!(running.join().unwrap(), Err(ClaudeError::Stopped));
     });
+}
+
+/// Un Claude Code préparé pour le contrat de la liste des serveurs MCP extérieurs.
+#[derive(Debug)]
+pub struct ClaudeServers<'a> {
+    /// Un Claude Code connecté qui connaît `known`.
+    pub knowing: &'a dyn ClaudeCode,
+    /// Les serveurs qu'il connaît, tels qu'il les donne.
+    pub known: Vec<ExternalServer>,
+}
+
+/// Joue tout le contrat de la liste des serveurs MCP extérieurs.
+pub fn claude_servers_contract(servers: &ClaudeServers<'_>) {
+    claude_code_gives_the_servers_it_knows_with_their_state(servers);
+    listing_the_servers_again_gives_the_same_list(servers);
+}
+
+fn claude_code_gives_the_servers_it_knows_with_their_state(servers: &ClaudeServers<'_>) {
+    assert_eq!(
+        servers.knowing.external_servers(),
+        Ok(servers.known.clone())
+    );
+}
+
+fn listing_the_servers_again_gives_the_same_list(servers: &ClaudeServers<'_>) {
+    servers.knowing.external_servers().unwrap();
+    assert_eq!(
+        servers.knowing.external_servers(),
+        Ok(servers.known.clone())
+    );
 }
 
 /// Deux Claude Code connectés, préparés pour le contrat du compte Claude.

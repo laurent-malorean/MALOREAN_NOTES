@@ -13,6 +13,8 @@ Autorisations validées par l'utilisateur le 19/11 : Claude lit, crée et modifi
 
 **Révision du 20/11** : Claude reçoit aussi les outils de l'application (chercher avec l'index, modèles, historique…), par un seul serveur MCP local, celui de l'application, joint sans aucun port réseau (fiche 0040). Rien d'autre ne change : aucun autre serveur MCP, chaque outil de l'application permis par son nom.
 
+**Révision du 27/11** : l'utilisateur peut permettre, serveur par serveur, des serveurs MCP extérieurs (connecteurs claude.ai, serveurs ajoutés à son Claude Code) ; tous les autres restent fermés (fiche 0105).
+
 Trois façons de faire ont été pesées :
 
 - **Un terminal intégré** qui lance `claude` en mode interactif : rien à comprendre du dialogue, mais ce n'est pas une discussion de l'application — pas de notes modifiées cliquables, pas de carte des agents, un émulateur de terminal à embarquer. Écarté.

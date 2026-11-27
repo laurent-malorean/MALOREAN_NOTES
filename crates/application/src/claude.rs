@@ -5,6 +5,7 @@ use std::fmt::Debug;
 
 use domain::app_tools::AppToolsKey;
 use domain::claude::{ClaudeEvent, ConversationId, TurnSettings};
+use domain::external_servers::{ExternalServer, ServerName};
 
 use crate::WorkspaceLocation;
 
@@ -93,6 +94,9 @@ pub struct ClaudeTurn<'a> {
     pub settings: TurnSettings,
     /// La clé du tour, si les outils de l'application sont offerts (fiche 0040).
     pub tools: Option<&'a AppToolsKey>,
+    /// Les serveurs MCP extérieurs permis à Claude pour ce tour (fiche 0105) ; aucun autre serveur
+    /// extérieur n'est ouvert.
+    pub servers: &'a [ServerName],
 }
 
 /// Claude Code, lancé pour chaque tour dans le dossier de l'espace de travail.
@@ -100,6 +104,16 @@ pub trait ClaudeCode: Send + Sync + Debug {
     /// Si Claude Code peut répondre, et avec quel compte, sinon pourquoi ; le modèle n'est pas
     /// appelé.
     fn status(&self) -> ClaudeStatus;
+
+    /// Les serveurs MCP extérieurs que Claude Code connaît (fiche 0105), avec leur état. La lecture
+    /// peut durer plus de dix secondes : à ne jamais faire sur le fil principal. Elle ne connecte
+    /// rien et ne garde rien.
+    ///
+    /// # Errors
+    ///
+    /// [`ClaudeError::Missing`] si Claude Code ne peut pas être lancé, [`ClaudeError::Failed`] s'il
+    /// ne donne pas sa liste.
+    fn external_servers(&self) -> Result<Vec<ExternalServer>, ClaudeError>;
 
     /// Déconnecte Claude Code de son compte, pour tout le Mac (Terminal et VS Code compris).
     ///
@@ -126,7 +140,8 @@ pub trait ClaudeCode: Send + Sync + Debug {
     /// Joue le tour `turn` : envoie `message` à Claude dans son espace de travail, en continuant
     /// sa conversation s'il y en a une, avec ses réglages, et donne à `on_event` chaque événement
     /// de Claude dès qu'il arrive. Avec la clé du tour, Claude reçoit aussi les outils de
-    /// l'application, si Claude Code sait les joindre (fiche 0040). Rend la main à la fin du tour.
+    /// l'application, si Claude Code sait les joindre (fiche 0040), et ceux des seuls serveurs MCP
+    /// extérieurs du tour (fiche 0105). Rend la main à la fin du tour.
     ///
     /// # Errors
     ///

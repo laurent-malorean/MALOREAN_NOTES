@@ -3,6 +3,7 @@
 use std::sync::{Mutex, PoisonError};
 
 use domain::MeaningModel;
+use domain::external_servers::ServerName;
 
 use crate::{Preferences, StoreError, Workspaces};
 
@@ -12,6 +13,7 @@ pub struct FakePreferences {
     workspaces: Mutex<Workspaces>,
     meaning_model: Mutex<MeaningModel>,
     voice_language: Mutex<Option<String>>,
+    allowed_servers: Mutex<Vec<ServerName>>,
 }
 
 impl Default for FakePreferences {
@@ -20,6 +22,7 @@ impl Default for FakePreferences {
             workspaces: Mutex::default(),
             meaning_model: Mutex::new(MeaningModel::DEFAULT),
             voice_language: Mutex::new(None),
+            allowed_servers: Mutex::default(),
         }
     }
 }
@@ -69,6 +72,22 @@ impl Preferences for FakePreferences {
             .voice_language
             .lock()
             .unwrap_or_else(PoisonError::into_inner) = language.map(str::to_owned);
+        Ok(())
+    }
+
+    fn allowed_servers(&self) -> Result<Vec<ServerName>, StoreError> {
+        Ok(self
+            .allowed_servers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone())
+    }
+
+    fn save_allowed_servers(&self, servers: &[ServerName]) -> Result<(), StoreError> {
+        *self
+            .allowed_servers
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = servers.to_vec();
         Ok(())
     }
 }

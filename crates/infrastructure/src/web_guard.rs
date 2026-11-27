@@ -1,10 +1,11 @@
 //! Garde-fou du web (fiche 0032) : une fois que Claude a lu le web pendant un tour, ses créations
 //! et modifications de fichiers sont retenues jusqu'à l'accord de l'utilisateur, car une page web
 //! lue pourrait cacher des instructions. Deux crochets de Claude Code, passés pour ce seul tour par
-//! `--settings`, le font : avant toute recherche ou lecture
-//! web, le premier pose une marque dans un dossier jetable du tour ; avant toute création ou
-//! modification, le second la cherche et, s'il la trouve, refuse l'action. Les sous-agents passent
-//! par les mêmes crochets, et les outils de l'application qui changent une note aussi.
+//! `--settings`, le font : avant toute recherche ou lecture web (ou tout outil d'un serveur MCP
+//! extérieur permis, fiche 0105), le premier pose une marque dans un dossier jetable du tour ; avant
+//! toute création ou modification, le second la cherche et, s'il la trouve, refuse l'action. Les
+//! sous-agents passent par les mêmes crochets, et les outils de l'application qui changent une note
+//! aussi.
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -22,6 +23,16 @@ pub(crate) const HELD_BACK: &str = "MALOREAN Notes a retenu cette modification :
 
 /// Les outils qui lisent le web.
 const WEB_TOOLS: &str = "WebSearch|WebFetch";
+
+/// Les outils qui lisent le web, et tous ceux des serveurs MCP extérieurs permis (fiche 0105),
+/// dont la réponse vient de l'extérieur comme une page web : `prefixes` donne le début du nom des
+/// outils de chaque serveur (`mcp__claude_ai_Noota`). Avec un serveur, c'est une expression
+/// régulière (`WebSearch|WebFetch|mcp__claude_ai_Noota__.*`).
+fn web_tools(prefixes: &[String]) -> String {
+    prefixes.iter().fold(WEB_TOOLS.to_owned(), |tools, prefix| {
+        format!("{tools}|{prefix}__.*")
+    })
+}
 
 /// Les outils de Claude Code qui créent ou modifient un fichier.
 const FILE_CHANGE_TOOLS: &str = "Write|Edit";
@@ -41,6 +52,8 @@ fn change_tools() -> String {
 #[derive(Debug)]
 pub(crate) struct WebGuard {
     folder: TempDir,
+    /// Les outils dont l'usage pose la marque.
+    web_tools: String,
 }
 
 /// `text` entre apostrophes pour le shell, qui le prend tel quel.
@@ -50,16 +63,27 @@ fn quoted(text: &str) -> String {
 
 impl WebGuard {
     /// Un garde-fou neuf, dont le dossier est rangé dans les fichiers temporaires.
+    #[cfg(test)]
     pub(crate) fn new() -> io::Result<Self> {
-        Self::within(&std::env::temp_dir())
+        Self::with_servers(&[])
+    }
+
+    /// Un garde-fou neuf, dont le dossier est rangé dans les fichiers temporaires, et qui compte
+    /// aussi comme lecture du web l'usage des outils des serveurs MCP extérieurs de début de nom
+    /// `prefixes`.
+    pub(crate) fn with_servers(prefixes: &[String]) -> io::Result<Self> {
+        Self::within(&std::env::temp_dir(), prefixes)
     }
 
     /// Un garde-fou neuf, dont le dossier est rangé dans `parent`.
-    pub(crate) fn within(parent: &Path) -> io::Result<Self> {
+    pub(crate) fn within(parent: &Path, prefixes: &[String]) -> io::Result<Self> {
         let folder = tempfile::Builder::new()
             .prefix("malorean-web-guard-")
             .tempdir_in(parent)?;
-        Ok(Self { folder })
+        Ok(Self {
+            folder,
+            web_tools: web_tools(prefixes),
+        })
     }
 
     /// La marque posée à la première lecture du web.
@@ -82,7 +106,7 @@ impl WebGuard {
             "hooks": {
                 "PreToolUse": [
                     {
-                        "matcher": WEB_TOOLS,
+                        "matcher": self.web_tools,
                         "hooks": [{ "type": "command", "command": format!("touch {mark}") }],
                     },
                     {

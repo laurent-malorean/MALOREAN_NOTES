@@ -189,6 +189,9 @@ pub enum AppError {
     /// Ce que l'interface donne pour un statut n'est pas une colonne du CRM.
     #[error("« {0} » n'est pas une colonne de ce CRM")]
     UnknownStatus(String),
+    /// Ce que l'interface donne pour un nom de serveur MCP n'est pas un nom (fiche 0105).
+    #[error("« {0} » n'est pas un nom de serveur MCP")]
+    InvalidServerName(String),
     /// L'espace de travail n'a pas de note des favoris (fiche 0102).
     #[error("Aucune note des favoris n'est choisie.")]
     NoFavoritesNote,

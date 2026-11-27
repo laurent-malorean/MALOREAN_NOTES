@@ -20,6 +20,7 @@ pub mod content_type;
 pub mod crm;
 pub mod diff;
 pub mod export;
+pub mod external_servers;
 pub mod favorites;
 pub mod favorites_note;
 pub mod file_name;

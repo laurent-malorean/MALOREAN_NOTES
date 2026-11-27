@@ -20,14 +20,15 @@ pub use dto::{
     CrmPersonChangeItem, CrmPersonItem, CrmProjectChangeItem, CrmProjectItem, DifferenceItem,
     DifferenceKind, EffortItem, EntryItem, ExcerptPartItem, ExportFile, ExportFormatItem,
     FavoritesNoteItem, IndexOverviewItem, LinkResolutionItem, LinkableItem, LinkingNoteItem,
-    MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem, MeaningUseItem, MenuEntryItem,
-    MenuRoleItem, MindMapItem, MindNodeItem, ModelDownloadItem, ModelOverviewItem, NoDataItem,
-    NoteContent, NoteListItem, NoteOrderItem, PassageItem, PlaceItem, PlacementItem, ProposalItem,
-    RemovedLineItem, SaveResult, SavedNote, SearchResultItem, StageChangeItem, StandardItem,
-    TagItem, TallyItem, TemplatesFolderItem, TrashInfo, TrashedNoteItem, TurnSettingsItem,
-    UrgencyItem, VersionItem, VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem,
-    VoiceLanguageItem, WeekDayItem, WeekItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
-    WorkspaceNoteItem, WritingActionItem, YearToneItem,
+    McpServerItem, McpServersItem, MeaningOverviewItem, MeaningProgressItem, MeaningSearchItem,
+    MeaningUseItem, MenuEntryItem, MenuRoleItem, MindMapItem, MindNodeItem, ModelDownloadItem,
+    ModelOverviewItem, NoDataItem, NoteContent, NoteListItem, NoteOrderItem, PassageItem,
+    PlaceItem, PlacementItem, ProposalItem, RemovedLineItem, SaveResult, SavedNote,
+    SearchResultItem, ServerStateItem, StageChangeItem, StandardItem, TagItem, TallyItem,
+    TemplatesFolderItem, TrashInfo, TrashedNoteItem, TurnSettingsItem, UrgencyItem, VersionItem,
+    VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem, VoiceLanguageItem, WeekDayItem,
+    WeekItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem, WritingActionItem,
+    YearToneItem,
 };
 pub use error::ApiError;
 pub use session::{AppScreen, MeaningEvents, Session};

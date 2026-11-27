@@ -180,6 +180,7 @@ fn after_a_login_a_turn_can_start() {
             conversation: None,
             settings: domain::claude::TurnSettings::default(),
             tools: None,
+            servers: &[],
         },
         "Bonjour",
         &mut |_| {},
