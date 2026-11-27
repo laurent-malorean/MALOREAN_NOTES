@@ -2,12 +2,10 @@
 
 use std::sync::Arc;
 
-use application::use_cases::{AttachmentSource, LinkDestination};
+use application::use_cases::AttachmentSource;
 use base64::Engine;
-use domain::WebAddress;
 use tauri::ipc::Invoke;
-use tauri::{AppHandle, Runtime, State};
-use tauri_plugin_opener::OpenerExt;
+use tauri::{Runtime, State};
 
 use crate::{
     ApiError, AttachedFile, IndexOverviewItem, LinkingNoteItem, NoteContent, NoteListItem,
@@ -433,47 +431,6 @@ pub async fn attach_file(
     .await
 }
 
-/// Ouvre ce que vise la cible d'un lien Markdown de la note : une adresse web dans le
-/// navigateur du Mac, une pièce jointe de la note avec l'application du Mac. Rien d'autre ne
-/// s'ouvre ainsi.
-///
-/// # Errors
-///
-/// Le message de l'erreur, prêt à afficher : voir [`Session::link_destination`]. S'y ajoute
-/// l'échec de l'ouverture par le Mac.
-#[tauri::command]
-pub async fn open_link_target<R: Runtime>(
-    app: AppHandle<R>,
-    session: SharedSession<'_>,
-    path: String,
-    target: String,
-) -> Result<(), ApiError> {
-    let session = Arc::clone(&session);
-    let destination = in_background(move || session.link_destination(&path, &target)).await?;
-    let opened = match destination {
-        LinkDestination::Web(address) => app.opener().open_url(address.as_str(), None::<&str>),
-        LinkDestination::Attachment(location) => {
-            app.opener().open_path(location.as_str(), None::<&str>)
-        }
-    };
-    opened.map_err(|e| ApiError::internal(&e))
-}
-
-/// Ouvre l'adresse web `address` dans le navigateur du Mac, comme le lien Markdown d'une note.
-///
-/// # Errors
-///
-/// `address` n'est pas une adresse web (`http`, `https`, `mailto`), ou le Mac n'a pas pu
-/// l'ouvrir.
-#[tauri::command]
-pub fn open_web_address<R: Runtime>(app: AppHandle<R>, address: &str) -> Result<(), ApiError> {
-    let address =
-        WebAddress::in_link(address).ok_or_else(|| ApiError::not_a_web_address(address))?;
-    app.opener()
-        .open_url(address.as_str(), None::<&str>)
-        .map_err(|e| ApiError::internal(&e))
-}
-
 /// Toutes les commandes que l'interface peut appeler ; l'assemblage les enregistre telles quelles.
 #[expect(
     clippy::too_many_lines,
@@ -522,8 +479,8 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         restore_folder,
         empty_trash,
         attach_file,
-        open_link_target,
-        open_web_address,
+        links::open_link_target,
+        links::open_web_address,
         history::list_versions,
         history::compare_version,
         history::keep_version,
