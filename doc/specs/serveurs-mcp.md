@@ -24,7 +24,7 @@ Ces mots entrent dans l'ontologie avant le code.
 
 - **Où** : dans l'onglet « Claude » des Réglages, une rubrique **« Serveurs MCP »**, sous le réglage des modifications après une lecture du web.
 - **Phrase d'introduction** : « Les services que Claude peut utiliser dans la colonne Claude Code, en plus des outils de l'application. Seuls les serveurs cochés lui sont ouverts. »
-- **La liste** : chaque serveur MCP extérieur que Claude Code connaît, une ligne chacun, triée par nom :
+- **La liste** : chaque serveur MCP extérieur que Claude Code connaît (connecteurs claude.ai, serveurs ajoutés à Claude Code qui se lancent sur le Mac), sauf les serveurs plugins et les serveurs web ajoutés à la main (voir « Ce que les essais du 27/11 ont montré »), une ligne chacun, triée par nom :
   - une case à cocher, nommée par le serveur ;
   - son nom, tel que Claude Code le donne, sans le préfixe « claude.ai » ;
   - son état, en toutes lettres : « Connecté », « À connecter » ou « En échec ».
@@ -74,7 +74,7 @@ sont ouverts.
 
 - **Choix exprès de l'utilisateur** : aucun serveur extérieur n'est ouvert sans qu'il l'ait coché lui-même. Cocher un serveur donne à Claude tous ses outils, y compris ceux qui écrivent dans le service (envoyer un message Slack, créer une page Notion…) : la phrase d'introduction et l'aide de la case le disent.
 - **Révision de la fiche 0032** : elle disait « aucun autre serveur MCP que celui de l'application ». Une nouvelle fiche de décision la révise : d'autres serveurs, seulement ceux cochés par l'utilisateur, tous les autres restent fermés.
-- **Aucun secret dans l'application** : ni jeton, ni mot de passe, ni configuration de serveur copiée ; seuls les noms des serveurs cochés sont gardés.
+- **Aucun secret gardé par l'application** : ni jeton, ni mot de passe ; seuls les noms des serveurs cochés sont gardés. La description d'un serveur ajouté dans Claude Code est relue à chaque tour et n'est jamais écrite ailleurs.
 
 ## 5. Hors de cette version
 
@@ -91,7 +91,10 @@ Essais faits avec Claude Code lancé comme la colonne Claude Code le lance, sans
 - Le serveur de l'application et Noota répondent ensemble dans le même tour.
 - Seul Noota permis : l'appel d'un outil Notion a été refusé d'office.
 - Sans moyen d'aller chercher les outils une fois prêts, Claude ne voyait pas les connecteurs dans 3 essais sur 4 ; avec ce moyen, il les a trouvés.
-- Les connecteurs claude.ai arrivent même quand l'application ignore les réglages de l'utilisateur. Les serveurs ajoutés par l'utilisateur à son Claude Code n'ont pas été essayés : ils le seront pendant le développement, et la liste ne montrera que les serveurs qui arrivent réellement à la colonne.
+- Les connecteurs claude.ai arrivent d'eux-mêmes, même quand l'application ignore les réglages de l'utilisateur.
+- Les serveurs ajoutés par l'utilisateur à son Claude Code (pour tout le Mac ou pour un dossier) n'arrivent pas d'eux-mêmes : deux serveurs d'essai, ajoutés puis retirés, étaient « Connecté » dans la liste de Claude Code, mais la colonne ne les a pas reçus. Lire les réglages de l'utilisateur pour les recevoir ouvrirait aussi ses autres réglages (crochets, permissions), ce que la fiche 0032 interdit. À la place, l'application lit la description de chaque serveur coché dans Claude Code au début de chaque tour, et la passe elle-même à Claude Code, comme elle passe déjà son propre serveur (ce passage a été essayé : le serveur de l'application ainsi passé et Noota ont répondu dans le même tour).
+- Serveurs plugins de Claude Code : ils n'arrivent pas non plus et ne sont pas dans la liste de cette version.
+- Reste non essayé, faute d'un tel serveur sur le Mac : un serveur web ajouté à la main dans Claude Code et qui demande une connexion (OAuth). La connexion faite dans Claude Code est-elle reprise quand l'application passe le serveur elle-même ? L'essai demande d'abord que l'utilisateur ajoute et connecte un tel serveur dans le Terminal. Tant que cet essai n'est pas fait, ces serveurs restent hors de cette version.
 
 ## 7. Vérification avec les vrais outils
 
