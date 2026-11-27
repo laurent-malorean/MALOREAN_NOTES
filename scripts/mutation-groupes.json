@@ -215,25 +215,53 @@
       ]
     },
     {
-      "nom": "infrastructure-divers",
-      "titre": "Infrastructure : modèles de sens, historique, surveillance et préférences",
+      "nom": "infrastructure-modeles-de-sens",
+      "titre": "Infrastructure : dossier des modèles de sens",
       "crate": "infrastructure",
       "fichiers": [
-        "crates/infrastructure/src/model_folder.rs",
+        "crates/infrastructure/src/model_folder.rs"
+      ]
+    },
+    {
+      "nom": "infrastructure-calcul-surveillance",
+      "titre": "Infrastructure : calcul des vecteurs, garde du web et surveillance",
+      "crate": "infrastructure",
+      "fichiers": [
         "crates/infrastructure/src/candle_embedder.rs",
         "crates/infrastructure/src/web_guard*",
+        "crates/infrastructure/src/fs_watcher.rs"
+      ]
+    },
+    {
+      "nom": "infrastructure-historique",
+      "titre": "Infrastructure : historique des versions",
+      "crate": "infrastructure",
+      "fichiers": [
+        "crates/infrastructure/src/fs_history.rs"
+      ]
+    },
+    {
+      "nom": "infrastructure-preferences-cles",
+      "titre": "Infrastructure : préférences et clés de branchement",
+      "crate": "infrastructure",
+      "fichiers": [
         "crates/infrastructure/src/json_preferences.rs",
-        "crates/infrastructure/src/fs_history.rs",
-        "crates/infrastructure/src/fs_watcher.rs",
         "crates/infrastructure/src/fs_connection_keys.rs"
       ]
     },
     {
-      "nom": "infrastructure-claude",
-      "titre": "Infrastructure : Claude Code (lancement et flux)",
+      "nom": "infrastructure-claude-lancement",
+      "titre": "Infrastructure : lancement de Claude Code",
       "crate": "infrastructure",
       "fichiers": [
-        "crates/infrastructure/src/claude_code_cli*",
+        "crates/infrastructure/src/claude_code_cli*"
+      ]
+    },
+    {
+      "nom": "infrastructure-claude-flux",
+      "titre": "Infrastructure : flux de Claude Code",
+      "crate": "infrastructure",
+      "fichiers": [
         "crates/infrastructure/src/claude_stream*"
       ]
     },
