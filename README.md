@@ -53,7 +53,7 @@ Deux IA y sont intégrées : Apple Intelligence pour corriger, reformuler et ré
 
 ### Pilotable par un agent IA (MCP)
 
-L'application offre ses actions aux IA par un serveur [MCP](https://modelcontextprotocol.io) local : 67 outils pour chercher, lire, créer, ranger et modifier les notes, les cartes mentales, les cahiers, les canvas et le CRM. Un agent fait donc tout ce que fait l'utilisateur, avec les mêmes règles. La liste complète des outils et leurs paramètres : [`doc/mcp/`](doc/mcp/).
+L'application offre ses actions aux IA par un serveur [MCP](https://modelcontextprotocol.io) local : 70 outils pour chercher, lire, créer, ranger et modifier les notes, les cartes mentales, les cahiers, les canvas et le CRM. Un agent fait donc tout ce que fait l'utilisateur, avec les mêmes règles. La liste complète des outils et leurs paramètres : [`doc/mcp/`](doc/mcp/).
 
 - **Branchement en deux clics** : dans les Réglages, onglet « Brancher une IA », créez une clé de branchement, puis copiez le bloc prêt à coller pour Claude (`.mcp.json`) ou pour Codex (`~/.codex/config.toml`).
 - **Sous votre contrôle** : aucun port réseau ouvert ; vous cochez les espaces de travail ouverts aux IA ; révoquer la clé coupe tout de suite les IA branchées.

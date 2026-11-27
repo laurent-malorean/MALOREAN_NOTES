@@ -202,6 +202,17 @@ Quand l'application écrit elle-même un lien (menu des liens), elle écrit le n
 - Les **liens entrants** d'une note sont les autres notes dont un lien la désigne sans ambiguïté. Les liens sont cherchés dans tout le texte de la note, en-tête et blocs de code compris (une action du CRM fait exception, voir `doc/format/crm.md`).
 - Changer le titre d'une note, la renommer ou la déplacer **ne réécrit pas** les liens des autres notes : un lien vers l'ancien titre ne mène plus nulle part, et un lien `[[Dossier/titre]]` ne suit pas un déplacement.
 
+## La note des favoris
+
+Les favoris tiennent dans une note ordinaire, que l'utilisateur choisit ou crée dans les Réglages (onglet « Favoris ») ; son chemin est gardé par espace de travail dans les préférences de l'application, jamais dans le dossier de l'espace. Elle n'a rien de particulier : aucune propriété d'en-tête, l'utilisateur la range comme il veut (sections, ordre, commentaires).
+
+- **Ligne de favori** : une ligne faite uniquement d'un lien entre notes, avec ou sans marque de liste (`- `, `* `, `1. `) et espaces autour ; `[[titre|texte]]` désigne `titre`. Le contenu désigné (note, cahier de recherche, carte mentale, canvas, CRM entier) est en favori si le lien le désigne sans ambiguïté. Un lien au milieu d'une phrase, plusieurs liens sur une ligne, un lien sans cible ou ambigu ne font pas un favori ; l'en-tête n'est jamais lu.
+- **Ajout** par l'étoile ou `add_favorite` : une ligne `- [[lien]]` est écrite à la fin de la note (le lien est celui du menu des liens), avec les fins de ligne du texte ; un texte sans fin de ligne finale en reçoit une avant.
+- **Retrait** : toutes les lignes qui désignent le contenu sont retirées ; « Annuler » les remet à leur place exacte.
+- Un contenu mis à la corbeille laisse sa ligne (lien sans cible) ; l'utilisateur la retire à la main. Le choix de la note suit son renommage et son déplacement (seule ou avec son dossier) ; à la corbeille, il n'y a plus de note des favoris.
+
+Spécification : `doc/specs/favoris.md` ; décision : fiche 0102.
+
 ## Liens Markdown : adresses web et pièces jointes
 
 Un lien Markdown ordinaire `[texte](cible)` ou une image `![texte](cible)` est ouvert selon sa cible :

@@ -227,7 +227,7 @@ Une note est toujours écrite de façon atomique : d'abord un fichier caché `.<
 Rien de ce qui suit n'est écrit dans le dossier de l'espace de travail ; tout se reconstruit ou se rechoisit sans perte de notes :
 
 - **L'index** (index de mots et index de sens) : un fichier SQLite par espace de travail, `~/Library/Application Support/com.malorean.notes/index-<empreinte>.sqlite`, où l'empreinte est le FNV-1a 64 bits du chemin du dossier, en 16 chiffres hexadécimaux. C'est un cache, reconstructible à tout moment depuis les fichiers (« Reconstruire l'index »).
-- **Les préférences de l'application** : `~/Library/Application Support/com.malorean.notes/preferences.json` : la liste des espaces de travail (nom et dossier), le dernier ouvert, et pour chacun son **dossier des modèles** et son autorisation pour les IA.
+- **Les préférences de l'application** : `~/Library/Application Support/com.malorean.notes/preferences.json` : la liste des espaces de travail (nom et dossier), le dernier ouvert, et pour chacun son **dossier des modèles**, sa **note des favoris** (son chemin ; voir `doc/format/note.md`, « La note des favoris ») et son autorisation pour les IA.
 - **Les modèles de sens** téléchargés : `~/Library/Application Support/com.malorean.notes/models/`.
 - **Les réglages de confort** gardés par l'interface pour chaque espace de travail : disposition des colonnes, dossiers pliés, tri de la liste, notes récentes, et réglages du **journal** (son dossier, « Journal » par défaut, et la création de la note du jour au lancement).
 

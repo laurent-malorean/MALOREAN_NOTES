@@ -7,7 +7,7 @@ Le même serveur, avec les mêmes outils, sert à deux endroits :
 - la **colonne Claude Code** de l'application, le temps d'un tour ;
 - une **IA extérieure branchée** : Claude Code hors de l'application, l'extension Claude de VS Code, Codex.
 
-Dans la liste de l'IA, chaque outil s'appelle `mcp__malorean_notes__<outil>` (par exemple `mcp__malorean_notes__search_notes`). Le serveur compte **67 outils**, listés plus bas.
+Dans la liste de l'IA, chaque outil s'appelle `mcp__malorean_notes__<outil>` (par exemple `mcp__malorean_notes__search_notes`). Le serveur compte **70 outils**, listés plus bas.
 
 ## Brancher une IA extérieure
 
@@ -46,7 +46,7 @@ Tout se fait dans les Réglages, onglet **« Brancher une IA »**.
 
 ## Le protocole
 
-Une demande JSON-RPC par ligne, une réponse par ligne. Le serveur comprend `initialize` (sa présentation, avec la consigne générale sur les outils), `ping`, `tools/list` (les 67 outils, leur description et le schéma de leur entrée) et `tools/call`. Une autre méthode reçoit l'erreur `-32601` « méthode inconnue ».
+Une demande JSON-RPC par ligne, une réponse par ligne. Le serveur comprend `initialize` (sa présentation, avec la consigne générale sur les outils), `ping`, `tools/list` (les 70 outils, leur description et le schéma de leur entrée) et `tools/call`. Une autre méthode reçoit l'erreur `-32601` « méthode inconnue ».
 
 Un appel d'outil :
 
@@ -114,6 +114,12 @@ Dans les pages de ce dossier, les exemples donnent la partie `params` d'un appel
 - [`remove_tags`](etiquettes-et-epingles.md#remove_tags) : retire des étiquettes.
 - [`pin_note`](etiquettes-et-epingles.md#pin_note) : épingle une note.
 - [`unpin_note`](etiquettes-et-epingles.md#unpin_note) : désépingle une note.
+
+### Favoris ([page](favoris.md))
+
+- [`add_favorite`](favoris.md#add_favorite) : met un contenu en favori (une ligne de lien à la fin de la note des favoris).
+- [`remove_favorite`](favoris.md#remove_favorite) : retire un contenu des favoris.
+- [`list_favorites`](favoris.md#list_favorites) : la note des favoris et les contenus en favori, dans l'ordre de la note.
 
 ### Historique des versions ([page](historique.md))
 
