@@ -34,7 +34,8 @@
     "active": true,
     "targets": ["app"],
     "category": "Productivity",
-    "externalBin": ["binaries/malorean-writing"],
+    "externalBin": ["binaries/malorean-writing", "binaries/malorean-voice"],
+    "macOS": { "entitlements": "Entitlements.plist" },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

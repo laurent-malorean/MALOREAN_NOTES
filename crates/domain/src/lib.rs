@@ -44,6 +44,7 @@ pub mod segments;
 pub mod tag;
 pub mod template;
 pub mod title;
+pub mod voice_input;
 pub mod web_address;
 pub mod writing;
 

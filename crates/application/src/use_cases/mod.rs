@@ -30,6 +30,7 @@ mod save_note;
 mod search_notes;
 mod tags;
 mod trash;
+mod voice_input;
 mod workspace;
 mod writing;
 
@@ -79,5 +80,6 @@ pub use save_note::{SaveNote, SaveOutcome};
 pub use search_notes::{MAX_RESULTS, SearchNotes, SearchResult};
 pub use tags::{ChangeTags, ListTaggedNotes, ListTags, ReadTags};
 pub use trash::{Trash, TrashView};
+pub use voice_input::{VoiceInput, VoiceStatus};
 pub use workspace::{ManageWorkspaces, OpenedWorkspace};
 pub use writing::{Proposal, ProposeRewriting};

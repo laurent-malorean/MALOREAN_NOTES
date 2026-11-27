@@ -12,6 +12,8 @@ mod fake_connection;
 mod fake_exports;
 mod fake_meaning;
 mod fake_opener;
+mod fake_preferences;
+mod fake_voice;
 mod fake_watcher;
 mod fake_writing;
 mod fakes;
@@ -29,6 +31,7 @@ pub use fake_clipboard::InMemoryClipboard;
 pub use fake_connection::{CountingSecretMaker, FakeConnectionSocket, InMemoryConnectionKeys};
 pub use fake_exports::InMemoryExportStore;
 pub use fake_meaning::{FakeEmbedder, FakeMeaningModels, FakeUptime};
+pub use fake_voice::{FakeTranscriber, RecordingVoiceEvents};
 pub use fake_watcher::FakeWatcher;
 pub use fake_writing::FakeWritingAssistant;
 
@@ -46,4 +49,5 @@ pub fn indexed(store: &dyn NoteStore) -> MemoryIndex {
     index
 }
 pub use fake_opener::FakeOpener;
-pub use fakes::{FakePreferences, FixedClock, InMemoryNoteStore};
+pub use fake_preferences::FakePreferences;
+pub use fakes::{FixedClock, InMemoryNoteStore};

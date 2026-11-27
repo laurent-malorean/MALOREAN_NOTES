@@ -33,6 +33,7 @@ pub mod renaming;
 pub mod research_notebook;
 pub mod tags;
 pub mod templates;
+pub mod voice;
 pub mod workspaces;
 pub mod writing;
 
@@ -522,6 +523,12 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         menu::enable_menu_items,
         writing::assistant_status,
         writing::propose_rewriting,
+        voice::voice_input_status,
+        voice::choose_voice_language,
+        voice::prepare_voice_language,
+        voice::start_voice_input,
+        voice::stop_voice_input,
+        voice::open_voice_privacy_settings,
         claude::answer_view,
         templates::templates_folder,
         templates::set_templates_folder,

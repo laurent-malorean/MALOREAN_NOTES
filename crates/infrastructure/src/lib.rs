@@ -2,6 +2,7 @@
 //! son index SQLite, exports, préférences, horloge, presse-papiers du Mac, assistant d'écriture
 //! (modèle d'IA du Mac), Claude Code piloté en arrière-plan.
 
+mod apple_voice;
 mod apple_writing;
 mod candle_embedder;
 mod claude_code_cli;
@@ -25,6 +26,7 @@ mod sqlite_meaning_index;
 mod system_clock;
 mod web_guard;
 
+pub use apple_voice::{AppleTranscriber, VOICE_HELPER};
 pub use apple_writing::{AppleWritingAssistant, WRITING_HELPER};
 pub use candle_embedder::CandleEmbedder;
 pub use claude_code_cli::{AppToolsRelay, ClaudeCodeCli, claude_folders};

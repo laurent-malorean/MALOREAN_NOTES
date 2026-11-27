@@ -16,6 +16,7 @@ mod meaning;
 mod mind_map;
 mod templates;
 mod turn_settings;
+mod voice;
 
 pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
@@ -42,6 +43,7 @@ pub use mind_map::{MindMapItem, MindNodeItem, PlaceItem};
 pub use templates::TemplatesFolderItem;
 pub use turn_settings::{ClaudeModelItem, EffortItem, TurnSettingsItem};
 pub(crate) use turn_settings::{continued_conversation, turn_settings};
+pub use voice::{VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem, VoiceLanguageItem};
 
 /// L'espace de travail ouvert.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

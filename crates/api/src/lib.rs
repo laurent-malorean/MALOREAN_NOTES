@@ -23,8 +23,9 @@ pub use dto::{
     NoteListItem, NoteOrderItem, PassageItem, PlaceItem, PlacementItem, ProposalItem,
     RemovedLineItem, SaveResult, SavedNote, SearchResultItem, StageChangeItem, StandardItem,
     TagItem, TallyItem, TemplatesFolderItem, TrashInfo, TrashedNoteItem, TurnSettingsItem,
-    UrgencyItem, VersionItem, WeekDayItem, WeekItem, WorkspaceChanged, WorkspaceInfo,
-    WorkspaceItem, WorkspaceNoteItem, WritingActionItem,
+    UrgencyItem, VersionItem, VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem,
+    VoiceLanguageItem, WeekDayItem, WeekItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem,
+    WorkspaceNoteItem, WritingActionItem,
 };
 pub use error::ApiError;
 pub use session::{AppScreen, MeaningEvents, Session};
