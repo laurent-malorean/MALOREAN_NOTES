@@ -1,6 +1,6 @@
 # Serveurs MCP de la colonne Claude Code
 
-Spécification fonctionnelle, rédigée le 27/11/2026, à valider. Ce document se lit seul.
+Spécification fonctionnelle, rédigée le 27/11/2026, **validée par l'utilisateur le 27/11** (demande de développement). Ce document se lit seul.
 
 ## 1. Besoin
 
