@@ -66,6 +66,7 @@ pub fn note_index_contract<I: NoteIndex>(empty_index: impl Fn() -> I) {
     a_mind_map_is_searched_by_title_and_tags_and_each_node_on_its_own(&empty_index());
     a_canvas_is_searched_by_its_name_and_the_texts_it_shows(&empty_index());
     the_crm_and_its_fiches_are_kept_with_their_type_container_and_useful_text(&empty_index());
+    an_agenda_12_and_its_events_are_kept_with_their_type_container_and_useful_text(&empty_index());
     nodes_follow_their_mind_map_kept_again_removed_or_cleared(&empty_index());
 }
 
@@ -530,6 +531,54 @@ fn the_crm_and_its_fiches_are_kept_with_their_type_container_and_useful_text(
         (ContentType::CrmAction, Some("clients.md".to_owned()))
     );
     only_the_useful_text_of_the_crm_and_its_fiches_is_searched(index);
+}
+
+const AGENDA_12: &str = "---\ntype: agenda-12\ncolonnes: 6\n---\n# Salons\n";
+const AGENDA_12_EVENT: &str = "---\ntype: agenda-12-evenement\nmois: 2\njour: 10\nannee: 2027\npays: DE\nville: Nuremberg\ntags: [salon]\n---\n# Embedded World\n\nStand 4A-110.\n";
+const AGENDA_12_CLOSED: &str =
+    "---\ntype: agenda-12-evenement\nmois: 2\nclos-le: 2026-11-27\n---\n# Embedded World passé\n";
+
+fn an_agenda_12_and_its_events_are_kept_with_their_type_container_and_useful_text(
+    index: &impl NoteIndex,
+) {
+    index
+        .put(&[
+            note("pro/salons.md", AGENDA_12, 1),
+            note("pro/salons/embedded-world.md", AGENDA_12_EVENT, 2),
+            note("pro/salons/archives/embedded-world.md", AGENDA_12_CLOSED, 3),
+        ])
+        .unwrap();
+    let all = index.all_notes().unwrap();
+    let kind_of = |name: &str| {
+        let summary = all.iter().find(|n| n.path().to_path() == name).unwrap();
+        (
+            summary.content_type(),
+            summary.container().map(NotePath::to_path),
+        )
+    };
+    assert_eq!(kind_of("pro/salons.md"), (ContentType::Agenda12, None));
+    let agenda = Some("pro/salons.md".to_owned());
+    assert_eq!(
+        kind_of("pro/salons/embedded-world.md"),
+        (ContentType::Agenda12Event, agenda.clone())
+    );
+    assert_eq!(
+        kind_of("pro/salons/archives/embedded-world.md"),
+        (ContentType::Agenda12Event, agenda)
+    );
+    let by = |query: &str, types: &[ContentType]| found_items(index, query, types);
+    // Le texte, la ville, le nom du pays et les étiquettes d'un événement sont cherchés.
+    for query in ["stand", "nuremberg", "allemagne", "salon"] {
+        assert_eq!(by(query, &[ContentType::Agenda12Event]).len(), 1, "{query}");
+    }
+    // Pas ses propriétés techniques.
+    for query in ["mois", "2027", "clos-le"] {
+        assert!(
+            by(query, &[ContentType::Agenda12Event]).is_empty(),
+            "{query}"
+        );
+    }
+    assert!(by("stand", &[ContentType::Note]).is_empty());
 }
 
 fn only_the_useful_text_of_the_crm_and_its_fiches_is_searched(index: &impl NoteIndex) {

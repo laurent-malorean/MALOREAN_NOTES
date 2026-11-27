@@ -46,8 +46,8 @@ pub fn followed(note: &NotePath, change: PlaceChange<'_>) -> Option<NotePath> {
 }
 
 /// Un contenu de ce type peut-il être mis en favori ? Une note, un cahier de recherche, une carte
-/// mentale, un canvas et un CRM entier le peuvent ; une fiche du CRM, une entrée de cahier et un
-/// nœud de carte mentale n'ont pas d'étoile.
+/// mentale, un canvas, un CRM entier et un agenda 12 entier le peuvent ; une fiche du CRM, un
+/// événement d'un agenda 12, une entrée de cahier et un nœud de carte mentale n'ont pas d'étoile.
 #[must_use]
 pub fn can_be_favorite(kind: ContentType) -> bool {
     matches!(
@@ -57,6 +57,7 @@ pub fn can_be_favorite(kind: ContentType) -> bool {
             | ContentType::MindMap
             | ContentType::Canvas
             | ContentType::Crm
+            | ContentType::Agenda12
     )
 }
 
@@ -184,6 +185,7 @@ mod tests {
                 ContentType::MindMap,
                 ContentType::Canvas,
                 ContentType::Crm,
+                ContentType::Agenda12,
             ]
         );
     }

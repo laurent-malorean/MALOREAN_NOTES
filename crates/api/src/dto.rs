@@ -3,10 +3,13 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+mod agenda_12;
+mod agenda_12_change;
 mod canvas;
 mod claude;
 mod claude_load;
 mod connection;
+mod content_type;
 mod crm;
 mod crm_change;
 mod favorites;
@@ -17,9 +20,18 @@ mod templates;
 mod turn_settings;
 mod voice;
 
+pub use agenda_12::{
+    Agenda12CellItem, Agenda12ClosedItem, Agenda12EndItem, Agenda12EventDetailItem,
+    Agenda12EventItem, Agenda12Item, Agenda12LineItem, CountryItem, YearToneItem,
+};
+pub use agenda_12_change::{Agenda12ClosingItem, Agenda12EventChangeItem};
+pub(crate) use agenda_12_change::{
+    columns as agenda_12_columns, country as agenda_12_country, month as agenda_12_month,
+};
 pub use canvas::{CanvasArrowItem, CanvasCardItem, CanvasExtraItem, CanvasFileItem, CanvasItem};
 pub use claude::{ActionKindItem, AgentStateItem, ClaudeEventItem, ClaudeStatusItem};
 pub use connection::{AiWorkspaceItem, ConnectionInfo, ConnectionKeyItem};
+pub use content_type::ContentTypeItem;
 pub use crm::{
     ActionPersonItem, ChecklistEntryItem, ChecklistItem, ColumnItem, CommentItem, CrmActionItem,
     CrmCompanyItem, CrmItem, CrmPersonItem, CrmProjectItem, NoDataItem, PassageItem, TallyItem,
@@ -110,53 +122,6 @@ impl From<NoteOrderItem> for domain::NoteOrder {
         match order {
             NoteOrderItem::Modified => Self::Modified,
             NoteOrderItem::Title => Self::Title,
-        }
-    }
-}
-
-/// Le type de contenu d'un élément de l'index.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-pub enum ContentTypeItem {
-    /// Une note.
-    Note,
-    /// Un cahier de recherche.
-    ResearchNotebook,
-    /// Une carte mentale.
-    MindMap,
-    /// Un canvas.
-    Canvas,
-    /// Une entrée d'un cahier de recherche.
-    Entry,
-    /// Un nœud d'une carte mentale.
-    Node,
-    /// Un CRM.
-    Crm,
-    /// Une entreprise d'un CRM.
-    CrmCompany,
-    /// Une personne d'un CRM.
-    CrmPerson,
-    /// Une action d'un CRM.
-    CrmAction,
-    /// Un projet d'un CRM.
-    CrmProject,
-}
-
-impl From<domain::ContentType> for ContentTypeItem {
-    fn from(content_type: domain::ContentType) -> Self {
-        match content_type {
-            domain::ContentType::Note => Self::Note,
-            domain::ContentType::ResearchNotebook => Self::ResearchNotebook,
-            domain::ContentType::MindMap => Self::MindMap,
-            domain::ContentType::Canvas => Self::Canvas,
-            domain::ContentType::Entry => Self::Entry,
-            domain::ContentType::Node => Self::Node,
-            domain::ContentType::Crm => Self::Crm,
-            domain::ContentType::CrmCompany => Self::CrmCompany,
-            domain::ContentType::CrmPerson => Self::CrmPerson,
-            domain::ContentType::CrmAction => Self::CrmAction,
-            domain::ContentType::CrmProject => Self::CrmProject,
         }
     }
 }
@@ -353,8 +318,8 @@ pub struct LinkingNoteItem {
     pub title: String,
     /// Le dossier de la note : `""` pour la racine.
     pub folder: String,
-    /// Son type de contenu, pour le CRM et ses fiches seulement (« Action · titre » à l'écran) ;
-    /// absent pour une note.
+    /// Son type de contenu, pour le CRM, ses fiches, l'agenda 12 et ses événements seulement
+    /// (« Action · titre » à l'écran) ; absent pour une note.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub content_type: Option<ContentTypeItem>,
@@ -362,6 +327,10 @@ pub struct LinkingNoteItem {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub crm: Option<String>,
+    /// Pour un événement d'un agenda 12, le chemin de son agenda 12, où l'ouvrir ; absent sinon.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub agenda: Option<String>,
 }
 
 /// Une note de la corbeille.

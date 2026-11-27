@@ -13,7 +13,7 @@ mod crm_note;
 mod day;
 mod fiche_folders;
 mod filters;
-mod header;
+pub(crate) mod header;
 pub mod kanban;
 mod kind;
 mod links;
@@ -54,3 +54,6 @@ pub use stage::{
 };
 pub use tally::{Tally, sort_most_late_first};
 pub use week::{Week, WeekColumns};
+
+/// Le texte sans majuscules ni accents, que les autres types de contenu emploient aussi pour comparer.
+pub(crate) use text::folded;

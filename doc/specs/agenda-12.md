@@ -138,3 +138,67 @@ Le format des fichiers (fichier de l'agenda 12, dossier des événements, sous-d
 - Vue qui regroupe plusieurs agendas 12.
 - Glisser-déposer d'un événement entre deux cases.
 - Événements répétés automatiquement : la copie à la clôture en tient lieu.
+
+## 13. Contrat du moteur
+
+Ce que le moteur offre à l'interface (fiche 0104). Les commandes agissent sur l'espace de travail ouvert ; les arguments sont en camelCase ; une erreur est un objet `{ message }` dont le message est en français, prêt à afficher. Les types sont générés dans `ui/src/bridge/generated/` (`Agenda12Item`, `Agenda12CellItem`, `Agenda12EventItem`, `Agenda12LineItem`, `Agenda12EndItem`, `Agenda12EventDetailItem`, `Agenda12ClosedItem`, `Agenda12EventChangeItem`, `Agenda12ClosingItem`, `CountryItem`, `YearToneItem`). Les chemins sont ceux de l'espace de travail (`pro/salons.md`) ; un événement se désigne par le chemin de sa note.
+
+### Types
+
+- `Agenda12Item` : `{ title, columns, tags, cells, archives, unreadable }` : l'agenda 12 lu.
+  - `title` : son titre (« Sans titre » s'il n'en a pas) ; `columns` : 3, 4 ou 6 (4 par défaut) ;
+  - `tags` : les étiquettes portées par les événements de la grille (la liste du filtre, § 5.4), par ordre alphabétique, chacune une fois ; les archives n'y comptent pas ;
+  - `cells` : toujours 12 `Agenda12CellItem`, de janvier à décembre ;
+  - `archives` : les événements clos, du plus récemment clos au plus ancien (§ 8), jamais filtrés ;
+  - `unreadable` : les chemins des événements illisibles (sans titre ou sans mois lisible), laissés de côté et signalés, jamais modifiés ni effacés.
+- `Agenda12CellItem` : `{ month, name, events }` : `month` de 1 à 12, `name` en français et en minuscules (`février`), `events` dans l'ordre de la case (§ 5.2). Avec un filtre, seuls les événements qui portent l'étiquette.
+- `Agenda12EventItem` : `{ path, title, month, day, year, end, country, city, tags, closedOn, line }` : un événement.
+  - `month` : le mois de début, de 1 à 12 ; `day`, `year`, `end`, `country`, `city` : `null` s'ils sont absents ; `tags` : liste, éventuellement vide ;
+  - `end` : `Agenda12EndItem` `{ day, month }`, `month` étant le mois du début quand la fin tombe le même mois ; une fin le jour du début n'existe pas (`null`) ;
+  - `country` : `CountryItem` `{ code, name, flag }` (`DE`, `Allemagne`, `🇩🇪`) ;
+  - `closedOn` : `2026-11-27`, le jour de la clôture ; `null` pour un événement ouvert ou clos sans avoir retenu son jour ;
+  - `line` : `Agenda12LineItem`.
+- `Agenda12LineItem` : `{ date, year, yearTone, flag, city, title, text }` : la ligne de § 5.3 en parties, à mettre en forme et à colorer par l'écran.
+  - `date` : `12/02`, `10–13/02` (tiret demi-cadratin) ou `30/01 → 02/02`, `null` sans jour ; `year` : à montrer en pastille ; `flag` : le drapeau, `city` : à montrer entre parenthèses ;
+  - `yearTone` : `YearToneItem`, `"current"` (année en cours, vert), `"next"` (suivante, orange), `"later"` (plus lointaine, marron) ou `"past"` (passée, neutre), d'après le jour du Mac ; `null` sans année ;
+  - `text` : la ligne entière en texte (`10–13/02 [2027] – 🇩🇪 (Nuremberg) – Salon Embedded World`), si l'écran n'a pas besoin des parties.
+- `Agenda12EventDetailItem` : `{ agenda, agendaTitle, closed, event }` : l'événement d'une note pour sa bande (§ 4.2) : le chemin et le titre de son agenda 12 (le lien « ← … »), s'il est clos (dans `archives/`), et son `Agenda12EventItem`.
+- `Agenda12ClosedItem` : `{ closed, successor }` : le chemin de l'événement dans les archives, et celui de la copie (`null` sans copie).
+- `Agenda12EventChangeItem` : un geste, objet à champ `kind` :
+  - `{ kind: "title", title }`, `{ kind: "month", month }` (1 à 12), `{ kind: "day", day }` (`null` pour l'effacer), `{ kind: "year", year }` (`null` pour l'effacer), `{ kind: "end", end }` (`{ day, month }`, ou `null` pour l'effacer), `{ kind: "country", country }` (code ISO sur deux lettres, ou `null`), `{ kind: "city", city }` (`null` ou vide pour l'effacer), `{ kind: "tags", tags }` (toutes les étiquettes ; vide pour les retirer).
+- `Agenda12ClosingItem` : `"alone"` (« Clore ») ou `"withSuccessor"` (« Clore et préparer le suivant »).
+
+### Commandes
+
+- `create_agenda_12({ folder, title })` → `{ path }` : crée l'agenda 12 titré `title` dans `folder` (`""` pour la racine), sous le nom tiré du titre (suffixe `-2`… si pris) ; il naît sans événement et sans dossier. L'interface l'ouvre avec le chemin rendu. Erreurs : « Le titre est vide. », « Le titre tient sur une seule ligne. » ; dossier invalide ou absent.
+- `read_agenda_12({ path, tag })` → `Agenda12Item` : la grille, les archives et la liste du filtre. `tag` : une étiquette (`null` : « Toutes »). Le filtre n'est pas gardé (§ 5.4). À appeler à l'ouverture et à chaque changement venu du disque. Erreurs : « cette note n'est pas un agenda 12 » ; « la note « … » n'existe pas ».
+- `change_agenda_12_columns({ path, columns })` → rien : garde 3, 4 ou 6 dans l'agenda 12 (clé `colonnes`, § 5.1) ; rien n'est écrit si le nombre est déjà celui-là. Erreurs : « « 5 » colonnes : la grille a 3, 4 ou 6 colonnes. » ; « cette note n'est pas un agenda 12 ».
+- `create_agenda_12_event({ agenda, month })` → `{ path }` : le « + » d'une case (§ 6) : crée l'événement « Sans titre » du mois `month` (1 à 12), sous le nom `sans-titre.md` (suffixe `-2`… si pris), et rend le chemin de sa note, que l'interface ouvre, le curseur sur le titre. Le dossier des événements naît avec le premier. Erreurs : « « 13 » n'est pas un mois : un nombre de 1 (janvier) à 12 (décembre) est attendu. » ; « cette note n'est pas un agenda 12 ».
+- `read_agenda_12_event({ path })` → `Agenda12EventDetailItem` : la bande d'un événement, ouvert ou clos. À appeler à l'ouverture de sa note et après chaque geste ou changement venu du disque. Erreurs : « Cet événement n'existe plus. » ; « cette note n'est pas un événement d'un agenda 12 » (une note ordinaire, ou un événement sans note d'agenda 12 à côté de son dossier) ; « Cet événement n'a pas de titre. » ; « Cet événement n'a pas de mois lisible. ».
+- `change_agenda_12_event({ path, change })` → rien : un geste de la bande (§ 4.2), sur la version la plus récente du fichier ; seule la clé touchée est réécrite, le texte et le reste de l'en-tête restent identiques ; un geste qui ne change rien n'écrit rien. Vaut pour un événement ouvert ou clos. Après un geste de mois, la case change : relire la grille. Erreurs :
+  - date (§ 4.1, message à montrer tel quel dans la bande) : « Ce jour n'existe pas dans ce mois. » (31 février, 29 février d'une année non bissextile, y compris après un changement de mois ou d'année), « La fin exige un jour de début. » (fin donnée sans jour, ou jour effacé alors qu'une fin existe : effacer la fin d'abord), « La fin est avant le début. », « L'année doit être comprise entre 1 et 9999. » ;
+  - « Le titre est vide. », « Le titre tient sur une seule ligne. » ;
+  - « « 13 » n'est pas un mois : … » ; « « ZZ » n'est pas un pays connu : un code sur deux lettres (FR, DE, US…) est attendu. » ;
+  - « Cet événement n'existe plus. », « cette note n'est pas un événement d'un agenda 12 ».
+  - Changer le titre ne change jamais le nom du fichier. Changer le mois d'un événement dont la fin tombe le même mois déplace la fin avec lui.
+- `close_agenda_12_event({ path, closing })` → `Agenda12ClosedItem` : « Clore » ou « Clore et préparer le suivant » (§ 7). L'événement retient le jour de sa clôture (jour du Mac) et passe dans `archives/` ; avec `"withSuccessor"`, la copie (titre, mois, pays, ville, étiquettes ; ni jour, ni année, ni fin, ni texte) naît dans la grille. L'interface ouvre ensuite la grille (`read_agenda_12`). Les onglets ouverts sur l'événement suivent son nouveau chemin (`closed`). Erreurs : « Cet événement est déjà clos. », « Cet événement n'existe plus. », « cette note n'est pas un événement d'un agenda 12 ».
+- `reopen_agenda_12_event({ path })` → `{ path }` : « Rouvrir » (§ 8) : l'événement perd son jour de clôture et revient dans la grille, dans la case de son mois ; son nom de fichier prend un suffixe (`-2`…) si le nom est déjà pris dans le dossier des événements. Rend son nouveau chemin. Erreurs : « Cet événement n'est pas clos. », « Cet événement n'existe plus. ».
+- `delete_agenda_12_event({ path })` → chemin dans la corbeille (texte) : « Placer dans la corbeille » (§ 9), après la confirmation de l'écran ; vaut pour un événement ouvert ou clos, même illisible ; restauré, il revient dans la grille ou dans les archives selon son état. Équivalent de `trash_note` avec la vérification du type. Erreurs : « Cet événement n'existe plus. », « cette note n'est pas un événement d'un agenda 12 ».
+- `list_countries()` → `CountryItem[]` : les 249 pays de la norme, rangés par nom en français sans compter les accents ni les majuscules (`Afghanistan`, `Afrique du Sud`, `Albanie`…) : la liste où l'on choisit (§ 4.1), filtrée en tapant par l'écran. Ne dépend pas de l'espace de travail ; ne rend jamais d'erreur.
+- Commandes existantes qui valent pour l'agenda 12 : `trash_note`, `move_note`, `rename_note`, `restore_note` (un agenda 12 emporte ses événements, archives comprises) ; `crm_fiches_in_trash({ path })` rend le nombre d'événements (ouverts et clos) qui partent avec un agenda 12 (le nom de la commande dit « fiches » : c'est la même règle) ; `read_note` et `save_note` pour le texte d'un événement (l'enregistrement ne renomme jamais le fichier d'un événement) ; `add_favorite` pour un agenda 12 entier (un événement n'a pas d'étoile : « Un événement d'un agenda 12 n'a pas d'étoile : seul l'agenda 12 entier se met en favori. ») ; `list_backlinks` (un lien entrant venu d'un événement porte `contentType: "agenda12Event"` et `agenda`, le chemin de son agenda 12 ; venu d'un agenda 12, `contentType: "agenda12"`).
+
+### Types de contenu et recherche
+
+- `ContentTypeItem` compte deux valeurs de plus : `"agenda12"` (l'agenda 12) et `"agenda12Event"` (l'événement). `read_note` d'un agenda 12 rend sa note comme toute note ; l'écran de la grille se choisit sur `contentType === "agenda12"`, la bande d'un événement sur `"agenda12Event"`.
+- Un résultat de recherche d'un événement a `contentType: "agenda12Event"`, `container` (le chemin de son agenda 12) et `containerTitle` (son titre) ; un événement est cherché par son texte, sa ville, le nom de son pays et ses étiquettes, jamais par ses propriétés techniques (mois, jour, année, fin, jour de clôture).
+
+### Événements
+
+Aucun événement nouveau. Un changement de fichier (écran, IA, éditeur extérieur) est annoncé par l'événement existant `workspace-changed` (`WorkspaceChanged.notes`, environ 300 ms après l'écriture) ; une clôture annonce le fichier d'archives et celui de la copie. L'écran de la grille relit `read_agenda_12` quand un chemin annoncé est celui de son agenda 12 ou se trouve dans son dossier des événements (`salons/…` pour `salons.md`, archives comprises) ; la bande d'un événement relit `read_agenda_12_event` quand son chemin est annoncé. Après un geste de l'écran, il rafraîchit seul sans attendre l'événement.
+
+### Règles que l'interface n'a pas à connaître
+
+- Le format des fichiers, les noms de fichier, l'ordre d'une case, le calcul de la ligne et de la couleur de l'année, la validité des dates, le nom que prend une copie ou un événement rouvert, le suivi du dossier des événements par le renommage, le déplacement et la corbeille de l'agenda 12 : tout est dans le moteur.
+- Le dossier des événements n'est pas dans la liste des dossiers (`list_folders`, dossier affiché) tant qu'il ne contient que des événements.
+- Les outils pour les IA (§ 11) passent par les mêmes cas d'usage que ces commandes.
+

@@ -1,4 +1,4 @@
-//! Commandes des liens : ce qu'on peut lier, et ce que désigne un lien écrit.
+//! Commandes des liens : ce qu'on peut lier, ce que désigne un lien écrit, et ce qu'ouvre un clic sur lui.
 
 use std::sync::Arc;
 

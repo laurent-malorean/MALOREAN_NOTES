@@ -101,6 +101,11 @@ fn not_a_note(kind: ContentType) -> String {
             kind.name(),
             crm_changing_tools_said()
         ),
+        ContentType::Agenda12 => "cette note est un agenda 12 : replace_in_note ne change que le \
+             texte des notes simples ; lisez-le avec read_agenda_12, ajoutez-y un événement avec \
+             add_agenda_12_event et clôturez-en un avec close_agenda_12_event ; le texte d'un \
+             événement se change avec replace_in_note"
+            .to_owned(),
         _ => format!(
             "cette note est de type « {} » : replace_in_note ne change que le texte des notes \
              simples",
@@ -146,7 +151,7 @@ pub fn replaced(
     new_text: &str,
     replace_all: bool,
 ) -> Result<Replaced, RefusedReplacement> {
-    if kind != ContentType::Note {
+    if !matches!(kind, ContentType::Note | ContentType::Agenda12Event) {
         return Err(RefusedReplacement::NotANote(kind));
     }
     if old_text.is_empty() {
@@ -346,9 +351,9 @@ mod tests {
     }
 
     #[test]
-    fn only_a_simple_note_can_be_changed() {
+    fn only_a_simple_note_or_an_event_of_an_agenda_12_can_be_changed() {
         for kind in ContentType::ALL {
-            if kind != ContentType::Note {
+            if kind != ContentType::Note && kind != ContentType::Agenda12Event {
                 assert_eq!(
                     replaced(kind, "# T\nun", "un", "deux", false),
                     Err(RefusedReplacement::NotANote(kind)),
@@ -411,6 +416,22 @@ mod tests {
             );
             assert!(said.contains("read_crm (la fiche y a sa `ref`)"), "{said}");
             assert!(said.contains("ou change_crm_stages"), "{said}");
+        }
+    }
+
+    #[test]
+    fn an_event_of_an_agenda_12_is_changed_like_a_note_and_the_agenda_is_sent_to_its_tools() {
+        let done = replaced(ContentType::Agenda12Event, "# T\nun", "un", "deux", false).unwrap();
+        assert_eq!(done.content, "# T\ndeux");
+        let said = RefusedReplacement::NotANote(ContentType::Agenda12).to_string();
+        for expected in [
+            "cette note est un agenda 12",
+            "replace_in_note ne change que le texte des notes simples",
+            "read_agenda_12",
+            "add_agenda_12_event",
+            "close_agenda_12_event",
+        ] {
+            assert!(said.contains(expected), "{expected} : {said}");
         }
     }
 

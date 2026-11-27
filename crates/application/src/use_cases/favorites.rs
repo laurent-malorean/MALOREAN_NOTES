@@ -108,7 +108,8 @@ impl<'a> Favorites<'a> {
     /// [`AppError::NoFavoritesNote`] s'il n'y a pas de note des favoris,
     /// [`AppError::FavoritesNoteIsNoFavorite`] pour la note des favoris elle-même,
     /// [`AppError::NoteNotFound`] si le contenu n'existe pas, [`AppError::FicheHasNoStar`] pour une
-    /// fiche du CRM, [`AppError::NoteUnreadable`] si une note n'est pas du texte UTF-8,
+    /// fiche du CRM, [`AppError::EventHasNoStar`] pour un événement d'un agenda 12,
+    /// [`AppError::NoteUnreadable`] si une note n'est pas du texte UTF-8,
     /// [`AppError::StorageUnavailable`] si le stockage ou l'historique ne répond pas.
     pub fn add(&self, content: &NotePath) -> Result<(), AppError> {
         let note = self.chosen()?;
@@ -116,8 +117,13 @@ impl<'a> Favorites<'a> {
             return Err(AppError::FavoritesNoteIsNoFavorite);
         }
         let stored = self.store.read(content)?;
-        if !can_be_favorite(ContentType::of_file(content.name(), &stored.content)) {
-            return Err(AppError::FicheHasNoStar);
+        let kind = ContentType::of_file(content.name(), &stored.content);
+        if !can_be_favorite(kind) {
+            return Err(if kind == ContentType::Agenda12Event {
+                AppError::EventHasNoStar
+            } else {
+                AppError::FicheHasNoStar
+            });
         }
         let text = self.store.read(&note.path)?.content;
         let (links, _) = self.links()?;

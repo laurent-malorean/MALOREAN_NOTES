@@ -52,12 +52,17 @@ impl Session {
             .into_iter()
             .map(|note| {
                 let of_crm = note.content_type.crm_kind().is_some();
+                let of_event = note.content_type == domain::ContentType::Agenda12Event;
+                let typed =
+                    of_crm || of_event || note.content_type == domain::ContentType::Agenda12;
+                let container = note.container.as_ref().map(NotePath::to_path);
                 LinkingNoteItem {
                     folder: note.path.folder().to_path(),
                     path: note.path.to_path(),
                     title: note.title,
-                    content_type: of_crm.then(|| note.content_type.into()),
-                    crm: note.container.as_ref().map(NotePath::to_path),
+                    content_type: typed.then(|| note.content_type.into()),
+                    crm: container.clone().filter(|_| !of_event),
+                    agenda: container.filter(|_| of_event),
                 }
             })
             .collect())
@@ -161,6 +166,7 @@ mod tests {
                 folder: "Travail".into(),
                 content_type: None,
                 crm: None,
+                agenda: None,
             }]
         );
     }
@@ -189,6 +195,7 @@ mod tests {
                     folder: "c/actions".into(),
                     content_type: Some(ContentTypeItem::CrmAction),
                     crm: Some("c.md".into()),
+                    agenda: None,
                 },
                 LinkingNoteItem {
                     path: "c/personnes/jean.md".into(),
@@ -196,6 +203,45 @@ mod tests {
                     folder: "c/personnes".into(),
                     content_type: Some(ContentTypeItem::CrmPerson),
                     crm: Some("c.md".into()),
+                    agenda: None,
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn the_events_of_an_agenda_12_that_link_a_note_come_with_their_type_and_their_agenda() {
+        let session = opened(&[
+            ("plan.md", "# Plan"),
+            (
+                "salons/audit.md",
+                "---\ntype: agenda-12-evenement\nmois: 1\n---\n# Audit\n\nVoir [[Plan]].",
+            ),
+            (
+                "salons.md",
+                "---\ntype: agenda-12\n---\n# Salons\n\nVoir [[Plan]].",
+            ),
+        ]);
+        let mut linking = session.list_backlinks("plan.md").unwrap();
+        linking.sort_by(|a, b| a.path.cmp(&b.path));
+        assert_eq!(
+            linking,
+            [
+                LinkingNoteItem {
+                    path: "salons.md".into(),
+                    title: "Salons".into(),
+                    folder: String::new(),
+                    content_type: Some(ContentTypeItem::Agenda12),
+                    crm: None,
+                    agenda: None,
+                },
+                LinkingNoteItem {
+                    path: "salons/audit.md".into(),
+                    title: "Audit".into(),
+                    folder: "salons".into(),
+                    content_type: Some(ContentTypeItem::Agenda12Event),
+                    crm: None,
+                    agenda: Some("salons.md".into()),
                 },
             ]
         );

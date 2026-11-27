@@ -64,7 +64,12 @@ impl<'a> RenameNote<'a> {
             kind if kind.crm_kind().is_some_and(|crm| crm != CrmKind::Crm) => {
                 Err(AppError::FicheNamedInItsScreen)
             }
-            kind => self.rename_text(note, &title, current, kind == ContentType::Crm),
+            kind => self.rename_text(
+                note,
+                &title,
+                current,
+                matches!(kind, ContentType::Crm | ContentType::Agenda12),
+            ),
         }
     }
 
@@ -95,7 +100,7 @@ impl<'a> RenameNote<'a> {
         note: &NotePath,
         title: &str,
         current: String,
-        is_crm: bool,
+        owns_a_folder: bool,
     ) -> Result<RenamedNote, AppError> {
         let content = retitled(&current, title);
         if content == current {
@@ -107,7 +112,7 @@ impl<'a> RenameNote<'a> {
             return Err(AppError::TitleTaken);
         }
         let renamed = note.renamed(planned.file_name().clone());
-        let fiches = if is_crm && renamed != *note {
+        let fiches = if owns_a_folder && renamed != *note {
             self.fiches_to_follow(note, &renamed)?
         } else {
             None
@@ -134,7 +139,7 @@ impl<'a> RenameNote<'a> {
         }
     }
 
-    /// Les fiches du CRM, qui suivent son nouveau nom (la règle est celle de la corbeille et du
+    /// Les fiches du CRM (ou les événements de l'agenda 12), qui suivent son nouveau nom (la règle est celle de la corbeille et du
     /// déplacement : `crm_fiches`) ; rien s'il n'a pas encore de fiche.
     fn fiches_to_follow(
         &self,

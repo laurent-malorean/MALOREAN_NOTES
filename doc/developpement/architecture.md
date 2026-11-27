@@ -176,6 +176,7 @@ Chaque décision qui engage la structure (technologie, format des données, déc
 | `0098-bande-du-haut-unique.md` | Une seule bande tout en haut de la fenêtre (réserve des boutons du Mac et bouton des panneaux, outils centrés, recherche) à la place de la barre de la fenêtre et de la bande du haut séparées ; remplace en partie la fiche 0085 |
 | `0103-saisie-vocale-moteur.md` | Saisie vocale : SpeechAnalyzer d'Apple par un assistant Swift qui reste lancé le temps de l'écoute (lignes JSON, arrêt par l'entrée), port `Transcriber`, règles de la dictée dans le domaine (texte provisoire fixé à l'arrêt, silence de 30 s), une écoute à la fois, langue du Mac par défaut, paquet avec textes d'accès au micro |
 | `0102-favoris.md` | Favoris : une note ordinaire choisie par espace de travail (gardée dans les préférences, suit son renommage et son déplacement), l'étoile ajoute ou retire des lignes de lien, retrait sans confirmation avec annulation, outils `add_favorite`, `remove_favorite` et `list_favorites` |
+| `0104-agenda-12.md` | Agenda 12 : un type de contenu, une grille de 12 mois ; un événement par fichier dans le dossier qui porte le nom de son agenda 12, les clos dans `archives/` ; ils suivent leur agenda comme les fiches suivent leur CRM ; nom de fichier jamais changé ; clore, rouvrir ; trois outils pour les IA |
 | `0101-licence-agpl-et-marque.md` | Code sous AGPL-3.0 ou ultérieure (remplace MIT) : chacun reprend le code, les versions dérivées restent open source ; le nom et l'icône restent à l'auteur |
 
 ## Construire l'application (`.app`)

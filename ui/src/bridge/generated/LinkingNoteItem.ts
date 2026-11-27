@@ -18,11 +18,15 @@ title: string,
  */
 folder: string, 
 /**
- * Son type de contenu, pour le CRM et ses fiches seulement (« Action · titre » à l'écran) ;
- * absent pour une note.
+ * Son type de contenu, pour le CRM, ses fiches, l'agenda 12 et ses événements seulement
+ * (« Action · titre » à l'écran) ; absent pour une note.
  */
 contentType?: ContentTypeItem, 
 /**
  * Pour une fiche d'un CRM, le chemin de son CRM, où l'ouvrir ; absent sinon.
  */
-crm?: string, };
+crm?: string, 
+/**
+ * Pour un événement d'un agenda 12, le chemin de son agenda 12, où l'ouvrir ; absent sinon.
+ */
+agenda?: string, };

@@ -21,36 +21,59 @@ struct MeaningNote {
     /// Le titre de la section trouvée, puis le début de son texte ; pour une note trouvée par ses
     /// mots, le passage autour d'eux.
     excerpt: String,
-    /// Pour le CRM ou une fiche d'un CRM : son type de contenu (`crm`, `crm-action`…).
+    /// Pour le CRM, une fiche d'un CRM, un agenda 12 ou un événement : son type de contenu (`crm`,
+    /// `crm-action`, `agenda-12-evenement`…).
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     content_type: Option<&'static str>,
     /// Pour une fiche d'un CRM : le chemin de son CRM.
     #[serde(skip_serializing_if = "Option::is_none")]
     crm: Option<String>,
+    /// Pour un événement d'un agenda 12 : le chemin de son agenda 12.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    agenda: Option<String>,
 }
 
-/// Le nom du type d'un CRM ou d'une de ses fiches ; rien pour le reste.
-pub(super) fn crm_type_of(content_type: ContentTypeItem) -> Option<&'static str> {
+/// Le nom du type d'un CRM, d'une de ses fiches, d'un agenda 12 ou d'un événement ; rien pour le
+/// reste.
+pub(super) fn typed_name_of(content_type: ContentTypeItem) -> Option<&'static str> {
     let kind = match content_type {
         ContentTypeItem::Crm => CrmKind::Crm,
         ContentTypeItem::CrmCompany => CrmKind::Company,
         ContentTypeItem::CrmPerson => CrmKind::Person,
         ContentTypeItem::CrmAction => CrmKind::Action,
         ContentTypeItem::CrmProject => CrmKind::Project,
+        ContentTypeItem::Agenda12 => return Some(domain::ContentType::Agenda12.name()),
+        ContentTypeItem::Agenda12Event => return Some(domain::ContentType::Agenda12Event.name()),
         _ => return None,
     };
     Some(kind.name())
 }
 
+/// Ce que la fiche d'un CRM ou l'événement d'un agenda 12 a pour conteneur : le chemin de son CRM,
+/// et celui de son agenda 12.
+fn containers_of(
+    content_type: ContentTypeItem,
+    container: Option<String>,
+) -> (Option<String>, Option<String>) {
+    match content_type {
+        ContentTypeItem::Agenda12Event => (None, container),
+        ContentTypeItem::Agenda12 => (None, None),
+        _ => (
+            container.filter(|_| typed_name_of(content_type).is_some()),
+            None,
+        ),
+    }
+}
+
 impl MeaningNote {
     fn of(result: SearchResultItem) -> Self {
+        let (crm, agenda) = containers_of(result.content_type, result.container);
         Self {
             path: result.path,
             title: result.title,
-            content_type: crm_type_of(result.content_type),
-            crm: result
-                .container
-                .filter(|_| crm_type_of(result.content_type).is_some()),
+            content_type: typed_name_of(result.content_type),
+            crm,
+            agenda,
             excerpt: result
                 .excerpt
                 .iter()

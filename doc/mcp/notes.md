@@ -1,6 +1,6 @@
 # Notes
 
-Six outils pour lire, créer, changer, renommer, ranger et jeter une note. Une note simple se lit avec `read_note` et se change avec `replace_in_note` ; les autres contenus (cahier de recherche, carte mentale, canvas, CRM et ses fiches) ont leurs outils, et ces deux outils les refusent en les nommant.
+Six outils pour lire, créer, changer, renommer, ranger et jeter une note. Une note simple se lit avec `read_note` et se change avec `replace_in_note` ; les autres contenus (cahier de recherche, carte mentale, canvas, CRM et ses fiches, agenda 12) ont leurs outils, et ces deux outils les refusent en les nommant. Les événements d'un agenda 12 sont des notes simples : leur texte se lit et se change avec ces deux outils.
 
 Le format d'une note (en-tête, titre `#`, liens) est décrit dans [`doc/format/note.md`](../format/note.md) ; le nom des fichiers, la corbeille, les pièces jointes et l'historique dans [`doc/format/espace-de-travail.md`](../format/espace-de-travail.md).
 
@@ -33,6 +33,7 @@ Le texte entier d'une note simple, pour le lire ou en recopier un texte exact (l
 - une carte mentale : la phrase renvoie à `read_mind_map` ;
 - un canvas : la phrase renvoie à `read_canvas` et aux outils du canvas ;
 - un CRM ou une fiche de CRM : la phrase renvoie à `read_crm` et aux outils du CRM (pour une fiche, avec son type) ;
+- un agenda 12 : la phrase renvoie à `read_agenda_12`, `add_agenda_12_event` et `close_agenda_12_event` (le texte d'un événement, lui, se lit avec `read_note`) ;
 - un fichier qui n'est pas du texte UTF-8 : « la note « … » n'est pas un texte lisible (UTF-8) : elle n'est pas ouverte, pour ne pas l'abîmer ».
 
 **Garde-fou du web** : non retenu.
@@ -111,7 +112,7 @@ Remplace un texte par un autre dans une note simple, avec les règles de la sais
 - introuvable : « le texte à remplacer (old_text) est introuvable dans la note : recopiez-le à l'identique, avec ses majuscules, ses accents, ses espaces et ses retours à la ligne ; rien n'a été changé » ;
 - répété sans `replace_all` : « le texte à remplacer (old_text) apparaît N fois (…) : ajoutez du texte autour pour qu'il n'apparaisse qu'une fois, ou passez replace_all à true pour remplacer toutes les occurrences ; rien n'a été changé » ; la parenthèse donne les premières lignes où il commence, 5 au plus ;
 - un cahier de recherche : « cette note est un cahier de recherche : on n'y ajoute que des entrées (add_entry), son texte ne se remplace jamais » ;
-- une carte mentale, un canvas, un CRM ou une fiche de CRM : la phrase nomme les outils à utiliser à la place ;
+- une carte mentale, un canvas, un CRM, une fiche de CRM ou un agenda 12 : la phrase nomme les outils à utiliser à la place (un événement d'un agenda 12 se change comme une note simple) ;
 - note introuvable.
 
 **Garde-fou du web** : retenu.
@@ -133,7 +134,7 @@ Réponse :
 
 Change le titre d'une note : la ligne du titre `#` est remplacée par `# title` (ou ajoutée en tête du corps s'il n'y en a pas), puis la note est enregistrée comme par la saisie : son fichier prend le nom tiré du nouveau titre (suffixe `-2`, `-3`… si le nom est pris), son dossier de pièces jointes est renommé et ses liens vers ses pièces jointes suivent. L'outil rend aussi les notes dont un lien `[[ancien titre]]` la visait : ces liens ne sont pas réécrits, à reprendre avec `read_note` et `replace_in_note` si besoin.
 
-> **À n'utiliser que sur une note simple.** L'outil passe par l'enregistrement d'une note, pas par le renommage de l'écran : il ne refuse aucune sorte de contenu. Sur une fiche de CRM, il renomme son fichier (que les autres fiches désignent par son nom) ; sur un CRM, il renomme la note sans son dossier de fiches ; sur un canvas, il écrit une ligne `# titre` dans le fichier JSON et lui donne un nom en `.md`. Pour un CRM et ses fiches, passer par les outils du CRM (`change_crm_person` avec `rename`…).
+> **À n'utiliser que sur une note simple.** L'outil passe par l'enregistrement d'une note, pas par le renommage de l'écran : il ne refuse aucune sorte de contenu. Sur une fiche de CRM, il renomme son fichier (que les autres fiches désignent par son nom) ; sur un CRM, il renomme la note sans son dossier de fiches ; sur un canvas, il écrit une ligne `# titre` dans le fichier JSON et lui donne un nom en `.md`. Pour un CRM et ses fiches, passer par les outils du CRM (`change_crm_person` avec `rename`…). Sur un agenda 12, de même, il renomme la note sans son dossier des événements ; sur un événement, il ne change que sa ligne de titre, le nom de son fichier ne change jamais.
 
 **Paramètres** :
 
@@ -167,7 +168,7 @@ Réponse :
 
 ## `move_note`
 
-Range une note dans un autre dossier, avec ses pièces jointes et son historique ; elle garde son nom, ou reçoit le premier suffixe `-2`, `-3`… libre si le nom est pris. Un CRM emporte ses fiches : son dossier de fiches le suit et prend le même suffixe que lui ; une note ordinaire rangée dans le dossier des fiches reste en place.
+Range une note dans un autre dossier, avec ses pièces jointes et son historique ; elle garde son nom, ou reçoit le premier suffixe `-2`, `-3`… libre si le nom est pris. Un CRM emporte ses fiches, et un agenda 12 ses événements (archives comprises) : leur dossier le suit et prend le même suffixe que lui ; une note ordinaire rangée dans ce dossier reste en place.
 
 **Paramètres** :
 
@@ -197,7 +198,7 @@ Réponse :
 
 ## `trash_note`
 
-Met une note à la corbeille de l'application, avec ses pièces jointes et son historique : jamais effacée, l'utilisateur la restaure. Un CRM part avec ses fiches (entreprises, personnes, actions, projets, avec leurs pièces jointes) : leur dossier entier s'il ne contient que des fiches, sinon les fiches seules ; il revient avec elles à la restauration. Une note ordinaire rangée dans le dossier des fiches reste en place.
+Met une note à la corbeille de l'application, avec ses pièces jointes et son historique : jamais effacée, l'utilisateur la restaure. Un CRM part avec ses fiches (entreprises, personnes, actions, projets, avec leurs pièces jointes), un agenda 12 avec ses événements (ouverts et clos) : leur dossier entier s'il ne contient que des fiches ou des événements, sinon ceux-là seuls ; il revient avec eux à la restauration. Une note ordinaire rangée dans le dossier des fiches reste en place.
 
 **Paramètres** :
 

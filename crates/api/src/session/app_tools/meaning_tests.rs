@@ -240,20 +240,26 @@ fn the_tool_needs_the_workspace_of_the_turn() {
 
 #[test]
 fn each_crm_content_type_has_its_name_and_the_others_have_none() {
-    use super::meaning::crm_type_of;
+    use super::meaning::typed_name_of;
     use crate::ContentTypeItem;
 
-    assert_eq!(crm_type_of(ContentTypeItem::Crm), Some("crm"));
+    assert_eq!(typed_name_of(ContentTypeItem::Crm), Some("crm"));
     assert_eq!(
-        crm_type_of(ContentTypeItem::CrmCompany),
+        typed_name_of(ContentTypeItem::CrmCompany),
         Some("crm-entreprise")
     );
     assert_eq!(
-        crm_type_of(ContentTypeItem::CrmPerson),
+        typed_name_of(ContentTypeItem::CrmPerson),
         Some("crm-personne")
     );
-    assert_eq!(crm_type_of(ContentTypeItem::CrmAction), Some("crm-action"));
-    assert_eq!(crm_type_of(ContentTypeItem::CrmProject), Some("crm-projet"));
-    assert_eq!(crm_type_of(ContentTypeItem::Note), None);
-    assert_eq!(crm_type_of(ContentTypeItem::Canvas), None);
+    assert_eq!(
+        typed_name_of(ContentTypeItem::CrmAction),
+        Some("crm-action")
+    );
+    assert_eq!(
+        typed_name_of(ContentTypeItem::CrmProject),
+        Some("crm-projet")
+    );
+    assert_eq!(typed_name_of(ContentTypeItem::Note), None);
+    assert_eq!(typed_name_of(ContentTypeItem::Canvas), None);
 }

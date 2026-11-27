@@ -201,6 +201,49 @@ pub enum AppError {
     /// Une fiche du CRM n'a pas d'étoile : seul le CRM entier est un favori (fiche 0102).
     #[error("Une fiche du CRM n'a pas d'étoile : seul le CRM entier se met en favori.")]
     FicheHasNoStar,
+    /// Un événement d'un agenda 12 n'a pas d'étoile : seul l'agenda 12 entier est un favori
+    /// (fiche 0104).
+    #[error(
+        "Un événement d'un agenda 12 n'a pas d'étoile : seul l'agenda 12 entier se met en favori."
+    )]
+    EventHasNoStar,
+    /// La note n'est pas un agenda 12 (fiche 0104).
+    #[error("cette note n'est pas un agenda 12")]
+    NotAnAgenda12,
+    /// La note n'est pas un événement d'un agenda 12, ou n'est pas rangée dans son dossier
+    /// (fiche 0104).
+    #[error("cette note n'est pas un événement d'un agenda 12")]
+    NotAnAgenda12Event,
+    /// Ce que l'interface donne pour un mois n'est pas un nombre de 1 à 12 (fiche 0104).
+    #[error("« {0} » n'est pas un mois : un nombre de 1 (janvier) à 12 (décembre) est attendu.")]
+    UnknownMonth(u32),
+    /// Ce que l'interface donne pour un pays n'est pas un code de la norme ISO 3166-1 (fiche 0104).
+    #[error(
+        "« {0} » n'est pas un pays connu : un code sur deux lettres (FR, DE, US…) est attendu."
+    )]
+    UnknownCountry(String),
+    /// Ce que l'interface donne pour un nombre de colonnes n'est ni 3, ni 4, ni 6 (fiche 0104).
+    #[error("« {0} » colonnes : la grille a 3, 4 ou 6 colonnes.")]
+    UnknownColumns(u32),
+    /// L'événement ne se lit pas : sans titre ou sans mois lisible ; la raison est lisible
+    /// (fiche 0104).
+    #[error("{0}")]
+    EventUnreadable(#[from] domain::agenda_12::EventUnreadable),
+    /// L'événement n'existe plus : le geste est abandonné (fiche 0104).
+    #[error("Cet événement n'existe plus.")]
+    EventGone,
+    /// On veut clore un événement déjà clos (fiche 0104).
+    #[error("Cet événement est déjà clos.")]
+    EventAlreadyClosed,
+    /// On veut rouvrir un événement qui n'est pas clos (fiche 0104).
+    #[error("Cet événement n'est pas clos.")]
+    EventNotClosed,
+    /// Le titre d'un événement est refusé ; la raison est lisible (fiche 0104).
+    #[error("{0}")]
+    EventTitle(#[from] domain::agenda_12::TitleError),
+    /// La date d'un événement est refusée ; la raison est lisible (fiche 0104).
+    #[error("{0}")]
+    EventDate(#[from] domain::agenda_12::DateError),
     /// La recherche par le sens a reçu une question vide.
     #[error("la question est vide : écrivez ce que vous cherchez")]
     EmptyQuestion,
@@ -309,6 +352,50 @@ mod tests {
             AppError::FicheNamedInItsScreen.to_string(),
             "le nom d'une fiche de CRM se change dans son écran"
         );
+    }
+
+    #[test]
+    fn agenda_12_errors_are_said_in_french_ready_to_show() {
+        for (error, said) in [
+            (
+                AppError::EventHasNoStar,
+                "Un événement d'un agenda 12 n'a pas d'étoile : seul l'agenda 12 entier se met en favori.",
+            ),
+            (AppError::NotAnAgenda12, "cette note n'est pas un agenda 12"),
+            (
+                AppError::NotAnAgenda12Event,
+                "cette note n'est pas un événement d'un agenda 12",
+            ),
+            (AppError::EventGone, "Cet événement n'existe plus."),
+            (
+                AppError::UnknownMonth(13),
+                "« 13 » n'est pas un mois : un nombre de 1 (janvier) à 12 (décembre) est attendu.",
+            ),
+            (
+                AppError::UnknownCountry("XX".to_owned()),
+                "« XX » n'est pas un pays connu : un code sur deux lettres (FR, DE, US…) est attendu.",
+            ),
+            (
+                AppError::UnknownColumns(5),
+                "« 5 » colonnes : la grille a 3, 4 ou 6 colonnes.",
+            ),
+            (
+                AppError::from(domain::agenda_12::EventUnreadable::NoTitle),
+                "Cet événement n'a pas de titre.",
+            ),
+            (AppError::EventAlreadyClosed, "Cet événement est déjà clos."),
+            (AppError::EventNotClosed, "Cet événement n'est pas clos."),
+            (
+                AppError::from(domain::agenda_12::TitleError::Empty),
+                "Le titre est vide.",
+            ),
+            (
+                AppError::from(domain::agenda_12::DateError::NoSuchDay),
+                "Ce jour n'existe pas dans ce mois.",
+            ),
+        ] {
+            assert_eq!(error.to_string(), said);
+        }
     }
 
     #[test]

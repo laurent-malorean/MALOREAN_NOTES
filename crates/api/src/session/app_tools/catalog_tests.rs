@@ -35,7 +35,14 @@ fn each_tool_is_described_by_its_name_and_an_object_schema() {
                 "tags" | "projects" | "people" | "linked_notes" | "cards" => "array",
                 "limit" | "x" | "y" | "width" | "height" | "list" | "item" | "comment"
                 | "index" => "integer",
-                "replace_all" | "done" | "at_end" => "boolean",
+                "month" | "day" | "year" | "end_day" | "end_month"
+                    if tool.name().contains("agenda_12") =>
+                {
+                    "integer"
+                }
+                "replace_all" | "done" | "at_end" | "include_archives" | "prepare_next" => {
+                    "boolean"
+                }
                 "place_x" | "place_y" => "number",
                 _ => "string",
             }));

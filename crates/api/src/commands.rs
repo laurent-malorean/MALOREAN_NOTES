@@ -17,6 +17,7 @@ use crate::{
 /// il porte un [`crate::WorkspaceChanged`].
 pub const WORKSPACE_CHANGED_EVENT: &str = "workspace-changed";
 
+pub mod agenda_12;
 pub mod canvas;
 pub mod claude;
 pub mod connection;
@@ -506,6 +507,16 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         crm::change_crm_project,
         crm::delete_crm_project,
         crm::change_crm_stages,
+        agenda_12::create_agenda_12,
+        agenda_12::read_agenda_12,
+        agenda_12::change_agenda_12_columns,
+        agenda_12::create_agenda_12_event,
+        agenda_12::read_agenda_12_event,
+        agenda_12::change_agenda_12_event,
+        agenda_12::close_agenda_12_event,
+        agenda_12::reopen_agenda_12_event,
+        agenda_12::delete_agenda_12_event,
+        agenda_12::list_countries,
         mind_map::create_mind_map,
         mind_map::read_mind_map,
         mind_map::save_mind_map,

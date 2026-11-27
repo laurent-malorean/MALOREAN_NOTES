@@ -16,7 +16,7 @@ pub const MAX_READ_CHARACTERS: usize = 60_000;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RefusedReading {
     /// Le contenu n'est pas une note simple : un cahier de recherche, une carte mentale, un canvas,
-    /// un CRM ou une fiche de CRM.
+    /// un CRM, une fiche de CRM ou un agenda 12. Un événement d'un agenda 12 se lit comme une note.
     NotANote(ContentType),
 }
 
@@ -58,6 +58,12 @@ impl fmt::Display for RefusedReading {
                 kind.name(),
                 crm_changing_tools_said()
             ),
+            Self::NotANote(ContentType::Agenda12) => f.write_str(
+                "cette note est un agenda 12 : read_note ne lit que les notes simples ; lisez-le \
+                 avec read_agenda_12 (le même chemin dans path), ajoutez-y un événement avec \
+                 add_agenda_12_event et clôturez-en un avec close_agenda_12_event ; le texte d'un \
+                 événement se lit avec read_note",
+            ),
             Self::NotANote(kind) => write!(
                 f,
                 "cette note est de type « {} » : read_note ne lit que les notes simples ; ce type \
@@ -91,7 +97,7 @@ pub struct ReadableNote {
 ///
 /// [`RefusedReading::NotANote`] si ce n'est pas une note simple.
 pub fn readable(kind: ContentType, content: &str) -> Result<ReadableNote, RefusedReading> {
-    if kind != ContentType::Note {
+    if !matches!(kind, ContentType::Note | ContentType::Agenda12Event) {
         return Err(RefusedReading::NotANote(kind));
     }
     let (header, body) = split_exact(content);
@@ -165,15 +171,31 @@ mod tests {
     }
 
     #[test]
-    fn every_content_other_than_a_simple_note_is_refused() {
+    fn every_content_other_than_a_simple_note_or_an_agenda_12_event_is_refused() {
         for kind in ContentType::ALL {
             let refused = readable(kind, "# Titre");
-            if kind == ContentType::Note {
+            if kind == ContentType::Note || kind == ContentType::Agenda12Event {
                 assert!(refused.is_ok());
             } else {
                 assert_eq!(refused, Err(RefusedReading::NotANote(kind)));
             }
         }
+    }
+
+    #[test]
+    fn an_agenda_12_is_sent_to_its_tools() {
+        let said = RefusedReading::NotANote(ContentType::Agenda12).to_string();
+        for expected in [
+            "cette note est un agenda 12",
+            "read_note ne lit que les notes simples",
+            "read_agenda_12 (le même chemin dans path)",
+            "add_agenda_12_event",
+            "close_agenda_12_event",
+            "le texte d'un événement se lit avec read_note",
+        ] {
+            assert!(said.contains(expected), "{expected} : {said}");
+        }
+        assert!(!said.contains("pas encore"), "{said}");
     }
 
     #[test]
