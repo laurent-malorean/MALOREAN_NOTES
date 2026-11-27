@@ -120,43 +120,9 @@ Le rendu exact (pastille, tailles, séparateurs) se règle à la réalisation, d
 - « Placer dans la corbeille » sur un événement (ouvert ou clos) : confirmation, puis la note va à la corbeille ; la restaurer la remet dans son agenda 12 (dans la grille ou les archives, selon son état).
 - Mettre l'agenda 12 à la corbeille y emporte tous ses événements, clos compris ; le restaurer les ramène.
 
-## 10. Fichiers (proposition)
+## 10. Fichiers
 
-Le format sera décrit dans `doc/format/agenda-12.md`, seule description du format, à la réalisation ; la spécification y renverra. Proposition, sur le modèle du CRM :
-
-```
-pro/
-├── salons.md                                 type: agenda-12
-└── salons/                                   dossier des événements
-    ├── salon-embedded-world.md               type: agenda-12-evenement
-    ├── audit-iso.md                          type: agenda-12-evenement
-    └── archives/
-        └── salon-embedded-world.md           type: agenda-12-evenement, clos-le
-```
-
-- Fichier de l'agenda 12 : en-tête `type: agenda-12`, `colonnes: 4` ; son texte n'est pas montré.
-- Le dossier qui porte le nom de l'agenda 12, à côté de lui, est son dossier des événements ; il n'est pas montré dans la liste des dossiers (même règle que le dossier des fiches du CRM).
-- Un événement : un fichier `.md` posé directement dans ce dossier, nom tiré du titre en kebab-case (`-2`, `-3` si déjà pris), qui ne change plus ensuite. En-tête :
-
-```
----
-type: agenda-12-evenement
-mois: 2
-jour: 10
-annee: 2027
-jour-fin: 13
-pays: DE
-ville: Nuremberg
-tags: [salon]
----
-# Salon Embedded World
-
-Budget : stand 6 m², deux personnes…
-```
-
-- `mois-fin` s'ajoute quand la fin tombe un autre mois. `pays` : le code du pays sur deux lettres (norme ISO 3166-1), d'où vient le drapeau.
-- Clore : le fichier passe dans `archives/` (suffixe `-2` si le nom y est pris) et reçoit `clos-le: 2026-11-27`. Rouvrir : le chemin inverse, `clos-le` retiré.
-- Un fichier sans titre, sans mois valide ou avec une valeur incompréhensible est laissé de côté et signalé, jamais effacé.
+Le format des fichiers (fichier de l'agenda 12, dossier des événements, sous-dossier `archives/`, noms de fichier, en-tête d'un événement, cohérence des dates, ce que l'application réécrit et garde) est décrit dans `doc/format/agenda-12.md`, seule description de ce format. Choix validés le 27/11 : clés de l'en-tête en français, jour, mois et année en champs séparés, pays par son code sur deux lettres, événements clos dans le sous-dossier `archives/`.
 
 ## 11. Outils pour les IA (MCP)
 
