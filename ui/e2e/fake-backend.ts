@@ -14,6 +14,7 @@ import { type FakeHistory, fakeHistory, keepFakeVersion, moveFakeVersions } from
 import { type FakeMenu, fakeMenu, fakeMenuState } from "./fake-menu";
 import { type FakeMeaning, fakeMeaning, fakeMeaningState } from "./fake-meaning";
 import { fakeCanvases } from "./fake-canvas";
+import { fakeFavorites } from "./fake-favorites";
 import { fakeLinks } from "./fake-links";
 import { fakeCrms } from "./fake-crm";
 import { searchContentType, searchTitle } from "./fake-search-types";
@@ -453,6 +454,10 @@ const commands: Record<string, (args: Record<string, string>) => unknown> = {
       setTimeout(() => resolve(searchNotes(query, order)), backend.searchDuration),
     ),
   ...fakeLinks({ notes: () => backend.notes, titleOf, folded, folderOf }),
+  ...fakeFavorites(params, {
+    ...{ notes: () => backend.notes, titleOf, freeName, slug },
+    write: (path, content) => void backend.changeOutside(path, content),
+  }),
   list_all_notes: () =>
     Object.entries(backend.notes)
       .sort(([, a], [, b]) => b.modified - a.modified)

@@ -30,6 +30,8 @@ async function followWorkspaceChange(deps: ExternalChangesDeps, change: Workspac
   for (const pane of deps.columns.panes().values()) {
     await pane.showBacklinks();
     await pane.showRelated();
+    // La note des favoris a pu changer à la main : l'étoile de chaque colonne se relit.
+    await pane.showStar();
     if (touchesNote(change.notes, pane.note())) await pane.followDisk();
     else await pane.followCrm(change.notes);
   }

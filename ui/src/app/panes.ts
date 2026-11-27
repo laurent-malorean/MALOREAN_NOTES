@@ -13,6 +13,7 @@ import {
   type Pane,
   type PaneBackend,
   type PaneEvents,
+  type PaneFavorites,
   type PaneTags,
   type RelatedNotes,
 } from "../screens/note-pane";
@@ -43,6 +44,8 @@ export interface PanesDeps {
   readonly layout?: Pick<Layout, "picker" | "confirmation">;
   /** Les notes proches de chaque colonne : demandées ou non, et lues par Rust. */
   readonly related?: RelatedNotes;
+  /** L'étoile de chaque colonne : son état, et ce que fait un clic. */
+  readonly favorites?: PaneFavorites;
   /** L'espace de travail ouvert : son dossier, et ce qui se relit quand les étiquettes d'un contenu changent. */
   readonly workspace: Pick<Workspace, "path" | "refreshTags" | "refreshList">;
   /** Règle l'éditeur d'une nouvelle colonne comme ceux des autres : mode focus, caractères par page. */
@@ -112,6 +115,7 @@ export function paneMaker(deps: PanesDeps): (parts: ColumnParts) => Pane {
       events: deps.events,
       notebook: deps.notebook,
       related: deps.related,
+      favorites: deps.favorites,
       ...canvasOf(deps),
       ...crmOf(deps),
       ...linksOf(deps),

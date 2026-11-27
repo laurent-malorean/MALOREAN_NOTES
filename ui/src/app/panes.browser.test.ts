@@ -155,6 +155,37 @@ describe("CRM d'une colonne", () => {
     pane.destroy();
   });
 
+  it("donne à l'étoile de la colonne ce que l'application sait des favoris", async () => {
+    const fake = fakeBackend({ "a.md": "# A" });
+    const shared = createSharedNotes({
+      backend: fake.backend,
+      events: { saved: vi.fn(), titled: vi.fn(), deleted: vi.fn(), error: vi.fn() },
+    });
+    const state = vi.fn(async () => "filled" as const);
+    const toggle = vi.fn(async () => {});
+    const make = paneMaker({
+      backend: { ...fake.backend, fileAddress: (path) => path },
+      shared,
+      events: { openNote: vi.fn(), openLink: vi.fn(), error: vi.fn() },
+      notebook: { add: vi.fn(async () => true), entries: vi.fn(), copyReference: vi.fn() },
+      workspace: { path: () => "/lib", refreshTags: vi.fn(), refreshList: vi.fn() },
+      favorites: { state, toggle },
+      configure: vi.fn(),
+    });
+    const element = document.createElement("section");
+    const star = document.createElement("button");
+    const backlinks = document.createElement("nav");
+    const related = document.createElement("nav");
+    element.append(star, backlinks, related);
+    document.body.replaceChildren(element);
+    const pane = make({ element, star, backlinks, related });
+    await pane.load("a.md");
+    await vi.waitFor(() => expect(star.getAttribute("aria-pressed")).toBe("true"));
+    star.click();
+    expect(toggle).toHaveBeenCalledWith("a.md", "filled");
+    pane.destroy();
+  });
+
   it("donne au champ d'étiquettes ce que le pont sait : lire, changer, proposer, et relire les listes", async () => {
     const fake = fakeBackend({ "a.md": "---\ntags: [perso]\n---\n# A" });
     const shared = createSharedNotes({

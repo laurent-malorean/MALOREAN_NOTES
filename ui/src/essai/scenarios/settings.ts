@@ -376,7 +376,7 @@ async function folderChoices(trial: Trial, env: Env): Promise<void> {
   closeSettings(window);
 }
 
-const TABS = ["Affichage", "Écriture", "Claude", "Index", "Brancher une IA"];
+const TABS = ["Affichage", "Écriture", "Claude", "Index", "Favoris", "Brancher une IA"];
 
 /** Les rectangles réels de la fenêtre, de son titre, de la rangée d'onglets et de « Fermer ». */
 function windowBoxes(window: HTMLElement) {
@@ -415,7 +415,7 @@ function checkClose(trial: Trial, { fermer, fenêtre }: Boxes): void {
   trial.check("« Fermer » est en bas à droite de la fenêtre", corner, JSON.stringify(fermer));
 }
 
-/** La fenêtre des Réglages garde la même taille et la même place sur les cinq onglets, « Fermer » dans l'écran. */
+/** La fenêtre des Réglages garde la même taille et la même place sur les six onglets, « Fermer » dans l'écran. */
 async function fixedSize(trial: Trial): Promise<void> {
   const window = await openSettings();
   const first = await showTab(window, TABS[0] as string).then(() => windowBoxes(window));
@@ -482,6 +482,6 @@ export const settingsScenarios = (env: Env): Scenario[] => [
     name: "Réglages : onglet Brancher une IA, cases des espaces de travail",
     run: (t) => allowedWorkspacesTab(t, env),
   },
-  { name: "Réglages : même fenêtre sur les cinq onglets", run: (t) => fixedSize(t) },
+  { name: "Réglages : même fenêtre sur les six onglets", run: (t) => fixedSize(t) },
   { name: "Réglages : choix de dossier (modèles, journal)", run: (t) => folderChoices(t, env) },
 ];

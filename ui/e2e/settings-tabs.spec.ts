@@ -26,6 +26,7 @@ test("change d'onglet à la souris et au clavier, et rouvre le dernier onglet ou
     "Écriture",
     "Claude",
     "Index",
+    "Favoris",
     "Brancher une IA",
   ]);
   await expect(tab("Affichage")).toHaveAttribute("aria-selected", "true");

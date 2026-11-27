@@ -92,6 +92,32 @@ describe("messages", () => {
     expect(texts(status)).toEqual(["un"]);
   });
 
+  it("offre un bouton d'action : un clic le lance et retire le message", async () => {
+    const { status, messages } = mount();
+    const undo = vi.fn(() => Promise.resolve());
+    messages.show("Retiré des favoris", "success", { label: "Annuler", run: undo });
+    const action = status.querySelector<HTMLButtonElement>(".toast-action");
+    expect(action?.textContent).toBe("Annuler");
+    expect(action?.type).toBe("button");
+    expect(texts(status)).toEqual(["Retiré des favorisAnnuler"]);
+    action?.click();
+    expect(undo).toHaveBeenCalledTimes(1);
+    expect(texts(status)).toEqual([]);
+  });
+
+  it("montre l'erreur d'une action refusée, et n'a pas de bouton sans action", async () => {
+    const { status, messages } = mount();
+    messages.show("Fait");
+    expect(status.querySelector(".toast-action")).toBeNull();
+    status.replaceChildren();
+    messages.show("Retiré", "success", {
+      label: "Annuler",
+      run: () => Promise.reject(new Error("note disparue")),
+    });
+    status.querySelector<HTMLButtonElement>(".toast-action")?.click();
+    await vi.waitFor(() => expect(texts(status)).toEqual(["traduit : note disparue"]));
+  });
+
   it("une action lancée sans être attendue montre son erreur", async () => {
     const { status, messages } = mount();
     messages.run(Promise.resolve("fait"));

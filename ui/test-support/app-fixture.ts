@@ -40,6 +40,7 @@ export function fakePane(note: string | null = null, log: string[] = []) {
     forget: vi.fn(() => void log.push(`oublier ${shown}`)),
     showBacklinks: vi.fn(async () => void log.push(`liens ${shown}`)),
     showRelated: vi.fn(async () => void log.push(`proches ${shown}`)),
+    showStar: vi.fn(async () => void log.push(`étoile ${shown}`)),
     followDisk: vi.fn(async () => void log.push(`relire ${shown}`)),
     followCrm: vi.fn(
       async (changed: readonly string[]) => void log.push(`fiches ${shown} ${changed.join(",")}`),

@@ -15,6 +15,8 @@ export interface ButtonsDeps {
   readonly workspace: { createNote(): Promise<void> };
   readonly search: { type(query: string): void };
   readonly trash: { show(): Promise<void> };
+  /** La note des favoris, que l'entrée « Favoris » ouvre. */
+  readonly favorites: { open(): Promise<void> };
   readonly folders: { startCreation(): void };
   /** La fenêtre de recherche se ferme par ce qu'on lui demande ici ; le menu de création crée par là. */
   readonly actions: { closeSearch(): void } & NewContentMenuDeps["actions"];
@@ -33,6 +35,7 @@ type ButtonsLayout = Pick<
   | "searchWindow"
   | "searchClose"
   | "trashButton"
+  | "favoritesButton"
   | "newFolderButton"
 >;
 
@@ -48,6 +51,7 @@ export function connectButtons(layout: ButtonsLayout, deps: ButtonsDeps): void {
   });
   connectSearchField(layout.searchField, deps.search.type);
   connectSearchWindow(layout, deps.actions.closeSearch);
+  layout.favoritesButton.addEventListener("click", () => run(deps.favorites.open()));
   layout.trashButton.addEventListener("click", () => run(deps.trash.show()));
   layout.newFolderButton.addEventListener("click", deps.folders.startCreation);
 }

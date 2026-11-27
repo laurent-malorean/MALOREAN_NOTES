@@ -10,13 +10,19 @@ import { matchingLinkable } from "../state/link-choice";
 /** Ce que la recherche demande à Rust : tout ce qu'on peut lier. */
 export type LinkPickerBackend = Pick<typeof Bridge, "listLinkable">;
 
+/** Ce que la recherche propose : son nom, et ce qu'elle garde de la liste (tout, sans `keep`). */
+export interface LinkChoiceOptions {
+  readonly label?: string;
+  readonly keep?: (item: LinkableItem) => boolean;
+}
+
 /** Ouvre la recherche dans la fenêtre de choix `picker` : le contenu choisi, `null` si on annule. */
 export async function chooseLinkable(
   backend: LinkPickerBackend,
   picker: HTMLDialogElement,
-  label = "Lier une note",
+  { label = "Lier une note", keep = () => true }: LinkChoiceOptions = {},
 ): Promise<LinkableItem | null> {
-  const items = await backend.listLinkable();
+  const items = (await backend.listLinkable()).filter(keep);
   return new Promise((resolve) => {
     let chosen = false;
     openPicker(picker, {

@@ -62,6 +62,17 @@ describe("mise en page", () => {
     expect(layout.claudeButton.getAttribute("aria-pressed")).toBe("false");
   });
 
+  it("met l'entrée « Favoris », avec son étoile, juste au-dessus de « Corbeille », du même composant", () => {
+    const root = document.createElement("div");
+    document.body.replaceChildren(root);
+    const layout = createLayout(root);
+    expect(layout.favoritesButton.nextElementSibling).toBe(layout.trashButton);
+    expect(layout.favoritesButton.parentElement).toBe(layout.foldersFooter);
+    expect(layout.favoritesButton.textContent).toBe("Favoris");
+    expect(layout.favoritesButton.className).toContain("trash-item");
+    expect(layout.favoritesButton.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("pose les trois blocs d'icônes puis le champ de recherche sur la bande du haut", () => {
     const root = document.createElement("div");
     document.body.replaceChildren(root);

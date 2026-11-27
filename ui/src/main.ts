@@ -11,8 +11,10 @@ import { createCurrentScreen } from "./app/current-screen";
 import { createExport } from "./app/export";
 import { connectExternalChanges } from "./app/external-changes";
 import { createFoldMemory } from "./app/fold-memory";
+import { createFavorites } from "./app/favorites";
 import { createFolders } from "./app/folders";
 import { followColumns } from "./app/follow-columns";
+import { launch } from "./app/launch";
 import { createHistory } from "./app/history";
 import { createNoteRenaming } from "./app/renaming";
 import { createJournal } from "./app/journal";
@@ -38,7 +40,6 @@ import { askName } from "./screens/name-prompt";
 import { renderScreen, type ScreenActions } from "./screens/screen-view";
 import { createSharedNotes } from "./screens/shared-notes";
 import { connectWindowDisplay } from "./screens/window-display";
-import { welcome } from "./state/screen";
 import "./theme.css";
 import "./style.css";
 
@@ -80,7 +81,7 @@ const settings = connectSettings(
   { documentElement: document.documentElement, ...layout },
   {
     ...{ columns, storage: localStorage, systemDark: matchMedia("(prefers-color-scheme: dark)") },
-    groups: () => [templates, journal, workspace, search.meaning, ai],
+    groups: () => [templates, journal, workspace, search.meaning, favorites, ai],
   },
 );
 const ai = createConnectAi({ ...messages, backend: bridge, dialog: layout.confirmation });
@@ -112,8 +113,13 @@ const workspaces = createWorkspaces({
   askName: (options) => askName(layout.confirmation, options),
   askRemoval: (name) => askWorkspaceRemoval(layout.confirmation, name),
 });
+const favorites = createFavorites({
+  ...{ backend: bridge, screen, columns, workspace, settings, picker: layout.picker, run },
+  ...{ open: (path) => actions.open(path), show: messages.show },
+});
 const newPane = paneMaker({
   ...{ backend: bridge, shared, workspace, related: search.meaning, layout },
+  favorites: favorites.star,
   events: {
     ...{ openNote: (path) => actions.open(path), error: messages.error, show: messages.show },
     openLink: (title, inNewTab) => run(workspace.followLink(title, inNewTab)),
@@ -127,6 +133,7 @@ const actions: ScreenActions = screenActions({
 });
 connectButtons(layout, {
   ...{ ...messages, workspaces, workspace, search, trash, folders, actions, templates, screen },
+  favorites,
 });
 const win = connectWindowDisplay(layout, { ...messages, window: bridge, storage: localStorage });
 const commands = connectCommands({
@@ -138,12 +145,5 @@ const commands = connectCommands({
 const formatBar = connectFormatBar(layout.formatBar, commands);
 const menu = connectAppMenu({ backend: bridge, actions: commands, assistant, ...messages });
 connectExternalChanges({ backend: bridge, screen, columns, workspace, messages });
-screen.show(welcome);
-void columns.change(columns.current());
-// Les dossiers des modèles gardés autrefois ici passent au moteur, puis la note du jour (colonnes retrouvées).
-templates
-  .migrate()
-  .then(bridge.reopenLastWorkspace)
-  .then((opened) => (opened ? workspace.open(opened).then(journal.atLaunch) : undefined))
-  .catch(messages.error);
+void launch({ ...messages, bridge, screen, columns, templates, workspace, journal });
 if (__ESSAI__) void import("./essai").then((e) => e.start({ bridge, actions, workspace, columns }));

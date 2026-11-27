@@ -15,6 +15,8 @@ export interface ColumnParts {
   readonly element: HTMLElement;
   /** La barre des étiquettes du contenu montré, sous les onglets ; sans elle, aucune barre n'est montrée. */
   readonly tags?: HTMLElement;
+  /** Le bouton de l'étoile, à droite de l'en-tête, avant « Diviser » : caché tant que la colonne ne lui donne pas d'état. */
+  readonly star?: HTMLButtonElement;
   readonly backlinks: HTMLElement;
   readonly related: HTMLElement;
 }
@@ -202,7 +204,9 @@ function columnElement(
   split.textContent = "◫";
   split.addEventListener("click", () => handlers.split());
   const trail = trailButtons(id, handlers);
-  header.append(trail.group, tabs, split);
+  const star = document.createElement("button");
+  star.className = "icon favorite-star";
+  header.append(trail.group, tabs, star, split);
   const tags = document.createElement("div");
   tags.className = "tag-bar";
   tags.hidden = true;
@@ -216,7 +220,7 @@ function columnElement(
   related.hidden = true;
   element.append(header, tags, backlinks, related);
   return {
-    parts: { element, tags, backlinks, related },
+    parts: { element, tags, star, backlinks, related },
     trail,
     tabs,
     split,

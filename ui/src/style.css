@@ -1080,6 +1080,9 @@ button {
   /* Les clics passent à travers : un message ne cache jamais un bouton, sauf sa croix. */
   pointer-events: none;
 }
+.toast:has(.toast-action) {
+  grid-template-columns: auto 1fr auto auto;
+}
 .toast-info {
   --toast-color: var(--info);
 }
@@ -1111,6 +1114,16 @@ button {
 }
 .toast-text {
   overflow-wrap: anywhere;
+}
+.toast-action {
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  pointer-events: auto;
 }
 .toast-close {
   background: none;
@@ -1205,6 +1218,43 @@ button {
 }
 .trash-item:hover {
   color: var(--text);
+}
+/* L'entrée « Favoris » : même bouton que « Corbeille », avec son étoile devant */
+.favorites-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.favorites-icon {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+/* L'étoile d'un contenu : à droite de l'en-tête de la colonne, creuse ou pleine (de la couleur d'accent) */
+.favorite-star {
+  flex: none;
+}
+.favorite-star[hidden] {
+  display: none;
+}
+.favorite-star svg {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.favorite-star[aria-pressed="true"] {
+  color: var(--accent);
+}
+.favorite-star[aria-pressed="true"] svg {
+  fill: currentColor;
 }
 .trash-item.selected {
   background: var(--selected);
@@ -1604,6 +1654,24 @@ button {
   border-radius: 6px;
   padding: 0.3rem 0.5rem;
   width: 14rem;
+}
+
+/* Réglages, onglet « Favoris » : la note choisie, les trois actions, le formulaire de création */
+.setting-label {
+  font-weight: 600;
+}
+.favorites-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.favorites-new {
+  display: grid;
+  gap: 0.3rem;
+}
+.favorites-new[hidden] {
+  display: none;
 }
 
 /* Liens entre notes */

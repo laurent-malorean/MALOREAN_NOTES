@@ -19,6 +19,7 @@ function setup() {
     workspace: { createNote: async () => void log.push("nouvelle note") },
     search: { type: (query) => log.push(`chercher ${query}`) },
     trash: { show: async () => void log.push("corbeille") },
+    favorites: { open: async () => void log.push("favoris") },
     folders: { startCreation: () => log.push("nouveau dossier") },
     screen: recordedScreen().screen,
     templates: { newNote: async () => void log.push("note depuis un modèle") },
@@ -41,12 +42,14 @@ describe("boutons de la fenêtre", () => {
     const { layout, log } = setup();
     layout.addButton.click();
     layout.newNoteButton.click();
+    layout.favoritesButton.click();
     layout.trashButton.click();
     layout.newFolderButton.click();
     await settle();
     expect(log).toEqual([
       "ajouter un espace de travail",
       "nouvelle note",
+      "favoris",
       "corbeille",
       "nouveau dossier",
     ]);

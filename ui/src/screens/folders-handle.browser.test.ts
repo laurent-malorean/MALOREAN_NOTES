@@ -22,10 +22,10 @@ const root = document.createElement("div");
 let layout = createLayout(root);
 
 /**
- * Monte la fenêtre : 30 dossiers, `tags` étiquettes, dans une fenêtre haute de `height` pixels (660 par défaut :
- * la bande du haut en prend 54, les listes en gardent 600).
+ * Monte la fenêtre : 30 dossiers, `tags` étiquettes, dans une fenêtre haute de `height` pixels (700 par défaut :
+ * la bande du haut en prend 54, les listes en gardent 646, une ligne de plus qu'avant au pied pour « Favoris »).
  */
-function mount(storage = memoryStorage(), tags = 6, height = 660) {
+function mount(storage = memoryStorage(), tags = 6, height = 700) {
   root.style.height = `${height}px`;
   layout = createLayout(root);
   layout.mainArea.hidden = false;

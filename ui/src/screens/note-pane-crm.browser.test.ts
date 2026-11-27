@@ -20,7 +20,8 @@ function mount(withCrm = true, failing = false, make: () => CrmItem = sample) {
   element.style.cssText = "width:1400px;height:600px;display:flex;flex-direction:column";
   const backlinks = document.createElement("nav");
   const related = document.createElement("nav");
-  element.append(backlinks, related);
+  const star = document.createElement("button");
+  element.append(star, backlinks, related);
   document.body.replaceChildren(element);
   const fake = fakeBackend({
     ...{ "Clients/prospects.md": CRM_NOTE, "autre.md": "# Autre\n\ntexte" },
@@ -55,9 +56,10 @@ function mount(withCrm = true, failing = false, make: () => CrmItem = sample) {
     chooseNote: async () => null,
   };
   const pane = createPane(
-    { element, backlinks, related },
+    { element, star, backlinks, related },
     {
       backend: fake.backend,
+      favorites: { state: async () => "empty", toggle: async () => {} },
       shared,
       events: {
         ...{ openNote: (p) => opened.push(p), error: (e) => errors.push(e) },
@@ -67,7 +69,7 @@ function mount(withCrm = true, failing = false, make: () => CrmItem = sample) {
       ...(withCrm ? { crm } : {}),
     },
   );
-  return { pane, element, reads, errors, opened, links };
+  return { pane, element, star, reads, errors, opened, links };
 }
 
 const shown = (element: HTMLElement) => element.classList.contains("crm-shown");
@@ -217,6 +219,18 @@ describe("colonne : une fiche du CRM", () => {
     await m.pane.load("autre.md");
     expect(m.element.classList.contains("fiche-shown")).toBe(false);
     expect(fiche(m.element)).toBeNull();
+  });
+
+  it("n'a pas d'étoile (seul le CRM entier en a une), contrairement au CRM et à une note", async () => {
+    const m = mount();
+    await m.pane.load("Clients/prospects.md");
+    await vi.waitFor(() => expect(m.star.hidden).toBe(false));
+    await m.pane.load(FICHE);
+    await vi.waitFor(() => expect(fiche(m.element)).not.toBeNull());
+    await m.pane.showStar();
+    expect(m.star.hidden).toBe(true);
+    await m.pane.load("autre.md");
+    await vi.waitFor(() => expect(m.star.hidden).toBe(false));
   });
 
   it("suit un changement venu du disque, et se retire avec la colonne", async () => {
