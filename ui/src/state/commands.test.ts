@@ -34,6 +34,7 @@ describe("palette de commandes", () => {
       ["correct-selection", "Corriger la sélection", "Ctrl+Cmd+K"],
       ["rephrase-selection", "Reformuler la sélection", "Ctrl+Cmd+R"],
       ["summarize-selection", "Résumer la sélection", "Ctrl+Cmd+U"],
+      ["voice-input", "Saisie vocale", "Ctrl+Maj+D"],
       ["toggle-focus", "Mode focus", "Cmd+Maj+F"],
       ["toggle-typewriter", "Mode machine à écrire", "Cmd+Maj+T"],
       ["toggle-outline", "Plan de la note", "Cmd+Maj+O"],

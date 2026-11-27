@@ -2,6 +2,7 @@
 // forme et de copie sur la note de la colonne active, sans prendre le focus de l'éditeur.
 import type { CommandId } from "../state/commands";
 import { formatIcon } from "./format-icons";
+import { MICROPHONE_COMMAND } from "./microphone";
 import { FORMAT_BAR, formatButtonName, formatButtonTitle } from "../state/format-bar";
 
 /** Pose les pilules de boutons dans la barre ; un clic lance la commande du bouton. */
@@ -34,7 +35,8 @@ export function buildFormatBar(bar: HTMLElement, run: (command: CommandId) => vo
   );
 }
 
-/** Grise les boutons tant qu'aucune note n'est montrée dans la colonne active. */
+/** Grise les boutons tant qu'aucune note n'est montrée dans la colonne active ; le micro dit lui-même pourquoi il est grisé. */
 export function showNoteShown(bar: HTMLElement, shown: boolean): void {
-  for (const button of bar.querySelectorAll("button")) button.disabled = !shown;
+  for (const button of bar.querySelectorAll<HTMLButtonElement>("button"))
+    if (button.dataset.command !== MICROPHONE_COMMAND) button.disabled = !shown;
 }

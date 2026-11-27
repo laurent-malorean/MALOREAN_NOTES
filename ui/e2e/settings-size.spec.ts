@@ -4,7 +4,15 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { waitForLaunchedNote } from "./journey";
 
 const NOTES = { "courses.md": { content: "# Courses\n\npain", modified: 30 } };
-const TABS = ["Affichage", "Écriture", "Claude", "Index", "Favoris", "Brancher une IA"];
+const TABS = [
+  "Affichage",
+  "Écriture",
+  "Claude",
+  "Index",
+  "Saisie vocale",
+  "Favoris",
+  "Brancher une IA",
+];
 const WIDE = { width: 1280, height: 1000 };
 const LOW = { width: 1280, height: 420 };
 

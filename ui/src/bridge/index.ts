@@ -23,6 +23,7 @@ import type { FavoritesNoteItem } from "./generated/FavoritesNoteItem";
 import type { RemovedLineItem } from "./generated/RemovedLineItem";
 import type { VoiceEventItem } from "./generated/VoiceEventItem";
 import type { VoiceInputStatusItem } from "./generated/VoiceInputStatusItem";
+import type { VoiceLanguageItem } from "./generated/VoiceLanguageItem";
 import type { CanvasArrowItem } from "./generated/CanvasArrowItem";
 import type { CanvasCardItem } from "./generated/CanvasCardItem";
 import type { CanvasFileItem } from "./generated/CanvasFileItem";
@@ -83,6 +84,9 @@ import type { VersionItem } from "./generated/VersionItem";
 import type { WritingActionItem } from "./generated/WritingActionItem";
 
 export type {
+  VoiceEventItem,
+  VoiceInputStatusItem,
+  VoiceLanguageItem,
   ActionKindItem,
   AgentStateItem,
   AiWorkspaceItem,

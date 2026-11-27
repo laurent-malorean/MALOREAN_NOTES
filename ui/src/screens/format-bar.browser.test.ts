@@ -20,7 +20,7 @@ describe("barre de mise en forme", () => {
     const groups = [...bar.children];
     expect(groups.map((group) => group.getAttribute("role"))).toEqual(["group", "group"]);
     expect(groups.every((group) => group.classList.contains("format-group"))).toBe(true);
-    expect(groups.map((group) => group.querySelectorAll("button").length)).toEqual([9, 2]);
+    expect(groups.map((group) => group.querySelectorAll("button").length)).toEqual([10, 2]);
   });
 
   it("chaque bouton montre une icône seule, porte le nom de sa commande et sa bulle d'aide", () => {
@@ -51,7 +51,10 @@ describe("barre de mise en forme", () => {
 
   it("est grisée tant qu'aucune note n'est montrée", () => {
     const { bar, button } = setup();
-    const buttons = [...bar.querySelectorAll("button")];
+    // Le micro n'en dépend pas : la saisie vocale dit elle-même pourquoi il est grisé.
+    const buttons = [...bar.querySelectorAll("button")].filter(
+      (each) => each.dataset.command !== "voice-input",
+    );
     expect(buttons.every((each) => each.disabled)).toBe(true);
     showNoteShown(bar, true);
     expect(buttons.some((each) => each.disabled)).toBe(false);

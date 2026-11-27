@@ -2821,3 +2821,56 @@ button.claude-chip:hover {
   border: 1px solid var(--border);
   border-radius: 4px;
 }
+
+/* Le micro de la saisie vocale : un bouton de la barre de mise en forme. En écoute l'icône est pleine et
+   rouge, avec un petit témoin du niveau sonore ; en préparation l'icône tourne ; grisé quand il est indisponible. */
+.format-button.voice-button {
+  position: relative;
+}
+.format-button.voice-unavailable {
+  opacity: var(--format-bar-disabled-opacity);
+}
+.format-button.voice-unavailable:not(:disabled) {
+  cursor: help;
+}
+.format-button.voice-listening,
+.format-button.voice-listening:hover:not(:disabled) {
+  color: var(--danger);
+}
+.format-button.voice-listening svg path:first-child {
+  fill: currentColor;
+}
+.format-button.voice-preparing svg {
+  animation: voice-spin var(--voice-spin-duration) linear infinite;
+}
+@keyframes voice-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .format-button.voice-preparing svg {
+    animation-duration: calc(var(--voice-spin-duration) * 4);
+  }
+}
+.voice-level {
+  position: absolute;
+  right: var(--voice-level-offset);
+  bottom: var(--voice-level-bottom);
+  width: var(--voice-level-width);
+  height: var(--voice-level-height);
+  border-radius: var(--voice-level-width);
+  background: var(--danger);
+  transform: scaleY(max(var(--voice-level, 0), var(--voice-level-minimum)));
+  transform-origin: bottom;
+  transition: transform var(--voice-level-transition) ease-out;
+}
+.voice-level[hidden] {
+  display: none;
+}
+
+/* Réglages, onglet « Saisie vocale » : l'état du modèle de la langue utilisée */
+.voice-status {
+  display: block;
+  margin-bottom: 0.5rem;
+}

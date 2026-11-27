@@ -88,6 +88,8 @@ export const APP_MENU: readonly MenuDef[] = [
       { command: "correct-selection", label: "Corriger la sélection…" },
       { command: "rephrase-selection", label: "Reformuler la sélection…" },
       { command: "summarize-selection", label: "Résumer la sélection…" },
+      "separator",
+      { command: "voice-input" },
     ],
   },
   {
@@ -168,6 +170,7 @@ export const NOTE_COMMANDS: ReadonlySet<MenuCommandId> = new Set<MenuCommandId>(
   "bullet-list",
   "numbered-list",
   "insert-date",
+  "voice-input",
 ]);
 
 /**

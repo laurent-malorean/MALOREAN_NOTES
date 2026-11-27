@@ -1,5 +1,5 @@
 // Ce qui suit un changement des colonnes : l'éditeur machine à écrire, la disposition retenue, les notes
-// récentes, le menu, la barre de mise en forme et la colonne Claude Code.
+// récentes, le menu, la barre de mise en forme, la colonne Claude Code et la saisie vocale.
 import type { Columns } from "../state/columns";
 
 export interface ColumnFollowers {
@@ -9,6 +9,7 @@ export interface ColumnFollowers {
   readonly menu: { follow(columns: Columns): void };
   readonly formatBar: { follow(columns: Columns): void };
   readonly claude: { follow(): void };
+  readonly voice: { follow(columns: Columns): void };
 }
 
 /** Les colonnes ont changé : chacun prend l'état `now`. */
@@ -19,4 +20,5 @@ export function followColumns(now: Columns, followers: ColumnFollowers): void {
   followers.menu.follow(now);
   followers.formatBar.follow(now);
   followers.claude.follow();
+  followers.voice.follow(now);
 }

@@ -19,6 +19,7 @@ const { screen } = recordedScreen(workspaceScreen());
 let columns = fakeColumns();
 let fullScreen = false;
 let tagFilter = false;
+let listening = false;
 let recentPaths: string[] = [];
 
 /** Ce que les commandes pilotent, chaque demande notée dans `log`. */
@@ -82,6 +83,10 @@ const deps: CommandsDeps = {
   history: { show: (path) => void log.push(`historique ${path}`) },
   assistant: { propose: (action) => void log.push(`aide à l'écriture ${action}`) },
   claude: { toggle: () => log.push("colonne Claude Code") },
+  voice: {
+    toggle: () => log.push("saisie vocale"),
+    escape: () => (log.push("arrêter la saisie vocale"), listening),
+  },
   meaning: {
     toggleRelated: () => void log.push("notes proches"),
   },
@@ -107,6 +112,7 @@ beforeEach(() => {
   if (picker().open) picker().close();
   log.length = 0;
   fullScreen = false;
+  listening = false;
   recentPaths = [];
   screen.show(workspaceScreen());
   columns = fakeColumns(["a.md", "b.md", "c.md"].reduce(noteOpened, columnsStarted));
@@ -137,6 +143,7 @@ describe("commandes de la palette", () => {
       "copy-note",
       "copy-markdown",
       "note-history",
+      "voice-input",
       "correct-selection",
       "rephrase-selection",
       "summarize-selection",
@@ -171,6 +178,7 @@ describe("commandes de la palette", () => {
       "copier undefined",
       "copier en Markdown undefined",
       "historique undefined",
+      "saisie vocale",
       "aide à l'écriture correct",
       "aide à l'écriture rephrase",
       "aide à l'écriture summarize",
@@ -481,17 +489,45 @@ describe("raccourcis clavier", () => {
     expect(picker().getAttribute("aria-label")).toBe("Ouvrir une note");
   });
 
+  it("Ctrl+Maj+D lance la saisie vocale, où que soit le curseur", () => {
+    expect(press("D", { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(true);
+    expect(log).toEqual(["saisie vocale"]);
+    // Cmd+Maj+D reste la date du jour.
+    log.length = 0;
+    press("d", { metaKey: true, shiftKey: true });
+    expect(log).toEqual([]);
+    expect(columns.open.activePane().editor.insertToday).toHaveBeenCalled();
+  });
+
+  it("Échap arrête d'abord la saisie vocale en cours, sans toucher au plein écran ni au filtre", () => {
+    listening = true;
+    fullScreen = true;
+    tagFilter = true;
+    expect(press("Escape").defaultPrevented).toBe(true);
+    expect(log).toEqual(["arrêter la saisie vocale"]);
+    fullScreen = false;
+    tagFilter = false;
+  });
+
   it("Échap quitte le plein écran, sinon retire le filtre par étiquette, sinon ne sert pas", () => {
     expect(press("Escape").defaultPrevented).toBe(false);
-    expect(log).toEqual(["quitter le plein écran", "retirer le filtre"]);
+    expect(log).toEqual([
+      "arrêter la saisie vocale",
+      "quitter le plein écran",
+      "retirer le filtre",
+    ]);
     log.length = 0;
     tagFilter = true;
     expect(press("Escape").defaultPrevented).toBe(true);
-    expect(log).toEqual(["quitter le plein écran", "retirer le filtre"]);
+    expect(log).toEqual([
+      "arrêter la saisie vocale",
+      "quitter le plein écran",
+      "retirer le filtre",
+    ]);
     log.length = 0;
     fullScreen = true;
     expect(press("Escape").defaultPrevented).toBe(true);
-    expect(log).toEqual(["quitter le plein écran"]);
+    expect(log).toEqual(["arrêter la saisie vocale", "quitter le plein écran"]);
     fullScreen = false;
     tagFilter = false;
   });

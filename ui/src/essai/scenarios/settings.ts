@@ -376,7 +376,15 @@ async function folderChoices(trial: Trial, env: Env): Promise<void> {
   closeSettings(window);
 }
 
-const TABS = ["Affichage", "Écriture", "Claude", "Index", "Favoris", "Brancher une IA"];
+const TABS = [
+  "Affichage",
+  "Écriture",
+  "Claude",
+  "Index",
+  "Saisie vocale",
+  "Favoris",
+  "Brancher une IA",
+];
 
 /** Les rectangles réels de la fenêtre, de son titre, de la rangée d'onglets et de « Fermer ». */
 function windowBoxes(window: HTMLElement) {

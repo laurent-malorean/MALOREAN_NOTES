@@ -22,6 +22,7 @@ import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { NoteHistory } from "./history";
 import type { Meaning } from "./meaning";
+import type { VoiceInput } from "./voice-input";
 import type { WritingAssistance } from "./writing-assistant";
 import type { WritingModes } from "./writing-modes";
 import type { Workspaces } from "./workspaces";
@@ -60,6 +61,8 @@ export interface CommandsDeps {
   readonly history: NoteHistory;
   /** L'aide à l'écriture, sur la sélection de la colonne active. */
   readonly assistant: Pick<WritingAssistance, "propose">;
+  /** La saisie vocale : le micro, et Échap qui l'arrête. */
+  readonly voice: Pick<VoiceInput, "toggle" | "escape">;
   /** La colonne Claude Code, affichée ou masquée. */
   readonly claude: { toggle(): void };
   /** La recherche par le sens : son mode, et les notes proches sous le texte. */
@@ -157,6 +160,7 @@ export function commandActions(deps: CommandsDeps): Readonly<Record<CommandId, (
     "search-workspace": () => deps.searchField.focus(),
     "find-in-note": () => columns.activePane().editor.openFind(),
     "find-and-replace": () => columns.activePane().editor.openReplace(),
+    "voice-input": () => deps.voice.toggle(),
     "correct-selection": () => deps.assistant.propose("correct"),
     "rephrase-selection": () => deps.assistant.propose("rephrase"),
     "summarize-selection": () => deps.assistant.propose("summarize"),
@@ -218,8 +222,9 @@ function runShortcut(
   actions: Readonly<Record<MenuCommandId, () => void>>,
   shortcut: Shortcut,
 ): boolean {
-  // Échap fait une chose à la fois : quitter le plein écran, sinon retirer le filtre par étiquette.
-  if (shortcut === "leave-full-screen") return deps.window.leaveFullScreen() || deps.tags.clear();
+  // Échap fait une chose à la fois : arrêter la saisie vocale, sinon quitter le plein écran, sinon retirer le filtre par étiquette.
+  if (shortcut === "leave-full-screen")
+    return deps.voice.escape() || deps.window.leaveFullScreen() || deps.tags.clear();
   actions[shortcut]();
   return true;
 }

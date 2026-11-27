@@ -29,6 +29,7 @@ import { linkMenu } from "./links/link-menu";
 import { linkStatus } from "./links/link-status";
 import { type EditorLinks, linkSiteOf } from "./links/link-site";
 import { noteLinkAt, noteLinks, type OpenNoteLink } from "./links/note-links";
+import { createDictation, type Dictation } from "./voice/dictation";
 import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
@@ -80,6 +81,10 @@ export interface Editor {
   openReplace(): void;
   /** Met en forme la sélection, comme le raccourci de la commande. */
   format(command: FormatCommandId): void;
+  /** Le texte peut-il s'écrire ici ? Faux pour un cahier de recherche (lecture seule). */
+  writable(): boolean;
+  /** La saisie vocale de cet éditeur : texte provisoire en décor, texte fixé écrit au curseur. */
+  readonly dictation: Dictation;
   /** Insère la date du jour à la place de la sélection, comme Cmd+Maj+D. */
   insertToday(): void;
   /** Ouvre le lien où se trouve le curseur, comme un clic dessus ; rien s'il n'y en a pas. */
@@ -196,6 +201,21 @@ function follower(view: EditorView) {
   };
 }
 
+/** Les commandes de l'éditeur lancées par le menu, la palette ou un bouton : recherche, mise en forme, date, lien. */
+function commandParts(
+  view: EditorView,
+  options: EditorOptions,
+  today: Today,
+): Pick<Editor, "openFind" | "openReplace" | "format" | "insertToday" | "openLinkAtCursor"> {
+  return {
+    openFind: () => void openSearchPanel(view),
+    openReplace: () => void openReplacePanel(view),
+    format: (command) => void formatCommand(command, linkChooser(options))(view),
+    insertToday: () => void insertToday(today)(view),
+    openLinkAtCursor: linkOpener(view, options),
+  };
+}
+
 /** La sélection principale : son texte, ses bornes, et le remplacement d'un passage. */
 function selectionParts(
   view: EditorView,
@@ -284,6 +304,7 @@ export function createEditor(
 ): Editor {
   const { resolveImage, attachmentActions, today = () => new Date(), outline, openLink } = options;
   const { focus, typewriter, outlineArea, page } = adjustableParts(outline ?? null);
+  const voice = createDictation(fromElsewhere);
   const extensions = () => [
     focus.extension(),
     typewriter.extension(),
@@ -297,6 +318,7 @@ export function createEditor(
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.
     formattingShortcuts(linkChooser(options)),
     todayShortcut(today),
+    voice.extension,
     page.extension(),
     statusBar,
     outlineArea.extension(),
@@ -332,11 +354,8 @@ export function createEditor(
     setFocusMode: (unit) => view.dispatch({ effects: focus.change(unit) }),
     setTypewriter: typewriterSwitch(view, typewriter),
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
-    openFind: () => void openSearchPanel(view),
-    openReplace: () => void openReplacePanel(view),
-    format: (command) => void formatCommand(command, linkChooser(options))(view),
-    insertToday: () => void insertToday(today)(view),
-    openLinkAtCursor: linkOpener(view, options),
+    ...commandParts(view, options, today),
+    ...voice.parts(view),
     ...positionParts(view),
     setOutline: (container) => view.dispatch({ effects: outlineArea.change(container) }),
     destroy: () => view.destroy(),

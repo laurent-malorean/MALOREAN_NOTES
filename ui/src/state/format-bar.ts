@@ -12,6 +12,8 @@ export type FormatIcon =
   | "heading-3"
   | "bullet-list"
   | "numbered-list"
+  | "microphone"
+  | "spinner"
   | "date"
   | "markdown"
   | "copy"
@@ -39,6 +41,7 @@ export const FORMAT_BAR: readonly (readonly FormatButton[])[] = [
     { command: "heading-3", icon: "heading-3" },
     { command: "bullet-list", icon: "bullet-list" },
     { command: "numbered-list", icon: "numbered-list" },
+    { command: "voice-input", icon: "microphone" },
     { command: "insert-date", icon: "date" },
   ],
   [
