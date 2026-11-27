@@ -24,7 +24,7 @@ Ces mots entrent dans l'ontologie avant le code.
 
 - **Où** : dans l'onglet « Claude » des Réglages, une rubrique **« Serveurs MCP »**, sous le réglage des modifications après une lecture du web.
 - **Phrase d'introduction** : « Les services que Claude peut utiliser dans la colonne Claude Code, en plus des outils de l'application. Seuls les serveurs cochés lui sont ouverts. »
-- **La liste** : chaque serveur MCP extérieur que Claude Code connaît (connecteurs claude.ai, serveurs ajoutés à Claude Code qui se lancent sur le Mac), sauf les serveurs plugins et les serveurs web ajoutés à la main (voir « Ce que les essais du 27/11 ont montré »), une ligne chacun, triée par nom :
+- **La liste** : chaque serveur MCP extérieur que Claude Code connaît (connecteurs claude.ai, serveurs ajoutés à Claude Code dans le Terminal, qu'ils se lancent sur le Mac ou soient sur le web), sauf les serveurs apportés par les plugins de Claude Code, une ligne chacun, triée par nom :
   - une case à cocher, nommée par le serveur ;
   - son nom, tel que Claude Code le donne, sans le préfixe « claude.ai » ;
   - son état, en toutes lettres : « Connecté », « À connecter » ou « En échec ».
@@ -93,8 +93,12 @@ Essais faits avec Claude Code lancé comme la colonne Claude Code le lance, sans
 - Sans moyen d'aller chercher les outils une fois prêts, Claude ne voyait pas les connecteurs dans 3 essais sur 4 ; avec ce moyen, il les a trouvés.
 - Les connecteurs claude.ai arrivent d'eux-mêmes, même quand l'application ignore les réglages de l'utilisateur.
 - Les serveurs ajoutés par l'utilisateur à son Claude Code (pour tout le Mac ou pour un dossier) n'arrivent pas d'eux-mêmes : deux serveurs d'essai, ajoutés puis retirés, étaient « Connecté » dans la liste de Claude Code, mais la colonne ne les a pas reçus. Lire les réglages de l'utilisateur pour les recevoir ouvrirait aussi ses autres réglages (crochets, permissions), ce que la fiche 0032 interdit. À la place, l'application lit la description de chaque serveur coché dans Claude Code au début de chaque tour, et la passe elle-même à Claude Code, comme elle passe déjà son propre serveur (ce passage a été essayé : le serveur de l'application ainsi passé et Noota ont répondu dans le même tour).
-- Serveurs plugins de Claude Code : ils n'arrivent pas non plus et ne sont pas dans la liste de cette version.
-- Reste non essayé, faute d'un tel serveur sur le Mac : un serveur web ajouté à la main dans Claude Code et qui demande une connexion (OAuth). La connexion faite dans Claude Code est-elle reprise quand l'application passe le serveur elle-même ? L'essai demande d'abord que l'utilisateur ajoute et connecte un tel serveur dans le Terminal. Tant que cet essai n'est pas fait, ces serveurs restent hors de cette version.
+- Serveur web ajouté dans le Terminal et qui demande une connexion (essayé avec Noota, ajouté une seconde fois sous un autre nom puis connecté par `claude mcp login`) : passé par l'application, il a répondu avec la connexion faite dans le Terminal, sans erreur d'authentification. Noota refuse un serveur ajouté dans le Terminal dont le nom contient « Noota » : il faut lui donner un autre nom.
+- Un serveur ajouté dans le Terminal à la même adresse qu'un connecteur claude.ai fait disparaître ce connecteur pour Claude Code : la liste montre alors seulement le serveur du Terminal, et c'est lui qu'il faut cocher.
+- Le garde-fou du web se déclenche sur les outils d'un serveur extérieur, connecteur claude.ai comme serveur du Terminal.
+- Masquer un serveur non coché : Claude, en cherchant ses outils, ne les trouve pas.
+- Les serveurs apportés par les plugins de Claude Code n'arrivent pas à la colonne ; ils restent hors de la liste, par choix : ils appartiennent au plugin, pas à l'utilisateur.
+- Les deux serveurs d'essai ont été retirés après les essais ; la configuration de Claude Code de l'utilisateur est revenue à l'identique.
 
 ## 7. Vérification avec les vrais outils
 
