@@ -1,5 +1,6 @@
-// La bande d'un événement (fiche 0104, spécification §§ 4.2, 7 et 9), au-dessus du texte de sa note : le lien
-// vers la grille, « Clore » (« Rouvrir » s'il est clos), « Placer dans la corbeille », puis ses champs.
+// La bande d'un événement (fiche 0104, spécification §§ 4.2, 7 et 9), au-dessus du texte de sa note. Une ligne
+// d'en-tête : le lien vers la grille, le résumé de l'événement, son état s'il est clos, puis « Clore » (« Rouvrir »
+// s'il est clos) et « Placer dans la corbeille » ; dessous, le titre en grand et les champs, regroupés en « Quand » et « Où ».
 // Rust valide chaque geste ; un refus est montré tel quel dans la bande, jamais passé sous silence.
 import type {
   Agenda12ClosedItem,
@@ -9,8 +10,9 @@ import type {
   CountryItem,
   SavedNote,
 } from "../bridge";
-import { closedDay } from "../state/agenda-12";
+import { closedDay, eventSummary } from "../state/agenda-12";
 import { createEventFields, type EventFields } from "./agenda-12-event-fields";
+import { appIcon } from "./app-icons";
 import { actionButton, h } from "./crm-dom";
 import "./agenda-12.css";
 
@@ -67,11 +69,12 @@ export const TRASH_TEXT = "Placer dans la corbeille";
 
 class Band implements EventBand {
   readonly element = h("div", "agenda-band");
-  private readonly back = actionButton("link agenda-back", "");
+  private readonly back = actionButton("agenda-back", "");
+  private readonly summary = h("p", "agenda-summary");
   private readonly closedText = h("span", "agenda-closed-on");
-  private readonly close = actionButton("link agenda-close", CLOSE_TEXT);
-  private readonly reopen = actionButton("link agenda-reopen", REOPEN_TEXT);
-  private readonly trash = actionButton("link agenda-trash", TRASH_TEXT);
+  private readonly close = actionButton("agenda-action agenda-close", CLOSE_TEXT);
+  private readonly reopen = actionButton("agenda-action agenda-reopen", REOPEN_TEXT);
+  private readonly trash = actionButton("agenda-icon-action agenda-trash", "", TRASH_TEXT);
   private readonly message = h("p", "agenda-band-message");
   private readonly fields: EventFields;
   private detail: Agenda12EventDetailItem | null = null;
@@ -94,9 +97,13 @@ class Band implements EventBand {
     this.close.addEventListener("click", () => this.go(() => this.closing()));
     this.reopen.addEventListener("click", () => this.go(() => this.reopening()));
     this.trash.addEventListener("click", () => this.go(() => this.trashing()));
+    this.trash.title = TRASH_TEXT;
+    this.trash.append(appIcon("trash"));
     const actions = h("div", "agenda-band-actions");
-    actions.append(this.back, this.closedText, this.close, this.reopen, this.trash);
-    this.element.append(actions, this.fields.element, this.message);
+    actions.append(this.close, this.reopen, this.trash);
+    const head = h("header", "agenda-band-head");
+    head.append(this.back, this.summary, this.closedText, actions);
+    this.element.append(head, this.fields.element, this.message);
   }
 
   destroy(): void {
@@ -124,6 +131,7 @@ class Band implements EventBand {
   private show(detail: Agenda12EventDetailItem, force: boolean): void {
     const { event, closed } = detail;
     this.back.textContent = `← ${detail.agendaTitle}`;
+    this.summary.textContent = eventSummary(event);
     this.element.dataset.closed = String(closed);
     this.closedText.hidden = !closed;
     this.closedText.textContent =

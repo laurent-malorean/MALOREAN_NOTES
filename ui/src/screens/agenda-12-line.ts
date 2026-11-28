@@ -27,10 +27,13 @@ function placeOf(line: Agenda12LineItem): HTMLElement | null {
   return place;
 }
 
+/** Le séparateur de deux parties : dans le texte de la ligne, effacé à l'écran où l'espace entre les parties le remplace. */
+const separator = (): HTMLElement => h("span", "agenda-sep", LINE_SEPARATOR);
+
 /** Les parties de la ligne, dans l'ordre, séparées par « – » ; celles qui manquent n'y sont pas. */
 export function lineParts(line: Agenda12LineItem): (Node | string)[] {
   const parts = [dateOf(line), placeOf(line), h("span", "agenda-title", line.title)];
   return parts
     .filter((part): part is HTMLElement => part !== null)
-    .flatMap((part, index) => (index === 0 ? [part] : [LINE_SEPARATOR, part]));
+    .flatMap((part, index) => (index === 0 ? [part] : [separator(), part]));
 }

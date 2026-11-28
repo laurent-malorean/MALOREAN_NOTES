@@ -1,5 +1,6 @@
-// Les champs de la bande d'un événement (spécification § 4.2) : titre, mois, jour, année, fin, pays, ville.
-// Chaque champ ne fait que dire son geste ; Rust le valide (dates, mois, pays) et l'écran montre sa réponse.
+// Les champs de la bande d'un événement (spécification § 4.2) : le titre, en grand ; « Quand » (jour, mois, année,
+// puis « au », jour et mois de la fin) ; « Où » (pays, ville). Chaque champ ne fait que dire son geste ; Rust le
+// valide (dates, mois, pays) et l'écran montre sa réponse.
 import type { Agenda12EventChangeItem, Agenda12EventItem, CountryItem } from "../bridge";
 import { monthName, wholeNumber } from "../state/agenda-12";
 import { type CountryField, createCountryField } from "./agenda-12-country";
@@ -21,6 +22,11 @@ export const FIELD_LABELS = {
 /** Le champ du pays a son propre nom, posé par le champ lui-même. */
 const COUNTRY_FIELD = "Pays";
 
+/** Les deux groupes de champs, et le mot qui relie le début de la date à sa fin. */
+export const WHEN_TEXT = "Quand";
+export const WHERE_TEXT = "Où";
+export const UNTIL_TEXT = "au";
+
 /** Ce que les champs demandent à la bande. */
 export interface FieldsDeps {
   /** Un geste du champ. */
@@ -38,18 +44,46 @@ export interface EventFields {
   show(event: Agenda12EventItem, force: boolean): void;
 }
 
-/** Un champ et son nom ; le pays, qui porte une liste, n'est pas une étiquette : un clic dans la liste ne vise pas le champ. */
-function labelled(label: string, control: HTMLElement, named = true): HTMLElement {
+/**
+ * Un champ et son nom, petit et discret au-dessus ; `shown` : le nom affiché, quand il est plus court que celui du
+ * champ (sous « au », « Fin : jour » s'affiche « Jour »). Le pays, qui porte une liste, n'est pas une étiquette :
+ * un clic dans la liste ne vise pas le champ.
+ */
+function labelled(label: string, control: HTMLElement, named = true, shown = label): HTMLElement {
   const field = h(named ? "label" : "div", "agenda-field");
-  field.append(h("span", "agenda-field-label", label), control);
+  field.append(h("span", "agenda-field-label", shown), control);
   if (named) control.setAttribute("aria-label", label);
   return field;
+}
+
+/** Un groupe de champs : son nom à gauche (au-dessus en largeur étroite), ses champs alignés à droite. */
+function group(kind: "when" | "where", name: string, ...rows: HTMLElement[]): HTMLElement {
+  const element = h("div", `agenda-group agenda-${kind}`);
+  element.setAttribute("role", "group");
+  element.setAttribute("aria-label", name);
+  const fields = h("div", "agenda-group-fields");
+  fields.append(...rows);
+  element.append(h("span", "agenda-group-label", name), fields);
+  return element;
+}
+
+function row(className: string, ...children: HTMLElement[]): HTMLElement {
+  const element = h("div", className);
+  element.append(...children);
+  return element;
 }
 
 function textInput(): HTMLInputElement {
   const input = h("input", "agenda-input");
   input.type = "text";
   input.autocomplete = "off";
+  return input;
+}
+
+/** Le titre : un champ sans cadre qui se lit comme un titre ; son cadre paraît au survol et au focus. */
+function titleInput(): HTMLInputElement {
+  const input = textInput();
+  input.className = "agenda-title-input";
   return input;
 }
 
@@ -67,7 +101,7 @@ function setValue(control: HTMLInputElement | HTMLSelectElement, value: string, 
 
 class Fields implements EventFields {
   readonly element = h("div", "agenda-fields");
-  readonly title = textInput();
+  readonly title = titleInput();
   private readonly month = monthSelect();
   private readonly day = textInput();
   private readonly year = textInput();
@@ -85,15 +119,25 @@ class Fields implements EventFields {
     for (const input of [this.day, this.year, this.endDay]) input.inputMode = "numeric";
     this.wire();
     const { title, month, day, year, endDay, endMonth, city } = FIELD_LABELS;
-    this.element.append(
-      labelled(title, this.title),
-      labelled(month, this.month),
-      labelled(day, this.day),
-      labelled(year, this.year),
-      labelled(endDay, this.endDay),
-      labelled(endMonth, this.endMonth),
+    this.title.setAttribute("aria-label", title);
+    const start = row(
+      "agenda-range-start",
+      ...[labelled(day, this.day), labelled(month, this.month), labelled(year, this.year)],
+    );
+    const end = row(
+      "agenda-range-end",
+      ...[h("span", "agenda-range-to", UNTIL_TEXT), labelled(endDay, this.endDay, true, "Jour")],
+      labelled(endMonth, this.endMonth, true, "Mois"),
+    );
+    const place = row(
+      "agenda-place-fields",
       labelled(COUNTRY_FIELD, this.country.element, false),
       labelled(city, this.city),
+    );
+    this.element.append(
+      this.title,
+      group("when", WHEN_TEXT, row("agenda-range", start, end)),
+      group("where", WHERE_TEXT, place),
     );
   }
 

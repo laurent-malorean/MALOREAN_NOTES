@@ -20,6 +20,7 @@ const COUNTRIES: CountryItem[] = [
   { code: "CI", name: "Côte d'Ivoire", flag: "🇨🇮" },
   { code: "ES", name: "Espagne", flag: "🇪🇸" },
   { code: "FR", name: "France", flag: "🇫🇷" },
+  { code: "PT", name: "Portugal", flag: "🇵🇹" },
 ];
 const MONTHS = [
   ...["janvier", "février", "mars", "avril", "mai", "juin"],

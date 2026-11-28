@@ -1,6 +1,6 @@
 # Agenda 12
 
-Spécification fonctionnelle rédigée le 27/11, **validée par l'utilisateur le 27/11** (demande de développement). Ce document se lit seul.
+Spécification fonctionnelle rédigée le 27/11, **validée par l'utilisateur le 27/11** (demande de développement) ; **présentation de l'écran d'un événement et de la grille refaite le 28/11 à la demande de l'utilisateur** (§§ 4.2, 5.1, 5.3, 7 et 14) : seuls l'organisation et l'aspect changent, aucun champ, contrôle ni état. Ce document se lit seul.
 
 ## 1. Idée
 
@@ -46,17 +46,57 @@ Une date impossible (31 février, 29 février d'une année non bissextile, fin a
 
 ### 4.2 Son écran
 
-Un clic sur un événement dans la grille ouvre sa note dans la colonne active, comme une note. Au-dessus du texte, une bande montre ses champs (mois, jour, année, fin, pays, ville, étiquettes), modifiables d'un clic, et deux boutons : « Clore » (§ 7) et « Placer dans la corbeille ». Un lien « ← nom de l'agenda 12 » ramène à la grille.
+Un clic sur un événement dans la grille ouvre sa note dans la colonne active, comme une note. Au-dessus du texte, la bande de l'événement (refonte du design du 28/11, à la demande de l'utilisateur) a une vraie hiérarchie, de haut en bas :
+
+1. **Une ligne d'en-tête** : le lien « ← nom de l'agenda 12 » à gauche, le **résumé** de l'événement (« 5 – 11 octobre 2026 · Lisbonne, Portugal », calculé à l'écran, jamais écrit), l'état « Clos le 27/11/2026 » en pastille quand l'événement est clos, et à droite les actions, en boutons : « Clore » (action principale, bouton plein ; « Rouvrir » s'il est clos) et « Placer dans la corbeille » (action discrète, icône seule dont le nom est dit au survol et aux lecteurs d'écran). En colonne étroite, le résumé passe sur sa propre ligne sous le retour et les actions.
+2. **Le titre**, en grand : un champ sans cadre qui se lit comme un titre ; son cadre paraît au survol et au focus.
+3. **Quand** : le jour, le mois et l'année du début, puis « au », le jour et le mois de la fin (grisé sans jour de fin). Les champs se lisent comme une date, dans l'ordre où on la dit.
+4. **Où** : le pays (champ où l'on tape pour filtrer la liste, drapeau et nom, « × » pour le retirer) et la ville, côte à côte ; en colonne étroite, l'un sous l'autre à pleine largeur, jamais un champ seul sur sa ligne.
+
+Chaque champ a son nom, petit et discret au-dessus de lui ; « Quand » et « Où » sont à gauche des champs quand la colonne est large, au-dessus quand elle est étroite (une colonne d'au moins 420 points tient sans débordement). Les étiquettes se règlent dans le champ d'étiquettes de la colonne, sous les onglets.
+
+Maquette (colonne large) :
+
+```
+← Salons             5 – 11 octobre 2026 · Lisbonne, Portugal     [ Clore ]  🗑
+WebSubmit                                                   (titre en grand)
+
+Quand   Jour  Mois        Année        Jour  Mois
+        [ 5 ] [Octobre ▾] [ 2026 ]  au [ 11 ] [Octobre ▾]
+Où      Pays                    Ville
+        [🇵🇹 Portugal       × ] [Lisbonne            ]
+───────────────────────────────────────────────────────────────
+[▸ Propriétés]                                   (texte de la note)
+# WebSubmit
+```
+
+Maquette (colonne étroite, 420 points) :
+
+```
+← Salons                        [ Clore ]  🗑
+5 – 11 octobre 2026 · Lisbonne, Portugal
+WebSubmit
+Quand
+  Jour  Mois         Année
+  [ 5 ] [Octobre ▾]  [ 2026 ]
+  au  Jour  Mois
+      [ 11 ] [Octobre ▾]
+Où
+  Pays                     Ville
+  [🇵🇹 Portugal     × ]    [Lisbonne      ]
+```
+
+**L'en-tête technique de la note** (`type`, `mois`, `jour`, `annee`, `jour-fin`, `pays`, `ville`…), que la bande édite déjà, n'occupe plus la tête de la page : dans l'éditeur, il est **replié sur une ligne « Propriétés »** (« ▸ Propriétés ») qu'un clic déplie (« ▾ Propriétés ») ; déplié, il se modifie comme du texte. Le fichier ne change jamais, seul l'affichage est replié. Replié, il est protégé : une frappe ou un remplacement qui l'atteindrait est refusé (le curseur ne s'y arrête pas) ; la bande, elle, le réécrit. Ne vaut que pour les événements d'un agenda 12 ; les autres notes montrent leur en-tête comme avant. Une note qu'on rouvre s'ouvre repliée.
 
 ## 5. La grille
 
 ### 5.1 Disposition
 
 - 12 cases, de janvier à décembre, le nom du mois en tête de chaque case.
-- **Bandeau du haut** : le titre de l'agenda 12, le choix du nombre de colonnes (3, 4 ou 6 : 4 lignes de 3, 3 lignes de 4 ou 2 lignes de 6), le filtre par étiquette (§ 5.4) et le lien « Archives » (§ 8).
+- **Bandeau du haut** : le titre de l'agenda 12 en grand, puis les outils groupés comme les pilules de la barre d'outils de l'application : le choix du nombre de colonnes (3, 4 ou 6 : 4 lignes de 3, 3 lignes de 4 ou 2 lignes de 6) en pilule, le filtre par étiquette (§ 5.4) et le bouton « Archives » (§ 8). En colonne étroite, les outils passent sous le titre.
 - Le nombre de colonnes est gardé par agenda 12, d'un lancement à l'autre (4 à la création).
 - Le mois en cours n'est pas mis en évidence.
-- Une case trop pleine défile ; les cases d'une même ligne gardent la même hauteur.
+- Une case trop pleine défile ; les cases d'une même ligne gardent la même hauteur minimale, et le nom du mois est à la même place dans toutes. Une case a son « + » à droite du nom du mois ; **une case vide** montre à la place, dans tout son corps, un grand « + » discret entouré d'un pointillé (le même bouton « Ajouter un événement en … »).
 
 ### 5.2 Ordre dans une case
 
@@ -84,7 +124,7 @@ Dans cet ordre, chaque partie absente disparaît avec son séparateur :
   - `[2029] – Renouveler malorean.fr`
   - `15/01 – Audit ISO`
 
-Le rendu exact (pastille, tailles, séparateurs) se règle à la réalisation, dans le thème.
+Le rendu exact (pastille, tailles, séparateurs) se règle à la réalisation, dans le thème. À l'écran (refonte du 28/11), la ligne se lit en deux rangs alignés à gauche : en légende (petite, discrète) la date, sa pastille d'année et le lieu (drapeau et ville), puis dessous le titre, plus lisible ; l'espace entre les parties remplace le « – », qui reste dans le texte de la ligne (copie, lecture d'écran, info-bulle). Une ligne sans date ni lieu est son titre seul. Rien ne dépasse d'une case étroite : les parties passent à la ligne.
 
 ### 5.4 Filtre par étiquette
 
@@ -100,7 +140,7 @@ Le rendu exact (pastille, tailles, séparateurs) se règle à la réalisation, d
 ## 7. Clore un événement
 
 - Le bouton « Clore » est dans la note de l'événement.
-- Une fenêtre demande : « Clore « titre » ? Il passe dans les archives. » avec trois choix :
+- Une fenêtre (mêmes règles de design que les autres fenêtres de l'application : coins, boutons de 36 points, espacements du thème) demande : « Clore « titre » ? Il passe dans les archives. » avec trois choix, l'un sous l'autre à la largeur de la fenêtre, l'action principale en haut :
   - **« Clore et préparer le suivant »** : clôt l'événement et crée sa copie ;
   - **« Clore »** : clôt sans copie ;
   - **« Annuler »**.
@@ -205,10 +245,10 @@ Aucun événement nouveau. Un changement de fichier (écran, IA, éditeur extér
 ## 14. Interface réalisée
 
 - **Création** : « Agenda 12 » dans le menu de création (le chevron du « + »), « Nouvel agenda 12 » dans le clic droit sur un dossier (et sur la racine), dans le menu Fichier (« Nouvel agenda 12… ») et dans la palette. Un titre vide est redemandé, Échap annule ; l'agenda 12 s'ouvre dans la colonne active.
-- **Grille** : elle prend la place de l'éditeur dans la colonne. Bandeau : titre, boutons « 3 », « 4 », « 6 » (le nombre gardé est enfoncé), liste « Toutes » / étiquettes, lien « Archives » (qui devient « Grille »). 12 cases dont les lignes sont celles du moteur, dans son ordre ; une case trop pleine défile, les cases d'une ligne gardent la même hauteur. La ligne est un bouton : `date année – drapeau (ville) – titre`, la pastille de l'année prend ses couleurs dans la palette du thème (vert, orange, marron, neutre). Un événement illisible est signalé au-dessus de la grille (un clic ouvre sa note). La grille se relit après chacun de ses gestes et à chaque changement du disque qui touche l'agenda 12 ou son dossier des événements.
+- **Grille** : elle prend la place de l'éditeur dans la colonne. Bandeau : titre en grand, puis les outils groupés : pilule « 3 », « 4 », « 6 » (le nombre gardé est enfoncé), liste « Toutes » / étiquettes en pilule, bouton « Archives » (qui devient « Grille »). 12 cases dont les lignes sont celles du moteur, dans son ordre ; une case trop pleine défile, les cases d'une ligne gardent la même hauteur. La ligne est un bouton : `date année – drapeau (ville) – titre`, la pastille de l'année prend ses couleurs dans la palette du thème (vert, orange, marron, neutre). Un événement illisible est signalé au-dessus de la grille (un clic ouvre sa note). La grille se relit après chacun de ses gestes et à chaque changement du disque qui touche l'agenda 12 ou son dossier des événements.
 - **Créer un événement** : le « + » de la case (« Ajouter un événement en février ») crée l'événement « Sans titre » du mois et l'ouvre, le curseur sur son titre, sélectionné.
-- **Écran d'un événement** : la bande au-dessus de la note. Titre, Mois (liste), Jour, Année, Fin : jour, Fin : mois (grisé sans jour de fin), Pays (champ où l'on tape pour filtrer les 249 pays, drapeau et nom ; « × » pour le retirer), Ville. Un champ se valide en le quittant ou par Entrée ; le texte tapé dans la note est enregistré avant chaque geste, la note relue après. Un refus du moteur (« Ce jour n'existe pas dans ce mois. »…) est dit tel quel dans la bande et le champ reprend ce qui est écrit ; un champ de nombre qui n'en contient pas est refusé par l'écran (« Un nombre entier est attendu. »). Les étiquettes se règlent dans le champ d'étiquettes de la colonne, sous les onglets, comme pour toute note. Pas de sélecteur de date : jour, mois et année sont des champs séparés (§ 4.1).
-- **Clore** : la fenêtre « Clore « titre » ? Il passe dans les archives. » avec « Annuler », « Clore » et « Clore et préparer le suivant » ; ensuite la grille s'ouvre. **Rouvrir** : dans la bande d'un événement clos (« Clos le 27/11/2026 », sa note reste modifiable) et dans les archives ; depuis la bande la note rouverte s'ouvre sous son nouveau chemin, depuis les archives la liste est relue.
-- **Corbeille** : « Placer dans la corbeille » de la bande demande confirmation (« Placer « titre » dans la corbeille ? », « Annuler » refuse), puis l'agenda 12 s'ouvre ; le message de retour et la restauration sont ceux des autres notes (écran Corbeille).
+- **Écran d'un événement** : la bande au-dessus de la note, organisée comme au § 4.2 (en-tête avec retour, résumé, état et actions ; titre en grand ; groupes « Quand » et « Où »). Champs : Titre, Jour, Mois (liste), Année, puis « au » Fin : jour et Fin : mois (grisé sans jour de fin), Pays (champ où l'on tape pour filtrer les 249 pays, drapeau et nom ; « × » pour le retirer), Ville. L'en-tête technique de la note est replié sur « Propriétés » dans l'éditeur. Un champ se valide en le quittant ou par Entrée ; le texte tapé dans la note est enregistré avant chaque geste, la note relue après. Un refus du moteur (« Ce jour n'existe pas dans ce mois. »…) est dit tel quel dans la bande et le champ reprend ce qui est écrit ; un champ de nombre qui n'en contient pas est refusé par l'écran (« Un nombre entier est attendu. »). Les étiquettes se règlent dans le champ d'étiquettes de la colonne, sous les onglets, comme pour toute note. Pas de sélecteur de date : jour, mois et année sont des champs séparés (§ 4.1).
+- **Clore** : la fenêtre « Clore « titre » ? Il passe dans les archives. » avec « Clore et préparer le suivant » (bouton plein, en haut), « Clore » et « Annuler », l'un sous l'autre ; ensuite la grille s'ouvre. **Rouvrir** : dans la bande d'un événement clos (état « Clos le 27/11/2026 » en pastille, sa note reste modifiable) et dans les archives ; depuis la bande la note rouverte s'ouvre sous son nouveau chemin, depuis les archives la liste est relue.
+- **Corbeille** : « Placer dans la corbeille » de la bande (icône seule) demande confirmation (« Placer « titre » dans la corbeille ? », « Annuler » refuse), puis l'agenda 12 s'ouvre ; le message de retour et la restauration sont ceux des autres notes (écran Corbeille).
 - **Étoile** : sur l'agenda 12 comme sur toute note ; cachée sur un événement (seul l'agenda 12 entier se met en favori).
 - Chaque action a un bouton visible ; rien ne dépend d'un raccourci ni d'un glisser. Pas de glisser-déposer entre cases (§ 12).

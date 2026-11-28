@@ -1,4 +1,5 @@
-/* Agenda 12 (fiche 0104) : la grille des 12 mois, la bande d'un événement. Couleurs et polices viennent du thème. */
+/* Agenda 12 (fiche 0104) : la grille des 12 mois, la bande d'un événement. Couleurs, polices, rayons et espacements
+   viennent du thème (échelle --space-*, --control-*, pilules de la barre) ; refonte du design le 28/11. */
 .column > .agenda {
   flex: 1 1 0;
   min-height: 0;
@@ -22,51 +23,133 @@
   font: inherit;
   cursor: pointer;
 }
-/* Les boutons discrets de l'écran : au moins 32 points de haut (décision 0084). */
-.agenda .link,
-.agenda-band .link {
-  min-height: var(--target-size);
-  padding: 0 var(--space-2);
-  font-size: inherit;
-}
-
-/* Bandeau du haut */
-.agenda-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3) var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border);
-}
-.agenda-title-bar {
-  flex: 1 1 auto;
-  margin: 0;
-  font-size: 1.2em;
-  font-weight: 600;
-}
-.agenda-columns {
-  display: flex;
-  gap: var(--space-1);
-}
+[hidden].agenda-action,
+[hidden].agenda-icon-action,
+.agenda-closed-on[hidden],
+.agenda-band-message[hidden],
 .agenda-columns[hidden],
-.agenda-filter[hidden] {
+.agenda-filter[hidden],
+.agenda-unreadable[hidden] {
   display: none;
 }
-.agenda-columns-choice {
-  min-width: var(--target-size);
+
+/* Les boutons de l'écran : un bouton à bordure (secondaire), un bouton plein (l'action principale), une icône seule */
+.agenda-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: var(--target-size);
-  background: none;
-  color: var(--muted);
+  padding: 0 var(--space-3);
+  color: var(--text);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--control-radius);
+  font-weight: 600;
+  white-space: nowrap;
 }
-.agenda-columns-choice[aria-pressed="true"] {
+.agenda-action:hover {
+  border-color: var(--accent);
+}
+.agenda-action.agenda-close {
   color: var(--on-accent);
   background: var(--accent);
   border-color: var(--accent);
 }
+.agenda-action.agenda-close:hover {
+  background: color-mix(in srgb, var(--accent) 85%, var(--text));
+}
+.agenda-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-size);
+  height: var(--target-size);
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--control-radius);
+}
+.agenda-icon-action svg {
+  width: var(--format-icon-size);
+  height: var(--format-icon-size);
+}
+.agenda-icon-action:hover {
+  color: var(--danger);
+  background: var(--selected);
+}
+
+/* Bandeau du haut : le titre, puis les outils groupés comme les pilules de la barre */
+.agenda-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+}
+.agenda-title-bar {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.agenda-columns {
+  display: flex;
+  align-items: center;
+  gap: var(--format-button-gap);
+  padding: var(--format-pill-padding);
+  background: var(--format-pill-background);
+  border: 1px solid var(--border);
+  border-radius: var(--format-pill-radius);
+}
+.agenda-columns-choice {
+  width: var(--format-button-size);
+  height: var(--format-button-size);
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--format-button-radius);
+}
+.agenda-columns-choice:hover {
+  color: var(--text);
+  background: var(--selected);
+}
+.agenda-columns-choice[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--selected);
+  font-weight: 600;
+}
 .agenda-filter,
+.agenda-archives-link {
+  box-sizing: border-box;
+  height: var(--format-pill-height);
+  font: inherit;
+  color: var(--text);
+  background: var(--format-pill-background);
+  border: 1px solid var(--border);
+  border-radius: var(--format-pill-radius);
+  padding: 0 var(--space-4);
+}
+.agenda-archives-link {
+  color: var(--muted);
+}
+.agenda-archives-link:hover {
+  color: var(--text);
+  background: var(--selected);
+}
 .agenda-input,
 .agenda-select {
   box-sizing: border-box;
@@ -82,11 +165,19 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: var(--space-2) var(--space-4);
+  margin: var(--space-3) var(--space-5) 0;
+  padding: var(--space-2) var(--space-3);
   color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--bg));
+  border-radius: var(--control-radius);
 }
-.agenda-unreadable[hidden] {
-  display: none;
+.agenda-unreadable-item {
+  min-height: var(--target-size);
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+  text-align: left;
 }
 
 /* La grille : les cases d'une même ligne gardent la même hauteur, une case trop pleine défile. */
@@ -99,91 +190,152 @@
   box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(var(--agenda-columns), minmax(0, 1fr));
-  grid-auto-rows: minmax(9rem, 1fr);
-  gap: var(--space-3);
+  grid-auto-rows: minmax(10rem, 1fr);
+  gap: var(--space-4);
   min-height: 100%;
-  padding: var(--space-4);
+  padding: var(--space-5);
 }
 .agenda-cell {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: var(--side-panel);
   border: 1px solid var(--border);
   border-radius: var(--control-radius);
-  background: var(--side-panel);
 }
 .agenda-cell-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
-  border-bottom: 1px solid var(--border);
+  box-sizing: border-box;
+  height: calc(var(--target-size) + var(--space-2));
+  padding: var(--space-2) var(--space-2) 0 var(--space-4);
 }
 .agenda-month {
   margin: 0;
-  font-size: 1em;
+  font-size: 1.05em;
   font-weight: 600;
 }
 .agenda-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: var(--target-size);
   min-height: var(--target-size);
-  background: none;
   color: var(--muted);
+  background: none;
   border: 0;
   border-radius: var(--control-radius);
-  font-size: 1.2em;
+  font-size: 1.3em;
+  line-height: 1;
 }
 .agenda-add:hover {
   color: var(--text);
   background: var(--selected);
+}
+/* Une case vide : tout son corps est un « + » discret, en pointillé. */
+.agenda-add.agenda-add-empty {
+  flex: 1 1 0;
+  margin: var(--space-2) var(--space-3) var(--space-3);
+  color: var(--marker);
+  border: 1px dashed var(--border);
+}
+.agenda-add.agenda-add-empty:hover {
+  color: var(--accent);
+  background: none;
+  border-color: var(--accent);
 }
 .agenda-events,
 .agenda-archives {
   flex: 1 1 0;
   min-height: 0;
   margin: 0;
-  padding: var(--space-1) 0;
+  overflow-x: hidden;
   overflow-y: auto;
   list-style: none;
 }
+.agenda-events {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) var(--space-3);
+}
+.agenda-events:empty {
+  display: none;
+}
 .agenda-event {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-3);
 }
+
+/* Une ligne : la date, la pastille de l'année et le lieu en légende, puis le titre. */
 .agenda-line {
   flex: 1 1 auto;
   min-width: 0;
-  padding: var(--space-1) var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text);
   background: none;
   border: 0;
-  color: var(--text);
+  border-radius: var(--control-radius);
   text-align: left;
 }
 .agenda-line:hover {
   background: var(--selected);
 }
-.agenda-archives {
-  padding: var(--space-4);
+/* Les séparateurs « – » existent pour le texte (copie, lecture) ; à l'écran, l'espace entre les parties les remplace. */
+.agenda-sep {
+  display: none;
 }
-.agenda-closed {
-  flex: none;
+.agenda-date,
+.agenda-place {
   color: var(--muted);
-}
-.agenda-empty {
-  margin: var(--space-4);
-  color: var(--muted);
+  font-size: var(--ui-label-size);
+  line-height: 1.4;
 }
 .agenda-title {
+  flex: 1 0 100%;
   font-weight: 500;
+  overflow-wrap: anywhere;
 }
 .agenda-flag {
   font-family: var(--sans);
 }
 
+/* Les archives : une ligne par événement clos, avec son jour de clôture et « Rouvrir » à droite. */
+.agenda-archives {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  box-sizing: border-box;
+  max-width: 60rem;
+  padding: var(--space-5);
+}
+.agenda-archives > .agenda-event {
+  flex: none;
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  background: var(--side-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+}
+.agenda-closed {
+  flex: none;
+  color: var(--muted);
+  font-size: var(--ui-label-size);
+}
+.agenda-empty {
+  margin: var(--space-5);
+  color: var(--muted);
+}
+
 /* La pastille de l'année : verte, orange, marron, ou neutre si l'année est passée. */
 .agenda-year {
   display: inline-block;
+  line-height: 1.4;
   padding: 0 var(--space-2);
   border-radius: var(--control-radius);
   font-size: var(--ui-label-size);
@@ -203,23 +355,54 @@
   color: var(--on-accent);
 }
 
-/* La fenêtre qui demande comment clore un événement. */
+/* La fenêtre qui demande comment clore un événement : trois choix l'un sous l'autre, l'action principale en haut. */
+.confirmation-buttons.agenda-closing-buttons {
+  flex-direction: column-reverse;
+  align-items: stretch;
+}
 .confirmation-buttons .agenda-closing-choice {
-  background: var(--accent);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.confirmation-buttons .agenda-closing-choice:hover {
+  border-color: var(--accent);
+}
+.confirmation-buttons .agenda-closing-choice.agenda-closing-successor {
   color: var(--on-accent);
-  border: 0;
-  border-radius: 6px;
-  padding: 0.3rem 0.7rem;
-  font: inherit;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
 }
 
-/* La bande d'un événement, au-dessus du texte de sa note */
+/* L'en-tête technique d'un événement, replié dans l'éditeur sur une ligne « Propriétés » (éditeur : agenda-event-properties.ts). */
+.editor .agenda-properties {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-size);
+  margin: var(--space-2) 0;
+  padding: 0 var(--space-3);
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  font-family: var(--sans);
+  font-size: var(--ui-label-size);
+  cursor: pointer;
+}
+.editor .agenda-properties:hover {
+  color: var(--text);
+  background: var(--selected);
+}
+
+/* La bande d'un événement, au-dessus du texte de sa note. Elle suit la largeur de sa colonne (requêtes de conteneur). */
 .agenda-band {
+  container: agenda-band / inline-size;
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4) var(--space-3);
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5) var(--space-5);
   border-bottom: 1px solid var(--border);
   background: var(--bg);
   color: var(--text);
@@ -227,28 +410,147 @@
   font-size: var(--ui-text-size);
   line-height: var(--ui-line-height);
 }
-.agenda-band-actions {
+/* En-tête : retour, état et actions d'abord ; le résumé, dessous en largeur étroite, entre les deux en largeur confortable. */
+.agenda-band-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-2) var(--space-3);
 }
-.agenda-band-actions .agenda-back {
-  margin-right: auto;
+.agenda-back {
+  order: 1;
+  min-height: var(--target-size);
+  max-width: 100%;
+  padding: 0 var(--space-3) 0 var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  overflow: hidden;
   color: var(--accent);
+  background: none;
+  border: 0;
+  border-radius: var(--control-radius);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-back:hover {
+  background: var(--selected);
 }
 .agenda-closed-on {
-  color: var(--muted);
+  order: 2;
+  padding: 0 var(--space-3);
+  color: var(--tag-text);
+  background: var(--tag-background);
+  border-radius: var(--tag-radius);
+  font-size: var(--ui-label-size);
+  white-space: nowrap;
 }
-.agenda-closed-on[hidden],
-.agenda-band .link[hidden],
-.agenda-band-message[hidden] {
+.agenda-band-actions {
+  order: 3;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.agenda-summary {
+  order: 4;
+  flex: 1 0 100%;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-summary:empty {
   display: none;
 }
+@container agenda-band (min-width: 40rem) {
+  .agenda-back {
+    order: 1;
+  }
+  .agenda-summary {
+    order: 2;
+    flex: 1 1 0;
+    text-align: center;
+  }
+  .agenda-closed-on {
+    order: 3;
+  }
+  .agenda-band-actions {
+    order: 4;
+    margin-left: 0;
+  }
+}
+
+/* Le titre : un champ sans cadre qui se lit comme un titre ; le cadre paraît au survol et au focus. */
 .agenda-fields {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.agenda-title-input {
+  box-sizing: border-box;
+  padding: var(--space-1) var(--space-2);
+  margin: 0 calc(-1 * var(--space-2));
+  width: calc(100% + 2 * var(--space-2));
+  font: inherit;
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  outline: none;
+}
+.agenda-title-input:hover {
+  border-color: var(--border);
+}
+.agenda-title-input:focus {
+  background: var(--bg);
+  border-color: var(--accent);
+}
+
+/* Deux groupes de champs, « Quand » et « Où » : leur nom au-dessus en largeur étroite, à gauche en largeur confortable. */
+.agenda-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.agenda-group-label {
+  color: var(--muted);
+  font-size: var(--ui-label-size);
+  font-weight: 600;
+}
+.agenda-group-fields {
+  min-width: 0;
+}
+.agenda-range,
+.agenda-range-start,
+.agenda-range-end,
+.agenda-place-fields {
+  display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.agenda-range {
+  column-gap: var(--space-4);
+}
+.agenda-range-start,
+.agenda-range-end {
+  flex-wrap: nowrap;
+}
+.agenda-range-to {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-height);
+  color: var(--muted);
+}
+.agenda-place-fields {
+  max-width: 40rem;
+}
+.agenda-place-fields > .agenda-field {
+  flex: 1 1 12rem;
 }
 .agenda-field {
   display: flex;
@@ -259,18 +561,36 @@
 .agenda-field-label {
   color: var(--muted);
   font-size: var(--ui-label-size);
+  line-height: 1.2;
 }
-.agenda-field:has([aria-label="Titre"]) {
-  flex: 1 1 14rem;
+.agenda-range .agenda-input {
+  width: 5rem;
 }
-.agenda-field:has([aria-label="Jour"]),
-.agenda-field:has([aria-label="Année"]),
-.agenda-field:has([aria-label="Fin : jour"]) {
-  width: 5.5rem;
+.agenda-range .agenda-select {
+  width: 9.5rem;
+}
+.agenda-place-fields .agenda-input {
+  width: 100%;
 }
 .agenda-band-message {
   margin: 0;
+  padding: var(--space-2) var(--space-3);
   color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--bg));
+  border-radius: var(--control-radius);
+}
+@container agenda-band (min-width: 56rem) {
+  .agenda-group {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    align-items: end;
+    gap: var(--space-4);
+  }
+  .agenda-group-label {
+    display: flex;
+    align-items: center;
+    height: var(--control-height);
+  }
 }
 
 /* Le choix du pays : un champ, et sa liste qui se filtre en tapant. */
@@ -278,7 +598,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  width: 14rem;
+  width: 100%;
 }
 .agenda-country-input {
   flex: 1 1 auto;
@@ -287,6 +607,8 @@
 .agenda-country-clear {
   position: absolute;
   right: var(--space-1);
+  min-height: var(--target-size);
+  padding: 0 var(--space-2);
 }
 .agenda-country-list {
   position: absolute;

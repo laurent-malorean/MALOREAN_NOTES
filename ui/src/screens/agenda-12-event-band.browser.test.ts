@@ -72,9 +72,10 @@ function mount(first: Detail = detailOf()) {
 
 const field = (label: string) =>
   document.querySelector(`[aria-label="${label}"]`) as HTMLInputElement & HTMLSelectElement;
+/** Un bouton de la bande, par son texte ou, pour une icône seule, par son nom. */
 const button = (text: string) =>
   [...document.querySelectorAll<HTMLButtonElement>(".agenda-band button")].find(
-    (b) => b.textContent === text,
+    (b) => b.textContent === text || b.getAttribute("aria-label") === text,
   ) as HTMLButtonElement;
 const message = () => document.querySelector(".agenda-band-message") as HTMLElement;
 
@@ -83,6 +84,72 @@ function enter(label: string, value: string) {
   control.value = value;
   control.dispatchEvent(new Event("change", { bubbles: true }));
 }
+
+describe("bande d'un événement : sa présentation", () => {
+  it("l'en-tête porte le retour, le résumé et les actions ; le titre vient dessous, puis « Quand » et « Où »", async () => {
+    const m = mount();
+    await m.band.reload();
+    const head = document.querySelector(".agenda-band-head") as HTMLElement;
+    expect(head.querySelector(".agenda-back")?.textContent).toBe("← Salons");
+    expect(head.querySelector(".agenda-summary")?.textContent).toBe(
+      "10 – 13 février 2027 · Nuremberg, Allemagne",
+    );
+    expect(head.querySelectorAll(".agenda-band-actions button")).toHaveLength(3);
+    const fields = [...(document.querySelector(".agenda-fields") as HTMLElement).children];
+    expect(fields.map((e) => e.className.split(" ")[0])).toEqual([
+      "agenda-title-input",
+      "agenda-group",
+      "agenda-group",
+    ]);
+  });
+
+  it("« Quand » réunit le jour, le mois et l'année, puis « au », le jour et le mois de la fin ; « Où », le pays et la ville", async () => {
+    const m = mount();
+    await m.band.reload();
+    const group = (name: string) =>
+      document.querySelector(`[role="group"][aria-label="${name}"]`) as HTMLElement;
+    const labels = (name: string) =>
+      [...group(name).querySelectorAll("[aria-label]")].map((e) => e.getAttribute("aria-label"));
+    expect(labels("Quand")).toEqual(["Jour", "Mois", "Année", "Fin : jour", "Fin : mois"]);
+    expect(group("Quand").querySelector(".agenda-range-to")?.textContent).toBe("au");
+    expect(labels("Où")).toEqual(["Pays", "Retirer le pays", "Liste des pays", "Ville"]);
+    expect(group("Où").querySelector(".agenda-group-label")?.textContent).toBe("Où");
+  });
+
+  it("le résumé suit l'événement relu", async () => {
+    const m = mount(detailOf(eventItem({ day: null, year: null, end: null, city: null })));
+    await m.band.reload();
+    expect(document.querySelector(".agenda-summary")?.textContent).toBe("février · Allemagne");
+    m.state.detail = detailOf(eventItem({ day: 3, end: null }));
+    await m.band.reload(true);
+    expect(document.querySelector(".agenda-summary")?.textContent).toBe(
+      "3 février 2027 · Nuremberg, Allemagne",
+    );
+  });
+
+  it("« Clore » est l'action principale (pleine), la corbeille une icône seule nommée", async () => {
+    const m = mount();
+    await m.band.reload();
+    const fill = (b: HTMLElement) => getComputedStyle(b).backgroundColor;
+    const transparent = "rgba(0, 0, 0, 0)";
+    expect(fill(button("Clore"))).not.toBe(transparent);
+    expect(fill(button("Rouvrir"))).not.toBe(fill(button("Clore")));
+    const trash = button("Placer dans la corbeille");
+    expect(trash.textContent).toBe("");
+    expect(trash.title).toBe("Placer dans la corbeille");
+    expect(trash.querySelector("svg")).not.toBeNull();
+  });
+
+  it("le titre est un champ sans cadre, grand, dont le cadre paraît au focus", async () => {
+    const m = mount();
+    await m.band.reload();
+    const title = field("Titre");
+    expect(getComputedStyle(title).borderTopColor).toBe("rgba(0, 0, 0, 0)");
+    expect(Number.parseFloat(getComputedStyle(title).fontSize)).toBeGreaterThan(24);
+    title.focus();
+    expect(getComputedStyle(title).borderTopColor).not.toBe("rgba(0, 0, 0, 0)");
+  });
+});
 
 describe("bande d'un événement : ce qu'elle montre", () => {
   it("montre chaque champ de l'événement, et le lien vers l'agenda 12", async () => {

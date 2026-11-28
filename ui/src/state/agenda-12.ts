@@ -1,7 +1,7 @@
 // L'agenda 12 à l'écran (fiche 0104) : ce que l'interface sait d'un agenda 12 et d'un événement sans écran.
 // Les règles (ordre d'une case, ligne, validité des dates) sont calculées par Rust ; ici, seulement ce
 // qui se lit, se filtre et se formate pour l'affichage.
-import type { CountryItem } from "../bridge";
+import type { Agenda12EventItem, CountryItem } from "../bridge";
 import { declaredType } from "./declared-type";
 import { formatDate, MONTHS } from "./date-picker";
 
@@ -59,3 +59,25 @@ export const countryText = (country: CountryItem): string => `${country.flag} ${
 
 /** Le jour de clôture tel qu'on le lit : `27/11/2026`. */
 export const closedDay = (closedOn: string): string => formatDate(closedOn);
+
+/** Un jour du mois comme on le dit : « 1er », puis « 2 », « 3 »… */
+const dayText = (day: number): string => (day === 1 ? "1er" : String(day));
+
+const lowerMonth = (month: number): string => monthName(month).toLowerCase();
+
+/** La date de l'événement en toutes lettres : « 5 – 11 octobre 2026 », « 30 janvier – 2 février 2027 », « octobre 2026 ». */
+function summaryDate({ month, day, year, end }: Agenda12EventItem): string {
+  let date = lowerMonth(month);
+  if (day !== null) {
+    if (end === null) date = `${dayText(day)} ${date}`;
+    else if (end.month === month) date = `${dayText(day)} – ${dayText(end.day)} ${date}`;
+    else date = `${dayText(day)} ${date} – ${dayText(end.day)} ${lowerMonth(end.month)}`;
+  }
+  return year === null ? date : `${date} ${year}`;
+}
+
+/** Le résumé d'un événement : sa date puis son lieu (« Lisbonne, Portugal »), séparés par « · ». */
+export function eventSummary(event: Agenda12EventItem): string {
+  const place = [event.city, event.country?.name].filter((part) => part != null && part !== "");
+  return [summaryDate(event), place.join(", ")].filter((part) => part !== "").join(" · ");
+}
