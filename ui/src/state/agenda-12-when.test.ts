@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   daysInMonth,
   endBeforeStart,
-  endDayAvailable,
   endWraps,
   mustBringEndBack,
   startDayAvailable,
@@ -59,44 +58,6 @@ describe("les jours de début possibles", () => {
     expect(startDayAvailable(29, 2, 2028)).toBe(true);
     expect(startDayAvailable(29, 2, 2027)).toBe(false);
     expect(startDayAvailable(1, 2, 2027)).toBe(true);
-  });
-});
-
-describe("les jours de fin possibles", () => {
-  const start = (day: number | null, month: number, year: number | null) => ({
-    day,
-    month,
-    year,
-  });
-
-  it("le même mois, aucun jour avant le jour de début ; le jour de début reste permis", () => {
-    expect(endDayAvailable(9, start(10, 2, 2027), 2)).toBe(false);
-    expect(endDayAvailable(10, start(10, 2, 2027), 2)).toBe(true);
-    expect(endDayAvailable(11, start(10, 2, 2027), 2)).toBe(true);
-    expect(endDayAvailable(1, start(2, 6, null), 6)).toBe(false);
-  });
-
-  it("un autre mois, aucun jour n'est grisé par le début", () => {
-    expect(endDayAvailable(1, start(30, 1, 2027), 2)).toBe(true);
-    expect(endDayAvailable(1, start(30, 12, 2026), 1)).toBe(true);
-  });
-
-  it("sans jour de début, rien à comparer", () => {
-    expect(endDayAvailable(1, start(null, 2, 2027), 2)).toBe(true);
-  });
-
-  it("les jours qui n'existent pas dans le mois de fin sont grisés", () => {
-    expect(endDayAvailable(31, start(10, 1, 2027), 2)).toBe(false);
-    expect(endDayAvailable(30, start(10, 3, null), 4)).toBe(true);
-    expect(endDayAvailable(31, start(10, 3, null), 4)).toBe(false);
-  });
-
-  it("la fin d'un début de décembre qui passe en février tombe l'année suivante pour le 29 février", () => {
-    expect(endDayAvailable(29, start(30, 12, 2027), 2)).toBe(true);
-    expect(endDayAvailable(29, start(30, 12, 2026), 2)).toBe(false);
-    expect(endDayAvailable(29, start(30, 12, null), 2)).toBe(true);
-    expect(endDayAvailable(29, start(10, 1, 2027), 2)).toBe(false);
-    expect(endDayAvailable(29, start(10, 1, 2028), 2)).toBe(true);
   });
 });
 

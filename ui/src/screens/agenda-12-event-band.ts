@@ -90,7 +90,7 @@ class Band implements EventBand {
     this.fields = createEventFields({
       error: deps.error,
       currentYear: deps.currentYear,
-      change: (changes, notice) => void this.change(changes, notice),
+      change: (changes, notice) => this.change(changes, notice),
       loadCountries: () => (this.countries ??= deps.backend.listCountries()),
     });
     this.message.setAttribute("role", "alert");

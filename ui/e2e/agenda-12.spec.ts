@@ -1,5 +1,17 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { band, event, field, launch, openSalons, SHOTS } from "./agenda-12-common";
+import {
+  band,
+  chooseYear,
+  dayCell,
+  event,
+  field,
+  launch,
+  monthCell,
+  openSalons,
+  period,
+  periodPopup,
+  SHOTS,
+} from "./agenda-12-common";
 
 // Agenda 12 (fiche 0104), à la souris : créer un agenda 12 et ses événements, la grille (ordre dans une
 // case, colonnes, filtre par étiquette), les champs d'un événement et les refus du moteur, clore, archives,
@@ -19,10 +31,6 @@ const chevron = (page: Page) => page.getByRole("button", { name: "Nouveau conten
 
 /** L'année suivante : la liste des années propose l'année en cours et les dix suivantes. */
 const NEXT_YEAR = new Date().getFullYear() + 1;
-/** Le bouton du jour `day` dans la fenêtre des jours ouverte. */
-const dayButton = (page: Page, day: number) =>
-  page.locator(".agenda-day-popup").getByRole("button", { name: String(day), exact: true });
-
 /** Écrit une valeur dans un champ de la bande et la valide, comme un utilisateur. */
 async function enter(page: Page, label: string, text: string) {
   await field(page, label).fill(text);
@@ -95,24 +103,20 @@ test("la grille range les lignes dans l'ordre, règle ses colonnes et filtre par
   await expect(cell(page, 2).locator(".agenda-line")).toHaveCount(2);
 });
 
-/** Les champs de la date d'un événement d'avril : le jour dans la grille, l'année dans la liste, la fin, puis un refus du moteur. */
+/** La date d'un événement d'avril : l'année dans la liste, le jour de début puis le jour de fin dans le calendrier. */
 async function fillDates(page: Page) {
-  // Le jour se choisit dans la grille : le 31 avril n'existe pas, il est grisé.
-  await field(page, "Jour").click();
-  await expect(dayButton(page, 31)).toBeDisabled();
-  await dayButton(page, 12).click();
-  await expect(field(page, "Jour")).toHaveText("12");
+  await period(page).click();
+  await chooseYear(page, NEXT_YEAR);
+  // Le calendrier d'avril n'a que 30 jours.
+  await expect(dayCell(page, 30)).toBeVisible();
+  await expect(dayCell(page, 31)).toHaveCount(0);
+  await dayCell(page, 12).click();
+  await expect(periodPopup(page)).toBeVisible();
+  await dayCell(page, 14).click();
+  await expect(periodPopup(page)).toBeHidden();
+  await expect(period(page)).toHaveText(`12 – 14 avril ${String(NEXT_YEAR)}`);
   await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
-  await field(page, "Année").selectOption(String(NEXT_YEAR));
-  await field(page, "Fin : jour").click();
-  await expect(dayButton(page, 5)).toBeDisabled();
-  await dayButton(page, 14).click();
-  await expect(field(page, "Fin : jour")).toHaveText("14");
   await expect(message(page)).toBeHidden();
-  await field(page, "Jour").click();
-  await page.getByRole("button", { name: "Aucun jour" }).click();
-  await expect(message(page)).toHaveText("La fin exige un jour de début.");
-  await expect(field(page, "Jour")).toHaveText("12");
 }
 
 test("un « + » crée l'événement de la case, dont chaque champ se renseigne, avec les refus du moteur dits", async ({
@@ -123,7 +127,7 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   expect(await saved(page, "Pro/salons/sans-titre.md")).toContain("mois: 4");
   await expect(band(page)).toBeVisible();
   await expect(field(page, "Titre")).toBeFocused();
-  await expect(field(page, "Mois")).toHaveValue("4");
+  await expect(period(page)).toHaveText("avril");
   await shot(page, "evenement");
 
   await page.keyboard.type("Salon Chimie");
@@ -140,7 +144,9 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   await expect(field(page, "Pays")).toHaveValue("🇩🇪 Allemagne");
   await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
   await enter(page, "Ville", "Hanovre");
-  await field(page, "Mois").selectOption("5");
+  await period(page).click();
+  await monthCell(page, 5).click();
+  await page.keyboard.press("Escape");
   await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
   await page.getByLabel("Ajouter une étiquette").fill("salon");
   await page.getByLabel("Ajouter une étiquette").press("Enter");

@@ -62,7 +62,7 @@ const dayText = (day: number): string => (day === 1 ? "1er" : String(day));
 const lowerMonth = (month: number): string => monthName(month).toLowerCase();
 
 /** La date de l'événement en toutes lettres : « 5 – 11 octobre 2026 », « 30 janvier – 2 février 2027 », « octobre 2026 ». */
-function summaryDate({ month, day, year, end }: Agenda12EventItem): string {
+export function summaryDate({ month, day, year, end }: Agenda12EventItem): string {
   let date = lowerMonth(month);
   if (day !== null) {
     if (end === null) date = `${dayText(day)} ${date}`;

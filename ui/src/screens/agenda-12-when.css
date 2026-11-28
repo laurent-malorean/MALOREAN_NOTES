@@ -1,10 +1,7 @@
-/* Les champs de la date de la bande d'un événement (spécification §§ 4.3 et 4.4) : la liste des années, le texte
-   d'aide de la fin, l'état d'erreur d'une fin avant le début. Couleurs du thème seulement. */
-.agenda-range .agenda-select.agenda-year-select {
-  width: 6rem;
-}
-.agenda-range .agenda-day-picker {
-  width: 5rem;
+/* La ligne « Quand » de la bande d'un événement (spécification §§ 4.3 et 4.4) : le champ de période a la largeur et la
+   hauteur de la ligne « Où » ; texte d'aide de la fin, état d'erreur d'une fin avant le début. Couleurs du thème seulement. */
+.agenda-when .agenda-group-fields > .agenda-field {
+  max-width: 40rem;
 }
 .agenda-end-note {
   grid-column: 2;
@@ -19,8 +16,7 @@
 .agenda-end-note[data-tone="error"] {
   color: var(--danger);
 }
-.agenda-day-trigger[aria-invalid="true"],
-.agenda-select[aria-invalid="true"] {
+.agenda-period-trigger[aria-invalid="true"] {
   border-color: var(--danger);
 }
 .agenda-band-message[data-tone="notice"] {

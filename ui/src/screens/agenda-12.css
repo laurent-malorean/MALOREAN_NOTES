@@ -175,8 +175,7 @@
   color: var(--text);
   background: var(--selected);
 }
-.agenda-input,
-.agenda-select {
+.agenda-input {
   box-sizing: border-box;
   height: var(--control-height);
   font: inherit;
@@ -540,29 +539,11 @@
 .agenda-group-fields {
   min-width: 0;
 }
-.agenda-range,
-.agenda-range-start,
-.agenda-range-end,
 .agenda-place-fields {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-3);
-}
-.agenda-range {
-  column-gap: var(--space-4);
-}
-.agenda-range-start,
-.agenda-range-end {
-  flex-wrap: nowrap;
-}
-.agenda-range-to {
-  display: inline-flex;
-  align-items: center;
-  height: var(--control-height);
-  color: var(--muted);
-}
-.agenda-place-fields {
   max-width: 40rem;
 }
 .agenda-place-fields > .agenda-field {
@@ -578,12 +559,6 @@
   color: var(--muted);
   font-size: var(--ui-label-size);
   line-height: 1.2;
-}
-.agenda-range .agenda-input {
-  width: 5rem;
-}
-.agenda-range .agenda-select {
-  width: 9.5rem;
 }
 .agenda-place-fields .agenda-input {
   width: 100%;

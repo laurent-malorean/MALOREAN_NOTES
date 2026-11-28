@@ -3,52 +3,37 @@
 // valide (dates, mois, pays) et l'écran montre sa réponse. L'écran garde en plus la fin cohérente avec le début
 // (§§ 4.3 et 4.4) : il grise les jours impossibles, ramène la fin au début, montre une fin incohérente en erreur.
 import type { Agenda12EventChangeItem, Agenda12EventItem, CountryItem } from "../bridge";
-import { monthName } from "../state/agenda-12";
-import {
-  endBeforeStart,
-  endDayAvailable,
-  endWraps,
-  mustBringEndBack,
-  type StartGesture,
-  startDayAvailable,
-  yearChoices,
-} from "../state/agenda-12-when";
+import { type Choice } from "../state/agenda-12-date-pick";
+import { endBeforeStart, endWraps } from "../state/agenda-12-when";
 import { type CountryField, createCountryField } from "./agenda-12-country";
-import { createDayPicker, type DayPicker } from "./agenda-12-day-picker";
+import { createPeriodPicker, type PeriodPicker } from "./agenda-12-period-picker";
 import { h } from "./crm-dom";
 import "./agenda-12-when.css";
 
-/** Ce que l'écran dit quand il a effacé la fin parce que le début la dépassait. */
-export const END_BROUGHT_BACK = "La fin a été ramenée au début.";
 /** Ce que l'écran dit d'une fin avant le début qu'il a reçue telle quelle, et d'une fin qui tombe l'année suivante. */
 export const END_BEFORE_START = "La fin est avant le début.";
 export const END_NEXT_YEAR = "Fin l'année suivante.";
-/** Le choix vide d'une liste, et le nom de la fenêtre des jours de fin. */
-const NO_VALUE_TEXT = "—";
-const END_DAY_TITLE = "Choisir le jour de fin";
 
 export const FIELD_LABELS = {
   title: "Titre",
-  month: "Mois",
-  day: "Jour",
-  year: "Année",
-  endDay: "Fin : jour",
-  endMonth: "Fin : mois",
+  period: "Date",
   city: "Ville",
 } as const;
 
 /** Le champ du pays a son propre nom, posé par le champ lui-même. */
 const COUNTRY_FIELD = "Pays";
 
-/** Les deux groupes de champs, et le mot qui relie le début de la date à sa fin. */
+/** Les deux groupes de champs. */
 export const WHEN_TEXT = "Quand";
 export const WHERE_TEXT = "Où";
-export const UNTIL_TEXT = "au";
 
 /** Ce que les champs demandent à la bande. */
 export interface FieldsDeps {
-  /** Les gestes d'un champ, joués l'un après l'autre ; `notice` : ce que l'écran dit quand ils ont tous réussi. */
-  readonly change: (changes: readonly Agenda12EventChangeItem[], notice?: string) => void;
+  /**
+   * Les gestes d'un champ, joués l'un après l'autre ; `notice` : ce que l'écran dit quand ils ont tous réussi.
+   * Rend la main quand la bande a relu l'événement.
+   */
+  readonly change: (changes: readonly Agenda12EventChangeItem[], notice?: string) => Promise<void>;
   /** L'année en cours, d'après l'horloge. */
   readonly currentYear: () => number;
   readonly loadCountries: () => Promise<readonly CountryItem[]>;
@@ -63,9 +48,8 @@ export interface EventFields {
 }
 
 /**
- * Un champ et son nom, petit et discret au-dessus ; `shown` : le nom affiché, quand il est plus court que celui du
- * champ (sous « au », « Fin : jour » s'affiche « Jour »). Le pays, qui porte une liste, n'est pas une étiquette :
- * un clic dans la liste ne vise pas le champ.
+ * Un champ et son nom, petit et discret au-dessus. Le pays et la période, qui portent une liste ou une fenêtre,
+ * ne sont pas des étiquettes (`named` faux) : un clic dans la liste ne vise pas le champ, qui se nomme lui-même.
  */
 function labelled(label: string, control: HTMLElement, named = true, shown = label): HTMLElement {
   const field = h(named ? "label" : "div", "agenda-field");
@@ -85,12 +69,6 @@ function group(kind: "when" | "where", name: string, ...rows: HTMLElement[]): HT
   return element;
 }
 
-function row(className: string, ...children: HTMLElement[]): HTMLElement {
-  const element = h("div", className);
-  element.append(...children);
-  return element;
-}
-
 function textInput(): HTMLInputElement {
   const input = h("input", "agenda-input");
   input.type = "text";
@@ -105,155 +83,68 @@ function titleInput(): HTMLInputElement {
   return input;
 }
 
-function monthSelect(): HTMLSelectElement {
-  const select = h("select", "agenda-select");
-  for (let month = 1; month <= 12; month += 1)
-    select.add(new Option(monthName(month), String(month)));
-  return select;
-}
-
-/** La liste des années : le choix vide, puis les années proposées (remplies à chaque lecture de l'événement). */
-function yearSelect(): HTMLSelectElement {
-  return h("select", "agenda-select agenda-year-select");
-}
-
-/** Les options d'une liste, sauf si elles sont déjà là (une liste ouverte ne se redessine pas pour rien). */
-function fillOptions(select: HTMLSelectElement, options: readonly [string, string][]): void {
-  const same =
-    select.options.length === options.length &&
-    options.every(([value], index) => select.options[index]?.value === value);
-  if (!same) select.replaceChildren(...options.map(([value, text]) => new Option(text, value)));
+/** Remplace la valeur d'un champ, sauf s'il a le curseur (une saisie en cours n'est pas perdue) et que `force` est faux. */
+function setValue(control: HTMLInputElement, value: string, force: boolean) {
+  if (force || document.activeElement !== control) control.value = value;
 }
 
 /** Le numéro des textes d'aide de la fin, pour que chacun ait son identifiant dans la page. */
 let notes = 0;
 
-/** Remplace la valeur d'un champ, sauf s'il a le curseur (une saisie en cours n'est pas perdue) et que `force` est faux. */
-function setValue(control: HTMLInputElement | HTMLSelectElement, value: string, force: boolean) {
-  if (force || document.activeElement !== control) control.value = value;
-}
-
 class Fields implements EventFields {
   readonly element = h("div", "agenda-fields");
   readonly title = titleInput();
-  private readonly month = monthSelect();
-  private readonly day: DayPicker;
-  private readonly year = yearSelect();
-  private readonly endDay: DayPicker;
-  private readonly endMonth = monthSelect();
+  private readonly period: PeriodPicker;
   private readonly endNote = h("p", "agenda-end-note");
   private readonly city = textInput();
   private readonly country: CountryField;
-  /** L'événement montré : les jours possibles et la cohérence de la fin se jugent sur lui. */
-  private event: Agenda12EventItem | null = null;
 
   constructor(private readonly deps: FieldsDeps) {
     this.country = createCountryField({
       load: deps.loadCountries,
       error: deps.error,
-      change: (country) => deps.change([{ kind: "country", country }]),
+      change: (country) => void deps.change([{ kind: "country", country }]),
     });
-    this.day = createDayPicker({
-      label: FIELD_LABELS.day,
-      title: "Choisir le jour",
-      available: (day) =>
-        this.event !== null && startDayAvailable(day, this.event.month, this.event.year),
-      choose: (day) => this.changeStart({ kind: "day", day }),
-    });
-    this.endDay = createDayPicker({
-      label: FIELD_LABELS.endDay,
-      title: END_DAY_TITLE,
-      available: (day) =>
-        this.event !== null && endDayAvailable(day, this.event, Number(this.endMonth.value)),
-      choose: (day) => deps.change([this.endTo(day, Number(this.endMonth.value))]),
+    this.period = createPeriodPicker({
+      currentYear: deps.currentYear,
+      apply: (choice) => this.apply(choice),
     });
     this.endNote.id = `agenda-end-note-${String((notes += 1))}`;
     this.endNote.hidden = true;
     this.wire();
-    const { title, month, day, year, endDay, endMonth, city } = FIELD_LABELS;
+    const { title, period, city } = FIELD_LABELS;
     this.title.setAttribute("aria-label", title);
-    const start = row(
-      "agenda-range-start",
-      ...[labelled(day, this.day.element, false), labelled(month, this.month)],
-      labelled(year, this.year),
-    );
-    const end = row(
-      "agenda-range-end",
-      ...[
-        h("span", "agenda-range-to", UNTIL_TEXT),
-        labelled(endDay, this.endDay.element, false, "Jour"),
-      ],
-      labelled(endMonth, this.endMonth, true, "Mois"),
-    );
-    const place = row(
-      "agenda-place-fields",
-      labelled(COUNTRY_FIELD, this.country.element, false),
-      labelled(city, this.city),
-    );
-    const when = group("when", WHEN_TEXT, row("agenda-range", start, end));
-    // Le texte d'aide de la fin est à part du groupe des champs : le nom « Quand » reste à la hauteur des champs.
+    const when = group("when", WHEN_TEXT, labelled(period, this.period.element, false));
+    // Le texte d'aide de la fin est à part du groupe des champs : le nom « Quand » reste à la hauteur du champ.
     when.append(this.endNote);
+    const place = h("div", "agenda-place-fields");
+    place.append(labelled(COUNTRY_FIELD, this.country.element, false), labelled(city, this.city));
     this.element.append(this.title, when, group("where", WHERE_TEXT, place));
+  }
+
+  /** Un choix du sélecteur de période : ses gestes partent, et rien ne part s'il n'y en a pas. */
+  private apply({ changes, notice }: Choice): Promise<void> {
+    return changes.length === 0 ? Promise.resolve() : this.deps.change(changes, notice);
   }
 
   private wire(): void {
     const { deps } = this;
-    this.title.addEventListener("change", () =>
-      deps.change([{ kind: "title", title: this.title.value }]),
-    );
-    this.month.addEventListener("change", () =>
-      this.changeStart({ kind: "month", month: Number(this.month.value) }),
-    );
-    this.year.addEventListener("change", () =>
-      this.changeStart({
-        kind: "year",
-        year: this.year.value === "" ? null : Number(this.year.value),
-      }),
+    this.title.addEventListener(
+      "change",
+      () => void deps.change([{ kind: "title", title: this.title.value }]),
     );
     this.city.addEventListener("change", () => {
       const city = this.city.value.trim();
-      deps.change([{ kind: "city", city: city === "" ? null : city }]);
+      void deps.change([{ kind: "city", city: city === "" ? null : city }]);
     });
-    this.endMonth.addEventListener("change", () =>
-      deps.change([this.endTo(this.event?.end?.day ?? null, Number(this.endMonth.value))]),
-    );
-  }
-
-  /** La fin au jour `day` du mois `month` ; sans jour, elle est effacée. */
-  private endTo(day: number | null, month: number): Agenda12EventChangeItem {
-    return day === null ? { kind: "end", end: null } : { kind: "end", end: { day, month } };
-  }
-
-  /** Un geste sur le début : si la fin déjà saisie passerait avant lui, elle est ramenée au début (effacée) d'abord. */
-  private changeStart(gesture: StartGesture): void {
-    const bringBack = this.event !== null && mustBringEndBack(this.event, gesture);
-    if (bringBack) this.deps.change([{ kind: "end", end: null }, gesture], END_BROUGHT_BACK);
-    else this.deps.change([gesture]);
   }
 
   show(event: Agenda12EventItem, force: boolean): void {
-    this.event = event;
     setValue(this.title, event.title, force);
-    setValue(this.month, String(event.month), force);
-    this.day.show(event.day);
-    this.showYear(event.year, force);
-    this.endDay.show(event.end?.day ?? null);
-    setValue(this.endMonth, String(event.end?.month ?? event.month), force);
-    // Sans jour de fin, le mois de fin n'a rien à dire.
-    this.endMonth.disabled = event.end === null;
+    this.period.show(event);
     this.showEndNote(event);
     setValue(this.city, event.city ?? "", force);
     this.country.show(event.country);
-  }
-
-  /** L'année de l'événement est toujours dans la liste, même hors de la plage proposée. */
-  private showYear(year: number | null, force: boolean): void {
-    const years = yearChoices(this.deps.currentYear(), year);
-    fillOptions(this.year, [
-      ["", NO_VALUE_TEXT],
-      ...years.map((value): [string, string] => [String(value), String(value)]),
-    ]);
-    setValue(this.year, year === null ? "" : String(year), force);
   }
 
   /** La fin avant le début est montrée en erreur, sans être corrigée ; une fin de l'année suivante est signalée. */
@@ -263,12 +154,11 @@ class Fields implements EventFields {
     this.endNote.textContent = text;
     this.endNote.hidden = text === "";
     this.endNote.dataset.tone = invalid ? "error" : "hint";
-    for (const control of [this.endDay.trigger, this.endMonth]) {
-      if (invalid) control.setAttribute("aria-invalid", "true");
-      else control.removeAttribute("aria-invalid");
-      if (text === "") control.removeAttribute("aria-describedby");
-      else control.setAttribute("aria-describedby", this.endNote.id);
-    }
+    const { trigger } = this.period;
+    if (invalid) trigger.setAttribute("aria-invalid", "true");
+    else trigger.removeAttribute("aria-invalid");
+    if (text === "") trigger.removeAttribute("aria-describedby");
+    else trigger.setAttribute("aria-describedby", this.endNote.id);
   }
 }
 

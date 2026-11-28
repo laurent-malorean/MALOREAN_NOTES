@@ -104,15 +104,15 @@ describe("bande d'un événement : sa présentation", () => {
     ]);
   });
 
-  it("« Quand » réunit le jour, le mois et l'année, puis « au », le jour et le mois de la fin ; « Où », le pays et la ville", async () => {
+  it("« Quand » réunit la date en un seul champ, avec « Effacer la fin » ; « Où », le pays et la ville", async () => {
     const m = mount();
     await m.band.reload();
     const group = (name: string) =>
       document.querySelector(`[role="group"][aria-label="${name}"]`) as HTMLElement;
     const labels = (name: string) =>
       [...group(name).querySelectorAll("[aria-label]")].map((e) => e.getAttribute("aria-label"));
-    expect(labels("Quand")).toEqual(["Jour", "Mois", "Année", "Fin : jour", "Fin : mois"]);
-    expect(group("Quand").querySelector(".agenda-range-to")?.textContent).toBe("au");
+    expect(labels("Quand")).toEqual(["Effacer la fin"]);
+    expect(group("Quand").querySelectorAll(".agenda-period-trigger")).toHaveLength(1);
     expect(labels("Où")).toEqual(["Pays", "Retirer le pays", "Liste des pays", "Ville"]);
     expect(group("Où").querySelector(".agenda-group-label")?.textContent).toBe("Où");
   });
@@ -157,45 +157,25 @@ describe("bande d'un événement : ce qu'elle montre", () => {
     const m = mount();
     await m.band.reload();
     expect(field("Titre").value).toBe("Salon Embedded World");
-    expect(field("Mois").value).toBe("2");
-    expect(field("Jour").textContent).toBe("10");
-    expect(field("Année").value).toBe("2027");
-    expect(field("Fin : jour").textContent).toBe("13");
-    expect(field("Fin : mois").value).toBe("2");
+    expect(document.querySelector(".agenda-period-trigger")?.textContent).toBe(
+      "10 – 13 février 2027",
+    );
     expect(field("Pays").value).toBe("🇩🇪 Allemagne");
     expect(field("Ville").value).toBe("Nuremberg");
     expect(button("← Salons")).toBeDefined();
     expect(m.log).toEqual([`lire ${PATH}`]);
   });
 
-  it("les mois s'écrivent en toutes lettres, de janvier à décembre", async () => {
-    const m = mount();
-    await m.band.reload();
-    const names = [...field("Mois").options].map((o) => o.textContent);
-    expect(names[0]).toBe("Janvier");
-    expect(names[11]).toBe("Décembre");
-    expect(names).toHaveLength(12);
-  });
-
-  it("un événement sans jour, année, fin, pays ni ville a des champs vides, et le mois de fin est grisé", async () => {
+  it("un événement sans jour, année, fin, pays ni ville : le mois seul, des champs vides, pas de « Effacer la fin »", async () => {
     const m = mount(
       detailOf(
         eventItem({ day: null, year: null, end: null, country: null, city: null, month: 5 }),
       ),
     );
     await m.band.reload();
-    for (const label of ["Jour", "Fin : jour"]) expect(field(label).textContent).toBe("—");
-    for (const label of ["Année", "Pays", "Ville"]) expect(field(label).value).toBe("");
-    expect(field("Fin : mois").value).toBe("5");
-    expect(field("Fin : mois").disabled).toBe(true);
-    expect(field("Mois").value).toBe("5");
-  });
-
-  it("une fin sur un autre mois montre ce mois", async () => {
-    const m = mount(detailOf(eventItem({ end: { day: 2, month: 3 } })));
-    await m.band.reload();
-    expect(field("Fin : mois").value).toBe("3");
-    expect(field("Fin : mois").disabled).toBe(false);
+    for (const label of ["Pays", "Ville"]) expect(field(label).value).toBe("");
+    expect(document.querySelector(".agenda-period-trigger")?.textContent).toBe("mai");
+    expect((document.querySelector(".agenda-period-clear") as HTMLElement).hidden).toBe(true);
   });
 
   it("ouvert : « Clore » et « Placer dans la corbeille », pas « Rouvrir »", async () => {
@@ -290,16 +270,6 @@ describe("bande d'un événement : chaque champ est un geste", () => {
     expect(m.changes).toEqual([{ kind: "title", title: "Embedded World 2027" }]);
   });
 
-  it("le mois", async () => {
-    expect((await gesture("Mois", "3")).changes).toEqual([{ kind: "month", month: 3 }]);
-  });
-
-  it("le mois de fin", async () => {
-    expect((await gesture("Fin : mois", "3")).changes).toEqual([
-      { kind: "end", end: { day: 13, month: 3 } },
-    ]);
-  });
-
   it("la ville, sans les espaces autour", async () => {
     expect((await gesture("Ville", "  Hanovre ")).changes).toEqual([
       { kind: "city", city: "Hanovre" },
@@ -369,7 +339,7 @@ describe("bande d'un événement : les gestes se suivent", () => {
     m.state.flushHold = new Promise((resolve) => (release = resolve));
     const element = document.querySelector(".agenda-band") as HTMLElement;
     enter("Ville", "Hanovre");
-    enter("Mois", "3");
+    enter("Titre", "Autre");
     expect(element.getAttribute("aria-busy")).toBe("true");
     await new Promise((resolve) => setTimeout(resolve, 30));
     // Le premier geste n'a pas fini d'enregistrer le texte : rien n'est encore écrit.
@@ -379,7 +349,7 @@ describe("bande d'un événement : les gestes se suivent", () => {
     await vi.waitFor(() => expect(m.changes).toHaveLength(2));
     expect(m.changes).toEqual([
       { kind: "city", city: "Hanovre" },
-      { kind: "month", month: 3 },
+      { kind: "title", title: "Autre" },
     ]);
     await vi.waitFor(() => expect(element.hasAttribute("aria-busy")).toBe(false));
   });

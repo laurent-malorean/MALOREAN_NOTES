@@ -3,6 +3,10 @@
 // et reste seul juge ; ici, seulement ce qui évite à l'écran de proposer ou de laisser passer l'impossible.
 import type { Agenda12EventItem } from "../bridge";
 
+/** La plus petite et la plus grande année qu'un événement peut porter (comme le moteur). */
+export const MIN_YEAR = 1;
+export const MAX_YEAR = 9999;
+
 /** Le nombre d'années proposées après l'année en cours. */
 export const YEAR_SPAN = 10;
 
@@ -54,12 +58,6 @@ function endYear({ month, year }: Start, endMonth: number): number | null {
 
 const endDayExists = (day: number, start: Start, endMonth: number): boolean =>
   day <= daysInMonth(endMonth, endYear(start, endMonth));
-
-/** Le jour de fin se choisit : il existe dans le mois de fin, et n'est pas avant le jour de début quand c'est le même mois. */
-export function endDayAvailable(day: number, start: Start, endMonth: number): boolean {
-  if (!endDayExists(day, start, endMonth)) return false;
-  return endMonth !== start.month || start.day === null || day >= start.day;
-}
 
 /** La fin tombe le mois du début avant son jour : le moteur la refuse (« La fin est avant le début. »). */
 export const endBeforeStart = ({ day, month, end }: Dated): boolean =>

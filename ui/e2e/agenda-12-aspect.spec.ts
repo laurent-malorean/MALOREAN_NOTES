@@ -76,9 +76,8 @@ for (const appearance of ["light", "dark"]) {
     // Quand : jour, mois, année, puis « au », jour et mois de la fin ; Où : pays, ville.
     const when = band(page).getByRole("group", { name: "Quand" });
     const where = band(page).getByRole("group", { name: "Où" });
-    for (const label of ["Jour", "Mois", "Année", "Fin : jour", "Fin : mois"])
-      await expect(when.locator(`[aria-label="${label}"]`)).toBeVisible();
-    await expect(when).toContainText("au");
+    await expect(when.locator(".agenda-period-trigger")).toHaveText("5 – 11 octobre 2026");
+    await expect(when.getByRole("button", { name: "Effacer la fin" })).toBeVisible();
     for (const label of ["Pays", "Ville"])
       await expect(where.locator(`[aria-label="${label}"]`)).toBeVisible();
 
