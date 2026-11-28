@@ -47,6 +47,7 @@ pub mod tag;
 pub mod template;
 pub mod title;
 pub mod voice_input;
+pub mod voice_shortcut;
 pub mod web_address;
 pub mod writing;
 

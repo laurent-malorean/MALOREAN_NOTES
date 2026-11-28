@@ -6,6 +6,7 @@
 )]
 
 use domain::external_servers::ServerName;
+use domain::voice_shortcut::VoiceShortcut;
 use domain::{Folder, MeaningModel, NotePath};
 
 use crate::{Preferences, Workspace, WorkspaceLocation, WorkspaceName, Workspaces};
@@ -33,8 +34,61 @@ pub fn preferences_contract<P: Preferences>(fresh: impl Fn() -> P) {
     favorites_notes_follow_a_renaming_and_a_removal(&fresh());
     the_voice_language_is_the_macs_at_first_launch_and_is_read_back(&fresh());
     the_voice_language_survives_the_other_preferences(&fresh());
+    the_voice_shortcut_is_the_default_at_first_launch_and_is_read_back(&fresh());
+    the_voice_beeps_are_off_at_first_launch_and_are_read_back(&fresh());
+    the_voice_shortcut_and_beeps_survive_the_other_preferences(&fresh());
     no_server_is_allowed_at_first_launch_and_the_allowed_ones_are_read_back(&fresh());
     the_allowed_servers_survive_the_other_preferences(&fresh());
+}
+
+fn shortcut(written: &str) -> VoiceShortcut {
+    written.parse().unwrap()
+}
+
+fn the_voice_shortcut_is_the_default_at_first_launch_and_is_read_back(
+    preferences: &impl Preferences,
+) {
+    assert_eq!(
+        preferences.voice_shortcut().unwrap(),
+        VoiceShortcut::default()
+    );
+    preferences
+        .save_voice_shortcut(&shortcut("Cmd+Alt+E"))
+        .unwrap();
+    assert_eq!(preferences.voice_shortcut().unwrap(), shortcut("Alt+Cmd+E"));
+    preferences
+        .save_voice_shortcut(&VoiceShortcut::default())
+        .unwrap();
+    assert_eq!(
+        preferences.voice_shortcut().unwrap(),
+        VoiceShortcut::default()
+    );
+}
+
+fn the_voice_beeps_are_off_at_first_launch_and_are_read_back(preferences: &impl Preferences) {
+    assert!(!preferences.voice_beeps().unwrap());
+    preferences.save_voice_beeps(true).unwrap();
+    assert!(preferences.voice_beeps().unwrap());
+    preferences.save_voice_beeps(false).unwrap();
+    assert!(!preferences.voice_beeps().unwrap());
+}
+
+fn the_voice_shortcut_and_beeps_survive_the_other_preferences(preferences: &impl Preferences) {
+    let workspaces = Workspaces::default()
+        .added(workspace("Notes", "/Users/moi/Notes"))
+        .unwrap();
+    preferences
+        .save_voice_shortcut(&shortcut("Ctrl+F5"))
+        .unwrap();
+    preferences.save_voice_beeps(true).unwrap();
+    preferences.save_workspaces(&workspaces).unwrap();
+    preferences.save_meaning_model(MeaningModel::Large).unwrap();
+    preferences.save_voice_language(Some("de-DE")).unwrap();
+    assert_eq!(preferences.voice_shortcut().unwrap(), shortcut("Ctrl+F5"));
+    assert!(preferences.voice_beeps().unwrap());
+    preferences.save_voice_beeps(false).unwrap();
+    assert_eq!(preferences.voice_shortcut().unwrap(), shortcut("Ctrl+F5"));
+    assert_eq!(preferences.workspaces().unwrap(), workspaces);
 }
 
 fn server(name: &str) -> ServerName {

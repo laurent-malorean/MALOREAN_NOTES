@@ -3,7 +3,7 @@ import { settle } from "../../test-support/app-fixture";
 import type { AppMenu, AssistantStatus } from "../bridge";
 import { ASSISTANT_COMMANDS, menuBar, NOTE_COMMANDS } from "../state/app-menu";
 import { columnsStarted, noteOpened } from "../state/columns";
-import type { MenuCommandId } from "../state/commands";
+import { chooseShortcut, type MenuCommandId } from "../state/commands";
 import { connectAppMenu } from "./app-menu";
 
 interface Options {
@@ -102,6 +102,65 @@ describe("barre des menus", () => {
     finishInstall();
     await settle();
     expect(log).toEqual(["construire"]);
+  });
+
+  it("se refait avec le raccourci choisi pour la saisie vocale, et reprend le raccourci de départ quand on le rétablit", async () => {
+    const { log, installed, finishInstall } = setup();
+    finishInstall();
+    await settle();
+    const accelerator = () =>
+      installed()
+        .flatMap((menu) => menu.entries)
+        .find((entry) => entry.kind === "command" && entry.id === "voice-input");
+    expect(accelerator()).toMatchObject({ accelerator: "Ctrl+Shift+D" });
+    chooseShortcut("voice-input", "Ctrl+Alt+Maj+E");
+    await settle();
+    finishInstall();
+    await settle();
+    expect(log).toEqual(["construire", "construire"]);
+    expect(accelerator()).toMatchObject({ accelerator: "Ctrl+Alt+Shift+E" });
+    chooseShortcut("voice-input", null);
+    await settle();
+    finishInstall();
+    await settle();
+    expect(accelerator()).toMatchObject({ accelerator: "Ctrl+Shift+D" });
+  });
+
+  it("garde actives les commandes de l'aide à l'écriture quand la barre se refait", async () => {
+    const { log, menu, finishInstall } = setup({
+      assistant: Promise.resolve({ kind: "available" }),
+    });
+    finishInstall();
+    menu.follow(withNote);
+    await settle();
+    log.length = 0;
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    await settle();
+    finishInstall();
+    await settle();
+    chooseShortcut("voice-input", null);
+    await settle();
+    expect(log).toEqual([
+      "construire",
+      `activer ${[...ASSISTANT_COMMANDS].join(",")}`,
+      "construire",
+    ]);
+    finishInstall();
+    await settle();
+  });
+
+  it("signale une barre qui n'a pas pu être refaite", async () => {
+    const { log, finishInstall } = setup({ failInstall: true });
+    finishInstall();
+    await settle();
+    log.length = 0;
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    await settle();
+    finishInstall();
+    await settle();
+    chooseShortcut("voice-input", null);
+    await settle();
+    expect(log).toContain("erreur pas de menu");
   });
 
   it("lance la commande de l'élément choisi, et rien pour un identifiant inconnu", () => {

@@ -1,5 +1,5 @@
-//! Commandes de la saisie vocale (fiche 0103) : l'état du micro, la langue, le départ et l'arrêt de
-//! l'écoute. Le texte arrive par l'événement [`VOICE_INPUT_EVENT`].
+//! Commandes de la saisie vocale (fiche 0103) : l'état du micro, la langue, le raccourci et les bips
+//! (fiche 0109), le départ et l'arrêt de l'écoute. Le texte arrive par l'événement [`VOICE_INPUT_EVENT`].
 
 use std::sync::Arc;
 
@@ -8,7 +8,7 @@ use tauri::{AppHandle, Emitter, Runtime};
 use tauri_plugin_opener::OpenerExt;
 
 use super::{SharedSession, in_background};
-use crate::{ApiError, VoiceEventItem, VoiceInputStatusItem};
+use crate::{ApiError, VoiceEventItem, VoiceInputStatusItem, VoiceSettingsItem};
 
 /// Événement envoyé à l'interface pendant la saisie vocale : il porte un
 /// [`crate::VoiceEventItem`].
@@ -41,6 +41,47 @@ pub async fn voice_input_status(
 ) -> Result<VoiceInputStatusItem, ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.voice_input_status()).await
+}
+
+/// Le raccourci et les bips de la saisie vocale.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::voice_input_settings`].
+#[tauri::command]
+pub async fn voice_input_settings(
+    session: SharedSession<'_>,
+) -> Result<VoiceSettingsItem, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.voice_input_settings()).await
+}
+
+/// Choisit le raccourci de la saisie vocale ; `null` : Ctrl+Maj+D. Rend les réglages.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::choose_voice_shortcut`].
+#[tauri::command]
+pub async fn choose_voice_shortcut(
+    session: SharedSession<'_>,
+    shortcut: Option<String>,
+) -> Result<VoiceSettingsItem, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.choose_voice_shortcut(shortcut.as_deref())).await
+}
+
+/// Choisit si la saisie vocale bippe au début et à la fin. Rend les réglages.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::choose_voice_beeps`].
+#[tauri::command]
+pub async fn choose_voice_beeps(
+    session: SharedSession<'_>,
+    beeps: bool,
+) -> Result<VoiceSettingsItem, ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.choose_voice_beeps(beeps)).await
 }
 
 /// Choisit la langue de la saisie vocale ; `null` : celle du Mac.

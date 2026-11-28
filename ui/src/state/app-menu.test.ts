@@ -9,7 +9,7 @@ import {
   menuCommand,
   NOTE_COMMANDS,
 } from "./app-menu";
-import { COMMANDS, MENU_COMMANDS, type MenuCommandId, PALETTE } from "./commands";
+import { chooseShortcut, COMMANDS, MENU_COMMANDS, type MenuCommandId, PALETTE } from "./commands";
 
 type CommandEntry = Extract<MenuEntryItem, { kind: "command" }>;
 const commandEntries = (noteShown: boolean): CommandEntry[] =>
@@ -310,5 +310,23 @@ describe("barre des menus", () => {
     expect(accelerator("Ctrl+Maj+Tab")).toBe("Ctrl+Shift+Tab");
     expect(accelerator("Ctrl+Cmd+F")).toBe("Ctrl+Cmd+F");
     expect(COMMANDS.length + 1).toBe(MENU_COMMANDS.length);
+  });
+});
+
+describe("raccourci choisi dans la barre des menus", () => {
+  const voice = () =>
+    menuBar(true)
+      .flatMap((menu) => menu.entries)
+      .find((entry) => entry.kind === "command" && entry.id === "voice-input");
+
+  it("donne à « Saisie vocale » le raccourci choisi, écrit pour le Mac", () => {
+    expect(voice()).toMatchObject({ accelerator: "Ctrl+Shift+D" });
+    chooseShortcut("voice-input", "Ctrl+Alt+Maj+E");
+    try {
+      expect(voice()).toMatchObject({ accelerator: "Ctrl+Alt+Shift+E" });
+    } finally {
+      chooseShortcut("voice-input", null);
+    }
+    expect(voice()).toMatchObject({ accelerator: "Ctrl+Shift+D" });
   });
 });

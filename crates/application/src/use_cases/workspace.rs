@@ -221,6 +221,7 @@ mod tests {
     use std::sync::Arc;
 
     use domain::external_servers::ServerName;
+    use domain::voice_shortcut::VoiceShortcut;
 
     use super::*;
     use crate::StoreError;
@@ -557,6 +558,18 @@ mod tests {
         }
         fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
             self.0.save_voice_language(language)
+        }
+        fn voice_shortcut(&self) -> Result<VoiceShortcut, StoreError> {
+            self.0.voice_shortcut()
+        }
+        fn save_voice_shortcut(&self, shortcut: &VoiceShortcut) -> Result<(), StoreError> {
+            self.0.save_voice_shortcut(shortcut)
+        }
+        fn voice_beeps(&self) -> Result<bool, StoreError> {
+            self.0.voice_beeps()
+        }
+        fn save_voice_beeps(&self, beeps: bool) -> Result<(), StoreError> {
+            self.0.save_voice_beeps(beeps)
         }
         fn allowed_servers(&self) -> Result<Vec<ServerName>, StoreError> {
             self.0.allowed_servers()

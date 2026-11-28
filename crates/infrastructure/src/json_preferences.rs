@@ -8,6 +8,7 @@ use application::{
     Preferences, StoreError, Workspace, WorkspaceLocation, WorkspaceName, Workspaces,
 };
 use domain::external_servers::ServerName;
+use domain::voice_shortcut::VoiceShortcut;
 use domain::{Folder, MeaningModel, NotePath};
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +47,13 @@ struct Stored {
     /// du Mac.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     voice_language: Option<String>,
+    /// Le raccourci de la saisie vocale (fiche 0109), ex. `Ctrl+Maj+E` ; absent tant que c'est
+    /// Ctrl+Maj+D. Un raccourci illisible vaut le raccourci par défaut.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    voice_shortcut: Option<String>,
+    /// Les bips de la saisie vocale sont voulus (fiche 0109) ; absents tant qu'ils ne le sont pas.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    voice_beeps: bool,
     /// Les noms des serveurs MCP extérieurs permis à Claude dans la colonne Claude Code (fiche
     /// 0105) ; absents tant qu'aucun n'est coché.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -121,6 +129,8 @@ impl Stored {
             active: workspaces.active().map(|w| w.name.as_str().to_owned()),
             meaning_model: None,
             voice_language: None,
+            voice_shortcut: None,
+            voice_beeps: false,
             allowed_mcp_servers: Vec::new(),
         }
     }
@@ -132,12 +142,14 @@ impl Stored {
         self.replacing_workspaces(&workspaces)
     }
 
-    /// Les mêmes choix (modèle de sens, langue de la saisie vocale, serveurs permis), avec ces
+    /// Les mêmes choix (modèle de sens, saisie vocale, serveurs permis), avec ces
     /// espaces de travail à la place des siens.
     fn replacing_workspaces(self, workspaces: &Workspaces) -> Self {
         Self {
             meaning_model: self.meaning_model,
             voice_language: self.voice_language,
+            voice_shortcut: self.voice_shortcut,
+            voice_beeps: self.voice_beeps,
             allowed_mcp_servers: self.allowed_mcp_servers,
             ..Self::of(workspaces)
         }
@@ -229,6 +241,30 @@ impl Preferences for JsonPreferences {
     fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError> {
         let mut kept = self.load()?;
         kept.voice_language = language.map(str::to_owned);
+        self.save(&kept.rewritten())
+    }
+
+    fn voice_shortcut(&self) -> Result<VoiceShortcut, StoreError> {
+        Ok(self
+            .load()?
+            .voice_shortcut
+            .and_then(|written| written.parse().ok())
+            .unwrap_or_default())
+    }
+
+    fn save_voice_shortcut(&self, shortcut: &VoiceShortcut) -> Result<(), StoreError> {
+        let mut kept = self.load()?;
+        kept.voice_shortcut = (!shortcut.is_default()).then(|| shortcut.to_string());
+        self.save(&kept.rewritten())
+    }
+
+    fn voice_beeps(&self) -> Result<bool, StoreError> {
+        Ok(self.load()?.voice_beeps)
+    }
+
+    fn save_voice_beeps(&self, beeps: bool) -> Result<(), StoreError> {
+        let mut kept = self.load()?;
+        kept.voice_beeps = beeps;
         self.save(&kept.rewritten())
     }
 

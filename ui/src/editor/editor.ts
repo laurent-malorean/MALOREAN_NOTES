@@ -299,6 +299,15 @@ function linkChooser({ links }: EditorOptions): ((view: EditorView) => void) | u
   return choose && ((view) => choose(linkSiteOf(view)));
 }
 
+/** Signale à `onChange` ce que l'utilisateur tape ; ce qui vient d'ailleurs (annotation `fromElsewhere`) n'est pas signalé. */
+function typedChanges(onChange: (content: string, changes: ChangeSet) => void) {
+  return EditorView.updateListener.of((update) => {
+    // Stryker disable next-line MethodExpression: l'éditeur applique ses transactions une à une ; « une » ou « toutes » revient au même.
+    const typed = update.transactions.some((t) => t.docChanged && !t.annotation(fromElsewhere));
+    if (typed) onChange(update.state.doc.toString(), update.changes);
+  });
+}
+
 export function createEditor(
   parent: HTMLElement,
   onChange: (content: string, changes: ChangeSet) => void,
@@ -335,11 +344,7 @@ export function createEditor(
     EditorView.lineWrapping,
     EditorView.contentAttributes.of({ spellcheck: "true", lang: "fr" }),
     placeholder("# Titre de la note"),
-    EditorView.updateListener.of((update) => {
-      // Stryker disable next-line MethodExpression: l'éditeur applique ses transactions une à une ; « une » ou « toutes » revient au même.
-      const typed = update.transactions.some((t) => t.docChanged && !t.annotation(fromElsewhere));
-      if (typed) onChange(update.state.doc.toString(), update.changes);
-    }),
+    typedChanges(onChange),
   ];
   const view = new EditorView({ parent, state: EditorState.create({ extensions: extensions() }) });
   return {

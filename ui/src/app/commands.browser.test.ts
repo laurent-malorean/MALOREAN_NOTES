@@ -8,7 +8,7 @@ import {
 } from "../../test-support/app-fixture";
 import { createLayout } from "../screens/layout";
 import { activeNote, columnsStarted, noteOpened } from "../state/columns";
-import { COMMANDS } from "../state/commands";
+import { chooseShortcut, COMMANDS } from "../state/commands";
 import { welcome } from "../state/screen";
 import { commandActions, connectCommands, type CommandsDeps } from "./commands";
 
@@ -500,6 +500,21 @@ describe("raccourcis clavier", () => {
     press("d", { metaKey: true, shiftKey: true });
     expect(log).toEqual([]);
     expect(columns.open.activePane().editor.insertToday).toHaveBeenCalled();
+  });
+
+  it("le raccourci choisi pour la saisie vocale la lance, l'ancien non, et la palette le montre", () => {
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    try {
+      expect(press("E", { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(true);
+      expect(log).toEqual(["saisie vocale"]);
+      log.length = 0;
+      expect(press("D", { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+      expect(log).toEqual([]);
+      press("p", { metaKey: true, shiftKey: true });
+      expect(options()).toContain("Saisie vocaleCtrl+Maj+E");
+    } finally {
+      chooseShortcut("voice-input", null);
+    }
   });
 
   it("Échap arrête d'abord la saisie vocale en cours, sans toucher au plein écran ni au filtre", () => {

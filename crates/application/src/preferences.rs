@@ -4,6 +4,7 @@ use std::fmt::Debug;
 
 use domain::MeaningModel;
 use domain::external_servers::ServerName;
+use domain::voice_shortcut::VoiceShortcut;
 
 use crate::{StoreError, Workspaces};
 
@@ -53,6 +54,36 @@ pub trait Preferences: Send + Sync + Debug {
     ///
     /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
     fn save_voice_language(&self, language: Option<&str>) -> Result<(), StoreError>;
+
+    /// Le raccourci qui démarre et arrête la saisie vocale (fiche 0109) ; Ctrl+Maj+D tant que rien
+    /// n'est choisi, ou si le raccourci gardé n'est plus valide.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
+    fn voice_shortcut(&self) -> Result<VoiceShortcut, StoreError>;
+
+    /// Garde ce raccourci pour la saisie vocale, sans toucher au reste des préférences.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
+    fn save_voice_shortcut(&self, shortcut: &VoiceShortcut) -> Result<(), StoreError>;
+
+    /// Les bips au début et à la fin de la saisie vocale (fiche 0109) sont-ils voulus ? Non tant
+    /// que rien n'est choisi.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être lues.
+    fn voice_beeps(&self) -> Result<bool, StoreError>;
+
+    /// Garde le choix des bips de la saisie vocale, sans toucher au reste des préférences.
+    ///
+    /// # Errors
+    ///
+    /// [`StoreError::Unavailable`] si les préférences ne peuvent pas être écrites.
+    fn save_voice_beeps(&self, beeps: bool) -> Result<(), StoreError>;
 
     /// Les serveurs MCP extérieurs que l'utilisateur a permis à Claude dans la colonne Claude Code
     /// (fiche 0105), par leur nom ; aucun tant qu'il n'en a pas coché. Ils valent pour tous les

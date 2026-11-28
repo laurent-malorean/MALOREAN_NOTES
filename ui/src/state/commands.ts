@@ -147,3 +147,35 @@ export const MENU_COMMANDS: readonly (Command | typeof PALETTE)[] = [...COMMANDS
 export function matchingCommands(query: string): Command[] {
   return matching(COMMANDS, query, (command) => command.label);
 }
+
+const BY_ID: ReadonlyMap<MenuCommandId, (typeof MENU_COMMANDS)[number]> = new Map(
+  MENU_COMMANDS.map((command) => [command.id, command]),
+);
+const chosenShortcuts = new Map<MenuCommandId, string>();
+const shortcutListeners = new Set<() => void>();
+let shortcutsRevision = 0;
+
+/** Le raccourci d'une commande : celui que l'utilisateur a choisi (saisie vocale), sinon celui de la liste. */
+export function shortcutOf(command: { readonly id: MenuCommandId; readonly shortcut?: string }) {
+  return chosenShortcuts.get(command.id) ?? command.shortcut;
+}
+
+/** Choisit le raccourci d'une commande (`null` : celui de la liste) et prévient ceux qui le montrent. */
+export function chooseShortcut(id: MenuCommandId, shortcut: string | null): void {
+  const before = shortcutOf(BY_ID.get(id) ?? { id });
+  if (shortcut === null) chosenShortcuts.delete(id);
+  else chosenShortcuts.set(id, shortcut);
+  if (shortcutOf(BY_ID.get(id) ?? { id }) === before) return;
+  shortcutsRevision += 1;
+  shortcutListeners.forEach((listener) => listener());
+}
+
+/** Combien de fois un raccourci a été choisi : de quoi savoir qu'une table de raccourcis est périmée. */
+export function shortcutsChanged(): number {
+  return shortcutsRevision;
+}
+
+/** Appelle `listener` à chaque raccourci choisi (la barre des menus se reconstruit). */
+export function onShortcutChosen(listener: () => void): void {
+  shortcutListeners.add(listener);
+}

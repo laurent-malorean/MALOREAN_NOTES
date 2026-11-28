@@ -4,6 +4,7 @@ use std::sync::{Mutex, PoisonError};
 
 use domain::MeaningModel;
 use domain::external_servers::ServerName;
+use domain::voice_shortcut::VoiceShortcut;
 
 use crate::{Preferences, StoreError, Workspaces};
 
@@ -13,6 +14,8 @@ pub struct FakePreferences {
     workspaces: Mutex<Workspaces>,
     meaning_model: Mutex<MeaningModel>,
     voice_language: Mutex<Option<String>>,
+    voice_shortcut: Mutex<VoiceShortcut>,
+    voice_beeps: Mutex<bool>,
     allowed_servers: Mutex<Vec<ServerName>>,
 }
 
@@ -22,6 +25,8 @@ impl Default for FakePreferences {
             workspaces: Mutex::default(),
             meaning_model: Mutex::new(MeaningModel::DEFAULT),
             voice_language: Mutex::new(None),
+            voice_shortcut: Mutex::default(),
+            voice_beeps: Mutex::new(false),
             allowed_servers: Mutex::default(),
         }
     }
@@ -72,6 +77,37 @@ impl Preferences for FakePreferences {
             .voice_language
             .lock()
             .unwrap_or_else(PoisonError::into_inner) = language.map(str::to_owned);
+        Ok(())
+    }
+
+    fn voice_shortcut(&self) -> Result<VoiceShortcut, StoreError> {
+        Ok(self
+            .voice_shortcut
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone())
+    }
+
+    fn save_voice_shortcut(&self, shortcut: &VoiceShortcut) -> Result<(), StoreError> {
+        *self
+            .voice_shortcut
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = shortcut.clone();
+        Ok(())
+    }
+
+    fn voice_beeps(&self) -> Result<bool, StoreError> {
+        Ok(*self
+            .voice_beeps
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner))
+    }
+
+    fn save_voice_beeps(&self, beeps: bool) -> Result<(), StoreError> {
+        *self
+            .voice_beeps
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = beeps;
         Ok(())
     }
 

@@ -8,7 +8,7 @@ use application::{AppError, Preferences, Transcriber, Uptime, VoiceEvents};
 use domain::voice_input::VoiceFailure;
 
 use super::Session;
-use crate::{ApiError, VoiceInputStatusItem};
+use crate::{ApiError, VoiceInputStatusItem, VoiceSettingsItem};
 
 impl Session {
     /// La même session, dont la saisie vocale passe par `transcriber` et envoie ses événements à
@@ -43,6 +43,40 @@ impl Session {
                 message: VoiceFailure::EngineMissing.to_string(),
             }),
         }
+    }
+
+    /// Le raccourci et les bips de la saisie vocale.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] si les préférences ne se lisent pas.
+    pub fn voice_input_settings(&self) -> Result<VoiceSettingsItem, ApiError> {
+        Ok(self.voice()?.settings()?.into())
+    }
+
+    /// Choisit le raccourci de la saisie vocale (`None` : Ctrl+Maj+D) ; rend les réglages.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit pourquoi le raccourci n'est pas valide.
+    pub fn choose_voice_shortcut(
+        &self,
+        shortcut: Option<&str>,
+    ) -> Result<VoiceSettingsItem, ApiError> {
+        let voice = self.voice()?;
+        voice.choose_shortcut(shortcut)?;
+        Ok(voice.settings()?.into())
+    }
+
+    /// Choisit si la saisie vocale bippe au début et à la fin ; rend les réglages.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] si les préférences ne s'écrivent pas.
+    pub fn choose_voice_beeps(&self, beeps: bool) -> Result<VoiceSettingsItem, ApiError> {
+        let voice = self.voice()?;
+        voice.choose_beeps(beeps)?;
+        Ok(voice.settings()?.into())
     }
 
     /// Choisit la langue de la saisie vocale (`None` : celle du Mac).

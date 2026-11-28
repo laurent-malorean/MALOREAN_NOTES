@@ -135,6 +135,10 @@ pub enum AppError {
     /// afficher.
     #[error("{0}")]
     Voice(#[from] domain::voice_input::VoiceFailure),
+    /// Le raccourci choisi pour la saisie vocale n'est pas valide ; la raison est lisible (fiche
+    /// 0109).
+    #[error("{0}")]
+    VoiceShortcut(#[from] domain::voice_shortcut::ShortcutError),
     /// L'entrée n'est pas ajoutée au cahier de recherche ; la raison est lisible.
     #[error("{0}")]
     EntryRefused(#[from] RefusedEntry),

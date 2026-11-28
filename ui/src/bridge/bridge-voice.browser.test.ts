@@ -34,6 +34,24 @@ describe("pont vers Rust : la saisie vocale (fiche 0103)", () => {
     ]);
   });
 
+  it("lit et choisit le raccourci et les bips", async () => {
+    const calls = recordCalls({ shortcut: "Ctrl+Maj+D", defaultShortcut: true, beeps: false });
+    expect(await bridge.voiceInputSettings()).toEqual({
+      shortcut: "Ctrl+Maj+D",
+      defaultShortcut: true,
+      beeps: false,
+    });
+    await bridge.chooseVoiceShortcut("Ctrl+Maj+E");
+    await bridge.chooseVoiceShortcut(null);
+    await bridge.chooseVoiceBeeps(true);
+    expect(calls).toEqual([
+      { command: "voice_input_settings", args: {} },
+      { command: "choose_voice_shortcut", args: { shortcut: "Ctrl+Maj+E" } },
+      { command: "choose_voice_shortcut", args: { shortcut: null } },
+      { command: "choose_voice_beeps", args: { beeps: true } },
+    ]);
+  });
+
   it("démarre, arrête et ouvre les réglages de confidentialité de macOS", async () => {
     const calls = recordCalls(null);
     await bridge.startVoiceInput();

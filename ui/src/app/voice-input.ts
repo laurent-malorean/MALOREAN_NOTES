@@ -2,12 +2,18 @@
 // écrit dans l'éditeur de la colonne active, les messages et l'onglet « Saisie vocale » des réglages.
 // Les règles (ordre des événements, silence, texte provisoire fixé à l'arrêt) sont celles du moteur.
 import type * as Bridge from "../bridge";
-import type { VoiceEventItem, VoiceInputStatusItem } from "../bridge";
+import type { VoiceEventItem, VoiceInputStatusItem, VoiceSettingsItem } from "../bridge";
 import type { Editor } from "../editor/editor";
 import { microphoneButton, showMicrophone } from "../screens/microphone";
 import type { Pane } from "../screens/note-pane";
-import { voiceGroup, type VoiceSetting, type VoiceSettingState } from "../screens/voice-setting";
+import {
+  type VoiceChoices,
+  voiceGroup,
+  type VoiceSetting,
+  type VoiceSettingState,
+} from "../screens/voice-setting";
 import { type Columns, shownNote } from "../state/columns";
+import { chooseShortcut } from "../state/commands";
 import {
   DENIED_MESSAGE,
   levelOf,
@@ -16,8 +22,10 @@ import {
   sessionAfter,
   type VoiceSession,
 } from "../state/voice-input";
+import { conflictOf } from "../state/voice-shortcut";
 import type { OpenColumns } from "./columns";
 import type { MessageAction, MessageKind } from "./messages";
+import { type Beeper, createBeeper } from "./voice-beep";
 
 export interface VoiceInputDeps {
   readonly backend: Pick<
@@ -29,11 +37,16 @@ export interface VoiceInputDeps {
     | "openVoicePrivacySettings"
     | "chooseVoiceLanguage"
     | "prepareVoiceLanguage"
+    | "voiceInputSettings"
+    | "chooseVoiceShortcut"
+    | "chooseVoiceBeeps"
     | "errorMessage"
   >;
   readonly columns: Pick<OpenColumns, "activePane" | "current">;
   /** La barre de mise en forme, où est le micro. */
   readonly bar: HTMLElement;
+  /** Les bips du début et de la fin ; ceux de Web Audio si rien n'est donné. */
+  readonly beeper?: Beeper;
   show(message: string, kind?: MessageKind, action?: MessageAction): void;
   error(error: unknown): void;
   run(action: Promise<unknown>): void;
@@ -74,17 +87,27 @@ class VoiceInputGestures implements VoiceInput {
   private setting: VoiceSetting | null = null;
   private preparing: string | null = null;
   private failure: string | null = null;
+  /** Le raccourci et les bips choisis ; rien tant que la lecture n'a pas répondu. */
+  private choices: VoiceSettingsItem | null = null;
+  private shortcutError: string | null = null;
+  /** L'écoute a commencé : la fin appelle son bip. */
+  private heard = false;
+  private readonly beeper: Beeper;
   private readonly ready: Promise<void>;
 
   constructor(private readonly deps: VoiceInputDeps) {
+    this.beeper = deps.beeper ?? createBeeper(() => new AudioContext());
     deps.backend.onVoiceInputEvent((event) => this.handle(event)).catch(deps.error);
     this.ready = this.readStatus();
+    void this.readChoices();
     // L'application passe à l'arrière-plan : l'écoute s'arrête (pas pendant la demande d'accès de macOS).
     window.addEventListener("blur", () => this.background());
     document.addEventListener("visibilitychange", () => document.hidden && this.background());
   }
 
   toggle(): void {
+    // Le clic ou le raccourci est le geste qui permet au son de partir plus tard, à l'écoute.
+    if (this.choices?.beeps) this.beeper.unlock();
     this.deps.run(this.press());
   }
 
@@ -119,9 +142,13 @@ class VoiceInputGestures implements VoiceInput {
     const group = voiceGroup({
       choose: (language) => run(this.choose(language)),
       prepare: (language) => run(this.prepare(language)),
+      chooseShortcut: (shortcut) => run(this.chooseShortcut(shortcut)),
+      resetShortcut: () => run(this.chooseShortcut(null)),
+      chooseBeeps: (beeps) => run(this.chooseBeeps(beeps)),
     });
     this.setting = group;
     this.showSetting();
+    this.showChoices();
     run(this.readStatus());
     return [group.element];
   }
@@ -184,8 +211,21 @@ class VoiceInputGestures implements VoiceInput {
 
   private handle(event: VoiceEventItem): void {
     this.session = sessionAfter(this.session, event);
+    this.beep(event);
     this.show(event);
     this.paint();
+  }
+
+  /** Un bip quand le micro écoute, un autre quand la dictée finit après avoir écouté (silence et erreur compris). */
+  private beep(event: VoiceEventItem): void {
+    const wanted = this.choices?.beeps === true;
+    if (event.kind === "listening" && !this.heard) {
+      this.heard = true;
+      if (wanted) this.beeper.play("start");
+    } else if (event.kind === "ended") {
+      if (this.heard && wanted) this.beeper.play("end");
+      this.heard = false;
+    }
   }
 
   /** Ce que chaque événement fait au-delà de l'état : écrire dans l'éditeur, dire un message, finir. */
@@ -241,6 +281,55 @@ class VoiceInputGestures implements VoiceInput {
         this.showSetting();
       })
       .catch(this.deps.error);
+  }
+
+  /** Lit le raccourci et les bips choisis ; une erreur est montrée. */
+  private readChoices(): Promise<void> {
+    return this.deps.backend
+      .voiceInputSettings()
+      .then((choices) => this.applyChoices(choices))
+      .catch(this.deps.error);
+  }
+
+  /** Les réglages gardés deviennent ceux de l'application : le raccourci partout (bulle, palette, menus), puis l'onglet. */
+  private applyChoices(choices: VoiceSettingsItem): void {
+    this.choices = choices;
+    chooseShortcut("voice-input", choices.defaultShortcut ? null : choices.shortcut);
+    this.paint();
+    this.showChoices();
+  }
+
+  private showChoices(): void {
+    const { choices } = this;
+    const view: VoiceChoices | null =
+      choices === null ? null : { ...choices, shortcutError: this.shortcutError };
+    this.setting?.showChoices(view);
+  }
+
+  /** Garde le raccourci pressé (`null` : celui de départ), sauf s'il est pris ou invalide : le refus est dit dans l'onglet. */
+  private async chooseShortcut(shortcut: string | null): Promise<void> {
+    const conflict = shortcut === null ? null : conflictOf(shortcut);
+    this.shortcutError = conflict;
+    if (conflict === null) {
+      try {
+        this.applyChoices(await this.deps.backend.chooseVoiceShortcut(shortcut));
+        return;
+      } catch (error) {
+        this.shortcutError = this.deps.backend.errorMessage(error);
+      }
+    }
+    this.showChoices();
+  }
+
+  private async chooseBeeps(beeps: boolean): Promise<void> {
+    // La case cochée est un geste : le son pourra partir à l'écoute.
+    if (beeps) this.beeper.unlock();
+    try {
+      this.applyChoices(await this.deps.backend.chooseVoiceBeeps(beeps));
+    } catch (error) {
+      this.deps.error(error);
+      this.showChoices();
+    }
   }
 
   private async choose(language: string | null): Promise<void> {

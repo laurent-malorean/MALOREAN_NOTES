@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { chooseShortcut } from "../state/commands";
 import { keyOf, shortcutFor } from "./shortcuts";
 
 const key = (
@@ -144,5 +145,34 @@ describe("raccourcis clavier", () => {
   it("Ctrl+Cmd+T divise la colonne", () => {
     expect(key("t", { metaKey: true, ctrlKey: true })).toBe("split-column");
     expect(key("t", { ctrlKey: true })).toBeNull();
+  });
+});
+
+describe("raccourci choisi pour la saisie vocale", () => {
+  afterEach(() => chooseShortcut("voice-input", null));
+
+  it("Ctrl+Maj+D lance la saisie vocale tant que rien n'est choisi", () => {
+    expect(key("d", { ctrlKey: true, shiftKey: true })).toBe("voice-input");
+  });
+
+  it("le raccourci choisi la lance, et l'ancien ne la lance plus", () => {
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    expect(key("e", { ctrlKey: true, shiftKey: true })).toBe("voice-input");
+    expect(key("E", { ctrlKey: true, shiftKey: true })).toBe("voice-input");
+    expect(key("d", { ctrlKey: true, shiftKey: true })).toBeNull();
+  });
+
+  it("un raccourci avec un chiffre se lit aussi à sa touche (AZERTY)", () => {
+    chooseShortcut("voice-input", "Ctrl+7");
+    expect(
+      shortcutFor({ key: "è", code: "Digit7", metaKey: false, ctrlKey: true, shiftKey: false }),
+    ).toBe("voice-input");
+  });
+
+  it("rendre le raccourci de départ le remet", () => {
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    chooseShortcut("voice-input", null);
+    expect(key("d", { ctrlKey: true, shiftKey: true })).toBe("voice-input");
+    expect(key("e", { ctrlKey: true, shiftKey: true })).toBeNull();
   });
 });

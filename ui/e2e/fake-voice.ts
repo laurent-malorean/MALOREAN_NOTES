@@ -4,7 +4,12 @@
 // `ended`. Paramètre d'adresse `voice` : `old` (macOS trop ancien), `denied` (accès refusé), `undecided` (le
 // premier clic fait demander l'accès, accordé).
 import { emit } from "@tauri-apps/api/event";
-import type { VoiceEventItem, VoiceInputStatusItem, VoiceLanguageItem } from "../src/bridge";
+import type {
+  VoiceEventItem,
+  VoiceInputStatusItem,
+  VoiceLanguageItem,
+  VoiceSettingsItem,
+} from "../src/bridge";
 
 type Handler = (args: Record<string, unknown>) => unknown;
 
@@ -27,6 +32,9 @@ export interface FakeVoiceState {
   silentStart: boolean;
   /** Durée de la préparation d'une langue, en millisecondes. */
   prepareDelay: number;
+  /** Le raccourci gardé (écrit comme dans les menus) ; `null` : celui de départ. */
+  shortcut: string | null;
+  beeps: boolean;
 }
 
 export interface FakeVoice {
@@ -57,6 +65,8 @@ export function fakeVoiceState(params: URLSearchParams): FakeVoice {
     failNextPrepare: null,
     silentStart: false,
     prepareDelay: 0,
+    shortcut: null,
+    beeps: false,
   };
   return {
     voice,
@@ -83,6 +93,33 @@ function status(voice: FakeVoiceState): VoiceInputStatusItem {
   };
 }
 
+const DEFAULT_SHORTCUT = "Ctrl+Maj+D";
+const NEEDS_CONTROL_OR_COMMAND =
+  "Un raccourci demande la touche Ctrl ou Cmd (avec Option ou Maj si vous voulez) : Maj et Option seules servent à taper.";
+
+function settings(voice: FakeVoiceState): VoiceSettingsItem {
+  const shortcut = voice.shortcut ?? DEFAULT_SHORTCUT;
+  return { shortcut, defaultShortcut: voice.shortcut === null, beeps: voice.beeps };
+}
+
+/** Le raccourci et les bips, gardés comme le fait le moteur : Ctrl ou Cmd est demandé, le raccourci de départ se garde comme « rien ». */
+function fakeVoiceSettings(voice: FakeVoiceState): Record<string, Handler> {
+  return {
+    voice_input_settings: () => settings(voice),
+    choose_voice_shortcut: ({ shortcut }) => {
+      const written = (shortcut as string | null) ?? null;
+      if (written !== null && !/(^|\+)(Ctrl|Cmd)(\+|$)/.test(written))
+        throw { message: NEEDS_CONTROL_OR_COMMAND };
+      voice.shortcut = written === DEFAULT_SHORTCUT ? null : written;
+      return settings(voice);
+    },
+    choose_voice_beeps: ({ beeps }) => {
+      voice.beeps = beeps as boolean;
+      return settings(voice);
+    },
+  };
+}
+
 export function fakeVoice(state: FakeVoice): Record<string, Handler> {
   const { voice, emitVoice } = state;
   const unavailable = () => {
@@ -93,6 +130,7 @@ export function fakeVoice(state: FakeVoice): Record<string, Handler> {
   };
   return {
     voice_input_status: () => status(voice),
+    ...fakeVoiceSettings(voice),
     choose_voice_language: ({ language }) => {
       unavailable();
       if (voice.listening)
