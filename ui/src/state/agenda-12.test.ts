@@ -8,6 +8,7 @@ import {
   eventSummary,
   isAgenda12Content,
   isAgenda12EventContent,
+  LAYOUT_CHOICES,
   matchingCountries,
   monthName,
   touchesAgenda12,
@@ -31,6 +32,7 @@ describe("agenda 12 : les types de notes", () => {
 
   it("les colonnes possibles sont 3, 4 et 6", () => {
     expect(COLUMN_CHOICES).toEqual([3, 4, 6]);
+    expect(LAYOUT_CHOICES).toEqual(["grid", "list"]);
   });
 });
 

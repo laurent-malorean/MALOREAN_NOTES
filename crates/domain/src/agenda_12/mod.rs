@@ -15,7 +15,7 @@ mod grid;
 mod line;
 mod month;
 
-pub use agenda::{AGENDA_TYPE, Agenda12, Columns, with_columns};
+pub use agenda::{AGENDA_TYPE, Agenda12, Columns, Layout, with_columns, with_layout};
 pub use country::Country;
 pub use date::{DateError, EventDate, EventEnd, MAX_YEAR, MIN_YEAR};
 pub use event::{Agenda12Event, EVENT_TYPE, EventUnreadable, searchable_text};

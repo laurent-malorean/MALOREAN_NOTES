@@ -51,6 +51,7 @@ function mount(withAgenda = true) {
         return state.agenda();
       },
       changeAgenda12Columns: async () => null,
+      changeAgenda12Layout: async () => null,
       createAgenda12Event: async () => ({ path: "x.md" }),
       reopenAgenda12Event: async () => ({ path: "x.md" }),
       readAgenda12Event: async (path) => {

@@ -1,4 +1,4 @@
-use domain::agenda_12::{Columns, YearTone};
+use domain::agenda_12::{Columns, Layout, YearTone};
 
 use super::super::fixture::*;
 use super::*;
@@ -23,6 +23,7 @@ fn the_grid_has_twelve_cells_with_the_open_events_in_their_month() {
     let view = read(&workspace(), None);
     assert_eq!(view.title, "Salons");
     assert_eq!(view.columns, Columns::DEFAULT);
+    assert_eq!(view.layout, Layout::Grid);
     assert_eq!(view.cells.len(), 12);
     assert_eq!(titles(&view, 1), ["Audit ISO"]);
     assert_eq!(titles(&view, 2), ["Salon Embedded World"]);
@@ -79,10 +80,11 @@ fn the_tags_of_the_events_of_the_grid_make_the_filter_and_the_filter_narrows_the
 fn an_agenda_without_events_has_twelve_empty_cells_and_no_folder() {
     let store = InMemoryNoteStore::with_notes(&[(
         AGENDA,
-        "---\ntype: agenda-12\ncolonnes: 6\n---\n# Salons\n",
+        "---\ntype: agenda-12\ncolonnes: 6\nvue: liste\n---\n# Salons\n",
     )]);
     let view = read(&store, None);
     assert_eq!(view.columns, Columns::new(6).unwrap());
+    assert_eq!(view.layout, Layout::List);
     assert!(view.cells.iter().all(|cell| cell.events.is_empty()));
     assert!(view.archives.is_empty());
     assert!(view.tags.is_empty());

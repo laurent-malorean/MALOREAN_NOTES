@@ -10,8 +10,8 @@ mod view;
 
 pub use closing::{CloseAgenda12Event, Closed, Closing, ReopenAgenda12Event};
 pub use events::{
-    ChangeAgenda12Event, ChangeColumns, CreateAgenda12, CreateAgenda12Event, DeleteAgenda12Event,
-    EventChange, EventDraft,
+    ChangeAgenda12Event, ChangeColumns, ChangeLayout, CreateAgenda12, CreateAgenda12Event,
+    DeleteAgenda12Event, EventChange, EventDraft,
 };
 pub use read::{ReadAgenda12, ReadAgenda12Event};
 pub use view::{Agenda12View, CellView, EventEntry, EventView};

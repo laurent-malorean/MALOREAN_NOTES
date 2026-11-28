@@ -132,6 +132,7 @@ function agendaOf(state: FakeNotes, path: string, tag: string | null): Agenda12I
   return {
     title: /^# (.+)$/m.exec(note.content)?.[1] ?? "Sans titre",
     columns: numberOf(note.content, "colonnes") ?? 4,
+    layout: value(note.content, "vue") === "liste" ? "list" : "grid",
     tags: [...new Set(all.flatMap((event) => event.tags))].sort(),
     ...{ cells, archives, unreadable: [] },
   };
@@ -231,6 +232,13 @@ function agendaHandlers(state: Fake, helpers: CrmHelpers, write: Writer): Record
       if (![3, 4, 6].includes(Number(columns)))
         return refuse(`« ${String(columns)} » colonnes : la grille a 3, 4 ou 6 colonnes.`);
       write(path, withKey(note.content, "colonnes", String(columns)));
+      return null;
+    },
+    change_agenda_12_layout: ({ path = "", layout }) => {
+      const note = state.notes[path];
+      if (note === undefined || value(note.content, "type") !== "agenda-12")
+        return refuse("cette note n'est pas un agenda 12");
+      write(path, withKey(note.content, "vue", layout === "list" ? "liste" : "grille"));
       return null;
     },
     list_countries: () => COUNTRIES,

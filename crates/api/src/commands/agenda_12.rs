@@ -6,7 +6,7 @@ use std::sync::Arc;
 use super::{SharedSession, in_background};
 use crate::{
     Agenda12ClosedItem, Agenda12ClosingItem, Agenda12EventChangeItem, Agenda12EventDetailItem,
-    Agenda12Item, ApiError, CountryItem, SavedNote,
+    Agenda12Item, Agenda12LayoutItem, ApiError, CountryItem, SavedNote,
 };
 
 /// Crée dans `folder` un agenda 12 titré `title`.
@@ -52,6 +52,21 @@ pub async fn change_agenda_12_columns(
 ) -> Result<(), ApiError> {
     let session = Arc::clone(&session);
     in_background(move || session.change_agenda_12_columns(&path, columns)).await
+}
+
+/// Garde la vue (grille ou liste) de l'agenda 12.
+///
+/// # Errors
+///
+/// Le message de l'erreur, prêt à afficher : voir [`crate::Session::change_agenda_12_layout`].
+#[tauri::command]
+pub async fn change_agenda_12_layout(
+    session: SharedSession<'_>,
+    path: String,
+    layout: Agenda12LayoutItem,
+) -> Result<(), ApiError> {
+    let session = Arc::clone(&session);
+    in_background(move || session.change_agenda_12_layout(&path, layout)).await
 }
 
 /// Crée l'événement « Sans titre » d'un mois.

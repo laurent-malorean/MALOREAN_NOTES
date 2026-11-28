@@ -34,7 +34,11 @@ impl<'a> ReadAgenda12<'a> {
         let today = Day::from_moment(self.clock.now())?;
         let loaded = files.load()?;
         Ok(Agenda12View::new(
-            (files.agenda.title.clone(), files.agenda.columns),
+            (
+                files.agenda.title.clone(),
+                files.agenda.columns,
+                files.agenda.layout,
+            ),
             loaded,
             today.year(),
             tag,

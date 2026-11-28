@@ -1,5 +1,5 @@
-//! Le fichier d'un agenda 12 (format `doc/format/agenda-12.md` § 5) : un titre, et le nombre de
-//! colonnes de sa grille. Le texte sous son titre n'est jamais lu ni modifié.
+//! Le fichier d'un agenda 12 (format `doc/format/agenda-12.md` § 5) : un titre, le nombre de
+//! colonnes de sa grille et sa vue (grille ou liste). Le texte sous son titre n'est jamais lu ni modifié.
 
 use crate::crm::header::{self, Style};
 use crate::front_matter::declared_type;
@@ -9,6 +9,7 @@ use crate::title::displayed_title;
 pub const AGENDA_TYPE: &str = "agenda-12";
 
 const COLUMNS_KEY: &str = "colonnes";
+const LAYOUT_KEY: &str = "vue";
 
 /// Le nombre de colonnes de la grille : 3, 4 ou 6.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -34,6 +35,37 @@ impl Columns {
     }
 }
 
+/// La vue d'un agenda 12 : la grille de 12 cases, ou la liste groupée par mois.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Layout {
+    /// La grille de 12 cases.
+    Grid,
+    /// La liste, groupée par mois.
+    List,
+}
+
+impl Layout {
+    /// La vue d'un agenda 12 qui n'en a pas choisi.
+    pub const DEFAULT: Self = Self::Grid;
+
+    /// Ce que le fichier écrit pour cette vue.
+    #[must_use]
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::Grid => "grille",
+            Self::List => "liste",
+        }
+    }
+
+    /// La vue que dit ce texte du fichier ; rien s'il n'est ni `grille` ni `liste`.
+    #[must_use]
+    pub fn from_key(written: &str) -> Option<Self> {
+        [Self::Grid, Self::List]
+            .into_iter()
+            .find(|layout| layout.key() == written)
+    }
+}
+
 /// Un agenda 12 lu.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Agenda12 {
@@ -41,6 +73,8 @@ pub struct Agenda12 {
     pub title: String,
     /// Les colonnes de sa grille : 4 si la clé est absente ou a une autre valeur.
     pub columns: Columns,
+    /// Sa vue : la grille si la clé est absente ou a une autre valeur.
+    pub layout: Layout,
 }
 
 impl Agenda12 {
@@ -54,6 +88,9 @@ impl Agenda12 {
                 .and_then(|written| written.parse().ok())
                 .and_then(Columns::new)
                 .unwrap_or(Columns::DEFAULT),
+            layout: header::scalar(content, LAYOUT_KEY)
+                .and_then(|written| Layout::from_key(&written))
+                .unwrap_or(Layout::DEFAULT),
         })
     }
 
@@ -74,6 +111,12 @@ pub fn with_columns(content: &str, columns: Columns) -> String {
         Some(&columns.count().to_string()),
         Style::Bare,
     )
+}
+
+/// Le texte de l'agenda 12 avec cette vue : la clé `vue` écrite à sa place, le reste inchangé.
+#[must_use]
+pub fn with_layout(content: &str, layout: Layout) -> String {
+    header::with_scalar(content, LAYOUT_KEY, Some(layout.key()), Style::Line)
 }
 
 #[cfg(test)]
@@ -166,6 +209,54 @@ mod tests {
                 Columns::new(3).unwrap()
             ),
             "---\ntype: agenda-12\ncolonnes: 3\n---\n# Salons\n"
+        );
+    }
+
+    #[test]
+    fn the_layout_is_the_grid_or_the_list_and_the_grid_by_default() {
+        assert_eq!(Layout::DEFAULT, Layout::Grid);
+        assert_eq!(Layout::Grid.key(), "grille");
+        assert_eq!(Layout::List.key(), "liste");
+        assert_eq!(Layout::from_key("grille"), Some(Layout::Grid));
+        assert_eq!(Layout::from_key("liste"), Some(Layout::List));
+        for other in ["", "Liste", "tableau", "grid"] {
+            assert_eq!(Layout::from_key(other), None, "{other}");
+        }
+    }
+
+    #[test]
+    fn an_agenda_is_read_with_its_layout() {
+        let list = Agenda12::parse("---\ntype: agenda-12\nvue: liste\n---\n# S\n").unwrap();
+        assert_eq!(list.layout, Layout::List);
+        let quoted = Agenda12::parse("---\ntype: agenda-12\nvue: 'liste'\n---\n# S\n").unwrap();
+        assert_eq!(quoted.layout, Layout::List);
+    }
+
+    #[test]
+    fn an_agenda_without_layout_or_with_another_value_shows_the_grid() {
+        for header in ["", "vue: tableau\n", "vue: 3\n", "vue:\n", "vue: grille\n"] {
+            let content = format!("---\ntype: agenda-12\n{header}---\n# Salons\n");
+            assert_eq!(
+                Agenda12::parse(&content).unwrap().layout,
+                Layout::Grid,
+                "{header}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_layout_is_written_in_place_and_nothing_else_changes() {
+        let content = "---\ntype: agenda-12\ncolonnes: 4\ntags: [pro]\n---\n# Salons\n\nTexte\n";
+        assert_eq!(
+            with_layout(content, Layout::List),
+            "---\ntype: agenda-12\ncolonnes: 4\ntags: [pro]\nvue: liste\n---\n# Salons\n\nTexte\n"
+        );
+        assert_eq!(
+            with_layout(
+                "---\ntype: agenda-12\nvue: liste\n---\n# Salons\n",
+                Layout::Grid
+            ),
+            "---\ntype: agenda-12\nvue: grille\n---\n# Salons\n"
         );
     }
 }

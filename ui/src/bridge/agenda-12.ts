@@ -8,6 +8,7 @@ import type { Agenda12EventChangeItem } from "./generated/Agenda12EventChangeIte
 import type { Agenda12EventDetailItem } from "./generated/Agenda12EventDetailItem";
 import type { Agenda12EventItem } from "./generated/Agenda12EventItem";
 import type { Agenda12Item } from "./generated/Agenda12Item";
+import type { Agenda12LayoutItem } from "./generated/Agenda12LayoutItem";
 import type { Agenda12LineItem } from "./generated/Agenda12LineItem";
 import type { CountryItem } from "./generated/CountryItem";
 import type { SavedNote } from "./generated/SavedNote";
@@ -22,6 +23,7 @@ export type {
   Agenda12EventDetailItem,
   Agenda12EventItem,
   Agenda12Item,
+  Agenda12LayoutItem,
   Agenda12LineItem,
   CountryItem,
   YearToneItem,
@@ -36,6 +38,9 @@ export const readAgenda12 = (path: string, tag: string | null) =>
 /** Garde 3, 4 ou 6 colonnes dans l'agenda 12 `path`. */
 export const changeAgenda12Columns = (path: string, columns: number) =>
   invoke<null>("change_agenda_12_columns", { path, columns });
+/** Garde la vue (grille ou liste) dans l'agenda 12 `path`. */
+export const changeAgenda12Layout = (path: string, layout: Agenda12LayoutItem) =>
+  invoke<null>("change_agenda_12_layout", { path, layout });
 /** Crée l'événement « Sans titre » du mois `month` (1 à 12) de l'agenda 12 `agenda` ; rend le chemin de sa note. */
 export const createAgenda12Event = (agenda: string, month: number) =>
   invoke<SavedNote>("create_agenda_12_event", { agenda, month });

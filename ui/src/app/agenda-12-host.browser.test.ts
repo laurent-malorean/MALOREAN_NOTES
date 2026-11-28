@@ -5,6 +5,7 @@ import { createAgenda12Host, hasAgenda12Backend } from "./agenda-12-host";
 const backend = {
   readAgenda12: vi.fn(),
   changeAgenda12Columns: vi.fn(),
+  changeAgenda12Layout: vi.fn(),
   createAgenda12Event: vi.fn(),
   readAgenda12Event: vi.fn(),
   changeAgenda12Event: vi.fn(),

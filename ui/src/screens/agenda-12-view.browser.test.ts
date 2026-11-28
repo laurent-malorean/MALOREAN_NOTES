@@ -1,69 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Agenda12Item } from "../bridge";
 import { agendaItem, eventItem, plainEvent } from "../../test-support/agenda-12-fixture";
-import { type Agenda12Backend, createAgenda12View } from "./agenda-12-view";
+import { mount, PATH, SALON } from "../../test-support/agenda-12-view-mount";
 import "../theme.css";
 import "../style.css";
 
 afterEach(() => document.body.replaceChildren());
-
-const PATH = "pro/salons.md";
-
-const SALON = eventItem();
-const AUDIT = plainEvent("pro/salons/audit.md", "Audit ISO", 1);
-const DOMAINS = eventItem({
-  ...{ path: "pro/salons/domaines.md", title: "Renouveler malorean.fr", month: 2 },
-  ...{ day: null, year: 2029, end: null, country: null, city: null, tags: [] },
-  line: {
-    ...{ date: null, year: 2029, yearTone: "later", flag: null, city: null },
-    ...{ title: "Renouveler malorean.fr", text: "[2029] – Renouveler malorean.fr" },
-  },
-});
-
-function mount(data: () => Agenda12Item = () => agendaItem([SALON, DOMAINS, AUDIT])) {
-  const container = document.createElement("div");
-  container.style.cssText = "width:1200px;height:700px;display:flex;flex-direction:column";
-  document.body.replaceChildren(container);
-  const calls: string[] = [];
-  const opened: string[] = [];
-  const errors: unknown[] = [];
-  const state = {
-    ...{ data, failRead: false, failCreate: false, failColumns: false },
-    hold: null as Promise<void> | null,
-  };
-  const backend: Agenda12Backend = {
-    readAgenda12: async (path, tag) => {
-      calls.push(`lire ${path} ${tag}`);
-      if (state.failRead) throw { message: "Agenda illisible" };
-      // Ce que Rust lisait à l'appel ; la réponse peut être retenue.
-      const read = state.data();
-      await state.hold;
-      return read;
-    },
-    changeAgenda12Columns: async (path, columns) => {
-      calls.push(`colonnes ${path} ${columns}`);
-      if (state.failColumns) throw { message: "« 5 » colonnes : la grille a 3, 4 ou 6 colonnes." };
-      return null;
-    },
-    createAgenda12Event: async (agenda, month) => {
-      calls.push(`créer ${agenda} ${month}`);
-      if (state.failCreate) throw { message: "« 13 » n'est pas un mois" };
-      return { path: "pro/salons/sans-titre.md" };
-    },
-    reopenAgenda12Event: async (path) => {
-      calls.push(`rouvrir ${path}`);
-      return { path: "pro/salons/rouvert.md" };
-    },
-  };
-  const view = createAgenda12View({
-    backend,
-    path: PATH,
-    error: (error) => errors.push(error),
-    open: (path, created) => opened.push(`${path} ${created}`),
-  });
-  container.append(view.element);
-  return { view, calls, opened, errors, state, container };
-}
 
 const cell = (month: number) =>
   document.querySelector(`.agenda-cell[data-month="${month}"]`) as HTMLElement;
@@ -340,13 +281,14 @@ describe("grille d'agenda 12 : événements illisibles, erreurs, relectures", ()
 });
 
 describe("grille d'agenda 12 : sa présentation", () => {
-  it("les outils du bandeau sont groupés : colonnes, filtre et archives dans un même bloc, après le titre", async () => {
+  it("les outils du bandeau sont groupés : vue, colonnes, filtre et archives dans un même bloc, après le titre", async () => {
     const m = mount();
     await m.view.reload();
     const bar = document.querySelector(".agenda-bar") as HTMLElement;
     expect([...bar.children].map((e) => e.className)).toEqual(["agenda-title-bar", "agenda-tools"]);
     const tools = [...(bar.querySelector(".agenda-tools") as HTMLElement).children];
     expect(tools.map((e) => e.className.split(" ")[0])).toEqual([
+      "agenda-layout",
       "agenda-columns",
       "agenda-filter",
       "agenda-archives-link",

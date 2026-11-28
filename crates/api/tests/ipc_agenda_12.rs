@@ -103,6 +103,7 @@ fn an_agenda_is_created_and_read_with_the_argument_names_used_by_the_interface()
     );
     assert_eq!(read["title"], "Salons");
     assert_eq!(read["columns"], 4);
+    assert_eq!(read["layout"], "grid");
     assert_eq!(read["cells"].as_array().unwrap().len(), 12);
     assert_eq!(
         read["cells"][0],
@@ -168,6 +169,37 @@ fn the_columns_are_kept_and_a_wrong_number_is_refused_with_a_message() {
     assert_eq!(
         refused,
         Err(json!({ "message": "« 5 » colonnes : la grille a 3, 4 ou 6 colonnes." }))
+    );
+}
+
+#[test]
+fn the_layout_is_kept_and_a_wrong_value_is_refused() {
+    let window = opened(&workspace());
+    run(
+        &window,
+        "change_agenda_12_layout",
+        json!({ "path": "salons.md", "layout": "list" }),
+    );
+    assert_eq!(
+        run(&window, "read_agenda_12", json!({ "path": "salons.md" }))["layout"],
+        "list"
+    );
+    run(
+        &window,
+        "change_agenda_12_layout",
+        json!({ "path": "salons.md", "layout": "grid" }),
+    );
+    assert_eq!(
+        run(&window, "read_agenda_12", json!({ "path": "salons.md" }))["layout"],
+        "grid"
+    );
+    assert!(
+        call(
+            &window,
+            "change_agenda_12_layout",
+            json!({ "path": "salons.md", "layout": "table" }),
+        )
+        .is_err()
     );
 }
 
@@ -407,6 +439,20 @@ fn the_list_of_countries_is_sorted_by_french_name_with_flags() {
         json!({ "code": "AF", "name": "Afghanistan", "flag": "🇦🇫" })
     );
     assert!(list.contains(&json!({ "code": "FR", "name": "France", "flag": "🇫🇷" })));
+}
+
+#[test]
+fn a_note_that_is_not_an_agenda_has_no_layout_to_change() {
+    let window = opened(&[("note.md", "# Note")]);
+    let refused = call(
+        &window,
+        "change_agenda_12_layout",
+        json!({ "path": "note.md", "layout": "list" }),
+    );
+    assert_eq!(
+        refused,
+        Err(json!({ "message": "cette note n'est pas un agenda 12" }))
+    );
 }
 
 #[test]
