@@ -55,3 +55,19 @@ export async function openSalons(page: Page) {
 export const field = (page: Page, label: string) =>
   page.locator(`.agenda-band [aria-label="${label}"]`);
 export const band = (page: Page) => page.locator(".agenda-band");
+
+/** Le champ de période de la bande, sa fenêtre, et leurs cases : l'année, le mois, le jour. */
+export const period = (page: Page) => page.locator(".agenda-period-trigger");
+export const periodPopup = (page: Page) => page.locator(".agenda-period-popup");
+export const monthCell = (page: Page, month: number) =>
+  periodPopup(page).locator(`[data-grid="months"][data-n="${String(month)}"]`);
+export const dayCell = (page: Page, day: number) =>
+  periodPopup(page).locator(`[data-grid="days"][data-n="${String(day)}"]`);
+export const yearBar = (page: Page) => periodPopup(page).locator(".agenda-period-year");
+/** Choisit `year` dans la liste des années de la fenêtre ouverte. */
+export async function chooseYear(page: Page, year: number) {
+  await yearBar(page).click();
+  await periodPopup(page)
+    .getByRole("option", { name: String(year), exact: true })
+    .click();
+}

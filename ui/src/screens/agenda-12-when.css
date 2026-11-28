@@ -1,0 +1,25 @@
+/* La ligne « Quand » de la bande d'un événement (spécification §§ 4.3 et 4.4) : le champ de période a la largeur et la
+   hauteur de la ligne « Où » ; texte d'aide de la fin, état d'erreur d'une fin avant le début. Couleurs du thème seulement. */
+.agenda-when .agenda-group-fields > .agenda-field {
+  max-width: 40rem;
+}
+.agenda-end-note {
+  grid-column: 2;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--ui-label-size);
+  line-height: 1.3;
+}
+.agenda-end-note[hidden] {
+  display: none;
+}
+.agenda-end-note[data-tone="error"] {
+  color: var(--danger);
+}
+.agenda-period-trigger[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+.agenda-band-message[data-tone="notice"] {
+  color: var(--info);
+  background: color-mix(in srgb, var(--info) 10%, var(--bg));
+}

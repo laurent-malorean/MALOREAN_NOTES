@@ -1,0 +1,203 @@
+/* Le sélecteur de période de la bande d'un événement (spécification § 4.3) : un champ de 36 points de haut, et une
+   fenêtre à cases alignées (mois en 3 colonnes, jours en 7). Couleurs, rayons et ombre viennent du thème. */
+.agenda-period {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.agenda-period-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding-right: calc(var(--control-height) + var(--space-1));
+  text-align: left;
+  cursor: pointer;
+}
+.agenda-period-trigger:hover {
+  border-color: var(--marker);
+}
+.agenda-period-trigger:focus-visible,
+.agenda-period-trigger[aria-expanded="true"] {
+  border-color: var(--accent);
+  outline: none;
+}
+.agenda-period-icon {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+.agenda-period-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-period-clear {
+  position: absolute;
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: var(--target-size);
+  height: var(--target-size);
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--control-radius);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.agenda-period-clear[hidden] {
+  display: none;
+}
+.agenda-period-clear:hover,
+.agenda-period-clear:focus-visible {
+  color: var(--text);
+  background: var(--selected);
+}
+.agenda-period-popup {
+  position: fixed;
+  z-index: 600;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 22rem;
+  padding: var(--space-3);
+  overflow: auto;
+  font-family: var(--sans);
+  font-size: var(--ui-text-size);
+  line-height: var(--ui-line-height);
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px var(--shadow);
+}
+.agenda-period-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+.agenda-period-step,
+.agenda-period-year {
+  height: var(--control-height);
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-radius: var(--control-radius);
+  cursor: pointer;
+}
+.agenda-period-step {
+  width: var(--control-height);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.agenda-period-year {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.agenda-period-step:hover:not(:disabled),
+.agenda-period-year:hover {
+  background: var(--selected);
+}
+.agenda-period-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.agenda-period-view {
+  flex: 1 1 auto;
+  text-align: center;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.agenda-period-months,
+.agenda-period-years {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+.agenda-period-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  row-gap: 2px;
+}
+.agenda-period-weekday {
+  text-align: center;
+  font-size: var(--ui-label-size);
+  font-weight: 600;
+  color: var(--muted);
+}
+.agenda-period-month,
+.agenda-period-option,
+.agenda-period-day,
+.agenda-period-action {
+  height: var(--control-height);
+  padding: 0;
+  font: inherit;
+  color: var(--text);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  cursor: pointer;
+}
+.agenda-period-month:hover,
+.agenda-period-option:hover,
+.agenda-period-day:hover:not(:disabled) {
+  background: var(--selected);
+}
+.agenda-period-month[aria-pressed="true"],
+.agenda-period-option[aria-selected="true"],
+.agenda-period-day[data-mark="start"],
+.agenda-period-day[data-mark="end"] {
+  color: var(--on-accent);
+  background: var(--accent);
+  font-weight: 600;
+}
+.agenda-period-day[data-mark="between"] {
+  background: color-mix(in srgb, var(--accent) 18%, var(--bg));
+  border-radius: 0;
+}
+.agenda-period-day:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.agenda-period-step:focus-visible,
+.agenda-period-year:focus-visible,
+.agenda-period-month:focus-visible,
+.agenda-period-option:focus-visible,
+.agenda-period-day:focus-visible,
+.agenda-period-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.agenda-period-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--ui-label-size);
+  line-height: 1.3;
+}
+.agenda-period-hint[hidden] {
+  display: none;
+}
+.agenda-period-foot {
+  display: flex;
+  gap: var(--space-2);
+}
+.agenda-period-action {
+  flex: 1 1 0;
+  border-color: var(--border);
+}
+.agenda-period-action:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.agenda-period-action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

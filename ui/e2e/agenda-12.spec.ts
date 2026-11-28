@@ -1,5 +1,17 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { band, event, field, launch, openSalons, SHOTS } from "./agenda-12-common";
+import {
+  band,
+  chooseYear,
+  dayCell,
+  event,
+  field,
+  launch,
+  monthCell,
+  openSalons,
+  period,
+  periodPopup,
+  SHOTS,
+} from "./agenda-12-common";
 
 // Agenda 12 (fiche 0104), à la souris : créer un agenda 12 et ses événements, la grille (ordre dans une
 // case, colonnes, filtre par étiquette), les champs d'un événement et les refus du moteur, clore, archives,
@@ -17,6 +29,8 @@ const click = (page: Page, name: string) => page.getByRole("button", { name, exa
 const confirmation = (page: Page) => page.getByRole("dialog", { name: "Confirmation" });
 const chevron = (page: Page) => page.getByRole("button", { name: "Nouveau contenu" });
 
+/** L'année suivante : la liste des années propose l'année en cours et les dix suivantes. */
+const NEXT_YEAR = new Date().getFullYear() + 1;
 /** Écrit une valeur dans un champ de la bande et la valide, comme un utilisateur. */
 async function enter(page: Page, label: string, text: string) {
   await field(page, label).fill(text);
@@ -89,6 +103,22 @@ test("la grille range les lignes dans l'ordre, règle ses colonnes et filtre par
   await expect(cell(page, 2).locator(".agenda-line")).toHaveCount(2);
 });
 
+/** La date d'un événement d'avril : l'année dans la liste, le jour de début puis le jour de fin dans le calendrier. */
+async function fillDates(page: Page) {
+  await period(page).click();
+  await chooseYear(page, NEXT_YEAR);
+  // Le calendrier d'avril n'a que 30 jours.
+  await expect(dayCell(page, 30)).toBeVisible();
+  await expect(dayCell(page, 31)).toHaveCount(0);
+  await dayCell(page, 12).click();
+  await expect(periodPopup(page)).toBeVisible();
+  await dayCell(page, 14).click();
+  await expect(periodPopup(page)).toBeHidden();
+  await expect(period(page)).toHaveText(`12 – 14 avril ${String(NEXT_YEAR)}`);
+  await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
+  await expect(message(page)).toBeHidden();
+}
+
 test("un « + » crée l'événement de la case, dont chaque champ se renseigne, avec les refus du moteur dits", async ({
   page,
 }) => {
@@ -97,7 +127,7 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   expect(await saved(page, "Pro/salons/sans-titre.md")).toContain("mois: 4");
   await expect(band(page)).toBeVisible();
   await expect(field(page, "Titre")).toBeFocused();
-  await expect(field(page, "Mois")).toHaveValue("4");
+  await expect(period(page)).toHaveText("avril");
   await shot(page, "evenement");
 
   await page.keyboard.type("Salon Chimie");
@@ -105,20 +135,7 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   await expect.poll(() => saved(page, "Pro/salons/sans-titre.md")).toContain("# Salon Chimie");
   await expect(page.locator(".cm-content")).toContainText("Salon Chimie");
 
-  await enter(page, "Jour", "31");
-  await expect(message(page)).toHaveText("Ce jour n'existe pas dans ce mois.");
-  await expect(field(page, "Jour")).toHaveValue("");
-  await enter(page, "Jour", "12");
-  await expect(message(page)).toBeHidden();
-  await enter(page, "Année", "2027");
-  await enter(page, "Fin : jour", "5");
-  await expect(message(page)).toHaveText("La fin est avant le début.");
-  await enter(page, "Fin : jour", "14");
-  await expect(message(page)).toBeHidden();
-  await enter(page, "Jour", "");
-  await expect(message(page)).toHaveText("La fin exige un jour de début.");
-  await enter(page, "Jour", "x");
-  await expect(message(page)).toHaveText("Un nombre entier est attendu.");
+  await fillDates(page);
 
   await field(page, "Pays").click();
   await field(page, "Pays").pressSequentially("alle");
@@ -127,7 +144,9 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   await expect(field(page, "Pays")).toHaveValue("🇩🇪 Allemagne");
   await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
   await enter(page, "Ville", "Hanovre");
-  await field(page, "Mois").selectOption("5");
+  await period(page).click();
+  await monthCell(page, 5).click();
+  await page.keyboard.press("Escape");
   await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
   await page.getByLabel("Ajouter une étiquette").fill("salon");
   await page.getByLabel("Ajouter une étiquette").press("Enter");
@@ -137,7 +156,13 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   await page.keyboard.type("Budget 5000");
   await enter(page, "Ville", "Hanovre Messe");
   const content = (await saved(page, "Pro/salons/sans-titre.md")) ?? "";
-  for (const key of ["mois: 5", "jour: 12", "annee: 2027", "jour-fin: 14", "pays: DE"])
+  for (const key of [
+    "mois: 5",
+    "jour: 12",
+    `annee: ${String(NEXT_YEAR)}`,
+    "jour-fin: 14",
+    "pays: DE",
+  ])
     expect(content).toContain(key);
   expect(content).toContain("ville: Hanovre Messe");
   expect(content).toContain("tags: [salon]");
@@ -145,7 +170,9 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
 
   await click(page, "← Salons");
   await expect(page.locator(".agenda-month")).toHaveCount(12);
-  expect(await lines(cell(page, 5))).toContain("12–14/05 2027 – 🇩🇪 (Hanovre Messe) – Salon Chimie");
+  expect(await lines(cell(page, 5))).toContain(
+    `12–14/05 ${String(NEXT_YEAR)} – 🇩🇪 (Hanovre Messe) – Salon Chimie`,
+  );
   expect(await lines(cell(page, 4))).toEqual([]);
 });
 

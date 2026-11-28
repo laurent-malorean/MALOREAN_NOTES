@@ -17,6 +17,8 @@ export interface Agenda12Deps {
   readonly trashEvent: (event: TrashedEvent) => Promise<void>;
   /** Le message d'une erreur de Rust, prêt à montrer. */
   readonly errorText: (error: unknown) => string;
+  /** L'année en cours, d'après l'horloge du Mac. */
+  readonly currentYear: () => number;
 }
 
 export interface Agenda12PaneOptions {

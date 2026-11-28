@@ -45,6 +45,8 @@ export interface Agenda12HostDeps {
   readonly dialog: HTMLDialogElement;
   readonly columns: Pick<OpenColumns, "openNote" | "activePane">;
   readonly trash: Pick<Trash, "trashEvent">;
+  /** L'année en cours ; l'horloge du Mac par défaut. */
+  readonly currentYear?: () => number;
 }
 
 export function createAgenda12Host({
@@ -52,9 +54,11 @@ export function createAgenda12Host({
   dialog,
   columns,
   trash,
+  currentYear = () => new Date().getFullYear(),
 }: Agenda12HostDeps): Agenda12Deps {
   return {
     backend,
+    currentYear,
     errorText: backend.errorMessage,
     askClosing: (title) => askClosing(dialog, title),
     trashEvent: trash.trashEvent,

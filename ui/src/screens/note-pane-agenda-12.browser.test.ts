@@ -41,6 +41,7 @@ function mount(withAgenda = true) {
   });
   const agenda12: Agenda12Deps = {
     errorText: (error) => (error as { message: string }).message,
+    currentYear: () => 2026,
     askClosing: async () => "alone",
     trashEvent: async (event) => void calls.push(`corbeille ${event.path}`),
     open: async (path, focusTitle) => void calls.push(`ouvrir ${path} ${focusTitle}`),
