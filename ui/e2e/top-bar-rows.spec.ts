@@ -7,8 +7,8 @@ import { waitForNote } from "./journey";
 // Code ouverte le déclenche aussi.
 
 const SEARCH_MINIMUM = 96;
-/** Les trois blocs, la recherche à son minimum et les écarts entre eux (mesurés : 705,1 points). */
-const SINGLE_ROW_NEEDS = 705;
+/** Les trois blocs, la recherche à son minimum et les écarts entre eux (mesurés : 721,9 points). */
+const SINGLE_ROW_NEEDS = 722;
 /** Tolérance autour du seuil : le basculement tombe à quelques points de la largeur nécessaire. */
 const MARGIN = 8;
 
@@ -162,7 +162,7 @@ test("à toute largeur de la zone du milieu : une ligne ou deux lignes propres, 
   page,
 }) => {
   await launch(page, 1800);
-  for (const target of [900, 760, 720, 680, 668, 640, 560, 480, 440]) {
+  for (const target of [900, 760, 730, 720, 680, 668, 640, 560, 480, 440]) {
     await giveStripWidth(page, target);
     const s = await strip(page);
     if (target >= SINGLE_ROW_NEEDS) expectOneRow(s);
@@ -189,7 +189,7 @@ test("zone du milieu plus étroite que l'affichage et la recherche à leur minim
   page,
 }) => {
   await launch(page, 1800);
-  // Bande resserrée à 270 points utiles (l'affichage et la recherche minimale en demandent 277).
+  // Bande resserrée à 270 points utiles (l'affichage et la recherche minimale en demandent 283).
   await page.locator(".editor-tools").evaluate((row) => (row.style.width = "296px"));
   const s = await strip(page);
   expect(Math.round(s.inner.width)).toBe(270);
@@ -202,7 +202,7 @@ test("zone du milieu plus étroite que l'affichage et la recherche à leur minim
   expect(Math.abs(s.search.x - s.inner.x)).toBeLessThan(1);
   expect(Math.abs(right(s.search) - right(s.inner))).toBeLessThan(1);
   expect(s.search.width).toBeGreaterThanOrEqual(SEARCH_MINIMUM);
-  // Assez large pour la mise en forme et les copies sur une ligne (422 points) : les deux lignes propres.
+  // Assez large pour la mise en forme et les copies sur une ligne (427 points) : les deux lignes propres.
   await page.locator(".editor-tools").evaluate((row) => (row.style.width = "470px"));
   expectTwoRows(await strip(page));
 });

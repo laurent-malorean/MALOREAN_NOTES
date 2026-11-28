@@ -397,7 +397,10 @@ button {
   flex: 1 1 var(--search-field-min-width);
   max-width: var(--search-field-width);
   min-width: var(--search-field-min-width);
-  padding: 0.25rem 0.6rem;
+  /* La hauteur d'une pilule : la recherche s'aligne sur les blocs d'icônes, au pixel. */
+  box-sizing: border-box;
+  height: var(--format-pill-height);
+  padding: 0 0.6rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
@@ -836,17 +839,17 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: var(--tool-block-gap);
 }
 /* Place insuffisante : deux lignes. En haut la mise en forme et les copies ; dessous l'affichage,
    puis la recherche qui prend toute la largeur restante (jamais tronquée, jamais de ligne à moitié
    vide). Le seuil est la largeur des trois blocs, des écarts et de la recherche à son minimum
-   (705,1 points mesurés : 672,3 avant le micro, qui ajoute son bouton de 28,8 et un écart de 4 points) ; une
-   requête de conteneur n'accepte pas de variable, d'où la valeur en rem (44,1 rem), gardée par le
+   (721,9 points mesurés, écarts de 12 points entre blocs : 705,1 avec les anciens écarts de 6,4 points) ; une
+   requête de conteneur n'accepte pas de variable, d'où la valeur en rem (45,15 rem = 722,4 points), gardée par le
    parcours « top-bar-rows ». La requête mesure la place utile des outils (sans leurs marges) : la
    réserve gauche, panneaux cachés, est une marge, donc le seuil ne bouge pas (fiche 0098). Chaque ligne reste centrée : la première, plus étroite que la zone,
    est au milieu ; la seconde, dont la recherche prend la largeur restante, la remplit. */
-@container editor-tools (max-width: 44.1rem) {
+@container editor-tools (max-width: 45.15rem) {
   .tool-rows {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -862,10 +865,10 @@ button {
     width: 100%;
   }
 }
-/* Plus étroit encore que l'affichage et la recherche à leur minimum (277,2 points, 17,45 rem) : la
+/* Plus étroit encore que l'affichage et la recherche à leur minimum (282,8 points, 17,7 rem) : la
    recherche passe seule sur une troisième ligne, pleine largeur, plutôt que de déborder ; l'affichage,
    seul sur sa ligne, est centré comme les autres lignes (fiche 0100). */
-@container editor-tools (max-width: 17.45rem) {
+@container editor-tools (max-width: 17.7rem) {
   .tool-rows > .display-tools {
     grid-column: 1 / -1;
     justify-self: center;
@@ -879,7 +882,7 @@ button {
   flex: 0 1 auto;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.4rem;
+  gap: var(--tool-block-gap);
 }
 /* Une pilule par groupe de boutons : fond discret, coins arrondis, icônes seules. */
 .format-group {
