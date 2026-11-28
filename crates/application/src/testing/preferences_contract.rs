@@ -56,6 +56,10 @@ fn the_voice_shortcut_is_the_default_at_first_launch_and_is_read_back(
         .save_voice_shortcut(&shortcut("Cmd+Alt+E"))
         .unwrap();
     assert_eq!(preferences.voice_shortcut().unwrap(), shortcut("Alt+Cmd+E"));
+    for written in ["Cmd droite", "Alt gauche", "F5"] {
+        preferences.save_voice_shortcut(&shortcut(written)).unwrap();
+        assert_eq!(preferences.voice_shortcut().unwrap(), shortcut(written));
+    }
     preferences
         .save_voice_shortcut(&VoiceShortcut::default())
         .unwrap();

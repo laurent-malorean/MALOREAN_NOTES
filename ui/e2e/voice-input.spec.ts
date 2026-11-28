@@ -437,3 +437,130 @@ test("Réglages : les bips sont décochés par défaut ; cochés, un bip joue au
   await say(page, { kind: "ended" });
   await expect.poll(() => notes(page)).toBe(8);
 });
+
+/** Presse et relâche une touche de modificateur seule (un tapotement), dans les 500 ms. */
+async function tap(page: Page, code: string) {
+  await page.keyboard.down(code);
+  await page.keyboard.up(code);
+}
+
+/** Choisit le raccourci dans les réglages par un tapotement de cette touche, puis ferme les réglages. */
+async function chooseTap(page: Page, code: string) {
+  const panel = await openVoiceSettings(page);
+  await panel.locator(".shortcut-key").click();
+  await tap(page, code);
+  await page.keyboard.press("Escape");
+  await expect(settings(page)).toBeHidden();
+}
+
+test("Réglages : choisir Cmd droite seule ; elle s'écrit ⌘ droite, la bulle la dit, un tapotement démarre et arrête l'écoute", async ({
+  page,
+}) => {
+  await launch(page);
+  const panel = await openVoiceSettings(page);
+  const key = panel.locator(".shortcut-key");
+  await key.click();
+  await expect(key).toHaveText("Appuyez sur la combinaison…");
+  await page.keyboard.down("MetaRight");
+  await expect(key).toHaveText("Appuyez sur la combinaison…");
+  await page.keyboard.up("MetaRight");
+  await expect(panel.getByRole("button", { name: "Raccourci : ⌘ droite" })).toBeVisible();
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBe("Cmd droite");
+  await page.keyboard.press("Escape");
+  await expect(mic(page)).toHaveAttribute("title", "Saisie vocale (Cmd droite)");
+
+  await cursorAtEnd(page);
+  await tap(page, "MetaRight");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".cm-content")).toBeFocused();
+  await tap(page, "MetaRight");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
+  expect(await voice(page)).toMatchObject({ starts: 1, stops: 1 });
+
+  const again = await openVoiceSettings(page);
+  await again.getByRole("button", { name: "Rétablir le raccourci par défaut" }).click();
+  await expect(again.getByRole("button", { name: "Raccourci : ⌃⇧D" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await tap(page, "MetaRight");
+  expect((await voice(page)).starts).toBe(1);
+});
+
+test("Cmd droite seule : l'autre côté, un maintien, une combinaison et Cmd + clic ne déclenchent rien ; Cmd droite + C garde son effet", async ({
+  page,
+}) => {
+  await launch(page);
+  await chooseTap(page, "MetaRight");
+  await cursorAtEnd(page);
+  await page.evaluate(() => {
+    (window as unknown as { copies: number }).copies = 0;
+    document.addEventListener("copy", () => (window as unknown as { copies: number }).copies++);
+  });
+
+  await tap(page, "MetaLeft");
+  await page.keyboard.down("MetaRight");
+  await page.waitForTimeout(650);
+  await page.keyboard.up("MetaRight");
+  await page.keyboard.down("MetaRight");
+  await page.keyboard.press("KeyA");
+  await page.keyboard.up("MetaRight");
+  await page.keyboard.down("MetaRight");
+  await page.locator(".cm-line").first().click();
+  await page.keyboard.up("MetaRight");
+  expect((await voice(page)).starts).toBe(0);
+
+  await page.keyboard.press("Meta+A");
+  await page.keyboard.down("MetaRight");
+  await page.keyboard.press("KeyC");
+  await page.keyboard.up("MetaRight");
+  expect((await voice(page)).starts).toBe(0);
+  expect(await page.evaluate(() => (window as unknown as { copies: number }).copies)).toBe(1);
+});
+
+test("Option droite seule démarre l'écoute, et aussi dans un champ de formulaire (la recherche)", async ({
+  page,
+}) => {
+  await launch(page);
+  await chooseTap(page, "AltRight");
+  await expect(mic(page)).toHaveAttribute("title", "Saisie vocale (Alt droite)");
+  await cursorAtEnd(page);
+  await tap(page, "AltRight");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
+  await tap(page, "AltRight");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
+
+  await page.getByRole("searchbox").first().click();
+  await tap(page, "AltRight");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
+  await tap(page, "AltRight");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
+  expect(await voice(page)).toMatchObject({ starts: 2, stops: 2 });
+});
+
+test("Réglages : F5 seule est permise et lance l'écoute ; une touche qui tape du texte est refusée avec son message", async ({
+  page,
+}) => {
+  await launch(page);
+  const panel = await openVoiceSettings(page);
+  const key = panel.locator(".shortcut-key");
+  await expect(panel).toContainText("La touche Fn n'est pas lisible par l'application.");
+  await key.click();
+  await page.keyboard.press("Enter");
+  await expect(panel.getByRole("alert").filter({ hasText: "ne peut pas servir" })).toBeVisible();
+  await key.click();
+  await page.keyboard.press("D");
+  await expect(panel.getByRole("alert").filter({ hasText: "tape du texte" })).toBeVisible();
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBeNull();
+  await key.click();
+  await page.keyboard.press("F5");
+  await expect(panel.getByRole("button", { name: "Raccourci : F5" })).toBeVisible();
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBe("F5");
+  await page.keyboard.press("Escape");
+  await expect(mic(page)).toHaveAttribute("title", "Saisie vocale (F5)");
+
+  await cursorAtEnd(page);
+  await page.keyboard.press("F5");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("F5");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
+  expect(await voice(page)).toMatchObject({ starts: 1, stops: 1 });
+});

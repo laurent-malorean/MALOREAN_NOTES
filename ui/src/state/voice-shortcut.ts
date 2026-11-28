@@ -2,6 +2,7 @@
 // menus du Mac (`Ctrl+Maj+D`) et en symboles (⌃⇧D), refuser celle qu'une autre commande ou macOS a déjà. Que le raccourci soit
 // valide (Ctrl ou Cmd, une lettre, un chiffre ou F1 à F12) est la règle du moteur : la commande qui le garde la dit.
 import { MENU_COMMANDS, shortcutOf } from "./commands";
+import { isTapShortcut } from "./tap-shortcut";
 
 /** La touche pressée, comme l'événement clavier la donne. */
 export interface PressedKey {
@@ -34,6 +35,7 @@ function keyName(press: PressedKey): string {
   if (FUNCTION_KEY.test(press.code)) return press.code;
   const digit = DIGIT.exec(press.code)?.[1];
   if (digit !== undefined) return digit;
+  if (press.key === " ") return "Space";
   if (LETTER.test(press.key)) return press.key.toUpperCase();
   return LETTER_CODE.exec(press.code)?.[1] ?? press.key;
 }
@@ -55,8 +57,12 @@ const SYMBOLS: Readonly<Record<string, string>> = { Ctrl: "⌃", Alt: "⌥", Maj
 /** L'ordre des symboles sur le Mac : Contrôle, Option, Majuscule, Commande. */
 const SYMBOL_ORDER = ["Ctrl", "Alt", "Maj", "Cmd"];
 
-/** Le raccourci en symboles du Mac : `Ctrl+Maj+D` devient ⌃⇧D. */
+/** Le raccourci en symboles du Mac : `Ctrl+Maj+D` devient ⌃⇧D, une touche seule `Cmd droite` devient ⌘ droite. */
 export function macSymbols(shortcut: string): string {
+  if (isTapShortcut(shortcut)) {
+    const [modifier = "", side = ""] = shortcut.split(" ");
+    return `${SYMBOLS[modifier]} ${side}`;
+  }
   const parts = shortcut.split("+");
   const key = parts.pop() ?? "";
   const modifiers = SYMBOL_ORDER.filter((name) => parts.includes(name));

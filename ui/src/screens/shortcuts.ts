@@ -1,6 +1,7 @@
 // Raccourcis clavier de la fenêtre, valables où que soit le curseur. Ceux des commandes viennent
 // de la liste des commandes (state/commands.ts), où chacun n'est écrit qu'une fois.
 import { MENU_COMMANDS, type MenuCommandId, shortcutOf, shortcutsChanged } from "../state/commands";
+import { isTapShortcut } from "../state/tap-shortcut";
 
 /** Ce que demande une touche : une commande, la palette, ou Échap. */
 export type Shortcut = MenuCommandId | "leave-full-screen";
@@ -28,7 +29,10 @@ function shortcuts(): ReadonlyMap<string, Shortcut> {
       map: new Map<string, Shortcut>([
         ...MENU_COMMANDS.flatMap((command) => {
           const shortcut = shortcutOf(command);
-          return shortcut === undefined ? [] : [[keyOf(shortcut), command.id] as const];
+          // Une touche de modificateur seule se déclenche au tapotement (`app/tap-shortcut.ts`), pas à l'appui d'une touche.
+          return shortcut === undefined || isTapShortcut(shortcut)
+            ? []
+            : [[keyOf(shortcut), command.id] as const];
         }),
         ["escape", "leave-full-screen"],
       ]),
@@ -44,6 +48,8 @@ export interface KeyPress {
   readonly metaKey: boolean;
   readonly ctrlKey: boolean;
   readonly shiftKey: boolean;
+  /** Option change la lettre tapée : une touche avec Option est celle de la barre des menus (une touche de fonction n'en change pas). */
+  readonly altKey?: boolean;
 }
 
 const DIGIT_KEY = /^Digit(\d)$/;
@@ -53,6 +59,7 @@ const DIGIT_KEY = /^Digit(\d)$/;
  * AZERTY, Cmd+0 tape « à », comme CodeMirror le fait pour ses propres touches.
  */
 export function shortcutFor(press: KeyPress): Shortcut | null {
+  if (press.altKey) return null;
   const modifiers = `${press.metaKey ? "cmd+" : ""}${press.ctrlKey ? "ctrl+" : ""}${press.shiftKey ? "shift+" : ""}`;
   const digit = DIGIT_KEY.exec(press.code)?.[1];
   const typed = shortcuts().get(`${modifiers}${press.key.toLowerCase()}`);

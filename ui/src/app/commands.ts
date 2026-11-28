@@ -23,6 +23,7 @@ import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { NoteHistory } from "./history";
 import type { Meaning } from "./meaning";
+import { connectTapShortcut } from "./tap-shortcut";
 import type { VoiceInput } from "./voice-input";
 import type { WritingAssistance } from "./writing-assistant";
 import type { WritingModes } from "./writing-modes";
@@ -245,6 +246,8 @@ export function connectCommands(deps: CommandsDeps): Readonly<Record<MenuCommand
     "command-palette": () => openPalette(deps, actions),
   };
   const editing: ReadonlySet<string> = new Set(Object.keys(editingActions(deps.columns)));
+  // Le raccourci de la saisie vocale peut être une touche de modificateur seule : elle se déclenche au tapotement.
+  connectTapShortcut({ voice: deps.voice, blocked: dialogOpen });
   document.addEventListener("keydown", (event) => {
     // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
     // Une fenêtre ouverte (réglages, choix) garde le clavier : Échap la ferme, sans quitter le plein écran.

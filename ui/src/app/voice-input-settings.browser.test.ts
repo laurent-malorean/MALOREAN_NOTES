@@ -42,6 +42,20 @@ async function pressShortcut(element: HTMLElement, init: KeyboardEventInit & { k
   await settle();
 }
 
+/** Clique sur la touche du raccourci, puis presse et relâche une touche de modificateur seule. */
+async function pressTap(
+  element: HTMLElement,
+  name: string,
+  code: string,
+  flags: KeyboardEventInit,
+) {
+  key(element).click();
+  const base = { key: name, code, bubbles: true, cancelable: true };
+  key(element).dispatchEvent(new KeyboardEvent("keydown", { ...base, ...flags }));
+  key(element).dispatchEvent(new KeyboardEvent("keyup", base));
+  await settle();
+}
+
 describe("saisie vocale : les réglages gardés au lancement", () => {
   it("lit le raccourci et les bips, une seule fois, sans toucher aux appels de la saisie", async () => {
     const s = await ready();
@@ -113,14 +127,66 @@ describe("saisie vocale : choisir le raccourci", () => {
     );
   });
 
+  it("une touche de modificateur seule (Cmd droite) est gardée au relâchement, et devient celle du micro, de la palette et des menus", async () => {
+    const { s, element } = await open();
+    await pressTap(element, "Meta", "MetaRight", { metaKey: true });
+    expect(s.settingsCalls).toEqual(["lire", "raccourci Cmd droite"]);
+    expect(shortcutOf(voice)).toBe("Cmd droite");
+    expect(s.button().title).toBe("Saisie vocale (Cmd droite)");
+    expect(key(element).textContent).toBe("⌘ droite");
+    expect(resetButton(element).hidden).toBe(false);
+    expect(error(element).hidden).toBe(true);
+  });
+
+  it("Option droite seule est gardée de la même façon, avec son côté", async () => {
+    const { s, element } = await open();
+    await pressTap(element, "Alt", "AltRight", { altKey: true });
+    expect(s.settingsCalls).toContain("raccourci Alt droite");
+    expect(key(element).textContent).toBe("⌥ droite");
+  });
+
+  it("une touche de fonction seule (F5) est gardée dès qu'elle est pressée", async () => {
+    const { s, element } = await open();
+    await pressShortcut(element, { key: "F5", code: "F5" });
+    expect(s.settingsCalls).toEqual(["lire", "raccourci F5"]);
+    expect(shortcutOf(voice)).toBe("F5");
+    expect(s.button().title).toBe("Saisie vocale (F5)");
+    expect(key(element).textContent).toBe("F5");
+  });
+
+  it("rétablir le raccourci par défaut après une touche seule remet Ctrl+Maj+D", async () => {
+    const { element } = await open(undefined, settingsOf("Cmd droite", false));
+    expect(shortcutOf(voice)).toBe("Cmd droite");
+    resetButton(element).click();
+    await settle();
+    expect(shortcutOf(voice)).toBe("Ctrl+Maj+D");
+    expect(key(element).textContent).toBe("⌃⇧D");
+  });
+
+  it("une touche seule choisie lors d'un lancement précédent est celle de la bulle d'aide", async () => {
+    const s = await ready(undefined, settingsOf("Alt gauche", false));
+    expect(s.button().title).toBe("Saisie vocale (Alt gauche)");
+  });
+
+  it("la touche Fn est refusée avec le message du moteur, sans rien garder", async () => {
+    const { s, element } = await open();
+    s.state.failures.raccourci = {
+      message:
+        "La touche Fn ne peut pas servir de raccourci : l'application ne la voit pas. Choisissez une autre touche.",
+    };
+    await pressShortcut(element, { key: "Fn", code: "Fn" });
+    expect(error(element).textContent).toContain("La touche Fn ne peut pas servir de raccourci");
+    expect(shortcutOf(voice)).toBe("Ctrl+Maj+D");
+  });
+
   it("une combinaison que le moteur refuse (ni Ctrl ni Cmd) est refusée avec son message, sans rien garder", async () => {
     const { s, element } = await open();
     s.state.failures.raccourci = {
       message:
-        "Un raccourci demande la touche Ctrl ou Cmd (avec Option ou Maj si vous voulez) : Maj et Option seules servent à taper.",
+        "Cette touche tape du texte : ajoutez Ctrl ou Cmd (avec Option ou Maj si vous voulez). Seules une touche de modificateur (Cmd, Option, Ctrl, Maj) et F1 à F12 servent seules.",
     };
     await pressShortcut(element, { key: "d", code: "KeyD", shiftKey: true });
-    expect(error(element).textContent).toContain("Un raccourci demande la touche Ctrl ou Cmd");
+    expect(error(element).textContent).toContain("Cette touche tape du texte");
     expect(error(element).hidden).toBe(false);
     expect(shortcutOf(voice)).toBe("Ctrl+Maj+D");
   });

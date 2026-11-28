@@ -175,4 +175,28 @@ describe("raccourci choisi pour la saisie vocale", () => {
     expect(key("d", { ctrlKey: true, shiftKey: true })).toBe("voice-input");
     expect(key("e", { ctrlKey: true, shiftKey: true })).toBeNull();
   });
+
+  it("une touche de fonction seule la lance, avec ou sans Maj (Maj+F5 est une autre touche)", () => {
+    chooseShortcut("voice-input", "F5");
+    expect(key("F5")).toBe("voice-input");
+    expect(key("F5", { shiftKey: true })).toBeNull();
+    expect(key("F5", { metaKey: true })).toBeNull();
+    expect(key("F6")).toBeNull();
+  });
+
+  it("une touche de fonction avec Option n'est pas lue ici : la barre des menus la prend, la fenêtre ne la lance pas deux fois", () => {
+    chooseShortcut("voice-input", "F5");
+    expect(
+      shortcutFor({
+        ...{ key: "F5", code: "F5", altKey: true },
+        ...{ metaKey: false, ctrlKey: false, shiftKey: false },
+      }),
+    ).toBeNull();
+  });
+
+  it("une touche de modificateur seule n'entre pas dans la table : elle se déclenche au tapotement, pas à l'appui", () => {
+    chooseShortcut("voice-input", "Cmd droite");
+    expect(key("Meta", { metaKey: true })).toBeNull();
+    expect(key("d", { ctrlKey: true, shiftKey: true })).toBeNull();
+  });
 });

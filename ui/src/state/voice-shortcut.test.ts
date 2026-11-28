@@ -74,6 +74,42 @@ describe("saisie du raccourci : la touche pressée", () => {
     });
   });
 
+  it("garde une touche de fonction seule, sans modificateur", () => {
+    expect(recordKey(press("F5", { code: "F5" }))).toEqual({ kind: "pressed", shortcut: "F5" });
+    expect(recordKey(press("F12", { code: "F12" }))).toEqual({ kind: "pressed", shortcut: "F12" });
+    expect(recordKey(press("F2", { altKey: true, code: "F2" }))).toEqual({
+      kind: "pressed",
+      shortcut: "Alt+F2",
+    });
+  });
+
+  it("nomme l'espace « Space » : le moteur le refuse comme une touche qui tape du texte", () => {
+    expect(recordKey(press(" ", { code: "Space" }))).toEqual({
+      kind: "pressed",
+      shortcut: "Space",
+    });
+    expect(recordKey(press(" ", { ctrlKey: true, code: "Space" }))).toEqual({
+      kind: "pressed",
+      shortcut: "Ctrl+Space",
+    });
+  });
+
+  it("garde une touche qui tape du texte seule : le moteur la refuse avec son message", () => {
+    expect(recordKey(press("d", { code: "KeyD" }))).toEqual({ kind: "pressed", shortcut: "D" });
+    expect(recordKey(press("Enter", { code: "Enter" }))).toEqual({
+      kind: "pressed",
+      shortcut: "Enter",
+    });
+    expect(recordKey(press("ArrowLeft", { code: "ArrowLeft" }))).toEqual({
+      kind: "pressed",
+      shortcut: "ArrowLeft",
+    });
+  });
+
+  it("garde la touche Fn si le navigateur la donne : le moteur la refuse avec son message", () => {
+    expect(recordKey(press("Fn", { code: "Fn" }))).toEqual({ kind: "pressed", shortcut: "Fn" });
+  });
+
   it("attend la suite tant que seuls des modificateurs sont pressés", () => {
     for (const key of ["Control", "Alt", "Shift", "Meta", "AltGraph"]) {
       expect(recordKey(press(key, { ctrlKey: true }))).toEqual({ kind: "waiting" });
@@ -96,6 +132,18 @@ describe("le raccourci en symboles du Mac", () => {
     expect(macSymbols("Alt+Cmd+F")).toBe("⌥⌘F");
     expect(macSymbols("Cmd+Maj+8")).toBe("⇧⌘8");
     expect(macSymbols("Ctrl+F5")).toBe("⌃F5");
+  });
+
+  it("écrit une touche de fonction seule telle quelle", () => {
+    expect(macSymbols("F5")).toBe("F5");
+  });
+
+  it("écrit une touche seule avec son symbole et son côté", () => {
+    expect(macSymbols("Cmd droite")).toBe("⌘ droite");
+    expect(macSymbols("Cmd gauche")).toBe("⌘ gauche");
+    expect(macSymbols("Alt droite")).toBe("⌥ droite");
+    expect(macSymbols("Ctrl gauche")).toBe("⌃ gauche");
+    expect(macSymbols("Maj droite")).toBe("⇧ droite");
   });
 });
 
@@ -126,6 +174,27 @@ describe("un raccourci déjà pris", () => {
     expect(conflictOf("Cmd+Maj+Z")).toBe("Ce raccourci est déjà pris par « Rétablir ».");
     expect(conflictOf("Cmd+Q")).toBe("Ce raccourci est déjà pris par « Quitter ».");
     expect(conflictOf("Alt+Cmd+H")).toBe("Ce raccourci est déjà pris par « Masquer les autres ».");
+  });
+
+  it("une touche de modificateur seule ne l'est jamais : tous les raccourcis de l'application ont une touche en plus", () => {
+    for (const written of [
+      "Cmd gauche",
+      "Cmd droite",
+      "Alt gauche",
+      "Alt droite",
+      "Ctrl gauche",
+      "Ctrl droite",
+      "Maj gauche",
+      "Maj droite",
+    ]) {
+      expect(conflictOf(written), written).toBeNull();
+    }
+  });
+
+  it("une touche de fonction seule est libre : aucune commande n'en a", () => {
+    for (let number = 1; number <= 12; number += 1) {
+      expect(conflictOf(`F${number}`), `F${number}`).toBeNull();
+    }
   });
 
   it("n'est pas un conflit quand il est libre", () => {
