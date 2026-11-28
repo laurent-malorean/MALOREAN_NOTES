@@ -1,58 +1,9 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { waitForNote } from "./journey";
+import { band, event, field, launch, openSalons, SHOTS } from "./agenda-12-common";
 
 // Agenda 12 (fiche 0104), à la souris : créer un agenda 12 et ses événements, la grille (ordre dans une
 // case, colonnes, filtre par étiquette), les champs d'un événement et les refus du moteur, clore, archives,
 // rouvrir, placer dans la corbeille. Les captures vont dans le dossier des maquettes quand `MAQUETTES` le nomme.
-
-const SHOTS = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env
-  .MAQUETTES;
-type Notes = Record<string, { content: string; modified: number }>;
-
-const event = (title: string, header: string[]) =>
-  `---\ntype: agenda-12-evenement\n${header.map((l) => `${l}\n`).join("")}---\n# ${title}\n\nNotes de ${title}\n`;
-
-const NOTES: Notes = {
-  "courses.md": { content: "# Courses\n- lait", modified: 50 },
-  "Pro/salons.md": { content: "---\ntype: agenda-12\n---\n# Salons\n", modified: 40 },
-  "Pro/salons/embedded.md": {
-    content: event("Salon Embedded World", [
-      ...["mois: 2", "jour: 10", "annee: 2027", "jour-fin: 13", "pays: DE"],
-      ...["ville: Nuremberg", "tags: [salon]"],
-    ]),
-    modified: 30,
-  },
-  "Pro/salons/domaines.md": {
-    content: event("Renouveler malorean.fr", ["mois: 2", "annee: 2029", "tags: [domaine]"]),
-    modified: 20,
-  },
-  "Pro/salons/audit.md": {
-    content: event("Audit ISO", ["mois: 1", "jour: 15"]),
-    modified: 10,
-  },
-  "Pro/salons/archives/rotterdam.md": {
-    content: event("Salon de Rotterdam", ["mois: 5", "clos-le: 2026-06-01"]),
-    modified: 5,
-  },
-};
-
-async function launch(page: Page, notes: Notes = NOTES) {
-  await page.setViewportSize({ width: 1500, height: 900 });
-  const params = new URLSearchParams({
-    notes: JSON.stringify(notes),
-    folders: JSON.stringify(["Pro"]),
-    remembered: "1",
-  });
-  await page.goto(`/e2e/app.html?${params.toString()}`);
-  await waitForNote(page, "Courses");
-}
-
-async function openSalons(page: Page) {
-  await launch(page);
-  await page.locator(".folder-item", { hasText: "Pro" }).click();
-  await page.locator(".note-item", { hasText: "Salons" }).click();
-  await expect(page.locator(".agenda-month")).toHaveCount(12);
-}
 
 const saved = (page: Page, path: string) =>
   page.evaluate((name) => window.backend.notes[name]?.content ?? null, path);
@@ -61,8 +12,6 @@ const shot = async (page: Page, name: string) => {
 };
 const cell = (page: Page, month: number) => page.locator(`.agenda-cell[data-month="${month}"]`);
 const lines = (scope: Locator) => scope.locator(".agenda-line").allTextContents();
-const field = (page: Page, label: string) => page.locator(`.agenda-band [aria-label="${label}"]`);
-const band = (page: Page) => page.locator(".agenda-band");
 const message = (page: Page) => page.locator(".agenda-band-message");
 const click = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).click();
 const confirmation = (page: Page) => page.getByRole("dialog", { name: "Confirmation" });

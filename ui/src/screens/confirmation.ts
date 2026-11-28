@@ -55,12 +55,15 @@ export function askClosing(
   text.className = "confirmation-question";
   text.textContent = `Clore « ${title} » ? Il passe dans les archives.`;
   let chosen: Agenda12ClosingItem | null = null;
-  const alone = button(CLOSE_ALONE, "agenda-closing-choice");
-  const withSuccessor = button(CLOSE_WITH_SUCCESSOR, "agenda-closing-choice");
+  const alone = button(CLOSE_ALONE, "agenda-closing-choice agenda-closing-alone");
+  const withSuccessor = button(
+    CLOSE_WITH_SUCCESSOR,
+    "agenda-closing-choice agenda-closing-successor",
+  );
   alone.addEventListener("click", () => (chosen = "alone"));
   withSuccessor.addEventListener("click", () => (chosen = "withSuccessor"));
   const buttons = document.createElement("div");
-  buttons.className = "confirmation-buttons";
+  buttons.className = "confirmation-buttons agenda-closing-buttons";
   buttons.append(button("Annuler", "link"), alone, withSuccessor);
   const form = document.createElement("form");
   form.method = "dialog";

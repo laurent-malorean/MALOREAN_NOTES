@@ -54,7 +54,7 @@ class AgendaScreen implements Agenda12View {
   private readonly notice = h("div", "agenda-unreadable");
   private readonly filter = h("select", "agenda-filter");
   private readonly columns = h("div", "agenda-columns");
-  private readonly archivesButton = actionButton("link agenda-archives-link", ARCHIVES_TEXT);
+  private readonly archivesButton = actionButton("agenda-archives-link", ARCHIVES_TEXT);
   private data: Agenda12Item | null = null;
   private tag: string | null = null;
   private archives = false;
@@ -69,7 +69,9 @@ class AgendaScreen implements Agenda12View {
     this.filter.addEventListener("change", () => this.choose(this.filter.value));
     this.archivesButton.addEventListener("click", () => this.toggleArchives());
     const bar = h("header", "agenda-bar");
-    bar.append(this.title, this.columns, this.filter, this.archivesButton);
+    const tools = h("div", "agenda-tools");
+    tools.append(this.columns, this.filter, this.archivesButton);
+    bar.append(this.title, tools);
     this.element.append(bar, this.notice, this.body);
   }
 
@@ -149,7 +151,7 @@ class AgendaScreen implements Agenda12View {
     this.notice.hidden = data.unreadable.length === 0;
     this.notice.replaceChildren(
       ...data.unreadable.map((path) => {
-        const button = actionButton("link agenda-unreadable-item", `Événement illisible : ${path}`);
+        const button = actionButton("agenda-unreadable-item", `Événement illisible : ${path}`);
         button.addEventListener("click", () => this.deps.open(path, false));
         return button;
       }),
@@ -172,12 +174,16 @@ class AgendaScreen implements Agenda12View {
     add.title = `Ajouter un événement en ${cell.name}`;
     add.addEventListener("click", () => void this.create(cell.month));
     const head = h("header", "agenda-cell-head");
-    head.append(h("h3", "agenda-month", name), add);
+    head.append(h("h3", "agenda-month", name));
     const list = h("ul", "agenda-events");
     list.append(
       ...cell.events.map((event) => this.item(lineButton(event, (p) => this.deps.open(p, false)))),
     );
+    // Une case pleine a son « + » dans son en-tête ; une case vide, tout son corps en est un, discret.
+    if (cell.events.length === 0) add.classList.add("agenda-add-empty");
+    else head.append(add);
     section.append(head, list);
+    if (cell.events.length === 0) section.append(add);
     return section;
   }
 
@@ -205,7 +211,11 @@ class AgendaScreen implements Agenda12View {
   }
 
   private archived(event: Agenda12EventItem): HTMLElement {
-    const reopen = actionButton("link agenda-reopen", REOPEN_TEXT, `Rouvrir « ${event.title} »`);
+    const reopen = actionButton(
+      "agenda-action agenda-reopen",
+      REOPEN_TEXT,
+      `Rouvrir « ${event.title} »`,
+    );
     reopen.addEventListener("click", () =>
       this.gesture(() => this.deps.backend.reopenAgenda12Event(event.path)),
     );

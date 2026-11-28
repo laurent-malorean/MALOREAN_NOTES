@@ -338,3 +338,73 @@ describe("grille d'agenda 12 : événements illisibles, erreurs, relectures", ()
     expect(tones[0]?.[1]).not.toBe(tones[1]?.[1]);
   });
 });
+
+describe("grille d'agenda 12 : sa présentation", () => {
+  it("les outils du bandeau sont groupés : colonnes, filtre et archives dans un même bloc, après le titre", async () => {
+    const m = mount();
+    await m.view.reload();
+    const bar = document.querySelector(".agenda-bar") as HTMLElement;
+    expect([...bar.children].map((e) => e.className)).toEqual(["agenda-title-bar", "agenda-tools"]);
+    const tools = [...(bar.querySelector(".agenda-tools") as HTMLElement).children];
+    expect(tools.map((e) => e.className.split(" ")[0])).toEqual([
+      "agenda-columns",
+      "agenda-filter",
+      "agenda-archives-link",
+    ]);
+  });
+
+  it("une case pleine a son « + » dans son en-tête ; une case vide, tout son corps en est un, discret", async () => {
+    const m = mount();
+    await m.view.reload();
+    expect(cell(1).querySelector(".agenda-cell-head .agenda-add")).not.toBeNull();
+    expect(cell(1).querySelector(".agenda-add-empty")).toBeNull();
+    const empty = cell(3);
+    expect(empty.querySelector(".agenda-cell-head .agenda-add")).toBeNull();
+    const ghost = empty.querySelector<HTMLElement>(".agenda-add.agenda-add-empty");
+    expect(ghost?.getAttribute("aria-label")).toBe("Ajouter un événement en mars");
+    expect(empty.querySelectorAll(".agenda-add")).toHaveLength(1);
+    expect(getComputedStyle(ghost as Element).borderTopStyle).toBe("dashed");
+    ghost?.click();
+    await vi.waitFor(() => expect(m.calls).toContain(`créer ${PATH} 3`));
+  });
+
+  it("les cases d'une même ligne ont la même hauteur, pleines ou vides, et leurs titres sont alignés", async () => {
+    const m = mount();
+    await m.view.reload();
+    const boxes = [1, 2, 3, 4].map((month) => cell(month).getBoundingClientRect().height);
+    expect(new Set(boxes.map(Math.round)).size).toBe(1);
+    const tops = [1, 2, 3, 4].map(
+      (month) =>
+        (cell(month).querySelector(".agenda-month") as HTMLElement).getBoundingClientRect().top,
+    );
+    expect(new Set(tops.map(Math.round)).size).toBe(1);
+  });
+
+  it("la ligne montre sa date et son lieu en légende, le titre dessous, sans les « – » à l'écran", async () => {
+    const m = mount();
+    await m.view.reload();
+    const line = cell(2).querySelector(".agenda-line") as HTMLElement;
+    const date = line.querySelector(".agenda-date") as HTMLElement;
+    const title = line.querySelector(".agenda-title") as HTMLElement;
+    expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      date.getBoundingClientRect().bottom,
+    );
+    for (const separator of line.querySelectorAll<HTMLElement>(".agenda-sep"))
+      expect(getComputedStyle(separator).display).toBe("none");
+    expect(Number.parseFloat(getComputedStyle(date).fontSize)).toBeLessThan(
+      Number.parseFloat(getComputedStyle(title).fontSize),
+    );
+  });
+
+  it("une archive : sa ligne, son jour de clôture et « Rouvrir » sont alignés sur une même rangée", async () => {
+    const m = mount(() => agendaItem([], { archives: [eventItem({ closedOn: "2026-11-27" })] }));
+    await m.view.reload();
+    (document.querySelector(".agenda-archives-link") as HTMLElement).click();
+    const row = document.querySelector(".agenda-archives .agenda-event") as HTMLElement;
+    const centers = ["agenda-line", "agenda-closed", "agenda-reopen"].map((name) => {
+      const box = (row.querySelector(`.${name}`) as HTMLElement).getBoundingClientRect();
+      return Math.round(box.top + box.height / 2);
+    });
+    expect(Math.max(...centers) - Math.min(...centers)).toBeLessThanOrEqual(12);
+  });
+});

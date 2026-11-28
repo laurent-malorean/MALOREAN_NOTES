@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { eventItem, plainEvent } from "../../test-support/agenda-12-fixture";
 import {
   agenda12Folder,
   closedDay,
   COLUMN_CHOICES,
   countryText,
+  eventSummary,
   isAgenda12Content,
   isAgenda12EventContent,
   matchingCountries,
@@ -89,5 +91,51 @@ describe("agenda 12 : chercher un pays en tapant", () => {
     expect(matchingCountries(COUNTRIES, "fr")).toEqual([COUNTRIES[1]]);
     expect(matchingCountries(COUNTRIES, "ci")).toEqual([COUNTRIES[2]]);
     expect(matchingCountries(COUNTRIES, "zz")).toEqual([]);
+  });
+});
+
+describe("agenda 12 : le résumé d'un événement", () => {
+  const dated = (overrides: Parameters<typeof eventItem>[0]) =>
+    eventItem({ country: null, city: null, ...overrides });
+
+  it("dit l'intervalle, l'année, la ville et le pays", () => {
+    const event = eventItem({
+      ...{ month: 10, day: 5, year: 2026, end: { day: 11, month: 10 }, city: "Lisbonne" },
+      country: { code: "PT", name: "Portugal", flag: "🇵🇹" },
+    });
+    expect(eventSummary(event)).toBe("5 – 11 octobre 2026 · Lisbonne, Portugal");
+  });
+
+  it("un jour seul, sans fin : « 5 octobre 2026 » ; le premier du mois est « 1er »", () => {
+    expect(eventSummary(dated({ month: 10, day: 5, year: 2026, end: null }))).toBe(
+      "5 octobre 2026",
+    );
+    expect(eventSummary(dated({ month: 3, day: 1, year: 2026, end: null }))).toBe("1er mars 2026");
+  });
+
+  it("une fin sur un autre mois nomme les deux mois, l'année une seule fois", () => {
+    expect(eventSummary(dated({ month: 1, day: 30, year: 2027, end: { day: 2, month: 2 } }))).toBe(
+      "30 janvier – 2 février 2027",
+    );
+    expect(eventSummary(dated({ month: 1, day: 30, year: 2027, end: { day: 1, month: 2 } }))).toBe(
+      "30 janvier – 1er février 2027",
+    );
+  });
+
+  it("sans année, pas d'année ; sans jour, le mois (et l'année) seuls", () => {
+    expect(eventSummary(dated({ month: 2, day: 10, year: null, end: { day: 13, month: 2 } }))).toBe(
+      "10 – 13 février",
+    );
+    expect(eventSummary(dated({ month: 2, day: null, year: 2029, end: null }))).toBe(
+      "février 2029",
+    );
+    expect(eventSummary(dated({ month: 8, day: null, year: null, end: null }))).toBe("août");
+  });
+
+  it("la ville seule, le pays seul, ou rien : chaque partie absente disparaît avec son séparateur", () => {
+    const base = { month: 5, day: null, year: null, end: null } as const;
+    expect(eventSummary(eventItem({ ...base, city: "Lyon", country: null }))).toBe("mai · Lyon");
+    expect(eventSummary(eventItem({ ...base, city: null }))).toBe("mai · Allemagne");
+    expect(eventSummary(plainEvent("a.md", "A", 5))).toBe("mai");
   });
 });

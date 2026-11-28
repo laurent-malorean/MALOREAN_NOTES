@@ -34,6 +34,7 @@ import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
+import { agendaEventProperties } from "./agenda-event-properties";
 import { type AddEntry, type CopyReference, researchNotebook } from "./research-notebook";
 import { keptPosition } from "../state/external-change";
 import { firstMatch } from "../state/search-match";
@@ -313,6 +314,7 @@ export function createEditor(
     openLink ? noteLinks(openLink) : [],
     options.links ? [linkMenu(options.links), linkStatus(options.links)] : [],
     researchNotebook(fromElsewhere, options.addEntry, today, options.copyReference),
+    agendaEventProperties(fromElsewhere),
     history(),
     [listContinuation, firstTitle, findReplace],
     // Avant les raccourcis de CodeMirror : Cmd+I y sélectionne l'élément parent.

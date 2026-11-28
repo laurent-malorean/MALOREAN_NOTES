@@ -31,6 +31,12 @@ describe("agenda 12 : une ligne d'événement", () => {
     expect(span.querySelector(".agenda-flag")?.textContent).toBe("🇩🇪");
   });
 
+  it("chaque séparateur est son propre élément : le texte le garde, l'écran peut l'effacer", () => {
+    const span = rendered(line({ date: "15/01", flag: "🇫🇷", title: "Audit" }));
+    const separators = [...span.querySelectorAll(".agenda-sep")].map((e) => e.textContent);
+    expect(separators).toEqual([LINE_SEPARATOR, LINE_SEPARATOR]);
+  });
+
   it("sans jour : la pastille de l'année seule, puis le titre", () => {
     const span = rendered(line({ year: 2029, yearTone: "later", title: "Renouveler malorean.fr" }));
     expect(span.textContent).toBe("2029 – Renouveler malorean.fr");
