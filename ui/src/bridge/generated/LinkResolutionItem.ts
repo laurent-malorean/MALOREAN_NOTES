@@ -7,7 +7,15 @@ export type LinkResolutionItem = { "kind": "found",
 /**
  * Le chemin du contenu.
  */
-path: string, } | { "kind": "ambiguous", 
+path: string, } | { "kind": "entry", 
+/**
+ * Le chemin du cahier de recherche.
+ */
+path: string, 
+/**
+ * Le numéro d'entrée.
+ */
+number: number, } | { "kind": "ambiguous", 
 /**
  * Les chemins des contenus.
  */

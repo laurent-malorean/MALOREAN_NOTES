@@ -138,10 +138,11 @@ Le texte d'une entrée, tel que l'application le lit (pour l'index, la recherche
   - 10:15 - Rectifie [l'entrée du 20 novembre 2026 à 09:42](#2026-11-20-09h42) : Levure A : mousse
   ```
 
-- Le lien `[texte](#ancre)` vers une entrée ne fonctionne qu'à l'intérieur du même cahier : un clic dessus montre l'entrée de cette ancre. Il n'existe pas de lien vers une entrée depuis une autre note.
+- Le lien `[texte](#ancre)` vers une entrée ne fonctionne qu'à l'intérieur du même cahier : un clic dessus montre l'entrée de cette ancre. Pour une autre note, voir le lien vers une entrée, ci-dessous.
 - Ce lien est du texte comme un autre : aucune règle de format ne rattache une entrée à celle qu'elle rectifie, et l'application ne vérifie pas que l'ancre existe.
 - Les cahiers écrits avant la fiche 0049 peuvent contenir des entrées de la forme `- 10:15 - Correction de [l'entrée du 20 novembre 2026 à 09:42](#2026-11-20-09h42) : …`. Ce sont des entrées ordinaires ; leur lien fonctionne toujours. L'application n'écrit plus cette forme.
-- Pour citer une entrée hors du cahier, on emploie la **référence** `Titre du cahier · 0007` (titre du cahier, espace, point médian, espace, numéro d'entrée sur 4 chiffres) : c'est du texte, pas un lien.
+- Pour citer une entrée depuis une autre note, on emploie la **référence** `[[Titre du cahier#0007]]` : un lien entre notes (`doc/ontology.md`, « Lien vers une entrée ») dont la cible est le titre du cahier, puis `#` et le numéro d'entrée sur 4 chiffres. Rien n'est écrit dans le fichier du cahier : le numéro se calcule à la lecture, comme au paragraphe 4.3. La cible suit les règles des liens entre notes (dossier devant le titre si deux contenus ont le même nom : `[[Labo/Levures#0007]]`) ; le texte entier est d'abord pris pour un titre, puis `#` et des chiffres seuls pour un numéro d'entrée si la cible est un cahier de recherche. Un numéro qui n'existe pas (`0000`, au-delà de la dernière entrée) n'est pas une erreur du fichier : le lien ouvre le cahier sans désigner d'entrée.
+- L'ancre `#2026-11-20-09h42` reste réservée au lien Markdown `[texte](#ancre)` à l'intérieur du cahier ; le lien entre notes n'emploie que le numéro.
 
 ## 6. Ce que l'application tolère à la lecture
 
@@ -285,6 +286,7 @@ Ajoutée le mardi 5 janvier 2027 à 08:00, elle s'écrit sous un nouveau titre d
 - `doc/decisions/0041-cahier-de-recherche.md` : le cahier de recherche, son format, son index.
 - `doc/decisions/0049-zone-de-saisie-du-cahier.md` : la zone de saisie du cahier, la fin de la correction.
 - `doc/decisions/0095-numero-d-entree-de-cahier.md` : le numéro d'entrée.
+- `doc/decisions/0107-lien-vers-une-entree-de-cahier.md` : le lien vers une entrée.
 - `doc/specs/entree-de-cahier.md` : spécification fonctionnelle de l'écriture d'une entrée.
 - `doc/ontology.md` : cahier de recherche, entrée, ancre d'une entrée, numéro d'entrée, zone de saisie du cahier, conteneur, type de contenu.
 - `doc/format/note.md` : règles communes à toutes les notes (en-tête, titre, nom du fichier, pièces jointes, liens).

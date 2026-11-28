@@ -1047,6 +1047,20 @@ button {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+/* Entrée montrée par un lien vers une entrée (fiche 0107) : toutes ses lignes prennent un fond qui
+   s'estompe ; l'éditeur retire la marque à la fin de l'animation. Le fond ne touche pas la barre,
+   qui est une image de fond. */
+.editor .cm-line.entry-flash {
+  animation: entry-flash var(--entry-flash-duration) ease-out;
+}
+@keyframes entry-flash {
+  from {
+    background-color: var(--entry-flash);
+  }
+  to {
+    background-color: transparent;
+  }
+}
 .editor .cm-placeholder {
   color: var(--marker);
 }

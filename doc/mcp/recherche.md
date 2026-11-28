@@ -93,7 +93,7 @@ Réponse :
 
 ## `linking_notes`
 
-Les liens entrants d'une note : les notes dont un lien `[[titre]]` la désigne. Une action d'un CRM la désigne aussi par ses notes liées, sa description ou un commentaire.
+Les liens entrants d'une note : les notes dont un lien `[[titre]]` la désigne. Pour un cahier de recherche, un lien vers une entrée (`[[titre#0007]]`) compte comme un lien vers le cahier. Une action d'un CRM la désigne aussi par ses notes liées, sa description ou un commentaire.
 
 **Paramètres** :
 

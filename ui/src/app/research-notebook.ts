@@ -25,7 +25,7 @@ export interface ResearchNotebooks {
   create(folder?: string): Promise<void>;
   /** Ajoute `text` au cahier `path` (sa zone de saisie) ; dit si c'est fait, l'erreur étant alors affichée. */
   add(path: string, text: string): Promise<boolean>;
-  /** Copie en texte brut la référence d'une entrée (`Levures · 0007`) et le dit ; l'erreur est affichée. */
+  /** Copie en texte brut la référence d'une entrée, un lien vers elle (`[[Levures#0007]]`), et le dit ; l'erreur est affichée. */
   copyReference(reference: string): Promise<void>;
 }
 

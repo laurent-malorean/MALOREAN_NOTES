@@ -22,9 +22,10 @@ describe("cahier de recherche", () => {
     expect(formatEntryNumber(123456)).toBe("123456");
   });
 
-  it("donne la référence d'une entrée : le titre du cahier, un point médian, son numéro", () => {
-    expect(entryReference("Levures", 7)).toBe("Levures · 0007");
-    expect(entryReference("Bières belges", 12345)).toBe("Bières belges · 12345");
+  it("donne la référence d'une entrée : un lien entre notes, le titre du cahier, # et son numéro", () => {
+    expect(entryReference("Levures", 7)).toBe("[[Levures#0007]]");
+    expect(entryReference("Bières belges", 12345)).toBe("[[Bières belges#12345]]");
+    expect(entryReference("C# notes", 1)).toBe("[[C# notes#0001]]");
   });
 
   it("prend pour titre le premier titre « # » après l'en-tête, sinon le nom du fichier", () => {

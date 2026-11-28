@@ -6,9 +6,9 @@ export function formatEntryNumber(number: number): string {
   return String(number).padStart(4, "0");
 }
 
-/** La référence copiée d'une entrée : le titre de son cahier, puis son numéro (`Levures · 0007`). */
+/** La référence copiée d'une entrée : un lien entre notes avec ancre, le titre du cahier puis son numéro (`[[Levures#0007]]`). */
 export function entryReference(title: string, number: number): string {
-  return `${title} · ${formatEntryNumber(number)}`;
+  return `[[${title}#${formatEntryNumber(number)}]]`;
 }
 
 /** Le titre du cahier : son premier titre `#` après l'en-tête, sinon le nom de son fichier sans `.md`. */

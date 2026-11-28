@@ -72,7 +72,8 @@ fn without_list_mark(line: &str) -> &str {
 fn content_of_line(line: &str, links: &LinkIndex) -> Option<NotePath> {
     match links.resolve(link_of_line(line)?) {
         Resolution::Found(path) => Some(path),
-        Resolution::Ambiguous(_) | Resolution::Missing => None,
+        // Un lien vers une entrée désigne une entrée, pas le cahier entier : jamais un favori.
+        Resolution::Entry { .. } | Resolution::Ambiguous(_) | Resolution::Missing => None,
     }
 }
 

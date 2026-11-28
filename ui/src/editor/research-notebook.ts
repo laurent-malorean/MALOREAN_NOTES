@@ -6,6 +6,7 @@ import {
   EditorState,
   type Extension,
   type Range,
+  StateEffect,
   StateField,
   type Text,
 } from "@codemirror/state";
@@ -122,39 +123,92 @@ class EntryNumber extends WidgetType {
 const ENTRY_LINE = Decoration.line({ class: "entry-bar" });
 const ENTRY_FIRST_LINE = Decoration.line({ class: "entry-bar entry-bar-first" });
 
+/** Une entrée du cahier : où elle commence et finit dans le texte. */
+interface EntrySpan {
+  readonly from: number;
+  readonly to: number;
+}
+
 /**
- * Les barres d'entrée : chaque élément de liste du premier niveau (hors en-tête) est une entrée,
- * dont toutes les lignes portent la barre, la première en plus la marque `entry-bar-first`. Avec
- * `copy`, la première ligne porte aussi le numéro d'entrée de l'entrée : sa position, à partir de 1.
+ * Les entrées du cahier, dans l'ordre : chaque élément de liste du premier niveau (hors en-tête).
+ * Leur rang, à partir de 1, est leur numéro d'entrée.
  */
-function entryBars(state: EditorState, copy: CopyReference | undefined): DecorationSet {
-  if (!isResearchNotebook(state.doc)) return Decoration.none;
-  const { doc } = state;
-  const headerEnd = frontMatterEnd(doc);
-  const ranges: Range<Decoration>[] = [];
-  let number = 0;
+function entrySpans(state: EditorState): EntrySpan[] {
+  if (!isResearchNotebook(state.doc)) return [];
+  const headerEnd = frontMatterEnd(state.doc);
+  const spans: EntrySpan[] = [];
   syntaxTree(state).iterate({
     enter: (node) => {
       if (node.to <= headerEnd) return false;
       if (node.name !== "ListItem") return node.name === "Document" || node.name === "BulletList";
-      if (node.node.parent?.parent?.name !== "Document") return false;
-      const last = doc.lineAt(node.to).number;
-      number += 1;
-      if (copy)
-        ranges.push(
-          Decoration.widget({ widget: new EntryNumber(number, copy), side: -1 }).range(node.from),
-        );
-      for (let n = doc.lineAt(node.from).number; n <= last; n++) {
-        ranges.push(
-          (n === doc.lineAt(node.from).number ? ENTRY_FIRST_LINE : ENTRY_LINE).range(
-            doc.line(n).from,
-          ),
-        );
-      }
+      if (node.node.parent?.parent?.name === "Document")
+        spans.push({ from: node.from, to: node.to });
       return false;
     },
   });
+  return spans;
+}
+
+/**
+ * Les barres d'entrée : toutes les lignes d'une entrée portent la barre, la première en plus la
+ * marque `entry-bar-first`. Avec `copy`, la première ligne porte aussi le numéro d'entrée de
+ * l'entrée : sa position, à partir de 1.
+ */
+function entryBars(state: EditorState, copy: CopyReference | undefined): DecorationSet {
+  const { doc } = state;
+  const ranges: Range<Decoration>[] = [];
+  entrySpans(state).forEach((span, index) => {
+    const first = doc.lineAt(span.from).number;
+    if (copy)
+      ranges.push(
+        Decoration.widget({ widget: new EntryNumber(index + 1, copy), side: -1 }).range(span.from),
+      );
+    for (let n = first; n <= doc.lineAt(span.to).number; n++) {
+      ranges.push((n === first ? ENTRY_FIRST_LINE : ENTRY_LINE).range(doc.line(n).from));
+    }
+  });
   return Decoration.set(ranges, true);
+}
+
+/** L'entrée à mettre en évidence (le début de son texte), ou plus aucune. */
+const flashEntry = StateEffect.define<EntrySpan | null>();
+
+const ENTRY_FLASH_LINE = Decoration.line({ class: "entry-flash" });
+
+/**
+ * L'entrée mise en évidence : toutes ses lignes portent `entry-flash`, dont l'animation (couleur et
+ * durée du thème) l'éteint ; l'éditeur la retire à la fin de l'animation.
+ */
+const entryFlash = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(flash, transaction) {
+    const effects = transaction.effects.filter((effect) => effect.is(flashEntry));
+    if (effects.length === 0) return flash.map(transaction.changes);
+    const span = effects[effects.length - 1]?.value as EntrySpan | null;
+    if (span === null) return Decoration.none;
+    const { doc } = transaction.state;
+    const lines: Range<Decoration>[] = [];
+    for (let n = doc.lineAt(span.from).number; n <= doc.lineAt(span.to).number; n++) {
+      lines.push(ENTRY_FLASH_LINE.range(doc.line(n).from));
+    }
+    return Decoration.set(lines);
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
+
+/**
+ * Montre l'entrée de ce numéro d'entrée (à partir de 1) : le curseur à son début, l'entrée en haut
+ * de l'écran et mise en évidence. Faux, sans rien changer, si le cahier n'a pas cette entrée
+ * (numéro 0, au-delà de la dernière, ou note qui n'est pas un cahier).
+ */
+export function revealEntryIn(view: EditorView, number: number): boolean {
+  const span = entrySpans(view.state)[number - 1];
+  if (span === undefined) return false;
+  view.dispatch({
+    selection: { anchor: span.from },
+    effects: [EditorView.scrollIntoView(span.from, { y: "start" }), flashEntry.of(span)],
+  });
+  return true;
 }
 
 /**
@@ -181,6 +235,15 @@ export function researchNotebook(
       create: (state) => entryBars(state, copy),
       update: (_, transaction) => entryBars(transaction.state, copy),
       provide: (field) => EditorView.decorations.from(field),
+    }),
+    entryFlash,
+    EditorView.domEventHandlers({
+      animationend: (event, view) => {
+        if (!(event.target instanceof Element) || !event.target.classList.contains("entry-flash"))
+          return false;
+        view.dispatch({ effects: flashEntry.of(null) });
+        return false;
+      },
     }),
     // La marge gauche du cahier est élargie pour que les numéros ne recouvrent jamais le texte.
     EditorView.contentAttributes.compute(["doc"], (state): Record<string, string> =>

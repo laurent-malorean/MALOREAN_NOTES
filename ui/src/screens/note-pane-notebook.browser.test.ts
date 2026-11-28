@@ -107,7 +107,7 @@ describe("colonne : un cahier de recherche", () => {
     await expect.poll(() => text.value).toBe("");
   });
 
-  it("le numéro d'une entrée copie la référence : le titre du cahier et son numéro", async () => {
+  it("le numéro d'une entrée copie sa référence : un lien vers elle, le titre du cahier # son numéro", async () => {
     const copied: string[] = [];
     const m = mount({
       add: async () => true,
@@ -119,7 +119,7 @@ describe("colonne : un cahier de recherche", () => {
     expect(numbers.map((n) => n.textContent)).toEqual(["0001", "0002"]);
     numbers[1]?.click();
     numbers[0]?.click();
-    expect(copied).toEqual(["Levures · 0002", "Levures · 0001"]);
+    expect(copied).toEqual(["[[Levures#0002]]", "[[Levures#0001]]"]);
   });
 
   it("sans action sur les cahiers, le lien est confié à Rust comme les autres", async () => {

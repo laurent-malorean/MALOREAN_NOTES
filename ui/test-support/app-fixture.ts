@@ -29,6 +29,7 @@ export function fakePane(note: string | null = null, log: string[] = []) {
     openLinkAtCursor: vi.fn(),
     position: vi.fn(() => ({ anchor: 0, head: 0, top: 0, offset: 0 })),
     restore: vi.fn(),
+    revealEntry: vi.fn((number: number) => number !== 0),
   };
   const pane = {
     editor,

@@ -118,8 +118,8 @@ describe("cahiers de recherche", () => {
 
   it("copie la référence d'une entrée en texte brut et le dit", async () => {
     const s = setup();
-    await s.notebooks.copyReference("Levures · 0007");
-    expect(s.log).toEqual(["copier Levures · 0007"]);
+    await s.notebooks.copyReference("[[Levures#0007]]");
+    expect(s.log).toEqual(["copier [[Levures#0007]]"]);
     expect(s.shown).toEqual(["Référence copiée"]);
   });
 
