@@ -307,11 +307,13 @@ run_both() {
     || fail "contrôles en échec (${1#check_} : ${first_status}, ${2#check_} : ${second_status})"
 }
 
-# Une empreinte de tout le code qui serait commité (suivi ou nouveau, hors fichiers ignorés).
+# Une empreinte de tout le code qui serait commité (suivi ou nouveau, hors fichiers ignorés). data_fake/
+# (les essais de l'utilisateur dans l'application, jamais commités) n'y est pas : y écrire pendant la CI
+# ne l'invalide pas.
 tree_hash() {
   local index hash
   index=$(mktemp -u)
-  GIT_INDEX_FILE=$index git add -A -- . >/dev/null 2>&1
+  GIT_INDEX_FILE=$index git add -A -- . ':!data_fake' >/dev/null 2>&1
   hash=$(GIT_INDEX_FILE=$index git write-tree)
   rm -f "$index"
   printf '%s' "$hash"
@@ -333,7 +335,8 @@ run_in_snapshot() {
     mkdir -p "$SNAPSHOT_DIR/build/reports"
     cp build/reports/stryker-incremental.json "$SNAPSHOT_DIR/build/reports/"
   fi
-  (cd "$SNAPSHOT_DIR" && MUTATION_DIR="$MUTATION_DIR" CI_IN_SNAPSHOT=1 ./scripts/ci.sh "$@") || status=$?
+  # `env` : MUTATION_DIR est en lecture seule, bash refuse de l'affecter en préfixe d'une commande.
+  (cd "$SNAPSHOT_DIR" && env MUTATION_DIR="$MUTATION_DIR" CI_IN_SNAPSHOT=1 ./scripts/ci.sh "$@") || status=$?
   if [ "$status" -eq 0 ]; then
     if [ -f "$SNAPSHOT_DIR/build/reports/stryker-incremental.json" ]; then
       mkdir -p build/reports
@@ -402,10 +405,11 @@ run_barrier() {
   local changed rust=0 ui=0
   changed=$(changed_files)
   if printf '%s\n' "$changed" | grep -q '^scripts/'; then
-    step "Scripts de CI changés : scénarios de la barrière, du ménage et du rejeu des dépassements"
+    step "Scripts de CI changés : scénarios de la barrière, du ménage, du rejeu des dépassements et de la copie figée"
     scripts/test-ci-gate.sh
     scripts/test-ci-menage.sh
     scripts/test-ci-rejeu.sh
+    scripts/test-ci-copie.sh
     scripts/test-essai-application.sh
   fi
   if printf '%s\n' "$changed" | grep -q -E '^(scripts/|\.github/workflows/|Cargo\.toml$|ui/package\.json$)'; then
