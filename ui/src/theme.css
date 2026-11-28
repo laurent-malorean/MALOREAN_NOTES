@@ -64,6 +64,10 @@
   --entry-number-border: color-mix(in srgb, var(--muted) 70%, var(--bg));
   --entry-number-width: calc(2.5em + 2 * var(--space-3) + 2px);
   --entry-number-gap: 0.6rem;
+  /* Entrée montrée par un lien vers une entrée (fiche 0107) : son fond s'éclaircit de cette couleur
+     (une teinte de l'accent) jusqu'à disparaître, sur cette durée */
+  --entry-flash: color-mix(in srgb, var(--accent) 28%, transparent);
+  --entry-flash-duration: 2.4s;
 
   /* Déplacer un bloc de texte : le bloc glissé est voilé aux couleurs du fond (fiche 0106) */
   --block-dragged-veil: color-mix(in srgb, var(--bg) 65%, transparent);

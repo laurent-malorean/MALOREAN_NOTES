@@ -152,5 +152,5 @@ test("chaque entrée montre son numéro dans la marge ; un clic copie « Titre �
   await numbers.nth(1).focus();
   await page.keyboard.press("Enter");
   await expect(page.locator(".status")).toContainText("Référence copiée");
-  expect(await page.evaluate(() => window.backend.copiedMarkdown)).toEqual(["Levures · 0002"]);
+  expect(await page.evaluate(() => window.backend.copiedMarkdown)).toEqual(["[[Levures#0002]]"]);
 });

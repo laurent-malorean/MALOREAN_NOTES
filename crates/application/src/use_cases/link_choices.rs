@@ -40,6 +40,12 @@ impl<'a> LinkChoices<'a> {
             notes
                 .iter()
                 .map(|note| (note.path().clone(), note.title().to_owned())),
+        )
+        .with_notebooks(
+            notes
+                .iter()
+                .filter(|note| note.content_type() == ContentType::ResearchNotebook)
+                .map(|note| note.path().clone()),
         );
         Ok((links, notes))
     }
@@ -166,6 +172,41 @@ mod tests {
             [
                 Resolution::Found(path("a.md")),
                 Resolution::Ambiguous(vec![path("Vieux/c.md"), path("b.md")]),
+                Resolution::Missing,
+            ]
+        );
+    }
+
+    #[test]
+    fn a_number_after_a_hash_resolves_to_an_entry_of_a_notebook_only() {
+        let store = InMemoryNoteStore::with_notes(&[
+            (
+                "Labo/levures.md",
+                "---\ntype: cahier-de-recherche\n---\n# Levures\n",
+            ),
+            ("courses.md", "# Courses"),
+        ]);
+        let targets = [
+            "levures#0007",
+            "Levures#0000",
+            "Courses#0007",
+            "Levures#abc",
+        ]
+        .map(str::to_owned);
+        assert_eq!(
+            LinkChoices::new(&indexed(&store))
+                .resolve(&targets)
+                .unwrap(),
+            [
+                Resolution::Entry {
+                    notebook: path("Labo/levures.md"),
+                    number: 7
+                },
+                Resolution::Entry {
+                    notebook: path("Labo/levures.md"),
+                    number: 0
+                },
+                Resolution::Missing,
                 Resolution::Missing,
             ]
         );

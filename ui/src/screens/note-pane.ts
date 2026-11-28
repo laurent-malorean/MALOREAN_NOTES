@@ -50,7 +50,7 @@ export interface NotebookActions {
   add(path: string, text: string): Promise<boolean>;
   /** Ses entrées, pour montrer celle que vise un lien `#ancre`. */
   entries(path: string): Promise<EntryItem[]>;
-  /** Copier la référence d'une entrée (`Levures · 0007`) : le clic sur son numéro d'entrée. */
+  /** Copier la référence d'une entrée (`[[Levures#0007]]`) : le clic sur son numéro d'entrée. */
   copyReference(reference: string): Promise<void>;
 }
 

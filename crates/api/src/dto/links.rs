@@ -47,6 +47,15 @@ pub enum LinkResolutionItem {
         /// Le chemin du contenu.
         path: String,
     },
+    /// Le lien vise une entrée d'un cahier de recherche (`[[Cahier#0007]]`) : le chemin du cahier
+    /// et le numéro d'entrée écrit (à partir de 1 ; `0` ou au-delà de la dernière entrée,
+    /// l'entrée n'existe pas : à l'interface de le dire).
+    Entry {
+        /// Le chemin du cahier de recherche.
+        path: String,
+        /// Le numéro d'entrée.
+        number: usize,
+    },
     /// Plusieurs contenus portent ce nom : leurs chemins.
     Ambiguous {
         /// Les chemins des contenus.
@@ -61,6 +70,10 @@ impl From<Resolution> for LinkResolutionItem {
         match resolution {
             Resolution::Found(path) => Self::Found {
                 path: path.to_path(),
+            },
+            Resolution::Entry { notebook, number } => Self::Entry {
+                path: notebook.to_path(),
+                number,
             },
             Resolution::Ambiguous(paths) => Self::Ambiguous {
                 paths: paths.iter().map(domain::NotePath::to_path).collect(),

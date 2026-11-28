@@ -58,7 +58,9 @@ function setup(
             ? { kind: "found", path: "a.md" }
             : title === "Double"
               ? { kind: "ambiguous", paths: ["a.md", "Vieux/a.md"] }
-              : { kind: "missing" },
+              : title.startsWith("Levures#")
+                ? { kind: "entry", path: "levures.md", number: Number(title.slice(8)) }
+                : { kind: "missing" },
         ]
       ),
       moveNote: async (path, into) => (
@@ -263,6 +265,42 @@ describe("espace de travail ouvert", () => {
     await t.workspace.followLink("Inconnu", false);
     expect(t.messages).toEqual(["[info] Aucune note ne porte le titre « Inconnu »."]);
     expect(t.columns.log).toEqual(["suivre a.md", "ouvrir a.md"]);
+  });
+
+  it("un lien vers une entrée ouvre le cahier, comme un lien, et défile jusqu'à l'entrée", async () => {
+    const t = setup();
+    const pane = fakePane("b.md", []);
+    t.columns.panes.set(t.columns.columns().active, pane);
+    await t.workspace.followLink("Levures#0007", false);
+    expect(t.columns.log).toEqual(["suivre levures.md"]);
+    expect(pane.editor.revealEntry).toHaveBeenCalledExactlyOnceWith(7);
+    expect(t.messages).toEqual([]);
+    await t.workspace.followLink("Levures#0002", true);
+    expect(t.columns.log).toEqual(["suivre levures.md", "ouvrir levures.md"]);
+    expect(pane.editor.revealEntry).toHaveBeenLastCalledWith(2);
+    expect(t.messages).toEqual([]);
+  });
+
+  it("un numéro d'entrée qui n'existe pas ouvre le cahier sans défiler et le dit", async () => {
+    const t = setup();
+    const pane = fakePane("b.md", []);
+    t.columns.panes.set(t.columns.columns().active, pane);
+    await t.workspace.followLink("Levures#0000", false);
+    expect(t.columns.log).toEqual(["suivre levures.md"]);
+    expect(t.messages).toEqual(["[info] Entrée 0000 introuvable dans ce cahier"]);
+  });
+
+  it("le message d'une entrée introuvable écrit son numéro sur 4 chiffres, entier au-delà de 9999", async () => {
+    const t = setup();
+    const pane = fakePane("b.md", []);
+    pane.editor.revealEntry.mockReturnValue(false);
+    t.columns.panes.set(t.columns.columns().active, pane);
+    await t.workspace.followLink("Levures#7", false);
+    await t.workspace.followLink("Levures#12345", false);
+    expect(t.messages).toEqual([
+      "[info] Entrée 0007 introuvable dans ce cahier",
+      "[info] Entrée 12345 introuvable dans ce cahier",
+    ]);
   });
 
   it("n'ouvre aucun contenu pour un lien ambigu : il dit comment préciser le dossier", async () => {

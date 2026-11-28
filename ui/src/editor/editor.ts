@@ -36,7 +36,12 @@ import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/ty
 import { listContinuation } from "./writing/lists";
 import { firstTitle } from "./writing/first-title";
 import { agendaEventProperties } from "./agenda-event-properties";
-import { type AddEntry, type CopyReference, researchNotebook } from "./research-notebook";
+import {
+  type AddEntry,
+  type CopyReference,
+  researchNotebook,
+  revealEntryIn,
+} from "./research-notebook";
 import { keptPosition } from "../state/external-change";
 import { firstMatch } from "../state/search-match";
 import type { NotePosition } from "../state/trail";
@@ -97,6 +102,8 @@ export interface Editor {
   restore(position: NotePosition): void;
   /** Va au premier passage où paraît un mot de la recherche : sélectionné et montré ; faux s'il n'y est pas. */
   reveal(query: string): boolean;
+  /** Montre l'entrée d'un cahier de recherche de ce numéro d'entrée (à partir de 1) : en haut, mise en évidence un instant ; faux, sans rien changer, si elle n'existe pas. */
+  revealEntry(number: number): boolean;
   /** Dessine le plan de la note dans `container` ; `null` arrête de le dessiner. */
   setOutline(container: HTMLElement | null): void;
   /** Retire l'éditeur de l'écran, quand sa colonne disparaît. */
@@ -274,11 +281,14 @@ function restoreIn(view: EditorView, position: NotePosition) {
 }
 
 /** La position dans la note : la prendre, et y revenir. */
-function positionParts(view: EditorView): Pick<Editor, "position" | "restore" | "reveal"> {
+function positionParts(
+  view: EditorView,
+): Pick<Editor, "position" | "restore" | "reveal" | "revealEntry"> {
   return {
     position: () => positionIn(view),
     restore: (position) => restoreIn(view, position),
     reveal: (query) => revealIn(view, query),
+    revealEntry: (number) => revealEntryIn(view, number),
   };
 }
 
@@ -297,6 +307,15 @@ function revealIn(view: EditorView, query: string): boolean {
 function linkChooser({ links }: EditorOptions): ((view: EditorView) => void) | undefined {
   const choose = links?.choose;
   return choose && ((view) => choose(linkSiteOf(view)));
+}
+
+/** Signale à `onChange` ce qui est tapé ici ; une transaction venue d'ailleurs (autre colonne, disque) ne l'est pas. */
+function typingListener(onChange: (content: string, changes: ChangeSet) => void): Extension {
+  return EditorView.updateListener.of((update) => {
+    // Stryker disable next-line MethodExpression: l'éditeur applique ses transactions une à une ; « une » ou « toutes » revient au même.
+    const typed = update.transactions.some((t) => t.docChanged && !t.annotation(fromElsewhere));
+    if (typed) onChange(update.state.doc.toString(), update.changes);
+  });
 }
 
 export function createEditor(
@@ -335,11 +354,7 @@ export function createEditor(
     EditorView.lineWrapping,
     EditorView.contentAttributes.of({ spellcheck: "true", lang: "fr" }),
     placeholder("# Titre de la note"),
-    EditorView.updateListener.of((update) => {
-      // Stryker disable next-line MethodExpression: l'éditeur applique ses transactions une à une ; « une » ou « toutes » revient au même.
-      const typed = update.transactions.some((t) => t.docChanged && !t.annotation(fromElsewhere));
-      if (typed) onChange(update.state.doc.toString(), update.changes);
-    }),
+    typingListener(onChange),
   ];
   const view = new EditorView({ parent, state: EditorState.create({ extensions: extensions() }) });
   return {

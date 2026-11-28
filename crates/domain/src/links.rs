@@ -6,6 +6,8 @@
 //! - `[[Dossier/titre]]` précise le dossier quand plusieurs contenus portent le même nom.
 //! - Un nom porté par plusieurs contenus, sans dossier pour les départager, est un lien ambigu :
 //!   il n'ouvre aucun des contenus au hasard ([`Resolution::Ambiguous`]).
+//! - `[[Cahier#0007]]` désigne l'entrée numéro 7 d'un cahier de recherche, comme un lien HTML avec
+//!   une ancre ([`Resolution::Entry`]) ; le texte entier est d'abord pris pour un titre.
 
 use crate::NotePath;
 use unicode_normalization::UnicodeNormalization;
@@ -19,6 +21,8 @@ const SHOWN_TEXT: char = '|';
 const FOLDER_SEPARATOR: char = '/';
 /// L'extension qui fait d'un nom celui d'un canvas : `[[nom.canvas]]`.
 const CANVAS_EXTENSION: &str = ".canvas";
+/// Sépare le cahier du numéro de son entrée : `[[Cahier#0007]]`.
+const ENTRY_MARK: char = '#';
 
 /// Les cibles des liens du texte (le titre, le nom de canvas ou le chemin écrit entre les
 /// crochets), dans l'ordre où elles apparaissent.
@@ -53,11 +57,32 @@ pub fn same_title(a: &str, b: &str) -> bool {
 pub enum Resolution {
     /// Un seul contenu porte ce nom : le lien l'ouvre.
     Found(NotePath),
+    /// Le lien vise l'entrée `number` (à partir de 1) d'un cahier de recherche : `[[Cahier#0007]]`.
+    /// Le domaine ne compte pas les entrées : un numéro `0` ou au-delà de la dernière entrée est
+    /// donné tel quel, c'est à l'écran de dire que l'entrée est introuvable.
+    Entry {
+        /// Le cahier de recherche.
+        notebook: NotePath,
+        /// Le numéro d'entrée écrit.
+        number: usize,
+    },
     /// Plusieurs contenus portent ce nom : le lien n'en ouvre aucun ; ils sont donnés dans
     /// l'ordre reçu, pour que l'utilisateur précise le dossier.
     Ambiguous(Vec<NotePath>),
     /// Aucun contenu ne porte ce nom.
     Missing,
+}
+
+impl Resolution {
+    /// Le contenu que le lien désigne pour les liens entrants : celui trouvé, ou le cahier d'une
+    /// entrée. Un lien ambigu ou sans contenu n'en désigne aucun.
+    #[must_use]
+    pub fn designated(&self) -> Option<&NotePath> {
+        match self {
+            Self::Found(path) | Self::Entry { notebook: path, .. } => Some(path),
+            Self::Ambiguous(_) | Self::Missing => None,
+        }
+    }
 }
 
 /// Un contenu qu'un lien peut désigner, tel que le nom, le dossier et le type le rendent.
@@ -71,6 +96,8 @@ struct Linkable {
     /// Les dossiers du chemin, de la même façon.
     folder: Vec<String>,
     canvas: bool,
+    /// Vrai pour un cahier de recherche : seul lui a des entrées.
+    notebook: bool,
 }
 
 /// Une cible de lien lue : son dossier s'il est écrit, son nom, et si c'est un canvas.
@@ -154,15 +181,59 @@ impl LinkIndex {
                     name,
                     folder,
                     canvas,
+                    notebook: false,
                 }
             })
             .collect();
         Self { entries }
     }
 
+    /// Les contenus donnés sont des cahiers de recherche : un lien peut viser leurs entrées. Les
+    /// chemins inconnus de l'index sont ignorés.
+    #[must_use]
+    pub fn with_notebooks(mut self, notebooks: impl IntoIterator<Item = NotePath>) -> Self {
+        for notebook in notebooks {
+            for entry in self
+                .entries
+                .iter_mut()
+                .filter(|entry| entry.path == notebook)
+            {
+                entry.notebook = true;
+            }
+        }
+        self
+    }
+
     /// Ce que désigne la cible `target` d'un lien : le contenu, plusieurs contenus, ou aucun.
     #[must_use]
     pub fn resolve(&self, target: &str) -> Resolution {
+        let named = self.resolve_name(target);
+        if named != Resolution::Missing {
+            return named;
+        }
+        // Le texte entier n'est le titre de personne : `#` et des chiffres désignent peut-être
+        // une entrée d'un cahier.
+        let Some((notebook, number)) = entry_number_in(target) else {
+            return Resolution::Missing;
+        };
+        match self.resolve_name(notebook) {
+            Resolution::Found(path) if self.is_notebook(&path) => Resolution::Entry {
+                notebook: path,
+                number,
+            },
+            ambiguous @ Resolution::Ambiguous(_) => ambiguous,
+            _ => Resolution::Missing,
+        }
+    }
+
+    fn is_notebook(&self, path: &NotePath) -> bool {
+        self.entries
+            .iter()
+            .any(|entry| entry.notebook && entry.path == *path)
+    }
+
+    /// Ce que désigne la cible lue comme un nom, `#` compris : un seul contenu, plusieurs, ou aucun.
+    fn resolve_name(&self, target: &str) -> Resolution {
         let target = Target::parse(target);
         let mut found = self.matching(&target.name, target.folder.as_deref(), target.canvas);
         // Un titre qui contient un `/` n'est pas un dossier : le texte entier est alors le titre.
@@ -208,6 +279,16 @@ impl LinkIndex {
     }
 }
 
+/// Le cahier et le numéro d'entrée d'une cible qui se termine par `#` et des chiffres seuls
+/// (`Cahier#0007`) ; rien si `#` n'est pas suivi de chiffres seuls, ou d'un nombre trop grand.
+fn entry_number_in(target: &str) -> Option<(&str, usize)> {
+    let (notebook, digits) = target.trim().rsplit_once(ENTRY_MARK)?;
+    if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    Some((notebook, digits.parse().ok()?))
+}
+
 fn folded(title: &str) -> Vec<String> {
     title
         .split_whitespace()
@@ -220,6 +301,10 @@ fn folded(title: &str) -> Vec<String> {
         })
         .collect()
 }
+
+#[cfg(test)]
+#[path = "links_entry_tests.rs"]
+mod entry_tests;
 
 #[cfg(test)]
 mod tests {

@@ -8,6 +8,7 @@ import { declaredType } from "../state/declared-type";
 import { movedPath } from "../state/folders";
 import type { PreferenceStorage } from "../state/focus-preference";
 import { loadNoteOrder, type NoteOrder, saveNoteOrder } from "../state/note-order";
+import { formatEntryNumber } from "../state/research-notebook";
 import {
   currentFolder,
   activeTag,
@@ -161,10 +162,17 @@ async function followLink(deps: WorkspaceDeps, title: string, inNewTab: boolean)
       `Plusieurs contenus portent le nom « ${title} » : écrivez le dossier devant, [[Dossier/${title}]].`,
       "info",
     );
-  if (resolution?.kind !== "found")
+  if (resolution?.kind !== "found" && resolution?.kind !== "entry")
     return deps.show(`Aucune note ne porte le titre « ${title} ».`, "info");
   const { path } = resolution;
   await (inNewTab ? deps.columns.openNote(path) : deps.columns.followNote(path));
+  if (resolution.kind === "entry") showEntry(deps, resolution.number);
+}
+
+/** Le cahier du lien vers une entrée est montré : défile jusqu'à l'entrée, sinon dit qu'elle n'existe pas. */
+function showEntry(deps: WorkspaceDeps, number: number) {
+  if (!deps.columns.activePane().editor.revealEntry(number))
+    deps.show(`Entrée ${formatEntryNumber(number)} introuvable dans ce cahier`, "info");
 }
 
 async function moveNote(deps: WorkspaceDeps, path: string, into: string) {

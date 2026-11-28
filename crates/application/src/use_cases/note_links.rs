@@ -1,7 +1,7 @@
 //! Les liens entrants d'un contenu : les notes qui pointent vers lui par un `[[lien]]`.
 
 use domain::crm::action_links;
-use domain::links::{LinkIndex, Resolution, linked_targets};
+use domain::links::{LinkIndex, linked_targets};
 use domain::title::displayed_title_of_note;
 use domain::{ContentType, Folder, Modified, NotePath, NoteSummary};
 
@@ -26,7 +26,7 @@ pub struct LinkingNote {
 /// n'en a que par ses notes liées, sa description et ses commentaires (spécification du CRM,
 /// § 12), les autres notes par tout leur texte. Un lien ambigu ne désigne aucun contenu.
 fn links_to(content: &str, path: &NotePath, links: &LinkIndex) -> bool {
-    let designates = |target: &str| links.resolve(target) == Resolution::Found(path.clone());
+    let designates = |target: &str| links.resolve(target).designated() == Some(path);
     match action_links(content) {
         Some(targets) => targets.iter().any(|target| designates(target)),
         None => linked_targets(content).into_iter().any(designates),
@@ -72,7 +72,16 @@ impl<'a> NoteLinks<'a> {
         let links = LinkIndex::new(notes.iter().map(|note| {
             let title = displayed_title_of_note(&note.content, note.path.name());
             (note.path.clone(), title)
-        }));
+        }))
+        .with_notebooks(
+            notes
+                .iter()
+                .filter(|note| {
+                    NoteSummary::new(note.path.clone(), &note.content, note.modified).content_type()
+                        == ContentType::ResearchNotebook
+                })
+                .map(|note| note.path.clone()),
+        );
         Ok(notes
             .into_iter()
             .filter(|note| note.path != *path && links_to(&note.content, path, &links))
@@ -231,5 +240,25 @@ mod tests {
         ]);
         assert_eq!(backlinks(&store, "Plan du projet.canvas"), ["a.md | Lundi"]);
         assert_eq!(backlinks(&store, "plan.md"), ["a.md | Lundi"]);
+    }
+
+    #[test]
+    fn a_link_to_an_entry_counts_as_a_link_to_the_notebook() {
+        let store = InMemoryNoteStore::with_notes(&[
+            (
+                "Labo/levures.md",
+                "---\ntype: cahier-de-recherche\n---\n# Levures\n",
+            ),
+            ("a.md", "# Lundi\nvoir [[Levures#0007]]"),
+            ("b.md", "# Mardi\nvoir [[Levures#0000|zéro]]"),
+            ("c.md", "# Mercredi\nvoir [[Levures#abc]]"),
+            ("courses.md", "# Courses"),
+            ("d.md", "# Jeudi\nvoir [[Courses#0007]]"),
+        ]);
+        assert_eq!(
+            backlinks(&store, "Labo/levures.md"),
+            ["b.md | Mardi", "a.md | Lundi"]
+        );
+        assert!(backlinks(&store, "courses.md").is_empty());
     }
 }

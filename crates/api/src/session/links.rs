@@ -124,6 +124,34 @@ mod tests {
     }
 
     #[test]
+    fn a_number_after_a_hash_leads_to_an_entry_of_a_notebook() {
+        let session = opened(&[
+            (
+                "Labo/levures.md",
+                "---\ntype: cahier-de-recherche\n---\n# Levures\n",
+            ),
+            ("a.md", "# Courses"),
+        ]);
+        let resolved = session
+            .resolve_links(&targets(&["Levures#0007", "Courses#0007", "Levures#0000"]))
+            .unwrap();
+        assert_eq!(
+            resolved,
+            [
+                LinkResolutionItem::Entry {
+                    path: "Labo/levures.md".into(),
+                    number: 7
+                },
+                LinkResolutionItem::Missing,
+                LinkResolutionItem::Entry {
+                    path: "Labo/levures.md".into(),
+                    number: 0
+                },
+            ]
+        );
+    }
+
+    #[test]
     fn everything_a_link_can_designate_comes_with_the_link_to_write() {
         let session = opened(&[
             ("Cuisine/crepes.md", "# Crêpes"),
