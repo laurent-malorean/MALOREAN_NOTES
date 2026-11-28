@@ -14,6 +14,7 @@ import {
   type MenuCommandId,
   shortcutOf,
 } from "../state/commands";
+import { landing } from "../state/shortcut-landing";
 import { NOTE_ORDERS, type NoteOrder } from "../state/note-order";
 import { matching, matchingNotes } from "../state/quick-open";
 import { noteOrder } from "../state/screen";
@@ -256,6 +257,8 @@ export function connectCommands(deps: CommandsDeps): Readonly<Record<MenuCommand
     // Prise sans rien faire : passée à la barre des menus, elle mettrait la note en forme.
     if (shortcut && editing.has(shortcut) && typingElsewhere(event.target))
       return event.preventDefault();
+    // Une bascule (saisie vocale) ne bascule qu'une fois par pression : la touche est prise sans rien faire de plus si cette pression a déjà compté (la barre des menus, la répétition d'une touche maintenue).
+    if (shortcut && !landing.accepts(shortcut, event.repeat)) return event.preventDefault();
     if (shortcut && runShortcut(deps, actions, shortcut)) event.preventDefault();
   });
   return actions;

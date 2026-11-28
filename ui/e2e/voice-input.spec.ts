@@ -145,6 +145,7 @@ test("Ctrl+Maj+D démarre et arrête l'écoute ; Cmd+Maj+D reste la date du jour
   await page.keyboard.press("Control+Shift+D");
   await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".cm-content")).toBeFocused();
+  await page.waitForTimeout(150);
   await page.keyboard.press("Control+Shift+D");
   await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
   expect((await voice(page)).starts).toBe(1);
@@ -331,6 +332,8 @@ test("Réglages : choisir le raccourci de la saisie vocale ; la bulle, le clavie
   expect((await voice(page)).starts).toBe(0);
   await page.keyboard.press("Control+Shift+E");
   await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
+  // Une bascule ne bascule qu'une fois par pression : un doigt ne presse pas deux fois en moins de 100 ms.
+  await page.waitForTimeout(150);
   await page.keyboard.press("Control+Shift+E");
   await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
 
@@ -526,7 +529,48 @@ test("Réglages : F5 seule est permise et lance l'écoute ; une touche qui tape 
   await cursorAtEnd(page);
   await page.keyboard.press("F5");
   await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
+  await page.waitForTimeout(150);
   await page.keyboard.press("F5");
   await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
   expect(await voice(page)).toMatchObject({ starts: 1, stops: 1 });
+});
+
+test("un raccourci avec Option (Ctrl+Option+E) bascule deux fois de suite ; puis le raccourci par défaut de même (28/11)", async ({
+  page,
+}) => {
+  await launch(page);
+  const panel = await openVoiceSettings(page);
+  await panel.locator(".shortcut-key").click();
+  await page.keyboard.press("Control+Alt+E");
+  await expect(panel.getByRole("button", { name: "Raccourci : ⌃⌥E" })).toBeVisible();
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBe("Ctrl+Alt+E");
+  await page.keyboard.press("Escape");
+  await expect(settings(page)).toBeHidden();
+  await expect(mic(page)).toHaveAttribute("title", "Saisie vocale (Ctrl+Alt+E)");
+
+  await cursorAtEnd(page);
+  const toggle = async (chord: string, listening: boolean) => {
+    await page.waitForTimeout(150);
+    await page.keyboard.press(chord);
+    await expect(mic(page)).toHaveAttribute("aria-pressed", String(listening));
+    if (listening) await say(page, { kind: "listening" });
+    else await say(page, { kind: "ended" });
+  };
+  await toggle("Control+Alt+E", true);
+  await expect(page.locator(".cm-content")).toBeFocused();
+  await toggle("Control+Alt+E", false);
+  await toggle("Control+Alt+E", true);
+  await toggle("Control+Alt+E", false);
+  expect(await voice(page)).toMatchObject({ starts: 2, stops: 2 });
+  // Le texte de la note n'a reçu aucun caractère composé (Option+E tape « ´ »).
+  await expect(lastLine(page)).toHaveText("Un beau départ.");
+
+  const again = await openVoiceSettings(page);
+  await again.getByRole("button", { name: "Rétablir le raccourci par défaut" }).click();
+  await page.keyboard.press("Escape");
+  await toggle("Control+Shift+D", true);
+  await toggle("Control+Shift+D", false);
+  await toggle("Control+Shift+D", true);
+  await toggle("Control+Shift+D", false);
+  expect(await voice(page)).toMatchObject({ starts: 4, stops: 4 });
 });

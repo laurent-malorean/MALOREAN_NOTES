@@ -5,6 +5,7 @@ import type * as Bridge from "../bridge";
 import { ASSISTANT_COMMANDS, menuBar, menuCommand, NOTE_COMMANDS } from "../state/app-menu";
 import { activeNote, type Columns } from "../state/columns";
 import { type MenuCommandId, onShortcutChosen } from "../state/commands";
+import { landing } from "../state/shortcut-landing";
 import { dialogOpen } from "./commands";
 import type { WritingAssistance } from "./writing-assistant";
 
@@ -51,7 +52,8 @@ export function connectAppMenu(deps: AppMenuDeps): AppMenuConnection {
     .onMenuCommand((id) => {
       const command = menuCommand(id);
       // Comme les raccourcis : une fenêtre ouverte (réglages, choix) garde la main.
-      if (command !== null && !dialogOpen()) actions[command]();
+      // Une pression livrée aussi par la fenêtre ne compte qu'une fois (`state/shortcut-landing.ts`).
+      if (command !== null && !dialogOpen() && landing.accepts(command)) actions[command]();
     })
     .catch(error);
   return {

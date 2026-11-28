@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { chooseShortcut } from "../state/commands";
-import { keyOf, shortcutFor } from "./shortcuts";
+import { type KeyPress, keyOf, shortcutFor } from "./shortcuts";
 
 const key = (
   key: string,
@@ -148,6 +148,13 @@ describe("raccourcis clavier", () => {
   });
 });
 
+const optioned = (key: string, code: string, mods: Partial<KeyPress> = {}) =>
+  shortcutFor({
+    ...{ key, code, metaKey: false, ctrlKey: false, shiftKey: false },
+    altKey: true,
+    ...mods,
+  });
+
 describe("raccourci choisi pour la saisie vocale", () => {
   afterEach(() => chooseShortcut("voice-input", null));
 
@@ -184,14 +191,39 @@ describe("raccourci choisi pour la saisie vocale", () => {
     expect(key("F6")).toBeNull();
   });
 
-  it("une touche de fonction avec Option n'est pas lue ici : la barre des menus la prend, la fenêtre ne la lance pas deux fois", () => {
+  it("une touche de fonction avec Option ne lance pas le raccourci F5 : celui d'Option+F5 est un autre", () => {
     chooseShortcut("voice-input", "F5");
-    expect(
-      shortcutFor({
-        ...{ key: "F5", code: "F5", altKey: true },
-        ...{ metaKey: false, ctrlKey: false, shiftKey: false },
-      }),
-    ).toBeNull();
+    expect(optioned("F5", "F5")).toBeNull();
+    chooseShortcut("voice-input", "Alt+F5");
+    expect(optioned("F5", "F5")).toBe("voice-input");
+    expect(key("F5")).toBeNull();
+  });
+
+  it("une combinaison avec Option est lue à sa touche physique : Option+E tape « ´ », Option+D tape « ∂ »", () => {
+    chooseShortcut("voice-input", "Ctrl+Alt+E");
+    expect(optioned("´", "KeyE", { ctrlKey: true })).toBe("voice-input");
+    expect(optioned("e", "KeyE", { ctrlKey: true })).toBe("voice-input");
+    expect(optioned("´", "KeyE", {})).toBeNull();
+    expect(optioned("´", "KeyE", { ctrlKey: true, shiftKey: true })).toBeNull();
+    expect(optioned("∂", "KeyD", { ctrlKey: true })).toBeNull();
+    // Sans Option, la combinaison n'est pas celle-là.
+    expect(key("e", { ctrlKey: true })).toBeNull();
+  });
+
+  it("une combinaison Option avec Cmd, Maj ou un chiffre se lit de même", () => {
+    chooseShortcut("voice-input", "Alt+Cmd+Maj+K");
+    expect(optioned("˚", "KeyK", { metaKey: true, shiftKey: true })).toBe("voice-input");
+    chooseShortcut("voice-input", "Ctrl+Alt+7");
+    expect(optioned("‡", "Digit7", { ctrlKey: true })).toBe("voice-input");
+  });
+
+  it("Option+Cmd+F, « Rechercher et remplacer », est lu par la fenêtre aussi (sa touche physique)", () => {
+    expect(optioned("ƒ", "KeyF", { metaKey: true })).toBe("find-and-replace");
+  });
+
+  it("une touche avec Option qui n'est celle d'aucune commande ne lance rien", () => {
+    expect(optioned("å", "KeyA", { metaKey: true })).toBeNull();
+    expect(optioned("Tab", "Tab", { ctrlKey: true })).toBeNull();
   });
 
   it("une touche de modificateur seule n'entre pas dans la table : elle se déclenche au tapotement, pas à l'appui", () => {
