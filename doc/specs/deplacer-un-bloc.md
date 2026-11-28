@@ -1,6 +1,6 @@
 # Déplacer un bloc de texte
 
-Spécification fonctionnelle rédigée le 27/11, **à valider par l'utilisateur** : ne pas coder avant sa validation. Ce document se lit seul. Les points marqués **(à valider)** sont des propositions.
+Spécification fonctionnelle rédigée le 27/11, **validée par l'utilisateur le 28/11** (demande de développement). Ce document se lit seul.
 
 ## 1. Idée
 
