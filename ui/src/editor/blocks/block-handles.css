@@ -1,0 +1,70 @@
+/* Les boutons d'un bloc de texte (fiche 0106) : « + » et la poignée ⋮⋮, dans la marge à gauche du texte, au
+   survol du bloc. Posés en position absolue dans la zone défilante, à gauche du texte : ils ne décalent rien.
+   Mêmes couleurs et même survol que les boutons-icônes (`.icon`). */
+.editor .cm-block-tools {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  transform: translateX(-100%);
+}
+.editor .cm-block-tools[hidden] {
+  display: none;
+}
+.editor .cm-block-tools button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--block-button-width);
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--control-radius);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.editor .cm-block-tools button:hover,
+.editor .cm-block-tools-active .cm-block-handle {
+  background: var(--selected);
+  color: var(--text);
+}
+.editor .cm-block-tools .cm-block-handle {
+  cursor: grab;
+}
+.editor .cm-block-tools svg {
+  display: block;
+  width: var(--block-button-icon-size);
+  height: var(--block-button-icon-size);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.editor .cm-block-tools .cm-block-handle svg {
+  stroke-width: 3;
+}
+/* Pendant le glissement : le bloc est grisé à sa place, le repère de dépôt de la couleur d'accent suit le pointeur. */
+.editor .cm-editor.cm-block-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+.editor .cm-block-dragged {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  background: var(--block-dragged-veil);
+}
+.editor .cm-block-drop-mark {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  height: var(--block-drop-mark-thickness);
+  transform: translateY(-50%);
+  border-radius: var(--block-drop-mark-thickness);
+  background: var(--accent);
+}
+.editor .cm-block-drop-mark[hidden] {
+  display: none;
+}

@@ -13,6 +13,7 @@ import {
 } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { type AttachmentActions, attachments, linkTargetAt } from "./attachments";
+import { blockHandles } from "./blocks/block-handles";
 import { focusMode } from "./focus/focus-mode";
 import type { FocusUnit } from "./focus/focus-range";
 import { liveFormatting } from "./live-formatting";
@@ -319,6 +320,7 @@ export function createEditor(
     formattingShortcuts(linkChooser(options)),
     todayShortcut(today),
     voice.extension,
+    blockHandles({ blocked: voice.listening }),
     page.extension(),
     statusBar,
     outlineArea.extension(),
