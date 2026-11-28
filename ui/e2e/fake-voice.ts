@@ -94,22 +94,37 @@ function status(voice: FakeVoiceState): VoiceInputStatusItem {
 }
 
 const DEFAULT_SHORTCUT = "Ctrl+Maj+D";
-const NEEDS_CONTROL_OR_COMMAND =
-  "Un raccourci demande la touche Ctrl ou Cmd (avec Option ou Maj si vous voulez) : Maj et Option seules servent à taper.";
+const TYPES_TEXT =
+  "Cette touche tape du texte : ajoutez Ctrl ou Cmd (avec Option ou Maj si vous voulez). Seules une touche de modificateur (Cmd, Option, Ctrl, Maj) et F1 à F12 servent seules.";
+const UNKNOWN_KEY =
+  "Cette touche ne peut pas servir de raccourci : choisissez une touche de modificateur seule, F1 à F12, ou Ctrl ou Cmd avec une lettre, un chiffre ou F1 à F12.";
+const FN_KEY =
+  "La touche Fn ne peut pas servir de raccourci : l'application ne la voit pas. Choisissez une autre touche.";
 
 function settings(voice: FakeVoiceState): VoiceSettingsItem {
   const shortcut = voice.shortcut ?? DEFAULT_SHORTCUT;
   return { shortcut, defaultShortcut: voice.shortcut === null, beeps: voice.beeps };
 }
 
-/** Le raccourci et les bips, gardés comme le fait le moteur : Ctrl ou Cmd est demandé, le raccourci de départ se garde comme « rien ». */
+/** Pourquoi le moteur refuse ce raccourci (mêmes règles que le domaine, version courte) ; rien s'il est valable. */
+function refusal(written: string): string | null {
+  if (/^(Ctrl|Alt|Cmd|Maj) (gauche|droite)$/.test(written)) return null;
+  const parts = written.split("+");
+  const key = parts.pop() ?? "";
+  if (key === "Fn" || parts.includes("Fn")) return FN_KEY;
+  if (/^F([1-9]|1[0-2])$/.test(key)) return null;
+  if (!/^[A-Z0-9]$/.test(key)) return UNKNOWN_KEY;
+  return parts.includes("Ctrl") || parts.includes("Cmd") ? null : TYPES_TEXT;
+}
+
+/** Le raccourci et les bips, gardés comme le fait le moteur : une touche seule, F1 à F12 ou Ctrl ou Cmd avec une touche ; le raccourci de départ se garde comme « rien ». */
 function fakeVoiceSettings(voice: FakeVoiceState): Record<string, Handler> {
   return {
     voice_input_settings: () => settings(voice),
     choose_voice_shortcut: ({ shortcut }) => {
       const written = (shortcut as string | null) ?? null;
-      if (written !== null && !/(^|\+)(Ctrl|Cmd)(\+|$)/.test(written))
-        throw { message: NEEDS_CONTROL_OR_COMMAND };
+      const refused = written === null ? null : refusal(written);
+      if (refused !== null) throw { message: refused };
       voice.shortcut = written === DEFAULT_SHORTCUT ? null : written;
       return settings(voice);
     },

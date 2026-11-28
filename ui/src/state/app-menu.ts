@@ -3,6 +3,7 @@
 // commandes, la même que la palette et les raccourcis.
 import type { AppMenu, MenuEntryItem, StandardItem } from "../bridge";
 import { MENU_COMMANDS, type MenuCommandId, shortcutOf } from "./commands";
+import { isTapShortcut } from "./tap-shortcut";
 
 /** Un élément de menu : une commande (nom de la palette sauf `label`), un élément standard, un trait. */
 export type MenuItemDef =
@@ -208,7 +209,8 @@ function entry(item: MenuItemDef, noteShown: boolean): MenuEntryItem {
     kind: "command",
     id: command.id,
     label: item.label ?? command.label,
-    accelerator: shortcut === undefined ? null : accelerator(shortcut),
+    // Une touche de modificateur seule n'est pas un raccourci de menu : la fenêtre la lit au tapotement.
+    accelerator: shortcut === undefined || isTapShortcut(shortcut) ? null : accelerator(shortcut),
     enabled: (noteShown || !NOTE_COMMANDS.has(command.id)) && !ASSISTANT_COMMANDS.has(command.id),
   };
 }

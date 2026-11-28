@@ -9,6 +9,7 @@ import {
 import { createLayout } from "../screens/layout";
 import { activeNote, columnsStarted, noteOpened } from "../state/columns";
 import { chooseShortcut, COMMANDS } from "../state/commands";
+import { SHORTCUT_ONCE_MS } from "../state/shortcut-landing";
 import { welcome } from "../state/screen";
 import { commandActions, connectCommands, type CommandsDeps } from "./commands";
 
@@ -502,7 +503,9 @@ describe("raccourcis clavier", () => {
     expect(columns.open.activePane().editor.insertToday).toHaveBeenCalled();
   });
 
-  it("le raccourci choisi pour la saisie vocale la lance, l'ancien non, et la palette le montre", () => {
+  it("le raccourci choisi pour la saisie vocale la lance, l'ancien non, et la palette le montre", async () => {
+    // Une bascule ne bascule qu'une fois par pression : la pression du test précédent doit être loin.
+    await new Promise((resolve) => setTimeout(resolve, SHORTCUT_ONCE_MS + 20));
     chooseShortcut("voice-input", "Ctrl+Maj+E");
     try {
       expect(press("E", { ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(true);

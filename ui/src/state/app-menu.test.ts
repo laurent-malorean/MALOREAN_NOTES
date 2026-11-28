@@ -329,4 +329,22 @@ describe("raccourci choisi dans la barre des menus", () => {
     }
     expect(voice()).toMatchObject({ accelerator: "Ctrl+Shift+D" });
   });
+
+  it("donne une touche de fonction seule telle quelle au menu", () => {
+    chooseShortcut("voice-input", "F5");
+    try {
+      expect(voice()).toMatchObject({ accelerator: "F5" });
+    } finally {
+      chooseShortcut("voice-input", null);
+    }
+  });
+
+  it("ne donne aucun raccourci au menu pour une touche de modificateur seule : il se déclenche au tapotement", () => {
+    chooseShortcut("voice-input", "Cmd droite");
+    try {
+      expect(voice()).toMatchObject({ accelerator: null });
+    } finally {
+      chooseShortcut("voice-input", null);
+    }
+  });
 });

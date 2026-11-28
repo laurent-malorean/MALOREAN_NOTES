@@ -394,8 +394,26 @@ fn the_voice_shortcut_is_written_only_when_it_is_not_the_default() {
 }
 
 #[test]
+fn a_key_alone_is_kept_with_its_side_and_the_old_default_is_still_read() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("preferences.json");
+    let preferences = JsonPreferences::new(file.clone());
+    preferences
+        .save_voice_shortcut(&"Cmd droite".parse().unwrap())
+        .unwrap();
+    let text = std::fs::read_to_string(&file).unwrap();
+    assert!(text.contains(r#""voice_shortcut": "Cmd droite""#), "{text}");
+    assert_eq!(
+        preferences.voice_shortcut().unwrap().to_string(),
+        "Cmd droite"
+    );
+    let (_dir, old) = written(r#"{ "voice_shortcut": "Ctrl+Maj+D" }"#);
+    assert!(old.voice_shortcut().unwrap().is_default());
+}
+
+#[test]
 fn a_voice_shortcut_that_is_no_longer_valid_counts_as_the_default() {
-    for stored in ["D", "Ctrl+Tab", "", "n'importe quoi"] {
+    for stored in ["D", "Ctrl+Tab", "", "n'importe quoi", "Fn", "Cmd"] {
         let (_dir, preferences) = written(&format!(r#"{{ "voice_shortcut": "{stored}" }}"#));
         assert_eq!(
             preferences.voice_shortcut().unwrap().to_string(),

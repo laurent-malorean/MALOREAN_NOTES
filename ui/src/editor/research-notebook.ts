@@ -20,6 +20,7 @@ import {
 } from "@codemirror/view";
 import { formatEntryNumber } from "../state/research-notebook";
 import { frontMatterEnd } from "./front-matter";
+import type { EntryDictation } from "./voice/entry-dictation";
 
 /** Le nom du type de contenu des cahiers de recherche, tel que l'écrit leur en-tête. */
 const NOTEBOOK_TYPE = "cahier-de-recherche";
@@ -50,7 +51,7 @@ export function entryDayLabel(date: Date): string {
 export type AddEntry = (text: string) => Promise<boolean>;
 
 /** La zone de saisie en bas de la page d'un cahier : le message, le texte, le bouton « Ajouter l'entrée ». */
-function entryArea(addEntry: AddEntry, today: () => Date): Panel {
+function entryArea(addEntry: AddEntry, today: () => Date, dictation?: EntryDictation): Panel {
   const dom = document.createElement("div");
   dom.className = "notebook-entry";
   const message = document.createElement("p");
@@ -64,6 +65,8 @@ function entryArea(addEntry: AddEntry, today: () => Date): Panel {
   text.rows = ENTRY_ROWS;
   text.setAttribute("aria-label", "Nouvelle entrée");
   text.addEventListener("focus", showDay);
+  // La saisie vocale écrit dans ce champ tant que le cahier le montre.
+  dictation?.bind(text);
   const footer = document.createElement("div");
   footer.className = "notebook-entry-footer";
   const readOnly = document.createElement("span");
@@ -76,13 +79,16 @@ function entryArea(addEntry: AddEntry, today: () => Date): Panel {
     add.disabled = true;
     void addEntry(text.value)
       .then((added) => {
-        if (added) text.value = "";
+        if (added) {
+          text.value = "";
+          dictation?.cleared();
+        }
       })
       .finally(() => (add.disabled = false));
   });
   footer.append(readOnly, add);
   dom.append(message, text, footer);
-  return { dom, top: false };
+  return { dom, top: false, destroy: () => dictation?.unbind() };
 }
 
 /** Copie la référence de l'entrée de ce numéro d'entrée (sa position dans le cahier, à partir de 1). */
@@ -215,16 +221,17 @@ export function revealEntryIn(view: EditorView, number: number): boolean {
  * Un cahier de recherche se lit sans se modifier : aucune frappe, aucun collage, aucune mise en
  * forme ; seules passent les transactions marquées `allowed` (version relue sur le disque, frappe
  * d'une autre colonne). Avec `addEntry`, la zone de saisie s'affiche en bas ; avec `copy`, chaque
- * entrée montre son numéro d'entrée dans la marge. Une note ordinaire n'est pas touchée.
+ * entrée montre son numéro d'entrée dans la marge ; avec `dictation`, la saisie vocale écrit dans la zone de saisie (fiche 0111). Une note ordinaire n'est pas touchée.
  */
 export function researchNotebook(
   allowed: AnnotationType<boolean>,
   addEntry: AddEntry | undefined,
   today: () => Date,
   copy?: CopyReference,
+  dictation?: EntryDictation,
 ): Extension {
   const notebook = (state: EditorState) => isResearchNotebook(state.doc);
-  const bar = addEntry && (() => entryArea(addEntry, today));
+  const bar = addEntry && (() => entryArea(addEntry, today, dictation));
   return [
     EditorState.readOnly.compute(["doc"], notebook),
     EditorState.changeFilter.of(

@@ -390,4 +390,65 @@ describe("cahier de recherche dans l'éditeur", () => {
       }
     });
   });
+
+  describe("saisie vocale dans la zone de saisie", () => {
+    it("n'est disponible que si le cahier montre sa zone de saisie : pas pour une note, ni sans action d'ajout", () => {
+      const { editor } = mount({ addEntry: async () => true });
+      expect(editor.entryDictation.available()).toBe(false);
+      editor.show("# Note\n");
+      expect(editor.entryDictation.available()).toBe(false);
+      editor.show(NOTEBOOK);
+      expect(editor.entryDictation.available()).toBe(true);
+      editor.show("# Autre note\n");
+      expect(editor.entryDictation.available()).toBe(false);
+      const bare = mount();
+      bare.editor.show(NOTEBOOK);
+      expect(bare.editor.entryDictation.available()).toBe(false);
+    });
+
+    it("écrit dans la zone de saisie, sans toucher au texte du cahier ni ajouter d'entrée", () => {
+      const asked: string[] = [];
+      const { parent, editor, changes } = mount({
+        addEntry: async (text) => (asked.push(text), true),
+      });
+      editor.show(NOTEBOOK);
+      const text = parent.querySelector("textarea") as HTMLTextAreaElement;
+      const { entryDictation: voice } = editor;
+      voice.begin();
+      expect(document.activeElement).toBe(text);
+      voice.provisional("un essai");
+      expect(text.value).toBe("un essai");
+      voice.fixed("Un essai.");
+      voice.end();
+      expect(text.value).toBe("Un essai.");
+      expect(editor.content()).toBe(NOTEBOOK);
+      expect(changes).toEqual([]);
+      expect(asked).toEqual([]);
+    });
+
+    it("« Ajouter l'entrée » pendant la dictée ajoute ce qui est écrit, vide la zone, et la dictée continue sans répéter", async () => {
+      const asked: string[] = [];
+      const { parent, editor } = mount({ addEntry: async (text) => (asked.push(text), true) });
+      editor.show(NOTEBOOK);
+      const text = parent.querySelector("textarea") as HTMLTextAreaElement;
+      const add = parent.querySelector(".notebook-entry button") as HTMLButtonElement;
+      const { entryDictation: voice } = editor;
+      voice.begin();
+      voice.provisional("première observation");
+      add.click();
+      await expect.poll(() => text.value).toBe("");
+      expect(asked).toEqual(["première observation"]);
+      voice.provisional("première observation et la suite");
+      expect(text.value).toBe("et la suite");
+      voice.end();
+    });
+
+    it("la zone de saisie qui disparaît arrête l'écoute", () => {
+      const { editor } = mount({ addEntry: async () => true });
+      editor.show(NOTEBOOK);
+      editor.entryDictation.begin();
+      editor.show("# Note\n");
+      expect(editor.entryDictation.listening()).toBe(false);
+    });
+  });
 });

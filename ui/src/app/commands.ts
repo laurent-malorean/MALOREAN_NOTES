@@ -14,6 +14,7 @@ import {
   type MenuCommandId,
   shortcutOf,
 } from "../state/commands";
+import { landing } from "../state/shortcut-landing";
 import { NOTE_ORDERS, type NoteOrder } from "../state/note-order";
 import { matching, matchingNotes } from "../state/quick-open";
 import { noteOrder } from "../state/screen";
@@ -23,6 +24,7 @@ import type { CurrentScreen } from "./current-screen";
 import type { Exporting } from "./export";
 import type { NoteHistory } from "./history";
 import type { Meaning } from "./meaning";
+import { connectTapShortcut } from "./tap-shortcut";
 import type { VoiceInput } from "./voice-input";
 import type { WritingAssistance } from "./writing-assistant";
 import type { WritingModes } from "./writing-modes";
@@ -245,6 +247,8 @@ export function connectCommands(deps: CommandsDeps): Readonly<Record<MenuCommand
     "command-palette": () => openPalette(deps, actions),
   };
   const editing: ReadonlySet<string> = new Set(Object.keys(editingActions(deps.columns)));
+  // Le raccourci de la saisie vocale peut être une touche de modificateur seule : elle se déclenche au tapotement.
+  connectTapShortcut({ voice: deps.voice, blocked: dialogOpen });
   document.addEventListener("keydown", (event) => {
     // Une touche déjà prise par l'éditeur (Échap ferme sa recherche) ne sert pas une seconde fois.
     // Une fenêtre ouverte (réglages, choix) garde le clavier : Échap la ferme, sans quitter le plein écran.
@@ -253,6 +257,8 @@ export function connectCommands(deps: CommandsDeps): Readonly<Record<MenuCommand
     // Prise sans rien faire : passée à la barre des menus, elle mettrait la note en forme.
     if (shortcut && editing.has(shortcut) && typingElsewhere(event.target))
       return event.preventDefault();
+    // Une bascule (saisie vocale) ne bascule qu'une fois par pression : la touche est prise sans rien faire de plus si cette pression a déjà compté (la barre des menus, la répétition d'une touche maintenue).
+    if (shortcut && !landing.accepts(shortcut, event.repeat)) return event.preventDefault();
     if (shortcut && runShortcut(deps, actions, shortcut)) event.preventDefault();
   });
   return actions;

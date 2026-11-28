@@ -257,6 +257,48 @@ fn a_chosen_shortcut_is_kept_in_the_preferences_and_answered_written_the_way_of_
 }
 
 #[test]
+fn a_modifier_key_alone_and_a_function_key_alone_are_kept_as_shortcuts() {
+    let (window, preferences) = window(Some(FakeTranscriber::new()));
+    assert_eq!(
+        call(
+            &window,
+            "choose_voice_shortcut",
+            json!({ "shortcut": "Cmd droite" })
+        )
+        .unwrap(),
+        json!({ "shortcut": "Cmd droite", "defaultShortcut": false, "beeps": false })
+    );
+    assert_eq!(
+        preferences.voice_shortcut().unwrap().to_string(),
+        "Cmd droite"
+    );
+    assert_eq!(
+        call(
+            &window,
+            "choose_voice_shortcut",
+            json!({ "shortcut": "F5" })
+        )
+        .unwrap(),
+        json!({ "shortcut": "F5", "defaultShortcut": false, "beeps": false })
+    );
+    assert_eq!(preferences.voice_shortcut().unwrap().to_string(), "F5");
+}
+
+#[test]
+fn the_fn_key_is_refused_with_its_reason_and_nothing_is_kept() {
+    let (window, preferences) = window(Some(FakeTranscriber::new()));
+    assert_eq!(
+        error_message(call(
+            &window,
+            "choose_voice_shortcut",
+            json!({ "shortcut": "Fn" })
+        )),
+        "La touche Fn ne peut pas servir de raccourci : l'application ne la voit pas. Choisissez une autre touche."
+    );
+    assert!(preferences.voice_shortcut().unwrap().is_default());
+}
+
+#[test]
 fn an_invalid_shortcut_is_refused_with_its_reason_and_nothing_is_kept() {
     let (window, preferences) = window(Some(FakeTranscriber::new()));
     assert_eq!(
@@ -265,7 +307,7 @@ fn an_invalid_shortcut_is_refused_with_its_reason_and_nothing_is_kept() {
             "choose_voice_shortcut",
             json!({ "shortcut": "D" })
         )),
-        "Un raccourci demande la touche Ctrl ou Cmd (avec Option ou Maj si vous voulez) : Maj et Option seules servent à taper."
+        "Cette touche tape du texte : ajoutez Ctrl ou Cmd (avec Option ou Maj si vous voulez). Seules une touche de modificateur (Cmd, Option, Ctrl, Maj) et F1 à F12 servent seules."
     );
     assert!(preferences.voice_shortcut().unwrap().is_default());
 }

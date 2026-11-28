@@ -3,7 +3,7 @@
 // Les règles (ordre des événements, silence, texte provisoire fixé à l'arrêt) sont celles du moteur.
 import type * as Bridge from "../bridge";
 import type { VoiceEventItem, VoiceInputStatusItem, VoiceSettingsItem } from "../bridge";
-import type { Editor } from "../editor/editor";
+import type { Dictation } from "../editor/voice/dictation";
 import { microphoneButton, showMicrophone } from "../screens/microphone";
 import type { Pane } from "../screens/note-pane";
 import {
@@ -65,11 +65,11 @@ export interface VoiceInput {
   settingsGroups(): HTMLElement[];
 }
 
-/** Où écrit l'écoute en cours : l'éditeur de la colonne qui était active au départ. */
+/** Où écrit l'écoute en cours : l'éditeur de la colonne qui était active au départ, ou la zone de saisie de son cahier de recherche. */
 interface Target {
   readonly pane: Pane;
   readonly column: number;
-  readonly editor: Editor;
+  readonly dictation: Dictation;
 }
 
 const RETRY = "Réessayer";
@@ -118,7 +118,7 @@ class VoiceInputGestures implements VoiceInput {
   }
 
   refresh(): void {
-    this.editable = this.deps.columns.activePane().textEditor() !== null;
+    this.editable = this.deps.columns.activePane().dictation() !== null;
     this.paint();
   }
 
@@ -132,7 +132,7 @@ class VoiceInputGestures implements VoiceInput {
       shownNote(column) === target.pane.note();
     if (unchanged) return;
     // Le texte provisoire est fixé dans la note qu'on quitte, qui est encore montrée ; le moteur n'écrit plus rien.
-    target.editor.dictation.end();
+    target.dictation.end();
     this.target = null;
     this.stop();
   }
@@ -168,16 +168,16 @@ class VoiceInputGestures implements VoiceInput {
   private async start(): Promise<void> {
     const { columns, backend } = this.deps;
     const pane = columns.activePane();
-    const editor = pane.textEditor();
-    if (editor === null) return;
-    this.target = { pane, column: columns.current().active, editor };
-    editor.dictation.begin();
+    const dictation = pane.dictation();
+    if (dictation === null) return;
+    this.target = { pane, column: columns.current().active, dictation };
+    dictation.begin();
     this.session = "starting";
     this.paint();
     try {
       await backend.startVoiceInput();
     } catch (error) {
-      editor.dictation.drop();
+      dictation.drop();
       this.target = null;
       this.session = "idle";
       this.paint();
@@ -230,7 +230,7 @@ class VoiceInputGestures implements VoiceInput {
 
   /** Ce que chaque événement fait au-delà de l'état : écrire dans l'éditeur, dire un message, finir. */
   private show(event: VoiceEventItem): void {
-    const dictation = this.target?.editor.dictation;
+    const dictation = this.target?.dictation;
     if (event.kind === "provisional") dictation?.provisional(event.text);
     else if (event.kind === "fixed") dictation?.fixed(event.text);
     else if (event.kind === "level") this.level = levelOf(event.value);
@@ -240,7 +240,7 @@ class VoiceInputGestures implements VoiceInput {
   }
 
   private endListening(): void {
-    this.target?.editor.dictation.end();
+    this.target?.dictation.end();
     this.target = null;
     this.session = "idle";
     this.level = 0;

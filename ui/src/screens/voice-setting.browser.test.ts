@@ -159,7 +159,13 @@ function keyboard(m: ReturnType<typeof mount>) {
     key().dispatchEvent(event);
     return event;
   };
-  return { key, reset, beeps, error, press };
+  /** Une touche relâchée sur la touche du raccourci. */
+  const release = (init: KeyboardEventInit & { key: string }) => {
+    const event = new KeyboardEvent("keyup", { bubbles: true, cancelable: true, ...init });
+    key().dispatchEvent(event);
+    return event;
+  };
+  return { key, reset, beeps, error, press, release };
 }
 
 describe("réglages : le raccourci et les bips de la saisie vocale", () => {
@@ -290,8 +296,150 @@ describe("réglages : le raccourci et les bips de la saisie vocale", () => {
   it("explique la saisie du raccourci", () => {
     const m = mount();
     expect(m.group.element.textContent).toContain(
-      "Démarre et arrête la dictée. Cliquez, puis pressez la combinaison ; Échap annule.",
+      "Démarre et arrête la dictée. Cliquez, puis pressez une touche ou une combinaison ; une touche de modificateur (⌘ ⌥ ⌃ ⇧, à gauche ou à droite) se choisit en la pressant puis en la relâchant ; Échap annule. La touche Fn n'est pas lisible par l'application.",
     );
+  });
+
+  it("une touche de modificateur pressée puis relâchée seule est gardée, avec son côté", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "Meta", code: "MetaRight", metaKey: true });
+    expect(m.log).toEqual([]);
+    expect(k.key().textContent).toBe("Appuyez sur la combinaison…");
+    const event = k.release({ key: "Meta", code: "MetaRight" });
+    expect(m.log).toEqual(["raccourci Cmd droite"]);
+    expect(event.defaultPrevented).toBe(true);
+    expect(k.key().textContent).toBe("⌃⇧D");
+  });
+
+  it("une touche pressée pendant une saisie abandonnée ne compte pas dans la saisie suivante", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "Meta", code: "MetaRight", metaKey: true });
+    k.key().dispatchEvent(new FocusEvent("blur"));
+    k.key().click();
+    k.release({ key: "Meta", code: "MetaRight" });
+    expect(m.log).toEqual([]);
+    expect(k.key().textContent).toBe("Appuyez sur la combinaison…");
+  });
+
+  it("le côté gauche et le côté droit sont deux touches", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "Alt", code: "AltLeft", altKey: true });
+    k.release({ key: "Alt", code: "AltLeft" });
+    k.key().click();
+    k.press({ key: "Alt", code: "AltRight", altKey: true });
+    k.release({ key: "Alt", code: "AltRight" });
+    expect(m.log).toEqual(["raccourci Alt gauche", "raccourci Alt droite"]);
+  });
+
+  it("montre une touche seule avec son symbole et son côté", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices({ shortcut: "Cmd droite", defaultShortcut: false }));
+    expect(k.key().textContent).toBe("⌘ droite");
+    expect(k.key().getAttribute("aria-label")).toBe("Raccourci : ⌘ droite");
+    expect(k.reset().hidden).toBe(false);
+  });
+
+  it("une touche maintenue longtemps puis relâchée reste prise : la capture n'a pas de limite de durée", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    const held = new KeyboardEvent("keydown", {
+      ...{ key: "Shift", code: "ShiftRight", shiftKey: true },
+      ...{ bubbles: true, cancelable: true },
+    });
+    Object.defineProperty(held, "timeStamp", { value: 1000 });
+    k.key().dispatchEvent(held);
+    const released = new KeyboardEvent("keyup", {
+      key: "Shift",
+      code: "ShiftRight",
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(released, "timeStamp", { value: 9000 });
+    k.key().dispatchEvent(released);
+    expect(m.log).toEqual(["raccourci Maj droite"]);
+  });
+
+  it("un modificateur suivi d'une lettre est la combinaison, pas la touche seule", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "Control", code: "ControlRight", ctrlKey: true });
+    k.press({ key: "e", code: "KeyE", ctrlKey: true });
+    k.release({ key: "Control", code: "ControlRight" });
+    expect(m.log).toEqual(["raccourci Ctrl+E"]);
+  });
+
+  it("deux modificateurs pressés ensemble : aucun n'est gardé comme touche seule", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "Meta", code: "MetaRight", metaKey: true });
+    k.press({ key: "Shift", code: "ShiftLeft", metaKey: true, shiftKey: true });
+    k.release({ key: "Shift", code: "ShiftLeft", metaKey: true });
+    k.release({ key: "Meta", code: "MetaRight" });
+    expect(m.log).toEqual([]);
+    expect(k.key().textContent).toBe("Appuyez sur la combinaison…");
+  });
+
+  it("Échap après un modificateur annule la saisie : son relâchement ne garde rien", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "Meta", code: "MetaRight", metaKey: true });
+    k.press({ key: "Escape", code: "Escape", metaKey: true });
+    k.release({ key: "Meta", code: "MetaRight" });
+    expect(m.log).toEqual([]);
+    expect(k.key().textContent).toBe("⌃⇧D");
+  });
+
+  it("le relâchement d'une touche hors saisie n'est pas pris, et une autre touche relâchée ne garde rien", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    const outside = k.release({ key: "Meta", code: "MetaRight" });
+    expect(outside.defaultPrevented).toBe(false);
+    k.key().click();
+    k.release({ key: "e", code: "KeyE" });
+    expect(m.log).toEqual([]);
+    expect(k.key().textContent).toBe("Appuyez sur la combinaison…");
+  });
+
+  it("une touche de fonction seule est gardée dès qu'elle est pressée", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "F5", code: "F5" });
+    expect(m.log).toEqual(["raccourci F5"]);
+  });
+
+  it("la touche Fn, si le navigateur la donne, est envoyée au moteur qui la refuse avec son message", () => {
+    const m = mount();
+    const k = keyboard(m);
+    m.group.showChoices(choices());
+    k.key().click();
+    k.press({ key: "Fn", code: "Fn" });
+    expect(m.log).toEqual(["raccourci Fn"]);
+  });
+
+  it("explique que la touche Fn n'est pas lisible", () => {
+    const m = mount();
+    expect(m.group.element.textContent).toContain("La touche Fn n'est pas lisible");
   });
 
   it("la case « Bip au début et à la fin de la dictée » est décochée par défaut et appelle le choix", () => {

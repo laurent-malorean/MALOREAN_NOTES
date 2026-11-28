@@ -186,6 +186,23 @@ fn a_chosen_menu_item_reaches_the_interface_as_its_command_id() {
     assert!(BRIDGE_SOURCE.contains("MENU_COMMAND_EVENT = \"menu-command\""));
 }
 
+/// Le raccourci de la saisie vocale peut être une touche de fonction seule (fiche 0110) : le Mac l'accepte comme raccourci d'un élément.
+fn a_function_key_alone_is_accepted_as_the_shortcut_of_a_menu_item() {
+    for accelerator in ["F5", "Alt+F5", "Shift+F12"] {
+        let window = window();
+        let menus = json!([{ "title": "Édition", "role": null, "entries": [
+            { "kind": "command", "id": "voice-input", "label": "Saisie vocale",
+              "accelerator": accelerator, "enabled": true },
+        ] }]);
+        call(&window, "install_menu", json!({ "menus": menus })).unwrap();
+        assert_eq!(
+            installed(&window)[0].1[0],
+            ("Saisie vocale".to_owned(), true),
+            "{accelerator}"
+        );
+    }
+}
+
 /// « Malorean.net », dans la fenêtre « À propos », s'ouvre dans le navigateur ; rien d'autre.
 fn only_a_web_address_opens_in_the_browser() {
     let window = window();
@@ -206,5 +223,6 @@ fn main() {
     menu_items_are_greyed_and_enabled_by_their_command_id();
     greying_items_before_the_menu_bar_is_installed_does_nothing();
     a_chosen_menu_item_reaches_the_interface_as_its_command_id();
+    a_function_key_alone_is_accepted_as_the_shortcut_of_a_menu_item();
     only_a_web_address_opens_in_the_browser();
 }

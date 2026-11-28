@@ -2,6 +2,7 @@
 // téléchargement (« préparation », avec « Réessayer » en cas d'échec) ; le raccourci qui démarre et arrête la dictée
 // et les bips (fiche 0109) ; le son reste sur le Mac (spécification § 7).
 import type { VoiceLanguageItem } from "../bridge";
+import { TapDetector, tapShortcutOf } from "../state/tap-shortcut";
 import { macSymbols, recordKey } from "../state/voice-shortcut";
 
 /** Ce que l'utilisateur peut demander depuis l'onglet : chacun est lancé par l'application, qui relit ensuite l'état. */
@@ -69,7 +70,7 @@ const SHORTCUT_ID = "setting-voiceShortcut";
 const BEEPS_ID = "setting-voiceBeeps";
 const SHORTCUT_LABEL = "Raccourci";
 const SHORTCUT_HELP =
-  "Démarre et arrête la dictée. Cliquez, puis pressez la combinaison ; Échap annule.";
+  "Démarre et arrête la dictée. Cliquez, puis pressez une touche ou une combinaison ; une touche de modificateur (⌘ ⌥ ⌃ ⇧, à gauche ou à droite) se choisit en la pressant puis en la relâchant ; Échap annule. La touche Fn n'est pas lisible par l'application.";
 const RECORDING = "Appuyez sur la combinaison…";
 const RESET = "Rétablir le raccourci par défaut";
 const BEEPS_LABEL = "Bip au début et à la fin de la dictée";
@@ -104,6 +105,41 @@ function options(state: VoiceSettingState & { kind: "ready" }): HTMLOptionElemen
   ];
 }
 
+/** Ce que la prise des touches demande au contrôle du raccourci. */
+interface Taking {
+  readonly recording: () => boolean;
+  readonly record: (on: boolean) => void;
+  readonly choose: (shortcut: string) => void;
+}
+
+/**
+ * Pendant la saisie, les touches sont prises ici : ni la barre des menus ni la fenêtre ne les voient (Échap ne ferme pas les
+ * réglages). Une combinaison ou une touche de fonction est gardée à l'appui ; une touche de modificateur, pressée puis relâchée
+ * seule (côté gauche ou droit, quelle que soit la durée), au relâchement.
+ */
+function takeKeys(key: HTMLElement, capture: TapDetector, taking: Taking): void {
+  key.addEventListener("keydown", (event) => {
+    if (!taking.recording()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    capture.keydown(event);
+    const pressed = recordKey(event);
+    if (pressed.kind === "waiting") return;
+    taking.record(false);
+    if (pressed.kind === "pressed") taking.choose(pressed.shortcut);
+  });
+  key.addEventListener("keyup", (event) => {
+    if (!taking.recording()) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const tapped = capture.keyup(event);
+    const written = tapped === null ? null : tapShortcutOf(tapped);
+    if (written === null) return;
+    taking.record(false);
+    taking.choose(written);
+  });
+}
+
 /** Le raccourci : sa touche (qui attend la combinaison au clic), « Rétablir… », l'aide, et le refus. */
 function shortcutLine(actions: VoiceSettingActions) {
   const label = document.createElement("label");
@@ -127,6 +163,8 @@ function shortcutLine(actions: VoiceSettingActions) {
   line.append(label, row, help, error);
   let current = "";
   let recording = false;
+  // La capture d'une touche seule : pressée puis relâchée sans autre touche entre les deux, quelle que soit la durée.
+  const capture = new TapDetector(Number.POSITIVE_INFINITY);
   const paintKey = () => {
     const text = recording ? RECORDING : macSymbols(current);
     if (key.textContent !== text) key.textContent = text;
@@ -141,20 +179,13 @@ function shortcutLine(actions: VoiceSettingActions) {
     // Sans changement, rien ne se redessine : le clic qui suit un `blur` serait perdu (WebKit) si le texte de la touche changeait entre le bouton enfoncé et relâché.
     if (recording === on) return;
     recording = on;
+    // Chaque saisie repart de zéro : une touche restée enfoncée d'avant ne compte pas.
+    capture.interrupt();
     paintKey();
     // Safari ne donne pas le focus à un bouton cliqué : sans lui, la combinaison pressée n'arriverait pas ici.
     if (on) key.focus();
   };
-  // Pendant la saisie, la touche est prise ici : ni la barre des menus ni la fenêtre ne la voient (Échap ne ferme pas les réglages).
-  key.addEventListener("keydown", (event) => {
-    if (!recording) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const pressed = recordKey(event);
-    if (pressed.kind === "waiting") return;
-    record(false);
-    if (pressed.kind === "pressed") actions.chooseShortcut(pressed.shortcut);
-  });
+  takeKeys(key, capture, { recording: () => recording, record, choose: actions.chooseShortcut });
   key.addEventListener("click", () => record(!recording));
   key.addEventListener("blur", () => record(false));
   const show = (choices: VoiceChoices) => {

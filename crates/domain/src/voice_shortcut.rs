@@ -1,9 +1,15 @@
-//! Le raccourci de la saisie vocale (fiche 0109) : la combinaison de touches qui démarre et arrête
-//! la dictée, choisie par l'utilisateur dans les réglages. Elle se compose de modificateurs (Ctrl,
-//! Option, Cmd, Maj), dont Ctrl ou Cmd (Maj et Option seules servent à taper des majuscules et des
-//! accents : le raccourci les volerait à la frappe), et d'une touche (une lettre, un chiffre ou F1
-//! à F12). Écrite comme dans les menus du Mac et la palette : `Ctrl+Maj+D`, modificateurs dans
-//! l'ordre Ctrl, Alt (Option), Cmd, Maj.
+//! Le raccourci de la saisie vocale (fiches 0109 et 0110) : ce qui démarre et arrête la dictée,
+//! choisi par l'utilisateur dans les réglages. Trois formes :
+//!
+//! - une **combinaison** : des modificateurs (Ctrl, Option, Cmd, Maj), dont Ctrl ou Cmd (Maj et
+//!   Option seules servent à taper des majuscules et des accents : le raccourci les volerait à la
+//!   frappe), et une touche (une lettre, un chiffre ou F1 à F12) ;
+//! - une **touche de fonction seule** (F1 à F12) : elle ne tape pas de texte ;
+//! - une **touche seule** : un modificateur pris seul, côté gauche ou droit (`Cmd droite`), que
+//!   l'interface déclenche au tapotement.
+//!
+//! Écrite comme dans les menus du Mac et la palette : `Ctrl+Maj+D`, `F5`, modificateurs dans
+//! l'ordre Ctrl, Alt (Option), Cmd, Maj ; une touche seule s'écrit avec son côté : `Cmd droite`.
 
 use std::collections::BTreeSet;
 use std::fmt;
@@ -49,6 +55,31 @@ impl Modifier {
     }
 }
 
+/// Le côté d'une touche de modificateur seule : le clavier a deux touches de chaque.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Side {
+    Left,
+    Right,
+}
+
+impl Side {
+    fn name(self) -> &'static str {
+        match self {
+            Self::Left => "gauche",
+            Self::Right => "droite",
+        }
+    }
+
+    /// Le côté que désigne ce mot (en minuscules ; l'anglais est reconnu aussi).
+    fn named(word: &str) -> Option<Self> {
+        match word {
+            "gauche" | "left" => Some(Self::Left),
+            "droite" | "droit" | "right" => Some(Self::Right),
+            _ => None,
+        }
+    }
+}
+
 /// La touche d'une combinaison.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Key {
@@ -76,6 +107,11 @@ impl Key {
             _ => None,
         }
     }
+
+    /// Une touche de fonction ne tape aucun texte : elle sert sans Ctrl ni Cmd.
+    fn types_nothing(self) -> bool {
+        matches!(self, Self::Function(_))
+    }
 }
 
 impl fmt::Display for Key {
@@ -91,48 +127,66 @@ impl fmt::Display for Key {
 /// Pourquoi un raccourci n'est pas valide ; le message est en français, prêt à afficher.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ShortcutError {
-    /// Ni Ctrl ni Cmd : la combinaison se taperait dans la note.
+    /// Une lettre ou un chiffre sans Ctrl ni Cmd : la touche se taperait dans la note.
     NoControlOrCommand,
-    /// Que des modificateurs, aucune touche.
+    /// Que des modificateurs sans côté, ou plusieurs modificateurs sans touche.
     NoKey,
     /// Une touche que les raccourcis ne savent pas porter.
     UnknownKey,
     /// Plusieurs touches (hors modificateurs) dans la même combinaison.
     TooManyKeys,
+    /// La touche Fn, que le contenu web ne voit pas.
+    FnKey,
 }
 
 impl fmt::Display for ShortcutError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
             Self::NoControlOrCommand => {
-                "Un raccourci demande la touche Ctrl ou Cmd (avec Option ou Maj si vous voulez) : Maj et Option seules servent à taper."
+                "Cette touche tape du texte : ajoutez Ctrl ou Cmd (avec Option ou Maj si vous voulez). Seules une touche de modificateur (Cmd, Option, Ctrl, Maj) et F1 à F12 servent seules."
             }
             Self::NoKey => {
-                "Un raccourci demande une touche en plus des modificateurs : une lettre, un chiffre ou F1 à F12."
+                "Un raccourci demande une touche en plus des modificateurs : une lettre, un chiffre ou F1 à F12. Une touche de modificateur se prend seule, avec son côté (gauche ou droite)."
             }
             Self::UnknownKey => {
-                "Cette touche ne peut pas servir de raccourci : choisissez une lettre, un chiffre ou F1 à F12."
+                "Cette touche ne peut pas servir de raccourci : choisissez une touche de modificateur seule, F1 à F12, ou Ctrl ou Cmd avec une lettre, un chiffre ou F1 à F12."
             }
             Self::TooManyKeys => "Un raccourci ne porte qu'une touche en plus des modificateurs.",
+            Self::FnKey => {
+                "La touche Fn ne peut pas servir de raccourci : l'application ne la voit pas. Choisissez une autre touche."
+            }
         })
     }
 }
 
 impl std::error::Error for ShortcutError {}
 
-/// Le raccourci de la saisie vocale : des modificateurs (au moins un) et une touche.
+/// Ce que déclenche le raccourci.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum Form {
+    /// Des modificateurs (aucun seulement pour une touche de fonction) et une touche.
+    Combination {
+        modifiers: BTreeSet<Modifier>,
+        key: Key,
+    },
+    /// Un modificateur seul, d'un côté du clavier.
+    Tap { modifier: Modifier, side: Side },
+}
+
+/// Le raccourci de la saisie vocale.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VoiceShortcut {
-    modifiers: BTreeSet<Modifier>,
-    key: Key,
+    form: Form,
 }
 
 impl Default for VoiceShortcut {
     /// Ctrl+Maj+D.
     fn default() -> Self {
         Self {
-            modifiers: BTreeSet::from([Modifier::Ctrl, Modifier::Shift]),
-            key: Key::Letter('D'),
+            form: Form::Combination {
+                modifiers: BTreeSet::from([Modifier::Ctrl, Modifier::Shift]),
+                key: Key::Letter('D'),
+            },
         }
     }
 }
@@ -143,51 +197,87 @@ impl VoiceShortcut {
     pub fn is_default(&self) -> bool {
         *self == Self::default()
     }
+
+    /// Est-ce une touche seule, à déclencher au tapotement ?
+    #[must_use]
+    pub fn is_tap(&self) -> bool {
+        matches!(self.form, Form::Tap { .. })
+    }
+}
+
+/// La touche seule que désignent ces mots (`cmd droite`), s'ils la désignent.
+fn tap_named(words: &[&str]) -> Option<Form> {
+    match words {
+        [modifier, side] => Some(Form::Tap {
+            modifier: Modifier::named(modifier)?,
+            side: Side::named(side)?,
+        }),
+        _ => None,
+    }
 }
 
 impl FromStr for VoiceShortcut {
     type Err = ShortcutError;
 
-    /// Lit `Ctrl+Maj+D` (casse et ordre libres ; Option et Shift sont reconnus).
+    /// Lit `Ctrl+Maj+D`, `F5` ou `Cmd droite` (casse et ordre libres ; Option et Shift sont reconnus).
     ///
     /// # Errors
     ///
-    /// [`ShortcutError::NoControlOrCommand`] sans Ctrl ni Cmd, [`ShortcutError::NoKey`] sans
-    /// touche, [`ShortcutError::UnknownKey`] pour une touche que le raccourci ne porte pas,
-    /// [`ShortcutError::TooManyKeys`] pour plusieurs touches.
+    /// [`ShortcutError::NoControlOrCommand`] pour une lettre ou un chiffre sans Ctrl ni Cmd,
+    /// [`ShortcutError::NoKey`] sans touche, [`ShortcutError::UnknownKey`] pour une touche que le
+    /// raccourci ne porte pas, [`ShortcutError::TooManyKeys`] pour plusieurs touches,
+    /// [`ShortcutError::FnKey`] pour la touche Fn.
     fn from_str(written: &str) -> Result<Self, Self::Err> {
+        let lowered = written.to_lowercase();
+        let words: Vec<&str> = lowered.split_whitespace().collect();
+        if let Some(form) = tap_named(&words) {
+            return Ok(Self { form });
+        }
         let mut modifiers = BTreeSet::new();
         let mut key = None;
-        for part in written.split('+') {
-            let word = part.trim().to_lowercase();
+        for part in lowered.split('+') {
+            let word = part.trim();
             if word.is_empty() {
                 continue;
             }
-            if let Some(modifier) = Modifier::named(&word) {
+            if word == "fn" {
+                return Err(ShortcutError::FnKey);
+            }
+            if let Some(modifier) = Modifier::named(word) {
                 modifiers.insert(modifier);
             } else if key.is_some() {
                 return Err(ShortcutError::TooManyKeys);
             } else {
-                key = Some(Key::named(&word).ok_or(ShortcutError::UnknownKey)?);
+                key = Some(Key::named(word).ok_or(ShortcutError::UnknownKey)?);
             }
         }
         let key = key.ok_or(ShortcutError::NoKey)?;
-        if !modifiers.contains(&Modifier::Ctrl) && !modifiers.contains(&Modifier::Cmd) {
+        let controls = modifiers.contains(&Modifier::Ctrl) || modifiers.contains(&Modifier::Cmd);
+        if !controls && !key.types_nothing() {
             return Err(ShortcutError::NoControlOrCommand);
         }
-        Ok(Self { modifiers, key })
+        Ok(Self {
+            form: Form::Combination { modifiers, key },
+        })
     }
 }
 
 impl fmt::Display for VoiceShortcut {
-    /// L'écriture des menus du Mac : `Ctrl+Maj+D`.
+    /// L'écriture des menus du Mac : `Ctrl+Maj+D` ; une touche seule avec son côté : `Cmd droite`.
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for modifier in Modifier::ALL {
-            if self.modifiers.contains(&modifier) {
-                write!(formatter, "{}+", modifier.name())?;
+        match &self.form {
+            Form::Tap { modifier, side } => {
+                write!(formatter, "{} {}", modifier.name(), side.name())
+            }
+            Form::Combination { modifiers, key } => {
+                for modifier in Modifier::ALL {
+                    if modifiers.contains(&modifier) {
+                        write!(formatter, "{}+", modifier.name())?;
+                    }
+                }
+                write!(formatter, "{key}")
             }
         }
-        write!(formatter, "{}", self.key)
     }
 }
 
@@ -241,13 +331,106 @@ mod tests {
 
     #[test]
     fn a_shortcut_without_control_or_command_is_refused() {
-        for shortcut in ["D", "Maj+D", "Alt+D", "Alt+Maj+D", "F5"] {
+        for shortcut in ["D", "5", "Maj+D", "Alt+D", "Alt+Maj+D", "Alt+7"] {
             assert_eq!(
                 parsed(shortcut),
                 Err(ShortcutError::NoControlOrCommand),
                 "{shortcut}"
             );
         }
+    }
+
+    #[test]
+    fn a_function_key_alone_is_a_shortcut() {
+        assert_eq!(written("F5"), "F5");
+        assert_eq!(written("f1"), "F1");
+        assert_eq!(written("F12"), "F12");
+        assert!(!parsed("F5").unwrap().is_tap());
+        assert!(!parsed("F5").unwrap().is_default());
+    }
+
+    #[test]
+    fn a_function_key_needs_no_control_or_command_with_option_or_shift() {
+        assert_eq!(written("Maj+F5"), "Maj+F5");
+        assert_eq!(written("Alt+F5"), "Alt+F5");
+        assert_eq!(written("maj+alt+f2"), "Alt+Maj+F2");
+    }
+
+    #[test]
+    fn a_function_key_beyond_f12_alone_is_still_refused() {
+        assert_eq!(parsed("F13"), Err(ShortcutError::UnknownKey));
+        assert_eq!(parsed("F0"), Err(ShortcutError::UnknownKey));
+    }
+
+    #[test]
+    fn a_modifier_key_alone_is_a_shortcut_on_one_side_of_the_keyboard() {
+        assert_eq!(written("Cmd droite"), "Cmd droite");
+        assert_eq!(written("Cmd gauche"), "Cmd gauche");
+        assert_eq!(written("Alt droite"), "Alt droite");
+        assert_eq!(written("Ctrl gauche"), "Ctrl gauche");
+        assert_eq!(written("Maj droite"), "Maj droite");
+        assert!(parsed("Cmd droite").unwrap().is_tap());
+        assert!(!parsed("Cmd droite").unwrap().is_default());
+    }
+
+    #[test]
+    fn a_modifier_key_alone_is_read_under_its_other_names_and_cases() {
+        assert_eq!(written("command RIGHT"), "Cmd droite");
+        assert_eq!(written("Option left"), "Alt gauche");
+        assert_eq!(written("  shift   droit "), "Maj droite");
+        assert_eq!(written("control gauche"), "Ctrl gauche");
+    }
+
+    #[test]
+    fn the_two_sides_of_a_modifier_are_two_shortcuts() {
+        assert_ne!(parsed("Cmd gauche"), parsed("Cmd droite"));
+        assert_ne!(parsed("Cmd droite"), parsed("Alt droite"));
+        assert_eq!(parsed("Cmd droite"), parsed("cmd right"));
+    }
+
+    #[test]
+    fn a_modifier_without_its_side_is_refused() {
+        assert_eq!(parsed("Cmd"), Err(ShortcutError::NoKey));
+        assert_eq!(parsed("Cmd haut"), Err(ShortcutError::UnknownKey));
+    }
+
+    #[test]
+    fn a_modifier_alone_with_a_side_is_not_a_combination() {
+        assert!(!parsed("Ctrl+Maj+D").unwrap().is_tap());
+        assert_eq!(parsed("Cmd droite+D"), Err(ShortcutError::UnknownKey));
+    }
+
+    #[test]
+    fn the_fn_key_is_refused_with_its_own_message() {
+        for shortcut in ["Fn", "fn", "Ctrl+Fn", "Fn+F5"] {
+            assert_eq!(parsed(shortcut), Err(ShortcutError::FnKey), "{shortcut}");
+        }
+    }
+
+    #[test]
+    fn a_key_that_types_text_alone_is_refused() {
+        for shortcut in [
+            "Space",
+            "Enter",
+            "Backspace",
+            "Tab",
+            "ArrowLeft",
+            "Escape",
+            "Echap",
+        ] {
+            assert_eq!(
+                parsed(shortcut),
+                Err(ShortcutError::UnknownKey),
+                "{shortcut}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_shortcut_written_before_the_single_keys_is_still_read() {
+        assert_eq!(written("Ctrl+Maj+D"), "Ctrl+Maj+D");
+        assert_eq!(written("Cmd+Alt+E"), "Alt+Cmd+E");
+        assert_eq!(written("Ctrl+F5"), "Ctrl+F5");
     }
 
     #[test]
@@ -293,19 +476,23 @@ mod tests {
         let messages = [
             (
                 ShortcutError::NoControlOrCommand,
-                "Un raccourci demande la touche Ctrl ou Cmd (avec Option ou Maj si vous voulez) : Maj et Option seules servent à taper.",
+                "Cette touche tape du texte : ajoutez Ctrl ou Cmd (avec Option ou Maj si vous voulez). Seules une touche de modificateur (Cmd, Option, Ctrl, Maj) et F1 à F12 servent seules.",
             ),
             (
                 ShortcutError::NoKey,
-                "Un raccourci demande une touche en plus des modificateurs : une lettre, un chiffre ou F1 à F12.",
+                "Un raccourci demande une touche en plus des modificateurs : une lettre, un chiffre ou F1 à F12. Une touche de modificateur se prend seule, avec son côté (gauche ou droite).",
             ),
             (
                 ShortcutError::UnknownKey,
-                "Cette touche ne peut pas servir de raccourci : choisissez une lettre, un chiffre ou F1 à F12.",
+                "Cette touche ne peut pas servir de raccourci : choisissez une touche de modificateur seule, F1 à F12, ou Ctrl ou Cmd avec une lettre, un chiffre ou F1 à F12.",
             ),
             (
                 ShortcutError::TooManyKeys,
                 "Un raccourci ne porte qu'une touche en plus des modificateurs.",
+            ),
+            (
+                ShortcutError::FnKey,
+                "La touche Fn ne peut pas servir de raccourci : l'application ne la voit pas. Choisissez une autre touche.",
             ),
         ];
         for (error, message) in messages {
