@@ -1,6 +1,6 @@
 # 0111 — Saisie vocale : la zone de saisie d'un cahier de recherche se dicte aussi
 
-Date : 28/11/2026. Spécification : `doc/specs/saisie-vocale.md`, § 6 et § 6.1. Fiches voisines : 0103 (le moteur), 0109 et 0110 (le raccourci). Spécification de la zone de saisie : `doc/specs/entree-de-cahier.md`.
+Date : 28/11/2026. Spécification : `doc/specs/saisie-vocale.md`, § 6 et § 6.1. Fiches voisines : 0103 (le moteur), 0109 et 0113 (le raccourci). Spécification de la zone de saisie : `doc/specs/entree-de-cahier.md`.
 
 ## Contexte
 

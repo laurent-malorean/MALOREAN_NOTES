@@ -1,4 +1,4 @@
-# 0110 — Saisie vocale : le raccourci peut être une touche seule (modificateur, côté gauche ou droit, ou touche de fonction)
+# 0113 — Saisie vocale : le raccourci peut être une touche seule (modificateur, côté gauche ou droit, ou touche de fonction)
 
 Date : 28/11/2026. Spécification : `doc/specs/saisie-vocale.md`, section « Raccourci et bips ». Fiche précédente : 0109 (le raccourci se choisit).
 

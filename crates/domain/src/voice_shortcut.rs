@@ -1,4 +1,4 @@
-//! Le raccourci de la saisie vocale (fiches 0109 et 0110) : ce qui démarre et arrête la dictée,
+//! Le raccourci de la saisie vocale (fiches 0109 et 0113) : ce qui démarre et arrête la dictée,
 //! choisi par l'utilisateur dans les réglages. Trois formes :
 //!
 //! - une **combinaison** : des modificateurs (Ctrl, Option, Cmd, Maj), dont Ctrl ou Cmd (Maj et

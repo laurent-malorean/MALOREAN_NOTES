@@ -1,6 +1,6 @@
 # 0112 — Saisie vocale : le raccourci est une bascule livrée une seule fois, par la fenêtre d'abord
 
-Date : 28/11/2026. Spécification : `doc/specs/saisie-vocale.md`, section « Raccourci et bips ». Fiches voisines : 0109 (le raccourci se choisit), 0110 (une touche seule).
+Date : 28/11/2026. Spécification : `doc/specs/saisie-vocale.md`, section « Raccourci et bips ». Fiches voisines : 0109 (le raccourci se choisit), 0113 (une touche seule).
 
 ## Contexte
 
@@ -17,7 +17,7 @@ Constat de l'utilisateur dans l'application réelle, après avoir choisi un racc
 ## Décision
 
 - **La fenêtre prend toute combinaison elle-même, lue à sa touche physique** (`event.code` : `KeyE`, `Digit7`, `F5`), avec ou sans Option (`screens/shortcuts.ts`). La touche prise (`preventDefault`) n'arrive ni à la saisie de texte (pas de touche morte, pas de « ´ » écrit dans la note), ni à la barre des menus. La barre des menus garde l'accélérateur (elle l'affiche et sert de filet si la page ne prend pas la touche). Effet de bord voulu : « Rechercher et remplacer » (Option+Cmd+F) est lu de même par la fenêtre.
-- **Une pression, une bascule** (`state/shortcut-landing.ts`) : une commande qui est une bascule (la saisie vocale) ne compte qu'une livraison par pression. Le clavier de la fenêtre et la barre des menus partagent la garde : une seconde livraison dans les 100 ms (`SHORTCUT_ONCE_MS`) est ignorée, comme la répétition d'une touche maintenue (`event.repeat`). La seconde livraison n'est jamais celle d'un second geste : un doigt ne presse pas deux fois en moins de 100 ms. Les autres commandes ne sont pas gardées. La touche seule (fiche 0110) a son propre détecteur et n'est pas livrée par la barre des menus.
+- **Une pression, une bascule** (`state/shortcut-landing.ts`) : une commande qui est une bascule (la saisie vocale) ne compte qu'une livraison par pression. Le clavier de la fenêtre et la barre des menus partagent la garde : une seconde livraison dans les 100 ms (`SHORTCUT_ONCE_MS`) est ignorée, comme la répétition d'une touche maintenue (`event.repeat`). La seconde livraison n'est jamais celle d'un second geste : un doigt ne presse pas deux fois en moins de 100 ms. Les autres commandes ne sont pas gardées. La touche seule (fiche 0113) a son propre détecteur et n'est pas livrée par la barre des menus.
 - Le clic sur le micro n'est pas gardé : il ne passe par aucun de ces deux chemins.
 
 ## À essayer à la main

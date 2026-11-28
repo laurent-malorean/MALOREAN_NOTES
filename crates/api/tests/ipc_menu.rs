@@ -186,7 +186,7 @@ fn a_chosen_menu_item_reaches_the_interface_as_its_command_id() {
     assert!(BRIDGE_SOURCE.contains("MENU_COMMAND_EVENT = \"menu-command\""));
 }
 
-/// Le raccourci de la saisie vocale peut être une touche de fonction seule (fiche 0110) : le Mac l'accepte comme raccourci d'un élément.
+/// Le raccourci de la saisie vocale peut être une touche de fonction seule (fiche 0113) : le Mac l'accepte comme raccourci d'un élément.
 fn a_function_key_alone_is_accepted_as_the_shortcut_of_a_menu_item() {
     for accelerator in ["F5", "Alt+F5", "Shift+F12"] {
         let window = window();

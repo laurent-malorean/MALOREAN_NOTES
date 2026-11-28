@@ -1,4 +1,4 @@
-// Touche seule (fiche 0110) : une touche de modificateur prise seule comme raccourci de la saisie vocale, côté gauche ou
+// Touche seule (fiche 0113) : une touche de modificateur prise seule comme raccourci de la saisie vocale, côté gauche ou
 // droit, déclenchée au tapotement. La logique est pure (événements clavier en entrée, rien du document) : elle se joue sans fenêtre.
 
 /** Un modificateur seul est un tapotement s'il est relâché dans ce délai (ms) ; au-delà, c'est un maintien. */

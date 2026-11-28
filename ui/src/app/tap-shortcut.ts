@@ -1,4 +1,4 @@
-// Touche seule (fiche 0110) : le raccourci de la saisie vocale peut être une touche de modificateur prise seule (Cmd droite,
+// Touche seule (fiche 0113) : le raccourci de la saisie vocale peut être une touche de modificateur prise seule (Cmd droite,
 // Option droite…). Elle se déclenche au tapotement : à son relâchement, si rien d'autre n'a été pressé pendant ce temps
 // (sinon c'est une combinaison ordinaire, Cmd+C par exemple, qui garde son effet) et qu'elle n'est pas restée enfoncée.
 // Les écouteurs sont ceux de la fenêtre, en phase de capture : ils marchent dans l'éditeur, dans un champ de formulaire et

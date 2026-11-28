@@ -197,7 +197,7 @@ Le micro (états, info-bulles, raccourci), le décor du texte provisoire, l'écr
 - **Réglages, onglet « Saisie vocale »** (entre « Index » et « Favoris ») : « Langue » (« La langue du Mac », avec son nom quand c'est celle utilisée, puis chaque langue avec « prête » ou « à télécharger »), l'état du modèle de la langue utilisée, « Télécharger le modèle de langue » (« Préparation de la langue… » pendant l'attente, le choix est alors bloqué), le message du moteur et « Réessayer » après un échec, et la phrase « Le son reste sur le Mac : il est traité par macOS, jamais envoyé ni enregistré. ». Changer de langue pendant l'écoute : le message du moteur est dit et la liste revient à la langue gardée. L'état est relu à l'ouverture de l'application, à l'ouverture de l'onglet, après un choix et après un échec.
 - **Hors de ce que les tests jouent** : le vrai micro, la demande d'accès de macOS et le vrai moteur ne sont jouables ni par les tests ni par l'essai de l'application réelle ; les tests (Vitest, WebKit, parcours `voice-input`) utilisent un faux moteur qui rejoue des événements écrits d'avance.
 
-### Raccourci et bips (réglages, 28/11, fiches 0109 et 0110)
+### Raccourci et bips (réglages, 28/11, fiches 0109 et 0113)
 
 Maquette de l'onglet « Saisie vocale » :
 
@@ -220,7 +220,7 @@ Saisie vocale
 ```
 
 - **Raccourci** : un seul raccourci démarre et arrête la dictée. La touche « ⌃⇧D » (ou « ⌘ droite », « F5 »…) est un contrôle : un clic la met en attente (« Appuyez sur la combinaison… », focus sur la touche), ce qui est pressé est gardé ; **Échap** annule sans rien changer ni fermer les réglages ; un autre clic, ou quitter la touche, abandonne aussi. Le raccourci s'écrit en symboles du Mac (⌃ Contrôle, ⌥ Option, ⇧ Majuscule, ⌘ Commande, dans cet ordre) ; une touche seule s'écrit avec son côté (« ⌘ droite », « ⌥ gauche »). « Rétablir le raccourci par défaut » n'apparaît que lorsque le raccourci n'est pas Ctrl+Maj+D.
-- **Ce qui est permis comme raccourci** (28/11, fiche 0110) :
+- **Ce qui est permis comme raccourci** (28/11, fiche 0113) :
   - une **touche de modificateur seule** (« touche seule ») : Cmd, Option, Ctrl ou Maj, **à gauche ou à droite** (la touche à droite de la barre d'espace est Cmd droite ou Option droite). Elle est reconnue par sa touche physique (`MetaRight`, `AltLeft`…), ce qui distingue les deux côtés. Dans les réglages, on la choisit en la pressant puis en la relâchant, sans autre touche entre les deux (peu importe la durée) ;
   - une **touche de fonction seule** (F1 à F12), déclenchée à l'appui. Le Mac réserve certaines touches de fonction à son système (luminosité, Mission Control, volume…) tant qu'on ne tient pas Fn : si la touche n'arrive pas à l'application, elle ne peut pas servir ;
   - une **combinaison** : des modificateurs dont **Ctrl ou Cmd**, plus une lettre (lue telle qu'on la tape, par la touche physique avec Option), un chiffre ou une touche de fonction. Avec une touche de fonction, n'importe quels modificateurs conviennent (Option+F5, Maj+F5 : aucun ne tape de texte). Avec une lettre ou un chiffre, Option et Maj seules, ou à deux, sont toujours refusées : elles servent déjà à taper des accents et des majuscules, le raccourci les volerait à la frappe (la règle de départ, inchangée).
