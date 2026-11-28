@@ -25,7 +25,7 @@ pub use agenda_12::{
     Agenda12CellItem, Agenda12ClosedItem, Agenda12EndItem, Agenda12EventDetailItem,
     Agenda12EventItem, Agenda12Item, Agenda12LineItem, CountryItem, YearToneItem,
 };
-pub use agenda_12_change::{Agenda12ClosingItem, Agenda12EventChangeItem};
+pub use agenda_12_change::{Agenda12ClosingItem, Agenda12EventChangeItem, Agenda12LayoutItem};
 pub(crate) use agenda_12_change::{
     columns as agenda_12_columns, country as agenda_12_country, month as agenda_12_month,
 };

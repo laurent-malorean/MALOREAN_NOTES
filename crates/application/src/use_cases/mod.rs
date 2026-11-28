@@ -37,9 +37,9 @@ mod workspace;
 mod writing;
 
 pub use agenda_12::{
-    Agenda12View, CellView, ChangeAgenda12Event, ChangeColumns, CloseAgenda12Event, Closed,
-    Closing, CreateAgenda12, CreateAgenda12Event, DeleteAgenda12Event, EventChange, EventDraft,
-    EventEntry, EventView, ReadAgenda12, ReadAgenda12Event, ReopenAgenda12Event,
+    Agenda12View, CellView, ChangeAgenda12Event, ChangeColumns, ChangeLayout, CloseAgenda12Event,
+    Closed, Closing, CreateAgenda12, CreateAgenda12Event, DeleteAgenda12Event, EventChange,
+    EventDraft, EventEntry, EventView, ReadAgenda12, ReadAgenda12Event, ReopenAgenda12Event,
 };
 pub use attachments::{
     AttachFile, AttachWorkspaceFile, AttachmentSource, LinkDestination, MAX_ATTACHMENT_MEGABYTES,

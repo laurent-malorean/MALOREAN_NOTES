@@ -1,0 +1,94 @@
+/* La vue liste d'un agenda 12 (spécification § 5.5) : un titre par mois, puis une ligne par événement. Couleurs, rayons et
+   espacements viennent du thème. En colonne étroite, la ligne est celle de la grille (la date et le lieu en légende, le titre
+   dessous) ; dès 36 rem, les lignes s'alignent en colonnes sur toute la liste : date, année, lieu, titre. */
+.agenda-list {
+  box-sizing: border-box;
+  max-width: 64rem;
+  padding: var(--space-3) var(--space-5) var(--space-6);
+}
+.agenda-month-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  min-height: calc(var(--target-size) + var(--space-2));
+  margin-top: var(--space-5);
+  padding: var(--space-2) var(--space-2) var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+.agenda-month-group:first-child .agenda-month-head {
+  margin-top: 0;
+}
+.agenda-list .agenda-month {
+  font-size: 1.2em;
+  letter-spacing: 0.01em;
+}
+/* Un mois sans événement garde son titre et son « + », en retrait. */
+.agenda-month-group[data-empty="true"] .agenda-month-head {
+  margin-top: var(--space-3);
+  border-bottom-color: transparent;
+}
+.agenda-month-group[data-empty="true"] .agenda-month {
+  color: var(--muted);
+  font-size: 1em;
+  font-weight: 500;
+}
+.agenda-month-events {
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  list-style: none;
+}
+.agenda-month-events:empty {
+  display: none;
+}
+.agenda-list .agenda-line {
+  column-gap: var(--space-2);
+}
+
+@container agenda-body (min-width: 36rem) {
+  .agenda-list {
+    display: grid;
+    grid-template-columns: max-content max-content max-content minmax(0, 1fr);
+    align-content: start;
+  }
+  .agenda-month-group,
+  .agenda-month-head,
+  .agenda-month-events,
+  .agenda-list .agenda-event,
+  .agenda-list .agenda-line {
+    grid-column: 1 / -1;
+  }
+  .agenda-month-group,
+  .agenda-month-events,
+  .agenda-list .agenda-event,
+  .agenda-list .agenda-line {
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+  .agenda-list .agenda-line {
+    align-items: baseline;
+    column-gap: 0;
+  }
+  /* La date dans deux colonnes communes à toute la liste : le jour (à droite) puis la pastille de l'année. */
+  .agenda-list .agenda-date {
+    display: grid;
+    grid-column: 1 / span 2;
+    grid-template-columns: subgrid;
+    align-items: baseline;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .agenda-list .agenda-year {
+    grid-column: 2;
+    margin-left: var(--space-2);
+  }
+  .agenda-list .agenda-place {
+    grid-column: 3;
+    margin-left: var(--space-4);
+    white-space: nowrap;
+  }
+  .agenda-list .agenda-title {
+    grid-column: 4;
+    margin-left: var(--space-4);
+  }
+}

@@ -1,9 +1,9 @@
-//! Ce que l'interface demande à un agenda 12 (fiche 0104) : mois, pays, colonnes, gestes sur un
+//! Ce que l'interface demande à un agenda 12 (fiche 0104) : mois, pays, colonnes, vue, gestes sur un
 //! événement. Tout est converti à la frontière, une fois, en types de l'application.
 
 use application::AppError;
 use application::use_cases::{Closing, EventChange};
-use domain::agenda_12::{Columns, Country, DateChange, EventEnd, Month};
+use domain::agenda_12::{Columns, Country, DateChange, EventEnd, Layout, Month};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -121,6 +121,35 @@ impl From<Agenda12ClosingItem> for Closing {
         match item {
             Agenda12ClosingItem::Alone => Self::Alone,
             Agenda12ClosingItem::WithSuccessor => Self::WithSuccessor,
+        }
+    }
+}
+
+/// La vue d'un agenda 12 : la grille ou la liste.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum Agenda12LayoutItem {
+    /// La grille de 12 cases.
+    Grid,
+    /// La liste, groupée par mois.
+    List,
+}
+
+impl From<Agenda12LayoutItem> for Layout {
+    fn from(item: Agenda12LayoutItem) -> Self {
+        match item {
+            Agenda12LayoutItem::Grid => Self::Grid,
+            Agenda12LayoutItem::List => Self::List,
+        }
+    }
+}
+
+impl From<Layout> for Agenda12LayoutItem {
+    fn from(layout: Layout) -> Self {
+        match layout {
+            Layout::Grid => Self::Grid,
+            Layout::List => Self::List,
         }
     }
 }

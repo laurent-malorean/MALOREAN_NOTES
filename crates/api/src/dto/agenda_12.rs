@@ -6,6 +6,8 @@ use domain::agenda_12::{Agenda12Line, Country, EventEnd, YearTone};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use super::Agenda12LayoutItem;
+
 /// Un pays de la liste où l'on choisit, ou celui d'un événement.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -195,6 +197,8 @@ pub struct Agenda12Item {
     pub title: String,
     /// Le nombre de colonnes de sa grille : 3, 4 ou 6.
     pub columns: u32,
+    /// Sa vue : la grille ou la liste.
+    pub layout: Agenda12LayoutItem,
     /// Les étiquettes portées par les événements de la grille, la liste du filtre.
     pub tags: Vec<String>,
     /// Les douze cases, de janvier à décembre.
@@ -210,6 +214,7 @@ impl From<Agenda12View> for Agenda12Item {
         Self {
             title: view.title,
             columns: view.columns.count(),
+            layout: view.layout.into(),
             tags: view.tags,
             cells: view.cells.into_iter().map(Agenda12CellItem::from).collect(),
             archives: view

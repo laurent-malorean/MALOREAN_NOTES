@@ -1,6 +1,6 @@
 # Agenda 12
 
-Spécification fonctionnelle rédigée le 27/11, **validée par l'utilisateur le 27/11** (demande de développement) ; **présentation de l'écran d'un événement et de la grille refaite le 28/11 à la demande de l'utilisateur** (§§ 4.2, 5.1, 5.3, 7 et 14) : seuls l'organisation et l'aspect changent, aucun champ, contrôle ni état. Ce document se lit seul.
+Spécification fonctionnelle rédigée le 27/11, **validée par l'utilisateur le 27/11** (demande de développement) ; **présentation de l'écran d'un événement et de la grille refaite le 28/11 à la demande de l'utilisateur** (§§ 4.2, 5.1, 5.3, 7 et 14) : seuls l'organisation et l'aspect changent, aucun champ, contrôle ni état. **La vue liste (§ 5.5) a été ajoutée le 28/11** à la demande de l'utilisateur. Ce document se lit seul.
 
 ## 1. Idée
 
@@ -15,6 +15,7 @@ L'**agenda 12** est un nouveau type de contenu, à côté de la note, du cahier 
 - **Case** : la place d'un mois dans la grille ; elle liste les événements de ce mois.
 - **Clore** : sortir un événement de la grille en le rangeant dans les archives de son agenda 12.
 - **Archives** : les événements clos d'un agenda 12.
+- **Vue grille**, **vue liste** : les deux façons de montrer les événements d'un agenda 12 : la grille de 12 cases, ou une liste groupée par mois (§ 5.5).
 
 Ces mots entrent dans `doc/ontology.md` avant le code. « Événement » existe déjà dans « Événement de Claude » : l'ontologie distingue les deux.
 
@@ -93,8 +94,8 @@ Où
 ### 5.1 Disposition
 
 - 12 cases, de janvier à décembre, le nom du mois en tête de chaque case.
-- **Bandeau du haut** : le titre de l'agenda 12 en grand, puis les outils groupés comme les pilules de la barre d'outils de l'application : le choix du nombre de colonnes (3, 4 ou 6 : 4 lignes de 3, 3 lignes de 4 ou 2 lignes de 6) en pilule, le filtre par étiquette (§ 5.4) et le bouton « Archives » (§ 8). En colonne étroite, les outils passent sous le titre.
-- Le nombre de colonnes est gardé par agenda 12, d'un lancement à l'autre (4 à la création).
+- **Bandeau du haut** : le titre de l'agenda 12 en grand, puis les outils groupés comme les pilules de la barre d'outils de l'application : le choix de la vue (grille ou liste, § 5.5) en pilule, le choix du nombre de colonnes (3, 4 ou 6 : 4 lignes de 3, 3 lignes de 4 ou 2 lignes de 6) en pilule, le filtre par étiquette (§ 5.4) et le bouton « Archives » (§ 8). En colonne étroite, les outils passent sous le titre.
+- Le nombre de colonnes est gardé par agenda 12, d'un lancement à l'autre (4 à la création) ; il ne vaut que pour la vue grille, et son choix n'est montré que dans cette vue.
 - Le mois en cours n'est pas mis en évidence.
 - Une case trop pleine défile ; les cases d'une même ligne gardent la même hauteur minimale, et le nom du mois est à la même place dans toutes. Une case a son « + » à droite du nom du mois ; **une case vide** montre à la place, dans tout son corps, un grand « + » discret entouré d'un pointillé (le même bouton « Ajouter un événement en … »).
 
@@ -130,6 +131,46 @@ Le rendu exact (pastille, tailles, séparateurs) se règle à la réalisation, d
 
 - Dans le bandeau : la liste des étiquettes portées par les événements de l'agenda 12 ; en choisir une ne montre que les événements qui la portent. « Toutes » retire le filtre.
 - Le filtre n'est pas gardé : l'agenda 12 s'ouvre toujours sans filtre.
+
+### 5.5 La vue liste
+
+L'agenda 12 se montre au choix en **vue grille** (§§ 5.1 à 5.4) ou en **vue liste**. Un bouton du bandeau, une pilule à deux positions du même style que le choix des colonnes, passe de l'une à l'autre : « Grille » et « Liste », celle qui est montrée est enfoncée ; bulle d'aide « Vue grille » et « Vue liste ». Le choix est gardé par agenda 12, d'un lancement à l'autre, comme le nombre de colonnes (grille à la création). Le filtre par étiquette (§ 5.4) et le bouton « Archives » (§ 8) valent dans les deux vues ; le choix des colonnes n'a de sens que pour la grille et disparaît en vue liste. Dans les archives, le choix de la vue est caché, et le bouton qui ramène (« Archives » devient « Grille » ou « Liste ») porte le nom de la vue gardée.
+
+Contenu :
+
+- **Un titre de mois** par mois, de janvier à décembre (toujours dans cet ordre), en hiérarchie nette : le nom du mois en titre, un filet sous lui, puis ses événements.
+- **Une ligne par événement**, sans puce, dans l'ordre d'une case (§ 5.2 : année, jour, titre). C'est la même ligne que celle de la grille (§ 5.3), construite par la même fonction : `date année – drapeau (ville) – titre`, par exemple `05–11/10 2026 – 🇵🇹 (Lisbonne) – WebSubmit` ; chaque partie absente disparaît avec son séparateur.
+- **Un clic sur une ligne** ouvre l'événement, comme dans la grille.
+- **Un mois sans événement** garde son titre, discret, avec le même « + » que l'en-tête d'une case de la grille (« Ajouter un événement en février », mêmes effet et curseur sur le titre, § 6) : c'est le plus cohérent avec la grille, où chaque mois a son « + », et chaque action garde ainsi un contrôle visible. Un mois qui a des événements a son « + » à droite de son titre, comme une case pleine.
+
+Aspect (valeurs du thème seulement) : la page défile ; les lignes sont **alignées en colonnes d'un mois à l'autre** : la date et sa pastille d'année dans une colonne de largeur commune à toute la liste, puis le lieu (drapeau et ville), puis le titre, qui prend le reste ; une partie absente laisse sa colonne vide, jamais le titre ne glisse. La date, la pastille d'année et le lieu sont discrets (petit corps, couleur atténuée), le titre est lisible. Au survol et au focus clavier, la ligne se teinte. En colonne étroite (moins de 36 rem), une ligne passe sur deux rangs, alignés à gauche, comme dans la grille : la date, sa pastille et le lieu en légende, le titre dessous ; rien ne dépasse. Le texte de la ligne (avec ses « – ») reste celui de la bulle et de la lecture d'écran.
+
+Maquette (colonne large) :
+
+```
+Salons                                   [Grille|Liste]  [Toutes ▾]  [Archives]
+
+Janvier                                                                      +
+────────────────────────────────────────────────────────────────────────────
+15/01 [2027]                                 Audit ISO
+
+Février                                                                      +
+────────────────────────────────────────────────────────────────────────────
+10–13/02 [2027]    🇩🇪 (Nuremberg)           Salon Embedded World
+[2029]                                       Renouveler malorean.fr
+
+Mars                                                                         +
+Avril                                                                        +
+```
+
+Maquette (colonne étroite) :
+
+```
+Octobre                       +
+─────────────────────────────
+05–11/10 [2026]  🇵🇹 (Lisbonne)
+WebSubmit
+```
 
 ## 6. Créer
 
@@ -176,17 +217,17 @@ Le format des fichiers (fichier de l'agenda 12, dossier des événements, sous-d
 - Rappels et notifications.
 - Lien automatique avec le CRM ou avec un agenda externe (Calendrier du Mac, Google Agenda).
 - Vue qui regroupe plusieurs agendas 12.
-- Glisser-déposer d'un événement entre deux cases.
+- Glisser-déposer d'un événement entre deux cases (ni entre deux mois de la vue liste).
 - Événements répétés automatiquement : la copie à la clôture en tient lieu.
 
 ## 13. Contrat du moteur
 
-Ce que le moteur offre à l'interface (fiche 0104). Les commandes agissent sur l'espace de travail ouvert ; les arguments sont en camelCase ; une erreur est un objet `{ message }` dont le message est en français, prêt à afficher. Les types sont générés dans `ui/src/bridge/generated/` (`Agenda12Item`, `Agenda12CellItem`, `Agenda12EventItem`, `Agenda12LineItem`, `Agenda12EndItem`, `Agenda12EventDetailItem`, `Agenda12ClosedItem`, `Agenda12EventChangeItem`, `Agenda12ClosingItem`, `CountryItem`, `YearToneItem`). Les chemins sont ceux de l'espace de travail (`pro/salons.md`) ; un événement se désigne par le chemin de sa note.
+Ce que le moteur offre à l'interface (fiche 0104). Les commandes agissent sur l'espace de travail ouvert ; les arguments sont en camelCase ; une erreur est un objet `{ message }` dont le message est en français, prêt à afficher. Les types sont générés dans `ui/src/bridge/generated/` (`Agenda12Item`, `Agenda12CellItem`, `Agenda12EventItem`, `Agenda12LineItem`, `Agenda12EndItem`, `Agenda12EventDetailItem`, `Agenda12ClosedItem`, `Agenda12EventChangeItem`, `Agenda12ClosingItem`, `Agenda12LayoutItem`, `CountryItem`, `YearToneItem`). Les chemins sont ceux de l'espace de travail (`pro/salons.md`) ; un événement se désigne par le chemin de sa note.
 
 ### Types
 
-- `Agenda12Item` : `{ title, columns, tags, cells, archives, unreadable }` : l'agenda 12 lu.
-  - `title` : son titre (« Sans titre » s'il n'en a pas) ; `columns` : 3, 4 ou 6 (4 par défaut) ;
+- `Agenda12Item` : `{ title, columns, layout, tags, cells, archives, unreadable }` : l'agenda 12 lu.
+  - `title` : son titre (« Sans titre » s'il n'en a pas) ; `columns` : 3, 4 ou 6 (4 par défaut) ; `layout` : `Agenda12LayoutItem`, `"grid"` (par défaut) ou `"list"`, la vue gardée (§ 5.5) ; la vue liste se dessine avec les mêmes `cells` ;
   - `tags` : les étiquettes portées par les événements de la grille (la liste du filtre, § 5.4), par ordre alphabétique, chacune une fois ; les archives n'y comptent pas ;
   - `cells` : toujours 12 `Agenda12CellItem`, de janvier à décembre ;
   - `archives` : les événements clos, du plus récemment clos au plus ancien (§ 8), jamais filtrés ;
@@ -213,6 +254,7 @@ Ce que le moteur offre à l'interface (fiche 0104). Les commandes agissent sur l
 - `create_agenda_12({ folder, title })` → `{ path }` : crée l'agenda 12 titré `title` dans `folder` (`""` pour la racine), sous le nom tiré du titre (suffixe `-2`… si pris) ; il naît sans événement et sans dossier. L'interface l'ouvre avec le chemin rendu. Erreurs : « Le titre est vide. », « Le titre tient sur une seule ligne. » ; dossier invalide ou absent.
 - `read_agenda_12({ path, tag })` → `Agenda12Item` : la grille, les archives et la liste du filtre. `tag` : une étiquette (`null` : « Toutes »). Le filtre n'est pas gardé (§ 5.4). À appeler à l'ouverture et à chaque changement venu du disque. Erreurs : « cette note n'est pas un agenda 12 » ; « la note « … » n'existe pas ».
 - `change_agenda_12_columns({ path, columns })` → rien : garde 3, 4 ou 6 dans l'agenda 12 (clé `colonnes`, § 5.1) ; rien n'est écrit si le nombre est déjà celui-là. Erreurs : « « 5 » colonnes : la grille a 3, 4 ou 6 colonnes. » ; « cette note n'est pas un agenda 12 ».
+- `change_agenda_12_layout({ path, layout })` → rien : garde la vue dans l'agenda 12 (clé `vue`, § 5.5) ; `layout` : `"grid"` ou `"list"` ; rien n'est écrit si c'est déjà la vue gardée. Une autre valeur est refusée par la désérialisation de l'argument. Erreur : « cette note n'est pas un agenda 12 ».
 - `create_agenda_12_event({ agenda, month })` → `{ path }` : le « + » d'une case (§ 6) : crée l'événement « Sans titre » du mois `month` (1 à 12), sous le nom `sans-titre.md` (suffixe `-2`… si pris), et rend le chemin de sa note, que l'interface ouvre, le curseur sur le titre. Le dossier des événements naît avec le premier. Erreurs : « « 13 » n'est pas un mois : un nombre de 1 (janvier) à 12 (décembre) est attendu. » ; « cette note n'est pas un agenda 12 ».
 - `read_agenda_12_event({ path })` → `Agenda12EventDetailItem` : la bande d'un événement, ouvert ou clos. À appeler à l'ouverture de sa note et après chaque geste ou changement venu du disque. Erreurs : « Cet événement n'existe plus. » ; « cette note n'est pas un événement d'un agenda 12 » (une note ordinaire, ou un événement sans note d'agenda 12 à côté de son dossier) ; « Cet événement n'a pas de titre. » ; « Cet événement n'a pas de mois lisible. ».
 - `change_agenda_12_event({ path, change })` → rien : un geste de la bande (§ 4.2), sur la version la plus récente du fichier ; seule la clé touchée est réécrite, le texte et le reste de l'en-tête restent identiques ; un geste qui ne change rien n'écrit rien. Vaut pour un événement ouvert ou clos. Après un geste de mois, la case change : relire la grille. Erreurs :
@@ -246,6 +288,7 @@ Aucun événement nouveau. Un changement de fichier (écran, IA, éditeur extér
 
 - **Création** : « Agenda 12 » dans le menu de création (le chevron du « + »), « Nouvel agenda 12 » dans le clic droit sur un dossier (et sur la racine), dans le menu Fichier (« Nouvel agenda 12… ») et dans la palette. Un titre vide est redemandé, Échap annule ; l'agenda 12 s'ouvre dans la colonne active.
 - **Grille** : elle prend la place de l'éditeur dans la colonne. Bandeau : titre en grand, puis les outils groupés : pilule « 3 », « 4 », « 6 » (le nombre gardé est enfoncé), liste « Toutes » / étiquettes en pilule, bouton « Archives » (qui devient « Grille »). 12 cases dont les lignes sont celles du moteur, dans son ordre ; une case trop pleine défile, les cases d'une ligne gardent la même hauteur. La ligne est un bouton : `date année – drapeau (ville) – titre`, la pastille de l'année prend ses couleurs dans la palette du thème (vert, orange, marron, neutre). Un événement illisible est signalé au-dessus de la grille (un clic ouvre sa note). La grille se relit après chacun de ses gestes et à chaque changement du disque qui touche l'agenda 12 ou son dossier des événements.
+- **Vue liste** : une pilule « Grille » / « Liste » du bandeau (bulle d'aide « Vue grille », « Vue liste », celle qui est montrée est enfoncée) ; en vue liste, le choix des colonnes est caché. La liste reprend les 12 cases du moteur : titre de mois (le « + » à sa droite, même pour un mois vide), lignes alignées en trois colonnes (date et année, lieu, titre) par une grille CSS commune à toute la liste, deux rangs en colonne étroite (§ 5.5). Le choix est gardé dans la note (`change_agenda_12_layout`).
 - **Créer un événement** : le « + » de la case (« Ajouter un événement en février ») crée l'événement « Sans titre » du mois et l'ouvre, le curseur sur son titre, sélectionné.
 - **Écran d'un événement** : la bande au-dessus de la note, organisée comme au § 4.2 (en-tête avec retour, résumé, état et actions ; titre en grand ; groupes « Quand » et « Où »). Champs : Titre, Jour, Mois (liste), Année, puis « au » Fin : jour et Fin : mois (grisé sans jour de fin), Pays (champ où l'on tape pour filtrer les 249 pays, drapeau et nom ; « × » pour le retirer), Ville. L'en-tête technique de la note est replié sur « Propriétés » dans l'éditeur. Un champ se valide en le quittant ou par Entrée ; le texte tapé dans la note est enregistré avant chaque geste, la note relue après. Un refus du moteur (« Ce jour n'existe pas dans ce mois. »…) est dit tel quel dans la bande et le champ reprend ce qui est écrit ; un champ de nombre qui n'en contient pas est refusé par l'écran (« Un nombre entier est attendu. »). Les étiquettes se règlent dans le champ d'étiquettes de la colonne, sous les onglets, comme pour toute note. Pas de sélecteur de date : jour, mois et année sont des champs séparés (§ 4.1).
 - **Clore** : la fenêtre « Clore « titre » ? Il passe dans les archives. » avec « Clore et préparer le suivant » (bouton plein, en haut), « Clore » et « Annuler », l'un sous l'autre ; ensuite la grille s'ouvre. **Rouvrir** : dans la bande d'un événement clos (état « Clos le 27/11/2026 » en pastille, sa note reste modifiable) et dans les archives ; depuis la bande la note rouverte s'ouvre sous son nouveau chemin, depuis les archives la liste est relue.

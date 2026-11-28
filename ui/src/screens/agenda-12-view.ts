@@ -1,9 +1,17 @@
 // La grille d'un agenda 12 à l'écran (fiche 0104, spécification §§ 5, 6 et 8) : 12 cases, une par mois,
-// leurs lignes dans l'ordre de Rust, le bandeau (titre, colonnes, filtre par étiquette, archives). Rust
+// leurs lignes dans l'ordre de Rust, ou la liste groupée par mois (§ 5.5), et le bandeau (titre, vue,
+// colonnes, filtre par étiquette, archives). Rust
 // lit et écrit les fichiers ; l'écran redessine ce qu'il rend. Couleurs et polices viennent du thème.
-import type { Agenda12CellItem, Agenda12EventItem, Agenda12Item, SavedNote } from "../bridge";
-import { closedDay, COLUMN_CHOICES, monthName } from "../state/agenda-12";
+import type {
+  Agenda12CellItem,
+  Agenda12EventItem,
+  Agenda12Item,
+  Agenda12LayoutItem,
+  SavedNote,
+} from "../bridge";
+import { closedDay, COLUMN_CHOICES, LAYOUT_CHOICES, monthName } from "../state/agenda-12";
 import { lineParts } from "./agenda-12-line";
+import { monthList } from "./agenda-12-list";
 import { actionButton, h } from "./crm-dom";
 import "./agenda-12.css";
 
@@ -11,6 +19,7 @@ import "./agenda-12.css";
 export interface Agenda12Backend {
   readonly readAgenda12: (path: string, tag: string | null) => Promise<Agenda12Item>;
   readonly changeAgenda12Columns: (path: string, columns: number) => Promise<unknown>;
+  readonly changeAgenda12Layout: (path: string, layout: Agenda12LayoutItem) => Promise<unknown>;
   readonly createAgenda12Event: (agenda: string, month: number) => Promise<SavedNote>;
   readonly reopenAgenda12Event: (path: string) => Promise<SavedNote>;
 }
@@ -34,6 +43,7 @@ export interface Agenda12View {
 export const ALL_TAGS = "Toutes";
 export const ARCHIVES_TEXT = "Archives";
 export const GRID_TEXT = "Grille";
+export const LIST_TEXT = "Liste";
 export const NO_ARCHIVES_TEXT = "Aucun événement clos.";
 export const REOPEN_TEXT = "Rouvrir";
 
@@ -53,6 +63,7 @@ class AgendaScreen implements Agenda12View {
   private readonly body = h("div", "agenda-body");
   private readonly notice = h("div", "agenda-unreadable");
   private readonly filter = h("select", "agenda-filter");
+  private readonly layout = h("div", "agenda-layout");
   private readonly columns = h("div", "agenda-columns");
   private readonly archivesButton = actionButton("agenda-archives-link", ARCHIVES_TEXT);
   private data: Agenda12Item | null = null;
@@ -62,6 +73,9 @@ class AgendaScreen implements Agenda12View {
 
   constructor(private readonly deps: Agenda12ViewDeps) {
     this.element.dataset.path = deps.path;
+    this.layout.setAttribute("role", "group");
+    this.layout.setAttribute("aria-label", "Vue");
+    this.layout.append(...LAYOUT_CHOICES.map((layout) => this.layoutButton(layout)));
     this.columns.setAttribute("role", "group");
     this.columns.setAttribute("aria-label", "Colonnes");
     this.columns.append(...COLUMN_CHOICES.map((count) => this.columnButton(count)));
@@ -70,7 +84,7 @@ class AgendaScreen implements Agenda12View {
     this.archivesButton.addEventListener("click", () => this.toggleArchives());
     const bar = h("header", "agenda-bar");
     const tools = h("div", "agenda-tools");
-    tools.append(this.columns, this.filter, this.archivesButton);
+    tools.append(this.layout, this.columns, this.filter, this.archivesButton);
     bar.append(this.title, tools);
     this.element.append(bar, this.notice, this.body);
   }
@@ -116,6 +130,17 @@ class AgendaScreen implements Agenda12View {
     return button;
   }
 
+  private layoutButton(layout: Agenda12LayoutItem): HTMLButtonElement {
+    const text = layout === "list" ? LIST_TEXT : GRID_TEXT;
+    const button = actionButton("agenda-layout-choice", text, `Vue ${text.toLowerCase()}`);
+    button.dataset.layout = layout;
+    button.title = `Vue ${text.toLowerCase()}`;
+    button.addEventListener("click", () =>
+      this.gesture(() => this.deps.backend.changeAgenda12Layout(this.deps.path, layout)),
+    );
+    return button;
+  }
+
   private choose(value: string): void {
     this.tag = value === "" ? null : value;
     void this.reload();
@@ -128,14 +153,18 @@ class AgendaScreen implements Agenda12View {
 
   private render(data: Agenda12Item): void {
     this.title.textContent = data.title;
-    this.element.dataset.mode = this.archives ? "archives" : "grid";
-    this.archivesButton.textContent = this.archives ? GRID_TEXT : ARCHIVES_TEXT;
+    this.element.dataset.mode = this.archives ? "archives" : data.layout;
+    const back = data.layout === "list" ? LIST_TEXT : GRID_TEXT;
+    this.archivesButton.textContent = this.archives ? back : ARCHIVES_TEXT;
+    for (const button of this.layout.querySelectorAll("button")) {
+      button.setAttribute("aria-pressed", String(button.dataset.layout === data.layout));
+    }
     for (const button of this.columns.querySelectorAll("button")) {
       button.setAttribute("aria-pressed", String(button.dataset.columns === String(data.columns)));
     }
     this.renderFilter(data);
     this.renderUnreadable(data);
-    this.body.replaceChildren(this.archives ? this.archiveList(data) : this.grid(data));
+    this.body.replaceChildren(this.archives ? this.archiveList(data) : this.cells(data));
   }
 
   private renderFilter(data: Agenda12Item): void {
@@ -143,7 +172,8 @@ class AgendaScreen implements Agenda12View {
     this.filter.replaceChildren(all, ...data.tags.map((tag) => new Option(tag, tag)));
     this.filter.value = this.tag ?? "";
     this.filter.hidden = this.archives;
-    this.columns.hidden = this.archives;
+    this.layout.hidden = this.archives;
+    this.columns.hidden = this.archives || data.layout === "list";
   }
 
   /** Les événements illisibles sont signalés, jamais modifiés : un clic ouvre leur note. */
@@ -158,6 +188,14 @@ class AgendaScreen implements Agenda12View {
     );
   }
 
+  /** Les douze mois : en grille, ou en liste groupée par mois (§ 5.5). */
+  private cells(data: Agenda12Item): HTMLElement {
+    if (data.layout !== "list") return this.grid(data);
+    const open = (event: Agenda12EventItem) =>
+      this.item(lineButton(event, (path) => this.deps.open(path, false)));
+    return monthList(data.cells, { item: open, add: (cell) => this.addButton(cell) });
+  }
+
   private grid(data: Agenda12Item): HTMLElement {
     const grid = h("div", "agenda-grid");
     grid.style.setProperty("--agenda-columns", String(data.columns));
@@ -170,9 +208,7 @@ class AgendaScreen implements Agenda12View {
     section.dataset.month = String(cell.month);
     const name = monthName(cell.month);
     section.setAttribute("aria-label", name);
-    const add = actionButton("agenda-add", "+", `Ajouter un événement en ${cell.name}`);
-    add.title = `Ajouter un événement en ${cell.name}`;
-    add.addEventListener("click", () => void this.create(cell.month));
+    const add = this.addButton(cell);
     const head = h("header", "agenda-cell-head");
     head.append(h("h3", "agenda-month", name));
     const list = h("ul", "agenda-events");
@@ -185,6 +221,14 @@ class AgendaScreen implements Agenda12View {
     section.append(head, list);
     if (cell.events.length === 0) section.append(add);
     return section;
+  }
+
+  /** Le « + » d'un mois : crée son événement. */
+  private addButton(cell: Agenda12CellItem): HTMLButtonElement {
+    const add = actionButton("agenda-add", "+", `Ajouter un événement en ${cell.name}`);
+    add.title = `Ajouter un événement en ${cell.name}`;
+    add.addEventListener("click", () => void this.create(cell.month));
+    return add;
   }
 
   private item(...content: HTMLElement[]): HTMLElement {

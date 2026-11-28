@@ -1,4 +1,4 @@
-use domain::agenda_12::{Columns, Country, DateChange, EventEnd, Month};
+use domain::agenda_12::{Columns, Country, DateChange, EventEnd, Layout, Month};
 
 use super::*;
 
@@ -38,6 +38,18 @@ fn the_columns_are_three_four_or_six() {
     assert_eq!(columns(3).unwrap(), Columns::new(3).unwrap());
     assert_eq!(columns(6).unwrap().count(), 6);
     assert_eq!(columns(5), Err(AppError::UnknownColumns(5)));
+}
+
+#[test]
+fn the_layout_is_read_and_written_as_grid_or_list_in_both_directions() {
+    let list: Agenda12LayoutItem = serde_json::from_str(r#""list""#).unwrap();
+    let grid: Agenda12LayoutItem = serde_json::from_str(r#""grid""#).unwrap();
+    assert_eq!(Layout::from(list), Layout::List);
+    assert_eq!(Layout::from(grid), Layout::Grid);
+    assert_eq!(Agenda12LayoutItem::from(Layout::List), list);
+    assert_eq!(Agenda12LayoutItem::from(Layout::Grid), grid);
+    assert_eq!(serde_json::to_string(&list).unwrap(), r#""list""#);
+    assert!(serde_json::from_str::<Agenda12LayoutItem>(r#""table""#).is_err());
 }
 
 #[test]

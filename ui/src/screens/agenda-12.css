@@ -27,6 +27,7 @@
 [hidden].agenda-icon-action,
 .agenda-closed-on[hidden],
 .agenda-band-message[hidden],
+.agenda-layout[hidden],
 .agenda-columns[hidden],
 .agenda-filter[hidden],
 .agenda-unreadable[hidden] {
@@ -105,6 +106,7 @@
   align-items: center;
   gap: var(--space-3);
 }
+.agenda-layout,
 .agenda-columns {
   display: flex;
   align-items: center;
@@ -114,7 +116,8 @@
   border: 1px solid var(--border);
   border-radius: var(--format-pill-radius);
 }
-.agenda-columns-choice {
+.agenda-columns-choice,
+.agenda-layout-choice {
   width: var(--format-button-size);
   height: var(--format-button-size);
   padding: 0;
@@ -123,11 +126,17 @@
   border: 0;
   border-radius: var(--format-button-radius);
 }
-.agenda-columns-choice:hover {
+.agenda-layout-choice {
+  width: auto;
+  padding: 0 var(--space-3);
+}
+.agenda-columns-choice:hover,
+.agenda-layout-choice:hover {
   color: var(--text);
   background: var(--selected);
 }
-.agenda-columns-choice[aria-pressed="true"] {
+.agenda-columns-choice[aria-pressed="true"],
+.agenda-layout-choice[aria-pressed="true"] {
   color: var(--accent);
   background: var(--selected);
   font-weight: 600;
@@ -182,6 +191,7 @@
 
 /* La grille : les cases d'une même ligne gardent la même hauteur, une case trop pleine défile. */
 .agenda-body {
+  container: agenda-body / inline-size;
   flex: 1 1 0;
   min-height: 0;
   overflow: auto;
@@ -286,6 +296,10 @@
 }
 .agenda-line:hover {
   background: var(--selected);
+}
+.agenda-line:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 /* Les séparateurs « – » existent pour le texte (copie, lecture) ; à l'écran, l'espace entre les parties les remplace. */
 .agenda-sep {

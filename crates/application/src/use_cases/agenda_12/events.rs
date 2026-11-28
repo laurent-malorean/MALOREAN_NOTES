@@ -1,10 +1,10 @@
 //! Les événements d'un agenda 12 (spécification §§ 4, 6 et 9) : en créer un, le changer champ par
-//! champ, le mettre à la corbeille ; et créer un agenda 12, choisir ses colonnes.
+//! champ, le mettre à la corbeille ; et créer un agenda 12, choisir ses colonnes et sa vue.
 
 use domain::agenda_12::{
-    Agenda12, Columns, Country, DateChange, EventDate, EventEnd, Month, change_date, clean_title,
-    new_event_content, with_city, with_columns, with_country, with_day, with_end, with_tags,
-    with_title, with_year,
+    Agenda12, Columns, Country, DateChange, EventDate, EventEnd, Layout, Month, change_date,
+    clean_title, new_event_content, with_city, with_columns, with_country, with_day, with_end,
+    with_layout, with_tags, with_title, with_year,
 };
 use domain::title::UNTITLED;
 use domain::{Folder, NotePath};
@@ -63,6 +63,36 @@ impl<'a> ChangeColumns<'a> {
     pub fn execute(&self, agenda: &NotePath, columns: Columns) -> Result<(), AppError> {
         let files = AgendaFiles::open(self.store, agenda)?;
         let written = with_columns(&files.content, columns);
+        if written != files.content {
+            self.store.write(agenda, &written)?;
+        }
+        Ok(())
+    }
+}
+
+/// Choisir la vue d'un agenda 12 : la grille ou la liste.
+#[derive(Debug)]
+pub struct ChangeLayout<'a> {
+    store: &'a dyn NoteStore,
+}
+
+impl<'a> ChangeLayout<'a> {
+    /// Le cas d'usage, branché sur l'espace de travail ouvert.
+    #[must_use]
+    pub fn new(store: &'a dyn NoteStore) -> Self {
+        Self { store }
+    }
+
+    /// Écrit cette vue dans l'agenda 12 `agenda`, sans rien changer d'autre ; un agenda qui a déjà
+    /// cette vue n'est pas réécrit.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::NotAnAgenda12`] si la note n'est pas un agenda 12 ;
+    /// [`AppError::StorageUnavailable`] si le stockage ne répond pas.
+    pub fn execute(&self, agenda: &NotePath, layout: Layout) -> Result<(), AppError> {
+        let files = AgendaFiles::open(self.store, agenda)?;
+        let written = with_layout(&files.content, layout);
         if written != files.content {
             self.store.write(agenda, &written)?;
         }

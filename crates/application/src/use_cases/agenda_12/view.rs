@@ -2,8 +2,8 @@
 
 use domain::NotePath;
 use domain::agenda_12::{
-    Agenda12Event, Agenda12Line, Cell, Columns, Month, PlacedEvent, archives_order, event_tags,
-    grid,
+    Agenda12Event, Agenda12Line, Cell, Columns, Layout, Month, PlacedEvent, archives_order,
+    event_tags, grid,
 };
 
 use super::files::Loaded;
@@ -45,6 +45,8 @@ pub struct Agenda12View {
     pub title: String,
     /// Les colonnes de sa grille.
     pub columns: Columns,
+    /// Sa vue : la grille ou la liste.
+    pub layout: Layout,
     /// Les étiquettes portées par les événements de la grille : la liste du filtre.
     pub tags: Vec<String>,
     /// Les douze cases, de janvier à décembre, filtrées par étiquette s'il y a un filtre.
@@ -56,10 +58,10 @@ pub struct Agenda12View {
 }
 
 impl Agenda12View {
-    /// La vue de l'agenda 12 de titre `title` et de colonnes `columns`, de ces événements lus,
+    /// La vue de l'agenda 12 de titre `title`, de colonnes et de vue `(columns, layout)`, de ces événements lus,
     /// montrés avec ce filtre ; `today_year` est l'année du jour du Mac.
     pub(super) fn new(
-        (title, columns): (String, Columns),
+        (title, columns, layout): (String, Columns, Layout),
         loaded: Loaded,
         today_year: i32,
         tag: Option<&str>,
@@ -82,6 +84,7 @@ impl Agenda12View {
         Self {
             title,
             columns,
+            layout,
             tags,
             cells,
             archives,

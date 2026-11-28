@@ -20,6 +20,9 @@ export const isAgenda12EventContent = (content: string): boolean =>
 /** Les nombres de colonnes de la grille (spécification § 5.1). */
 export const COLUMN_CHOICES = [3, 4, 6] as const;
 
+/** Les deux vues d'un agenda 12 : la grille et la liste (spécification § 5.5). */
+export const LAYOUT_CHOICES = ["grid", "list"] as const;
+
 /** Le dossier des événements d'un agenda 12 : celui qui porte son nom de fichier (`pro/salons.md` : `pro/salons/`). */
 export const agenda12Folder = (path: string): string => `${path.replace(/\.md$/i, "")}/`;
 

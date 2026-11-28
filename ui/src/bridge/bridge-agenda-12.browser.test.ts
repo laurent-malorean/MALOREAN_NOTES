@@ -25,11 +25,13 @@ describe("pont vers Rust : l'agenda 12 (fiche 0104)", () => {
     await bridge.readAgenda12("pro/salons.md", null);
     await bridge.readAgenda12("pro/salons.md", "salon");
     await bridge.changeAgenda12Columns("pro/salons.md", 6);
+    await bridge.changeAgenda12Layout("pro/salons.md", "list");
     expect(calls).toEqual([
       { command: "create_agenda_12", args: { folder: "pro", title: "Salons" } },
       { command: "read_agenda_12", args: { path: "pro/salons.md", tag: null } },
       { command: "read_agenda_12", args: { path: "pro/salons.md", tag: "salon" } },
       { command: "change_agenda_12_columns", args: { path: "pro/salons.md", columns: 6 } },
+      { command: "change_agenda_12_layout", args: { path: "pro/salons.md", layout: "list" } },
     ]);
   });
 

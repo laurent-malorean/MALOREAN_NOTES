@@ -1,11 +1,11 @@
 //! L'agenda 12 de l'espace de travail ouvert, vu depuis l'interface et les outils (fiche 0104) : le
-//! créer, lire sa grille, changer ses colonnes, et créer, changer, clore, rouvrir, supprimer ses
+//! créer, lire sa grille, changer ses colonnes et sa vue, et créer, changer, clore, rouvrir, supprimer ses
 //! événements.
 
 use application::use_cases::{
-    ChangeAgenda12Event, ChangeColumns, CloseAgenda12Event, CreateAgenda12, CreateAgenda12Event,
-    DeleteAgenda12Event, EventChange, EventDraft, ReadAgenda12, ReadAgenda12Event,
-    ReopenAgenda12Event,
+    ChangeAgenda12Event, ChangeColumns, ChangeLayout, CloseAgenda12Event, CreateAgenda12,
+    CreateAgenda12Event, DeleteAgenda12Event, EventChange, EventDraft, ReadAgenda12,
+    ReadAgenda12Event, ReopenAgenda12Event,
 };
 use domain::agenda_12::Country;
 use domain::{Folder, NotePath};
@@ -14,7 +14,7 @@ use super::Session;
 use crate::dto::{agenda_12_columns, agenda_12_month};
 use crate::{
     Agenda12ClosedItem, Agenda12ClosingItem, Agenda12EventChangeItem, Agenda12EventDetailItem,
-    Agenda12Item, ApiError, CountryItem, SavedNote,
+    Agenda12Item, Agenda12LayoutItem, ApiError, CountryItem, SavedNote,
 };
 
 impl Session {
@@ -56,6 +56,22 @@ impl Session {
         let store = self.store()?;
         ChangeColumns::new(&*store)
             .execute(&NotePath::parse(path)?, agenda_12_columns(columns)?)?;
+        Ok(())
+    }
+
+    /// Garde cette vue (grille ou liste) dans l'agenda 12 `path`.
+    ///
+    /// # Errors
+    ///
+    /// Un [`ApiError`] dont le message dit ce qui a échoué ; note qui n'est pas un agenda 12,
+    /// stockage indisponible, aucun espace de travail ouvert.
+    pub fn change_agenda_12_layout(
+        &self,
+        path: &str,
+        layout: Agenda12LayoutItem,
+    ) -> Result<(), ApiError> {
+        let store = self.store()?;
+        ChangeLayout::new(&*store).execute(&NotePath::parse(path)?, layout.into())?;
         Ok(())
     }
 

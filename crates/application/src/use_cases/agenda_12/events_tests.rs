@@ -80,6 +80,46 @@ fn the_columns_of_a_note_that_is_not_an_agenda_are_refused() {
 }
 
 #[test]
+fn the_layout_is_written_and_nothing_else_changes() {
+    let store = workspace();
+    ChangeLayout::new(&store)
+        .execute(&agenda(), Layout::List)
+        .unwrap();
+    assert_eq!(
+        text(&store, AGENDA),
+        "---\ntype: agenda-12\nvue: liste\n---\n# Salons\n"
+    );
+    ChangeLayout::new(&store)
+        .execute(&agenda(), Layout::Grid)
+        .unwrap();
+    assert_eq!(
+        text(&store, AGENDA),
+        "---\ntype: agenda-12\nvue: grille\n---\n# Salons\n"
+    );
+}
+
+#[test]
+fn the_layout_of_a_note_that_is_not_an_agenda_is_refused() {
+    let store = workspace();
+    let refused = ChangeLayout::new(&store).execute(&path("pro/autre.md"), Layout::List);
+    assert_eq!(refused, Err(AppError::NotAnAgenda12));
+    assert_eq!(text(&store, "pro/autre.md"), "# Autre\n");
+}
+
+#[test]
+fn a_layout_already_kept_is_not_written_again() {
+    let store = workspace();
+    ChangeLayout::new(&store)
+        .execute(&agenda(), Layout::List)
+        .unwrap();
+    let before = text(&store, AGENDA);
+    ChangeLayout::new(&store)
+        .execute(&agenda(), Layout::List)
+        .unwrap();
+    assert_eq!(text(&store, AGENDA), before);
+}
+
+#[test]
 fn the_plus_of_a_cell_creates_an_untitled_event_of_that_month_and_its_folder() {
     let store = InMemoryNoteStore::with_notes(&[(AGENDA, "---\ntype: agenda-12\n---\n# Salons\n")]);
     let created = CreateAgenda12Event::new(&store)

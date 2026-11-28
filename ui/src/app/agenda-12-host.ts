@@ -11,6 +11,7 @@ export type Agenda12HostBackend = Pick<
   typeof Bridge,
   | "readAgenda12"
   | "changeAgenda12Columns"
+  | "changeAgenda12Layout"
   | "createAgenda12Event"
   | "readAgenda12Event"
   | "changeAgenda12Event"
@@ -23,6 +24,7 @@ export type Agenda12HostBackend = Pick<
 const BACKEND_KEYS = [
   "readAgenda12",
   "changeAgenda12Columns",
+  "changeAgenda12Layout",
   "createAgenda12Event",
   "readAgenda12Event",
   "changeAgenda12Event",

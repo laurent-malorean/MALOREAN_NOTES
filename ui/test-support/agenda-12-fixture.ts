@@ -62,6 +62,7 @@ export function agendaItem(
   const base: Agenda12Item = {
     title: "Salons",
     columns: 4,
+    layout: "grid",
     tags: ["salon"],
     cells: MONTH_NAMES.map((name, index) => ({
       month: index + 1,

@@ -511,6 +511,7 @@ pub fn invoke_handler<R: Runtime>() -> impl Fn(Invoke<R>) -> bool + Send + Sync 
         agenda_12::create_agenda_12,
         agenda_12::read_agenda_12,
         agenda_12::change_agenda_12_columns,
+        agenda_12::change_agenda_12_layout,
         agenda_12::create_agenda_12_event,
         agenda_12::read_agenda_12_event,
         agenda_12::change_agenda_12_event,

@@ -85,6 +85,7 @@ Un nombre s'écrit en chiffres, sans signe ni décimale ; des zéros en tête so
 
 - `type` : obligatoire, `agenda-12`.
 - `colonnes` : facultatif, `3`, `4` ou `6` ; le nombre de colonnes de la grille. Absente ou autre valeur : 4. L'application l'écrit quand l'utilisateur change le nombre de colonnes.
+- `vue` : facultatif, `grille` ou `liste` ; la vue gardée de l'agenda 12 (spécification § 5.5). Absente ou autre valeur : `grille`. L'application l'écrit (sans apostrophes) quand l'utilisateur change de vue.
 - `tags` : facultatif, comme toute note.
 
 ### 5.2 Corps

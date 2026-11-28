@@ -164,7 +164,8 @@ describe("CRM d'une colonne", () => {
     });
     const read = vi.fn(async () => agendaItem());
     const bridge = {
-      ...{ readAgenda12: read, changeAgenda12Columns: vi.fn(), createAgenda12Event: vi.fn() },
+      ...{ readAgenda12: read, changeAgenda12Columns: vi.fn(), changeAgenda12Layout: vi.fn() },
+      ...{ createAgenda12Event: vi.fn() },
       ...{ readAgenda12Event: vi.fn(), changeAgenda12Event: vi.fn(), listCountries: vi.fn() },
       ...{ closeAgenda12Event: vi.fn(), reopenAgenda12Event: vi.fn(), errorMessage: String },
     };
