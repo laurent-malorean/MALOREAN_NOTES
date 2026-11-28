@@ -26,9 +26,9 @@ pub use dto::{
     PassageItem, PlaceItem, PlacementItem, ProposalItem, RemovedLineItem, SaveResult, SavedNote,
     SearchResultItem, ServerStateItem, StageChangeItem, StandardItem, TagItem, TallyItem,
     TemplatesFolderItem, TrashInfo, TrashedNoteItem, TurnSettingsItem, UrgencyItem, VersionItem,
-    VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem, VoiceLanguageItem, WeekDayItem,
-    WeekItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem, WritingActionItem,
-    YearToneItem,
+    VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem, VoiceLanguageItem, VoiceSettingsItem,
+    WeekDayItem, WeekItem, WorkspaceChanged, WorkspaceInfo, WorkspaceItem, WorkspaceNoteItem,
+    WritingActionItem, YearToneItem,
 };
 pub use error::ApiError;
 pub use session::{AppScreen, MeaningEvents, Session};

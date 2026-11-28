@@ -12,6 +12,7 @@ import {
   type FormatCommandId,
   matchingCommands,
   type MenuCommandId,
+  shortcutOf,
 } from "../state/commands";
 import { NOTE_ORDERS, type NoteOrder } from "../state/note-order";
 import { matching, matchingNotes } from "../state/quick-open";
@@ -210,7 +211,7 @@ function openPalette(deps: CommandsDeps, actions: Readonly<Record<CommandId, () 
     placeholder: "Nom de la commande",
     empty: "Aucune commande ne correspond",
     entries: matchingCommands,
-    describe: (command) => ({ label: command.label, detail: command.shortcut }),
+    describe: (command) => ({ label: command.label, detail: shortcutOf(command) }),
     choose: (command) => actions[command.id](),
   });
 }

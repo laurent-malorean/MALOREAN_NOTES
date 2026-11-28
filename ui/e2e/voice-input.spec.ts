@@ -333,3 +333,107 @@ test("changer de langue pendant l'écoute est refusé, avec le message du moteur
   await expect(toast(page, "Arrêtez la saisie vocale avant de changer de langue.")).toBeVisible();
   await expect(settings(page).getByRole("combobox", { name: "Langue" })).toHaveValue("");
 });
+
+/** Les réglages, onglet « Saisie vocale » ouvert. */
+async function openVoiceSettings(page: Page) {
+  await page.getByRole("button", { name: "Réglages" }).click();
+  await settings(page).getByRole("tab", { name: "Saisie vocale" }).click();
+  return settings(page).getByRole("tabpanel");
+}
+
+test("Réglages : choisir le raccourci de la saisie vocale ; la bulle, le clavier et le rétablissement le suivent", async ({
+  page,
+}) => {
+  await launch(page);
+  const panel = await openVoiceSettings(page);
+  const key = panel.locator(".shortcut-key");
+  await expect(key).toBeVisible();
+  await expect(
+    panel.getByRole("button", { name: "Rétablir le raccourci par défaut" }),
+  ).toBeHidden();
+  await key.click();
+  await expect(key).toHaveText("Appuyez sur la combinaison…");
+  await page.keyboard.press("Control+Shift+E");
+  await expect(panel.getByRole("button", { name: "Raccourci : ⌃⇧E" })).toBeVisible();
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBe("Ctrl+Maj+E");
+  await page.keyboard.press("Escape");
+  await expect(settings(page)).toBeHidden();
+  await expect(mic(page)).toHaveAttribute("title", "Saisie vocale (Ctrl+Maj+E)");
+
+  await cursorAtEnd(page);
+  await page.keyboard.press("Control+Shift+D");
+  expect((await voice(page)).starts).toBe(0);
+  await page.keyboard.press("Control+Shift+E");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Control+Shift+E");
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
+
+  const again = await openVoiceSettings(page);
+  await again.getByRole("button", { name: "Rétablir le raccourci par défaut" }).click();
+  await expect(again.getByRole("button", { name: "Raccourci : ⌃⇧D" })).toBeVisible();
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBeNull();
+  await page.keyboard.press("Escape");
+  await expect(mic(page)).toHaveAttribute("title", "Saisie vocale (Ctrl+Maj+D)");
+});
+
+test("Réglages : un raccourci déjà pris est refusé en nommant la commande ; Échap annule la saisie sans fermer les réglages", async ({
+  page,
+}) => {
+  await launch(page);
+  const panel = await openVoiceSettings(page);
+  const key = panel.locator(".shortcut-key");
+  await key.click();
+  await page.keyboard.press("Meta+B");
+  await expect(panel.getByRole("alert").filter({ hasText: "Gras" })).toHaveText(
+    "Ce raccourci est déjà pris par « Gras ».",
+  );
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBeNull();
+  await key.click();
+  await page.keyboard.press("Escape");
+  await expect(settings(page)).toBeVisible();
+  await expect(key).toHaveText("⌃⇧D");
+  await key.click();
+  await page.keyboard.press("Shift+D");
+  await expect(panel.getByRole("alert").filter({ hasText: "Ctrl ou Cmd" })).toBeVisible();
+  expect(await page.evaluate(() => window.backend.voice.shortcut)).toBeNull();
+});
+
+test("Réglages : les bips sont décochés par défaut ; cochés, un bip joue au début et un à la fin, y compris au silence", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const notes: number[] = [];
+    (window as unknown as { notes: number[] }).notes = notes;
+    const create = AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator = function () {
+      const oscillator = create.call(this);
+      notes.push(0);
+      return oscillator;
+    };
+  });
+  const notes = (page: Page) =>
+    page.evaluate(() => (window as unknown as { notes: number[] }).notes.length);
+  await launch(page);
+  await listen(page);
+  await mic(page).click();
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
+  expect(await notes(page)).toBe(0);
+
+  const panel = await openVoiceSettings(page);
+  const box = panel.getByRole("checkbox", { name: "Bip au début et à la fin de la dictée" });
+  await expect(box).not.toBeChecked();
+  await box.check();
+  expect(await page.evaluate(() => window.backend.voice.beeps)).toBe(true);
+  await page.keyboard.press("Escape");
+  await listen(page);
+  await expect.poll(() => notes(page)).toBe(2);
+  await mic(page).click();
+  await expect(mic(page)).toHaveAttribute("aria-pressed", "false");
+  await expect.poll(() => notes(page)).toBe(4);
+
+  await listen(page);
+  await expect.poll(() => notes(page)).toBe(6);
+  await say(page, { kind: "silence", message: "Saisie vocale arrêtée : silence" });
+  await say(page, { kind: "ended" });
+  await expect.poll(() => notes(page)).toBe(8);
+});

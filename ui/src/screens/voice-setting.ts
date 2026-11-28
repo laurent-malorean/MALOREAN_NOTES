@@ -1,6 +1,8 @@
 // Réglages, onglet « Saisie vocale » : la langue (par défaut celle du Mac), l'état de son modèle de langue, son
-// téléchargement (« préparation », avec « Réessayer » en cas d'échec) ; le son reste sur le Mac (spécification § 7).
+// téléchargement (« préparation », avec « Réessayer » en cas d'échec) ; le raccourci qui démarre et arrête la dictée
+// et les bips (fiche 0109) ; le son reste sur le Mac (spécification § 7).
 import type { VoiceLanguageItem } from "../bridge";
+import { macSymbols, recordKey } from "../state/voice-shortcut";
 
 /** Ce que l'utilisateur peut demander depuis l'onglet : chacun est lancé par l'application, qui relit ensuite l'état. */
 export interface VoiceSettingActions {
@@ -8,6 +10,23 @@ export interface VoiceSettingActions {
   readonly choose: (language: string | null) => void;
   /** Prépare le modèle de cette langue (le télécharge s'il manque). */
   readonly prepare: (language: string) => void;
+  /** Garde ce raccourci, écrit comme dans les menus (`Ctrl+Maj+D`) ; refusé avec un message s'il est pris ou invalide. */
+  readonly chooseShortcut: (shortcut: string) => void;
+  /** Revient au raccourci par défaut. */
+  readonly resetShortcut: () => void;
+  /** Garde le choix des bips au début et à la fin de la dictée. */
+  readonly chooseBeeps: (beeps: boolean) => void;
+}
+
+/** Le raccourci et les bips choisis : montrés même quand le moteur ne peut pas servir. */
+export interface VoiceChoices {
+  /** Le raccourci, écrit comme dans les menus (`Ctrl+Maj+D`). */
+  readonly shortcut: string;
+  /** C'est le raccourci par défaut. */
+  readonly defaultShortcut: boolean;
+  readonly beeps: boolean;
+  /** Pourquoi le dernier raccourci pressé est refusé. */
+  readonly shortcutError: string | null;
 }
 
 /** Ce que l'onglet montre. */
@@ -31,6 +50,8 @@ export type VoiceSettingState =
 export interface VoiceSetting {
   readonly element: HTMLElement;
   show(state: VoiceSettingState): void;
+  /** Le raccourci et les bips ; la saisie du raccourci en cours est abandonnée. */
+  showChoices(choices: VoiceChoices | null): void;
 }
 
 export const TITLE = "Saisie vocale";
@@ -44,6 +65,15 @@ const PREPARING = "Préparation de la langue…";
 const DOWNLOAD = "Télécharger le modèle de langue";
 const RETRY = "Réessayer";
 const SELECT_ID = "setting-voiceLanguage";
+const SHORTCUT_ID = "setting-voiceShortcut";
+const BEEPS_ID = "setting-voiceBeeps";
+const SHORTCUT_LABEL = "Raccourci";
+const SHORTCUT_HELP =
+  "Démarre et arrête la dictée. Cliquez, puis pressez la combinaison ; Échap annule.";
+const RECORDING = "Appuyez sur la combinaison…";
+const RESET = "Rétablir le raccourci par défaut";
+const BEEPS_LABEL = "Bip au début et à la fin de la dictée";
+const BEEPS_HELP = "Un court son quand le micro écoute, et un autre quand la dictée s'arrête.";
 
 function paragraph(className: string, content = ""): HTMLParagraphElement {
   const element = document.createElement("p");
@@ -72,6 +102,89 @@ function options(state: VoiceSettingState & { kind: "ready" }): HTMLOptionElemen
         new Option(`${language.name} (${language.ready ? READY : TO_DOWNLOAD})`, language.id),
     ),
   ];
+}
+
+/** Le raccourci : sa touche (qui attend la combinaison au clic), « Rétablir… », l'aide, et le refus. */
+function shortcutLine(actions: VoiceSettingActions) {
+  const label = document.createElement("label");
+  label.htmlFor = SHORTCUT_ID;
+  label.textContent = SHORTCUT_LABEL;
+  const key = document.createElement("button");
+  key.type = "button";
+  key.id = SHORTCUT_ID;
+  key.className = "shortcut-key";
+  key.setAttribute("aria-describedby", `${SHORTCUT_ID}-help`);
+  const reset = button(RESET, () => actions.resetShortcut());
+  const row = document.createElement("div");
+  row.className = "shortcut-row";
+  row.append(key, reset);
+  const help = paragraph("setting-help", SHORTCUT_HELP);
+  help.id = `${SHORTCUT_ID}-help`;
+  const error = paragraph("setting-error");
+  error.setAttribute("role", "alert");
+  const line = document.createElement("div");
+  line.className = "setting";
+  line.append(label, row, help, error);
+  let current = "";
+  let recording = false;
+  const paintKey = () => {
+    const text = recording ? RECORDING : macSymbols(current);
+    if (key.textContent !== text) key.textContent = text;
+    key.classList.toggle("recording", recording);
+    key.setAttribute("aria-pressed", String(recording));
+    key.setAttribute(
+      "aria-label",
+      recording ? RECORDING : `${SHORTCUT_LABEL} : ${macSymbols(current)}`,
+    );
+  };
+  const record = (on: boolean) => {
+    // Sans changement, rien ne se redessine : le clic qui suit un `blur` serait perdu (WebKit) si le texte de la touche changeait entre le bouton enfoncé et relâché.
+    if (recording === on) return;
+    recording = on;
+    paintKey();
+    // Safari ne donne pas le focus à un bouton cliqué : sans lui, la combinaison pressée n'arriverait pas ici.
+    if (on) key.focus();
+  };
+  // Pendant la saisie, la touche est prise ici : ni la barre des menus ni la fenêtre ne la voient (Échap ne ferme pas les réglages).
+  key.addEventListener("keydown", (event) => {
+    if (!recording) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const pressed = recordKey(event);
+    if (pressed.kind === "waiting") return;
+    record(false);
+    if (pressed.kind === "pressed") actions.chooseShortcut(pressed.shortcut);
+  });
+  key.addEventListener("click", () => record(!recording));
+  key.addEventListener("blur", () => record(false));
+  const show = (choices: VoiceChoices) => {
+    current = choices.shortcut;
+    record(false);
+    paintKey();
+    reset.hidden = choices.defaultShortcut;
+    error.textContent = choices.shortcutError ?? "";
+    error.hidden = choices.shortcutError === null;
+  };
+  return { line, show };
+}
+
+/** La case des bips, avec son aide. */
+function beepsLine(actions: VoiceSettingActions) {
+  const box = document.createElement("input");
+  box.type = "checkbox";
+  box.id = BEEPS_ID;
+  box.name = "voiceBeeps";
+  box.setAttribute("aria-describedby", `${BEEPS_ID}-help`);
+  box.addEventListener("change", () => actions.chooseBeeps(box.checked));
+  const label = document.createElement("label");
+  label.htmlFor = BEEPS_ID;
+  label.textContent = BEEPS_LABEL;
+  const help = paragraph("setting-help", BEEPS_HELP);
+  help.id = `${BEEPS_ID}-help`;
+  const line = document.createElement("div");
+  line.className = "setting voice-beeps";
+  line.append(box, label, help);
+  return { line, show: (beeps: boolean) => void (box.checked = beeps) };
 }
 
 /** La partie « Saisie vocale » de l'écran de réglages. */
@@ -103,8 +216,22 @@ export function voiceGroup(actions: VoiceSettingActions): VoiceSetting {
   failure.setAttribute("role", "alert");
   const buttons = document.createElement("div");
   buttons.className = "favorites-actions";
+  const shortcut = shortcutLine(actions);
+  const beeps = beepsLine(actions);
+  shortcut.line.hidden = true;
+  beeps.line.hidden = true;
   const element = document.createElement("fieldset");
-  element.append(legend, line, status, failure, buttons, paragraph("setting-help", PRIVACY));
+  element.append(
+    ...[legend, line, status, failure, buttons, shortcut.line, beeps.line],
+    paragraph("setting-help", PRIVACY),
+  );
+  const showChoices = (choices: VoiceChoices | null) => {
+    shortcut.line.hidden = choices === null;
+    beeps.line.hidden = choices === null;
+    if (choices === null) return;
+    shortcut.show(choices);
+    beeps.show(choices.beeps);
+  };
   const show = (state: VoiceSettingState) => {
     line.hidden = state.kind !== "ready";
     failure.hidden = true;
@@ -119,7 +246,7 @@ export function voiceGroup(actions: VoiceSettingActions): VoiceSetting {
     showLanguage(state, { status, failure, buttons }, actions);
   };
   show({ kind: "loading" });
-  return { element, show };
+  return { element, show, showChoices };
 }
 
 /** L'état du modèle de la langue utilisée, et ce qu'on peut en faire : le télécharger, ou réessayer. */

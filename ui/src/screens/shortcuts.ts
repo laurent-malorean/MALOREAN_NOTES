@@ -1,6 +1,6 @@
 // Raccourcis clavier de la fenêtre, valables où que soit le curseur. Ceux des commandes viennent
 // de la liste des commandes (state/commands.ts), où chacun n'est écrit qu'une fois.
-import { MENU_COMMANDS, type MenuCommandId } from "../state/commands";
+import { MENU_COMMANDS, type MenuCommandId, shortcutOf, shortcutsChanged } from "../state/commands";
 
 /** Ce que demande une touche : une commande, la palette, ou Échap. */
 export type Shortcut = MenuCommandId | "leave-full-screen";
@@ -18,12 +18,23 @@ export function keyOf(shortcut: string): string {
   return `${has("cmd")}${has("ctrl")}${has("alt")}${parts.includes("maj") ? "shift+" : ""}${key}`;
 }
 
-const SHORTCUTS: ReadonlyMap<string, Shortcut> = new Map<string, Shortcut>([
-  ...MENU_COMMANDS.flatMap((command) =>
-    command.shortcut === undefined ? [] : [[keyOf(command.shortcut), command.id] as const],
-  ),
-  ["escape", "leave-full-screen"],
-]);
+/** Les touches et ce qu'elles lancent ; refaite quand un raccourci est choisi (saisie vocale). */
+let table: { readonly built: number; readonly map: ReadonlyMap<string, Shortcut> } | null = null;
+
+function shortcuts(): ReadonlyMap<string, Shortcut> {
+  if (table === null || table.built !== shortcutsChanged())
+    table = {
+      built: shortcutsChanged(),
+      map: new Map<string, Shortcut>([
+        ...MENU_COMMANDS.flatMap((command) => {
+          const shortcut = shortcutOf(command);
+          return shortcut === undefined ? [] : [[keyOf(shortcut), command.id] as const];
+        }),
+        ["escape", "leave-full-screen"],
+      ]),
+    };
+  return table.map;
+}
 
 /** Ce qu'il faut savoir d'une touche pressée. */
 export interface KeyPress {
@@ -44,7 +55,7 @@ const DIGIT_KEY = /^Digit(\d)$/;
 export function shortcutFor(press: KeyPress): Shortcut | null {
   const modifiers = `${press.metaKey ? "cmd+" : ""}${press.ctrlKey ? "ctrl+" : ""}${press.shiftKey ? "shift+" : ""}`;
   const digit = DIGIT_KEY.exec(press.code)?.[1];
-  const typed = SHORTCUTS.get(`${modifiers}${press.key.toLowerCase()}`);
+  const typed = shortcuts().get(`${modifiers}${press.key.toLowerCase()}`);
   // Stryker disable next-line ConditionalExpression: sans chiffre, la clé « cmd+undefined » ne désigne aucune commande : même résultat.
-  return typed ?? (digit === undefined ? null : (SHORTCUTS.get(`${modifiers}${digit}`) ?? null));
+  return typed ?? (digit === undefined ? null : (shortcuts().get(`${modifiers}${digit}`) ?? null));
 }

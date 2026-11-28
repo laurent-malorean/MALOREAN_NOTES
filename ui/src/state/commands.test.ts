@@ -1,5 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { COMMANDS, MENU_COMMANDS, matchingCommands, PALETTE } from "./commands";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  chooseShortcut,
+  COMMANDS,
+  MENU_COMMANDS,
+  matchingCommands,
+  onShortcutChosen,
+  PALETTE,
+  shortcutOf,
+  shortcutsChanged,
+} from "./commands";
 
 const labels = (query: string) => matchingCommands(query).map((c) => c.label);
 
@@ -89,5 +98,40 @@ describe("palette de commandes", () => {
       "À propos de MALOREAN Notes",
     ]);
     expect(labels("")).toHaveLength(COMMANDS.length);
+  });
+});
+
+describe("raccourci choisi pour une commande", () => {
+  const voice = COMMANDS.find(
+    (command) => command.id === "voice-input",
+  ) as (typeof COMMANDS)[number];
+  afterEach(() => chooseShortcut("voice-input", null));
+
+  it("remplace celui de la liste, et `null` le rend", () => {
+    expect(shortcutOf(voice)).toBe("Ctrl+Maj+D");
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    expect(shortcutOf(voice)).toBe("Ctrl+Maj+E");
+    chooseShortcut("voice-input", null);
+    expect(shortcutOf(voice)).toBe("Ctrl+Maj+D");
+  });
+
+  it("laisse les autres commandes avec le leur, et ne donne rien à celles qui n'en ont pas", () => {
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    const bold = COMMANDS.find((command) => command.id === "bold") as (typeof COMMANDS)[number];
+    expect(shortcutOf(bold)).toBe("Cmd+B");
+    expect(shortcutOf({ id: "open-link" })).toBeUndefined();
+  });
+
+  it("prévient ceux qui l'écoutent, et compte les changements, seulement quand il change", () => {
+    let calls = 0;
+    onShortcutChosen(() => (calls += 1));
+    const before = shortcutsChanged();
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    expect([calls, shortcutsChanged() - before]).toEqual([1, 1]);
+    chooseShortcut("voice-input", "Ctrl+Maj+E");
+    chooseShortcut("voice-input", "Ctrl+Maj+D");
+    expect([calls, shortcutsChanged() - before]).toEqual([2, 2]);
+    chooseShortcut("voice-input", null);
+    expect([calls, shortcutsChanged() - before]).toEqual([2, 2]);
   });
 });

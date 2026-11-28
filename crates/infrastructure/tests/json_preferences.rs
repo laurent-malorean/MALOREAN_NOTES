@@ -375,3 +375,45 @@ fn the_allowed_servers_are_kept_when_the_workspaces_are_saved_and_never_written_
     let kept: serde_json::Value = serde_json::from_str(&text).unwrap();
     assert!(kept["workspaces"][0].get("allowed_mcp_servers").is_none());
 }
+
+#[test]
+fn the_voice_shortcut_is_written_only_when_it_is_not_the_default() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("preferences.json");
+    let preferences = JsonPreferences::new(file.clone());
+    preferences
+        .save_voice_shortcut(&"Alt+Cmd+E".parse().unwrap())
+        .unwrap();
+    let text = std::fs::read_to_string(&file).unwrap();
+    assert!(text.contains(r#""voice_shortcut": "Alt+Cmd+E""#), "{text}");
+    preferences
+        .save_voice_shortcut(&"Ctrl+Maj+D".parse().unwrap())
+        .unwrap();
+    let text = std::fs::read_to_string(&file).unwrap();
+    assert!(!text.contains("voice_shortcut"), "{text}");
+}
+
+#[test]
+fn a_voice_shortcut_that_is_no_longer_valid_counts_as_the_default() {
+    for stored in ["D", "Ctrl+Tab", "", "n'importe quoi"] {
+        let (_dir, preferences) = written(&format!(r#"{{ "voice_shortcut": "{stored}" }}"#));
+        assert_eq!(
+            preferences.voice_shortcut().unwrap().to_string(),
+            "Ctrl+Maj+D",
+            "{stored}"
+        );
+    }
+}
+
+#[test]
+fn the_voice_beeps_are_written_only_when_they_are_wanted() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("preferences.json");
+    let preferences = JsonPreferences::new(file.clone());
+    preferences.save_voice_beeps(true).unwrap();
+    let text = std::fs::read_to_string(&file).unwrap();
+    assert!(text.contains(r#""voice_beeps": true"#), "{text}");
+    preferences.save_voice_beeps(false).unwrap();
+    let text = std::fs::read_to_string(&file).unwrap();
+    assert!(!text.contains("voice_beeps"), "{text}");
+}

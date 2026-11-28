@@ -7,6 +7,7 @@ use std::thread;
 use std::time::Duration;
 
 use domain::voice_input::{Dictation, SILENCE_TIMEOUT, VoiceEvent, VoiceFailure};
+use domain::voice_shortcut::VoiceShortcut;
 
 use crate::{
     AppError, Listening, Preferences, Transcriber, Uptime, VoiceCatalog, VoiceEvents, VoiceSink,
@@ -24,6 +25,15 @@ pub struct VoiceStatus {
     pub chosen: Option<String>,
     /// Une saisie vocale est en cours (ou se termine).
     pub listening: bool,
+}
+
+/// Les réglages de la saisie vocale que l'utilisateur choisit (fiche 0109).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VoiceSettings {
+    /// Le raccourci qui démarre et arrête la dictée.
+    pub shortcut: VoiceShortcut,
+    /// Un bip au début et à la fin de la dictée.
+    pub beeps: bool,
 }
 
 /// Une écoute lancée : sa dictée, et de quoi l'arrêter.
@@ -103,6 +113,44 @@ impl VoiceInput {
         })
     }
 
+    /// Le raccourci et les bips choisis.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si les préférences ne se lisent pas.
+    pub fn settings(&self) -> Result<VoiceSettings, AppError> {
+        Ok(VoiceSettings {
+            shortcut: self.inner.preferences.voice_shortcut()?,
+            beeps: self.inner.preferences.voice_beeps()?,
+        })
+    }
+
+    /// Garde `shortcut` (écrit comme dans les menus : `Ctrl+Maj+E`) comme raccourci de la saisie
+    /// vocale, ou, avec `None`, revient à Ctrl+Maj+D ; rend le raccourci gardé, écrit comme dans
+    /// les menus. Permis pendant une écoute.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::VoiceShortcut`] si ce n'est pas un raccourci valide (rien n'est gardé) ;
+    /// [`AppError::StorageUnavailable`] si les préférences ne s'écrivent pas.
+    pub fn choose_shortcut(&self, shortcut: Option<&str>) -> Result<VoiceShortcut, AppError> {
+        let shortcut = match shortcut {
+            Some(written) => written.parse()?,
+            None => VoiceShortcut::default(),
+        };
+        self.inner.preferences.save_voice_shortcut(&shortcut)?;
+        Ok(shortcut)
+    }
+
+    /// Garde le choix des bips au début et à la fin de la dictée. Permis pendant une écoute.
+    ///
+    /// # Errors
+    ///
+    /// [`AppError::StorageUnavailable`] si les préférences ne s'écrivent pas.
+    pub fn choose_beeps(&self, beeps: bool) -> Result<(), AppError> {
+        Ok(self.inner.preferences.save_voice_beeps(beeps)?)
+    }
+
     /// Garde `language` comme langue de la saisie vocale, ou, avec `None`, revient à celle du Mac.
     ///
     /// # Errors
@@ -139,9 +187,9 @@ impl VoiceInput {
     /// # Errors
     ///
     /// [`VoiceFailure::AlreadyListening`] si une saisie vocale est en cours (ou se termine),
-    /// [`VoiceFailure::LanguageUnsupported`] si le Mac n'a aucune langue à proposer, l'erreur du
-    /// moteur s'il ne peut pas être lancé ; [`AppError::StorageUnavailable`] si les préférences ne
-    /// se lisent pas.
+    /// l'erreur du moteur s'il ne peut pas être lancé ; [`AppError::StorageUnavailable`] si les
+    /// préférences ne se lisent pas. Un Mac sans langue à proposer arrive par un événement
+    /// ([`VoiceFailure::LanguageUnsupported`]).
     pub fn start(&self) -> Result<(), AppError> {
         let running = Arc::new(Running {
             dictation: Mutex::new(Dictation::new(self.inner.silence)),
@@ -182,20 +230,14 @@ impl VoiceInput {
     }
 
     fn listen(&self, running: &Arc<Running>) -> Result<(), AppError> {
-        let language = match self.inner.preferences.voice_language()? {
-            Some(language) => language,
-            None => self
-                .inner
-                .transcriber
-                .catalog()?
-                .system
-                .ok_or(VoiceFailure::LanguageUnsupported)?,
-        };
+        // Sans langue choisie, le moteur trouve lui-même celle du Mac : demander le catalogue
+        // ici lancerait un programme de plus avant l'écoute (fiche 0107).
+        let language = self.inner.preferences.voice_language()?;
         let sink: VoiceSink = {
             let (inner, running) = (Arc::clone(&self.inner), Arc::clone(running));
             Box::new(move |event| inner.receive(&running, event))
         };
-        let listening = self.inner.transcriber.listen(&language, sink)?;
+        let listening = self.inner.transcriber.listen(language.as_deref(), sink)?;
         *locked(&running.listening) = Some(listening);
         let (inner, running) = (Arc::clone(&self.inner), Arc::clone(running));
         thread::spawn(move || inner.watch_silence(&running));

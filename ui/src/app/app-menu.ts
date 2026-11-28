@@ -4,7 +4,7 @@
 import type * as Bridge from "../bridge";
 import { ASSISTANT_COMMANDS, menuBar, menuCommand, NOTE_COMMANDS } from "../state/app-menu";
 import { activeNote, type Columns } from "../state/columns";
-import type { MenuCommandId } from "../state/commands";
+import { type MenuCommandId, onShortcutChosen } from "../state/commands";
 import { dialogOpen } from "./commands";
 import type { WritingAssistance } from "./writing-assistant";
 
@@ -26,11 +26,26 @@ export interface AppMenuConnection {
 export function connectAppMenu(deps: AppMenuDeps): AppMenuConnection {
   const { backend, actions, error } = deps;
   let noteShown = false;
+  // Les commandes de l'aide à l'écriture ont été rendues actives : une barre refaite doit les rendre actives de nouveau.
+  let assistantEnabled = false;
   // Chaque demande attend la précédente : griser avant que la barre soit construite serait perdu.
-  let queue = backend.installMenu(menuBar(noteShown)).catch(error);
+  const install = async (): Promise<void> => {
+    await backend.installMenu(menuBar(noteShown));
+    if (assistantEnabled) await backend.enableMenuItems([...ASSISTANT_COMMANDS], true);
+  };
+  let queue: Promise<unknown> = install().catch(error);
   void deps.assistant.status.then((status) => {
     if (status.kind !== "available") return;
-    queue = queue.then(() => backend.enableMenuItems([...ASSISTANT_COMMANDS], true)).catch(error);
+    queue = queue
+      .then(() => {
+        assistantEnabled = true;
+        return backend.enableMenuItems([...ASSISTANT_COMMANDS], true);
+      })
+      .catch(error);
+  });
+  // Un raccourci choisi (saisie vocale) : la barre se refait avec lui.
+  onShortcutChosen(() => {
+    queue = queue.then(install).catch(error);
   });
   backend
     .onMenuCommand((id) => {

@@ -15,7 +15,8 @@ use crate::{
 /// Ce que le faux a reçu.
 #[derive(Debug, Default)]
 struct Received {
-    listened: Vec<String>,
+    listened: Vec<Option<String>>,
+    catalogs: usize,
     prepared: Vec<String>,
     stops: usize,
 }
@@ -115,9 +116,14 @@ impl FakeTranscriber {
         self
     }
 
-    /// Les langues demandées à l'écoute, dans l'ordre.
-    pub fn listened(&self) -> Vec<String> {
+    /// Les langues demandées à l'écoute, dans l'ordre (`None` : la langue du Mac).
+    pub fn listened(&self) -> Vec<Option<String>> {
         self.received().listened.clone()
+    }
+
+    /// Combien de fois le catalogue a été demandé.
+    pub fn catalogs(&self) -> usize {
+        self.received().catalogs
     }
 
     /// Les langues préparées, dans l'ordre.
@@ -159,6 +165,7 @@ impl Listening for FakeListening {
 
 impl Transcriber for FakeTranscriber {
     fn catalog(&self) -> Result<VoiceCatalog, VoiceFailure> {
+        self.received().catalogs += 1;
         self.catalog.clone()
     }
 
@@ -169,20 +176,30 @@ impl Transcriber for FakeTranscriber {
 
     fn listen(
         &self,
-        language: &str,
+        language: Option<&str>,
         mut sink: VoiceSink,
     ) -> Result<Box<dyn Listening>, VoiceFailure> {
-        self.received().listened.push(language.to_owned());
+        self.received().listened.push(language.map(str::to_owned));
         if let Some(reason) = self.listen_failure {
             return Err(reason);
         }
+        // Comme le vrai moteur, qui cherche lui-même la langue du Mac : sans langue à proposer,
+        // l'échec arrive par un événement.
+        let without_language = language.is_none()
+            && self
+                .catalog
+                .as_ref()
+                .is_ok_and(|catalog| catalog.system.is_none());
         let (stop, stopped) = mpsc::channel();
         let (script, at_stop, ends_by_itself) = (
             self.script.clone(),
             self.at_stop.clone(),
-            self.ends_by_itself,
+            self.ends_by_itself || without_language,
         );
         thread::spawn(move || {
+            if without_language {
+                sink(VoiceEvent::Failed(VoiceFailure::LanguageUnsupported));
+            }
             script.into_iter().for_each(&mut sink);
             if !ends_by_itself {
                 // Un arrêt demandé, ou une écoute abandonnée : dans les deux cas, on finit.
@@ -270,7 +287,7 @@ mod tests {
             ])
             .saying_at_stop(vec![VoiceEvent::Fixed("Bonjour.".to_owned())]);
         let seen = Arc::default();
-        let listening = transcriber.listen("fr-FR", sink_into(&seen)).unwrap();
+        let listening = transcriber.listen(Some("fr-FR"), sink_into(&seen)).unwrap();
         thread::sleep(Duration::from_millis(100));
         assert_eq!(
             *seen.lock().unwrap(),
@@ -289,7 +306,7 @@ mod tests {
                 VoiceEvent::Ended
             ]
         );
-        assert_eq!(transcriber.listened(), vec!["fr-FR".to_owned()]);
+        assert_eq!(transcriber.listened(), vec![Some("fr-FR".to_owned())]);
         assert_eq!(transcriber.stops(), 1);
     }
 
@@ -299,7 +316,7 @@ mod tests {
             .saying(vec![VoiceEvent::Failed(VoiceFailure::Stopped)])
             .ending_by_itself();
         let seen = Arc::default();
-        let _listening = transcriber.listen("fr-FR", sink_into(&seen)).unwrap();
+        let _listening = transcriber.listen(Some("fr-FR"), sink_into(&seen)).unwrap();
         assert_eq!(
             wait_for_end(&seen),
             vec![VoiceEvent::Failed(VoiceFailure::Stopped), VoiceEvent::Ended]
@@ -310,7 +327,7 @@ mod tests {
     fn an_abandoned_listening_ends() {
         let transcriber = FakeTranscriber::new();
         let seen = Arc::default();
-        drop(transcriber.listen("fr-FR", sink_into(&seen)).unwrap());
+        drop(transcriber.listen(Some("fr-FR"), sink_into(&seen)).unwrap());
         assert_eq!(wait_for_end(&seen), vec![VoiceEvent::Ended]);
     }
 
@@ -320,7 +337,9 @@ mod tests {
             .failing_to_listen(VoiceFailure::EngineMissing)
             .failing_to_prepare(VoiceFailure::LanguageDownload);
         assert_eq!(
-            transcriber.listen("fr-FR", Box::new(|_| ())).unwrap_err(),
+            transcriber
+                .listen(Some("fr-FR"), Box::new(|_| ()))
+                .unwrap_err(),
             VoiceFailure::EngineMissing
         );
         assert_eq!(
@@ -343,7 +362,7 @@ mod tests {
             transcriber.prepare("fr-FR"),
             Err(VoiceFailure::SystemTooOld)
         );
-        assert!(transcriber.listen("fr-FR", Box::new(|_| ())).is_err());
+        assert!(transcriber.listen(Some("fr-FR"), Box::new(|_| ())).is_err());
     }
 
     #[test]

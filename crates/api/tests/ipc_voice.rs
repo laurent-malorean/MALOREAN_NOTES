@@ -105,6 +105,9 @@ fn the_event_and_the_commands_have_the_names_and_arguments_the_interface_uses() 
     assert_eq!(VOICE_INPUT_EVENT, "voice-input-event");
     for expected in [
         "\"voice_input_status\"",
+        "\"voice_input_settings\"",
+        "\"choose_voice_shortcut\", { shortcut }",
+        "\"choose_voice_beeps\", { beeps }",
         "\"choose_voice_language\", { language }",
         "\"prepare_voice_language\", { language }",
         "\"start_voice_input\"",
@@ -167,6 +170,9 @@ fn without_an_engine_the_voice_input_is_unavailable() {
         ("start_voice_input", json!({})),
         ("choose_voice_language", json!({ "language": null })),
         ("prepare_voice_language", json!({ "language": "fr-FR" })),
+        ("voice_input_settings", json!({})),
+        ("choose_voice_shortcut", json!({ "shortcut": "Ctrl+E" })),
+        ("choose_voice_beeps", json!({ "beeps": true })),
     ] {
         assert_eq!(error_message(call(&window, command, args)), message);
     }
@@ -211,6 +217,69 @@ fn the_chosen_language_is_kept_in_the_preferences_and_the_status_follows() {
         )),
         "Cette langue n'est pas prise en charge par la saisie vocale."
     );
+}
+
+#[test]
+fn the_settings_are_the_default_shortcut_and_no_beep_at_first() {
+    let (window, _) = window(Some(FakeTranscriber::new()));
+    assert_eq!(
+        call(&window, "voice_input_settings", json!({})).unwrap(),
+        json!({ "shortcut": "Ctrl+Maj+D", "defaultShortcut": true, "beeps": false })
+    );
+}
+
+#[test]
+fn a_chosen_shortcut_is_kept_in_the_preferences_and_answered_written_the_way_of_the_menus() {
+    let (window, preferences) = window(Some(FakeTranscriber::new()));
+    assert_eq!(
+        call(
+            &window,
+            "choose_voice_shortcut",
+            json!({ "shortcut": "maj+cmd+e" })
+        )
+        .unwrap(),
+        json!({ "shortcut": "Cmd+Maj+E", "defaultShortcut": false, "beeps": false })
+    );
+    assert_eq!(
+        preferences.voice_shortcut().unwrap().to_string(),
+        "Cmd+Maj+E"
+    );
+    assert_eq!(
+        call(
+            &window,
+            "choose_voice_shortcut",
+            json!({ "shortcut": null })
+        )
+        .unwrap(),
+        json!({ "shortcut": "Ctrl+Maj+D", "defaultShortcut": true, "beeps": false })
+    );
+    assert!(preferences.voice_shortcut().unwrap().is_default());
+}
+
+#[test]
+fn an_invalid_shortcut_is_refused_with_its_reason_and_nothing_is_kept() {
+    let (window, preferences) = window(Some(FakeTranscriber::new()));
+    assert_eq!(
+        error_message(call(
+            &window,
+            "choose_voice_shortcut",
+            json!({ "shortcut": "D" })
+        )),
+        "Un raccourci demande la touche Ctrl ou Cmd (avec Option ou Maj si vous voulez) : Maj et Option seules servent à taper."
+    );
+    assert!(preferences.voice_shortcut().unwrap().is_default());
+}
+
+#[test]
+fn the_beeps_are_kept_in_the_preferences() {
+    let (window, preferences) = window(Some(FakeTranscriber::new()));
+    assert_eq!(
+        call(&window, "choose_voice_beeps", json!({ "beeps": true })).unwrap(),
+        json!({ "shortcut": "Ctrl+Maj+D", "defaultShortcut": true, "beeps": true })
+    );
+    assert!(preferences.voice_beeps().unwrap());
+    call(&window, "choose_voice_beeps", json!({ "beeps": false })).unwrap();
+    assert!(!preferences.voice_beeps().unwrap());
 }
 
 #[test]

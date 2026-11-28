@@ -2,7 +2,7 @@
 // de commande ne donne que l'identifiant : son nom et son raccourci viennent de la liste des
 // commandes, la même que la palette et les raccourcis.
 import type { AppMenu, MenuEntryItem, StandardItem } from "../bridge";
-import { MENU_COMMANDS, type MenuCommandId } from "./commands";
+import { MENU_COMMANDS, type MenuCommandId, shortcutOf } from "./commands";
 
 /** Un élément de menu : une commande (nom de la palette sauf `label`), un élément standard, un trait. */
 export type MenuItemDef =
@@ -203,11 +203,12 @@ function entry(item: MenuItemDef, noteShown: boolean): MenuEntryItem {
   if ("standard" in item) return { kind: "standard", item: item.standard, label: item.label };
   const command = BY_ID.get(item.command);
   if (command === undefined) throw new Error(`commande inconnue : ${item.command}`);
+  const shortcut = shortcutOf(command);
   return {
     kind: "command",
     id: command.id,
     label: item.label ?? command.label,
-    accelerator: command.shortcut === undefined ? null : accelerator(command.shortcut),
+    accelerator: shortcut === undefined ? null : accelerator(shortcut),
     enabled: (noteShown || !NOTE_COMMANDS.has(command.id)) && !ASSISTANT_COMMANDS.has(command.id),
   };
 }

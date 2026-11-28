@@ -2,6 +2,7 @@ use super::*;
 use crate::testing::{FakePreferences, FakeTranscriber, FakeUptime, RecordingVoiceEvents};
 use crate::{VoiceAccess, VoiceLanguage};
 use VoiceEvent::{Ended, Failed, Fixed, Listening, Preparing, Provisional, Silence};
+use domain::voice_shortcut::ShortcutError;
 
 struct Bench {
     input: VoiceInput,
@@ -74,7 +75,45 @@ fn listening_uses_the_language_of_the_mac_without_a_choice() {
     bench.input.start().unwrap();
     bench.input.stop();
     bench.events.wait_for_the_end();
-    assert_eq!(bench.transcriber.listened(), vec![text("fr-FR")]);
+    assert_eq!(bench.transcriber.listened(), vec![None]);
+}
+
+#[test]
+fn starting_does_not_ask_the_engine_for_its_catalog() {
+    // Le catalogue lance un second programme (énumère les langues, lit les modèles) : un
+    // démarrage à froid de plus entre le clic et l'écoute (fiche 0107).
+    for chosen in [None, Some("en-US")] {
+        let bench = bench(FakeTranscriber::new());
+        bench.input.choose_language(chosen).unwrap();
+        let asked = bench.transcriber.catalogs();
+        bench.input.start().unwrap();
+        bench.input.stop();
+        bench.events.wait_for_the_end();
+        assert_eq!(bench.transcriber.catalogs(), asked, "{chosen:?}");
+    }
+}
+
+#[test]
+fn the_events_of_the_start_reach_the_interface_in_the_order_of_the_engine() {
+    // Préparation du modèle, puis écoute, puis le texte capté dès l'ouverture du micro.
+    let bench = bench(FakeTranscriber::new().saying(vec![
+        Preparing,
+        Listening,
+        Provisional(text("bon")),
+        Fixed(text("Bonjour. ")),
+    ]));
+    bench.input.start().unwrap();
+    bench.input.stop();
+    assert_eq!(
+        bench.events.wait_for_the_end(),
+        vec![
+            Preparing,
+            Listening,
+            Provisional(text("bon")),
+            Fixed(text("Bonjour. ")),
+            Ended
+        ]
+    );
 }
 
 #[test]
@@ -84,21 +123,21 @@ fn listening_uses_the_chosen_language() {
     bench.input.start().unwrap();
     bench.input.stop();
     bench.events.wait_for_the_end();
-    assert_eq!(bench.transcriber.listened(), vec![text("en-US")]);
+    assert_eq!(bench.transcriber.listened(), vec![Some(text("en-US"))]);
 }
 
 #[test]
-fn a_mac_without_a_language_to_offer_cannot_listen() {
+fn a_mac_without_a_language_to_offer_says_so_by_an_event() {
     let bench = bench(FakeTranscriber::new().with_catalog(VoiceCatalog {
         system: None,
         access: VoiceAccess::Allowed,
         languages: Vec::new(),
     }));
+    bench.input.start().unwrap();
     assert_eq!(
-        bench.input.start(),
-        Err(AppError::Voice(VoiceFailure::LanguageUnsupported))
+        bench.events.wait_for_the_end(),
+        vec![Failed(VoiceFailure::LanguageUnsupported), Ended]
     );
-    assert!(bench.transcriber.listened().is_empty());
     assert!(!bench.input.status().unwrap().listening);
 }
 
@@ -333,4 +372,69 @@ fn a_language_listed_by_the_mac_is_known_by_its_identifier() {
     }));
     bench.input.choose_language(Some("fr-FR")).unwrap();
     assert!(bench.input.choose_language(Some("fr")).is_err());
+}
+
+#[test]
+fn the_settings_are_the_default_shortcut_and_no_beep_at_first() {
+    let bench = bench(FakeTranscriber::new());
+    let settings = bench.input.settings().unwrap();
+    assert_eq!(settings.shortcut.to_string(), "Ctrl+Maj+D");
+    assert!(settings.shortcut.is_default());
+    assert!(!settings.beeps);
+}
+
+#[test]
+fn a_chosen_shortcut_is_kept_written_the_way_of_the_menus_and_can_be_reset() {
+    let bench = bench(FakeTranscriber::new());
+    let chosen = bench.input.choose_shortcut(Some("cmd+alt+e")).unwrap();
+    assert_eq!(chosen.to_string(), "Alt+Cmd+E");
+    assert_eq!(bench.input.settings().unwrap().shortcut, chosen);
+    assert_eq!(bench.preferences.voice_shortcut().unwrap(), chosen);
+    let reset = bench.input.choose_shortcut(None).unwrap();
+    assert!(reset.is_default());
+    assert!(bench.input.settings().unwrap().shortcut.is_default());
+}
+
+#[test]
+fn a_shortcut_that_is_not_valid_is_refused_with_its_reason_and_nothing_is_kept() {
+    let bench = bench(FakeTranscriber::new());
+    bench.input.choose_shortcut(Some("Ctrl+F5")).unwrap();
+    for (written, reason) in [
+        ("D", ShortcutError::NoControlOrCommand),
+        ("Maj+D", ShortcutError::NoControlOrCommand),
+        ("Ctrl+Maj", ShortcutError::NoKey),
+        ("Ctrl+Tab", ShortcutError::UnknownKey),
+        ("Ctrl+D+E", ShortcutError::TooManyKeys),
+    ] {
+        assert_eq!(
+            bench.input.choose_shortcut(Some(written)),
+            Err(AppError::VoiceShortcut(reason)),
+            "{written}"
+        );
+    }
+    assert_eq!(
+        bench.input.settings().unwrap().shortcut.to_string(),
+        "Ctrl+F5"
+    );
+}
+
+#[test]
+fn the_shortcut_and_the_beeps_can_change_while_listening() {
+    let bench = bench(FakeTranscriber::new());
+    bench.input.start().unwrap();
+    bench.input.choose_shortcut(Some("Ctrl+E")).unwrap();
+    bench.input.choose_beeps(true).unwrap();
+    bench.input.stop();
+    bench.events.wait_for_the_end();
+    assert!(bench.input.settings().unwrap().beeps);
+}
+
+#[test]
+fn the_beeps_are_kept_and_can_be_turned_off() {
+    let bench = bench(FakeTranscriber::new());
+    bench.input.choose_beeps(true).unwrap();
+    assert!(bench.input.settings().unwrap().beeps);
+    assert!(bench.preferences.voice_beeps().unwrap());
+    bench.input.choose_beeps(false).unwrap();
+    assert!(!bench.input.settings().unwrap().beeps);
 }

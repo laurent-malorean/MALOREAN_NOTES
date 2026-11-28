@@ -24,6 +24,7 @@ import type { RemovedLineItem } from "./generated/RemovedLineItem";
 import type { VoiceEventItem } from "./generated/VoiceEventItem";
 import type { VoiceInputStatusItem } from "./generated/VoiceInputStatusItem";
 import type { VoiceLanguageItem } from "./generated/VoiceLanguageItem";
+import type { VoiceSettingsItem } from "./generated/VoiceSettingsItem";
 import type { CanvasArrowItem } from "./generated/CanvasArrowItem";
 import type { CanvasCardItem } from "./generated/CanvasCardItem";
 import type { CanvasFileItem } from "./generated/CanvasFileItem";
@@ -91,6 +92,7 @@ export type {
   VoiceEventItem,
   VoiceInputStatusItem,
   VoiceLanguageItem,
+  VoiceSettingsItem,
   ActionKindItem,
   AgentStateItem,
   AiWorkspaceItem,
@@ -565,6 +567,14 @@ export const onModelDownload = (handler: (progress: ModelDownloadItem) => void) 
 
 /** L'état de la saisie vocale : le micro peut-il servir, l'accès, la langue utilisée, les langues du Mac. */
 export const voiceInputStatus = () => invoke<VoiceInputStatusItem>("voice_input_status");
+/** Le raccourci et les bips de la saisie vocale. */
+export const voiceInputSettings = () => invoke<VoiceSettingsItem>("voice_input_settings");
+/** Choisit le raccourci de la saisie vocale (`null` : Ctrl+Maj+D) ; rend les réglages, le raccourci écrit comme dans les menus. */
+export const chooseVoiceShortcut = (shortcut: string | null) =>
+  invoke<VoiceSettingsItem>("choose_voice_shortcut", { shortcut });
+/** Choisit si la saisie vocale bippe au début et à la fin. */
+export const chooseVoiceBeeps = (beeps: boolean) =>
+  invoke<VoiceSettingsItem>("choose_voice_beeps", { beeps });
 /** Choisit la langue de la saisie vocale (`id` comme `fr-FR`) ; `null` : la langue du Mac. Refusé pendant l'écoute. */
 export const chooseVoiceLanguage = (language: string | null) =>
   invoke<null>("choose_voice_language", { language });

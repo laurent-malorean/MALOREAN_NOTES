@@ -1,7 +1,7 @@
 //! La saisie vocale vue de l'interface (fiche 0103) : son état pour le micro et l'onglet des
 //! réglages, et ses événements.
 
-use application::use_cases::VoiceStatus;
+use application::use_cases::{VoiceSettings, VoiceStatus};
 use application::{VoiceAccess, VoiceLanguage};
 use domain::voice_input::{SILENCE_MESSAGE, VoiceEvent};
 use serde::{Deserialize, Serialize};
@@ -109,6 +109,29 @@ impl From<VoiceStatus> for VoiceInputStatusItem {
                     listening: status.listening,
                 }
             }
+        }
+    }
+}
+
+/// Les réglages de la saisie vocale que l'utilisateur choisit : le raccourci et les bips.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct VoiceSettingsItem {
+    /// Le raccourci qui démarre et arrête la dictée, écrit comme dans les menus (`Ctrl+Maj+D`).
+    pub shortcut: String,
+    /// C'est le raccourci de départ : « Rétablir le raccourci par défaut » n'a rien à faire.
+    pub default_shortcut: bool,
+    /// Un bip au début et à la fin de la dictée.
+    pub beeps: bool,
+}
+
+impl From<VoiceSettings> for VoiceSettingsItem {
+    fn from(settings: VoiceSettings) -> Self {
+        Self {
+            default_shortcut: settings.shortcut.is_default(),
+            shortcut: settings.shortcut.to_string(),
+            beeps: settings.beeps,
         }
     }
 }
@@ -252,6 +275,33 @@ mod tests {
         let item = json(&status(Some("fr-FR"), Some("tlh"), false));
         assert_eq!(item["language"], "tlh");
         assert_eq!(item["languageName"], serde_json::Value::Null);
+    }
+
+    #[test]
+    fn the_settings_say_whether_the_shortcut_is_the_default() {
+        let settings = |written: &str| -> VoiceSettingsItem {
+            VoiceSettings {
+                shortcut: written.parse().unwrap(),
+                beeps: true,
+            }
+            .into()
+        };
+        assert_eq!(
+            settings("Ctrl+Maj+D"),
+            VoiceSettingsItem {
+                shortcut: "Ctrl+Maj+D".to_owned(),
+                default_shortcut: true,
+                beeps: true
+            }
+        );
+        assert_eq!(
+            settings("maj+cmd+e"),
+            VoiceSettingsItem {
+                shortcut: "Cmd+Maj+E".to_owned(),
+                default_shortcut: false,
+                beeps: true
+            }
+        );
     }
 
     #[test]

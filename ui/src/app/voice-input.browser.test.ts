@@ -1,127 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { settle } from "../../test-support/app-fixture";
-import type { VoiceEventItem, VoiceInputStatusItem } from "../bridge";
-import type { Editor } from "../editor/editor";
-import { buildFormatBar } from "../screens/format-bar";
-import { microphoneButton } from "../screens/microphone";
+import {
+  allowed,
+  click,
+  ENGLISH,
+  FRENCH,
+  ready,
+  setup,
+} from "../../test-support/voice-input-fixture";
 import { columnsStarted, noteOpened, notesMoved } from "../state/columns";
-import { createVoiceInput, type VoiceInputDeps } from "./voice-input";
+import { chooseShortcut } from "../state/commands";
 import "../theme.css";
 import "../style.css";
 
-const FRENCH = { id: "fr-FR", name: "français (France)", ready: true };
-const ENGLISH = { id: "en-US", name: "anglais (États-Unis)", ready: false };
-
-const allowed = (changes: Partial<Extract<VoiceInputStatusItem, { kind: "available" }>> = {}) =>
-  ({
-    kind: "available",
-    access: "allowed",
-    language: "fr-FR",
-    languageName: "français (France)",
-    usingMacLanguage: true,
-    languages: [ENGLISH, FRENCH],
-    listening: false,
-    ...changes,
-  }) as VoiceInputStatusItem;
-
 const columns = noteOpened(columnsStarted, "a.md");
 
-function setup(initial: VoiceInputStatusItem = allowed(), failures: Record<string, unknown> = {}) {
-  const bar = document.createElement("div");
-  document.body.replaceChildren(bar);
-  buildFormatBar(bar, () => undefined);
-  let status = initial;
-  let emit: (event: VoiceEventItem) => void = () => undefined;
-  const calls: string[] = [];
-  const shown: {
-    message: string;
-    kind?: string;
-    action?: { label: string; run: () => Promise<unknown> };
-  }[] = [];
-  const errors: unknown[] = [];
-  const dictation = {
-    begin: vi.fn(),
-    provisional: vi.fn(),
-    fixed: vi.fn(),
-    end: vi.fn(),
-    drop: vi.fn(),
-    listening: vi.fn(),
-  };
-  const editor = { dictation } as unknown as Editor;
-  const state = {
-    editor: editor as Editor | null,
-    note: "a.md",
-    failures,
-  };
-  const call = (name: string) => async () => {
-    calls.push(name);
-    if (name in state.failures) throw state.failures[name];
-    return null;
-  };
-  const backend = {
-    voiceInputStatus: async () => {
-      calls.push("état");
-      if ("état" in state.failures) throw state.failures["état"];
-      return status;
-    },
-    startVoiceInput: call("démarrer"),
-    stopVoiceInput: call("arrêter"),
-    openVoicePrivacySettings: call("réglages macOS"),
-    chooseVoiceLanguage: async (language: string | null) => {
-      calls.push(`choisir ${language}`);
-      if ("choisir" in state.failures) throw state.failures.choisir;
-      return null;
-    },
-    prepareVoiceLanguage: async (language: string) => {
-      calls.push(`préparer ${language}`);
-      if ("préparer" in state.failures) throw state.failures["préparer"];
-      return null;
-    },
-    onVoiceInputEvent: async (handler: (event: VoiceEventItem) => void) => {
-      emit = handler;
-      return () => undefined;
-    },
-    errorMessage: (error: unknown) => (error as { message: string }).message,
-  };
-  const pane = { textEditor: () => state.editor, note: () => state.note };
-  const deps: VoiceInputDeps = {
-    backend,
-    columns: { activePane: () => pane as never, current: () => columns },
-    bar,
-    show: (message, kind, action) => void shown.push({ message, kind, action }),
-    error: (error) => void errors.push(error),
-    run: (action) => void action.catch((error: unknown) => errors.push(error)),
-  };
-  const voice = createVoiceInput(deps);
-  const button = () => microphoneButton(bar) as HTMLButtonElement;
-  return {
-    voice,
-    button,
-    dictation,
-    calls,
-    shown,
-    errors,
-    state,
-    setStatus: (next: VoiceInputStatusItem) => void (status = next),
-    send: (event: VoiceEventItem) => emit(event),
-  };
-}
-
-/** Le contenu est prêt (le moteur a répondu, la colonne a montré sa note) ; le micro est au repos. */
-async function ready(initial?: VoiceInputStatusItem) {
-  const s = setup(initial);
-  await settle();
-  s.voice.refresh();
-  return s;
-}
-
-/** Le clic sur le micro, et ce qu'il déclenche. */
-async function click(s: Awaited<ReturnType<typeof ready>>) {
-  s.voice.toggle();
-  await settle();
-}
-
-beforeEach(() => document.body.replaceChildren());
+beforeEach(() => {
+  document.body.replaceChildren();
+  chooseShortcut("voice-input", null);
+});
 
 describe("saisie vocale : le micro au repos", () => {
   it("est actif, avec son raccourci, quand le moteur répond et qu'un éditeur de texte est ouvert", async () => {

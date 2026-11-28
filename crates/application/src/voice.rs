@@ -70,13 +70,20 @@ pub trait Transcriber: Send + Sync + Debug {
     fn prepare(&self, language: &str) -> Result<(), VoiceFailure>;
 
     /// Lance l'écoute en `language` et rend la main aussitôt : les événements arrivent ensuite
-    /// par `sink`, et finissent toujours par [`VoiceEvent::Ended`], même après un échec.
+    /// par `sink`, et finissent toujours par [`VoiceEvent::Ended`], même après un échec. Sans
+    /// langue (`None`), le moteur cherche lui-même la langue du Mac, sans demande préalable au
+    /// catalogue : un démarrage de moins avant l'écoute (fiche 0107).
     ///
     /// # Errors
     ///
     /// [`VoiceFailure::SystemTooOld`] ou [`VoiceFailure::EngineMissing`] si le moteur ne peut pas
-    /// être lancé ; toute autre raison arrive par `sink`.
-    fn listen(&self, language: &str, sink: VoiceSink) -> Result<Box<dyn Listening>, VoiceFailure>;
+    /// être lancé ; toute autre raison, dont [`VoiceFailure::LanguageUnsupported`] quand le Mac
+    /// n'a aucune langue à proposer, arrive par `sink`.
+    fn listen(
+        &self,
+        language: Option<&str>,
+        sink: VoiceSink,
+    ) -> Result<Box<dyn Listening>, VoiceFailure>;
 }
 
 /// L'interface, qui apprend la saisie vocale par des événements.

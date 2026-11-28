@@ -1,6 +1,6 @@
 // Barre de mise en forme et bloc d'outils d'affichage : leurs boutons, en pilules. Leur raccourci
 // vient de la liste des commandes, la même que la palette et la barre des menus.
-import { COMMANDS, type Command, type CommandId } from "./commands";
+import { COMMANDS, type Command, type CommandId, shortcutOf } from "./commands";
 
 /** Les icônes dessinées de la barre : une par bouton. */
 export type FormatIcon =
@@ -88,6 +88,6 @@ export const DISPLAY_TOOLS: readonly DisplayTool[] = [
 
 /** La bulle d'aide d'un bouton d'affichage : son nom du moment, et le raccourci de sa commande. */
 export function displayToolTitle(label: string, id: CommandId): string {
-  const { shortcut } = command(id);
+  const shortcut = shortcutOf(command(id));
   return shortcut ? `${label} (${shortcut})` : label;
 }

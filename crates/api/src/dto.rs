@@ -55,7 +55,9 @@ pub use mind_map::{MindMapItem, MindNodeItem, PlaceItem};
 pub use templates::TemplatesFolderItem;
 pub use turn_settings::{ClaudeModelItem, EffortItem, TurnSettingsItem};
 pub(crate) use turn_settings::{continued_conversation, turn_settings};
-pub use voice::{VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem, VoiceLanguageItem};
+pub use voice::{
+    VoiceAccessItem, VoiceEventItem, VoiceInputStatusItem, VoiceLanguageItem, VoiceSettingsItem,
+};
 
 /// L'espace de travail ouvert.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

@@ -2891,3 +2891,53 @@ button.claude-chip:hover {
   display: block;
   margin-bottom: 0.5rem;
 }
+
+/* Réglages, onglet « Saisie vocale » : le raccourci (une touche de clavier qui attend la combinaison) et les bips */
+.shortcut-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.shortcut-row [hidden] {
+  display: none;
+}
+.shortcut-key {
+  min-width: 5.5rem;
+  padding: 0.35rem 0.9rem;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-align: center;
+  color: var(--text);
+  background: var(--side-panel);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.shortcut-key:hover {
+  background: var(--selected);
+}
+.shortcut-key.recording {
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--accent);
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  outline-offset: 1px;
+}
+.voice-beeps {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.5rem;
+}
+.voice-beeps input {
+  width: auto;
+  margin: 0;
+}
+.voice-beeps .setting-help {
+  grid-column: 2;
+}
