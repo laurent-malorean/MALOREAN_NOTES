@@ -1874,6 +1874,10 @@ button {
   resize: none;
   overflow-y: auto;
 }
+/* Pendant la saisie vocale, la zone de saisie prend la couleur du micro à l'écoute. */
+.editor .notebook-entry-text.dictating {
+  border-color: var(--danger);
+}
 .editor .notebook-entry-footer {
   display: flex;
   align-items: center;

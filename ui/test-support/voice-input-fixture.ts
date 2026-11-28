@@ -116,7 +116,10 @@ export function setup(
   };
   const state = { editor: { dictation } as unknown as Editor | null, note: "a.md", failures };
   const engine = fakeEngine(initial, failures, calls);
-  const pane = { textEditor: () => state.editor, note: () => state.note };
+  const pane = {
+    dictation: () => state.editor?.dictation ?? null,
+    note: () => state.note,
+  };
   const deps: VoiceInputDeps = {
     backend: { ...engine.backend, ...fakeSettings(saved, failures, settingsCalls) },
     columns: { activePane: () => pane as never, current: () => columns },

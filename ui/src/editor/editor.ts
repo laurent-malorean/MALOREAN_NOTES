@@ -31,6 +31,7 @@ import { linkStatus } from "./links/link-status";
 import { type EditorLinks, linkSiteOf } from "./links/link-site";
 import { noteLinkAt, noteLinks, type OpenNoteLink } from "./links/note-links";
 import { createDictation, type Dictation } from "./voice/dictation";
+import { createEntryDictation, type EntryDictation } from "./voice/entry-dictation";
 import { insertToday, type Today, todayShortcut } from "./writing/today";
 import { type Typewriter, typewriterMode, typewriterStarted } from "./writing/typewriter";
 import { listContinuation } from "./writing/lists";
@@ -92,6 +93,8 @@ export interface Editor {
   writable(): boolean;
   /** La saisie vocale de cet éditeur : texte provisoire en décor, texte fixé écrit au curseur. */
   readonly dictation: Dictation;
+  /** La saisie vocale de la zone de saisie d'un cahier de recherche (un champ de texte simple) : disponible tant que le cahier la montre. */
+  readonly entryDictation: EntryDictation;
   /** Insère la date du jour à la place de la sélection, comme Cmd+Maj+D. */
   insertToday(): void;
   /** Ouvre le lien où se trouve le curseur, comme un clic dessus ; rien s'il n'y en a pas. */
@@ -326,6 +329,7 @@ export function createEditor(
   const { resolveImage, attachmentActions, today = () => new Date(), outline, openLink } = options;
   const { focus, typewriter, outlineArea, page } = adjustableParts(outline ?? null);
   const voice = createDictation(fromElsewhere);
+  const entryDictation = createEntryDictation();
   const extensions = () => [
     focus.extension(),
     typewriter.extension(),
@@ -333,7 +337,7 @@ export function createEditor(
     attachmentActions ? attachments(attachmentActions) : [],
     openLink ? noteLinks(openLink) : [],
     options.links ? [linkMenu(options.links), linkStatus(options.links)] : [],
-    researchNotebook(fromElsewhere, options.addEntry, today, options.copyReference),
+    researchNotebook(fromElsewhere, options.addEntry, today, options.copyReference, entryDictation),
     agendaEventProperties(fromElsewhere),
     history(),
     [listContinuation, firstTitle, findReplace],
@@ -375,6 +379,7 @@ export function createEditor(
     setCharactersPerPage: (characters) => view.dispatch({ effects: page.change(characters) }),
     ...commandParts(view, options, today),
     ...voice.parts(view),
+    entryDictation,
     ...positionParts(view),
     setOutline: (container) => view.dispatch({ effects: outlineArea.change(container) }),
     destroy: () => view.destroy(),

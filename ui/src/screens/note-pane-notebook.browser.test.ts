@@ -130,4 +130,41 @@ describe("colonne : un cahier de recherche", () => {
     expect(m.element.querySelector(".entry-number")).toBeNull();
     expect(m.fake.calls).toContain("ouvrir levures.md #2026-11-16-09h00");
   });
+
+  it("la saisie vocale écrit dans la zone de saisie du cahier, et dans l'éditeur d'une note ordinaire", async () => {
+    const m = mount({
+      add: async () => true,
+      copyReference: async () => {},
+      entries: async () => [],
+    });
+    expect(m.pane.dictation()).toBeNull();
+    await m.pane.load("levures.md");
+    expect(m.pane.textEditor()).toBeNull();
+    expect(m.pane.dictation()).toBe(m.pane.editor.entryDictation);
+    await m.pane.load("autre.md");
+    expect(m.pane.dictation()).toBe(m.pane.editor.dictation);
+    expect(m.pane.dictation()).not.toBeNull();
+  });
+
+  it("sans zone de saisie (aucune action sur les cahiers), le cahier n'a pas de saisie vocale", async () => {
+    const m = mount();
+    await m.pane.load("levures.md");
+    expect(m.pane.dictation()).toBeNull();
+  });
+
+  it("quitter le cahier fixe le texte provisoire de la zone de saisie et arrête la dictée", async () => {
+    const m = mount({
+      add: async () => true,
+      copyReference: async () => {},
+      entries: async () => [],
+    });
+    await m.pane.load("levures.md");
+    const text = m.element.querySelector("textarea") as HTMLTextAreaElement;
+    const voice = m.pane.editor.entryDictation;
+    voice.begin();
+    voice.provisional("une idée");
+    m.pane.destroy();
+    expect(text.value).toBe("une idée");
+    expect(voice.listening()).toBe(false);
+  });
 });

@@ -4,6 +4,7 @@ import type { AttachedFile } from "../bridge/generated/AttachedFile";
 import type { LinkingNoteItem } from "../bridge/generated/LinkingNoteItem";
 import { createEditor, type Editor } from "../editor/editor";
 import type { EditorLinks } from "../editor/links/link-site";
+import type { Dictation } from "../editor/voice/dictation";
 import type { OpenNoteLink } from "../editor/links/note-links";
 import { entryReference, lineStart, notebookTitle } from "../state/research-notebook";
 import type { TagSuggestion } from "../state/tag-field";
@@ -123,6 +124,8 @@ export interface Pane {
   revealNode(node: string): void;
   /** L'éditeur de texte où l'on peut écrire, s'il est ce que la colonne montre (ni carte, canvas, CRM, ni cahier en lecture seule) ; sinon rien. */
   textEditor(): Editor | null;
+  /** Où la saisie vocale écrit dans ce que la colonne montre : l'éditeur de texte, ou la zone de saisie d'un cahier de recherche ; sinon rien. */
+  dictation(): Dictation | null;
   /** Le canvas montré, s'il y en a un (fiche 0052). */
   canvasPane(): CanvasPane | null;
   /** Des fichiers ont changé hors de l'application : un CRM ou un agenda 12 montré dont l'un est une fiche ou un événement est relu (fiches 0060 et 0104). */
@@ -339,8 +342,19 @@ class NotePane implements Pane, Viewer {
   }
 
   textEditor(): Editor | null {
+    return this.inEditor() && this.editor.writable() ? this.editor : null;
+  }
+
+  dictation(): Dictation | null {
+    if (!this.inEditor()) return null;
+    if (this.editor.writable()) return this.editor.dictation;
+    return this.editor.entryDictation.available() ? this.editor.entryDictation : null;
+  }
+
+  /** La colonne montre une note dans son éditeur (ni carte mentale, ni canvas, ni CRM, ni fiche). */
+  private inEditor(): boolean {
     const elsewhere = [this.map, this.canvas, this.crm, this.fiche].some((p) => p?.shown());
-    return this.shown !== null && !elsewhere && this.editor.writable() ? this.editor : null;
+    return this.shown !== null && !elsewhere;
   }
 
   canvasPane(): CanvasPane | null {
@@ -417,6 +431,7 @@ class NotePane implements Pane, Viewer {
   destroy(): void {
     // Le texte provisoire d'une saisie vocale en cours est fixé avant que la note soit quittée.
     this.editor.dictation.end();
+    this.editor.entryDictation.end();
     void this.options.shared.leave(this).catch(this.options.events.error);
     this.map?.destroy();
     this.canvas?.destroy();
