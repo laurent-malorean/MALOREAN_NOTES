@@ -65,6 +65,9 @@
   --entry-number-width: calc(2.5em + 2 * var(--space-3) + 2px);
   --entry-number-gap: 0.6rem;
 
+  /* Déplacer un bloc de texte : le bloc glissé est voilé aux couleurs du fond (fiche 0106) */
+  --block-dragged-veil: color-mix(in srgb, var(--bg) 65%, transparent);
+
   /* Historique : lignes seulement dans la version, seulement dans la note actuelle */
   --difference-added-background: #dcf0d8;
   --difference-removed-background: #f6dcd8;
@@ -108,6 +111,9 @@
   --heading3-size: 1.2em;
   --image-max-height: 70vh;
   --focus-dimmed-opacity: 0.3;
+  --block-button-width: 16px;
+  --block-button-icon-size: 14px;
+  --block-drop-mark-thickness: 3px;
   --table-text-size: 0.9em;
   --code-block-text-size: 0.85em;
   --status-bar-text-size: 12px;

@@ -232,6 +232,8 @@ class VoiceDictation implements Dictation {
 /** La saisie vocale d'un éditeur : son extension, et de quoi lui donner la vue (`parts`). */
 export function createDictation(fromElsewhere: AnnotationType<boolean>): {
   readonly extension: Extension;
+  /** Une écoute est-elle en cours ? (Les boutons de bloc s'effacent pendant ce temps.) */
+  readonly listening: () => boolean;
   readonly parts: (view: EditorView) => { dictation: Dictation; writable: () => boolean };
 } {
   const dictation = new VoiceDictation(fromElsewhere);
@@ -245,6 +247,7 @@ export function createDictation(fromElsewhere: AnnotationType<boolean>): {
   ];
   return {
     extension,
+    listening: () => dictation.listening(),
     parts: (view) => ({ dictation, writable: () => !view.state.readOnly }),
   };
 }
