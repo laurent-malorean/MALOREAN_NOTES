@@ -39,39 +39,88 @@ test("la rubrique est sous le réglage des modifications après une lecture du w
   const rows = section(page).locator("li");
   await expect(rows.locator("label")).toHaveText([
     "Atlassian",
-    "Figma",
-    "mon-serveur",
     "Noota",
     "Notion",
-    "serveur-en-panne",
     "Slack",
+    "Figma",
+    "mon-serveur",
+    "serveur-en-panne",
   ]);
   await expect(rows.locator(".mcp-server-state")).toHaveText([
     "Connecté",
-    "À connecter",
-    "À connecter",
     "Connecté",
     "Connecté",
+    "Connecté",
+    "À connecter",
+    "À connecter",
     "En échec",
-    "Connecté",
+  ]);
+  await expect(section(page).locator(".mcp-status")).toHaveText("7 serveurs");
+  await expect(section(page).locator(".mcp-group-title")).toHaveText([
+    "Connectés4",
+    "À connecter2",
+    "En échec1",
   ]);
   for (const box of await section(page).getByRole("checkbox").all())
     await expect(box).not.toBeChecked();
 });
 
-test("dit quoi faire sous un serveur « À connecter », différemment pour un connecteur et pour le Terminal", async ({
+test("dit une seule fois quoi faire pour les serveurs « À connecter », une phrase pour les connecteurs et une pour le Terminal", async ({
   page,
 }) => {
   await launch(page);
   await openClaudeTab(page);
-  const hints = section(page).locator(".mcp-server-hint");
+  const hints = section(page).locator(".mcp-hint");
   await expect(hints).toHaveText([
-    "Connectez-le dans les réglages des connecteurs de claude.ai, puis cliquez sur « Actualiser ».",
-    "Connectez-le dans le Terminal : tapez claude, puis /mcp, puis cliquez sur « Actualiser ».",
+    "Connectez-les dans les réglages des connecteurs de claude.ai, puis cliquez sur « Actualiser ».",
+    "Connectez-les dans le Terminal : tapez claude, puis /mcp, puis cliquez sur « Actualiser ».",
   ]);
   await expect(section(page).getByRole("checkbox", { name: "Figma" })).toHaveAccessibleDescription(
-    /À connecter.*Connectez-le dans les réglages des connecteurs/,
+    /À connecter.*Connectez-les dans les réglages des connecteurs/,
   );
+});
+
+test("replie les serveurs « À connecter » au-delà de 5, un bouton les déplie, et la phrase d'aide reste dite une fois", async ({
+  page,
+}) => {
+  await launch(page, { mcp: "many", mcpAllowed: JSON.stringify(["claude.ai Service 3"]) });
+  await openClaudeTab(page);
+  const rows = section(page).locator("li");
+  await expect(rows.locator("label")).toHaveText([
+    "Atlassian",
+    "Noota",
+    "Notion",
+    "Slack",
+    "Service 3",
+    "serveur-en-panne",
+  ]);
+  await expect(section(page).locator(".mcp-group-title")).toHaveText([
+    "Connectés4",
+    "À connecter10",
+    "En échec1",
+  ]);
+  await expect(section(page).locator(".mcp-hint")).toHaveCount(2);
+  await section(page).getByRole("button", { name: "Afficher les 9 serveurs non cochés" }).click();
+  await expect(rows).toHaveCount(15);
+  await expect(section(page).locator(".mcp-hint")).toHaveCount(2);
+  await section(page).getByRole("button", { name: "Masquer les serveurs non cochés" }).click();
+  await expect(rows).toHaveCount(6);
+});
+
+test("la liste longue défile dans sa zone, en clair comme en sombre, sans déborder en largeur étroite", async ({
+  page,
+}) => {
+  await launch(page, { mcp: "many" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await openClaudeTab(page);
+  await section(page)
+    .getByRole("button", { name: /Afficher les 10 serveurs/ })
+    .click();
+  const list = section(page).locator(".mcp-list");
+  expect(await list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  await page.setViewportSize({ width: 600, height: 900 });
+  expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
 });
 
 test("cocher et décocher un serveur est gardé par le moteur, sans relire la liste", async ({
@@ -142,7 +191,7 @@ test("« Actualiser » relit la liste", async ({ page }) => {
   await expect(
     section(page).locator("li").filter({ hasText: "Figma" }).locator(".mcp-server-state"),
   ).toHaveText("Connecté");
-  await expect(section(page).locator(".mcp-server-hint")).toHaveCount(1);
+  await expect(section(page).locator(".mcp-hint")).toHaveCount(1);
   expect(await page.evaluate(() => window.backend.mcpServers.reads)).toBe(2);
 });
 

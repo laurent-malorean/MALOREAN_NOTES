@@ -133,10 +133,11 @@ describe("serveurs MCP : la rubrique des réglages", () => {
     const t = setup([listed]);
     t.show();
     await settle();
-    (t.boxes()[1] as HTMLInputElement).click();
+    // Les serveurs connectés viennent d'abord : Noota, Slack, puis Figma « À connecter ».
+    (t.boxes()[0] as HTMLInputElement).click();
     await settle();
     expect(t.calls).toEqual(["liste", "cocher claude.ai Noota"]);
-    expect(t.boxes().map((box) => box.checked)).toEqual([false, true, false]);
+    expect(t.boxes().map((box) => box.checked)).toEqual([true, false, false]);
     expect(t.errors).toEqual([]);
   });
 
@@ -159,7 +160,8 @@ describe("serveurs MCP : la rubrique des réglages", () => {
     const t = setup([listed]);
     t.show();
     await settle();
-    (t.boxes()[0] as HTMLInputElement).click();
+    // Noota (connecté) vient avant Notion (introuvable).
+    (t.boxes()[1] as HTMLInputElement).click();
     await settle();
     expect(t.element.querySelectorAll("li")).toHaveLength(1);
     expect(t.element.querySelector("label")?.textContent).toBe("Noota");
@@ -170,7 +172,7 @@ describe("serveurs MCP : la rubrique des réglages", () => {
     const t = setup([listed], { allow: error });
     t.show();
     await settle();
-    (t.boxes()[1] as HTMLInputElement).click();
+    (t.boxes()[0] as HTMLInputElement).click();
     await settle();
     expect(t.boxes().map((box) => box.checked)).toEqual([false, false, false]);
     expect(t.errors).toEqual([error]);
