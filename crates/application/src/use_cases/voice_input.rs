@@ -139,9 +139,9 @@ impl VoiceInput {
     /// # Errors
     ///
     /// [`VoiceFailure::AlreadyListening`] si une saisie vocale est en cours (ou se termine),
-    /// [`VoiceFailure::LanguageUnsupported`] si le Mac n'a aucune langue à proposer, l'erreur du
-    /// moteur s'il ne peut pas être lancé ; [`AppError::StorageUnavailable`] si les préférences ne
-    /// se lisent pas.
+    /// l'erreur du moteur s'il ne peut pas être lancé ; [`AppError::StorageUnavailable`] si les
+    /// préférences ne se lisent pas. Un Mac sans langue à proposer arrive par un événement
+    /// ([`VoiceFailure::LanguageUnsupported`]).
     pub fn start(&self) -> Result<(), AppError> {
         let running = Arc::new(Running {
             dictation: Mutex::new(Dictation::new(self.inner.silence)),
@@ -182,20 +182,14 @@ impl VoiceInput {
     }
 
     fn listen(&self, running: &Arc<Running>) -> Result<(), AppError> {
-        let language = match self.inner.preferences.voice_language()? {
-            Some(language) => language,
-            None => self
-                .inner
-                .transcriber
-                .catalog()?
-                .system
-                .ok_or(VoiceFailure::LanguageUnsupported)?,
-        };
+        // Sans langue choisie, le moteur trouve lui-même celle du Mac : demander le catalogue
+        // ici lancerait un programme de plus avant l'écoute (fiche 0107).
+        let language = self.inner.preferences.voice_language()?;
         let sink: VoiceSink = {
             let (inner, running) = (Arc::clone(&self.inner), Arc::clone(running));
             Box::new(move |event| inner.receive(&running, event))
         };
-        let listening = self.inner.transcriber.listen(&language, sink)?;
+        let listening = self.inner.transcriber.listen(language.as_deref(), sink)?;
         *locked(&running.listening) = Some(listening);
         let (inner, running) = (Arc::clone(&self.inner), Arc::clone(running));
         thread::spawn(move || inner.watch_silence(&running));

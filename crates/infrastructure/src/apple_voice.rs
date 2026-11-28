@@ -164,9 +164,14 @@ impl Transcriber for AppleTranscriber {
         }
     }
 
-    fn listen(&self, language: &str, sink: VoiceSink) -> Result<Box<dyn Listening>, VoiceFailure> {
+    fn listen(
+        &self,
+        language: Option<&str>,
+        sink: VoiceSink,
+    ) -> Result<Box<dyn Listening>, VoiceFailure> {
         let mut child = Command::new(&self.helper)
-            .args(["listen", language])
+            .arg("listen")
+            .args(language)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

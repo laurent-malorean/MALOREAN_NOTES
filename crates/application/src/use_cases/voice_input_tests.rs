@@ -74,7 +74,45 @@ fn listening_uses_the_language_of_the_mac_without_a_choice() {
     bench.input.start().unwrap();
     bench.input.stop();
     bench.events.wait_for_the_end();
-    assert_eq!(bench.transcriber.listened(), vec![text("fr-FR")]);
+    assert_eq!(bench.transcriber.listened(), vec![None]);
+}
+
+#[test]
+fn starting_does_not_ask_the_engine_for_its_catalog() {
+    // Le catalogue lance un second programme (énumère les langues, lit les modèles) : un
+    // démarrage à froid de plus entre le clic et l'écoute (fiche 0107).
+    for chosen in [None, Some("en-US")] {
+        let bench = bench(FakeTranscriber::new());
+        bench.input.choose_language(chosen).unwrap();
+        let asked = bench.transcriber.catalogs();
+        bench.input.start().unwrap();
+        bench.input.stop();
+        bench.events.wait_for_the_end();
+        assert_eq!(bench.transcriber.catalogs(), asked, "{chosen:?}");
+    }
+}
+
+#[test]
+fn the_events_of_the_start_reach_the_interface_in_the_order_of_the_engine() {
+    // Préparation du modèle, puis écoute, puis le texte capté dès l'ouverture du micro.
+    let bench = bench(FakeTranscriber::new().saying(vec![
+        Preparing,
+        Listening,
+        Provisional(text("bon")),
+        Fixed(text("Bonjour. ")),
+    ]));
+    bench.input.start().unwrap();
+    bench.input.stop();
+    assert_eq!(
+        bench.events.wait_for_the_end(),
+        vec![
+            Preparing,
+            Listening,
+            Provisional(text("bon")),
+            Fixed(text("Bonjour. ")),
+            Ended
+        ]
+    );
 }
 
 #[test]
@@ -84,21 +122,21 @@ fn listening_uses_the_chosen_language() {
     bench.input.start().unwrap();
     bench.input.stop();
     bench.events.wait_for_the_end();
-    assert_eq!(bench.transcriber.listened(), vec![text("en-US")]);
+    assert_eq!(bench.transcriber.listened(), vec![Some(text("en-US"))]);
 }
 
 #[test]
-fn a_mac_without_a_language_to_offer_cannot_listen() {
+fn a_mac_without_a_language_to_offer_says_so_by_an_event() {
     let bench = bench(FakeTranscriber::new().with_catalog(VoiceCatalog {
         system: None,
         access: VoiceAccess::Allowed,
         languages: Vec::new(),
     }));
+    bench.input.start().unwrap();
     assert_eq!(
-        bench.input.start(),
-        Err(AppError::Voice(VoiceFailure::LanguageUnsupported))
+        bench.events.wait_for_the_end(),
+        vec![Failed(VoiceFailure::LanguageUnsupported), Ended]
     );
-    assert!(bench.transcriber.listened().is_empty());
     assert!(!bench.input.status().unwrap().listening);
 }
 

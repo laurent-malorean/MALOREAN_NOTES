@@ -101,7 +101,7 @@ fn a_missing_helper_is_reported_as_missing_everywhere() {
         Err(VoiceFailure::EngineMissing)
     );
     assert!(matches!(
-        transcriber.listen("fr-FR", Box::new(|_| ())),
+        transcriber.listen(Some("fr-FR"), Box::new(|_| ())),
         Err(VoiceFailure::EngineMissing)
     ));
 }
@@ -166,7 +166,9 @@ echo "$line" > "$(dirname "$0")/stop"
 printf '{"event":"fixed","text":"Bon."}\n{"event":"ended"}\n'"#,
     );
     let events = Events::default();
-    let listening = transcriber.listen("en-US", collecting(&events)).unwrap();
+    let listening = transcriber
+        .listen(Some("en-US"), collecting(&events))
+        .unwrap();
     for _ in 0..500 {
         if events.lock().unwrap().len() >= 2 {
             break;
@@ -199,10 +201,25 @@ printf '{"event":"fixed","text":"Bon."}\n{"event":"ended"}\n'"#,
 }
 
 #[test]
+fn without_a_language_the_helper_is_asked_for_the_one_of_the_mac_by_itself() {
+    // Pas de commande `status` avant : le helper cherche lui-même la langue du Mac (fiche 0107).
+    let (folder, transcriber) = scripted(r#"printf '{"event":"listening"}\n{"event":"ended"}\n'"#);
+    let events = Events::default();
+    let _listening = transcriber.listen(None, collecting(&events)).unwrap();
+    assert_eq!(
+        wait_for_the_end(&events),
+        vec![VoiceEvent::Listening, VoiceEvent::Ended]
+    );
+    assert_eq!(command(&folder), "listen \n");
+}
+
+#[test]
 fn a_helper_that_dies_after_speaking_is_a_stopped_engine() {
     let (_folder, transcriber) = scripted(r#"printf '{"event":"listening"}\n'"#);
     let events = Events::default();
-    let _listening = transcriber.listen("fr-FR", collecting(&events)).unwrap();
+    let _listening = transcriber
+        .listen(Some("fr-FR"), collecting(&events))
+        .unwrap();
     assert_eq!(
         wait_for_the_end(&events),
         vec![
@@ -217,7 +234,9 @@ fn a_helper_that_dies_after_speaking_is_a_stopped_engine() {
 fn a_helper_that_says_nothing_before_dying_is_a_missing_engine() {
     let (_folder, transcriber) = scripted("exit 1");
     let events = Events::default();
-    let _listening = transcriber.listen("fr-FR", collecting(&events)).unwrap();
+    let _listening = transcriber
+        .listen(Some("fr-FR"), collecting(&events))
+        .unwrap();
     assert_eq!(
         wait_for_the_end(&events),
         vec![
@@ -232,7 +251,9 @@ fn a_failure_told_by_the_helper_is_passed_on_before_the_end() {
     let (_folder, transcriber) =
         scripted(r#"printf '{"event":"failed","reason":"noMicrophone"}\n{"event":"ended"}\n'"#);
     let events = Events::default();
-    let _listening = transcriber.listen("fr-FR", collecting(&events)).unwrap();
+    let _listening = transcriber
+        .listen(Some("fr-FR"), collecting(&events))
+        .unwrap();
     assert_eq!(
         wait_for_the_end(&events),
         vec![
@@ -250,7 +271,9 @@ printf '{"event":"listening"}\n'
 exec sleep 30"#,
     );
     let events = Events::default();
-    let listening = transcriber.listen("fr-FR", collecting(&events)).unwrap();
+    let listening = transcriber
+        .listen(Some("fr-FR"), collecting(&events))
+        .unwrap();
     let pid_file = folder.path().join("pid");
     for _ in 0..500 {
         if pid_file.exists() && !events.lock().unwrap().is_empty() {
@@ -306,7 +329,9 @@ fn the_real_engine_writes_what_the_microphone_hears() {
     let mut stderr = std::io::stderr();
     writeln!(stderr, "catalogue : {catalog:?}").unwrap();
     let events = Events::default();
-    let listening = transcriber.listen(&language, collecting(&events)).unwrap();
+    let listening = transcriber
+        .listen(Some(&language), collecting(&events))
+        .unwrap();
     writeln!(
         stderr,
         "ÉCOUTE {seconds} secondes en {language} : parlez maintenant"

@@ -16,3 +16,9 @@ Prouve, hors de l'application, que SpeechAnalyzer d'Apple écoute le micro du Ma
 - Réglage utilisé : `SpeechTranscriber(locale:, preset: .progressiveTranscription)`.
 - Le programme d'essai est lancé depuis un terminal ; l'application aura ses propres textes
   d'autorisation (`NSMicrophoneUsageDescription`).
+
+## Mesure du démarrage (28/11)
+
+`python3 -I mesure.py <malorean-voice> [langue ou -] [répétitions] [--resume]` lance `listen` avec
+`MALOREAN_VOICE_TRACE=1` et donne le temps de chaque étape ; résultats et décision dans
+`doc/decisions/0108-saisie-vocale-demarrage.md`.
