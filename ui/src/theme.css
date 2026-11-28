@@ -223,6 +223,8 @@
   --format-pill-height: calc(var(--format-button-size) + 0.4rem + 2px);
   --format-button-radius: 999px;
   --format-icon-size: 1.1rem;
+  /* Écart entre deux blocs voisins de la bande du haut (les pilules et la recherche) : un pas de l'échelle. */
+  --tool-block-gap: var(--space-3);
   /* Micro de la saisie vocale : tour de l'icône en préparation, témoin du niveau sonore (barre à droite de l'icône) */
   --voice-spin-duration: 1s;
   --voice-level-width: 3px;

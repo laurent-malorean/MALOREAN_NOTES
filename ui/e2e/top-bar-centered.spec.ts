@@ -8,8 +8,8 @@ import { sidePanelsButton, waitForNote } from "./journey";
 
 /** Tolérance sur le milieu : un point. */
 const CENTRE_TOLERANCE = 1;
-/** La bande n'a la place d'une seule ligne qu'à partir de 705 points utiles (fiche 0085). */
-const SINGLE_ROW_NEEDS = 705;
+/** La bande n'a la place d'une seule ligne qu'à partir de 722 points utiles (fiche 0085). */
+const SINGLE_ROW_NEEDS = 722;
 
 async function launch(page: Page, width: number, height = 700) {
   await page.setViewportSize({ width, height });
@@ -201,7 +201,7 @@ test("fenêtre de 1100 × 720, panneaux montrés, colonne Claude Code ouverte : 
   await launch(page, 1100, 720);
   await claude(page).click();
   await expect(page.getByRole("region", { name: "Claude Code" })).toBeVisible();
-  // La zone de l'éditeur est plus étroite que l'affichage et la recherche à leur minimum (277 points) :
+  // La zone de l'éditeur est plus étroite que l'affichage et la recherche à leur minimum (283 points) :
   // quatre lignes, la recherche seule sur la dernière, l'affichage seul sur la troisième.
   await expect.poll(async () => (await measure(page)).lines.length).toBe(4);
   expectCentred(await measure(page), 4);

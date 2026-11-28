@@ -9,14 +9,14 @@ import type { Scenario, Trial } from "../runner";
 import { type Rect, centreOf, find, findAll, rectOf } from "./env";
 
 const NAMES = ["Focus", "Plan", "Machine à écrire", "Plein écran", "Claude"];
-/** La largeur utile à partir de laquelle la bande tient sur une ligne : 44,1 rem. */
-const SWITCH_WIDTH = 44.1 * 16;
-/** La largeur de la mise en forme et des copies côte à côte (première ligne). */
-const FIRST_ROW_WIDTH = 423;
+/** La largeur utile à partir de laquelle la bande tient sur une ligne : 45,15 rem. */
+const SWITCH_WIDTH = 45.15 * 16;
+/** La largeur de la mise en forme et des copies côte à côte (première ligne : 427,1 points mesurés). */
+const FIRST_ROW_WIDTH = 428;
 /** Le minimum du champ de recherche : 6 rem. */
 const SEARCH_MINIMUM = 96;
-const ROOT_REM = 16;
-const GAP = 0.4 * ROOT_REM;
+/** L'écart entre deux blocs voisins : 12 points (`--tool-block-gap`, un pas de l'échelle d'espacement). */
+const GAP = 12;
 /** Le temps que la fenêtre se remette en page après avoir caché les panneaux. */
 const SETTLE_MS = 300;
 /** Écart toléré entre les milieux de deux éléments d'une même ligne. */

@@ -20,8 +20,8 @@ const WAIT = 5_000;
 const MAXIMUM_HEIGHT = 56;
 /** Deux lignes d'outils : la deuxième ligne ajoute une pilule (37,2 points) et un écart de 6,4 points, soit environ 98 points au total. */
 const TWO_ROWS_MAXIMUM_HEIGHT = 100;
-/** La largeur utile à partir de laquelle les outils tiennent sur une ligne : 42,05 rem (fiches 0072 et 0098). */
-const SINGLE_ROW_WIDTH = 44.1 * 16;
+/** La largeur utile à partir de laquelle les outils tiennent sur une ligne : 45,15 rem (fiches 0072 et 0098). */
+const SINGLE_ROW_WIDTH = 45.15 * 16;
 
 const bar = () => find<HTMLElement>(".window-bar");
 const button = () => find<HTMLButtonElement>('.window-bar button[aria-label="Panneaux latéraux"]');
@@ -37,7 +37,7 @@ function toolsWidth(): number {
 }
 
 /**
- * La bande tient sur une ligne d'outils quand la zone de l'éditeur a la place (705 points) : sinon deux lignes
+ * La bande tient sur une ligne d'outils quand la zone de l'éditeur a la place (722 points) : sinon deux lignes
  * (fiche 0072), qui ne dépassent jamais deux lignes d'outils. À 1100 points avec les deux listes montrées, la zone
  * n'a que 620 points : deux lignes, voulues ; les listes cachées, elle en a plus de 900 : une ligne.
  */
