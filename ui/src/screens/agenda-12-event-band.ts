@@ -39,6 +39,8 @@ export interface EventBandDeps {
   readonly backend: Agenda12EventBackend;
   /** Le chemin de la note de l'événement. */
   readonly path: string;
+  /** L'année en cours, d'après l'horloge (la liste des années part de là). */
+  readonly currentYear: () => number;
   readonly error: (error: unknown) => void;
   /** Le message d'une erreur de Rust, prêt à montrer. */
   readonly errorText: (error: unknown) => string;
@@ -87,8 +89,8 @@ class Band implements EventBand {
   constructor(private readonly deps: EventBandDeps) {
     this.fields = createEventFields({
       error: deps.error,
-      refuse: (message) => this.say(message),
-      change: (change) => void this.change(change),
+      currentYear: deps.currentYear,
+      change: (changes, notice) => void this.change(changes, notice),
       loadCountries: () => (this.countries ??= deps.backend.listCountries()),
     });
     this.message.setAttribute("role", "alert");
@@ -141,8 +143,10 @@ class Band implements EventBand {
     this.fields.show(event, force);
   }
 
-  private say(text: string): void {
+  /** Le message de la bande : un refus (`error`), ou ce que l'écran a fait de lui-même (`notice`). */
+  private say(text: string, tone: "error" | "notice" = "error"): void {
     this.message.textContent = text;
+    this.message.dataset.tone = tone;
     this.message.hidden = text === "";
   }
 
@@ -172,18 +176,25 @@ class Band implements EventBand {
     });
   }
 
-  /** Un geste d'un champ : le texte tapé est enregistré d'abord, Rust réécrit une clé, le texte et la bande relisent le fichier. */
-  private change(change: Agenda12EventChangeItem): Promise<void> {
+  /**
+   * Les gestes d'un champ : le texte tapé est enregistré d'abord, Rust réécrit une clé par geste, le texte et la
+   * bande relisent le fichier. Le premier refus arrête la suite et se dit ; `notice` se dit quand tout a réussi.
+   */
+  private change(changes: readonly Agenda12EventChangeItem[], notice?: string): Promise<void> {
     return this.enqueue(async () => {
       this.say("");
+      let done = false;
       try {
         await this.deps.flush();
-        await this.deps.backend.changeAgenda12Event(this.deps.path, change);
+        for (const change of changes)
+          await this.deps.backend.changeAgenda12Event(this.deps.path, change);
         await this.deps.followText();
+        done = true;
       } catch (error) {
         this.say(this.deps.errorText(error));
       }
       await this.reload(true);
+      if (done && notice !== undefined) this.say(notice, "notice");
     });
   }
 

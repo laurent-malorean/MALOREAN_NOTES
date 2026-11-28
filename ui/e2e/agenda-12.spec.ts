@@ -17,6 +17,12 @@ const click = (page: Page, name: string) => page.getByRole("button", { name, exa
 const confirmation = (page: Page) => page.getByRole("dialog", { name: "Confirmation" });
 const chevron = (page: Page) => page.getByRole("button", { name: "Nouveau contenu" });
 
+/** L'année suivante : la liste des années propose l'année en cours et les dix suivantes. */
+const NEXT_YEAR = new Date().getFullYear() + 1;
+/** Le bouton du jour `day` dans la fenêtre des jours ouverte. */
+const dayButton = (page: Page, day: number) =>
+  page.locator(".agenda-day-popup").getByRole("button", { name: String(day), exact: true });
+
 /** Écrit une valeur dans un champ de la bande et la valide, comme un utilisateur. */
 async function enter(page: Page, label: string, text: string) {
   await field(page, label).fill(text);
@@ -89,6 +95,26 @@ test("la grille range les lignes dans l'ordre, règle ses colonnes et filtre par
   await expect(cell(page, 2).locator(".agenda-line")).toHaveCount(2);
 });
 
+/** Les champs de la date d'un événement d'avril : le jour dans la grille, l'année dans la liste, la fin, puis un refus du moteur. */
+async function fillDates(page: Page) {
+  // Le jour se choisit dans la grille : le 31 avril n'existe pas, il est grisé.
+  await field(page, "Jour").click();
+  await expect(dayButton(page, 31)).toBeDisabled();
+  await dayButton(page, 12).click();
+  await expect(field(page, "Jour")).toHaveText("12");
+  await expect(band(page)).not.toHaveAttribute("aria-busy", "true");
+  await field(page, "Année").selectOption(String(NEXT_YEAR));
+  await field(page, "Fin : jour").click();
+  await expect(dayButton(page, 5)).toBeDisabled();
+  await dayButton(page, 14).click();
+  await expect(field(page, "Fin : jour")).toHaveText("14");
+  await expect(message(page)).toBeHidden();
+  await field(page, "Jour").click();
+  await page.getByRole("button", { name: "Aucun jour" }).click();
+  await expect(message(page)).toHaveText("La fin exige un jour de début.");
+  await expect(field(page, "Jour")).toHaveText("12");
+}
+
 test("un « + » crée l'événement de la case, dont chaque champ se renseigne, avec les refus du moteur dits", async ({
   page,
 }) => {
@@ -105,20 +131,7 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   await expect.poll(() => saved(page, "Pro/salons/sans-titre.md")).toContain("# Salon Chimie");
   await expect(page.locator(".cm-content")).toContainText("Salon Chimie");
 
-  await enter(page, "Jour", "31");
-  await expect(message(page)).toHaveText("Ce jour n'existe pas dans ce mois.");
-  await expect(field(page, "Jour")).toHaveValue("");
-  await enter(page, "Jour", "12");
-  await expect(message(page)).toBeHidden();
-  await enter(page, "Année", "2027");
-  await enter(page, "Fin : jour", "5");
-  await expect(message(page)).toHaveText("La fin est avant le début.");
-  await enter(page, "Fin : jour", "14");
-  await expect(message(page)).toBeHidden();
-  await enter(page, "Jour", "");
-  await expect(message(page)).toHaveText("La fin exige un jour de début.");
-  await enter(page, "Jour", "x");
-  await expect(message(page)).toHaveText("Un nombre entier est attendu.");
+  await fillDates(page);
 
   await field(page, "Pays").click();
   await field(page, "Pays").pressSequentially("alle");
@@ -137,7 +150,13 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
   await page.keyboard.type("Budget 5000");
   await enter(page, "Ville", "Hanovre Messe");
   const content = (await saved(page, "Pro/salons/sans-titre.md")) ?? "";
-  for (const key of ["mois: 5", "jour: 12", "annee: 2027", "jour-fin: 14", "pays: DE"])
+  for (const key of [
+    "mois: 5",
+    "jour: 12",
+    `annee: ${String(NEXT_YEAR)}`,
+    "jour-fin: 14",
+    "pays: DE",
+  ])
     expect(content).toContain(key);
   expect(content).toContain("ville: Hanovre Messe");
   expect(content).toContain("tags: [salon]");
@@ -145,7 +164,9 @@ test("un « + » crée l'événement de la case, dont chaque champ se renseigne,
 
   await click(page, "← Salons");
   await expect(page.locator(".agenda-month")).toHaveCount(12);
-  expect(await lines(cell(page, 5))).toContain("12–14/05 2027 – 🇩🇪 (Hanovre Messe) – Salon Chimie");
+  expect(await lines(cell(page, 5))).toContain(
+    `12–14/05 ${String(NEXT_YEAR)} – 🇩🇪 (Hanovre Messe) – Salon Chimie`,
+  );
   expect(await lines(cell(page, 4))).toEqual([]);
 });
 

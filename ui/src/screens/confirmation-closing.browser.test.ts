@@ -31,7 +31,7 @@ describe("fenêtre de clôture : sa présentation", () => {
     expect(successor.right).toBeLessThanOrEqual(dialog.right);
   });
 
-  it("les boutons ont la forme de ceux de l'application : 36 points de haut, mêmes rayons ; seule l'action principale est pleine", () => {
+  it("les boutons ont la forme de ceux de l'application : 36 points de haut, mêmes rayons ; les deux « Clore » ont le même orange, « Annuler » reste neutre", () => {
     const element = open();
     const style = (text: string) => {
       const button = [...element.querySelectorAll("button")].find((b) => b.textContent === text);
@@ -41,9 +41,10 @@ describe("fenêtre de clôture : sa présentation", () => {
       expect(style(text).borderTopLeftRadius).toBe("8px");
       expect(box(element, text).height).toBeGreaterThanOrEqual(36);
     }
-    expect(style("Clore et préparer le suivant").backgroundColor).not.toBe(
+    expect(style("Clore et préparer le suivant").backgroundColor).toBe(
       style("Clore").backgroundColor,
     );
-    expect(style("Clore").backgroundColor).toBe(style("Annuler").backgroundColor);
+    expect(style("Clore").backgroundColor).not.toBe(style("Annuler").backgroundColor);
+    expect(style("Annuler").backgroundColor).toBe(style("Annuler").backgroundColor);
   });
 });

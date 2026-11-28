@@ -34,7 +34,7 @@
   display: none;
 }
 
-/* Les boutons de l'écran : un bouton à bordure (secondaire), un bouton plein (l'action principale), une icône seule */
+/* Les boutons de l'écran : un bouton à bordure (neutre), « Clore » plein en orange, une icône seule (la corbeille, rouge au survol et au focus) */
 .agenda-action {
   display: inline-flex;
   align-items: center;
@@ -51,13 +51,24 @@
 .agenda-action:hover {
   border-color: var(--accent);
 }
-.agenda-action.agenda-close {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
+/* « Clore » : l'action de clore, secondaire et sans retour direct, en orange d'avertissement du thème (un seul style
+   pour la bande et pour la fenêtre de clôture) ; le texte du thème sur l'orange garde un contraste d'au moins 4,5. */
+.agenda-action.agenda-close,
+.confirmation-buttons .agenda-closing-choice {
+  color: var(--on-warning);
+  background: var(--warning);
+  border-color: var(--warning);
+  font-weight: 600;
 }
-.agenda-action.agenda-close:hover {
-  background: color-mix(in srgb, var(--accent) 85%, var(--text));
+.agenda-action.agenda-close:hover,
+.confirmation-buttons .agenda-closing-choice:hover {
+  background: color-mix(in srgb, var(--warning) 85%, var(--text));
+  border-color: color-mix(in srgb, var(--warning) 85%, var(--text));
+}
+.agenda-action.agenda-close:focus-visible,
+.confirmation-buttons .agenda-closing-choice:focus-visible {
+  outline: 2px solid var(--warning);
+  outline-offset: 2px;
 }
 .agenda-icon-action {
   display: inline-flex;
@@ -75,9 +86,14 @@
   width: var(--format-icon-size);
   height: var(--format-icon-size);
 }
-.agenda-icon-action:hover {
+.agenda-icon-action:hover,
+.agenda-icon-action:focus-visible {
   color: var(--danger);
   background: var(--selected);
+}
+.agenda-icon-action:focus-visible {
+  outline: 2px solid var(--danger);
+  outline-offset: 1px;
 }
 
 /* Bandeau du haut : le titre, puis les outils groupés comme les pilules de la barre */
@@ -373,20 +389,6 @@
 .confirmation-buttons.agenda-closing-buttons {
   flex-direction: column-reverse;
   align-items: stretch;
-}
-.confirmation-buttons .agenda-closing-choice {
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--border);
-}
-.confirmation-buttons .agenda-closing-choice:hover {
-  border-color: var(--accent);
-}
-.confirmation-buttons .agenda-closing-choice.agenda-closing-successor {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
-  font-weight: 600;
 }
 
 /* L'en-tête technique d'un événement, replié dans l'éditeur sur une ligne « Propriétés » (éditeur : agenda-event-properties.ts). */

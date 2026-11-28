@@ -15,7 +15,7 @@ const backend = {
   errorMessage: (error: unknown) => `dit : ${String(error)}`,
 };
 
-function host() {
+function host(currentYear?: () => number) {
   const dialog = document.createElement("dialog");
   document.body.replaceChildren(dialog);
   const focused: string[] = [];
@@ -26,7 +26,7 @@ function host() {
     activePane: () => ({ focusEventTitle: () => focused.push("titre") }) as never,
   };
   return {
-    host: createAgenda12Host({ backend, dialog, columns, trash }),
+    host: createAgenda12Host({ backend, dialog, columns, trash, currentYear }),
     dialog,
     opened,
     focused,
@@ -46,6 +46,11 @@ describe("pont de l'agenda 12 d'une colonne", () => {
     const { host: deps } = host();
     expect(deps.backend).toBe(backend);
     expect(deps.errorText("x")).toBe("dit : x");
+  });
+
+  it("donne l'année en cours, de l'horloge du Mac par défaut ou de celle qu'on lui injecte", () => {
+    expect(host().host.currentYear()).toBe(new Date().getFullYear());
+    expect(host(() => 2031).host.currentYear()).toBe(2031);
   });
 
   it("ouvre une note dans la colonne active ; le curseur va sur le titre seulement à la création", async () => {

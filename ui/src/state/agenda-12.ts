@@ -38,13 +38,6 @@ export function monthName(month: number): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-/** Le texte d'un champ de nombre : vide, `null` ; des chiffres, leur valeur ; autre chose, `undefined`. */
-export function wholeNumber(text: string): number | null | undefined {
-  const trimmed = text.trim();
-  if (trimmed === "") return null;
-  return /^\d+$/.test(trimmed) ? Number(trimmed) : undefined;
-}
-
 /** Sans majuscule ni accent, pour chercher en tapant. */
 const folded = (text: string): string => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -74,6 +67,9 @@ function summaryDate({ month, day, year, end }: Agenda12EventItem): string {
   if (day !== null) {
     if (end === null) date = `${dayText(day)} ${date}`;
     else if (end.month === month) date = `${dayText(day)} – ${dayText(end.day)} ${date}`;
+    else if (year !== null && end.month < month)
+      // Une fin dans un mois antérieur tombe l'année suivante : les deux années se disent.
+      return `${dayText(day)} ${date} ${year} – ${dayText(end.day)} ${lowerMonth(end.month)} ${year + 1}`;
     else date = `${dayText(day)} ${date} – ${dayText(end.day)} ${lowerMonth(end.month)}`;
   }
   return year === null ? date : `${date} ${year}`;

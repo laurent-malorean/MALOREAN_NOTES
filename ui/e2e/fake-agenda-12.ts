@@ -172,6 +172,18 @@ type Gesture = (content: string, change: Args) => string;
 
 const text = (x: unknown): string | null => (x === null ? null : String(x));
 
+/** Refuse une fin qui n'existe pas, ou qui tombe avant le début : `start` est le jour et le mois du début. */
+function checkedEnd(next: string, start: { day: number; month: number; year: number | null }) {
+  const endDay = numberOf(next, "jour-fin");
+  if (endDay === null) return;
+  const endMonth = numberOf(next, "mois-fin") ?? start.month;
+  // Comme le moteur : seule une fin du même mois peut tomber avant le début ; un mois de fin plus petit passe à
+  // l'année suivante (du 30 décembre au 2 janvier).
+  if (endMonth === start.month && endDay < start.day) refuse("La fin est avant le début.");
+  const endYear = start.year !== null && endMonth < start.month ? start.year + 1 : start.year;
+  if (endDay > lastDay(endMonth, endYear)) refuse("Ce jour n'existe pas dans ce mois.");
+}
+
 /** Refuse la date qui n'existe pas, ou une fin sans jour de début ou avant le début. */
 function checked(next: string): string {
   const [month, day, year] = [
@@ -179,12 +191,10 @@ function checked(next: string): string {
     numberOf(next, "jour"),
     numberOf(next, "annee"),
   ];
-  const endDay = numberOf(next, "jour-fin");
-  if (endDay !== null && day === null) refuse("La fin exige un jour de début.");
-  if (day !== null && day > lastDay(month, year)) refuse("Ce jour n'existe pas dans ce mois.");
-  const endMonth = numberOf(next, "mois-fin") ?? month;
-  if (endDay !== null && day !== null && endMonth * 100 + endDay < month * 100 + day)
-    refuse("La fin est avant le début.");
+  if (numberOf(next, "jour-fin") !== null && day === null) refuse("La fin exige un jour de début.");
+  if (day === null) return next;
+  if (day > lastDay(month, year)) refuse("Ce jour n'existe pas dans ce mois.");
+  checkedEnd(next, { day, month, year });
   return next;
 }
 

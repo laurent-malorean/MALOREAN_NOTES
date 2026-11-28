@@ -28,6 +28,7 @@ function mount(first: Detail = detailOf()) {
   };
   const band = createEventBand({
     path: PATH,
+    currentYear: () => 2026,
     error: (error) => errors.push(error),
     errorText: (error) => (error as { message: string }).message,
     flush: async () => {
@@ -157,9 +158,9 @@ describe("bande d'un événement : ce qu'elle montre", () => {
     await m.band.reload();
     expect(field("Titre").value).toBe("Salon Embedded World");
     expect(field("Mois").value).toBe("2");
-    expect(field("Jour").value).toBe("10");
+    expect(field("Jour").textContent).toBe("10");
     expect(field("Année").value).toBe("2027");
-    expect(field("Fin : jour").value).toBe("13");
+    expect(field("Fin : jour").textContent).toBe("13");
     expect(field("Fin : mois").value).toBe("2");
     expect(field("Pays").value).toBe("🇩🇪 Allemagne");
     expect(field("Ville").value).toBe("Nuremberg");
@@ -183,8 +184,8 @@ describe("bande d'un événement : ce qu'elle montre", () => {
       ),
     );
     await m.band.reload();
-    for (const label of ["Jour", "Année", "Fin : jour", "Pays", "Ville"])
-      expect(field(label).value).toBe("");
+    for (const label of ["Jour", "Fin : jour"]) expect(field(label).textContent).toBe("—");
+    for (const label of ["Année", "Pays", "Ville"]) expect(field(label).value).toBe("");
     expect(field("Fin : mois").value).toBe("5");
     expect(field("Fin : mois").disabled).toBe(true);
     expect(field("Mois").value).toBe("5");
@@ -293,36 +294,10 @@ describe("bande d'un événement : chaque champ est un geste", () => {
     expect((await gesture("Mois", "3")).changes).toEqual([{ kind: "month", month: 3 }]);
   });
 
-  it("le jour", async () => {
-    expect((await gesture("Jour", " 12 ")).changes).toEqual([{ kind: "day", day: 12 }]);
-  });
-
-  it("effacer le jour", async () => {
-    expect((await gesture("Jour", "")).changes).toEqual([{ kind: "day", day: null }]);
-  });
-
-  it("l'année", async () => {
-    expect((await gesture("Année", "2028")).changes).toEqual([{ kind: "year", year: 2028 }]);
-  });
-
-  it("effacer l'année", async () => {
-    expect((await gesture("Année", "")).changes).toEqual([{ kind: "year", year: null }]);
-  });
-
-  it("le jour de fin, avec le mois de fin montré", async () => {
-    expect((await gesture("Fin : jour", "14")).changes).toEqual([
-      { kind: "end", end: { day: 14, month: 2 } },
-    ]);
-  });
-
   it("le mois de fin", async () => {
     expect((await gesture("Fin : mois", "3")).changes).toEqual([
       { kind: "end", end: { day: 13, month: 3 } },
     ]);
-  });
-
-  it("effacer le jour de fin efface la fin", async () => {
-    expect((await gesture("Fin : jour", "")).changes).toEqual([{ kind: "end", end: null }]);
   });
 
   it("la ville, sans les espaces autour", async () => {
@@ -368,30 +343,19 @@ describe("bande d'un événement : chaque champ est un geste", () => {
     );
   });
 
-  it("un nombre mal écrit est refusé dans la bande, sans aller à Rust", async () => {
-    const m = mount();
-    await m.band.reload();
-    enter("Jour", "douze");
-    expect(message().hidden).toBe(false);
-    expect(message().textContent).toBe("Un nombre entier est attendu.");
-    expect(message().getAttribute("role")).toBe("alert");
-    enter("Année", "20x7");
-    enter("Fin : jour", "1,5");
-    expect(m.changes).toEqual([]);
-  });
-
   it("le refus du moteur est montré tel quel dans la bande, les champs retrouvent ce qui est écrit, le message s'efface au geste suivant", async () => {
     const m = mount();
     await m.band.reload();
     m.state.fail = { message: "Ce jour n'existe pas dans ce mois." };
-    enter("Jour", "31");
+    enter("Ville", "Hanovre");
     await vi.waitFor(() =>
       expect(message().textContent).toBe("Ce jour n'existe pas dans ce mois."),
     );
     expect(message().hidden).toBe(false);
-    expect(field("Jour").value).toBe("10");
+    expect(message().dataset.tone).toBe("error");
+    expect(field("Ville").value).toBe("Nuremberg");
     m.state.fail = null;
-    enter("Jour", "11");
+    enter("Ville", "Lyon");
     await vi.waitFor(() => expect(message().hidden).toBe(true));
     expect(message().textContent).toBe("");
   });
@@ -405,7 +369,7 @@ describe("bande d'un événement : les gestes se suivent", () => {
     m.state.flushHold = new Promise((resolve) => (release = resolve));
     const element = document.querySelector(".agenda-band") as HTMLElement;
     enter("Ville", "Hanovre");
-    enter("Jour", "12");
+    enter("Mois", "3");
     expect(element.getAttribute("aria-busy")).toBe("true");
     await new Promise((resolve) => setTimeout(resolve, 30));
     // Le premier geste n'a pas fini d'enregistrer le texte : rien n'est encore écrit.
@@ -415,7 +379,7 @@ describe("bande d'un événement : les gestes se suivent", () => {
     await vi.waitFor(() => expect(m.changes).toHaveLength(2));
     expect(m.changes).toEqual([
       { kind: "city", city: "Hanovre" },
-      { kind: "day", day: 12 },
+      { kind: "month", month: 3 },
     ]);
     await vi.waitFor(() => expect(element.hasAttribute("aria-busy")).toBe(false));
   });

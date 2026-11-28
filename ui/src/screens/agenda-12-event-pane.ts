@@ -62,6 +62,7 @@ class ColumnEvent implements EventPane {
     this.path = path;
     this.band = createEventBand({
       ...{ backend: deps.backend, path, error, flush, followText },
+      currentYear: deps.currentYear,
       errorText: deps.errorText,
       ...{ askClosing: deps.askClosing, trashEvent: deps.trashEvent },
       open: (target) => deps.open(target, false),

@@ -12,7 +12,6 @@ import {
   matchingCountries,
   monthName,
   touchesAgenda12,
-  wholeNumber,
 } from "./agenda-12";
 
 const COUNTRIES = [
@@ -56,16 +55,6 @@ describe("agenda 12 : les textes", () => {
     expect(monthName(1)).toBe("Janvier");
     expect(monthName(2)).toBe("Février");
     expect(monthName(12)).toBe("Décembre");
-  });
-
-  it("lit un champ de nombre : vide, chiffres, ou autre chose", () => {
-    expect(wholeNumber("")).toBeNull();
-    expect(wholeNumber("  ")).toBeNull();
-    expect(wholeNumber("12")).toBe(12);
-    expect(wholeNumber(" 2027 ")).toBe(2027);
-    expect(wholeNumber("12a")).toBeUndefined();
-    expect(wholeNumber("-3")).toBeUndefined();
-    expect(wholeNumber("1.5")).toBeUndefined();
   });
 
   it("montre le pays par son drapeau et son nom", () => {
@@ -121,6 +110,18 @@ describe("agenda 12 : le résumé d'un événement", () => {
     );
     expect(eventSummary(dated({ month: 1, day: 30, year: 2027, end: { day: 1, month: 2 } }))).toBe(
       "30 janvier – 1er février 2027",
+    );
+  });
+
+  it("une fin dans un mois antérieur tombe l'année suivante : le résumé donne les deux années", () => {
+    expect(eventSummary(dated({ month: 9, day: 13, year: 2026, end: { day: 23, month: 6 } }))).toBe(
+      "13 septembre 2026 – 23 juin 2027",
+    );
+    expect(eventSummary(dated({ month: 12, day: 30, year: 2026, end: { day: 1, month: 1 } }))).toBe(
+      "30 décembre 2026 – 1er janvier 2027",
+    );
+    expect(eventSummary(dated({ month: 9, day: 13, year: null, end: { day: 23, month: 6 } }))).toBe(
+      "13 septembre – 23 juin",
     );
   });
 
