@@ -1,7 +1,7 @@
 // Serveurs MCP extérieurs simulés pour les parcours (fiche 0105) : Rust répond comme le contrat de la spécification
 // « serveurs-mcp » § 8, sans Claude Code. Le moteur garde les serveurs cochés (jamais dans l'espace de travail) ; un serveur
 // coché que la liste ne contient plus revient « introuvable ». Paramètres d'adresse : `mcp` = `absent` (Claude Code
-// n'est pas là : une phrase, aucune liste), `empty` (aucun serveur connu), `failing` (la lecture échoue) ; `mcpDelay` :
+// n'est pas là : une phrase, aucune liste), `empty` (aucun serveur connu), `failing` (la lecture échoue), `many` (huit connecteurs « À connecter » de plus) ; `mcpDelay` :
 // durée de la lecture, en millisecondes.
 import type { McpServerItem, McpServersItem } from "../src/bridge";
 
@@ -12,7 +12,7 @@ export interface FakeMcpServersState {
   known: McpServerItem[];
   /** Les noms cochés, dans l'ordre du cochage. */
   allowed: string[];
-  /** Mode : `absent`, `empty`, `failing` ou rien. */
+  /** Mode : `absent`, `empty`, `failing`, `many` ou rien. */
   mode: string | null;
   /** Durée d'une lecture, en millisecondes. */
   delay: number;
@@ -35,6 +35,8 @@ const server = (name: string, state: McpServerItem["state"], connector = true): 
   allowed: false,
 });
 
+const MANY = Array.from({ length: 8 }, (_, i) => server(`Service ${i + 1}`, "toConnect"));
+
 export function fakeMcpServersState(params: URLSearchParams): FakeMcpServers {
   return {
     mcpServers: {
@@ -46,6 +48,7 @@ export function fakeMcpServersState(params: URLSearchParams): FakeMcpServers {
         server("Atlassian", "connected"),
         server("mon-serveur", "toConnect", false),
         server("serveur-en-panne", "failed", false),
+        ...(params.get("mcp") === "many" ? MANY : []),
       ],
       allowed: JSON.parse(params.get("mcpAllowed") ?? "[]") as string[],
       mode: params.get("mcp"),

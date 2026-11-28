@@ -1,6 +1,6 @@
 # Serveurs MCP de la colonne Claude Code
 
-Spécification fonctionnelle, rédigée le 27/11/2026, **validée par l'utilisateur le 27/11** (demande de développement). Ce document se lit seul.
+Spécification fonctionnelle, rédigée le 27/11/2026, **validée par l'utilisateur le 27/11** (demande de développement). Présentation de la rubrique (§ 3 « La liste », « La connexion à chaque service », maquette, § 9) refaite le 28/11 à la demande de l'utilisateur. Ce document se lit seul.
 
 ## 1. Besoin
 
@@ -24,10 +24,13 @@ Ces mots entrent dans l'ontologie avant le code.
 
 - **Où** : dans l'onglet « Claude » des Réglages, une rubrique **« Serveurs MCP »**, sous le réglage des modifications après une lecture du web.
 - **Phrase d'introduction** : « Les services que Claude peut utiliser dans la colonne Claude Code, en plus des outils de l'application. Seuls les serveurs cochés lui sont ouverts. »
-- **La liste** : chaque serveur MCP extérieur que Claude Code connaît (connecteurs claude.ai, serveurs ajoutés à Claude Code dans le Terminal, qu'ils se lancent sur le Mac ou soient sur le web), sauf les serveurs apportés par les plugins de Claude Code, une ligne chacun, triée par nom :
+- **La liste** : chaque serveur MCP extérieur que Claude Code connaît (connecteurs claude.ai, serveurs ajoutés à Claude Code dans le Terminal, qu'ils se lancent sur le Mac ou soient sur le web), sauf les serveurs apportés par les plugins de Claude Code. Elle est **regroupée par état** (refonte du 28/11, demandée par l'utilisateur après essai de l'application réelle : la liste était tassée et répétait la même phrase sous chaque serveur « À connecter ») : « Connectés » d'abord, puis « À connecter », « En échec » et « Introuvables » (un serveur coché disparu reste visible dans ce dernier groupe). Chaque groupe a un petit titre avec son nombre de serveurs ; un groupe vide n'a pas de titre. Dans un groupe, les serveurs sont triés par nom. Une ligne par serveur, qui ne garde que :
   - une case à cocher, nommée par le serveur ;
   - son nom, tel que Claude Code le donne, sans le préfixe « claude.ai » ;
-  - son état, en toutes lettres : « Connecté », « À connecter » ou « En échec ».
+  - son état, en toutes lettres, à droite : « Connecté », « À connecter », « En échec » ou « Introuvable ».
+- **En tête de la liste** : le nombre de serveurs (« 32 serveurs », « 1 serveur ») à gauche, le bouton **« Actualiser »** à droite, sous la phrase d'introduction.
+- **Une zone de défilement** : quand la liste est longue, elle défile dans sa propre zone (28 rem de haut au plus) ; le titre de chaque groupe reste en haut pendant qu'on défile.
+- **Les « À connecter » repliés s'ils sont plus de 5** : au-delà de 5 serveurs « À connecter », ceux qui ne sont pas cochés sont masqués au départ ; un bouton « Afficher les N serveurs non cochés » les déplie, puis devient « Masquer les serveurs non cochés ». Un serveur « À connecter » coché reste toujours visible. Les autres groupes ne se replient jamais.
 - **Lecture de la liste** : l'application demande la liste à Claude Code à l'ouverture de l'onglet « Claude ». Cette lecture a pris 13 secondes sur le Mac de l'utilisateur, pour 32 serveurs : pendant ce temps, la rubrique affiche « Lecture des serveurs de Claude Code… » et le reste des Réglages reste utilisable. Un bouton **« Actualiser »** relit la liste.
 - **Claude Code absent ou pas connecté** : la rubrique le dit en une phrase et renvoie à la colonne Claude Code, comme la vérification de la connexion ; aucune liste.
 - **Aucun serveur coché au départ.** Cocher un serveur le permet dès le message suivant ; le décocher le retire dès le message suivant. Un tour déjà en cours garde ce qu'il avait au départ.
@@ -37,9 +40,10 @@ Ces mots entrent dans l'ontologie avant le code.
 ### La connexion à chaque service
 
 - L'application ne fait aucune connexion elle-même et ne garde aucun mot de passe ni jeton : elle réutilise la connexion que Claude Code a déjà.
-- **Serveur « À connecter »** : sous son nom, une phrase dit quoi faire :
-  - pour un connecteur claude.ai : « Connectez-le dans les réglages des connecteurs de claude.ai, puis cliquez sur « Actualiser ». » ;
-  - pour un autre serveur : « Connectez-le dans le Terminal : tapez `claude`, puis `/mcp`, puis cliquez sur « Actualiser ». ».
+- **Serveurs « À connecter »** : la phrase qui dit quoi faire n'est dite **qu'une seule fois**, en tête du groupe « À connecter », jamais sous chaque serveur :
+  - pour les connecteurs claude.ai : « Connectez-les dans les réglages des connecteurs de claude.ai, puis cliquez sur « Actualiser ». » ;
+  - pour les serveurs ajoutés dans le Terminal : « Connectez-les dans le Terminal : tapez `claude`, puis `/mcp`, puis cliquez sur « Actualiser ». ».
+  - Une phrase n'apparaît que si le groupe contient au moins un serveur de cette origine ; quand les deux origines sont là, le groupe montre d'abord les connecteurs sous leur phrase, puis les serveurs du Terminal sous la leur. La phrase reste visible quand les serveurs sont repliés.
 - Un serveur « À connecter » peut être coché ; ses outils échoueront tant que la connexion n'est pas faite, et la colonne montre l'erreur du service.
 
 ### Dans la colonne Claude Code
@@ -55,20 +59,32 @@ Ces mots entrent dans l'ontologie avant le code.
 ### Maquette de la rubrique
 
 ```
-Serveurs MCP                                            [ Actualiser ]
+Serveurs MCP
 Les services que Claude peut utiliser dans la colonne Claude Code,
 en plus des outils de l'application. Seuls les serveurs cochés lui
 sont ouverts.
-
-[ ] Atlassian                Connecté
-[ ] Figma                    À connecter
-      Connectez-le dans les réglages des connecteurs de claude.ai,
-      puis cliquez sur « Actualiser ».
-[x] Noota                    Connecté
-[ ] Notion                   Connecté
-[ ] Slack                    Connecté
-…
+32 serveurs                                             [ Actualiser ]
++--------------------------------------------------------------------+
+| Connectés  11                                                      |
+|--------------------------------------------------------------------|
+| [ ] Atlassian                                           Connecté   |
+|--------------------------------------------------------------------|
+| [x] Noota                                               Connecté   |
+|--------------------------------------------------------------------|
+| [ ] Slack                                               Connecté   |
+| …                                                                  |
+| À connecter  21                                                    |
+|--------------------------------------------------------------------|
+| Connectez-les dans les réglages des connecteurs de claude.ai,      |
+| puis cliquez sur « Actualiser ».                                   |
+| [ Afficher les 21 serveurs non cochés ]                            |
+| En échec  1                                                        |
+|--------------------------------------------------------------------|
+| [ ] serveur-en-panne                                    En échec   |
++--------------------------------------------------------------------+
 ```
+
+Lignes de 36 points au moins, séparées par un filet discret, fond au survol ; couleurs, polices et espacements du thème (clair et sombre) ; la liste ne déborde pas en largeur étroite.
 
 ## 4. Contraintes
 
@@ -143,10 +159,11 @@ Aucun événement nouveau. L'action d'un outil d'un serveur permis arrive par l'
 ## 9. Interface réalisée
 
 - **Où** : l'onglet « Claude » des Réglages montre, sous le réglage des modifications après une lecture du web, la rubrique « Serveurs MCP » (une partie de l'écran comme les autres, titre « Serveurs MCP »). Un champ de plus dans le contrôle des onglets : les parties « Claude » et « Serveurs MCP » vont ensemble dans l'onglet « Claude ».
-- **Quand la liste est lue** : la première fois que l'onglet « Claude » est montré après l'ouverture des Réglages (au clic sur l'onglet, ou à l'ouverture si c'est le dernier onglet ouvert), jamais si l'on ne va pas sur cet onglet ; un nouveau passage sur l'onglet ne relit pas. « Actualiser » (en haut à droite de la rubrique, à la hauteur de la phrase d'introduction) relit ; il est grisé pendant la lecture.
-- **Textes** : ceux du § 3, mots pour mots. Pendant la lecture : « Lecture des serveurs de Claude Code… ». La phrase d'un serveur « À connecter » : pour un connecteur, « Connectez-le dans les réglages des connecteurs de claude.ai, puis cliquez sur « Actualiser ». » ; pour un autre serveur, « Connectez-le dans le Terminal : tapez `claude`, puis `/mcp`, puis cliquez sur « Actualiser ». » avec `claude` et `/mcp` en police de code (les accents graves du § 3 sont la notation du code, ils ne s'affichent pas). Un serveur n'a de phrase que s'il est « À connecter ». Liste vide : « Claude Code ne connaît aucun serveur MCP extérieur. » (seule phrase ajoutée à celles du § 3). Claude Code absent ou muet : la phrase du moteur (§ 8), en couleur d'erreur, sans liste.
-- **La case** : nommée par le serveur (nom montré, sans « claude.ai »), décrite par son état et, s'il y en a une, sa phrase ; sa bulle d'aide dit que Claude pourra se servir de tous les outils du serveur, y compris ceux qui écrivent dans le service, sans rien demander (§ 4). L'état est coloré par les couleurs du thème (succès pour « Connecté », erreur pour « En échec » et « Introuvable », discret pour « À connecter »).
+- **Quand la liste est lue** : la première fois que l'onglet « Claude » est montré après l'ouverture des Réglages (au clic sur l'onglet, ou à l'ouverture si c'est le dernier onglet ouvert), jamais si l'on ne va pas sur cet onglet ; un nouveau passage sur l'onglet ne relit pas. « Actualiser » (à droite de l'en-tête de la liste, qui dit le nombre de serveurs) relit ; il est grisé pendant la lecture.
+- **Textes** : ceux du § 3, mots pour mots. Pendant la lecture, l'en-tête dit « Lecture des serveurs de Claude Code… » ; liste lue, il dit le nombre de serveurs. Les phrases des serveurs « À connecter » sont celles du § 3, au pluriel, dites une fois par origine (connecteurs, Terminal) avec `claude` et `/mcp` en police de code (les accents graves du § 3 sont la notation du code, ils ne s'affichent pas). Liste vide : « Claude Code ne connaît aucun serveur MCP extérieur. » (seule phrase ajoutée à celles du § 3). Claude Code absent ou muet : la phrase du moteur (§ 8), en couleur d'erreur, sans liste.
+- **Le repli** : l'état déplié ou replié des « À connecter » est gardé tant que les Réglages sont ouverts (cocher ne le change pas) ; le bouton garde le focus quand on l'actionne. Quand tous les « À connecter » sont cochés, aucun bouton n'est proposé au départ (rien à masquer).
+- **La case** : nommée par le serveur (nom montré, sans « claude.ai »), décrite par son état et, pour un serveur « À connecter », la phrase de son groupe ; sa bulle d'aide dit que Claude pourra se servir de tous les outils du serveur, y compris ceux qui écrivent dans le service, sans rien demander (§ 4). L'état est coloré par les couleurs du thème (succès pour « Connecté », erreur pour « En échec » et « Introuvable », discret pour « À connecter »).
 - **Cocher / décocher** : la ligne change aussitôt et la commande part ; la liste n'est pas relue. Si le moteur refuse (préférences illisibles ou impossibles à écrire), la case revient comme elle était et l'erreur du moteur est montrée en message. Décocher un serveur « Introuvable » le fait disparaître de la liste.
 - **Les réglages restent utilisables** pendant la lecture : on change d'onglet, on règle autre chose ; la lecture finie, la rubrique se remplit.
 - **Dans la colonne Claude Code** : l'action d'un outil d'un serveur permis est montrée « Noota · search_records » (§ 3) ; aucun autre changement d'écran.
-- **Essais** : tests d'écran de la rubrique (textes, états, cases, erreurs) et de son câblage ; parcours Playwright (`ui/e2e/mcp-servers.spec.ts`, avec le faux de Rust `ui/e2e/fake-mcp-servers.ts` : paramètres d'adresse `mcp=absent|empty|failing`, `mcpDelay`, `mcpAllowed`).
+- **Essais** : tests d'écran de la rubrique (textes, regroupement, phrase dite une fois, repli, mesures, états, cases, erreurs) et de son câblage ; parcours Playwright (`ui/e2e/mcp-servers.spec.ts`, avec le faux de Rust `ui/e2e/fake-mcp-servers.ts` : paramètres d'adresse `mcp=absent|empty|failing|many`, `mcpDelay`, `mcpAllowed`).
